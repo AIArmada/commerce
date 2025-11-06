@@ -23,15 +23,17 @@ jobs:
           - jnt
           - stock
           - vouchers
-    
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-      
+        with:
+          fetch-depth: 0
+
       - name: Get previous tag
         id: previous-tag
         uses: WyriHaximus/github-action-get-previous-tag@master
-      
+
       - name: Monorepo Split of ${{ matrix.package }}
         uses: danharrin/monorepo-split-github-action@v2.4.0
         env:
