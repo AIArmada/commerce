@@ -33,12 +33,12 @@ jobs:
       
       - name: Monorepo Split of ${{ matrix.package }}
         uses: symplify/monorepo-split-github-action@v2.3.0
-        env:
-          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
         with:
           package_directory: 'packages/${{ matrix.package }}'
-          split_repository_organization: 'aiarmada'
-          split_repository_name: '${{ matrix.package }}'
+          repository_organization: 'AIArmada'
+          repository_name: '${{ matrix.package }}'
+          repository_host: 'github.com'
           tag: ${{ steps.previous-tag.outputs.tag }}
           user_name: 'AIArmada Bot'
           user_email: 'bot@aiarmada.com'
+          github_token: ${{ secrets.GH_ACCESS_TOKEN }}
