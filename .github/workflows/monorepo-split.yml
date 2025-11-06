@@ -1,12 +1,12 @@
-name: Monorepo Split
+name: Monorepo Split + Instant Packagist
 
 on:
   push:
     tags:
-      - '[0-9]+.*'   # only run on semver-like tags, prevents accidents
+      - 'v[0-9]+.[0-9]+.[0-9]+-*'         # allows v1.0.0-rc1
 
 jobs:
-  split-monorepo:
+  split-and-publish:
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -25,25 +25,37 @@ jobs:
           - vouchers
 
     steps:
-      - name: Checkout code
+      - name: Checkout
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
       - name: Get current tag
-        id: current-tag
-        run: |
-          echo "tag=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
+        id: tag
+        run: echo "value=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
-      - name: Monorepo Split of ${{ matrix.package }}
+      - name: Monorepo Split → ${{ matrix.package }}
         uses: danharrin/monorepo-split-github-action@v2.4.0
+        with:
+          package_directory: packages/${{ matrix.package }}
+          repository_organization: AIArmada
+          repository_name: ${{ matrix.package }}
+          branch: main
+          tag: ${{ steps.tag.outputs.value }}
+          user_name: AIArmada Bot
+          user_email: bot@aiarmada.com
         env:
           PAT: ${{ secrets.GH_ACCESS_TOKEN }}
-        with:
-          package_directory: 'packages/${{ matrix.package }}'
-          repository_organization: 'AIArmada'
-          repository_name: '${{ matrix.package }}'
-          branch: 'main'
-          tag: ${{ steps.current-tag.outputs.tag }}
-          user_name: 'AIArmada Bot'
-          user_email: 'bot@aiarmada.com'
+
+      - name: Instant Packagist Update
+        run: |
+          sleep 12
+
+          echo "Triggering Packagist update for aiarmada/$PACKAGIST_NAME"
+
+          curl -X POST \
+            "https://packagist.org/api/update-package?username=saiffil&apiToken=${{ secrets.PACKAGIST_TOKEN }}" \
+            -H "Content-Type: application/json" \
+            -d "{\"repository\":{\"url\":\"https://github.com/AIArmada/${{ matrix.package }}\"}}"
+        env:
+          PACKAGIST_TOKEN: ${{ secrets.PACKAGIST_TOKEN }}
