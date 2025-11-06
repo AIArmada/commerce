@@ -39,6 +39,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
         with:
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
           package_directory: 'packages/${{ matrix.package }}'
           repository_organization: 'AIArmada'
           repository_name: '${{ matrix.package }}'
