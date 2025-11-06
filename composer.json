@@ -45,20 +45,20 @@
     "repositories": [
         {
             "type": "path",
-            "url": "packages/support"
+            "url": "packages/commerce-support"
         }
     ],
     "autoload": {
         "files": [
-            "packages/support/src/helpers.php"
+            "packages/commerce-support/src/helpers.php"
         ],
         "psr-4": {
             "AIArmada\\Cart\\": "packages/cart/src",
             "AIArmada\\Cart\\Tests\\": "packages/cart/tests/",
             "AIArmada\\Chip\\": "packages/chip/src",
             "AIArmada\\Chip\\Tests\\": "packages/chip/tests/",
-            "AIArmada\\CommerceSupport\\": "packages/support/src",
-            "AIArmada\\CommerceSupport\\Tests\\": "packages/support/tests/",
+            "AIArmada\\CommerceSupport\\": "packages/commerce-support/src",
+            "AIArmada\\CommerceSupport\\Tests\\": "packages/commerce-support/tests/",
             "AIArmada\\Commerce\\Tests\\": "tests/src",
             "AIArmada\\Docs\\": "packages/docs/src",
             "AIArmada\\Docs\\Tests\\": "packages/docs/tests/",

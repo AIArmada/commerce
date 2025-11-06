@@ -13,7 +13,7 @@ jobs:
       matrix:
         package:
           - csuite
-          - support
+          - commerce-support
           - cart
           - chip
           - docs
