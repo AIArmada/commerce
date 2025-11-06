@@ -12,6 +12,7 @@ jobs:
       fail-fast: false
       matrix:
         package:
+          - csuite
           - support
           - cart
           - chip
