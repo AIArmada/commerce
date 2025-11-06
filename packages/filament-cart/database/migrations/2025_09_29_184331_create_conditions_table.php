@@ -57,11 +57,13 @@ return new class extends Migration
             $table->index('order');
         });
 
-        // Add GIN indexes for JSONB columns for efficient querying
-        Schema::table('conditions', function (Blueprint $table): void {
-            $table->rawIndex('attributes', 'conditions_attributes_gin_index');
-            $table->rawIndex('rules', 'conditions_rules_gin_index');
-        });
+        // GIN indexes only work with jsonb in PostgreSQL
+        if (commerce_json_column_type('cart', 'json') === 'jsonb') {
+            Schema::table('conditions', function (Blueprint $table): void {
+                $table->rawIndex('attributes', 'conditions_attributes_gin_index');
+                $table->rawIndex('rules', 'conditions_rules_gin_index');
+            });
+        }
     }
 
     /**

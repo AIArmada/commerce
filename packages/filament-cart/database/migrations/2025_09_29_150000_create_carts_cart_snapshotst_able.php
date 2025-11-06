@@ -38,12 +38,14 @@ return new class extends Migration
             $table->index('updated_at');
         });
 
-        // Add GIN indexes for JSONB columns for efficient querying
-        Schema::table('cart_snapshots', function (Blueprint $table): void {
-            $table->rawIndex('items', 'cart_snapshots_items_gin_index');
-            $table->rawIndex('conditions', 'cart_snapshots_conditions_gin_index');
-            $table->rawIndex('metadata', 'cart_snapshots_metadata_gin_index');
-        });
+        // GIN indexes only work with jsonb in PostgreSQL
+        if (commerce_json_column_type('cart', 'json') === 'jsonb') {
+            Schema::table('cart_snapshots', function (Blueprint $table): void {
+                $table->rawIndex('items', 'cart_snapshots_items_gin_index');
+                $table->rawIndex('conditions', 'cart_snapshots_conditions_gin_index');
+                $table->rawIndex('metadata', 'cart_snapshots_metadata_gin_index');
+            });
+        }
     }
 
     public function down(): void
