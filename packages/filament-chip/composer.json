@@ -1,0 +1,33 @@
+{
+  "name": "aiarmada/filament-chip",
+  "description": "A Filament admin plugin to explore CHIP data ingested by the aiarmada/chip package.",
+  "license": "MIT",
+  "homepage": "https://github.com/aiarmada/commerce",
+  "support": {
+    "issues": "https://github.com/aiarmada/commerce/issues",
+    "source": "https://github.com/aiarmada/commerce"
+  },
+  "require": {
+    "php": "^8.4",
+    "aiarmada/commerce-support": "self.version",
+    "aiarmada/chip": "self.version",
+    "filament/filament": "^4.2 || ^5.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\FilamentChip\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\FilamentChip\\FilamentChipServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

@@ -1,0 +1,35 @@
+{
+  "name": "aiarmada/cart",
+  "description": "A comprehensive commerce ecosystem for Laravel with cart, payments, vouchers, shipping, and inventory management.",
+  "license": "MIT",
+  "homepage": "https://github.com/aiarmada/commerce",
+  "support": {
+    "issues": "https://github.com/aiarmada/commerce/issues",
+    "source": "https://github.com/aiarmada/commerce"
+  },
+  "require": {
+    "php": "^8.4",
+    "aiarmada/commerce-support": "self.version",
+    "akaunting/laravel-money": "^6.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\Cart\\": "src"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\Cart\\CartServiceProvider"
+      ],
+      "aliases": {
+        "Cart": "AIArmada\\Cart\\Facades\\Cart"
+      }
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

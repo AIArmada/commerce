@@ -1,0 +1,20 @@
+# Git attributes file to clean up package exports
+
+# Exclude development and macOS junk files from archives
+.gitattributes export-ignore
+.gitignore export-ignore
+.github/ export-ignore
+cleanup-macos-junk.sh export-ignore
+rector.php export-ignore
+phpstan.neon export-ignore
+phpunit.xml export-ignore
+
+# macOS
+.DS_Store export-ignore
+._* export-ignore
+__MACOSX/ export-ignore
+
+# Development tools
+.vscode/ export-ignore
+.idea/ export-ignore
+*.sublime-* export-ignore

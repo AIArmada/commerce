@@ -1,0 +1,31 @@
+{
+  "name": "aiarmada/stock",
+  "description": "Comprehensive stock and inventory management system for Laravel with UUID support, movement tracking, and reservation capabilities",
+  "license": "MIT",
+  "homepage": "https://github.com/aiarmada/commerce",
+  "support": {
+    "issues": "https://github.com/aiarmada/commerce/issues",
+    "source": "https://github.com/aiarmada/commerce"
+  },
+  "require": {
+    "php": "^8.4",
+    "aiarmada/commerce-support": "self.version"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\Stock\\": "src/"
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\Stock\\StockServiceProvider"
+      ]
+    }
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

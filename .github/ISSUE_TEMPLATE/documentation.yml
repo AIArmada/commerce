@@ -1,0 +1,112 @@
+name: 📚 Documentation
+description: Report issues with documentation or suggest improvements
+title: "[Docs]: "
+labels: ["documentation", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for helping improve our documentation!
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Which package's documentation?
+      description: Select the package this relates to
+      options:
+        - aiarmada/commerce (meta-package)
+        - aiarmada/cart
+        - aiarmada/chip
+        - aiarmada/vouchers
+        - aiarmada/jnt
+        - aiarmada/stock
+        - aiarmada/docs
+        - aiarmada/filament-cart
+        - aiarmada/filament-chip
+        - aiarmada/filament-vouchers
+        - aiarmada/commerce-support
+        - General/Ecosystem docs
+    validations:
+      required: true
+
+  - type: dropdown
+    id: type
+    attributes:
+      label: Documentation Issue Type
+      description: What kind of documentation issue is this?
+      options:
+        - Missing documentation
+        - Incorrect/outdated information
+        - Typo or formatting issue
+        - Unclear explanation
+        - Code example doesn't work
+        - Missing code example
+        - Suggestion for improvement
+        - Translation issue
+    validations:
+      required: true
+
+  - type: input
+    id: location
+    attributes:
+      label: Documentation Location
+      description: Link or path to the affected documentation
+      placeholder: "packages/cart/README.md line 145 or https://github.com/..."
+    validations:
+      required: true
+
+  - type: textarea
+    id: current
+    attributes:
+      label: Current Documentation
+      description: What does the current documentation say? (copy/paste or quote)
+      render: markdown
+      placeholder: |
+        > Cart::add() accepts 4 parameters: id, name, price, quantity
+
+  - type: textarea
+    id: issue
+    attributes:
+      label: What's the issue?
+      description: Explain what's wrong or missing
+      placeholder: |
+        The documentation doesn't mention the optional 5th parameter for attributes,
+        which is essential for storing variant information like size/color.
+    validations:
+      required: true
+
+  - type: textarea
+    id: suggested
+    attributes:
+      label: Suggested Improvement
+      description: How should it be corrected or improved?
+      render: markdown
+      placeholder: |
+        Should be:
+        > Cart::add() accepts 5 parameters: id, name, price, quantity, and optional attributes array.
+        
+        With example:
+        ```php
+        Cart::add('prod-001', 'T-Shirt', 29.99, 2, [
+            'size' => 'L',
+            'color' => 'Blue'
+        ]);
+        ```
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other information or screenshots
+      placeholder: |
+        This caused confusion for several users in Issue #123
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have checked the latest version of the documentation
+          required: true
+        - label: I have searched existing issues
+          required: true

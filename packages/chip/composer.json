@@ -1,0 +1,39 @@
+{
+  "name": "aiarmada/chip",
+  "description": "Modern Laravel integration for CHIP payment gateway - Collect & Send APIs",
+  "license": "MIT",
+  "homepage": "https://github.com/aiarmada/commerce",
+  "support": {
+    "issues": "https://github.com/aiarmada/commerce/issues",
+    "source": "https://github.com/aiarmada/commerce"
+  },
+  "require": {
+    "php": "^8.4",
+    "ext-curl": "*",
+    "aiarmada/commerce-support": "self.version",
+    "illuminate/http": "^12.0",
+    "illuminate/queue": "^12.0",
+    "illuminate/validation": "^12.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\Chip\\": "src/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\Chip\\ChipServiceProvider"
+      ],
+      "aliases": {
+        "Chip": "AIArmada\\Chip\\Facades\\Chip",
+        "ChipSend": "AIArmada\\Chip\\Facades\\ChipSend"
+      }
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

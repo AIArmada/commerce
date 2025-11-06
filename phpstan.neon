@@ -1,0 +1,62 @@
+parameters:
+    paths:
+        - packages
+
+    level: 6
+
+    reportUnmatchedIgnoredErrors: false
+
+    treatPhpDocTypesAsCertain: false
+
+    parallel:
+        maximumNumberOfProcesses: 4
+
+    tmpDir: var/cache/phpstan
+
+    # Ignore specific errors
+    ignoreErrors:
+        - identifier: 'missingType.generics'
+        - identifier: 'larastan.noEnvCallsOutsideOfConfig'
+        - message: '#Trait AIArmada\\Stock\\Traits\\HasStock is used zero times and is not analysed\.#'
+          identifier: 'trait.unused'
+        - message: '#Call to static method view\(\) on an unknown class Spatie\\LaravelPdf\\Facades\\Pdf\.#'
+          identifier: 'class.notFound'
+        - identifier: 'typeCoverage.paramTypeCoverage'
+        - identifier: 'typeCoverage.constantTypeCoverage'
+        # Ignore example files that reference external dependencies
+        - message: '#.*vouchers/examples/usage\.php.*#'
+        # Ignore Filament v5 beta compatibility issues
+        - message: '#Call to an undefined method.*Filament.*glow\(\)\.#'
+        - message: '#Call to an undefined method.*Filament.*carded\(\)\.#'
+        - message: '#Call to an undefined method.*Filament.*softShadow\(\)\.#'
+        - message: '#Call to an undefined method.*Filament.*inlineLabelled\(\)\.#'
+        # Ignore external class dependencies
+        - message: '#Call to static method.*on an unknown class.*Log\.#'
+        - message: '#Call to static method.*on an unknown class.*Grid\.#'
+        - message: '#Call to static method.*on an unknown class.*Form\.#'
+        - message: '#Call to static method.*on an unknown class.*Action\.#'
+        - message: '#Method.*has invalid return type.*Form\.#'
+        - message: '#Parameter.*has invalid type.*Form\.#'
+        - message: '#Call to method.*on an unknown class.*Form\.#'
+        - message: '#Access to an undefined property.*\$form\.#'
+        # Ignore property override issues in widgets
+        - message: '#Static property.*overrides non-static property.*\$view\.#'
+        # Ignore template type issues in collect() calls
+        - message: '#Unable to resolve the template type.*in call to function collect#'
+        # Ignore external cart model references
+        - message: '#PHPDoc tag @var for variable.*contains unknown class.*Cart\.#'
+        - message: '#PHPDoc tag @var with type.*Cart.*is not subtype of native type.*Model.*#'
+        - message: '#Access to property.*on an unknown class.*Cart\.#'
+
+    # Exclude patterns
+    excludePaths:
+        analyseAndScan:
+            # Exclude widget files with property override issues
+            - packages/filament-vouchers/src/Widgets/AppliedVoucherBadgesWidget.php
+            - packages/filament-vouchers/src/Widgets/QuickApplyVoucherWidget.php
+            - packages/filament-vouchers/src/Widgets/VoucherSuggestionsWidget.php
+            - packages/filament-vouchers/src/Widgets/VoucherUsageTimelineWidget.php
+            # Exclude examples file with external dependencies
+            - packages/vouchers/examples/usage.php
+        - vendor
+        - '*/Testing/*'

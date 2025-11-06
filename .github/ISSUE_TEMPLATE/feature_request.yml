@@ -1,0 +1,139 @@
+name: ✨ Feature Request
+description: Suggest a new feature or enhancement
+title: "[Feature]: "
+labels: ["enhancement", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for suggesting a feature! Please provide as much detail as possible.
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Which package would this feature affect?
+      description: Select the package(s) this feature request relates to
+      multiple: true
+      options:
+        - aiarmada/commerce (meta-package)
+        - aiarmada/cart
+        - aiarmada/chip
+        - aiarmada/vouchers
+        - aiarmada/jnt
+        - aiarmada/stock
+        - aiarmada/docs
+        - aiarmada/filament-cart
+        - aiarmada/filament-chip
+        - aiarmada/filament-vouchers
+        - aiarmada/commerce-support
+        - New package
+    validations:
+      required: true
+
+  - type: textarea
+    id: problem
+    attributes:
+      label: Is your feature request related to a problem?
+      description: A clear description of the problem you're trying to solve
+      placeholder: I'm always frustrated when I need to manually calculate shipping for multiple items...
+    validations:
+      required: true
+
+  - type: textarea
+    id: solution
+    attributes:
+      label: Describe the solution you'd like
+      description: A clear and concise description of what you want to happen
+      placeholder: |
+        Add a method `Cart::calculateShipping()` that:
+        1. Groups items by warehouse location
+        2. Calculates weight per location
+        3. Integrates with shipping provider APIs
+        4. Returns total shipping cost
+    validations:
+      required: true
+
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: Describe alternatives you've considered
+      description: Other solutions or workarounds you've thought about
+      placeholder: Currently using a custom service class that manually queries items and calls shipping API...
+
+  - type: textarea
+    id: api-proposal
+    attributes:
+      label: Proposed API / Code Example
+      description: How would you like to use this feature?
+      render: php
+      placeholder: |
+        use AIArmada\Cart\Facades\Cart;
+        
+        $shipping = Cart::calculateShipping([
+            'provider' => 'jnt',
+            'service' => 'express',
+            'destination' => '10000',
+        ]);
+        
+        Cart::applyCondition([
+            'name' => 'shipping',
+            'type' => 'shipping',
+            'target' => 'total',
+            'value' => $shipping->getAmount(),
+        ]);
+
+  - type: dropdown
+    id: breaking
+    attributes:
+      label: Would this be a breaking change?
+      description: Does this require changes to existing code?
+      options:
+        - "No - Backward compatible"
+        - "Yes - Breaking change"
+        - "Not sure"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: willing-to-contribute
+    attributes:
+      label: Are you willing to contribute?
+      description: Would you like to submit a pull request for this feature?
+      options:
+        - "Yes, I can submit a PR"
+        - "Yes, but I need guidance"
+        - "No, just suggesting"
+    validations:
+      required: true
+
+  - type: textarea
+    id: use-case
+    attributes:
+      label: Use Case / Business Value
+      description: Who would benefit from this feature and how?
+      placeholder: |
+        - E-commerce stores with multiple warehouses
+        - Businesses shipping to different regions
+        - Reduces manual shipping calculation errors
+        - Improves checkout experience
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context, mockups, or references
+      placeholder: |
+        Similar feature in package X: https://...
+        Shopify does this by: ...
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: This feature aligns with the package's scope and philosophy
+          required: true
+        - label: I have considered backward compatibility
+          required: true

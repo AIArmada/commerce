@@ -1,0 +1,60 @@
+# Code Owners for AIArmada Commerce
+# 
+# These owners will be automatically requested for review when PRs are opened.
+# 
+# Learn more: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default owners for everything in the repo
+* @aiarmada/commerce-core
+
+# Meta-package and root configuration
+/composer.json @aiarmada/commerce-core @aiarmada/commerce-leads
+/monorepo-builder.php @aiarmada/commerce-core
+/.github/ @aiarmada/commerce-core
+
+# Documentation
+/docs/ @aiarmada/commerce-core @aiarmada/commerce-docs
+/README.md @aiarmada/commerce-core @aiarmada/commerce-docs
+/CONTRIBUTING.md @aiarmada/commerce-docs
+/SECURITY.md @aiarmada/commerce-docs
+
+# Package: Support
+/packages/support/ @aiarmada/commerce-core
+
+# Package: Cart
+/packages/cart/ @aiarmada/commerce-cart
+/packages/filament-cart/ @aiarmada/commerce-cart @aiarmada/commerce-filament
+
+# Package: CHIP
+/packages/chip/ @aiarmada/commerce-payments
+/packages/filament-chip/ @aiarmada/commerce-payments @aiarmada/commerce-filament
+
+# Package: Vouchers
+/packages/vouchers/ @aiarmada/commerce-vouchers
+/packages/filament-vouchers/ @aiarmada/commerce-vouchers @aiarmada/commerce-filament
+
+# Package: JNT (Shipping)
+/packages/jnt/ @aiarmada/commerce-shipping
+
+# Package: Stock
+/packages/stock/ @aiarmada/commerce-inventory
+
+# Package: Docs
+/packages/docs/ @aiarmada/commerce-docs
+
+# Workflows and CI/CD
+/.github/workflows/ @aiarmada/commerce-core @aiarmada/commerce-devops
+
+# Tests
+/tests/ @aiarmada/commerce-core
+**/tests/ @aiarmada/commerce-core
+
+# Configuration files
+phpstan.neon @aiarmada/commerce-core
+pint.json @aiarmada/commerce-core
+rector.php @aiarmada/commerce-core
+phpunit.xml @aiarmada/commerce-core
+
+# Dependency management
+composer.lock @aiarmada/commerce-core
+**/composer.json @aiarmada/commerce-core

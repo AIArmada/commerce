@@ -1,0 +1,16 @@
+/.idea
+/.phpunit.cache
+/build
+/coverage
+/node_modules
+/node_modules.nosync
+/vendor
+/vendor.nosync
+/var
+/.vscode
+.DS_Store
+.phpunit.cache
+.phpunit.result.cache
+composer.phar
+Thumbs.db
+phpunit.xml

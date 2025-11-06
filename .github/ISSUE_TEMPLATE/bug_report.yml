@@ -1,0 +1,169 @@
+name: 🐛 Bug Report
+description: Report a bug or unexpected behavior
+title: "[Bug]: "
+labels: ["bug", "triage"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a bug! Please fill out the information below to help us resolve the issue.
+
+  - type: dropdown
+    id: package
+    attributes:
+      label: Which package is affected?
+      description: Select the package where you encountered the bug
+      options:
+        - aiarmada/commerce (meta-package)
+        - aiarmada/cart
+        - aiarmada/chip
+        - aiarmada/vouchers
+        - aiarmada/jnt
+        - aiarmada/stock
+        - aiarmada/docs
+        - aiarmada/filament-cart
+        - aiarmada/filament-chip
+        - aiarmada/filament-vouchers
+        - aiarmada/commerce-support
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Bug Description
+      description: A clear and concise description of what the bug is
+      placeholder: When I try to add an item to cart with a negative quantity...
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to Reproduce
+      description: Steps to reproduce the behavior
+      placeholder: |
+        1. Install package with `composer require aiarmada/cart`
+        2. Configure cart storage driver to 'database'
+        3. Call `Cart::add('prod-001', 'Product', 10, -5)`
+        4. See error
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected Behavior
+      description: What you expected to happen
+      placeholder: Should validate quantity and throw ValidationException
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual Behavior
+      description: What actually happened
+      placeholder: Saves item with negative quantity, breaks total calculation
+    validations:
+      required: true
+
+  - type: textarea
+    id: code
+    attributes:
+      label: Code Sample
+      description: Minimal code sample to reproduce the issue
+      render: php
+      placeholder: |
+        use AIArmada\Cart\Facades\Cart;
+        
+        Cart::add('prod-001', 'Product', 10, -5);
+        // Expected: ValidationException
+        // Actual: Saves with negative quantity
+
+  - type: textarea
+    id: logs
+    attributes:
+      label: Error Messages / Logs
+      description: Relevant error messages or log excerpts
+      render: shell
+      placeholder: |
+        [2025-11-01 10:30:45] production.ERROR: ...
+
+  - type: dropdown
+    id: php-version
+    attributes:
+      label: PHP Version
+      description: Which PHP version are you using?
+      options:
+        - 8.4
+        - 8.3
+        - 8.2
+        - Other (please specify below)
+    validations:
+      required: true
+
+  - type: dropdown
+    id: laravel-version
+    attributes:
+      label: Laravel Version
+      description: Which Laravel version are you using?
+      options:
+        - 12.x
+        - 11.x
+        - Other (please specify below)
+    validations:
+      required: true
+
+  - type: input
+    id: package-version
+    attributes:
+      label: Package Version
+      description: Which version of the affected package are you using?
+      placeholder: "0.1.0"
+    validations:
+      required: true
+
+  - type: dropdown
+    id: filament-version
+    attributes:
+      label: Filament Version (if applicable)
+      description: If using a Filament plugin, which version?
+      options:
+        - Not using Filament
+        - 4.x
+        - 3.x
+        - Other
+
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment Details
+      description: Any other relevant environment details
+      placeholder: |
+        - OS: Ubuntu 22.04
+        - Database: PostgreSQL 15
+        - Cache driver: Redis
+        - Queue driver: Redis
+
+  - type: textarea
+    id: additional
+    attributes:
+      label: Additional Context
+      description: Any other context, screenshots, or information
+      placeholder: This started happening after upgrading from 0.0.9 to 0.1.0
+
+  - type: checkboxes
+    id: checklist
+    attributes:
+      label: Checklist
+      options:
+        - label: I have searched existing issues to ensure this is not a duplicate
+          required: true
+        - label: I have provided all requested information
+          required: true
+        - label: I am using a supported version of PHP (^8.4)
+          required: true
+        - label: I am using a supported version of Laravel (^12.0)
+          required: true
