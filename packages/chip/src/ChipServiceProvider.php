@@ -39,7 +39,7 @@ final class ChipServiceProvider extends PackageServiceProvider
     {
         $this->validateConfiguration('chip', [
             'collect.api_key',
-            'collect.brand_id'
+            'collect.brand_id',
         ]);
     }
 
