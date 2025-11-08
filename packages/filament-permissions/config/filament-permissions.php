@@ -27,7 +27,7 @@ return [
         // 'permissions' => [ 'users.viewAny','users.view','users.create','users.update','users.delete' ],
     ],
     'permission_naming' => [
-        'ability_to_permission' => \AIArmada\FilamentPermissions\Support\DefaultAbilityToPermissionMapper::class,
+        'ability_to_permission' => AIArmada\FilamentPermissions\Support\DefaultAbilityToPermissionMapper::class,
     ],
     'features' => [
         'doctor' => true,
