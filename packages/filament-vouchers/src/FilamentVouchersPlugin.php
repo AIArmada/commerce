@@ -10,7 +10,7 @@ use AIArmada\FilamentVouchers\Widgets\VoucherStatsWidget;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
-final class FilamentVouchers implements Plugin
+final class FilamentVouchersPlugin implements Plugin
 {
     public static function make(): static
     {

@@ -12,7 +12,7 @@ use AIArmada\FilamentCart\Widgets\CartStatsWidget;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
-final class FilamentCart implements Plugin
+final class FilamentCartPlugin implements Plugin
 {
     public static function make(): static
     {

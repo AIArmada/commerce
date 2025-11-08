@@ -22,7 +22,7 @@ final class FilamentChipServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        $this->app->singleton(FilamentChip::class);
+        $this->app->singleton(FilamentChipPlugin::class);
     }
 
     public function packageBooted(): void

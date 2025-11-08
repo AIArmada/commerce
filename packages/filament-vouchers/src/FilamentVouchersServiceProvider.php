@@ -26,6 +26,7 @@ final class FilamentVouchersServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->app->singleton(FilamentVouchersPlugin::class);
         $this->app->singleton(VoucherStatsAggregator::class);
         $this->app->singleton(OwnerTypeRegistry::class);
         $this->app->singleton(FilamentCartBridge::class);

@@ -10,7 +10,7 @@ use AIArmada\FilamentChip\Resources\PurchaseResource;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
-final class FilamentChip implements Plugin
+final class FilamentChipPlugin implements Plugin
 {
     public static function make(): static
     {

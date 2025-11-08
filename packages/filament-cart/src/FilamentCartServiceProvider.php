@@ -40,6 +40,8 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->app->singleton(FilamentCartPlugin::class);
+
         if (! $this->app->bound(RulesFactoryInterface::class)) {
             $this->app->singleton(function ($app): RulesFactoryInterface {
                 $factoryClass = (string) config(

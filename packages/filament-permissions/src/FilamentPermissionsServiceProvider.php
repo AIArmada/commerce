@@ -11,6 +11,7 @@ class FilamentPermissionsServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
+        $this->app->singleton(FilamentPermissionsPlugin::class);
         $this->mergeConfigFrom(__DIR__.'/../config/filament-permissions.php', 'filament-permissions');
     }
 

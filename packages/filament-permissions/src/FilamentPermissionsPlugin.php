@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentPermissions\Plugin;
+namespace AIArmada\FilamentPermissions;
 
 use AIArmada\FilamentPermissions\Resources\PermissionResource;
 use AIArmada\FilamentPermissions\Resources\RoleResource;
@@ -12,9 +12,9 @@ use Filament\Panel;
 
 class FilamentPermissionsPlugin implements Plugin
 {
-    public static function make(): self
+    public static function make(): static
     {
-        return new self();
+        return app(self::class);
     }
 
     public function getId(): string
