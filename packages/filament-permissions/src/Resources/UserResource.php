@@ -61,9 +61,9 @@ class UserResource extends Resource
         return $table->columns([
             TextColumn::make('name')->searchable()->sortable(),
             TextColumn::make('email')->searchable()->sortable(),
-            TextColumn::make('created_at')->since()->sortable()->toggleable(isToggledHiddenByDefault: true),
+            TextColumn::make('updated_at')->since()->sortable()->toggleable(isToggledHiddenByDefault: true),
         ])->actions([
-            Tables\Actions\EditAction::make()->authorize(fn (Model $record) => auth()->user()?->can('user.update')),
+            \Filament\Actions\EditAction::make()->authorize(fn (Model $record) => auth()->user()?->can('user.update')),
         ]);
     }
 

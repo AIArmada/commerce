@@ -17,9 +17,15 @@ class FilamentPermissionsServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
+        $this->loadViewsFrom(__DIR__.'/../resources/views', 'filament-permissions');
+
         $this->publishes([
             __DIR__.'/../config/filament-permissions.php' => config_path('filament-permissions.php'),
         ], 'filament-permissions-config');
+
+        $this->publishes([
+            __DIR__.'/../resources/views' => resource_path('views/vendor/filament-permissions'),
+        ], 'filament-permissions-views');
 
         $this->registerGateBefore();
         $this->registerCommands();

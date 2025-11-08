@@ -9,6 +9,7 @@ use AIArmada\FilamentPermissions\Resources\RoleResource;
 use AIArmada\FilamentPermissions\Resources\UserResource;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use AIArmada\FilamentPermissions\Http\Middleware\AuthorizePanelRoles;
 
 class FilamentPermissionsPlugin implements Plugin
 {
@@ -24,34 +25,33 @@ class FilamentPermissionsPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
-        $panel = $panel->resources([
+        $resources = [
             RoleResource::class,
             PermissionResource::class,
-        ]);
+        ];
 
         if ((bool) config('filament-permissions.enable_user_resource')) {
-            $panel->resources([
-                UserResource::class,
-            ]);
+            $resources[] = UserResource::class;
         }
 
+        $pages = [];
         if ((bool) config('filament-permissions.features.permission_explorer')) {
-            $panel->pages([
-                Pages\PermissionExplorer::class,
-            ]);
+            $pages[] = Pages\PermissionExplorer::class;
         }
 
+        $widgets = [];
         if ((bool) config('filament-permissions.features.diff_widget')) {
-            $panel->widgets([
-                Widgets\PermissionsDiffWidget::class,
-            ]);
+            $widgets[] = Widgets\PermissionsDiffWidget::class;
         }
 
         if ((bool) config('filament-permissions.features.impersonation_banner')) {
-            $panel->widgets([
-                Widgets\ImpersonationBannerWidget::class,
-            ]);
+            $widgets[] = Widgets\ImpersonationBannerWidget::class;
         }
+
+        $panel
+            ->resources($resources)
+            ->pages($pages)
+            ->widgets($widgets);
 
         $map = (array) config('filament-permissions.panel_guard_map');
         if ((bool) config('filament-permissions.features.auto_panel_middleware') && isset($map[$panel->getId()])) {
@@ -61,6 +61,12 @@ class FilamentPermissionsPlugin implements Plugin
                 'web',
                 'auth:'.$guard,
                 'permission:access '.$panel->getId(),
+            ]);
+        }
+
+        if ((bool) config('filament-permissions.features.panel_role_authorization')) {
+            $panel->authMiddleware([
+                AuthorizePanelRoles::class,
             ]);
         }
     }

@@ -27,18 +27,20 @@ class RolesRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('guard_name')->badge(),
             ])
             ->headerActions([
-                Tables\Actions\AttachAction::make()
+                \Filament\Actions\AttachAction::make()
                     ->preloadRecordSelect()
-                    ->recordSelectOptionsQuery(fn ($query) => $query->whereIn('guard_name', $guards))
+                    ->recordSelectOptionsQuery(fn ($query) => $query->where('guard_name', config('filament-permissions.default_guard_name')))
                     ->after(fn () => app(PermissionRegistrar::class)->forgetCachedPermissions()),
             ])
-            ->actions([
-                Tables\Actions\DetachAction::make()
+            ->recordActions([
+                \Filament\Actions\DetachAction::make()
                     ->after(fn () => app(PermissionRegistrar::class)->forgetCachedPermissions()),
             ])
-            ->bulkActions([
-                Tables\Actions\DetachBulkAction::make()
-                    ->after(fn () => app(PermissionRegistrar::class)->forgetCachedPermissions()),
+            ->toolbarActions([
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DetachBulkAction::make()
+                        ->after(fn () => app(PermissionRegistrar::class)->forgetCachedPermissions()),
+                ]),
             ]);
     }
 

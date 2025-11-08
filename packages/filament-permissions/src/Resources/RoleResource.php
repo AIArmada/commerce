@@ -6,6 +6,7 @@ namespace AIArmada\FilamentPermissions\Resources;
 
 use AIArmada\FilamentPermissions\Resources\RoleResource\Pages;
 use AIArmada\FilamentPermissions\Resources\RoleResource\RelationManagers;
+use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -68,10 +69,10 @@ class RoleResource extends Resource
         ])->filters([
             Filter::make('guard_name = web')->query(fn (Builder $q) => $q->where('guard_name', 'web')),
         ])->actions([
-            Tables\Actions\EditAction::make()->authorize(fn (Role $record) => auth()->user()?->can('role.update')),
-            Tables\Actions\DeleteAction::make()->authorize(fn (Role $record) => auth()->user()?->can('role.delete')),
+            \Filament\Actions\EditAction::make()->authorize(fn (Role $record) => auth()->user()?->can('role.update')),
+            \Filament\Actions\DeleteAction::make()->authorize(fn (Role $record) => auth()->user()?->can('role.delete')),
         ])->bulkActions([
-            Tables\Actions\DeleteBulkAction::make()->authorize(fn () => auth()->user()?->can('role.delete')),
+            \Filament\Actions\DeleteBulkAction::make()->authorize(fn () => auth()->user()?->can('role.delete')),
         ]);
     }
 

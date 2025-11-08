@@ -6,6 +6,7 @@ namespace AIArmada\FilamentPermissions\Resources;
 
 use AIArmada\FilamentPermissions\Resources\PermissionResource\Pages;
 use AIArmada\FilamentPermissions\Resources\PermissionResource\RelationManagers;
+use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -67,10 +68,10 @@ class PermissionResource extends Resource
         ])->filters([
             Filter::make('guard_name = web')->query(fn (Builder $q) => $q->where('guard_name', 'web')),
         ])->actions([
-            Tables\Actions\EditAction::make()->authorize(fn (Permission $record) => auth()->user()?->can('permission.update')),
-            Tables\Actions\DeleteAction::make()->authorize(fn (Permission $record) => auth()->user()?->can('permission.delete')),
+            \Filament\Actions\EditAction::make()->authorize(fn (Permission $record) => auth()->user()?->can('permission.update')),
+            \Filament\Actions\DeleteAction::make()->authorize(fn (Permission $record) => auth()->user()?->can('permission.delete')),
         ])->bulkActions([
-            Tables\Actions\DeleteBulkAction::make()->authorize(fn () => auth()->user()?->can('permission.delete')),
+            \Filament\Actions\DeleteBulkAction::make()->authorize(fn () => auth()->user()?->can('permission.delete')),
         ]);
     }
 
