@@ -19,6 +19,7 @@ jobs:
           - docs
           - filament-cart
           - filament-chip
+          - filament-permissions
           - filament-vouchers
           - jnt
           - stock
