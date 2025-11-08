@@ -9,11 +9,11 @@ use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->userClass = config('auth.providers.users.model', Illuminate\Foundation\Auth\User::class);
 });
 
-test('can create role with guard', function () {
+test('can create role with guard', function (): void {
     $role = Role::create(['name' => 'Admin', 'guard_name' => 'web']);
 
     expect($role)->toBeInstanceOf(Role::class)
@@ -21,7 +21,7 @@ test('can create role with guard', function () {
         ->and($role->guard_name)->toBe('web');
 });
 
-test('can create permission with guard', function () {
+test('can create permission with guard', function (): void {
     $permission = Permission::create(['name' => 'edit posts', 'guard_name' => 'web']);
 
     expect($permission)->toBeInstanceOf(Permission::class)
@@ -29,7 +29,7 @@ test('can create permission with guard', function () {
         ->and($permission->guard_name)->toBe('web');
 });
 
-test('can assign permission to role', function () {
+test('can assign permission to role', function (): void {
     $role = Role::create(['name' => 'Editor', 'guard_name' => 'web']);
     $permission = Permission::create(['name' => 'edit articles', 'guard_name' => 'web']);
 
@@ -38,7 +38,7 @@ test('can assign permission to role', function () {
     expect($role->hasPermissionTo('edit articles'))->toBeTrue();
 });
 
-test('can assign role to user', function () {
+test('can assign role to user', function (): void {
     $user = $this->userClass::create([
         'name' => 'John Doe',
         'email' => 'john@example.com',
@@ -51,7 +51,7 @@ test('can assign role to user', function () {
     expect($user->hasRole('Manager'))->toBeTrue();
 });
 
-test('user can check permission via role', function () {
+test('user can check permission via role', function (): void {
     $user = $this->userClass::create([
         'name' => 'Jane Doe',
         'email' => 'jane@example.com',
@@ -66,7 +66,7 @@ test('user can check permission via role', function () {
     expect($user->can('publish posts'))->toBeTrue();
 });
 
-test('super admin bypasses all gates when configured', function () {
+test('super admin bypasses all gates when configured', function (): void {
     config(['filament-permissions.super_admin_role' => 'Super Admin']);
 
     $user = $this->userClass::create([
@@ -85,7 +85,7 @@ test('super admin bypasses all gates when configured', function () {
     expect(Gate::allows('some-random-ability'))->toBeTrue();
 });
 
-test('can assign direct permission to user', function () {
+test('can assign direct permission to user', function (): void {
     $user = $this->userClass::create([
         'name' => 'Direct User',
         'email' => 'direct@example.com',
@@ -98,7 +98,7 @@ test('can assign direct permission to user', function () {
     expect($user->can('view reports'))->toBeTrue();
 });
 
-test('multi-guard roles work independently', function () {
+test('multi-guard roles work independently', function (): void {
     $webRole = Role::create(['name' => 'WebAdmin', 'guard_name' => 'web']);
     $adminRole = Role::create(['name' => 'AdminManager', 'guard_name' => 'admin']);
 

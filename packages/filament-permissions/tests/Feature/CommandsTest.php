@@ -9,7 +9,7 @@ use Spatie\Permission\PermissionRegistrar;
 
 uses(RefreshDatabase::class);
 
-test('sync command creates permissions and roles', function () {
+test('sync command creates permissions and roles', function (): void {
     config([
         'filament-permissions.sync.permissions' => ['users.viewAny', 'users.create'],
         'filament-permissions.sync.roles' => [
@@ -24,7 +24,7 @@ test('sync command creates permissions and roles', function () {
         ->and(Role::where('name', 'Admin')->exists())->toBeTrue();
 });
 
-test('doctor command detects unused permissions', function () {
+test('doctor command detects unused permissions', function (): void {
     Permission::create(['name' => 'orphaned.permission', 'guard_name' => 'web']);
 
     $this->artisan('permissions:doctor')
@@ -32,7 +32,7 @@ test('doctor command detects unused permissions', function () {
         ->assertFailed();
 });
 
-test('export command creates json file', function () {
+test('export command creates json file', function (): void {
     Role::create(['name' => 'TestRole', 'guard_name' => 'web']);
     Permission::create(['name' => 'test.permission', 'guard_name' => 'web']);
 
@@ -49,7 +49,7 @@ test('export command creates json file', function () {
     unlink($path);
 });
 
-test('import command loads json file', function () {
+test('import command loads json file', function (): void {
     $data = [
         'permissions' => [
             ['name' => 'imported.permission', 'guard_name' => 'web'],
@@ -75,7 +75,7 @@ test('import command loads json file', function () {
     unlink($path);
 });
 
-test('cache is flushed after structural changes', function () {
+test('cache is flushed after structural changes', function (): void {
     $registrar = app(PermissionRegistrar::class);
 
     Permission::create(['name' => 'cached.permission', 'guard_name' => 'web']);

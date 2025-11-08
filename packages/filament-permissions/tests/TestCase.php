@@ -56,7 +56,7 @@ abstract class TestCase extends Orchestra
         $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadMigrationsFrom(__DIR__.'/../../../../../../vendor/spatie/laravel-permission/database/migrations');
 
-        $this->app['db']->connection()->getSchemaBuilder()->create('users', function (Blueprint $table) {
+        $this->app['db']->connection()->getSchemaBuilder()->create('users', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
