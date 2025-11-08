@@ -37,19 +37,19 @@ class FilamentPermissionsPlugin implements Plugin
 
         if ((bool) config('filament-permissions.features.permission_explorer')) {
             $panel->pages([
-                \AIArmada\FilamentPermissions\Pages\PermissionExplorer::class,
+                Pages\PermissionExplorer::class,
             ]);
         }
 
         if ((bool) config('filament-permissions.features.diff_widget')) {
             $panel->widgets([
-                \AIArmada\FilamentPermissions\Widgets\PermissionsDiffWidget::class,
+                Widgets\PermissionsDiffWidget::class,
             ]);
         }
 
         if ((bool) config('filament-permissions.features.impersonation_banner')) {
             $panel->widgets([
-                \AIArmada\FilamentPermissions\Widgets\ImpersonationBannerWidget::class,
+                Widgets\ImpersonationBannerWidget::class,
             ]);
         }
 
