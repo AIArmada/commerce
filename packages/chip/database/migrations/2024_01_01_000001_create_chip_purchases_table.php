@@ -113,6 +113,7 @@ return new class extends Migration
             $table->index('created_on');
             $table->index('viewed_on');
             $table->index('due');
+            $table->index('order_id'); // For order lookup queries
         });
 
         // Optional: create GIN index for metadata when using jsonb on PostgreSQL

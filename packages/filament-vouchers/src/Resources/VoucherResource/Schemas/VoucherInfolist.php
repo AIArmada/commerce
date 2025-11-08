@@ -82,6 +82,37 @@ final class VoucherInfolist
                         ]),
                 ]),
 
+            Section::make('Wallet Statistics')
+                ->description('Vouchers saved to user wallets for future use')
+                ->schema([
+                    Grid::make(4)
+                        ->schema([
+                            TextEntry::make('walletEntriesCount')
+                                ->label('Total in Wallets')
+                                ->state(static fn ($record): int => $record->walletEntriesCount ?? 0)
+                                ->badge()
+                                ->color('primary'),
+
+                            TextEntry::make('walletAvailableCount')
+                                ->label('Available')
+                                ->state(static fn ($record): int => $record->walletAvailableCount ?? 0)
+                                ->badge()
+                                ->color('success'),
+
+                            TextEntry::make('walletClaimedCount')
+                                ->label('Claimed')
+                                ->state(static fn ($record): int => $record->walletClaimedCount ?? 0)
+                                ->badge()
+                                ->color('warning'),
+
+                            TextEntry::make('walletRedeemedCount')
+                                ->label('Redeemed')
+                                ->state(static fn ($record): int => $record->walletRedeemedCount ?? 0)
+                                ->badge()
+                                ->color('danger'),
+                        ]),
+                ]),
+
             Section::make('Description')
                 ->schema([
                     TextEntry::make('description')

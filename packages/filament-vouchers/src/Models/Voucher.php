@@ -13,6 +13,10 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 /**
  * @property float|null $usageProgress
  * @property string|null $end_date
+ * @property int|null $walletEntriesCount
+ * @property int|null $walletClaimedCount
+ * @property int|null $walletRedeemedCount
+ * @property int|null $walletAvailableCount
  */
 final class Voucher extends BaseVoucher
 {
@@ -86,6 +90,46 @@ final class Voucher extends BaseVoucher
 
                 return (string) Money::{$currency}($value);
             }
+        );
+    }
+
+    /**
+     * Returns the total number of wallet entries for this voucher.
+     */
+    protected function walletEntriesCount(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): int => $this->walletEntries()->count()
+        );
+    }
+
+    /**
+     * Returns the number of claimed wallet entries.
+     */
+    protected function walletClaimedCount(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): int => $this->walletEntries()->where('is_claimed', true)->count()
+        );
+    }
+
+    /**
+     * Returns the number of redeemed wallet entries.
+     */
+    protected function walletRedeemedCount(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): int => $this->walletEntries()->where('is_redeemed', true)->count()
+        );
+    }
+
+    /**
+     * Returns the number of available (not redeemed) wallet entries.
+     */
+    protected function walletAvailableCount(): Attribute
+    {
+        return Attribute::make(
+            get: fn (): int => $this->walletEntries()->where('is_redeemed', false)->count()
         );
     }
 }

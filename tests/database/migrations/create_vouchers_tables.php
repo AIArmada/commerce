@@ -23,17 +23,12 @@ return new class extends Migration
             $table->decimal('max_discount', 10, 2)->nullable();
             $table->integer('usage_limit')->nullable();
             $table->integer('usage_limit_per_user')->nullable();
-            $table->integer('times_used')->default(0);
             $table->boolean('allows_manual_redemption')->default(false);
             $table->datetime('starts_at')->nullable();
             $table->datetime('expires_at')->nullable();
             $table->string('status')->default('active');
-            $table->json('applicable_products')->nullable();
-            $table->json('excluded_products')->nullable();
-            $table->json('applicable_categories')->nullable();
             $table->json('metadata')->nullable();
             $table->timestamps();
-            $table->softDeletes();
         });
 
         Schema::create('voucher_usage', function (Blueprint $table): void {
@@ -50,10 +45,27 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->timestamp('used_at');
         });
+
+        Schema::create('voucher_wallets', function (Blueprint $table): void {
+            $table->id();
+            $table->foreignId('voucher_id')->constrained()->cascadeOnDelete();
+            $table->morphs('owner');
+            $table->boolean('is_claimed')->default(false);
+            $table->timestamp('claimed_at')->nullable();
+            $table->boolean('is_redeemed')->default(false);
+            $table->timestamp('redeemed_at')->nullable();
+            $table->json('metadata')->nullable();
+            $table->timestamps();
+
+            $table->index('is_claimed');
+            $table->index('is_redeemed');
+            $table->unique(['voucher_id', 'owner_type', 'owner_id', 'is_redeemed']);
+        });
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('voucher_wallets');
         Schema::dropIfExists('voucher_usage');
         Schema::dropIfExists('vouchers');
     }

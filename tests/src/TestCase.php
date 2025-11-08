@@ -61,6 +61,7 @@ abstract class TestCase extends Orchestra
     {
         return [
             'Cart' => \AIArmada\Cart\Facades\Cart::class,
+            'Voucher' => \AIArmada\Vouchers\Facades\Voucher::class,
         ];
     }
 

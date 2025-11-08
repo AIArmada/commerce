@@ -10,6 +10,7 @@ use AIArmada\FilamentVouchers\Resources\VoucherResource\Pages\EditVoucher;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Pages\ListVouchers;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Pages\ViewVoucher;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\RelationManagers\VoucherUsagesRelationManager;
+use AIArmada\FilamentVouchers\Resources\VoucherResource\RelationManagers\WalletEntriesRelationManager;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas\VoucherForm;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas\VoucherInfolist;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Tables\VouchersTable;
@@ -53,6 +54,7 @@ final class VoucherResource extends Resource
     {
         $relations = [
             VoucherUsagesRelationManager::class,
+            WalletEntriesRelationManager::class,
         ];
 
         // Add carts relation manager if filament-cart is available

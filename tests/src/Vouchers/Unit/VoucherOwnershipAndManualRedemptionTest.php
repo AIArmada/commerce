@@ -80,7 +80,7 @@ it('redeems voucher manually when allowed', function (): void {
     $voucher = VoucherModel::where('code', 'MANUAL1')->first();
 
     expect($voucher)->not->toBeNull()
-        ->and($voucher->times_used)->toBe(1);
+        ->and($voucher->usages()->count())->toBe(1);
 });
 
 it('rejects manual redemption when voucher disallows it', function (): void {
