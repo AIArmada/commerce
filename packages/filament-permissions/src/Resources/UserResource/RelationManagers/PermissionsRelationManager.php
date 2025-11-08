@@ -1,0 +1,54 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentPermissions\Resources\UserResource\RelationManagers;
+
+use Filament\Forms;
+use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Spatie\Permission\PermissionRegistrar;
+
+class PermissionsRelationManager extends RelationManager
+{
+    protected static string $relationship = 'permissions';
+
+    protected static ?string $title = 'Direct Permissions';
+
+    public function table(Table $table): Table
+    {
+        $guards = (array) config('filament-permissions.guards');
+
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('name')->searchable(),
+                Tables\Columns\TextColumn::make('guard_name')->badge(),
+            ])
+            ->headerActions([
+                Tables\Actions\AttachAction::make()
+                    ->preloadRecordSelect()
+                    ->recordSelectOptionsQuery(fn ($query) => $query->whereIn('guard_name', $guards))
+                    ->after(fn () => app(PermissionRegistrar::class)->forgetCachedPermissions()),
+            ])
+            ->actions([
+                Tables\Actions\DetachAction::make()
+                    ->after(fn () => app(PermissionRegistrar::class)->forgetCachedPermissions()),
+            ])
+            ->bulkActions([
+                Tables\Actions\DetachBulkAction::make()
+                    ->after(fn () => app(PermissionRegistrar::class)->forgetCachedPermissions()),
+            ]);
+    }
+
+    public function form(Schema $form): Schema
+    {
+        return $form->schema([
+            Forms\Components\Select::make('permissions')
+                ->multiple()
+                ->relationship('permissions', 'name')
+                ->preload(),
+        ]);
+    }
+}

@@ -1,0 +1,35 @@
+{
+  "name": "aiarmada/filament-permissions",
+  "description": "Filament v4 permissions suite powered by Spatie laravel-permission with multi-guard, panel-aware gating, and admin UX.",
+  "license": "MIT",
+  "homepage": "https://github.com/aiarmada/commerce",
+  "support": {
+    "issues": "https://github.com/aiarmada/commerce/issues",
+    "source": "https://github.com/aiarmada/commerce"
+  },
+  "require": {
+    "php": "^8.4",
+    "filament/filament": "^4.2 || ^5.0",
+    "spatie/laravel-permission": "^6.0",
+    "illuminate/support": "^12.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\FilamentPermissions\\": "src/",
+      "AIArmada\\FilamentPermissions\\Database\\Factories\\": "database/factories/",
+      "AIArmada\\FilamentPermissions\\Database\\Seeders\\": "database/seeders/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\FilamentPermissions\\FilamentPermissionsServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

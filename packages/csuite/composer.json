@@ -18,6 +18,7 @@
         "aiarmada/docs": "self.version",
         "aiarmada/filament-cart": "self.version",
         "aiarmada/filament-chip": "self.version",
+        "aiarmada/filament-permissions": "self.version",
         "aiarmada/filament-vouchers": "self.version"
     },
     "config": {
