@@ -15,7 +15,7 @@ beforeEach(function (): void {
 
     // Create users table for testing
     if (! Schema::hasTable('users')) {
-        Schema::create('users', function ($table) {
+        Schema::create('users', function ($table): void {
             $table->id();
             $table->string('name');
             $table->string('email');

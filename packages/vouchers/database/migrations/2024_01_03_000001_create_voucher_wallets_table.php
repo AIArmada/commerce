@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('vouchers.table_names.voucher_wallets', 'voucher_wallets'), function (Blueprint $table) {
+        Schema::create(config('vouchers.table_names.voucher_wallets', 'voucher_wallets'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('voucher_id');
             $table->uuidMorphs('owner');
