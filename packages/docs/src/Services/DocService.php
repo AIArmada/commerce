@@ -14,45 +14,6 @@ use Spatie\LaravelPdf\Facades\Pdf;
 
 class DocService
 {
-    /**
-     * Normalize a template view name into the canonical 'docs::templates.<slug>' form.
-     */
-    protected function normalizeViewName(string $viewName): string
-    {
-        $viewName = trim($viewName);
-
-        // Already correct
-        if (str_starts_with($viewName, 'docs::templates.')) {
-            return $viewName;
-        }
-
-        // If it has the docs:: prefix but missing templates.
-        if (str_starts_with($viewName, 'docs::')) {
-            $suffix = substr($viewName, strlen('docs::')) ?: '';
-            if ($suffix === '') {
-                return 'docs::templates.doc-default';
-            }
-            if (str_starts_with($suffix, 'templates.')) {
-                return 'docs::' . $suffix; // becomes docs::templates.<slug>
-            }
-            return 'docs::templates.' . $suffix; // ensure templates prefix
-        }
-
-        // Dot notation like docs.templates.slug
-        if (str_starts_with($viewName, 'docs.templates.')) {
-            $slug = substr($viewName, strlen('docs.templates.')) ?: 'doc-default';
-            return 'docs::templates.' . $slug;
-        }
-
-        // Starting with templates.
-        if (str_starts_with($viewName, 'templates.')) {
-            $slug = substr($viewName, strlen('templates.')) ?: 'doc-default';
-            return 'docs::templates.' . $slug;
-        }
-
-        // Fallback plain slug
-        return 'docs::templates.' . $viewName;
-    }
     public function generateDocNumber(string $docType = 'invoice'): string
     {
         $config = config("docs.types.{$docType}.number_format");
@@ -192,6 +153,49 @@ class DocService
             'status' => $status,
             'notes' => $notes ?? "Status changed from {$oldStatus->label()} to {$status->label()}",
         ]);
+    }
+
+    /**
+     * Normalize a template view name into the canonical 'docs::templates.<slug>' form.
+     */
+    protected function normalizeViewName(string $viewName): string
+    {
+        $viewName = mb_trim($viewName);
+
+        // Already correct
+        if (str_starts_with($viewName, 'docs::templates.')) {
+            return $viewName;
+        }
+
+        // If it has the docs:: prefix but missing templates.
+        if (str_starts_with($viewName, 'docs::')) {
+            $suffix = mb_substr($viewName, mb_strlen('docs::')) ?: '';
+            if ($suffix === '') {
+                return 'docs::templates.doc-default';
+            }
+            if (str_starts_with($suffix, 'templates.')) {
+                return 'docs::'.$suffix; // becomes docs::templates.<slug>
+            }
+
+            return 'docs::templates.'.$suffix; // ensure templates prefix
+        }
+
+        // Dot notation like docs.templates.slug
+        if (str_starts_with($viewName, 'docs.templates.')) {
+            $slug = mb_substr($viewName, mb_strlen('docs.templates.')) ?: 'doc-default';
+
+            return 'docs::templates.'.$slug;
+        }
+
+        // Starting with templates.
+        if (str_starts_with($viewName, 'templates.')) {
+            $slug = mb_substr($viewName, mb_strlen('templates.')) ?: 'doc-default';
+
+            return 'docs::templates.'.$slug;
+        }
+
+        // Fallback plain slug
+        return 'docs::templates.'.$viewName;
     }
 
     /**
