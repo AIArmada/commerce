@@ -11,7 +11,6 @@ use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
-use Filament\Tables;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
@@ -68,10 +67,10 @@ class PermissionResource extends Resource
         ])->filters([
             Filter::make('guard_name = web')->query(fn (Builder $q) => $q->where('guard_name', 'web')),
         ])->actions([
-            \Filament\Actions\EditAction::make()->authorize(fn (Permission $record) => auth()->user()?->can('permission.update')),
-            \Filament\Actions\DeleteAction::make()->authorize(fn (Permission $record) => auth()->user()?->can('permission.delete')),
+            Actions\EditAction::make()->authorize(fn (Permission $record) => auth()->user()?->can('permission.update')),
+            Actions\DeleteAction::make()->authorize(fn (Permission $record) => auth()->user()?->can('permission.delete')),
         ])->bulkActions([
-            \Filament\Actions\DeleteBulkAction::make()->authorize(fn () => auth()->user()?->can('permission.delete')),
+            Actions\DeleteBulkAction::make()->authorize(fn () => auth()->user()?->can('permission.delete')),
         ]);
     }
 
