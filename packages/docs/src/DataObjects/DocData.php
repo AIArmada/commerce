@@ -35,6 +35,7 @@ class DocData
         public readonly ?array $customerData = null,
         public readonly ?array $companyData = null,
         public readonly ?array $metadata = null,
+        public readonly ?array $pdfOptions = null,
         public readonly ?bool $generatePdf = false,
     ) {}
 
@@ -44,12 +45,12 @@ class DocData
     public static function from(array $data): self
     {
         return new self(
-            docNumber: $data['doc_number'] ?? $data['document_number'] ?? $data['invoice_number'] ?? null,
-            docType: $data['doc_type'] ?? $data['document_type'] ?? 'invoice',
-            docTemplateId: $data['doc_template_id'] ?? $data['template_id'] ?? null,
+            docNumber: $data['doc_number'] ?? null,
+            docType: $data['doc_type'] ?? 'invoice',
+            docTemplateId: $data['doc_template_id'] ?? null,
             templateSlug: $data['template_slug'] ?? null,
-            docableType: $data['docable_type'] ?? $data['documentable_type'] ?? $data['invoiceable_type'] ?? null,
-            docableId: $data['docable_id'] ?? $data['documentable_id'] ?? $data['invoiceable_id'] ?? null,
+            docableType: $data['docable_type'] ?? null,
+            docableId: $data['docable_id'] ?? null,
             status: isset($data['status']) ? (is_string($data['status']) ? DocStatus::from($data['status']) : $data['status']) : null,
             issueDate: $data['issue_date'] ?? null,
             dueDate: $data['due_date'] ?? null,
@@ -63,6 +64,7 @@ class DocData
             customerData: $data['customer_data'] ?? null,
             companyData: $data['company_data'] ?? null,
             metadata: $data['metadata'] ?? null,
+            pdfOptions: $data['pdf_options'] ?? $data['pdf'] ?? null,
             generatePdf: $data['generate_pdf'] ?? false,
         );
     }

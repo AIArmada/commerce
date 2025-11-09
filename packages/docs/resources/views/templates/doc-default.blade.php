@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Document {{ $doc->document_number }}</title>
+    <title>Document {{ $doc->doc_number }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-white">
@@ -18,17 +18,17 @@
         <div class="mb-8 flex items-start justify-between">
             <div>
                 <h1 class="text-4xl font-bold text-gray-900">
-                    @if($doc->document_type === 'ticket')
+                    @if($doc->doc_type === 'ticket')
                         TICKET
                     @else
                         DOCUMENT
                     @endif
                 </h1>
                 <p class="mt-2 text-sm text-gray-600">
-                    @if($doc->document_type === 'ticket' && $doc->documentable)
-                        {{ $doc->documentable->ticket_number }}
+                    @if($doc->doc_type === 'ticket' && $doc->docable)
+                        {{ $doc->docable->ticket_number }}
                     @else
-                        {{ $doc->document_number }}
+                        {{ $doc->doc_number }}
                     @endif
                 </p>
             </div>

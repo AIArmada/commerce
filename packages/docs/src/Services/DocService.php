@@ -14,6 +14,45 @@ use Spatie\LaravelPdf\Facades\Pdf;
 
 class DocService
 {
+    /**
+     * Normalize a template view name into the canonical 'docs::templates.<slug>' form.
+     */
+    protected function normalizeViewName(string $viewName): string
+    {
+        $viewName = trim($viewName);
+
+        // Already correct
+        if (str_starts_with($viewName, 'docs::templates.')) {
+            return $viewName;
+        }
+
+        // If it has the docs:: prefix but missing templates.
+        if (str_starts_with($viewName, 'docs::')) {
+            $suffix = substr($viewName, strlen('docs::')) ?: '';
+            if ($suffix === '') {
+                return 'docs::templates.doc-default';
+            }
+            if (str_starts_with($suffix, 'templates.')) {
+                return 'docs::' . $suffix; // becomes docs::templates.<slug>
+            }
+            return 'docs::templates.' . $suffix; // ensure templates prefix
+        }
+
+        // Dot notation like docs.templates.slug
+        if (str_starts_with($viewName, 'docs.templates.')) {
+            $slug = substr($viewName, strlen('docs.templates.')) ?: 'doc-default';
+            return 'docs::templates.' . $slug;
+        }
+
+        // Starting with templates.
+        if (str_starts_with($viewName, 'templates.')) {
+            $slug = substr($viewName, strlen('templates.')) ?: 'doc-default';
+            return 'docs::templates.' . $slug;
+        }
+
+        // Fallback plain slug
+        return 'docs::templates.' . $viewName;
+    }
     public function generateDocNumber(string $docType = 'invoice'): string
     {
         $config = config("docs.types.{$docType}.number_format");
@@ -55,6 +94,12 @@ class DocService
         $discountAmount = $data->discountAmount ?? 0;
         $total = $subtotal + $taxAmount - $discountAmount;
 
+        // Merge metadata with pdf options (if provided)
+        $metadata = $data->metadata ?? [];
+        if ($data->pdfOptions !== null) {
+            $metadata['pdf'] = array_merge($metadata['pdf'] ?? [], $data->pdfOptions);
+        }
+
         // Create doc
         $doc = Doc::create([
             'doc_number' => $docNumber,
@@ -75,7 +120,7 @@ class DocService
             'customer_data' => $data->customerData,
             'company_data' => $data->companyData ?? config('docs.company'),
             'items' => $data->items,
-            'metadata' => $data->metadata,
+            'metadata' => $metadata,
         ]);
 
         // Generate PDF if requested
@@ -98,17 +143,46 @@ class DocService
         $viewName = $template->view_name ?? config("docs.types.{$docType}.default_template", "{$docType}-default");
         $resolvedView = $this->normalizeViewName($viewName);
 
+        // Resolve effective PDF options (config defaults overridden by per-doc metadata)
+        $defaults = [
+            'format' => config('docs.pdf.format', 'a4'),
+            'orientation' => config('docs.pdf.orientation', 'portrait'),
+            'margin' => [
+                'top' => config('docs.pdf.margin.top', 10),
+                'right' => config('docs.pdf.margin.right', 10),
+                'bottom' => config('docs.pdf.margin.bottom', 10),
+                'left' => config('docs.pdf.margin.left', 10),
+            ],
+            'full_bleed' => config('docs.pdf.full_bleed', false),
+            'print_background' => config('docs.pdf.print_background', true),
+        ];
+        $templatePdf = (array) ($template->settings['pdf'] ?? []);
+        $perDoc = (array) ($doc->metadata['pdf'] ?? []);
+        // Precedence: config < template < per-doc
+        $opts = array_replace_recursive($defaults, $templatePdf, $perDoc);
+
         $pdf = Pdf::view($resolvedView, [
             'doc' => $doc,
         ])
-            ->format(config('docs.pdf.format', 'a4'))
-            ->orientation(config('docs.pdf.orientation', 'portrait'))
+            ->format($opts['format'])
+            ->orientation($opts['orientation'])
             ->margins(
-                config('docs.pdf.margin.top', 10),
-                config('docs.pdf.margin.right', 10),
-                config('docs.pdf.margin.bottom', 10),
-                config('docs.pdf.margin.left', 10)
+                $opts['margin']['top'],
+                $opts['margin']['right'],
+                $opts['margin']['bottom'],
+                $opts['margin']['left']
             );
+
+        // Enable borderless full-bleed if configured
+        if (!empty($opts['full_bleed'])) {
+            $pdf->margins(0, 0, 0, 0);
+        }
+
+        // Ensure backgrounds (colors, gradients) are printed
+        if (!empty($opts['print_background'])) {
+            // Call on underlying Browsershot instance
+            $pdf->getBrowsershot()->showBackground();
+        }
 
         if ($save) {
             $path = $this->generatePdfPath($doc);
@@ -118,7 +192,8 @@ class DocService
 
             $doc->update(['pdf_path' => $path]);
 
-            return Storage::disk($disk)->url($path);
+            // Return relative path (consumer can turn into URL). Avoid assuming url() method exists on custom disk.
+            return $path;
         }
 
         return $pdf->getBrowsershot()->pdf();
@@ -129,7 +204,7 @@ class DocService
         $docType = $doc->doc_type ?? 'invoice';
 
         if ($doc->pdf_path && Storage::disk(config("docs.types.{$docType}.storage.disk", 'local'))->exists($doc->pdf_path)) {
-            return Storage::disk(config("docs.types.{$docType}.storage.disk", 'local'))->url($doc->pdf_path);
+            return $doc->pdf_path;
         }
 
         return $this->generatePdf($doc);
@@ -153,49 +228,6 @@ class DocService
             'status' => $status,
             'notes' => $notes ?? "Status changed from {$oldStatus->label()} to {$status->label()}",
         ]);
-    }
-
-    /**
-     * Normalize a template view name into the canonical 'docs::templates.<slug>' form.
-     */
-    protected function normalizeViewName(string $viewName): string
-    {
-        $viewName = mb_trim($viewName);
-
-        // Already correct
-        if (str_starts_with($viewName, 'docs::templates.')) {
-            return $viewName;
-        }
-
-        // If it has the docs:: prefix but missing templates.
-        if (str_starts_with($viewName, 'docs::')) {
-            $suffix = mb_substr($viewName, mb_strlen('docs::')) ?: '';
-            if ($suffix === '') {
-                return 'docs::templates.doc-default';
-            }
-            if (str_starts_with($suffix, 'templates.')) {
-                return 'docs::'.$suffix; // becomes docs::templates.<slug>
-            }
-
-            return 'docs::templates.'.$suffix; // ensure templates prefix
-        }
-
-        // Dot notation like docs.templates.slug
-        if (str_starts_with($viewName, 'docs.templates.')) {
-            $slug = mb_substr($viewName, mb_strlen('docs.templates.')) ?: 'doc-default';
-
-            return 'docs::templates.'.$slug;
-        }
-
-        // Starting with templates.
-        if (str_starts_with($viewName, 'templates.')) {
-            $slug = mb_substr($viewName, mb_strlen('templates.')) ?: 'doc-default';
-
-            return 'docs::templates.'.$slug;
-        }
-
-        // Fallback plain slug
-        return 'docs::templates.'.$viewName;
     }
 
     /**
