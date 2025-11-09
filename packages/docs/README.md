@@ -505,6 +505,48 @@ docs::templates.<template-slug>
 - `docs::templates.modern` → Custom modern template
 - `docs::templates.minimal` → Custom minimal template
 
+### Template Resolution Priority
+
+When creating a document, the package resolves templates in this order:
+
+1. **By UUID** (if `doc_template_id` provided)
+   ```php
+   $template = DocTemplate::find($data->docTemplateId);
+   ```
+
+2. **By Slug** (if `template_slug` provided)
+   ```php
+   $template = DocTemplate::where('slug', $data->templateSlug)->first();
+   ```
+
+3. **Database Default** (if no template found)
+   ```php
+   $template = DocTemplate::where('is_default', true)
+       ->where('doc_type', $docType)
+       ->first();
+   ```
+
+4. **Config Fallback** (during PDF generation if template still null)
+   ```php
+   $viewName = config("docs.types.{$docType}.default_template", "{$docType}-default");
+   ```
+
+**Best Practice:** Explicitly specify `template_slug` when creating documents to ensure deterministic template selection:
+
+```php
+$document = $docService->createDoc(DocData::from([
+    'doc_type' => 'invoice',
+    'template_slug' => 'nusavue-invoice',  // ✅ Explicit and predictable
+    // ... other data
+]));
+```
+
+**Why explicit is better:**
+- ✅ **Predictable** - Always uses the template you specify
+- ✅ **Independent** - Not affected by database default changes
+- ✅ **Testable** - Tests don't depend on database state
+- ❌ Without it - Depends on database having correct default template seeded
+
 ### View Resolution
 
 The `DocService` automatically normalizes view names. You can reference templates in multiple ways:
@@ -516,6 +558,11 @@ The `DocService` automatically normalizes view names. You can reference template
 'view_name' => 'docs.templates.modern'
 'view_name' => 'docs::templates.modern'
 ```
+
+The `normalizeViewName()` method handles various input formats and ensures they resolve to the canonical `docs::templates.<slug>` format, which Laravel uses to find views in:
+- Package views: `packages/docs/resources/views/templates/`
+- Published views: `resources/views/vendor/docs/templates/` (takes precedence)
+- Application views: `resources/views/docs/templates/`
 
 ### Creating a New Template
 

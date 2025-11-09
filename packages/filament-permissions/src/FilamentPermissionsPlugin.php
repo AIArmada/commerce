@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPermissions;
 
-use AIArmada\FilamentPermissions\Http\Middleware\AuthorizePanelRoles;
 use AIArmada\FilamentPermissions\Resources\PermissionResource;
 use AIArmada\FilamentPermissions\Resources\RoleResource;
 use AIArmada\FilamentPermissions\Resources\UserResource;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use AIArmada\FilamentPermissions\Http\Middleware\AuthorizePanelRoles;
 
 class FilamentPermissionsPlugin implements Plugin
 {

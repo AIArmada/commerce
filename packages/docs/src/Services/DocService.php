@@ -14,6 +14,49 @@ use Spatie\LaravelPdf\Facades\Pdf;
 
 class DocService
 {
+    /**
+     * Normalize a template view name into the canonical 'docs::templates.<slug>' form.
+     */
+    protected function normalizeViewName(string $viewName): string
+    {
+        $viewName = trim($viewName);
+
+        // Already correct
+        if (str_starts_with($viewName, 'docs::templates.')) {
+            return $viewName;
+        }
+
+        // If it has the docs:: prefix but missing templates.
+        if (str_starts_with($viewName, 'docs::')) {
+            $suffix = substr($viewName, strlen('docs::')) ?: '';
+            if ($suffix === '') {
+                return 'docs::templates.doc-default';
+            }
+            if (str_starts_with($suffix, 'templates.')) {
+                return 'docs::'.$suffix; // becomes docs::templates.<slug>
+            }
+
+            return 'docs::templates.'.$suffix; // ensure templates prefix
+        }
+
+        // Dot notation like docs.templates.slug
+        if (str_starts_with($viewName, 'docs.templates.')) {
+            $slug = substr($viewName, strlen('docs.templates.')) ?: 'doc-default';
+
+            return 'docs::templates.'.$slug;
+        }
+
+        // Starting with templates.
+        if (str_starts_with($viewName, 'templates.')) {
+            $slug = substr($viewName, strlen('templates.')) ?: 'doc-default';
+
+            return 'docs::templates.'.$slug;
+        }
+
+        // Fallback plain slug
+        return 'docs::templates.'.$viewName;
+    }
+
     public function generateDocNumber(string $docType = 'invoice'): string
     {
         $config = config("docs.types.{$docType}.number_format");
@@ -49,16 +92,26 @@ class DocService
                 ->first();
         }
 
-        // Calculate totals
-        $subtotal = $this->calculateSubtotal($data->items);
+        // Calculate totals (use provided values if available, otherwise calculate)
+        $calculatedSubtotal = $this->calculateSubtotal($data->items);
+        $subtotal = $data->subtotal ?? $calculatedSubtotal;
         $taxAmount = $data->taxAmount ?? ($subtotal * ($data->taxRate ?? 0));
         $discountAmount = $data->discountAmount ?? 0;
-        $total = $subtotal + $taxAmount - $discountAmount;
+        $total = $data->total ?? ($subtotal + $taxAmount - $discountAmount);
 
         // Merge metadata with pdf options (if provided)
         $metadata = $data->metadata ?? [];
         if ($data->pdfOptions !== null) {
             $metadata['pdf'] = array_merge($metadata['pdf'] ?? [], $data->pdfOptions);
+        }
+
+        // Determine status
+        $status = $data->status ?? DocStatus::DRAFT;
+
+        // Only set due_date for payable statuses (not for PAID, CANCELLED, REFUNDED)
+        $dueDate = $data->dueDate;
+        if ($dueDate === null && $status->isPayable()) {
+            $dueDate = now()->addDays(config("docs.types.{$docType}.defaults.due_days", 30));
         }
 
         // Create doc
@@ -68,9 +121,9 @@ class DocService
             'doc_template_id' => $template?->id,
             'docable_type' => $data->docableType,
             'docable_id' => $data->docableId,
-            'status' => $data->status ?? DocStatus::DRAFT,
+            'status' => $status,
             'issue_date' => $data->issueDate ?? now(),
-            'due_date' => $data->dueDate ?? now()->addDays(config("docs.types.{$docType}.defaults.due_days", 30)),
+            'due_date' => $dueDate,
             'subtotal' => $subtotal,
             'tax_amount' => $taxAmount,
             'discount_amount' => $discountAmount,
@@ -189,49 +242,6 @@ class DocService
             'status' => $status,
             'notes' => $notes ?? "Status changed from {$oldStatus->label()} to {$status->label()}",
         ]);
-    }
-
-    /**
-     * Normalize a template view name into the canonical 'docs::templates.<slug>' form.
-     */
-    protected function normalizeViewName(string $viewName): string
-    {
-        $viewName = mb_trim($viewName);
-
-        // Already correct
-        if (str_starts_with($viewName, 'docs::templates.')) {
-            return $viewName;
-        }
-
-        // If it has the docs:: prefix but missing templates.
-        if (str_starts_with($viewName, 'docs::')) {
-            $suffix = mb_substr($viewName, mb_strlen('docs::')) ?: '';
-            if ($suffix === '') {
-                return 'docs::templates.doc-default';
-            }
-            if (str_starts_with($suffix, 'templates.')) {
-                return 'docs::'.$suffix; // becomes docs::templates.<slug>
-            }
-
-            return 'docs::templates.'.$suffix; // ensure templates prefix
-        }
-
-        // Dot notation like docs.templates.slug
-        if (str_starts_with($viewName, 'docs.templates.')) {
-            $slug = mb_substr($viewName, mb_strlen('docs.templates.')) ?: 'doc-default';
-
-            return 'docs::templates.'.$slug;
-        }
-
-        // Starting with templates.
-        if (str_starts_with($viewName, 'templates.')) {
-            $slug = mb_substr($viewName, mb_strlen('templates.')) ?: 'doc-default';
-
-            return 'docs::templates.'.$slug;
-        }
-
-        // Fallback plain slug
-        return 'docs::templates.'.$viewName;
     }
 
     /**
