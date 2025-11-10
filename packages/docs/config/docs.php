@@ -99,6 +99,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | PDF Generation
+    |--------------------------------------------------------------------------
+    |
+    | Control whether PDF files are automatically generated for documents.
+    | When false, documents will be created in the database but no PDF will
+    | be generated (useful for testing or when PDF generation is not needed).
+    |
+    */
+    'generate_pdf' => env('DOCS_GENERATE_PDF', true),
+
+    /*
+    |--------------------------------------------------------------------------
     | Company Information
     |--------------------------------------------------------------------------
     |
