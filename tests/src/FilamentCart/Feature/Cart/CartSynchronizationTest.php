@@ -47,7 +47,7 @@ describe('cart synchronization', function (): void {
 
     it('removes normalized cart when last item is removed and cart auto-destroys', function (): void {
         config(['cart.preserve_empty_cart' => false]); // Enable auto-destroy
-        
+
         CartFacade::add('sku-001', 'Product', 5000, 1);
         expect(CartSnapshot::count())->toBe(1);
 
@@ -103,7 +103,7 @@ describe('cart synchronization', function (): void {
         // Destroy cart to remove the empty snapshot created by beforeEach clear()
         CartFacade::destroy();
         expect(CartSnapshot::count())->toBe(0);
-        
+
         // Just reading totals should not create a cart snapshot
         CartFacade::getTotalQuantity();
         expect(CartSnapshot::count())->toBe(0);

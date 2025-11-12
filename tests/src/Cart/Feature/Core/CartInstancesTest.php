@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Facades\Cart;
 
 describe('Cart Instance Management', function (): void {

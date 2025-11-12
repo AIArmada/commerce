@@ -275,7 +275,7 @@ final readonly class CacheStorage implements StorageInterface
         // Clear items and conditions
         $this->cache->put($this->getItemsKey($identifier, $instance), [], $this->ttl);
         $this->cache->put($this->getConditionsKey($identifier, $instance), [], $this->ttl);
-        
+
         // Clear metadata
         $this->clearMetadata($identifier, $instance);
     }

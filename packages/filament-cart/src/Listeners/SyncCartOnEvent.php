@@ -40,6 +40,7 @@ final class SyncCartOnEvent
         // CartDestroyed: cart no longer exists → delete normalized cart
         if ($event instanceof CartDestroyed) {
             $this->syncManager->deleteByIdentity($event->instance, $event->identifier);
+
             return;
         }
 

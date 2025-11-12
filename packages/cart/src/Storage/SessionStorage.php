@@ -56,22 +56,22 @@ final readonly class SessionStorage implements StorageInterface
         $instances = [];
         $allSessionData = $this->session->all();
         $itemsPrefix = "{$this->keyPrefix}.{$identifier}.";
-        
+
         // Find all cart instances by looking for items or conditions keys
         foreach (array_keys($allSessionData) as $key) {
             if (str_starts_with((string) $key, $itemsPrefix)) {
                 // Extract instance name from key like "cart.identifier.instance.items"
-                $remainder = substr((string) $key, strlen($itemsPrefix));
+                $remainder = mb_substr((string) $key, mb_strlen($itemsPrefix));
                 $parts = explode('.', $remainder);
                 if (count($parts) >= 2 && ($parts[1] === 'items' || $parts[1] === 'conditions')) {
                     $instance = $parts[0];
-                    if (!in_array($instance, $instances, true)) {
+                    if (! in_array($instance, $instances, true)) {
                         $instances[] = $instance;
                     }
                 }
             }
         }
-        
+
         return $instances;
     }
 
@@ -81,7 +81,7 @@ final readonly class SessionStorage implements StorageInterface
     public function forgetIdentifier(string $identifier): void
     {
         $instances = $this->getInstances($identifier);
-        
+
         foreach ($instances as $instance) {
             $this->forget($identifier, $instance);
         }
@@ -216,40 +216,18 @@ final readonly class SessionStorage implements StorageInterface
     public function clearMetadata(string $identifier, string $instance): void
     {
         $metadataPrefix = "{$this->keyPrefix}.{$identifier}.{$instance}.metadata.";
-        
+
         // Get all session keys (flat dot-notation keys)
         $allSessionData = $this->session->all();
-        
+
         // Build list of metadata keys to remove by checking each top-level key
         // and reconstructing the full dot-notation path
         $keysToRemove = [];
         $this->findMetadataKeys($allSessionData, $metadataPrefix, '', $keysToRemove);
-        
+
         // Remove all found metadata keys
         foreach ($keysToRemove as $key) {
             $this->session->forget($key);
-        }
-    }
-    
-    /**
-     * Recursively find all metadata keys in session data
-     *
-     * @param  array<string, mixed>  $data
-     * @param  string  $prefix
-     * @param  string  $currentPath
-     * @param  array<string>  $keysToRemove
-     */
-    private function findMetadataKeys(array $data, string $prefix, string $currentPath, array &$keysToRemove): void
-    {
-        foreach ($data as $key => $value) {
-            $fullPath = $currentPath === '' ? (string) $key : $currentPath.'.'.$key;
-            
-            if (str_starts_with($fullPath, $prefix)) {
-                $keysToRemove[] = $fullPath;
-            } elseif (is_array($value) && str_starts_with($prefix, $fullPath.'.')) {
-                // Only recurse if the prefix could potentially match deeper keys
-                $this->findMetadataKeys($value, $prefix, $fullPath, $keysToRemove);
-            }
         }
     }
 
@@ -261,7 +239,7 @@ final readonly class SessionStorage implements StorageInterface
         // Clear items and conditions
         $this->session->put($this->getItemsKey($identifier, $instance), []);
         $this->session->put($this->getConditionsKey($identifier, $instance), []);
-        
+
         // Clear metadata
         $this->clearMetadata($identifier, $instance);
     }
@@ -322,6 +300,26 @@ final readonly class SessionStorage implements StorageInterface
     public function getUpdatedAt(string $identifier, string $instance): ?string
     {
         return null;
+    }
+
+    /**
+     * Recursively find all metadata keys in session data
+     *
+     * @param  array<string, mixed>  $data
+     * @param  array<string>  $keysToRemove
+     */
+    private function findMetadataKeys(array $data, string $prefix, string $currentPath, array &$keysToRemove): void
+    {
+        foreach ($data as $key => $value) {
+            $fullPath = $currentPath === '' ? (string) $key : $currentPath.'.'.$key;
+
+            if (str_starts_with($fullPath, $prefix)) {
+                $keysToRemove[] = $fullPath;
+            } elseif (is_array($value) && str_starts_with($prefix, $fullPath.'.')) {
+                // Only recurse if the prefix could potentially match deeper keys
+                $this->findMetadataKeys($value, $prefix, $fullPath, $keysToRemove);
+            }
+        }
     }
 
     /**

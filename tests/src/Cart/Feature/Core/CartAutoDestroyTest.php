@@ -7,14 +7,14 @@ use AIArmada\Cart\Facades\Cart;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 
-beforeEach(function () {
+beforeEach(function (): void {
     Config::set('cart.preserve_empty_cart', false); // Default to not preserving
     Event::fake(); // Fake events BEFORE any cart operations so Cart gets EventFake
     Cart::destroy();
 });
 
-describe('Auto-Destroy on Empty Cart', function () {
-    it('destroys cart when last item is removed via remove()', function () {
+describe('Auto-Destroy on Empty Cart', function (): void {
+    it('destroys cart when last item is removed via remove()', function (): void {
         Cart::add('item1', 'Product 1', 100, 1);
         expect(Cart::has('item1'))->toBeTrue();
 
@@ -25,7 +25,7 @@ describe('Auto-Destroy on Empty Cart', function () {
         expect(Cart::count())->toBe(0);
     });
 
-    it('destroys cart when last item quantity is zeroed via update()', function () {
+    it('destroys cart when last item quantity is zeroed via update()', function (): void {
         Cart::add('item1', 'Product 1', 100, 5);
 
         // Update with negative quantity to zero it out
@@ -35,7 +35,7 @@ describe('Auto-Destroy on Empty Cart', function () {
         expect(Cart::count())->toBe(0);
     });
 
-    it('destroys cart when last item quantity set to zero via absolute update', function () {
+    it('destroys cart when last item quantity set to zero via absolute update', function (): void {
         Cart::add('item1', 'Product 1', 100, 5);
 
         // Absolute quantity update to 0
@@ -45,14 +45,14 @@ describe('Auto-Destroy on Empty Cart', function () {
         expect(Cart::count())->toBe(0);
     });
 
-    it('dispatches CartDestroyed event when auto-destroying', function () {
+    it('dispatches CartDestroyed event when auto-destroying', function (): void {
         Cart::add('item1', 'Product 1', 100, 1);
         Cart::remove('item1');
 
         Event::assertDispatched(CartDestroyed::class);
     });
 
-    it('does not destroy cart when multiple items exist', function () {
+    it('does not destroy cart when multiple items exist', function (): void {
         Cart::add('item1', 'Product 1', 100, 1);
         Cart::add('item2', 'Product 2', 200, 1);
 
@@ -64,8 +64,8 @@ describe('Auto-Destroy on Empty Cart', function () {
     });
 });
 
-describe('Preserve Empty Cart Config', function () {
-    it('preserves empty cart when config is true', function () {
+describe('Preserve Empty Cart Config', function (): void {
+    it('preserves empty cart when config is true', function (): void {
         Config::set('cart.preserve_empty_cart', true);
 
         Cart::add('item1', 'Product 1', 100, 1);
@@ -76,10 +76,10 @@ describe('Preserve Empty Cart Config', function () {
         expect(Cart::count())->toBe(0);
     });
 
-    it('does not dispatch CartDestroyed when preserving empty cart', function () {
+    it('does not dispatch CartDestroyed when preserving empty cart', function (): void {
         // Clear any events from beforeEach
         Event::fake();
-        
+
         Config::set('cart.preserve_empty_cart', true);
 
         // Verify config is set
@@ -91,7 +91,7 @@ describe('Preserve Empty Cart Config', function () {
         Event::assertNotDispatched(CartDestroyed::class);
     });
 
-    it('preserves empty cart when last item zeroed via update and config is true', function () {
+    it('preserves empty cart when last item zeroed via update and config is true', function (): void {
         Config::set('cart.preserve_empty_cart', true);
 
         Cart::add('item1', 'Product 1', 100, 5);
@@ -102,8 +102,8 @@ describe('Preserve Empty Cart Config', function () {
     });
 });
 
-describe('Auto-Destroy with Multiple Instances', function () {
-    it('destroys specific instance when emptied', function () {
+describe('Auto-Destroy with Multiple Instances', function (): void {
+    it('destroys specific instance when emptied', function (): void {
         Cart::setInstance('shopping')->add('item1', 'Product 1', 100, 1);
         Cart::setInstance('wishlist')->add('item2', 'Product 2', 200, 1);
 
@@ -116,7 +116,7 @@ describe('Auto-Destroy with Multiple Instances', function () {
         expect(Cart::setInstance('wishlist')->has('item2'))->toBeTrue();
     });
 
-    it('preserves other instances when one is auto-destroyed', function () {
+    it('preserves other instances when one is auto-destroyed', function (): void {
         Cart::setInstance('cart1')->add('item1', 'Product 1', 100, 1);
         Cart::setInstance('cart2')->add('item2', 'Product 2', 200, 1);
         Cart::setInstance('cart3')->add('item3', 'Product 3', 300, 1);
@@ -132,20 +132,20 @@ describe('Auto-Destroy with Multiple Instances', function () {
     });
 });
 
-describe('Auto-Destroy with Database Storage', function () {
-    beforeEach(function () {
+describe('Auto-Destroy with Database Storage', function (): void {
+    beforeEach(function (): void {
         Config::set('cart.storage', 'database');
         Event::fake(); // Re-fake after config change to get new Cart with DB storage
         Cart::destroy();
     });
 
-    it('removes database record when cart is auto-destroyed', function () {
+    it('removes database record when cart is auto-destroyed', function (): void {
         $identifier = 'user-123';
         Cart::setIdentifier($identifier)->add('item1', 'Product 1', 100, 1);
 
         // Verify record exists
         expect(
-            \Illuminate\Support\Facades\DB::table('carts')
+            Illuminate\Support\Facades\DB::table('carts')
                 ->where('identifier', $identifier)
                 ->where('instance', 'default')
                 ->exists()
@@ -155,41 +155,41 @@ describe('Auto-Destroy with Database Storage', function () {
 
         // Verify record is deleted
         expect(
-            \Illuminate\Support\Facades\DB::table('carts')
+            Illuminate\Support\Facades\DB::table('carts')
                 ->where('identifier', $identifier)
                 ->where('instance', 'default')
                 ->exists()
         )->toBeFalse();
     });
 
-    it('keeps database record when preserve_empty_cart is true', function () {
+    it('keeps database record when preserve_empty_cart is true', function (): void {
         // Reset events to avoid leakage from beforeEach destroy() call
         Event::fake();
-        
+
         Config::set('cart.preserve_empty_cart', true);
 
         $identifier = 'user-456';
         Cart::setIdentifier($identifier)->add('item1', 'Product 1', 100, 1);
-        
+
         // Verify cart was created
         expect(
-            \Illuminate\Support\Facades\DB::table('carts')
+            Illuminate\Support\Facades\DB::table('carts')
                 ->where('identifier', $identifier)
                 ->where('instance', 'default')
                 ->exists()
         )->toBeTrue();
-        
+
         Cart::setIdentifier($identifier)->remove('item1');
 
         // Record should still exist with empty items when preserve_empty_cart is true
-        $cart = \Illuminate\Support\Facades\DB::table('carts')
+        $cart = Illuminate\Support\Facades\DB::table('carts')
             ->where('identifier', $identifier)
             ->where('instance', 'default')
             ->first();
 
         // Cart should still exist
         expect($cart)->not->toBeNull();
-        
+
         // Items should be empty array
         $items = json_decode($cart->items ?? '[]', true);
         expect($items)->toBe([]);
