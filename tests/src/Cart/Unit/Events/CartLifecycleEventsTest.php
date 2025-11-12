@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartCreated;
+use AIArmada\Cart\Events\CartDestroyed;
 use AIArmada\Cart\Events\CartMerged;
 
 describe('CartCleared Event', function (): void {
@@ -49,6 +50,38 @@ describe('CartCreated Event', function (): void {
         expect($array)->toHaveKey('identifier');
         expect($array)->toHaveKey('instance_name');
         expect($array)->toHaveKey('timestamp');
+    });
+});
+
+describe('CartDestroyed Event', function (): void {
+    it('creates event with identifier and instance', function (): void {
+        $event = new CartDestroyed('test-identifier', 'default');
+
+        expect($event)->toBeInstanceOf(CartDestroyed::class);
+        expect($event->identifier)->toBe('test-identifier');
+        expect($event->instance)->toBe('default');
+    });
+
+    it('converts to array', function (): void {
+        $event = new CartDestroyed('test-identifier', 'wishlist');
+        $array = $event->toArray();
+
+        expect($array)->toBeArray();
+        expect($array)->toHaveKey('identifier');
+        expect($array)->toHaveKey('instance_name');
+        expect($array)->toHaveKey('timestamp');
+        expect($array['identifier'])->toBe('test-identifier');
+        expect($array['instance_name'])->toBe('wishlist');
+    });
+
+    it('handles different instance names', function (): void {
+        $defaultEvent = new CartDestroyed('user-123', 'default');
+        $wishlistEvent = new CartDestroyed('user-123', 'wishlist');
+        $compareEvent = new CartDestroyed('user-123', 'comparison');
+
+        expect($defaultEvent->instance)->toBe('default');
+        expect($wishlistEvent->instance)->toBe('wishlist');
+        expect($compareEvent->instance)->toBe('comparison');
     });
 });
 

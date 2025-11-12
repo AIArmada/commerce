@@ -35,4 +35,9 @@ final class CartSyncManager
         $cart = $this->cartInstances->resolve($instance, $identifier);
         $this->sync($cart, force: true);
     }
+
+    public function deleteByIdentity(string $instance, string $identifier): void
+    {
+        $this->synchronizer->deleteNormalizedCart($identifier, $instance);
+    }
 }

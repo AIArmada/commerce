@@ -268,6 +268,19 @@ final readonly class CacheStorage implements StorageInterface
     }
 
     /**
+     * Clear all cart data (items, conditions, metadata) in a single operation
+     */
+    public function clearAll(string $identifier, string $instance): void
+    {
+        // Clear items and conditions
+        $this->cache->put($this->getItemsKey($identifier, $instance), [], $this->ttl);
+        $this->cache->put($this->getConditionsKey($identifier, $instance), [], $this->ttl);
+        
+        // Clear metadata
+        $this->clearMetadata($identifier, $instance);
+    }
+
+    /**
      * Swap cart identifier by transferring cart data from old identifier to new identifier.
      * This changes cart ownership to ensure the new identifier has an active cart.
      */

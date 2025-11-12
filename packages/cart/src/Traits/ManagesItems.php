@@ -192,6 +192,11 @@ trait ManagesItems
         // Evaluate dynamic conditions after removing item
         $this->evaluateDynamicConditions();
 
+        // Destroy cart if empty and not configured to preserve
+        if ($cartItems->isEmpty() && ! config('cart.preserve_empty_cart', false)) {
+            $this->destroy();
+        }
+
         return $item;
     }
 

@@ -9,6 +9,7 @@ use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartConditionAdded as ConditionAdded;
 use AIArmada\Cart\Events\CartConditionRemoved as ConditionRemoved;
 use AIArmada\Cart\Events\CartCreated;
+use AIArmada\Cart\Events\CartDestroyed;
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Events\ItemAdded;
 use AIArmada\Cart\Events\ItemConditionAdded;
@@ -90,12 +91,13 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
         $this->app['events']->listen(ItemRemoved::class, [ApplyGlobalConditions::class, 'handleItemChanged']);
 
         // Unified sync listener for all cart state changes
-        // Handles: CartCreated, CartCleared, ItemAdded, ItemUpdated, ItemRemoved,
+        // Handles: CartCreated, CartCleared, CartDestroyed, ItemAdded, ItemUpdated, ItemRemoved,
         //          CartConditionAdded, CartConditionRemoved, ItemConditionAdded, ItemConditionRemoved
         $this->app['events']->listen(
             [
                 CartCreated::class,
                 CartCleared::class,
+                CartDestroyed::class,
                 ItemAdded::class,
                 ItemUpdated::class,
                 ItemRemoved::class,

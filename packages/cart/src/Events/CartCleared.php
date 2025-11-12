@@ -10,10 +10,13 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 /**
- * Event fired when a cart is cleared of all items and conditions.
+ * Event fired when a cart is cleared of all items, conditions, and metadata.
  *
- * This event is dispatched whenever all items and conditions are removed from the cart,
- * effectively resetting it to an empty state while maintaining the cart instance.
+ * This event is dispatched when all content is removed from the cart,
+ * effectively resetting it to an empty state while maintaining the cart structure in storage.
+ * The cart entity itself remains and can be refilled with new items.
+ *
+ * This is different from CartDestroyed which completely removes the cart from storage.
  *
  * @example
  * ```php

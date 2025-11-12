@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Facades\Cart;
 
 describe('Cart Instance Management', function (): void {
     beforeEach(function (): void {
-        Cart::setInstance('default')->clear();
-        Cart::setInstance('wishlist')->clear();
-        Cart::setInstance('comparison')->clear();
+        // Use destroy() to completely remove carts, not clear() which preserves them
+        Cart::setInstance('default')->destroy();
+        Cart::setInstance('wishlist')->destroy();
+        Cart::setInstance('comparison')->destroy();
         Cart::setInstance('default'); // Reset to default
     });
 
@@ -194,7 +196,8 @@ describe('Cart Identifier Management', function (): void {
 
 describe('Cart Storage Operations', function (): void {
     beforeEach(function (): void {
-        Cart::setInstance('default')->clear();
+        // Use destroy() to ensure no cart exists at the start of each test
+        Cart::setInstance('default')->destroy();
     });
 
     it('can check if cart exists', function (): void {
@@ -270,17 +273,24 @@ describe('Cart Storage Operations', function (): void {
     it('distinguishes between clear and destroy', function (): void {
         Cart::add('item-1', 'Item 1', 10.00, 1);
 
-        // Clear empties the cart but it still exists
-        Cart::clear();
-        expect(Cart::isEmpty())->toBeTrue();
-        expect(Cart::exists())->toBeFalse(); // Session storage removes on clear
-
-        // Add item again
-        Cart::add('item-2', 'Item 2', 20.00, 1);
+        // Verify cart has content
+        expect(Cart::isEmpty())->toBeFalse();
         expect(Cart::exists())->toBeTrue();
 
-        // Destroy removes it completely
+        // Clear empties the cart (items, conditions, metadata) but preserves the cart structure
+        // Note: With SessionStorage, the cart won't "exist" after clear because it tracks
+        // presence by content. With DatabaseStorage, the cart record remains but is empty.
+        Cart::clear();
+        expect(Cart::isEmpty())->toBeTrue();
+
+        // Add item again - cart can be refilled after clear
+        Cart::add('item-2', 'Item 2', 20.00, 1);
+        expect(Cart::isEmpty())->toBeFalse();
+        expect(Cart::exists())->toBeTrue();
+
+        // Destroy removes the cart completely from storage
         Cart::destroy();
         expect(Cart::exists())->toBeFalse();
+        expect(Cart::isEmpty())->toBeTrue();
     });
 });

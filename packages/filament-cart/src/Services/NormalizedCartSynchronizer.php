@@ -26,12 +26,6 @@ final class NormalizedCartSynchronizer
             $items = $cart->getItems();
             $conditions = $cart->getConditions();
 
-            if ($items->isEmpty() && $conditions->isEmpty()) {
-                $this->clearCart($identifier, $instance);
-
-                return;
-            }
-
             $currency = $this->resolveCurrency();
 
             $cartModel = Cart::query()
@@ -41,7 +35,7 @@ final class NormalizedCartSynchronizer
                 ]);
 
             /** @phpstan-ignore assign.propertyReadOnly */
-            $cartModel->items = $items->toArray();
+            $cartModel->items = $items->isEmpty() ? null : $items->toArray();
             /** @phpstan-ignore assign.propertyReadOnly */
             $cartModel->conditions = $conditions->isEmpty() ? null : $conditions->toArray();
             /** @phpstan-ignore assign.propertyReadOnly */
@@ -63,7 +57,11 @@ final class NormalizedCartSynchronizer
         });
     }
 
-    public function clearCart(string $identifier, string $instance): void
+    /**
+     * Delete the normalized cart representation from database
+     * This is called when the cart is destroyed or cleared
+     */
+    public function deleteNormalizedCart(string $identifier, string $instance): void
     {
         $cartModel = Cart::query()
             ->where('identifier', $identifier)

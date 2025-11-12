@@ -45,12 +45,15 @@ describe('cart synchronization', function (): void {
         expect($item->quantity)->toBe(3);
     });
 
-    it('removes stale normalized data when items are deleted', function (): void {
+    it('removes normalized cart when last item is removed and cart auto-destroys', function (): void {
+        config(['cart.preserve_empty_cart' => false]); // Enable auto-destroy
+        
         CartFacade::add('sku-001', 'Product', 5000, 1);
         expect(CartSnapshot::count())->toBe(1);
 
         CartFacade::remove('sku-001');
 
+        // Auto-destroy triggers CartDestroyed → normalized cart deleted
         expect(CartSnapshot::count())->toBe(0);
         expect(CartItem::count())->toBe(0);
         expect(CartCondition::count())->toBe(0);
@@ -78,7 +81,7 @@ describe('cart synchronization', function (): void {
         expect($snapshot->total)->toBe((int) CartFacade::total()->getAmount());
     });
 
-    it('clears the normalized snapshot when the cart is cleared', function (): void {
+    it('syncs empty state when the cart is cleared', function (): void {
         CartFacade::add('sku-001', 'Product A', 1000, 1);
         CartFacade::add('sku-002', 'Product B', 2500, 2);
         expect(CartSnapshot::count())->toBe(1);
@@ -86,13 +89,64 @@ describe('cart synchronization', function (): void {
 
         CartFacade::clear();
 
-        expect(CartSnapshot::count())->toBe(0);
+        // Cart exists but is empty - normalized cart should reflect this
+        expect(CartSnapshot::count())->toBe(1);
+        $snapshot = CartSnapshot::first();
+        expect($snapshot->items_count)->toBe(0);
+        expect($snapshot->quantity)->toBe(0);
+        expect($snapshot->subtotal)->toBe(0);
+        expect($snapshot->total)->toBe(0);
         expect(CartItem::count())->toBe(0);
     });
 
     it('does not persist empty carts when only totals are inspected', function (): void {
+        // Destroy cart to remove the empty snapshot created by beforeEach clear()
+        CartFacade::destroy();
         expect(CartSnapshot::count())->toBe(0);
+        
+        // Just reading totals should not create a cart snapshot
         CartFacade::getTotalQuantity();
         expect(CartSnapshot::count())->toBe(0);
+    });
+
+    it('cleans up normalized snapshot when cart is destroyed', function (): void {
+        CartFacade::add('sku-001', 'Product', 1000, 1);
+        expect(CartSnapshot::count())->toBe(1);
+        expect(CartItem::count())->toBe(1);
+
+        CartFacade::destroy();
+
+        expect(CartSnapshot::count())->toBe(0);
+        expect(CartItem::count())->toBe(0);
+        expect(CartCondition::count())->toBe(0);
+    });
+
+    it('cleans up normalized snapshot when last item is removed and auto-destroy is enabled', function (): void {
+        config(['cart.preserve_empty_cart' => false]);
+
+        CartFacade::add('sku-001', 'Product', 1000, 1);
+        expect(CartSnapshot::count())->toBe(1);
+
+        CartFacade::remove('sku-001');
+
+        // Auto-destroy should trigger, cleaning up normalized data
+        expect(CartSnapshot::count())->toBe(0);
+        expect(CartItem::count())->toBe(0);
+    });
+
+    it('syncs empty state when preserve_empty_cart is true', function (): void {
+        config(['cart.preserve_empty_cart' => true]);
+
+        CartFacade::add('sku-001', 'Product', 1000, 1);
+        expect(CartSnapshot::count())->toBe(1);
+
+        CartFacade::remove('sku-001');
+
+        // Cart is preserved (not destroyed) → normalized cart reflects empty state
+        expect(CartSnapshot::count())->toBe(1);
+        $snapshot = CartSnapshot::first();
+        expect($snapshot->items_count)->toBe(0);
+        expect($snapshot->quantity)->toBe(0);
+        expect(CartItem::count())->toBe(0);
     });
 });

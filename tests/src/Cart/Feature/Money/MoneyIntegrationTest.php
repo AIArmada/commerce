@@ -87,6 +87,13 @@ function createTestCart(string $instance = 'test'): Cart
                 $this->data[$identifier][$instance]['metadata'] = [];
             }
 
+            public function clearAll(string $identifier, string $instance): void
+            {
+                $this->data[$identifier][$instance]['items'] = [];
+                $this->data[$identifier][$instance]['conditions'] = [];
+                $this->data[$identifier][$instance]['metadata'] = [];
+            }
+
             public function swapIdentifier(string $oldIdentifier, string $newIdentifier, string $instance): bool
             {
                 if (isset($this->data[$oldIdentifier][$instance])) {

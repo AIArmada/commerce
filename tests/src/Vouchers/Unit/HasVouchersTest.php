@@ -98,6 +98,13 @@ it('retrieves applied vouchers from cart conditions', function (): void {
             unset($this->metadata[$identifier][$instance]);
         }
 
+        public function clearAll(string $identifier, string $instance): void
+        {
+            $this->items[$identifier][$instance] = [];
+            $this->conditions[$identifier][$instance] = [];
+            unset($this->metadata[$identifier][$instance]);
+        }
+
         public function getVersion(string $identifier, string $instance): ?int
         {
             return $this->versions[$identifier][$instance] ?? null;

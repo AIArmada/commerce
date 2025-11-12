@@ -22,10 +22,8 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function has(string $identifier, string $instance): bool
     {
-        $cartData = $this->session->get($this->keyPrefix, []);
-
-        return isset($cartData[$identifier][$instance]['items']) ||
-               isset($cartData[$identifier][$instance]['conditions']);
+        return $this->session->has($this->getItemsKey($identifier, $instance)) ||
+               $this->session->has($this->getConditionsKey($identifier, $instance));
     }
 
     /**
@@ -33,23 +31,10 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function forget(string $identifier, string $instance): void
     {
-        $cartData = $this->session->get($this->keyPrefix, []);
-
-        if (isset($cartData[$identifier][$instance])) {
-            unset($cartData[$identifier][$instance]);
-
-            // If this identifier has no more instances, remove it entirely
-            if (empty($cartData[$identifier])) {
-                unset($cartData[$identifier]);
-            }
-
-            // Update the session with the modified data
-            if (empty($cartData)) {
-                $this->session->forget($this->keyPrefix);
-            } else {
-                $this->session->put($this->keyPrefix, $cartData);
-            }
-        }
+        // Remove items, conditions, and all metadata using flat keys
+        $this->session->forget($this->getItemsKey($identifier, $instance));
+        $this->session->forget($this->getConditionsKey($identifier, $instance));
+        $this->clearMetadata($identifier, $instance);
     }
 
     /**
@@ -68,15 +53,26 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function getInstances(string $identifier): array
     {
-        // Get the nested cart data for this identifier
-        $cartData = $this->session->get($this->keyPrefix, []);
-
-        if (! isset($cartData[$identifier]) || ! is_array($cartData[$identifier])) {
-            return [];
+        $instances = [];
+        $allSessionData = $this->session->all();
+        $itemsPrefix = "{$this->keyPrefix}.{$identifier}.";
+        
+        // Find all cart instances by looking for items or conditions keys
+        foreach (array_keys($allSessionData) as $key) {
+            if (str_starts_with((string) $key, $itemsPrefix)) {
+                // Extract instance name from key like "cart.identifier.instance.items"
+                $remainder = substr((string) $key, strlen($itemsPrefix));
+                $parts = explode('.', $remainder);
+                if (count($parts) >= 2 && ($parts[1] === 'items' || $parts[1] === 'conditions')) {
+                    $instance = $parts[0];
+                    if (!in_array($instance, $instances, true)) {
+                        $instances[] = $instance;
+                    }
+                }
+            }
         }
-
-        // Return all instance names (keys) for this identifier
-        return array_keys($cartData[$identifier]);
+        
+        return $instances;
     }
 
     /**
@@ -84,17 +80,10 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function forgetIdentifier(string $identifier): void
     {
-        // Get current cart data
-        $cartData = $this->session->get($this->keyPrefix, []);
-
-        // Remove this identifier's data
-        unset($cartData[$identifier]);
-
-        // Put back the modified cart data
-        if (empty($cartData)) {
-            $this->session->forget($this->keyPrefix);
-        } else {
-            $this->session->put($this->keyPrefix, $cartData);
+        $instances = $this->getInstances($identifier);
+        
+        foreach ($instances as $instance) {
+            $this->forget($identifier, $instance);
         }
     }
 
@@ -227,13 +216,54 @@ final readonly class SessionStorage implements StorageInterface
     public function clearMetadata(string $identifier, string $instance): void
     {
         $metadataPrefix = "{$this->keyPrefix}.{$identifier}.{$instance}.metadata.";
-        $allKeys = $this->session->all();
-
-        foreach (array_keys($allKeys) as $key) {
-            if (str_starts_with((string) $key, $metadataPrefix)) {
-                $this->session->forget($key);
+        
+        // Get all session keys (flat dot-notation keys)
+        $allSessionData = $this->session->all();
+        
+        // Build list of metadata keys to remove by checking each top-level key
+        // and reconstructing the full dot-notation path
+        $keysToRemove = [];
+        $this->findMetadataKeys($allSessionData, $metadataPrefix, '', $keysToRemove);
+        
+        // Remove all found metadata keys
+        foreach ($keysToRemove as $key) {
+            $this->session->forget($key);
+        }
+    }
+    
+    /**
+     * Recursively find all metadata keys in session data
+     *
+     * @param  array<string, mixed>  $data
+     * @param  string  $prefix
+     * @param  string  $currentPath
+     * @param  array<string>  $keysToRemove
+     */
+    private function findMetadataKeys(array $data, string $prefix, string $currentPath, array &$keysToRemove): void
+    {
+        foreach ($data as $key => $value) {
+            $fullPath = $currentPath === '' ? (string) $key : $currentPath.'.'.$key;
+            
+            if (str_starts_with($fullPath, $prefix)) {
+                $keysToRemove[] = $fullPath;
+            } elseif (is_array($value) && str_starts_with($prefix, $fullPath.'.')) {
+                // Only recurse if the prefix could potentially match deeper keys
+                $this->findMetadataKeys($value, $prefix, $fullPath, $keysToRemove);
             }
         }
+    }
+
+    /**
+     * Clear all cart data (items, conditions, metadata) in a single operation
+     */
+    public function clearAll(string $identifier, string $instance): void
+    {
+        // Clear items and conditions
+        $this->session->put($this->getItemsKey($identifier, $instance), []);
+        $this->session->put($this->getConditionsKey($identifier, $instance), []);
+        
+        // Clear metadata
+        $this->clearMetadata($identifier, $instance);
     }
 
     /**

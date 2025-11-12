@@ -160,10 +160,9 @@ final class CartsTable
                     DeleteAction::make()
                         ->icon(Heroicon::OutlinedXMark)
                         ->using(function (Cart $record): void {
-                            $cart = app(CartInstanceManager::class)
-                                ->resolve($record->instance, $record->identifier);
-                            $cart->clear();
-                            $record->delete();
+                            app(CartInstanceManager::class)
+                                ->resolve($record->instance, $record->identifier)
+                                ->destroy();
                         })
                         ->successNotificationTitle('Cart deleted'),
                 ])
@@ -195,10 +194,9 @@ final class CartsTable
                         /** @var Collection<int|string, Cart> $records */
                         $records->each(function (Cart $record): void {
                             /** @phpstan-ignore property.notFound */
-                            $cart = app(CartInstanceManager::class)
-                                ->resolve($record->instance, $record->identifier);
-                            $cart->clear();
-                            $record->delete();
+                            app(CartInstanceManager::class)
+                                ->resolve($record->instance, $record->identifier)
+                                ->destroy();
                         });
                     }),
             ])

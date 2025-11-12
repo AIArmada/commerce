@@ -135,6 +135,16 @@ interface StorageInterface
     public function clearMetadata(string $identifier, string $instance): void;
 
     /**
+     * Clear all cart data (items, conditions, metadata) in a single operation
+     *
+     * This is more efficient than calling putItems, putConditions, and clearMetadata separately.
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     */
+    public function clearAll(string $identifier, string $instance): void;
+
+    /**
      * Get cart version for change tracking
      * Returns the version number used for optimistic locking and change detection
      *

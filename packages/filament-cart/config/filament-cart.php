@@ -11,7 +11,7 @@ return [
     | The navigation group where the cart resource will be displayed.
     |
     */
-    'navigation_group' => 'E-commerce',
+    'navigation_group' => 'E-Commerce',
 
     /*
     |--------------------------------------------------------------------------

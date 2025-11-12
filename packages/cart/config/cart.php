@@ -126,4 +126,14 @@ return [
         // Maximum string length for item names/attributes
         'max_string_length' => env('CART_MAX_STRING_LENGTH', 255),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Empty Cart Behavior
+    |--------------------------------------------------------------------------
+    |
+    | Control what happens when a cart becomes empty.
+    |
+    */
+    'preserve_empty_cart' => env('CART_PRESERVE_EMPTY', false),
 ];

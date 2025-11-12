@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Traits;
 
 use AIArmada\Cart\Events\CartCleared;
+use AIArmada\Cart\Events\CartDestroyed;
 use AIArmada\Cart\Storage\StorageInterface;
 
 trait ManagesInstances
@@ -56,8 +57,8 @@ trait ManagesInstances
     /**
      * Completely remove cart from storage
      *
-     * Unlike clear() which empties items but keeps the cart structure,
-     * destroy() completely removes the cart from storage.
+     * Unlike clear() which empties items/conditions/metadata but keeps the cart structure,
+     * destroy() completely removes the cart from storage and dispatches CartDestroyed event.
      *
      * @param  string|null  $identifier  Cart identifier (defaults to current)
      * @param  string|null  $instance  Instance name (defaults to current)
@@ -67,7 +68,13 @@ trait ManagesInstances
         $identifier ??= $this->getIdentifier();
         $instance ??= $this->instance();
 
+        // Remove cart completely from storage
         $this->storage->forget($identifier, $instance);
+
+        // Dispatch CartDestroyed event
+        if ($this->eventsEnabled && $this->events) {
+            $this->events->dispatch(new CartDestroyed($identifier, $instance));
+        }
     }
 
     /**
@@ -84,12 +91,27 @@ trait ManagesInstances
     }
 
     /**
-     * Clear the entire cart
+     * Clear the entire cart (items, conditions, metadata) but preserve the cart structure
+     *
+     * This method removes all items, conditions, and metadata from the cart while keeping
+     * the cart entity itself in storage. This is useful when an admin wants to manually
+     * refill a cart from scratch while maintaining the same cart identifier and instance.
+     *
+     * Unlike destroy() which completely removes the cart from storage, clear() resets
+     * the cart to an empty state ready for new content.
+     *
+     * @param  string|null  $identifier  Cart identifier (defaults to current)
+     * @param  string|null  $instance  Instance name (defaults to current)
      */
-    public function clear(): bool
+    public function clear(?string $identifier = null, ?string $instance = null): bool
     {
-        $this->storage->forget($this->getIdentifier(), $this->instance());
+        $identifier ??= $this->getIdentifier();
+        $instance ??= $this->instance();
 
+        // Clear everything in a single storage operation
+        $this->storage->clearAll($identifier, $instance);
+
+        // Dispatch CartCleared event
         if ($this->eventsEnabled && $this->events) {
             $this->events->dispatch(new CartCleared($this));
         }

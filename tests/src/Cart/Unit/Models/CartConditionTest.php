@@ -574,6 +574,8 @@ it('shouldApply returns true for static and evaluates rules for dynamic', functi
 
             public function clearMetadata(string $identifier, string $instance): void {}
 
+            public function clearAll(string $identifier, string $instance): void {}
+
             public function swapIdentifier(string $oldIdentifier, string $newIdentifier, string $instance): bool
             {
                 return false;
