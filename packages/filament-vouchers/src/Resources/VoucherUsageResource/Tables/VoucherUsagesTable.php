@@ -54,8 +54,7 @@ final class VoucherUsagesTable
                     ->label('Order ID')
                     ->copyable()
                     ->toggleable()
-                    ->formatStateUsing(fn ($state, VoucherUsage $record) => 
-                        $record->redeemed_by_type === 'order' ? $state : null
+                    ->formatStateUsing(fn ($state, VoucherUsage $record) => $record->redeemed_by_type === 'order' ? $state : null
                     )
                     ->placeholder('N/A'),
 

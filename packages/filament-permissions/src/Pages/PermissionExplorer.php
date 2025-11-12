@@ -42,7 +42,7 @@ class PermissionExplorer extends Page
             return $group->map(function ($permission) {
                 // Load roles separately to avoid eager loading issues
                 $roles = $permission->roles()->pluck('name')->toArray();
-                
+
                 return [
                     'name' => $permission->name,
                     'guard_name' => $permission->guard_name,
