@@ -32,7 +32,7 @@ class PermissionExplorer extends Page
 
     public function getPermissionsGrouped(): array
     {
-        $permissions = Permission::with('roles')->orderBy('name')->get();
+        $permissions = Permission::orderBy('name')->get();
 
         return $permissions->groupBy(function ($permission) {
             $parts = explode('.', $permission->name);
@@ -40,10 +40,13 @@ class PermissionExplorer extends Page
             return $parts[0] ?? 'Other';
         })->map(function ($group) {
             return $group->map(function ($permission) {
+                // Load roles separately to avoid eager loading issues
+                $roles = $permission->roles()->pluck('name')->toArray();
+                
                 return [
                     'name' => $permission->name,
                     'guard_name' => $permission->guard_name,
-                    'roles' => $permission->roles->pluck('name')->toArray(),
+                    'roles' => $roles,
                 ];
             })->toArray();
         })->toArray();

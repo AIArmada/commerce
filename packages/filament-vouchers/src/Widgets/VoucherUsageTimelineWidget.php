@@ -22,7 +22,7 @@ final class VoucherUsageTimelineWidget extends Widget
     public ?Model $record = null;
 
     /** @phpstan-ignore-next-line */
-    protected static string $view = 'filament-vouchers::widgets.voucher-usage-timeline';
+    protected string $view = 'filament-vouchers::widgets.voucher-usage-timeline';
 
     protected int|string|array $columnSpan = 'full';
 

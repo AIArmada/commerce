@@ -19,7 +19,12 @@ use Spatie\Permission\Models\Role;
 
 class RoleResource extends Resource
 {
-    protected static ?string $model = Role::class;
+    protected static ?string $model = null;
+
+    public static function getModel(): string
+    {
+        return config('permission.models.role', Role::class);
+    }
 
     public static function getNavigationGroup(): ?string
     {

@@ -19,11 +19,12 @@ final class VoucherUsagesTable
         return $table
             ->defaultSort('used_at', 'desc')
             ->columns([
-                TextColumn::make('user_identifier')
-                    ->label('User Identifier')
+                TextColumn::make('redeemedBy.user.email')
+                    ->label('User')
                     ->searchable()
                     ->copyable()
-                    ->wrap(),
+                    ->wrap()
+                    ->placeholder('N/A'),
 
                 TextColumn::make('channel')
                     ->label('Channel')
@@ -49,12 +50,14 @@ final class VoucherUsagesTable
                     })
                     ->alignEnd(),
 
-                TextColumn::make('cart_identifier')
-                    ->label('Cart ID')
+                TextColumn::make('redeemedBy.id')
+                    ->label('Order ID')
                     ->copyable()
                     ->toggleable()
-                    ->url(fn (VoucherUsage $record): ?string => $record->cart_url)
-                    ->openUrlInNewTab(),
+                    ->formatStateUsing(fn ($state, VoucherUsage $record) => 
+                        $record->redeemed_by_type === 'order' ? $state : null
+                    )
+                    ->placeholder('N/A'),
 
                 TextColumn::make('used_at')
                     ->label('Redeemed At')
