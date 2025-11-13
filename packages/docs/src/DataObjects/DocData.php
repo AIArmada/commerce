@@ -14,6 +14,7 @@ class DocData
      * @param  array<string, mixed>|null  $customerData
      * @param  array<string, mixed>|null  $companyData
      * @param  array<string, mixed>|null  $metadata
+     * @param  array<string, mixed>|null  $pdfOptions
      */
     public function __construct(
         public readonly ?string $docNumber = null,

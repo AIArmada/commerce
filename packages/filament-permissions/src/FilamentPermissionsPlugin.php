@@ -13,7 +13,7 @@ use Filament\Panel;
 
 class FilamentPermissionsPlugin implements Plugin
 {
-    public static function make(): static
+    public static function make(): self
     {
         return app(self::class);
     }

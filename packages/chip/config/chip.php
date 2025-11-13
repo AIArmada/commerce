@@ -156,6 +156,7 @@ return [
         'payment_method_whitelist' => env('CHIP_PAYMENT_METHOD_WHITELIST', ''),
         'success_redirect' => env('CHIP_SUCCESS_REDIRECT'),
         'failure_redirect' => env('CHIP_FAILURE_REDIRECT'),
+        'send_receipt' => env('CHIP_SEND_RECEIPT', false),
     ],
 
     /*

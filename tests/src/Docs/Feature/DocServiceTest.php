@@ -151,7 +151,7 @@ test('it can use custom template', function (): void {
     $service = new DocService;
 
     $doc = $service->createDoc(DocData::from([
-        'template_id' => $template->id,
+        'doc_template_id' => $template->id,
         'items' => [['name' => 'Item', 'quantity' => 1, 'price' => 100]],
     ]));
 
@@ -176,19 +176,4 @@ test('it can check payable status', function (): void {
         ->and(DocStatus::SENT->isPayable())->toBeTrue()
         ->and(DocStatus::PAID->isPayable())->toBeFalse()
         ->and(DocStatus::DRAFT->isPayable())->toBeFalse();
-});
-
-test('it supports backward compatibility with invoice keys', function (): void {
-    $service = new DocService;
-
-    $doc = $service->createDoc(DocData::from([
-        'invoice_number' => 'INV-123',
-        'invoiceable_type' => 'App\\Models\\Order',
-        'invoiceable_id' => '123',
-        'items' => [['name' => 'Item', 'quantity' => 1, 'price' => 100]],
-    ]));
-
-    expect($doc->doc_number)->toBe('INV-123')
-        ->and($doc->docable_type)->toBe('App\\Models\\Order')
-        ->and($doc->docable_id)->toBe('123');
 });

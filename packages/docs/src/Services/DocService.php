@@ -94,6 +94,9 @@ class DocService
             'metadata' => $metadata,
         ]);
 
+        // Load relationships
+        $doc->loadMissing(['template', 'docable']);
+
         // Generate PDF if requested
         if ($data->generatePdf ?? false) {
             $this->generatePdf($doc);

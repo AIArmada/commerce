@@ -151,7 +151,7 @@ describe('Collect Purchases API', function (): void {
             ->once()
             ->with('purchases/', Mockery::on(function ($payload) {
                 return $payload['brand_id'] === 'brand_checkout'
-                    && $payload['send_receipt'] === true
+                    && $payload['send_receipt'] === false
                     && $payload['payment_method_whitelist'] === ['fpx', 'grabpay']
                     && $payload['success_redirect'] === 'https://example.com/success';
             }))

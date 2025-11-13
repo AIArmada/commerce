@@ -66,6 +66,8 @@ final class VoucherWalletStatsWidget extends BaseWidget
 
     /**
      * Get wallet entries trend for the last 7 days.
+     *
+     * @return array<int, int>
      */
     private function getWalletTrend(): array
     {

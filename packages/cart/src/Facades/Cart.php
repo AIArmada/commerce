@@ -19,7 +19,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static array<string> instances(?string $identifier = null)
  * @method static string instance()
  * @method static \AIArmada\Cart\Storage\StorageInterface storage()
- * @method static \AIArmada\Cart\Cart getCurrentCart()
+ * @method static \AIArmada\Cart\Cart getCartInstance(string $name, ?string $identifier = null)
  * @method static \AIArmada\Cart\Storage\StorageInterface session(?string $sessionKey = null)
  * @method static self formatted()
  * @method static self raw()
@@ -77,7 +77,6 @@ final class Cart extends Facade
 {
     /**
      * Handle dynamic, static calls to the facade.
-     * This allows us to handle the setInstance method properly for chaining.
      *
      * @param  array<string, mixed>  $args
      */
@@ -85,8 +84,6 @@ final class Cart extends Facade
     {
         $instance = self::getFacadeRoot();
 
-        // For setInstance, we return the CartManager for chaining
-        // All other methods will be proxied to the current cart via __call
         return $instance->$method(...$args);
     }
 

@@ -30,6 +30,9 @@ class PermissionExplorer extends Page
         return $user?->can('permission.viewAny') || $user?->hasRole(config('filament-permissions.super_admin_role'));
     }
 
+    /**
+     * @return array<string, array<int, array{name: string, guard_name: string, roles: array<int, string>}>>
+     */
     public function getPermissionsGrouped(): array
     {
         $permissions = Permission::orderBy('name')->get();
@@ -52,6 +55,9 @@ class PermissionExplorer extends Page
         })->toArray();
     }
 
+    /**
+     * @return array<int, array{name: string, guard_name: string, permissions_count: int}>
+     */
     public function getRolesWithPermissionCounts(): array
     {
         return Role::withCount('permissions')->orderBy('name')->get()->map(function ($role) {

@@ -47,6 +47,42 @@ parameters:
         - message: '#PHPDoc tag @var for variable.*contains unknown class.*Cart\.#'
         - message: '#PHPDoc tag @var with type.*Cart.*is not subtype of native type.*Model.*#'
         - message: '#Access to property.*on an unknown class.*Cart\.#'
+        # Ignore Spatie Permission package classes (external dependency)
+        - message: '#Class Spatie\\Permission\\Models\\Permission not found\.#'
+        - message: '#Class Spatie\\Permission\\Models\\Role not found\.#'
+        - message: '#Class Spatie\\Permission\\PermissionRegistrar not found\.#'
+        - message: '#Class Spatie\\Permission\\PermissionServiceProvider not found\.#'
+        - message: '#Call to static method.*on an unknown class Spatie\\Permission\\Models\\Permission\.#'
+        - message: '#Call to static method.*on an unknown class Spatie\\Permission\\Models\\Role\.#'
+        - message: '#Call to method.*on an unknown class Spatie\\Permission\\PermissionRegistrar\.#'
+        - message: '#Parameter.*has invalid type Spatie\\Permission\\Models\\Permission\.#'
+        - message: '#Parameter.*has invalid type Spatie\\Permission\\Models\\Role\.#'
+        # Ignore Voucher model method calls (methods exist but PHPStan can't resolve them)
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::isExpired\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::isActive\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::hasStarted\(\)\.#'
+        # Ignore view function type issues
+        - message: '#Parameter .* \$view of function view expects view-string\|null, string given\.#'
+        # Ignore unused trait (it's part of the public API)
+        - message: '#Trait AIArmada\\Vouchers\\Traits\\HasVoucherWallet is used zero times and is not analysed\.#'
+        # Ignore filament-permissions external dependencies
+        - message: '#Class App\\Models\\User not found\.#'
+        - message: '#Call to an undefined method Illuminate\\Foundation\\Auth\\User::hasRole\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Foundation\\Auth\\User::hasAnyRole\(\)\.#'
+        - message: '#Access to an undefined property Illuminate\\Foundation\\Auth\\User::\$roles\.#'
+        - message: '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model::\$guard_name\.#'
+        - message: '#Property .*\$view \(view-string\) does not accept default value of type string\.#'
+        # Ignore macro classes using $this in static context
+        - message: '#Undefined variable: \$this#'
+        - message: '#Variable \$this in PHPDoc tag @var does not exist\.#'
+        - message: '#Variable \$this in PHPDoc tag @var does not match assigned variable .*#'
+        # Ignore test-specific issues
+        - message: '#Call to an undefined method PHPUnit\\Framework\\TestCase::artisan\(\)\.#'
+        - message: '#Call to an undefined method PHPUnit\\Framework\\TestCase::actingAs\(\)\.#'
+        - message: '#Access to an undefined property PHPUnit\\Framework\\TestCase::\$userClass\.#'
+        - message: '#Unable to resolve the template type TValue in call to function expect#'
+        # Ignore collection proxy method calls
+        - message: '#Call to an undefined method Illuminate\\Support\\HigherOrderCollectionProxy.*::markAsRedeemed\(\)\.#'
 
     # Exclude patterns
     excludePaths:

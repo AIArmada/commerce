@@ -188,7 +188,7 @@ final class PurchasesApi extends CollectApi
                 'currency' => $options['currency'] ?? config('chip.defaults.currency', 'MYR'),
             ],
             'brand_id' => $this->client->getBrandId(),
-            'send_receipt' => $options['send_receipt'] ?? true,
+            'send_receipt' => $options['send_receipt'] ?? config('chip.defaults.send_receipt', false),
             'creator_agent' => config('chip.defaults.creator_agent', 'Laravel Package'),
             'platform' => config('chip.defaults.platform', 'api'),
         ];
