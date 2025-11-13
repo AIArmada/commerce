@@ -64,8 +64,13 @@ final class VoucherInfolist
 
             Section::make('Usage Metrics')
                 ->schema([
-                    Grid::make(3)
+                    Grid::make(4)
                         ->schema([
+                            TextEntry::make('applied_count')
+                                ->label('Applied')
+                                ->badge()
+                                ->tooltip('Number of times this voucher has been applied to carts'),
+
                             TextEntry::make('times_used')
                                 ->label('Redeemed')
                                 ->badge(),

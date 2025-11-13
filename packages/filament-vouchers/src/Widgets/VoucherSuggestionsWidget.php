@@ -29,7 +29,7 @@ final class VoucherSuggestionsWidget extends Widget
     public ?Model $record = null;
 
     /** @phpstan-ignore-next-line */
-    protected static string $view = 'filament-vouchers::widgets.voucher-suggestions';
+    protected string $view = 'filament-vouchers::widgets.voucher-suggestions';
 
     protected int|string|array $columnSpan = 'full';
 

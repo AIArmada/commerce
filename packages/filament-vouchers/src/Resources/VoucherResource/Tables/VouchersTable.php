@@ -74,6 +74,12 @@ final class VouchersTable
                     ->alignCenter()
                     ->sortable(),
 
+                TextColumn::make('applied_count')
+                    ->label('Applied')
+                    ->alignCenter()
+                    ->sortable()
+                    ->tooltip('Number of times this voucher has been applied to carts'),
+
                 TextColumn::make('usageProgress')
                     ->label('Usage %')
                     ->state(fn (Voucher $record): ?float => $record->usageProgress)
