@@ -8,24 +8,20 @@ use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\Numbering\NumberStrategyRegistry;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Spatie\LaravelPdf\Facades\Pdf;
 
 class DocService
 {
+    public function __construct(
+        protected NumberStrategyRegistry $numberRegistry
+    ) {}
+
     public function generateDocNumber(string $docType = 'invoice'): string
     {
-        $config = config("docs.types.{$docType}.number_format");
-        $prefix = $config['prefix'] ?? 'DOC';
-        $yearFormat = $config['year_format'] ?? 'y';
-        $separator = $config['separator'] ?? '-';
-        $suffixLength = $config['suffix_length'] ?? 6;
-
-        $year = now()->format($yearFormat);
-        $suffix = mb_strtoupper(mb_substr(uniqid(), -$suffixLength));
-
-        return "{$prefix}{$year}{$separator}{$suffix}";
+        return $this->numberRegistry->generate($docType);
     }
 
     public function createDoc(DocData $data): Doc
@@ -68,7 +64,8 @@ class DocService
         // Only set due_date for payable statuses (not for PAID, CANCELLED, REFUNDED)
         $dueDate = $data->dueDate;
         if ($dueDate === null && $status->isPayable()) {
-            $dueDate = now()->addDays(config("docs.types.{$docType}.defaults.due_days", 30));
+            $dueDays = (int) $this->resolveDefault($docType, 'due_days', 30);
+            $dueDate = now()->addDays($dueDays);
         }
 
         // Create doc
@@ -85,7 +82,7 @@ class DocService
             'tax_amount' => $taxAmount,
             'discount_amount' => $discountAmount,
             'total' => $total,
-            'currency' => $data->currency ?? config("docs.types.{$docType}.defaults.currency", 'MYR'),
+            'currency' => $data->currency ?? (string) $this->resolveDefault($docType, 'currency', 'MYR'),
             'notes' => $data->notes,
             'terms' => $data->terms,
             'customer_data' => $data->customerData,
@@ -160,7 +157,7 @@ class DocService
 
         if ($save) {
             $path = $this->generatePdfPath($doc);
-            $disk = config("docs.types.{$docType}.storage.disk", 'local');
+            $disk = $this->resolveStorageDisk($docType);
 
             Storage::disk($disk)->put($path, $pdf->getBrowsershot()->pdf());
 
@@ -177,7 +174,7 @@ class DocService
     {
         $docType = $doc->doc_type ?? 'invoice';
 
-        if ($doc->pdf_path && Storage::disk(config("docs.types.{$docType}.storage.disk", 'local'))->exists($doc->pdf_path)) {
+        if ($doc->pdf_path && Storage::disk($this->resolveStorageDisk($docType))->exists($doc->pdf_path)) {
             return $doc->pdf_path;
         }
 
@@ -268,9 +265,28 @@ class DocService
     protected function generatePdfPath(Doc $doc): string
     {
         $docType = $doc->doc_type ?? 'invoice';
-        $basePath = config("docs.types.{$docType}.storage.path", 'docs');
+        $basePath = $this->resolveStoragePath($docType);
         $filename = Str::slug($doc->doc_number).'.pdf';
 
         return "{$basePath}/{$filename}";
+    }
+
+    protected function resolveStorageDisk(string $docType): string
+    {
+        return config("docs.types.{$docType}.storage.disk")
+            ?? config("docs.storage.disks.{$docType}")
+            ?? config('docs.storage.disk', 'local');
+    }
+
+    protected function resolveStoragePath(string $docType): string
+    {
+        return config("docs.types.{$docType}.storage.path")
+            ?? config("docs.storage.paths.{$docType}")
+            ?? config('docs.storage.path', 'docs');
+    }
+
+    protected function resolveDefault(string $docType, string $key, mixed $fallback = null): mixed
+    {
+        return config("docs.types.{$docType}.defaults.{$key}", config("docs.defaults.{$key}", $fallback));
     }
 }
