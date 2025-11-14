@@ -9,7 +9,7 @@ use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Services\DocService;
 
 test('it can generate doc numbers', function (): void {
-    $service = new DocService;
+    $service = app(DocService::class);
     $number = $service->generateDocNumber('invoice');
 
     expect($number)
@@ -17,8 +17,30 @@ test('it can generate doc numbers', function (): void {
         ->toMatch('/^INV\d{2}-[A-Z0-9]{6}$/');
 });
 
+test('default strategy respects numbering format overrides', function (): void {
+    $service = app(DocService::class);
+    $original = config('docs.types.invoice.numbering.format');
+
+    config()->set('docs.types.invoice.numbering.format', [
+        'prefix' => 'BILL',
+        'year_format' => 'Y',
+        'separator' => '/',
+        'suffix_length' => 4,
+    ]);
+
+    try {
+        $number = $service->generateDocNumber('invoice');
+
+        expect($number)
+            ->toBeString()
+            ->toMatch('/^BILL\d{4}\/[A-Z0-9]{4}$/');
+    } finally {
+        config()->set('docs.types.invoice.numbering.format', $original);
+    }
+});
+
 test('it can create a doc', function (): void {
-    $service = new DocService;
+    $service = app(DocService::class);
 
     $doc = $service->createDoc(DocData::from([
         'doc_type' => 'invoice',
@@ -51,7 +73,7 @@ test('it can create a doc', function (): void {
 });
 
 test('it calculates totals correctly', function (): void {
-    $service = new DocService;
+    $service = app(DocService::class);
 
     $doc = $service->createDoc(DocData::from([
         'items' => [
@@ -69,7 +91,7 @@ test('it calculates totals correctly', function (): void {
 });
 
 test('it can update doc status', function (): void {
-    $service = new DocService;
+    $service = app(DocService::class);
 
     $doc = $service->createDoc(DocData::from([
         'items' => [['name' => 'Item', 'quantity' => 1, 'price' => 100]],
@@ -90,7 +112,7 @@ test('it can update doc status', function (): void {
 });
 
 test('it can mark doc as paid', function (): void {
-    $service = new DocService;
+    $service = app(DocService::class);
 
     $doc = $service->createDoc(DocData::from([
         'items' => [['name' => 'Item', 'quantity' => 1, 'price' => 100]],
@@ -107,7 +129,7 @@ test('it can mark doc as paid', function (): void {
 });
 
 test('it can check if doc is overdue', function (): void {
-    $service = new DocService;
+    $service = app(DocService::class);
 
     $doc = $service->createDoc(DocData::from([
         'items' => [['name' => 'Item', 'quantity' => 1, 'price' => 100]],
@@ -129,7 +151,7 @@ test('it uses default template when none specified', function (): void {
         'is_default' => true,
     ]);
 
-    $service = new DocService;
+    $service = app(DocService::class);
 
     $doc = $service->createDoc(DocData::from([
         'items' => [['name' => 'Item', 'quantity' => 1, 'price' => 100]],
@@ -148,7 +170,7 @@ test('it can use custom template', function (): void {
         'is_default' => false,
     ]);
 
-    $service = new DocService;
+    $service = app(DocService::class);
 
     $doc = $service->createDoc(DocData::from([
         'doc_template_id' => $template->id,

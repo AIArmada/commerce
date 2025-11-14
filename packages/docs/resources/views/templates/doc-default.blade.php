@@ -9,28 +9,15 @@
 <body class="bg-white">
     <div class="mx-auto max-w-4xl p-8">
         @php
-            $voucherSummary = $doc->metadata['voucher_summary'] ?? null;
-            $voucherCodes = $voucherSummary['voucher_codes'] ?? [];
-            $voucherDiscountCents = (int) ($voucherSummary['total_discount_cents'] ?? 0);
-            $voucherChargeCents = (int) ($voucherSummary['total_charge_cents'] ?? 0);
+            $documentLabel = strtoupper($doc->doc_type ?? 'Document');
+            $companyPostcode = data_get($doc->company_data, 'postcode');
+            $customerPostcode = data_get($doc->customer_data, 'postcode');
         @endphp
         <!-- Header -->
         <div class="mb-8 flex items-start justify-between">
             <div>
-                <h1 class="text-4xl font-bold text-gray-900">
-                    @if($doc->doc_type === 'ticket')
-                        TICKET
-                    @else
-                        DOCUMENT
-                    @endif
-                </h1>
-                <p class="mt-2 text-sm text-gray-600">
-                    @if($doc->doc_type === 'ticket' && $doc->docable)
-                        {{ $doc->docable->ticket_number }}
-                    @else
-                        {{ $doc->doc_number }}
-                    @endif
-                </p>
+                <h1 class="text-4xl font-bold text-gray-900">{{ $documentLabel }}</h1>
+                <p class="mt-2 text-sm text-gray-600">{{ $doc->doc_number }}</p>
             </div>
             @if($doc->company_data)
             <div class="text-right">
@@ -44,8 +31,8 @@
                     @if(!empty($doc->company_data['state']))
                     , {{ $doc->company_data['state'] }}
                     @endif
-                    @if(!empty($doc->company_data['postal_code']))
-                    {{ $doc->company_data['postal_code'] }}
+                    @if(!empty($companyPostcode))
+                    {{ $companyPostcode }}
                     @endif
                 </p>
                 @endif
@@ -79,8 +66,8 @@
                         @if(!empty($doc->customer_data['state']))
                         , {{ $doc->customer_data['state'] }}
                         @endif
-                        @if(!empty($doc->customer_data['postal_code']))
-                        {{ $doc->customer_data['postal_code'] }}
+                        @if(!empty($customerPostcode))
+                        {{ $customerPostcode }}
                         @endif
                     </p>
                     @endif
@@ -93,7 +80,7 @@
 
             <!-- Invoice Info -->
             <div>
-                <h2 class="mb-2 text-sm font-semibold uppercase text-gray-600">Invoice Details</h2>
+                <h2 class="mb-2 text-sm font-semibold uppercase text-gray-600">Document Details</h2>
                 <div class="space-y-1 text-sm">
                     <div class="flex justify-between">
                         <span class="text-gray-600">Issue Date:</span>
@@ -164,13 +151,8 @@
                     </div>
                     @endif
                     @if($doc->discount_amount > 0)
-                    @php
-                        $discountLabelSuffix = $voucherSummary && ! empty($voucherCodes)
-                            ? ' ('.implode(', ', $voucherCodes).')'
-                            : '';
-                    @endphp
                     <div class="flex justify-between text-sm">
-                        <span class="text-gray-600">Discount{!! $discountLabelSuffix !!}:</span>
+                        <span class="text-gray-600">Discount:</span>
                         <span class="text-gray-900">-{{ $doc->currency }} {{ number_format($doc->discount_amount, 2) }}</span>
                     </div>
                     @endif
@@ -181,58 +163,6 @@
                 </div>
             </div>
         </div>
-
-        @if($voucherSummary && (($voucherDiscountCents > 0) || ($voucherChargeCents > 0) || ! empty($voucherSummary['vouchers'])))
-        <div class="mb-8">
-            <h3 class="mb-3 text-sm font-semibold uppercase text-gray-600">Voucher Summary</h3>
-            <div class="overflow-hidden rounded-lg border border-gray-200">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-50">
-                        <tr>
-                            <th class="px-4 py-2 text-left font-semibold text-gray-600">Voucher</th>
-                            <th class="px-4 py-2 text-left font-semibold text-gray-600">Type</th>
-                            <th class="px-4 py-2 text-right font-semibold text-gray-600">Amount</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($voucherSummary['vouchers'] ?? [] as $voucher)
-                            @php
-                                $amountCents = (int) ($voucher['amount_cents'] ?? 0);
-                                $isDiscount = $amountCents < 0;
-                                $amountDisplay = number_format(abs($amountCents) / 100, 2);
-                            @endphp
-                            <tr class="border-t border-gray-200">
-                                <td class="px-4 py-2 text-gray-900">
-                                    <div class="font-medium">{{ $voucher['name'] ?? $voucher['code'] ?? 'Voucher' }}</div>
-                                    @if(!empty($voucher['code']))
-                                        <div class="text-xs text-gray-500">Code: {{ $voucher['code'] }}</div>
-                                    @endif
-                                </td>
-                                <td class="px-4 py-2 text-gray-600">{{ $isDiscount ? 'Discount' : 'Surcharge' }}</td>
-                                <td class="px-4 py-2 text-right font-medium {{ $isDiscount ? 'text-green-600' : 'text-orange-600' }}">
-                                    {{ $isDiscount ? '-' : '+' }}{{ $doc->currency }} {{ $amountDisplay }}
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                    <tfoot class="bg-gray-50">
-                        @if($voucherDiscountCents > 0)
-                            <tr class="border-t border-gray-200">
-                                <td class="px-4 py-2 font-semibold text-gray-600" colspan="2">Total Discount</td>
-                                <td class="px-4 py-2 text-right font-semibold text-green-600">-{{ $doc->currency }} {{ number_format($voucherDiscountCents / 100, 2) }}</td>
-                            </tr>
-                        @endif
-                        @if($voucherChargeCents > 0)
-                            <tr class="border-t border-gray-200">
-                                <td class="px-4 py-2 font-semibold text-gray-600" colspan="2">Total Surcharge</td>
-                                <td class="px-4 py-2 text-right font-semibold text-orange-600">+{{ $doc->currency }} {{ number_format($voucherChargeCents / 100, 2) }}</td>
-                            </tr>
-                        @endif
-                    </tfoot>
-                </table>
-            </div>
-        </div>
-        @endif
 
         <!-- Notes -->
         @if($doc->notes)

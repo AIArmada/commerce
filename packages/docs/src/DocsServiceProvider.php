@@ -22,6 +22,9 @@ final class DocsServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        // Numbering registry
+        $this->app->singleton(Numbering\NumberStrategyRegistry::class, Numbering\ConfiguredNumberStrategyRegistry::class);
+
         // Register Doc Service
         $this->app->singleton(DocService::class);
         $this->app->alias(DocService::class, 'doc');
@@ -35,6 +38,7 @@ final class DocsServiceProvider extends PackageServiceProvider
         return [
             DocService::class,
             'doc',
+            Numbering\NumberStrategyRegistry::class,
         ];
     }
 }

@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -12,6 +14,30 @@ return [
     */
     'database' => [
         'json_column_type' => env('DOCS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+    ],
+
+    'storage' => [
+        'disk' => env('DOCS_STORAGE_DISK', 'local'),
+        'path' => env('DOCS_STORAGE_PATH', 'docs'),
+        'disks' => [],
+        'paths' => [
+            'invoice' => env('DOCS_STORAGE_PATH_INVOICE', 'docs/invoices'),
+            'receipt' => env('DOCS_STORAGE_PATH_RECEIPT', 'docs/receipts'),
+        ],
+    ],
+
+    'defaults' => [
+        'currency' => env('DOCS_CURRENCY', 'MYR'),
+        'tax_rate' => env('DOCS_TAX_RATE', 0),
+        'due_days' => env('DOCS_DUE_DAYS', 30),
+    ],
+
+    'numbering' => [
+        'format' => [
+            'year_format' => env('DOCS_NUMBER_YEAR_FORMAT', 'y'),
+            'separator' => env('DOCS_NUMBER_SEPARATOR', '-'),
+            'suffix_length' => (int) env('DOCS_NUMBER_SUFFIX_LENGTH', 6),
+        ],
     ],
 
     /*
@@ -27,53 +53,16 @@ return [
     'types' => [
         'invoice' => [
             'default_template' => 'doc-default',
-            'number_format' => [
+            'numbering' => [
+                'strategy' => DefaultNumberStrategy::class,
                 'prefix' => 'INV',
-                'year_format' => 'y',
-                'separator' => '-',
-                'suffix_length' => 6,
-            ],
-            'storage' => [
-                'disk' => env('DOCS_STORAGE_DISK', 'local'),
-                'path' => env('DOCS_STORAGE_PATH', 'docs/invoices'),
-            ],
-            'defaults' => [
-                'currency' => env('DOCS_CURRENCY', 'MYR'),
-                'tax_rate' => env('DOCS_TAX_RATE', 0),
-                'due_days' => env('DOCS_DUE_DAYS', 30),
             ],
         ],
         'receipt' => [
             'default_template' => 'doc-default',
-            'number_format' => [
+            'numbering' => [
+                'strategy' => DefaultNumberStrategy::class,
                 'prefix' => 'RCP',
-                'year_format' => 'y',
-                'separator' => '-',
-                'suffix_length' => 6,
-            ],
-            'storage' => [
-                'disk' => env('DOCS_STORAGE_DISK', 'local'),
-                'path' => env('DOCS_STORAGE_PATH', 'docs/receipts'),
-            ],
-            'defaults' => [
-                'currency' => env('DOCS_CURRENCY', 'MYR'),
-            ],
-        ],
-        'ticket' => [
-            'default_template' => 'doc-default',
-            'number_format' => [
-                'prefix' => 'TKT',
-                'year_format' => 'y',
-                'separator' => '-',
-                'suffix_length' => 6,
-            ],
-            'storage' => [
-                'disk' => env('DOCS_STORAGE_DISK', 'local'),
-                'path' => env('DOCS_STORAGE_PATH', 'docs/tickets'),
-            ],
-            'defaults' => [
-                'currency' => env('DOCS_CURRENCY', 'MYR'),
-                'due_days' => 0,
             ],
         ],
     ],
@@ -123,7 +112,7 @@ return [
         'address' => env('DOCS_COMPANY_ADDRESS'),
         'city' => env('DOCS_COMPANY_CITY'),
         'state' => env('DOCS_COMPANY_STATE'),
-        'postal_code' => env('DOCS_COMPANY_POSTAL_CODE'),
+        'postcode' => env('DOCS_COMPANY_POSTCODE'),
         'country' => env('DOCS_COMPANY_COUNTRY'),
         'phone' => env('DOCS_COMPANY_PHONE'),
         'email' => env('DOCS_COMPANY_EMAIL'),
