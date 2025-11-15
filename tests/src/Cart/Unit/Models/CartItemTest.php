@@ -1052,3 +1052,101 @@ describe('CartItem Condition Normalization', function (): void {
         expect($item->hasCondition('second-discount'))->toBeTrue();
     });
 });
+
+describe('CartItem Money Methods', function (): void {
+    it('provides subtotal() as alias for getSubtotal()', function (): void {
+        $item = new CartItem(
+            id: 'product-1',
+            name: 'Test Product',
+            price: 100.0,
+            quantity: 2
+        );
+
+        $subtotal = $item->subtotal();
+        $getSubtotal = $item->getSubtotal();
+
+        expect($subtotal)->toEqual($getSubtotal);
+        expect($subtotal)->toBeInstanceOf(Akaunting\Money\Money::class);
+    });
+
+    it('provides total() as alias for getSubtotal()', function (): void {
+        $item = new CartItem(
+            id: 'product-2',
+            name: 'Test Product 2',
+            price: 50.0,
+            quantity: 3
+        );
+
+        $total = $item->total();
+        $getSubtotal = $item->getSubtotal();
+
+        expect($total)->toEqual($getSubtotal);
+        expect($total->getAmount())->toBe(150.0);
+    });
+
+    it('provides discountAmount() as alias for getDiscountAmount()', function (): void {
+        $item = new CartItem(
+            id: 'product-3',
+            name: 'Test Product 3',
+            price: 200.0,
+            quantity: 1,
+            conditions: [
+                new CartCondition(
+                    name: 'discount',
+                    type: 'discount',
+                    target: 'item',
+                    value: '-20%'
+                )
+            ]
+        );
+
+        $discountAmount = $item->discountAmount();
+        $getDiscountAmount = $item->getDiscountAmount();
+
+        expect($discountAmount)->toEqual($getDiscountAmount);
+        expect($discountAmount->getAmount())->toBe(40.0); // 20% of 200
+    });
+
+    it('validates quantity does not exceed maximum limit', function (): void {
+        $maxQuantity = config('cart.limits.max_item_quantity', 10000);
+
+        expect(fn () => new CartItem(
+            id: 'product-1',
+            name: 'Test Product',
+            price: 100.0,
+            quantity: $maxQuantity + 1
+        ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class, 'quantity cannot exceed');
+    });
+
+    it('validates string length limits for id and name', function (): void {
+        $maxLength = config('cart.limits.max_string_length', 255);
+        $longString = str_repeat('a', $maxLength + 1);
+
+        expect(fn () => new CartItem(
+            id: $longString,
+            name: 'Test Product',
+            price: 100.0,
+            quantity: 1
+        ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class, 'ID cannot exceed');
+
+        expect(fn () => new CartItem(
+            id: 'product-1',
+            name: $longString,
+            price: 100.0,
+            quantity: 1
+        ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class, 'name cannot exceed');
+    });
+
+    it('handles JSON encoding errors in data size validation', function (): void {
+        // Create a string with invalid UTF-8 sequence to trigger json_encode error
+        $invalidUtf8 = "\xB1\x31";
+
+        expect(fn () => new CartItem(
+            id: 'product-1',
+            name: 'Test Product',
+            price: 100.0,
+            quantity: 1,
+            attributes: ['bad' => $invalidUtf8]
+        ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class, 'Cannot validate');
+    });
+});

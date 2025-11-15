@@ -110,34 +110,4 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable
 
         return str_contains($price, '.') ? (float) $price : (int) $price;
     }
-
-    /**
-     * Normalize conditions to CartConditionCollection
-     *
-     * @param  array<string, mixed>|Collection<string, CartCondition>  $conditions
-     */
-    private function normalizeConditions(array|Collection $conditions): CartConditionCollection
-    {
-        if ($conditions instanceof CartConditionCollection) {
-            return $conditions;
-        }
-
-        $collection = new CartConditionCollection;
-
-        if (is_array($conditions)) {
-            foreach ($conditions as $key => $condition) {
-                if ($condition instanceof CartCondition) {
-                    $collection->put($condition->getName(), $condition);
-                } elseif (is_array($condition)) {
-                    $collection->put($key, CartCondition::fromArray($condition));
-                }
-            }
-        } elseif ($conditions instanceof Collection) {
-            foreach ($conditions as $condition) {
-                $collection->put($condition->getName(), $condition);
-            }
-        }
-
-        return $collection;
-    }
 }
