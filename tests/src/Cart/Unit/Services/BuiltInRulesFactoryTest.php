@@ -141,4 +141,260 @@ describe('BuiltInRulesFactory', function (): void {
 
         expect($rule($cart, $item))->toBeTrue();
     });
+
+    it('always-true rule always returns true', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('always-true');
+
+        $rules = $factory->createRules('always-true', []);
+        expect($rules)->toHaveCount(1);
+        $rule = $rules[0];
+
+        expect($rule($cart))->toBeTrue();
+    });
+
+    it('always-false rule always returns false', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('always-false');
+
+        $rules = $factory->createRules('always-false', []);
+        expect($rules)->toHaveCount(1);
+        $rule = $rules[0];
+
+        expect($rule($cart))->toBeFalse();
+    });
+
+    it('has-any-item rule checks if cart has items', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('has-any-item');
+
+        $rules = $factory->createRules('has-any-item', []);
+        expect($rules)->toHaveCount(1);
+        $rule = $rules[0];
+
+        expect($rule($cart))->toBeFalse();
+
+        $cart->add('item1', 'Item 1', 10, 1);
+        expect($rule($cart))->toBeTrue();
+    });
+
+    it('subtotal-at-least rule checks subtotal threshold', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('subtotal-at-least');
+
+        $rules = $factory->createRules('subtotal-at-least', ['context' => ['amount' => 50]]);
+        expect($rules)->toHaveCount(1);
+        $rule = $rules[0];
+
+        $cart->add('item1', 'Item 1', 30, 1);
+        expect($rule($cart))->toBeFalse();
+
+        $cart->add('item2', 'Item 2', 25, 1);
+        expect($rule($cart))->toBeTrue();
+    });
+
+    it('has-item rule checks for specific item', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('has-item');
+
+        $rules = $factory->createRules('has-item', ['context' => ['id' => 'item1']]);
+        expect($rules)->toHaveCount(1);
+        $rule = $rules[0];
+
+        expect($rule($cart))->toBeFalse();
+
+        $cart->add('item1', 'Item 1', 10, 1);
+        expect($rule($cart))->toBeTrue();
+    });
+
+    it('missing-item rule checks for absence of specific item', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('missing-item');
+
+        $rules = $factory->createRules('missing-item', ['context' => ['id' => 'item1']]);
+        expect($rules)->toHaveCount(1);
+        $rule = $rules[0];
+
+        expect($rule($cart))->toBeTrue();
+
+        $cart->add('item1', 'Item 1', 10, 1);
+        expect($rule($cart))->toBeFalse();
+    });
+
+    it('max-items rule checks maximum item count', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('max-items');
+
+        $rules = $factory->createRules('max-items', ['context' => ['max' => 2]]);
+        expect($rules)->toHaveCount(1);
+        $rule = $rules[0];
+
+        $cart->add('item1', 'Item 1', 10, 1);
+        $cart->add('item2', 'Item 2', 10, 1);
+        expect($rule($cart))->toBeTrue();
+
+        $cart->add('item3', 'Item 3', 10, 1);
+        expect($rule($cart))->toBeFalse();
+    });
+
+    it('min-quantity rule checks minimum total quantity', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('min-quantity');
+
+        $rules = $factory->createRules('min-quantity', ['context' => ['min' => 5]]);
+        expect($rules)->toHaveCount(1);
+        $rule = $rules[0];
+
+        $cart->add('item1', 'Item 1', 10, 3);
+        expect($rule($cart))->toBeFalse();
+
+        $cart->add('item2', 'Item 2', 10, 3);
+        expect($rule($cart))->toBeTrue();
+    });
+
+    it('max-quantity rule checks maximum total quantity', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('max-quantity');
+
+        $rules = $factory->createRules('max-quantity', ['context' => ['max' => 5]]);
+        expect($rules)->toHaveCount(1);
+        $rule = $rules[0];
+
+        $cart->add('item1', 'Item 1', 10, 3);
+        expect($rule($cart))->toBeTrue();
+
+        $cart->add('item2', 'Item 2', 10, 3);
+        expect($rule($cart))->toBeFalse();
+    });
+
+    it('subtotal-below rule checks subtotal threshold', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('subtotal-below');
+
+        $rules = $factory->createRules('subtotal-below', ['context' => ['amount' => 50]]);
+        expect($rules)->toHaveCount(1);
+        $rule = $rules[0];
+
+        $cart->add('item1', 'Item 1', 30, 1);
+        expect($rule($cart))->toBeTrue();
+
+        $cart->add('item2', 'Item 2', 25, 1);
+        expect($rule($cart))->toBeFalse();
+    });
+
+    it('total-at-least rule checks total threshold', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('total-at-least');
+
+        $rules = $factory->createRules('total-at-least', ['context' => ['amount' => 50]]);
+        expect($rules)->toHaveCount(1);
+        $rule = $rules[0];
+
+        $cart->add('item1', 'Item 1', 30, 1);
+        $cart->addTax('VAT', '10%');
+        expect($rule($cart))->toBeFalse();
+
+        $cart->add('item2', 'Item 2', 25, 1);
+        expect($rule($cart))->toBeTrue();
+    });
+
+    it('has-metadata rule checks for metadata presence', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('has-metadata');
+
+        $rules = $factory->createRules('has-metadata', ['context' => ['key' => 'promo']]);
+        expect($rules)->toHaveCount(1);
+        $rule = $rules[0];
+
+        expect($rule($cart))->toBeFalse();
+
+        $cart->setMetadata('promo', 'discount10');
+        expect($rule($cart))->toBeTrue();
+    });
+
+    it('metadata-equals rule checks metadata value', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('metadata-equals');
+
+        $rules = $factory->createRules('metadata-equals', ['context' => ['key' => 'tier', 'value' => 'vip']]);
+        expect($rules)->toHaveCount(1);
+        $rule = $rules[0];
+
+        expect($rule($cart))->toBeFalse();
+
+        $cart->setMetadata('tier', 'vip');
+        expect($rule($cart))->toBeTrue();
+    });
+
+    it('item-list-includes-any and all rules behave correctly', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('item-list');
+
+        $cart->add('item-1', 'Item 1', 10, 1);
+        $cart->add('item-2', 'Item 2', 10, 1);
+
+        $anyRule = $factory->createRules('item-list-includes-any', ['context' => ['ids' => ['item-2', 'missing']]])[0];
+        $allRule = $factory->createRules('item-list-includes-all', ['context' => ['ids' => ['item-1', 'item-2']]])[0];
+
+        expect($anyRule($cart))->toBeTrue();
+        expect($allRule($cart))->toBeTrue();
+    });
+
+    it('item quantity and price rules consider item scope', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('item-scope');
+
+        $cart->add('sku', 'Scoped Item', 20, 3);
+        $item = $cart->get('sku');
+        expect($item)->not->toBeNull();
+
+        $qtyAtLeast = $factory->createRules('item-quantity-at-least', ['context' => ['quantity' => 2]])[0];
+        $qtyAtMost = $factory->createRules('item-quantity-at-most', ['context' => ['quantity' => 3]])[0];
+        $priceAtLeast = $factory->createRules('item-price-at-least', ['context' => ['amount' => 15]])[0];
+        $priceAtMost = $factory->createRules('item-price-at-most', ['context' => ['amount' => 25]])[0];
+        $totalAtLeast = $factory->createRules('item-total-at-least', ['context' => ['amount' => 60]])[0];
+        $totalAtMost = $factory->createRules('item-total-at-most', ['context' => ['amount' => 70]])[0];
+
+        expect($qtyAtLeast($cart, $item))->toBeTrue();
+        expect($qtyAtMost($cart, $item))->toBeTrue();
+        expect($priceAtLeast($cart, $item))->toBeTrue();
+        expect($priceAtMost($cart, $item))->toBeTrue();
+        expect($totalAtLeast($cart, $item))->toBeTrue();
+        expect($totalAtMost($cart, $item))->toBeTrue();
+    });
+
+    it('item-has-condition and id-prefix rules behave correctly', function (): void {
+        $factory = new BuiltInRulesFactory();
+        $cart = makeRulesFactoryCart('item-condition');
+
+        $cart->add('promo-1', 'Promo Item', 10, 1, [], [
+            new CartCondition(
+                name: 'promo',
+                type: 'discount',
+                target: 'item',
+                value: '-10%'
+            )
+        ]);
+        $item = $cart->get('promo-1');
+        expect($item)->not->toBeNull();
+
+        $hasCondition = $factory->createRules('item-has-condition', ['context' => ['condition' => 'promo']])[0];
+        $idPrefix = $factory->createRules('item-id-prefix', ['context' => ['prefix' => 'promo-']])[0];
+
+        expect($hasCondition($cart, $item))->toBeTrue();
+        expect($idPrefix($cart, $item))->toBeTrue();
+    });
+
+    it('throws for unsupported key and invalid context', function (): void {
+        $factory = new BuiltInRulesFactory();
+
+        expect(fn () => $factory->createRules('unsupported-key', []))
+            ->toThrow(InvalidArgumentException::class);
+
+        expect(fn () => $factory->createRules('min-items', ['context' => 'not-an-array']))
+            ->toThrow(InvalidArgumentException::class, 'metadata context must be an array');
+
+        expect(fn () => $factory->createRules('min-items', ['context' => []]))
+            ->toThrow(InvalidArgumentException::class, 'Missing context value [min]');
+    });
 });

@@ -46,6 +46,7 @@ class InMemoryStorage implements StorageInterface
     public function putItems(string $identifier, string $instance, array $items): void
     {
         $this->items[$identifier][$instance] = $items;
+        $this->instances[$identifier][$instance] = true;
         $this->incrementVersion($identifier, $instance);
     }
 
@@ -57,6 +58,7 @@ class InMemoryStorage implements StorageInterface
     public function putConditions(string $identifier, string $instance, array $conditions): void
     {
         $this->conditions[$identifier][$instance] = $conditions;
+        $this->instances[$identifier][$instance] = true;
         $this->incrementVersion($identifier, $instance);
     }
 
@@ -215,6 +217,7 @@ class InMemoryStorage implements StorageInterface
     {
         $this->items[$identifier][$instance] = $items;
         $this->conditions[$identifier][$instance] = $conditions;
+        $this->instances[$identifier][$instance] = true;
         $this->incrementVersion($identifier, $instance);
     }
 

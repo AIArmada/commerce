@@ -191,6 +191,21 @@ describe('Cart Identifier Management', function (): void {
         expect($result)->toBeInstanceOf(AIArmada\Cart\Models\CartItem::class);
         expect(Cart::count())->toBe(1);
     });
+
+    it('returns same cart instance when setting same identifier', function (): void {
+        $cart = Cart::getCartInstance('test-instance', 'test-id');
+        $sameCart = $cart->setIdentifier('test-id');
+
+        expect($sameCart)->toBe($cart);
+    });
+
+    it('returns new cart instance when setting different identifier', function (): void {
+        $cart = Cart::getCartInstance('test-instance', 'test-id');
+        $newCart = $cart->setIdentifier('new-id');
+
+        expect($newCart)->not->toBe($cart);
+        expect($newCart->getIdentifier())->toBe('new-id');
+    });
 });
 
 describe('Cart Storage Operations', function (): void {

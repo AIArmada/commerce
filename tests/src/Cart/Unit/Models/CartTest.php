@@ -1163,4 +1163,14 @@ describe('Edge cases for 100% coverage', function (): void {
         expect($result)->toBeInstanceOf(CartItem::class);
         expect($this->cart->getItems()->count())->toBe(0);
     });
+
+    it('getContent returns cart content', function (): void {
+        $this->cart->add('item1', 'Item 1', 10, 1);
+
+        $content = $this->cart->getContent();
+
+        expect($content)->toBeArray();
+        expect($content)->toHaveKey('items');
+        expect($content)->toHaveKey('conditions');
+    });
 });

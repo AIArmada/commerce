@@ -85,6 +85,25 @@ describe('Cart Metadata Management', function (): void {
         expect($result)->toBe($this->cart);
     });
 
+    test('setMetadataBatch returns early for empty array', function (): void {
+        $result = $this->cart->setMetadataBatch([]);
+        expect($result)->toBe($this->cart);
+    });
+
+    test('clearMetadata removes all metadata', function (): void {
+        $this->cart->setMetadata('key1', 'value1');
+        $this->cart->setMetadata('key2', 'value2');
+
+        expect($this->cart->getMetadata('key1'))->toBe('value1');
+        expect($this->cart->getMetadata('key2'))->toBe('value2');
+
+        $result = $this->cart->clearMetadata();
+        expect($result)->toBe($this->cart);
+
+        expect($this->cart->getMetadata('key1'))->toBeNull();
+        expect($this->cart->getMetadata('key2'))->toBeNull();
+    });
+
     test('metadata persists across cart operations but not clear', function (): void {
         // Set metadata
         $this->cart->setMetadata('persistent_key', 'persistent_value');

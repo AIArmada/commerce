@@ -7,6 +7,7 @@ use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartCreated;
 use AIArmada\Cart\Events\CartDestroyed;
 use AIArmada\Cart\Events\CartMerged;
+use AIArmada\Cart\Events\MetadataCleared;
 
 describe('CartCleared Event', function (): void {
     it('creates event with cart', function (): void {
@@ -215,5 +216,29 @@ describe('CartMerged Event', function (): void {
 
         expect($eventWithConflict->hadConflicts)->toBeTrue();
         expect($eventWithoutConflict->hadConflicts)->toBeFalse();
+    });
+});
+
+describe('MetadataCleared Event', function (): void {
+    it('creates event with cart', function (): void {
+        $cart = app(CartManager::class)->getCurrentCart();
+        $event = new MetadataCleared($cart);
+
+        expect($event)->toBeInstanceOf(MetadataCleared::class);
+        expect($event->cart)->toBe($cart);
+    });
+
+    it('converts to array', function (): void {
+        $cart = app(CartManager::class)->getCurrentCart();
+        $cart->add('test-item', 'Test Item', 10.00);
+
+        $event = new MetadataCleared($cart);
+        $array = $event->toArray();
+
+        expect($array)->toBeArray();
+        expect($array)->toHaveKey('cart');
+        expect($array)->toHaveKey('timestamp');
+        expect($array['cart']['identifier'])->toBe($cart->getIdentifier());
+        expect($array['cart']['instance'])->toBe($cart->instance());
     });
 });

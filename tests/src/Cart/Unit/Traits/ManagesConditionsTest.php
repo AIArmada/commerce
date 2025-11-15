@@ -228,4 +228,43 @@ describe('ManagesConditions Trait', function (): void {
 
         expect($value)->toBe(10.0);
     });
+
+    it('handles Traversable condition input', function (): void {
+        $conditions = new ArrayIterator([
+            new CartCondition(
+                name: 'tax1',
+                type: 'tax',
+                target: 'subtotal',
+                value: '+10%'
+            ),
+            new CartCondition(
+                name: 'discount',
+                type: 'discount',
+                target: 'subtotal',
+                value: '-5%'
+            )
+        ]);
+
+        $this->cart->addCondition($conditions);
+
+        expect($this->cart->getConditions())->toHaveCount(2);
+        expect($this->cart->getCondition('tax1'))->not->toBeNull();
+        expect($this->cart->getCondition('discount'))->not->toBeNull();
+    });
+
+    it('handles associative array condition input', function (): void {
+        $conditionArray = [
+            'name' => 'tax_from_array',
+            'type' => 'tax',
+            'target' => 'subtotal',
+            'value' => '+8%'
+        ];
+
+        $this->cart->addCondition($conditionArray);
+
+        $condition = $this->cart->getCondition('tax_from_array');
+        expect($condition)->not->toBeNull();
+        expect($condition->getType())->toBe('tax');
+        expect($condition->getValue())->toBe('+8%');
+    });
 });
