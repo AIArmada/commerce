@@ -1096,7 +1096,7 @@ describe('CartItem Money Methods', function (): void {
                     type: 'discount',
                     target: 'item',
                     value: '-20%'
-                )
+                ),
             ]
         );
 

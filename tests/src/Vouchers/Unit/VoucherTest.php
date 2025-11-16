@@ -17,36 +17,45 @@ test('voucher has relations', function (): void {
         'status' => 'active',
     ]);
 
-    expect($voucher->usages())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class)
-        ->and($voucher->walletEntries())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class)
-        ->and($voucher->owner())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphTo::class);
+    expect($voucher->usages())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class)
+        ->and($voucher->walletEntries())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class)
+        ->and($voucher->owner())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphTo::class);
 });
 
 test('voucher scope for owner', function (): void {
     // Test with owner disabled
     Config::set('vouchers.owner.enabled', false);
     $query = Voucher::forOwner(null);
-    expect($query)->toBeInstanceOf(\Illuminate\Database\Eloquent\Builder::class);
+    expect($query)->toBeInstanceOf(Illuminate\Database\Eloquent\Builder::class);
 
     Config::set('vouchers.owner.enabled', true);
 
     // Test with no owner, include global
     $query = Voucher::forOwner(null, true);
-    expect($query)->toBeInstanceOf(\Illuminate\Database\Eloquent\Builder::class);
+    expect($query)->toBeInstanceOf(Illuminate\Database\Eloquent\Builder::class);
 
     // Test with no owner, exclude global
     $query = Voucher::forOwner(null, false);
-    expect($query)->toBeInstanceOf(\Illuminate\Database\Eloquent\Builder::class);
+    expect($query)->toBeInstanceOf(Illuminate\Database\Eloquent\Builder::class);
 
     // Test with owner
-    $user = new class extends Model {
+    $user = new class extends Model
+    {
         protected $table = 'users';
-        public function getMorphClass() { return 'User'; }
-        public function getKey() { return 1; }
+
+        public function getMorphClass()
+        {
+            return 'User';
+        }
+
+        public function getKey()
+        {
+            return 1;
+        }
     };
 
     $query = Voucher::forOwner($user, true);
-    expect($query)->toBeInstanceOf(\Illuminate\Database\Eloquent\Builder::class);
+    expect($query)->toBeInstanceOf(Illuminate\Database\Eloquent\Builder::class);
 });
 
 test('voucher has uses left', function (): void {

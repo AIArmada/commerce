@@ -22,7 +22,7 @@ test('voucher usage has relations', function (): void {
         'used_at' => now(),
     ]);
 
-    expect($usage->voucher())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+    expect($usage->voucher())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
 });
 
 test('voucher usage is manual', function (): void {

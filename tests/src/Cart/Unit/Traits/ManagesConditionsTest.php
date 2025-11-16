@@ -242,7 +242,7 @@ describe('ManagesConditions Trait', function (): void {
                 type: 'discount',
                 target: 'subtotal',
                 value: '-5%'
-            )
+            ),
         ]);
 
         $this->cart->addCondition($conditions);
@@ -257,7 +257,7 @@ describe('ManagesConditions Trait', function (): void {
             'name' => 'tax_from_array',
             'type' => 'tax',
             'target' => 'subtotal',
-            'value' => '+8%'
+            'value' => '+8%',
         ];
 
         $this->cart->addCondition($conditionArray);

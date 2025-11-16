@@ -17,7 +17,7 @@ it('simulates deletion in dry-run mode without removing data', function (): void
 
     DB::table('carts')->insert([
         [
-            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'id' => (string) Illuminate\Support\Str::uuid(),
             'identifier' => 'user-1',
             'instance' => 'default',
             'items' => json_encode([], JSON_THROW_ON_ERROR),
@@ -45,7 +45,7 @@ it('deletes abandoned carts after confirmation', function (): void {
 
     DB::table('carts')->insert([
         [
-            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'id' => (string) Illuminate\Support\Str::uuid(),
             'identifier' => 'user-1',
             'instance' => 'default',
             'items' => json_encode([], JSON_THROW_ON_ERROR),

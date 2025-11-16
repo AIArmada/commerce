@@ -129,10 +129,19 @@ test('validates voucher with usage limit reached', function (): void {
 test('validates voucher with per-user limit reached', function (): void {
     Config::set('vouchers.validation.check_user_limit', true);
 
-    $user = new class extends \Illuminate\Database\Eloquent\Model {
+    $user = new class extends Illuminate\Database\Eloquent\Model
+    {
         protected $table = 'users';
-        public function getMorphClass() { return 'User'; }
-        public function getKey() { return 1; }
+
+        public function getMorphClass()
+        {
+            return 'User';
+        }
+
+        public function getKey()
+        {
+            return 1;
+        }
     };
 
     Auth::shouldReceive('user')->andReturn($user);
@@ -198,8 +207,12 @@ test('validates with object cart', function (): void {
         'min_cart_value' => 50,
     ]);
 
-    $cart = new class {
-        public function getRawSubtotalWithoutConditions() { return 100.0; }
+    $cart = new class
+    {
+        public function getRawSubtotalWithoutConditions()
+        {
+            return 100.0;
+        }
     };
 
     $validator = app(VoucherValidator::class);

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Storage\SessionStorage;
-use Illuminate\Session\Store;
 use Illuminate\Session\ArraySessionHandler;
+use Illuminate\Session\Store;
 
 beforeEach(function (): void {
     $this->session = new Store('testing', new ArraySessionHandler(120));

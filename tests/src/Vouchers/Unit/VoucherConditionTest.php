@@ -581,5 +581,3 @@ it('encodes to json', function (): void {
     expect($decoded)->toBeArray()
         ->and($decoded['name'])->toBe('voucher_JSON');
 });
-
-

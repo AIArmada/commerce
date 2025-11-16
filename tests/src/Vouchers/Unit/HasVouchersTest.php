@@ -192,9 +192,13 @@ it('collects voucher conditions from cart conditions', function (): void {
     $storage = new class implements StorageInterface
     {
         private array $items = [];
+
         private array $conditions = [];
+
         private array $metadata = [];
+
         private array $ids = [];
+
         private array $versions = [];
 
         public function has(string $identifier, string $instance): bool
@@ -341,7 +345,7 @@ it('collects voucher conditions from cart conditions', function (): void {
     ]);
 
     // Add a CartCondition with type 'voucher'
-    $cartCondition = new \AIArmada\Cart\Conditions\CartCondition(
+    $cartCondition = new AIArmada\Cart\Conditions\CartCondition(
         name: 'voucher_cartcond',
         type: 'voucher',
         target: 'subtotal',
@@ -372,9 +376,13 @@ it('applies voucher successfully', function (): void {
     $storage = new class implements StorageInterface
     {
         private array $items = [];
+
         private array $conditions = [];
+
         private array $metadata = [];
+
         private array $ids = [];
+
         private array $versions = [];
 
         public function has(string $identifier, string $instance): bool
@@ -513,7 +521,7 @@ it('applies voucher successfully', function (): void {
     $wrapper = new CartWithVouchers($cart);
 
     // Create a voucher
-    $voucher = \AIArmada\Vouchers\Models\Voucher::create([
+    $voucher = AIArmada\Vouchers\Models\Voucher::create([
         'code' => 'APPLYTEST',
         'name' => 'Apply Test',
         'type' => 'percentage',
@@ -532,9 +540,13 @@ it('fails to apply invalid voucher code', function (): void {
     $storage = new class implements StorageInterface
     {
         private array $items = [];
+
         private array $conditions = [];
+
         private array $metadata = [];
+
         private array $ids = [];
+
         private array $versions = [];
 
         public function has(string $identifier, string $instance): bool
@@ -672,16 +684,20 @@ it('fails to apply invalid voucher code', function (): void {
 
     $wrapper = new CartWithVouchers($cart);
 
-    expect(fn() => $wrapper->applyVoucher('INVALID'))->toThrow(\AIArmada\Vouchers\Exceptions\InvalidVoucherException::class);
+    expect(fn () => $wrapper->applyVoucher('INVALID'))->toThrow(AIArmada\Vouchers\Exceptions\InvalidVoucherException::class);
 });
 
 it('removes voucher successfully', function (): void {
     $storage = new class implements StorageInterface
     {
         private array $items = [];
+
         private array $conditions = [];
+
         private array $metadata = [];
+
         private array $ids = [];
+
         private array $versions = [];
 
         public function has(string $identifier, string $instance): bool
@@ -820,7 +836,7 @@ it('removes voucher successfully', function (): void {
     $wrapper = new CartWithVouchers($cart);
 
     // Add a voucher first
-    $voucher = \AIArmada\Vouchers\Models\Voucher::create([
+    $voucher = AIArmada\Vouchers\Models\Voucher::create([
         'code' => 'REMOVETEST',
         'name' => 'Remove Test',
         'type' => 'percentage',
@@ -843,9 +859,13 @@ it('removes non-existent voucher gracefully', function (): void {
     $storage = new class implements StorageInterface
     {
         private array $items = [];
+
         private array $conditions = [];
+
         private array $metadata = [];
+
         private array $ids = [];
+
         private array $versions = [];
 
         public function has(string $identifier, string $instance): bool
@@ -992,9 +1012,13 @@ it('calculates voucher discount', function (): void {
     $storage = new class implements StorageInterface
     {
         private array $items = [];
+
         private array $conditions = [];
+
         private array $metadata = [];
+
         private array $ids = [];
+
         private array $versions = [];
 
         public function has(string $identifier, string $instance): bool
@@ -1133,7 +1157,7 @@ it('calculates voucher discount', function (): void {
     $wrapper = new CartWithVouchers($cart);
 
     // Add a voucher
-    $voucher = \AIArmada\Vouchers\Models\Voucher::create([
+    $voucher = AIArmada\Vouchers\Models\Voucher::create([
         'code' => 'DISCOUNTTEST',
         'name' => 'Discount Test',
         'type' => 'fixed',
@@ -1162,9 +1186,13 @@ it('checks if can add voucher', function (): void {
     $storage = new class implements StorageInterface
     {
         private array $items = [];
+
         private array $conditions = [];
+
         private array $metadata = [];
+
         private array $ids = [];
+
         private array $versions = [];
 
         public function has(string $identifier, string $instance): bool
@@ -1305,18 +1333,22 @@ it('checks if can add voucher', function (): void {
     expect($wrapper->canAddVoucher())->toBeTrue();
 
     // Test with max vouchers disabled
-    \Illuminate\Support\Facades\Config::set('vouchers.cart.max_vouchers_per_cart', 0);
+    Illuminate\Support\Facades\Config::set('vouchers.cart.max_vouchers_per_cart', 0);
     expect($wrapper->canAddVoucher())->toBeFalse();
-    \Illuminate\Support\Facades\Config::set('vouchers.cart.max_vouchers_per_cart', 1);
+    Illuminate\Support\Facades\Config::set('vouchers.cart.max_vouchers_per_cart', 1);
 });
 
 it('validates applied vouchers', function (): void {
     $storage = new class implements StorageInterface
     {
         private array $items = [];
+
         private array $conditions = [];
+
         private array $metadata = [];
+
         private array $ids = [];
+
         private array $versions = [];
 
         public function has(string $identifier, string $instance): bool
@@ -1455,7 +1487,7 @@ it('validates applied vouchers', function (): void {
     $wrapper = new CartWithVouchers($cart);
 
     // Add a voucher
-    $voucher = \AIArmada\Vouchers\Models\Voucher::create([
+    $voucher = AIArmada\Vouchers\Models\Voucher::create([
         'code' => 'INVALIDATE',
         'name' => 'Invalidate Test',
         'type' => 'percentage',
@@ -1479,15 +1511,19 @@ it('validates applied vouchers', function (): void {
 });
 
 it('calculates voucher discount with stacking', function (): void {
-    \Illuminate\Support\Facades\Config::set('vouchers.cart.allow_stacking', true);
-    \Illuminate\Support\Facades\Config::set('vouchers.cart.max_vouchers_per_cart', 2);
+    Illuminate\Support\Facades\Config::set('vouchers.cart.allow_stacking', true);
+    Illuminate\Support\Facades\Config::set('vouchers.cart.max_vouchers_per_cart', 2);
 
     $storage = new class implements StorageInterface
     {
         private array $items = [];
+
         private array $conditions = [];
+
         private array $metadata = [];
+
         private array $ids = [];
+
         private array $versions = [];
 
         public function has(string $identifier, string $instance): bool
@@ -1635,7 +1671,7 @@ it('calculates voucher discount with stacking', function (): void {
     ]);
 
     // Add two vouchers
-    $voucher1 = \AIArmada\Vouchers\Models\Voucher::create([
+    $voucher1 = AIArmada\Vouchers\Models\Voucher::create([
         'code' => 'STACK1',
         'name' => 'Stack 1',
         'type' => 'fixed',
@@ -1644,7 +1680,7 @@ it('calculates voucher discount with stacking', function (): void {
         'status' => 'active',
     ]);
 
-    $voucher2 = \AIArmada\Vouchers\Models\Voucher::create([
+    $voucher2 = AIArmada\Vouchers\Models\Voucher::create([
         'code' => 'STACK2',
         'name' => 'Stack 2',
         'type' => 'fixed',
@@ -1665,9 +1701,13 @@ it('tests cart with vouchers get underlying cart', function (): void {
     $storage = new class implements StorageInterface
     {
         private array $items = [];
+
         private array $conditions = [];
+
         private array $metadata = [];
+
         private array $ids = [];
+
         private array $versions = [];
 
         public function has(string $identifier, string $instance): bool
@@ -1812,9 +1852,13 @@ it('removes static voucher condition', function (): void {
     $storage = new class implements StorageInterface
     {
         private array $items = [];
+
         private array $conditions = [];
+
         private array $metadata = [];
+
         private array $ids = [];
+
         private array $versions = [];
 
         public function has(string $identifier, string $instance): bool

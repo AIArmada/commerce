@@ -373,7 +373,7 @@ describe('BuiltInRulesFactory', function (): void {
                 type: 'discount',
                 target: 'item',
                 value: '-10%'
-            )
+            ),
         ]);
         $item = $cart->get('promo-1');
         expect($item)->not->toBeNull();
