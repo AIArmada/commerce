@@ -77,6 +77,196 @@ test('can check if voucher exists in wallet', function (): void {
     expect($user->hasVoucherInWallet('EXISTCHECK'))->toBeTrue();
 });
 
+test('can claim voucher wallet entry', function (): void {
+    $user = TestWalletUser::create(['name' => 'Test User', 'email' => 'test@example.com']);
+
+    $voucher = Voucher::create([
+        'code' => 'CLAIMTEST',
+        'name' => 'Claim Test Voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $walletEntry = VoucherWallet::create([
+        'voucher_id' => $voucher->id,
+        'owner_id' => $user->id,
+        'owner_type' => $user->getMorphClass(),
+        'is_claimed' => false,
+    ]);
+
+    expect($walletEntry->is_claimed)->toBeFalse()
+        ->and($walletEntry->claimed_at)->toBeNull();
+
+    $walletEntry->claim();
+
+    $walletEntry->refresh();
+
+    expect($walletEntry->is_claimed)->toBeTrue()
+        ->and($walletEntry->claimed_at)->not->toBeNull();
+
+    // Claiming again should not change
+    $originalClaimedAt = $walletEntry->claimed_at;
+    $walletEntry->claim();
+    expect($walletEntry->claimed_at)->toEqual($originalClaimedAt);
+});
+
+test('can mark voucher wallet entry as redeemed', function (): void {
+    $user = TestWalletUser::create(['name' => 'Test User', 'email' => 'test@example.com']);
+
+    $voucher = Voucher::create([
+        'code' => 'REDEEMTEST',
+        'name' => 'Redeem Test Voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $walletEntry = VoucherWallet::create([
+        'voucher_id' => $voucher->id,
+        'owner_id' => $user->id,
+        'owner_type' => $user->getMorphClass(),
+        'is_claimed' => true,
+        'is_redeemed' => false,
+    ]);
+
+    expect($walletEntry->is_redeemed)->toBeFalse()
+        ->and($walletEntry->redeemed_at)->toBeNull();
+
+    $walletEntry->markAsRedeemed();
+
+    $walletEntry->refresh();
+
+    expect($walletEntry->is_redeemed)->toBeTrue()
+        ->and($walletEntry->redeemed_at)->not->toBeNull();
+
+    // Marking again should not change
+    $originalRedeemedAt = $walletEntry->redeemed_at;
+    $walletEntry->markAsRedeemed();
+    expect($walletEntry->redeemed_at)->toEqual($originalRedeemedAt);
+});
+
+test('can check if voucher wallet entry is expired', function (): void {
+    $user = TestWalletUser::create(['name' => 'Test User', 'email' => 'test@example.com']);
+
+    $expiredVoucher = Voucher::create([
+        'code' => 'EXPIRED',
+        'name' => 'Expired Voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+        'expires_at' => now()->subDay(),
+    ]);
+
+    $activeVoucher = Voucher::create([
+        'code' => 'ACTIVE',
+        'name' => 'Active Voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $expiredWallet = VoucherWallet::create([
+        'voucher_id' => $expiredVoucher->id,
+        'owner_id' => $user->id,
+        'owner_type' => $user->getMorphClass(),
+        'is_claimed' => true,
+    ]);
+
+    $activeWallet = VoucherWallet::create([
+        'voucher_id' => $activeVoucher->id,
+        'owner_id' => $user->id,
+        'owner_type' => $user->getMorphClass(),
+        'is_claimed' => true,
+    ]);
+
+    expect($expiredWallet->isExpired())->toBeTrue()
+        ->and($activeWallet->isExpired())->toBeFalse();
+});
+
+test('can check if voucher wallet entry can be used', function (): void {
+    $user = TestWalletUser::create(['name' => 'Test User', 'email' => 'test@example.com']);
+
+    $expiredVoucher = Voucher::create([
+        'code' => 'EXPIRED',
+        'name' => 'Expired Voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+        'expires_at' => now()->subDay(),
+    ]);
+
+    $activeVoucher = Voucher::create([
+        'code' => 'ACTIVE',
+        'name' => 'Active Voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $inactiveVoucher = Voucher::create([
+        'code' => 'INACTIVE',
+        'name' => 'Inactive Voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'paused',
+    ]);
+
+    $notStartedVoucher = Voucher::create([
+        'code' => 'NOTSTARTED',
+        'name' => 'Not Started Voucher',
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => 'MYR',
+        'status' => 'active',
+        'starts_at' => now()->addDay(),
+    ]);
+
+    $expiredWallet = VoucherWallet::create([
+        'voucher_id' => $expiredVoucher->id,
+        'owner_id' => $user->id,
+        'owner_type' => $user->getMorphClass(),
+        'is_claimed' => true,
+        'is_redeemed' => false,
+    ]);
+
+    $activeWallet = VoucherWallet::create([
+        'voucher_id' => $activeVoucher->id,
+        'owner_id' => $user->id,
+        'owner_type' => $user->getMorphClass(),
+        'is_claimed' => true,
+        'is_redeemed' => false,
+    ]);
+
+    $unclaimedWallet = VoucherWallet::create([
+        'voucher_id' => $notStartedVoucher->id,
+        'owner_id' => $user->id,
+        'owner_type' => $user->getMorphClass(),
+        'is_claimed' => false,
+        'is_redeemed' => false,
+    ]);
+
+    $inactiveWallet = VoucherWallet::create([
+        'voucher_id' => $inactiveVoucher->id,
+        'owner_id' => $user->id,
+        'owner_type' => $user->getMorphClass(),
+        'is_claimed' => true,
+        'is_redeemed' => false,
+    ]);
+
+    expect($expiredWallet->canBeUsed())->toBeFalse()
+        ->and($activeWallet->canBeUsed())->toBeTrue()
+        ->and($unclaimedWallet->canBeUsed())->toBeFalse()
+        ->and($inactiveWallet->canBeUsed())->toBeFalse();
+});
+
 test('can get available vouchers from wallet', function (): void {
     $user = TestWalletUser::create(['name' => 'Test User', 'email' => 'test@example.com']);
 
