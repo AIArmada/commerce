@@ -19,6 +19,7 @@ return new class extends Migration
             $table->string('name');
             $table->string('type'); // discount, tax, fee, shipping, etc.
             $table->string('target'); // subtotal, total, price, etc.
+            $table->{$jsonType}('target_definition'); // structured scope/phase/application
             $table->string('value'); // percentage or fixed amount
             $table->string('operator')->nullable(); // +, -, *, /, %
             $table->boolean('is_charge')->default(false);

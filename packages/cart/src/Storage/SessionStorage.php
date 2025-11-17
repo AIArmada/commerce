@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Storage;
 
 use Illuminate\Contracts\Session\Session;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use JsonException;
 
@@ -31,10 +32,14 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function forget(string $identifier, string $instance): void
     {
-        // Remove items, conditions, and all metadata using flat keys
         $this->session->forget($this->getItemsKey($identifier, $instance));
         $this->session->forget($this->getConditionsKey($identifier, $instance));
-        $this->clearMetadata($identifier, $instance);
+        $this->clearMetadataKeys($identifier, $instance);
+        $this->session->forget($this->getVersionKey($identifier, $instance));
+        $this->session->forget($this->getIdKey($identifier, $instance));
+        $this->session->forget($this->getCreatedAtKey($identifier, $instance));
+        $this->session->forget($this->getUpdatedAtKey($identifier, $instance));
+        $this->unregisterInstance($identifier, $instance);
     }
 
     /**
@@ -53,23 +58,14 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function getInstances(string $identifier): array
     {
-        $instances = [];
-        $allSessionData = $this->session->all();
-        $itemsPrefix = "{$this->keyPrefix}.{$identifier}.";
+        $registry = $this->session->get($this->getInstanceRegistryKey($identifier));
+        if (is_array($registry) && $registry !== []) {
+            return array_values($registry);
+        }
 
-        // Find all cart instances by looking for items or conditions keys
-        foreach (array_keys($allSessionData) as $key) {
-            if (str_starts_with((string) $key, $itemsPrefix)) {
-                // Extract instance name from key like "cart.identifier.instance.items"
-                $remainder = mb_substr((string) $key, mb_strlen($itemsPrefix));
-                $parts = explode('.', $remainder);
-                if (count($parts) >= 2 && ($parts[1] === 'items' || $parts[1] === 'conditions')) {
-                    $instance = $parts[0];
-                    if (! in_array($instance, $instances, true)) {
-                        $instances[] = $instance;
-                    }
-                }
-            }
+        $instances = $this->discoverInstances($identifier);
+        if ($instances !== []) {
+            $this->session->put($this->getInstanceRegistryKey($identifier), $instances);
         }
 
         return $instances;
@@ -85,6 +81,8 @@ final readonly class SessionStorage implements StorageInterface
         foreach ($instances as $instance) {
             $this->forget($identifier, $instance);
         }
+
+        $this->session->forget($this->getInstanceRegistryKey($identifier));
     }
 
     /**
@@ -128,6 +126,7 @@ final readonly class SessionStorage implements StorageInterface
     {
         $this->validateDataSize($items, 'items');
         $this->session->put($this->getItemsKey($identifier, $instance), $items);
+        $this->touchCart($identifier, $instance);
     }
 
     /**
@@ -139,6 +138,7 @@ final readonly class SessionStorage implements StorageInterface
     {
         $this->validateDataSize($conditions, 'conditions');
         $this->session->put($this->getConditionsKey($identifier, $instance), $conditions);
+        $this->touchCart($identifier, $instance);
     }
 
     /**
@@ -149,8 +149,11 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function putBoth(string $identifier, string $instance, array $items, array $conditions): void
     {
-        $this->putItems($identifier, $instance, $items);
-        $this->putConditions($identifier, $instance, $conditions);
+        $this->validateDataSize($items, 'items');
+        $this->validateDataSize($conditions, 'conditions');
+        $this->session->put($this->getItemsKey($identifier, $instance), $items);
+        $this->session->put($this->getConditionsKey($identifier, $instance), $conditions);
+        $this->touchCart($identifier, $instance);
     }
 
     /**
@@ -160,6 +163,8 @@ final readonly class SessionStorage implements StorageInterface
     {
         $metadataKey = $this->getMetadataKey($identifier, $instance, $key);
         $this->session->put($metadataKey, $value);
+        $this->addMetadataKey($identifier, $instance, $key);
+        $this->touchCart($identifier, $instance);
     }
 
     /**
@@ -177,6 +182,11 @@ final readonly class SessionStorage implements StorageInterface
             $metadataKey = $this->getMetadataKey($identifier, $instance, $key);
             $this->session->put($metadataKey, $value);
         }
+
+        $existingKeys = $this->session->get($this->getMetadataRegistryKey($identifier, $instance), []);
+        $newKeys = array_unique(array_merge($existingKeys, array_keys($metadata)));
+        $this->session->put($this->getMetadataRegistryKey($identifier, $instance), $newKeys);
+        $this->touchCart($identifier, $instance);
     }
 
     /**
@@ -196,9 +206,23 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function getAllMetadata(string $identifier, string $instance): array
     {
+        $metadata = [];
+        $registryKey = $this->getMetadataRegistryKey($identifier, $instance);
+        $metadataKeys = $this->session->get($registryKey);
+
+        if (is_array($metadataKeys)) {
+            foreach ($metadataKeys as $key) {
+                $value = $this->session->get($this->getMetadataKey($identifier, $instance, $key));
+                if ($value !== null) {
+                    $metadata[$key] = $value;
+                }
+            }
+
+            return $metadata;
+        }
+
         $metadataPrefix = "{$this->keyPrefix}.{$identifier}.{$instance}.metadata.";
         $allKeys = $this->session->all();
-        $metadata = [];
 
         foreach ($allKeys as $key => $value) {
             if (str_starts_with((string) $key, $metadataPrefix)) {
@@ -215,20 +239,8 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function clearMetadata(string $identifier, string $instance): void
     {
-        $metadataPrefix = "{$this->keyPrefix}.{$identifier}.{$instance}.metadata.";
-
-        // Get all session keys (flat dot-notation keys)
-        $allSessionData = $this->session->all();
-
-        // Build list of metadata keys to remove by checking each top-level key
-        // and reconstructing the full dot-notation path
-        $keysToRemove = [];
-        $this->findMetadataKeys($allSessionData, $metadataPrefix, '', $keysToRemove);
-
-        // Remove all found metadata keys
-        foreach ($keysToRemove as $key) {
-            $this->session->forget($key);
-        }
+        $this->clearMetadataKeys($identifier, $instance);
+        $this->touchCart($identifier, $instance);
     }
 
     /**
@@ -236,12 +248,10 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function clearAll(string $identifier, string $instance): void
     {
-        // Clear items and conditions
         $this->session->put($this->getItemsKey($identifier, $instance), []);
         $this->session->put($this->getConditionsKey($identifier, $instance), []);
-
-        // Clear metadata
-        $this->clearMetadata($identifier, $instance);
+        $this->clearMetadataKeys($identifier, $instance);
+        $this->touchCart($identifier, $instance);
     }
 
     /**
@@ -250,19 +260,30 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function swapIdentifier(string $oldIdentifier, string $newIdentifier, string $instance): bool
     {
-        // Check if source cart exists
         if (! $this->has($oldIdentifier, $instance)) {
             return false;
         }
 
-        // Get all data from the source identifier
+        if ($this->has($newIdentifier, $instance)) {
+            $this->forget($newIdentifier, $instance);
+        }
+
         $items = $this->getItems($oldIdentifier, $instance);
         $conditions = $this->getConditions($oldIdentifier, $instance);
+        $metadata = $this->getAllMetadata($oldIdentifier, $instance);
+        $version = $this->getVersion($oldIdentifier, $instance);
+        $id = $this->getId($oldIdentifier, $instance);
+        $createdAt = $this->getCreatedAt($oldIdentifier, $instance);
+        $updatedAt = $this->getUpdatedAt($oldIdentifier, $instance);
 
-        // Transfer source cart to new identifier (swap even if empty to ensure ownership)
         $this->putBoth($newIdentifier, $instance, $items, $conditions);
 
-        // Remove data from old identifier
+        if (! empty($metadata)) {
+            $this->putMetadataBatch($newIdentifier, $instance, $metadata);
+        }
+
+        $this->overwriteCartMetadata($newIdentifier, $instance, $id, $version, $createdAt, $updatedAt);
+
         $this->forget($oldIdentifier, $instance);
 
         return true;
@@ -274,7 +295,9 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function getVersion(string $identifier, string $instance): ?int
     {
-        return null;
+        $version = $this->session->get($this->getVersionKey($identifier, $instance));
+
+        return $version === null ? null : (int) $version;
     }
 
     /**
@@ -283,7 +306,9 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function getId(string $identifier, string $instance): ?string
     {
-        return null;
+        $id = $this->session->get($this->getIdKey($identifier, $instance));
+
+        return is_string($id) ? $id : null;
     }
 
     /**
@@ -291,7 +316,9 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function getCreatedAt(string $identifier, string $instance): ?string
     {
-        return null;
+        $timestamp = $this->session->get($this->getCreatedAtKey($identifier, $instance));
+
+        return is_string($timestamp) ? $timestamp : null;
     }
 
     /**
@@ -299,7 +326,9 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function getUpdatedAt(string $identifier, string $instance): ?string
     {
-        return null;
+        $timestamp = $this->session->get($this->getUpdatedAtKey($identifier, $instance));
+
+        return is_string($timestamp) ? $timestamp : null;
     }
 
     /**
@@ -319,6 +348,170 @@ final readonly class SessionStorage implements StorageInterface
                 // Only recurse if the prefix could potentially match deeper keys
                 $this->findMetadataKeys($value, $prefix, $fullPath, $keysToRemove);
             }
+        }
+    }
+
+    /**
+     * Discover instances by inspecting session keys (legacy fallback).
+     *
+     * @return array<string>
+     */
+    private function discoverInstances(string $identifier): array
+    {
+        $instances = [];
+        $allSessionData = $this->session->all();
+        $itemsPrefix = "{$this->keyPrefix}.{$identifier}.";
+
+        foreach (array_keys($allSessionData) as $key) {
+            if (str_starts_with((string) $key, $itemsPrefix)) {
+                $remainder = mb_substr((string) $key, mb_strlen($itemsPrefix));
+                $parts = explode('.', $remainder);
+                if (count($parts) >= 2 && ($parts[1] === 'items' || $parts[1] === 'conditions')) {
+                    $instance = $parts[0];
+                    if (! in_array($instance, $instances, true)) {
+                        $instances[] = $instance;
+                    }
+                }
+            }
+        }
+
+        return $instances;
+    }
+
+    private function getInstanceRegistryKey(string $identifier): string
+    {
+        return "{$this->keyPrefix}.{$identifier}._instances";
+    }
+
+    private function registerInstance(string $identifier, string $instance): void
+    {
+        $registryKey = $this->getInstanceRegistryKey($identifier);
+        $instances = $this->session->get($registryKey, []);
+
+        if (! in_array($instance, $instances, true)) {
+            $instances[] = $instance;
+            $this->session->put($registryKey, $instances);
+        }
+    }
+
+    private function unregisterInstance(string $identifier, string $instance): void
+    {
+        $registryKey = $this->getInstanceRegistryKey($identifier);
+        $instances = $this->session->get($registryKey, []);
+
+        if ($instances === []) {
+            return;
+        }
+
+        $filtered = array_values(array_filter($instances, fn (string $value) => $value !== $instance));
+        if ($filtered === []) {
+            $this->session->forget($registryKey);
+        } else {
+            $this->session->put($registryKey, $filtered);
+        }
+    }
+
+    private function touchCart(string $identifier, string $instance): void
+    {
+        $this->registerInstance($identifier, $instance);
+        $now = now()->toIso8601String();
+
+        $idKey = $this->getIdKey($identifier, $instance);
+        if (! $this->session->has($idKey)) {
+            $this->session->put($idKey, (string) Str::uuid());
+            $this->session->put($this->getCreatedAtKey($identifier, $instance), $now);
+        }
+
+        $versionKey = $this->getVersionKey($identifier, $instance);
+        $version = ((int) $this->session->get($versionKey, 0)) + 1;
+        $this->session->put($versionKey, $version);
+        $this->session->put($this->getUpdatedAtKey($identifier, $instance), $now);
+    }
+
+    private function overwriteCartMetadata(
+        string $identifier,
+        string $instance,
+        ?string $id,
+        ?int $version,
+        ?string $createdAt,
+        ?string $updatedAt
+    ): void {
+        if ($id !== null) {
+            $this->session->put($this->getIdKey($identifier, $instance), $id);
+        }
+
+        if ($version !== null) {
+            $this->session->put($this->getVersionKey($identifier, $instance), $version);
+        }
+
+        if ($createdAt !== null) {
+            $this->session->put($this->getCreatedAtKey($identifier, $instance), $createdAt);
+        }
+
+        if ($updatedAt !== null) {
+            $this->session->put($this->getUpdatedAtKey($identifier, $instance), $updatedAt);
+        }
+    }
+
+    private function getVersionKey(string $identifier, string $instance): string
+    {
+        return "{$this->keyPrefix}.{$identifier}.{$instance}.version";
+    }
+
+    private function getIdKey(string $identifier, string $instance): string
+    {
+        return "{$this->keyPrefix}.{$identifier}.{$instance}.id";
+    }
+
+    private function getCreatedAtKey(string $identifier, string $instance): string
+    {
+        return "{$this->keyPrefix}.{$identifier}.{$instance}.created_at";
+    }
+
+    private function getUpdatedAtKey(string $identifier, string $instance): string
+    {
+        return "{$this->keyPrefix}.{$identifier}.{$instance}.updated_at";
+    }
+
+    private function getMetadataRegistryKey(string $identifier, string $instance): string
+    {
+        return "{$this->keyPrefix}.{$identifier}.{$instance}.metadata._keys";
+    }
+
+    private function addMetadataKey(string $identifier, string $instance, string $key): void
+    {
+        $registryKey = $this->getMetadataRegistryKey($identifier, $instance);
+        $keys = $this->session->get($registryKey, []);
+
+        if (! in_array($key, $keys, true)) {
+            $keys[] = $key;
+            $this->session->put($registryKey, $keys);
+        }
+    }
+
+    private function clearMetadataKeys(string $identifier, string $instance): void
+    {
+        $registryKey = $this->getMetadataRegistryKey($identifier, $instance);
+        $metadataKeys = $this->session->get($registryKey);
+
+        if (is_array($metadataKeys)) {
+            foreach ($metadataKeys as $key) {
+                $metadataKey = $this->getMetadataKey($identifier, $instance, $key);
+                $this->session->forget($metadataKey);
+            }
+
+            $this->session->forget($registryKey);
+
+            return;
+        }
+
+        // Fallback to legacy scan if registry wasn't available
+        $metadataPrefix = "{$this->keyPrefix}.{$identifier}.{$instance}.metadata.";
+        $allSessionData = $this->session->all();
+        $keysToRemove = [];
+        $this->findMetadataKeys($allSessionData, $metadataPrefix, '', $keysToRemove);
+        foreach ($keysToRemove as $key) {
+            $this->session->forget($key);
         }
     }
 

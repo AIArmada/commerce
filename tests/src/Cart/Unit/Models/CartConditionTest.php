@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Exceptions\InvalidCartConditionException;
 
 it('parses valid and invalid percent values', function (): void {
@@ -10,7 +11,7 @@ it('parses valid and invalid percent values', function (): void {
     $condition = new CartCondition(
         name: 'Percent',
         type: 'fee',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '25%'
     );
     expect($condition->getValue())->toBe('25%');
@@ -20,7 +21,7 @@ it('parses valid and invalid percent values', function (): void {
     $discountCondition = new CartCondition(
         name: 'Discount',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-25%'
     );
     expect($discountCondition->getValue())->toBe('-25%');
@@ -30,7 +31,7 @@ it('parses valid and invalid percent values', function (): void {
     expect(fn () => new CartCondition(
         name: 'BadPercent',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '1e309%'
     ))->toThrow(InvalidCartConditionException::class, 'Invalid condition value: 1e309%');
 });
@@ -40,7 +41,7 @@ it('throws for non-finite numericValue in parseValue', function (): void {
     expect(fn () => new CartCondition(
         name: 'TestNonFinite',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '1e309' // Produces INF
     ))->toThrow(InvalidCartConditionException::class, 'Invalid condition value: 1e309');
 });
@@ -49,13 +50,13 @@ it('can create a cart condition', function (): void {
     $condition = new CartCondition(
         name: 'VAT 12.5%',
         type: 'tax',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '12.5%'
     );
 
     expect($condition->getName())->toBe('VAT 12.5%');
     expect($condition->getType())->toBe('tax');
-    expect($condition->getTarget())->toBe('subtotal');
+    expect($condition->getTargetDefinition()->toDsl())->toBe('cart@cart_subtotal/aggregate');
     expect($condition->getValue())->toBe('12.5%');
 });
 
@@ -63,7 +64,7 @@ it('can create condition with attributes and order', function (): void {
     $condition = new CartCondition(
         name: 'Premium Tax',
         type: 'tax',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '8.5%',
         attributes: ['jurisdiction' => 'CA', 'code' => 'TAX001'],
         order: 5
@@ -81,7 +82,7 @@ it('can apply percentage discount to value', function (): void {
     $condition = new CartCondition(
         name: '10% Discount',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%'
     );
 
@@ -93,7 +94,7 @@ it('can apply fixed amount discount', function (): void {
     $condition = new CartCondition(
         name: '$5 Discount',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-5'
     );
 
@@ -105,7 +106,7 @@ it('can apply percentage charge to value', function (): void {
     $condition = new CartCondition(
         name: '8% Tax',
         type: 'tax',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '8%'
     );
 
@@ -117,7 +118,7 @@ it('can apply fixed amount charge', function (): void {
     $condition = new CartCondition(
         name: 'Shipping Fee',
         type: 'shipping',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '+15'
     );
 
@@ -129,14 +130,14 @@ it('identifies discount conditions correctly', function (): void {
     $discount = new CartCondition(
         name: '10% Off',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%'
     );
 
     $charge = new CartCondition(
         name: 'Tax',
         type: 'tax',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '8%'
     );
 
@@ -151,7 +152,7 @@ it('validates condition properties', function (): void {
     expect(fn () => new CartCondition(
         name: '',
         type: 'tax',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '10%'
     ))->toThrow(InvalidCartConditionException::class, 'Condition name cannot be empty');
 });
@@ -162,14 +163,16 @@ it('validates condition target', function (): void {
         type: 'tax',
         target: 'invalid',
         value: '10%'
-    ))->toThrow(InvalidCartConditionException::class, 'Condition target must be one of: subtotal, total, item');
+    ))->toThrow(InvalidArgumentException::class, 'Malformed target segment [invalid]');
 });
 
 it('can create condition from array', function (): void {
     $condition = CartCondition::fromArray([
         'name' => 'Test Condition',
         'type' => 'discount',
-        'target' => 'subtotal',
+        'target' => 'cart@cart_subtotal/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+        'target_definition' => ConditionTarget::from('cart@cart_subtotal/aggregate')->toArray(),
         'value' => '-10%',
         'attributes' => ['description' => 'Test discount'],
         'order' => 1,
@@ -185,7 +188,7 @@ it('can convert condition to array', function (): void {
     $condition = new CartCondition(
         name: 'Test Condition',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%',
         attributes: ['description' => 'Test'],
         order: 1
@@ -194,11 +197,12 @@ it('can convert condition to array', function (): void {
     $array = $condition->toArray();
 
     expect($array)->toHaveKeys([
-        'name', 'type', 'target', 'value', 'attributes', 'order',
+        'name', 'type', 'target_definition', 'value', 'attributes', 'order',
         'operator', 'parsed_value', 'is_discount', 'is_charge', 'is_percentage',
     ]);
 
     expect($array['name'])->toBe('Test Condition');
+    expect($array['target_definition']['scope'])->toBe('cart');
     expect($array['is_percentage'])->toBeTrue();
     expect($array['is_discount'])->toBeTrue();
 });
@@ -207,7 +211,7 @@ it('can get calculated value for display', function (): void {
     $condition = new CartCondition(
         name: '10% Discount',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%'
     );
 
@@ -220,14 +224,14 @@ it('identifies percentage-based conditions correctly', function (): void {
     $percentageCondition = new CartCondition(
         name: 'Percentage Tax',
         type: 'tax',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '8.5%'
     );
 
     $fixedCondition = new CartCondition(
         name: 'Fixed Fee',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '+15.00'
     );
 
@@ -239,7 +243,7 @@ it('can create modified copy with with method', function (): void {
     $original = new CartCondition(
         name: 'Original',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%'
     );
 
@@ -255,7 +259,7 @@ it('can convert to JSON', function (): void {
     $condition = new CartCondition(
         name: 'JSON Test',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-5%'
     );
 
@@ -270,7 +274,7 @@ it('can be JSON serialized', function (): void {
     $condition = new CartCondition(
         name: 'Serializable',
         type: 'tax',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '10%'
     );
 
@@ -284,7 +288,7 @@ it('has string representation', function (): void {
     $condition = new CartCondition(
         name: 'Test Condition',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%'
     );
 
@@ -297,14 +301,14 @@ it('validates condition properties on creation', function (): void {
     expect(fn () => new CartCondition(
         name: '',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%'
     ))->toThrow(InvalidCartConditionException::class, 'Condition name cannot be empty');
 
     expect(fn () => new CartCondition(
         name: 'Valid Name',
         type: '',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%'
     ))->toThrow(InvalidCartConditionException::class, 'Condition type cannot be empty');
 
@@ -313,7 +317,7 @@ it('validates condition properties on creation', function (): void {
         type: 'discount',
         target: '',
         value: '-10%'
-    ))->toThrow(InvalidCartConditionException::class, 'Condition target cannot be empty');
+    ))->toThrow(InvalidArgumentException::class, 'Target string cannot be empty.');
 });
 
 it('validates condition target values', function (): void {
@@ -322,14 +326,14 @@ it('validates condition target values', function (): void {
         type: 'discount',
         target: 'invalid_target',
         value: '-10%'
-    ))->toThrow(InvalidCartConditionException::class, 'Condition target must be one of: subtotal, total, item');
+    ))->toThrow(InvalidArgumentException::class, 'Malformed target segment [invalid_target]');
 });
 
 it('validates condition value is not empty', function (): void {
     expect(fn () => new CartCondition(
         name: 'Empty Value',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: ''
     ))->toThrow(InvalidCartConditionException::class, 'Condition value cannot be empty');
 
@@ -337,7 +341,7 @@ it('validates condition value is not empty', function (): void {
     expect(new CartCondition(
         name: 'Zero String',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '0'
     ))->toBeInstanceOf(CartCondition::class);
 
@@ -350,7 +354,7 @@ it('validates condition values and handles edge cases', function (): void {
     expect(new CartCondition(
         name: 'Alpha String',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: 'abc'
     ))->toBeInstanceOf(CartCondition::class);
 
@@ -358,7 +362,7 @@ it('validates condition values and handles edge cases', function (): void {
     expect(new CartCondition(
         name: 'Numeric String',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '25.50'
     ))->toBeInstanceOf(CartCondition::class);
 });
@@ -367,35 +371,35 @@ it('handles different operators correctly', function (): void {
     $addition = new CartCondition(
         name: 'Add',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '+15.00'
     );
 
     $subtraction = new CartCondition(
         name: 'Subtract',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-10.00'
     );
 
     $multiplication = new CartCondition(
         name: 'Multiply',
         type: 'modifier',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '*1.5'
     );
 
     $division = new CartCondition(
         name: 'Divide',
         type: 'modifier',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '/2'
     );
 
     $noOperator = new CartCondition(
         name: 'No Operator',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '25.00'
     );
 
@@ -410,7 +414,7 @@ it('handles division by zero safely', function (): void {
     $divisionByZero = new CartCondition(
         name: 'Divide by Zero',
         type: 'modifier',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '/0'
     );
 
@@ -422,7 +426,9 @@ it('creates conditions from array with fromArray method', function (): void {
     $data = [
         'name' => 'Array Condition',
         'type' => 'discount',
-        'target' => 'subtotal',
+        'target' => 'cart@cart_subtotal/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+        'target_definition' => ConditionTarget::from('cart@cart_subtotal/aggregate')->toArray(),
         'value' => '-15%',
         'attributes' => ['source' => 'coupon'],
         'order' => 3,
@@ -432,7 +438,7 @@ it('creates conditions from array with fromArray method', function (): void {
 
     expect($condition->getName())->toBe('Array Condition')
         ->and($condition->getType())->toBe('discount')
-        ->and($condition->getTarget())->toBe('subtotal')
+        ->and($condition->getTargetDefinition()->toDsl())->toBe('cart@cart_subtotal/aggregate')
         ->and($condition->getValue())->toBe('-15%')
         ->and($condition->getAttribute('source'))->toBe('coupon')
         ->and($condition->getOrder())->toBe(3);
@@ -442,14 +448,14 @@ it('handles positive and negative percentage charges correctly', function (): vo
     $positiveCharge = new CartCondition(
         name: 'Positive Charge',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '10%'
     );
 
     $negativeDiscount = new CartCondition(
         name: 'Negative Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-15%'
     );
 
@@ -464,7 +470,7 @@ it('throws exception for non-finite condition values', function (): void {
     expect(fn () => new CartCondition(
         name: 'InfiniteStr',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: 'INF'
     ))->toThrow(InvalidCartConditionException::class);
 
@@ -472,7 +478,7 @@ it('throws exception for non-finite condition values', function (): void {
     expect(fn () => new CartCondition(
         name: 'NegativeInfiniteStr',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-INF'
     ))->toThrow(InvalidCartConditionException::class);
 
@@ -480,7 +486,7 @@ it('throws exception for non-finite condition values', function (): void {
     expect(fn () => new CartCondition(
         name: 'NaNStr',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: 'NAN'
     ))->toThrow(InvalidCartConditionException::class);
 
@@ -488,7 +494,7 @@ it('throws exception for non-finite condition values', function (): void {
     expect(fn () => new CartCondition(
         name: 'ExponentInf',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '1e309'
     ))->toThrow(InvalidCartConditionException::class);
 });
@@ -497,7 +503,7 @@ it('can get rules and check isDynamic', function (): void {
     $static = new CartCondition(
         name: 'Static',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '+5'
     );
     expect($static->getRules())->toBeNull()
@@ -506,7 +512,7 @@ it('can get rules and check isDynamic', function (): void {
     $dynamic = new CartCondition(
         name: 'Dynamic',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '+5',
         rules: [fn () => true]
     );
@@ -518,7 +524,7 @@ it('shouldApply returns true for static and evaluates rules for dynamic', functi
     $static = new CartCondition(
         name: 'Static',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '+5'
     );
     $cart = new AIArmada\Cart\Cart(
@@ -619,7 +625,7 @@ it('shouldApply returns true for static and evaluates rules for dynamic', functi
     $dynamicTrue = new CartCondition(
         name: 'DynamicTrue',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '+5',
         rules: [fn () => true]
     );
@@ -628,7 +634,7 @@ it('shouldApply returns true for static and evaluates rules for dynamic', functi
     $dynamicFalse = new CartCondition(
         name: 'DynamicFalse',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '+5',
         rules: [fn () => false]
     );

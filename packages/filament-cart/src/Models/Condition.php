@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Models;
 
+use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,6 +25,7 @@ use InvalidArgumentException;
  * @property string|null $description
  * @property string $type
  * @property string $target
+ * @property array<mixed>|null $target_definition
  * @property string $value
  * @property string|null $operator
  * @property bool $is_charge
@@ -63,6 +65,7 @@ final class Condition extends Model
         'description',
         'type',
         'target',
+        'target_definition',
         'value',
         'operator',
         'is_charge',
@@ -84,6 +87,7 @@ final class Condition extends Model
         'order' => 'integer',
         'attributes' => 'array',
         'rules' => 'array',
+        'target_definition' => 'array',
         'is_charge' => 'boolean',
         'is_dynamic' => 'boolean',
         'is_discount' => 'boolean',
@@ -320,11 +324,13 @@ final class Condition extends Model
     public function toConditionArray(?string $customName = null): array
     {
         $factoryKeys = $this->getRuleFactoryKeys();
+        $targetDefinition = ConditionTarget::from($this->target)->toArray();
 
         return [
             'name' => $customName ?? $this->display_name,
             'type' => $this->type,
             'target' => $this->target,
+            'target_definition' => $targetDefinition,
             'value' => $this->value,
             'order' => $this->order,
             'attributes' => array_merge($this->attributes ?? [], [
@@ -349,10 +355,12 @@ final class Condition extends Model
 
         $rules = $this->buildRuleCallables();
 
+        $target = ConditionTarget::from($this->target);
+
         return new \AIArmada\Cart\Conditions\CartCondition(
             name: $data['name'],
             type: $data['type'],
-            target: $data['target'],
+            target: $target,
             value: $data['value'],
             attributes: $data['attributes'],
             order: $data['order'],
@@ -386,6 +394,7 @@ final class Condition extends Model
     {
         self::saving(function (Condition $condition): void {
             $condition->computeDerivedFields();
+            $condition->target_definition = ConditionTarget::from($condition->target)->toArray();
 
             // Normalize rules after is_dynamic is computed
             if (isset($condition->attributes['rules']) && is_string($condition->attributes['rules'])) {

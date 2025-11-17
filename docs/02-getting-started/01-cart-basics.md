@@ -120,12 +120,14 @@ echo Cart::total()->format(); // "RM53.98"
 ### Tax Calculation
 
 ```php
+use AIArmada\Cart\Conditions\TargetPresets;
+
 // Add tax condition
-Cart::applyCondition([
+Cart::addCondition([
     'name' => 'SST',
     'type' => 'tax',
-    'target' => 'subtotal',
-    'value' => 6, // 6%
+    'target_definition' => TargetPresets::cartSubtotal()->toArray(),
+    'value' => '6%', // percentages should stay strings
 ]);
 
 // Tax amount
@@ -135,43 +137,49 @@ echo $taxAmount->format(); // "RM3.60"
 
 ## Cart Conditions
 
-Conditions modify cart totals (discounts, taxes, shipping, fees).
+Conditions modify cart totals (discounts, taxes, shipping, fees). Each condition
+needs a **target definition** that declares *where* and *when* it runs inside
+the pricing pipeline. Build one with the fluent `Target` builder or reuse the
+presets provided by `AIArmada\Cart\Conditions\TargetPresets`.
 
 ### Applying Conditions
 
 ```php
+use AIArmada\Cart\Conditions\TargetPresets;
+
 // Percentage discount
-Cart::applyCondition([
+Cart::addCondition([
     'name' => 'Holiday Sale',
     'type' => 'discount',
-    'target' => 'subtotal', // or 'total'
-    'value' => -10, // -10%
+    'target_definition' => TargetPresets::cartSubtotal()->toArray(),
+    'value' => '-10%', // -10%
 ]);
 
 // Fixed amount discount
-Cart::applyCondition([
+Cart::addCondition([
     'name' => 'First Order',
     'type' => 'discount',
-    'target' => 'subtotal',
-    'value' => -500, // RM 5.00 off
-    'is_percentage' => false,
+    'target_definition' => TargetPresets::cartSubtotal()->toArray(),
+    'value' => '-5.00', // RM 5.00 off
 ]);
 
 // Shipping fee
-Cart::applyCondition([
+Cart::addCondition([
     'name' => 'Standard Shipping',
     'type' => 'shipping',
-    'target' => 'total',
-    'value' => 1000, // RM 10.00
-    'is_percentage' => false,
+    'target_definition' => TargetPresets::cartShipping()->toArray(),
+    'value' => '+10.00', // RM 10.00
 ]);
 
 // Item-level condition
-Cart::applyItemCondition('prod-001', [
-    'name' => 'Bundle Discount',
-    'type' => 'discount',
-    'value' => -5, // -5%
-]);
+$itemDiscount = new \AIArmada\Cart\Conditions\CartCondition(
+    name: 'Bundle Discount',
+    type: 'discount',
+    target: TargetPresets::itemsPerItem(),
+    value: '-5%'
+);
+
+Cart::addItemCondition('prod-001', $itemDiscount);
 ```
 
 ### Managing Conditions
@@ -203,29 +211,30 @@ Conditions apply in this order:
 Cart::add('prod-001', 'Product', 10000, 2); // RM 200.00
 
 // Item condition: -10%
-Cart::applyItemCondition('prod-001', [
-    'name' => 'Item Discount',
-    'type' => 'discount',
-    'value' => -10,
-]);
+$previewItemDiscount = new \AIArmada\Cart\Conditions\CartCondition(
+    name: 'Item Discount',
+    type: 'discount',
+    target: TargetPresets::itemsPerItem(),
+    value: '-10%'
+);
+Cart::addItemCondition('prod-001', $previewItemDiscount);
 // Item total: RM 180.00
 
 // Subtotal condition: -RM 20
-Cart::applyCondition([
+Cart::addCondition([
     'name' => 'Coupon',
     'type' => 'discount',
-    'target' => 'subtotal',
-    'value' => -2000,
-    'is_percentage' => false,
+    'target_definition' => TargetPresets::cartSubtotal()->toArray(),
+    'value' => '-20.00',
 ]);
 // Subtotal: RM 160.00
 
 // Total condition: +6% tax
-Cart::applyCondition([
+Cart::addCondition([
     'name' => 'SST',
     'type' => 'tax',
-    'target' => 'total',
-    'value' => 6,
+    'target_definition' => TargetPresets::cartGrandTotal()->toArray(),
+    'value' => '6%',
 ]);
 // Final total: RM 169.60
 ```
@@ -331,7 +340,7 @@ if ($voucher && $voucher->canBeRedeemed()) {
     Cart::applyCondition([
         'name' => $voucher->name,
         'type' => 'discount',
-        'target' => 'subtotal',
+        'target' => 'cart@cart_subtotal/aggregate',
         'value' => -$voucher->discount_amount,
         'is_percentage' => $voucher->type === 'percentage',
     ]);
@@ -342,7 +351,7 @@ $shipping = calculateShipping(Auth::user()->address);
 Cart::applyCondition([
     'name' => 'Shipping',
     'type' => 'shipping',
-    'target' => 'total',
+    'target' => 'cart@grand_total/aggregate',
     'value' => $shipping,
     'is_percentage' => false,
 ]);
@@ -351,7 +360,7 @@ Cart::applyCondition([
 Cart::applyCondition([
     'name' => 'SST',
     'type' => 'tax',
-    'target' => 'total',
+    'target' => 'cart@grand_total/aggregate',
     'value' => 6,
 ]);
 

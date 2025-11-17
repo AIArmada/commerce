@@ -29,6 +29,9 @@ class ConfiguredNumberStrategyRegistry extends NumberStrategyRegistry
      * 2. Convention-based auto-detection: App\Numbering\{DocType}NumberStrategy
      * 3. Default strategy: DefaultNumberStrategy
      */
+    /**
+     * @param  array<string, mixed>  $typeConfig
+     */
     protected function resolveStrategy(string $docType, array $typeConfig): DocumentNumberStrategy
     {
         // 1. Check if explicitly configured in config

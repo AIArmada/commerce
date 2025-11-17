@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Examples\ExampleRulesFactory;
 use AIArmada\Cart\Storage\CacheStorage;
 use Illuminate\Support\Facades\Cache;
@@ -28,7 +29,7 @@ it('can register dynamic condition with persistence', function (): void {
     $condition = new CartCondition(
         name: 'test_discount',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%',
         rules: [fn ($cart) => $cart->subtotalWithoutConditions()->getAmount() >= 100]
     );
@@ -43,7 +44,7 @@ it('can register dynamic condition with persistence', function (): void {
     expect($metadata)->toHaveKey('test_discount');
     expect($metadata['test_discount']['rule_factory_key'])->toBe('min_order_discount');
     expect($metadata['test_discount']['type'])->toBe('discount');
-    expect($metadata['test_discount']['target'])->toBe('subtotal');
+    expect($metadata['test_discount']['target_definition']['phase'])->toBe('cart_subtotal');
     expect($metadata['test_discount']['value'])->toBe('-10%');
 });
 
@@ -51,7 +52,7 @@ it('can register dynamic condition without persistence', function (): void {
     $condition = new CartCondition(
         name: 'temp_discount',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-5%',
         rules: [fn ($cart) => true]
     );
@@ -72,7 +73,7 @@ it('can restore dynamic conditions from metadata', function (): void {
     $condition = new CartCondition(
         name: 'persistent_discount',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-15%',
         rules: [fn ($cart) => $cart->subtotalWithoutConditions()->getAmount() >= 100]
     );
@@ -93,7 +94,7 @@ it('can restore dynamic conditions from metadata', function (): void {
 
     $restoredCondition = $newCart->getDynamicConditions()->get('persistent_discount');
     expect($restoredCondition->getType())->toBe('discount');
-    expect($restoredCondition->getTarget())->toBe('subtotal');
+    expect($restoredCondition->getTargetDefinition()->toDsl())->toBe('cart@cart_subtotal/aggregate');
     expect($restoredCondition->getValue())->toBe('-15%');
     expect($restoredCondition->isDynamic())->toBeTrue();
 });
@@ -106,7 +107,7 @@ it('withRulesFactory automatically restores conditions', function (): void {
     $condition = new CartCondition(
         name: 'auto_restore_discount',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-20%',
         rules: [fn ($cart) => true]
     );
@@ -127,7 +128,7 @@ it('can remove dynamic condition and its metadata', function (): void {
     $condition = new CartCondition(
         name: 'removable_discount',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%',
         rules: [fn ($cart) => true]
     );
@@ -151,7 +152,7 @@ it('can clear all dynamic conditions and metadata', function (): void {
         $condition = new CartCondition(
             name: "discount_{$i}",
             type: 'discount',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: "-{$i}0%",
             rules: [fn ($cart) => true]
         );
@@ -179,7 +180,9 @@ it('skips conditions without rule factory during restoration', function (): void
         [
             'invalid_condition' => [
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+                'target_definition' => ConditionTarget::from('cart@cart_subtotal/aggregate')->toArray(),
                 'value' => '-10%',
                 'rule_factory_key' => 'non_existent_key',
                 'created_at' => time(),
@@ -203,7 +206,9 @@ it('skips restoration when no rules factory is set', function (): void {
         [
             'some_condition' => [
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+                'target_definition' => ConditionTarget::from('cart@cart_subtotal/aggregate')->toArray(),
                 'value' => '-10%',
                 'rule_factory_key' => 'min_order_discount',
                 'created_at' => time(),
@@ -229,7 +234,9 @@ it('handles metadata with missing rule factory key gracefully', function (): voi
         [
             'no_factory_key' => [
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+                'target_definition' => ConditionTarget::from('cart@cart_subtotal/aggregate')->toArray(),
                 'value' => '-10%',
                 'created_at' => time(),
                 // Missing 'rule_factory_key'
@@ -251,7 +258,7 @@ it('restores conditions with custom metadata values', function (): void {
     $condition = new CartCondition(
         name: 'custom_discount',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-25%',
         attributes: ['description' => 'Special holiday discount', 'category' => 'seasonal'],
         order: 100,
@@ -280,7 +287,7 @@ it('throws exception when registering non-dynamic condition with factory key', f
     $staticCondition = new CartCondition(
         name: 'static_discount',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%'
         // No rules = not dynamic
     );

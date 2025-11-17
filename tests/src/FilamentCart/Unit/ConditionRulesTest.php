@@ -88,7 +88,8 @@ it('builds dynamic cart conditions using built-in rule factories', function (): 
         'name' => 'bulk_discount',
         'display_name' => 'Bulk Discount',
         'type' => 'discount',
-        'target' => 'subtotal',
+        'target' => 'cart@cart_subtotal/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
         'value' => '-10%',
         'order' => 1,
         'rules' => [

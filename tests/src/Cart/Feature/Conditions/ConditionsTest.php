@@ -16,7 +16,7 @@ describe('Cart-Level Conditions', function (): void {
         $condition = new CartCondition(
             name: 'Tax',
             type: 'tax',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '10%'
         );
 
@@ -31,7 +31,7 @@ describe('Cart-Level Conditions', function (): void {
         Cart::addCondition(new CartCondition(
             name: 'Discount',
             type: 'discount',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '-10%',
             order: 1
         ));
@@ -39,7 +39,7 @@ describe('Cart-Level Conditions', function (): void {
         Cart::addCondition(new CartCondition(
             name: 'Tax',
             type: 'tax',
-            target: 'total',
+            target: 'cart@grand_total/aggregate',
             value: '10%',
             order: 2
         ));
@@ -54,14 +54,14 @@ describe('Cart-Level Conditions', function (): void {
         Cart::addCondition(new CartCondition(
             name: 'Subtotal Tax',
             type: 'tax',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '5%'
         ));
 
         Cart::addCondition(new CartCondition(
             name: 'Total Fee',
             type: 'fee',
-            target: 'total',
+            target: 'cart@grand_total/aggregate',
             value: '10.00'
         ));
 
@@ -115,7 +115,7 @@ describe('Item-Level Conditions', function (): void {
         Cart::addItemCondition('item-1', new CartCondition(
             name: 'Discount',
             type: 'discount',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '-20%'
         ));
 
@@ -130,7 +130,7 @@ describe('Item-Level Conditions', function (): void {
         Cart::addItemCondition('item-1', new CartCondition(
             name: 'Special Discount',
             type: 'discount',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '-50%'
         ));
 
@@ -147,7 +147,7 @@ describe('Item-Level Conditions', function (): void {
         Cart::addItemCondition('item', new CartCondition(
             name: 'Discount',
             type: 'discount',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '-10%'
         ));
 
@@ -161,8 +161,8 @@ describe('Item-Level Conditions', function (): void {
     it('can clear all item conditions', function (): void {
         Cart::add('item', 'Item', 100.00, 1);
 
-        Cart::addItemCondition('item', new CartCondition(name: 'Discount1', type: 'discount', target: 'subtotal', value: '-5%'));
-        Cart::addItemCondition('item', new CartCondition(name: 'Discount2', type: 'discount', target: 'subtotal', value: '-5%'));
+        Cart::addItemCondition('item', new CartCondition(name: 'Discount1', type: 'discount', target: 'cart@cart_subtotal/aggregate', value: '-5%'));
+        Cart::addItemCondition('item', new CartCondition(name: 'Discount2', type: 'discount', target: 'cart@cart_subtotal/aggregate', value: '-5%'));
 
         Cart::clearItemConditions('item');
 

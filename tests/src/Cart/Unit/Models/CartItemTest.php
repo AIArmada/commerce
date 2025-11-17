@@ -9,13 +9,13 @@ beforeEach(function (): void {
     $this->condition1 = new CartCondition(
         name: 'discount-10',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%'
     );
     $this->condition2 = new CartCondition(
         name: 'shipping',
         type: 'charge',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '+15'
     );
 });
@@ -451,14 +451,14 @@ it('handles complex conditions correctly', function (): void {
     $discountCondition = new CartCondition(
         name: 'discount-20',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-20%'
     );
 
     $chargeCondition = new CartCondition(
         name: 'handling',
         type: 'charge',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '+5'
     );
 
@@ -706,14 +706,14 @@ describe('CartItem Condition Normalization', function (): void {
         $condition1 = new CartCondition(
             name: 'discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-10%'
         );
 
         $condition2 = new CartCondition(
             name: 'tax',
             type: 'tax',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '+5%'
         );
 
@@ -740,7 +740,9 @@ describe('CartItem Condition Normalization', function (): void {
                 'discount' => [
                     'name' => 'discount',
                     'type' => 'discount',
-                    'target' => 'item',
+                    'target' => 'items@item_discount/per-item',
+                    'target_definition' => conditionTargetDefinition('items@item_discount/per-item'),
+
                     'value' => '-10%',
                 ],
             ]
@@ -754,7 +756,7 @@ describe('CartItem Condition Normalization', function (): void {
         $condition = new CartCondition(
             name: 'discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-15%'
         );
 
@@ -779,7 +781,7 @@ describe('CartItem Condition Normalization', function (): void {
         $condition = new CartCondition(
             name: 'shipping',
             type: 'shipping',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: 10.0
         );
 
@@ -802,7 +804,7 @@ describe('CartItem Condition Normalization', function (): void {
         $conditionObj = new CartCondition(
             name: 'discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-10%'
         );
 
@@ -816,7 +818,9 @@ describe('CartItem Condition Normalization', function (): void {
                 'tax' => [
                     'name' => 'tax',
                     'type' => 'tax',
-                    'target' => 'item',
+                    'target' => 'items@item_discount/per-item',
+                    'target_definition' => conditionTargetDefinition('items@item_discount/per-item'),
+
                     'value' => '+5%',
                 ],
             ]
@@ -844,7 +848,7 @@ describe('CartItem Condition Normalization', function (): void {
         $validCondition = new CartCondition(
             name: 'discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-10%'
         );
 
@@ -868,7 +872,7 @@ describe('CartItem Condition Normalization', function (): void {
         $condition = new CartCondition(
             name: 'premium-discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-25%'
         );
 
@@ -892,7 +896,7 @@ describe('CartItem Condition Normalization', function (): void {
         $condition = new CartCondition(
             name: 'auto-keyed-discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-15%'
         );
 
@@ -912,7 +916,7 @@ describe('CartItem Condition Normalization', function (): void {
         $condition = new CartCondition(
             name: 'collection-discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-20%'
         );
 
@@ -936,14 +940,14 @@ describe('CartItem Condition Normalization', function (): void {
         $condition1 = new CartCondition(
             name: 'discount-10',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-10%'
         );
 
         $condition2 = new CartCondition(
             name: 'tax',
             type: 'tax',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '+5%'
         );
 
@@ -969,7 +973,7 @@ describe('CartItem Condition Normalization', function (): void {
         $condition = new CartCondition(
             name: 'vip-discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-15%'
         );
 
@@ -989,7 +993,7 @@ describe('CartItem Condition Normalization', function (): void {
         $objectCondition = new CartCondition(
             name: 'object-discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-10%'
         );
 
@@ -1003,7 +1007,9 @@ describe('CartItem Condition Normalization', function (): void {
                 'array' => [
                     'name' => 'array-discount',
                     'type' => 'discount',
-                    'target' => 'item',
+                    'target' => 'items@item_discount/per-item',
+                    'target_definition' => conditionTargetDefinition('items@item_discount/per-item'),
+
                     'value' => '-5%',
                 ],
             ]
@@ -1022,14 +1028,14 @@ describe('CartItem Condition Normalization', function (): void {
         $condition1 = new CartCondition(
             name: 'first-discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-10%'
         );
 
         $condition2 = new CartCondition(
             name: 'second-discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-5%'
         );
 
@@ -1094,7 +1100,7 @@ describe('CartItem Money Methods', function (): void {
                 new CartCondition(
                     name: 'discount',
                     type: 'discount',
-                    target: 'item',
+                    target: 'items@item_discount/per-item',
                     value: '-20%'
                 ),
             ]

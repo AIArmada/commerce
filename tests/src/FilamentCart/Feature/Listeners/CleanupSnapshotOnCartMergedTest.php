@@ -82,7 +82,8 @@ describe('CartMerged Event Updates', function (): void {
         $guestCondition = $guestSnapshot->cartConditions()->create([
             'name' => 'guest-discount',
             'type' => 'discount',
-            'target' => 'subtotal',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
             'value' => '10',
             'order' => 1,
         ]);
@@ -107,7 +108,8 @@ describe('CartMerged Event Updates', function (): void {
         $userCondition = $userSnapshot->cartConditions()->create([
             'name' => 'user-tax',
             'type' => 'tax',
-            'target' => 'subtotal',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
             'value' => '6',
             'order' => 1,
         ]);
@@ -433,7 +435,8 @@ describe('Normalized Data Transfer', function (): void {
         $guestSnapshot->cartConditions()->create([
             'name' => 'tax',
             'type' => 'tax',
-            'target' => 'subtotal',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
             'value' => '10%',
             'is_percentage' => true,
             'order' => 1,
@@ -445,7 +448,8 @@ describe('Normalized Data Transfer', function (): void {
             'item_id' => 'product-1',
             'name' => 'discount',
             'type' => 'discount',
-            'target' => 'price',
+            'target' => 'items@item_discount/per-item',
+            'target_definition' => conditionTargetDefinition('items@item_discount/per-item'),
             'value' => '5%',
             'is_discount' => true,
             'is_percentage' => true,

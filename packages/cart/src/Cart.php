@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart;
 
+use AIArmada\Cart\Conditions\Pipeline\ConditionPipeline;
+use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineContext;
+use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineResult;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Storage\StorageInterface;
@@ -15,6 +18,7 @@ use AIArmada\Cart\Traits\ManagesInstances;
 use AIArmada\Cart\Traits\ManagesItems;
 use AIArmada\Cart\Traits\ManagesMetadata;
 use AIArmada\Cart\Traits\ManagesStorage;
+use AIArmada\Cart\Traits\ProvidesConditionScopes;
 use Illuminate\Contracts\Events\Dispatcher;
 
 final class Cart
@@ -27,6 +31,7 @@ final class Cart
     use ManagesItems;
     use ManagesMetadata;
     use ManagesStorage;
+    use ProvidesConditionScopes;
 
     private CartConditionResolver $conditionResolver;
 
@@ -46,6 +51,22 @@ final class Cart
     public function getConditionResolver(): CartConditionResolver
     {
         return $this->conditionResolver;
+    }
+
+    /**
+     * Evaluate the condition pipeline for the current cart state.
+     *
+     * @param  callable(ConditionPipeline):void|null  $configure  Optional pipeline configuration callback
+     */
+    public function evaluateConditionPipeline(?callable $configure = null): ConditionPipelineResult
+    {
+        $pipeline = new ConditionPipeline();
+
+        if ($configure !== null) {
+            $configure($pipeline);
+        }
+
+        return $pipeline->process(ConditionPipelineContext::fromCart($this));
     }
 
     /**

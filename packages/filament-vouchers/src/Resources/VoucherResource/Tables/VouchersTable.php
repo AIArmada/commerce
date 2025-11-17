@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Tables;
 
+use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\FilamentVouchers\Models\Voucher;
+use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use Akaunting\Money\Money;
@@ -68,6 +70,32 @@ final class VouchersTable
                     })
                     ->alignEnd()
                     ->sortable(),
+
+                TextColumn::make('condition_target_display')
+                    ->label('Target')
+                    ->state(static function (Voucher $record): string {
+                        $metadata = $record->metadata ?? [];
+                        $definition = $record->target_definition
+                            ?? (is_array($metadata) ? ($metadata['target_definition'] ?? null) : null);
+                        $dsl = $definition !== null
+                            ? ConditionTarget::from($definition)->toDsl()
+                            : ConditionTargetPreset::default()->dsl();
+                        $preset = ConditionTargetPreset::detect($dsl);
+
+                        return ($preset ?? ConditionTargetPreset::Custom)->label();
+                    })
+                    ->tooltip(static function (Voucher $record): ?string {
+                        $metadata = $record->metadata ?? [];
+                        $definition = $record->target_definition
+                            ?? (is_array($metadata) ? ($metadata['target_definition'] ?? null) : null);
+
+                        return $definition !== null
+                            ? ConditionTarget::from($definition)->toDsl()
+                            : ConditionTargetPreset::default()->dsl();
+                    })
+                    ->badge()
+                    ->color('info')
+                    ->toggleable(isToggledHiddenByDefault: true),
 
                 TextColumn::make('times_used')
                     ->label('Redeemed')

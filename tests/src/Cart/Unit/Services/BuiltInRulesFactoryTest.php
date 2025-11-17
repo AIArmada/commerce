@@ -117,7 +117,7 @@ describe('BuiltInRulesFactory', function (): void {
         $cart->addCondition(new CartCondition(
             name: 'order-tax',
             type: 'tax',
-            target: 'total',
+            target: 'cart@grand_total/aggregate',
             value: '+5',
             attributes: [],
             order: 0,
@@ -371,7 +371,7 @@ describe('BuiltInRulesFactory', function (): void {
             new CartCondition(
                 name: 'promo',
                 type: 'discount',
-                target: 'item',
+                target: 'items@item_discount/per-item',
                 value: '-10%'
             ),
         ]);

@@ -11,7 +11,8 @@ it('applies active global conditions to new carts', function (): void {
         'name' => 'global-tax',
         'display_name' => 'Global Tax',
         'type' => 'tax',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '10%',
         'is_global' => true,
         'is_active' => true,
@@ -30,7 +31,8 @@ it('ignores inactive global conditions', function (): void {
     Condition::factory()->create([
         'name' => 'inactive-fee',
         'type' => 'fee',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '+500',
         'is_global' => true,
         'is_active' => false,
@@ -45,7 +47,8 @@ it('ignores non-global conditions', function (): void {
     Condition::factory()->create([
         'name' => 'local-discount',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-10%',
         'is_global' => false,
         'is_active' => true,
@@ -60,7 +63,8 @@ it('re-evaluates rules whenever items are added', function (): void {
     Condition::factory()->create([
         'name' => 'bulk-discount',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-20%',
         'is_global' => true,
         'is_active' => true,
@@ -80,7 +84,8 @@ it('respects the enable_global_conditions flag', function (): void {
     Condition::factory()->create([
         'name' => 'disabled-tax',
         'type' => 'tax',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '10%',
         'is_global' => true,
         'is_active' => true,
@@ -98,7 +103,8 @@ it('applies multiple global conditions together', function (): void {
     Condition::factory()->create([
         'name' => 'global-tax',
         'type' => 'tax',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '10%',
         'is_global' => true,
         'is_active' => true,
@@ -107,7 +113,8 @@ it('applies multiple global conditions together', function (): void {
     Condition::factory()->create([
         'name' => 'processing-fee',
         'type' => 'fee',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '+200',
         'is_global' => true,
         'is_active' => true,
@@ -116,7 +123,8 @@ it('applies multiple global conditions together', function (): void {
     Condition::factory()->create([
         'name' => 'loyalty-discount',
         'type' => 'discount',
-        'target' => 'subtotal',
+        'target' => 'cart@cart_subtotal/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
         'value' => '-5%',
         'is_global' => true,
         'is_active' => true,
@@ -134,7 +142,8 @@ it('handles conditions with different targets correctly', function (): void {
     Condition::factory()->create([
         'name' => 'subtotal-discount',
         'type' => 'discount',
-        'target' => 'subtotal',
+        'target' => 'cart@cart_subtotal/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
         'value' => '-10%',
         'is_global' => true,
         'is_active' => true,
@@ -143,7 +152,8 @@ it('handles conditions with different targets correctly', function (): void {
     Condition::factory()->create([
         'name' => 'total-tax',
         'type' => 'tax',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '8%',
         'is_global' => true,
         'is_active' => true,
@@ -154,8 +164,8 @@ it('handles conditions with different targets correctly', function (): void {
     $subtotalCondition = CartFacade::getConditions()->get('subtotal-discount');
     $totalCondition = CartFacade::getConditions()->get('total-tax');
 
-    expect($subtotalCondition->getTarget())->toBe('subtotal');
-    expect($totalCondition->getTarget())->toBe('total');
+    expect($subtotalCondition->getTargetDefinition()->toDsl())->toBe('cart@cart_subtotal/aggregate');
+    expect($totalCondition->getTargetDefinition()->toDsl())->toBe('cart@grand_total/aggregate');
 });
 
 // Dynamic Condition Tests - Item Updates
@@ -163,7 +173,8 @@ it('prevents conditions from being applied when rules do not match', function ()
     Condition::factory()->create([
         'name' => 'three-item-discount',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-15%',
         'is_global' => true,
         'is_active' => true,
@@ -184,7 +195,8 @@ it('applies conditions when item count reaches threshold via adding items', func
     Condition::factory()->create([
         'name' => 'bulk-discount',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-20%',
         'is_global' => true,
         'is_active' => true,
@@ -205,7 +217,8 @@ it('applies conditions based on minimum total', function (): void {
     Condition::factory()->create([
         'name' => 'free-shipping',
         'type' => 'shipping',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-1000',
         'is_global' => true,
         'is_active' => true,
@@ -223,7 +236,8 @@ it('prevents conditions from applying when total below minimum threshold', funct
     Condition::factory()->create([
         'name' => 'premium-discount',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-25%',
         'is_global' => true,
         'is_active' => true,
@@ -241,7 +255,8 @@ it('prevents conditions when total exceeds maximum', function (): void {
     Condition::factory()->create([
         'name' => 'small-order-fee',
         'type' => 'fee',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '+500',
         'is_global' => true,
         'is_active' => true,
@@ -260,7 +275,8 @@ it('handles total range conditions correctly', function (): void {
     Condition::factory()->create([
         'name' => 'mid-tier-bonus',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-10%',
         'is_global' => true,
         'is_active' => true,
@@ -287,7 +303,8 @@ it('requires all rules to match for condition to apply', function (): void {
     Condition::factory()->create([
         'name' => 'exclusive-deal',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-30%',
         'is_global' => true,
         'is_active' => true,
@@ -311,7 +328,8 @@ it('does not apply condition when one of multiple rules fails', function (): voi
     Condition::factory()->create([
         'name' => 'combo-discount',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-20%',
         'is_global' => true,
         'is_active' => true,
@@ -334,7 +352,8 @@ it('applies conditions when specific items are in cart', function (): void {
     Condition::factory()->create([
         'name' => 'featured-product-bonus',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-15%',
         'is_global' => true,
         'is_active' => true,
@@ -352,7 +371,8 @@ it('does not apply condition without specific required items', function (): void
     Condition::factory()->create([
         'name' => 'bundle-discount',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-25%',
         'is_global' => true,
         'is_active' => true,
@@ -372,7 +392,8 @@ it('applies conditions based on product categories', function (): void {
     Condition::factory()->create([
         'name' => 'electronics-tax',
         'type' => 'tax',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '5%',
         'is_global' => true,
         'is_active' => true,
@@ -390,7 +411,8 @@ it('does not apply category condition when category not present', function (): v
     Condition::factory()->create([
         'name' => 'clothing-discount',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-10%',
         'is_global' => true,
         'is_active' => true,
@@ -410,7 +432,8 @@ it('applies appropriate tier discount based on cart total', function (): void {
     Condition::factory()->create([
         'name' => 'tier-1-discount',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-5%',
         'is_global' => true,
         'is_active' => true,
@@ -423,7 +446,8 @@ it('applies appropriate tier discount based on cart total', function (): void {
     Condition::factory()->create([
         'name' => 'tier-2-discount',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-10%',
         'is_global' => true,
         'is_active' => true,
@@ -436,7 +460,8 @@ it('applies appropriate tier discount based on cart total', function (): void {
     Condition::factory()->create([
         'name' => 'tier-3-discount',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-15%',
         'is_global' => true,
         'is_active' => true,
@@ -468,7 +493,8 @@ it('applies correct condition based on total threshold', function (): void {
     Condition::factory()->create([
         'name' => 'new-customer-discount',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-20%',
         'is_global' => true,
         'is_active' => true,
@@ -478,7 +504,8 @@ it('applies correct condition based on total threshold', function (): void {
     Condition::factory()->create([
         'name' => 'vip-discount',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-30%',
         'is_global' => true,
         'is_active' => true,
@@ -499,7 +526,8 @@ it('handles complex multi-rule scenarios', function (): void {
     Condition::factory()->create([
         'name' => 'premium-bundle-deal',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-35%',
         'is_global' => true,
         'is_active' => true,
@@ -534,7 +562,8 @@ it('applies item-level conditions based on item quantity threshold', function ()
     Condition::factory()->create([
         'name' => 'bulk-item-discount',
         'type' => 'discount',
-        'target' => 'item',
+        'target' => 'items@item_discount/per-item',
+        'target_definition' => conditionTargetDefinition('items@item_discount/per-item'),
         'value' => '-10%',
         'is_global' => true,
         'is_active' => true,
@@ -555,7 +584,8 @@ it('applies item-level conditions based on item price threshold', function (): v
     Condition::factory()->create([
         'name' => 'premium-item-fee',
         'type' => 'fee',
-        'target' => 'item',
+        'target' => 'items@item_discount/per-item',
+        'target_definition' => conditionTargetDefinition('items@item_discount/per-item'),
         'value' => '+100',
         'is_global' => true,
         'is_active' => true,
@@ -577,7 +607,8 @@ it('handles empty cart gracefully', function (): void {
     Condition::factory()->create([
         'name' => 'always-active',
         'type' => 'fee',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '+100',
         'is_global' => true,
         'is_active' => true,
@@ -590,7 +621,8 @@ it('handles clearing cart with active conditions', function (): void {
     Condition::factory()->create([
         'name' => 'auto-tax',
         'type' => 'tax',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '10%',
         'is_global' => true,
         'is_active' => true,
@@ -610,7 +642,8 @@ it('reapplies conditions after cart is cleared and items added again', function 
     Condition::factory()->create([
         'name' => 'bulk-order',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-15%',
         'is_global' => true,
         'is_active' => true,
@@ -636,7 +669,8 @@ it('does not apply conditions that become deactivated between cart operations', 
     $condition = Condition::factory()->create([
         'name' => 'seasonal-promo',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-20%',
         'is_global' => true,
         'is_active' => true,
@@ -656,7 +690,8 @@ it('creates condition snapshots with correct global flag', function (): void {
     Condition::factory()->create([
         'name' => 'snapshot-test',
         'type' => 'tax',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '8%',
         'is_global' => true,
         'is_active' => true,
@@ -668,7 +703,7 @@ it('creates condition snapshots with correct global flag', function (): void {
     expect($snapshot)->not->toBeNull();
     expect($snapshot->is_global)->toBeTrue();
     expect($snapshot->type)->toBe('tax');
-    expect($snapshot->target)->toBe('total');
+    expect($snapshot->target)->toBe('cart@grand_total/aggregate');
     expect($snapshot->value)->toBe('8%');
 });
 
@@ -676,7 +711,8 @@ it('creates and removes snapshots when conditions are dynamically evaluated', fu
     Condition::factory()->create([
         'name' => 'dynamic-fee',
         'type' => 'fee',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '+500',
         'is_global' => true,
         'is_active' => true,
@@ -698,7 +734,8 @@ it('applies conditions correctly during sequential cart builds', function (): vo
     Condition::factory()->create([
         'name' => 'flash-deal',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-40%',
         'is_global' => true,
         'is_active' => true,
@@ -726,7 +763,8 @@ it('correctly handles overlapping condition rules', function (): void {
     Condition::factory()->create([
         'name' => 'condition-a',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-5%',
         'is_global' => true,
         'is_active' => true,
@@ -736,7 +774,8 @@ it('correctly handles overlapping condition rules', function (): void {
     Condition::factory()->create([
         'name' => 'condition-b',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-10%',
         'is_global' => true,
         'is_active' => true,
@@ -759,7 +798,8 @@ it('respects max rules for upper boundary conditions', function (): void {
     Condition::factory()->create([
         'name' => 'small-cart-bonus',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-15%',
         'is_global' => true,
         'is_active' => true,
@@ -789,7 +829,8 @@ it('handles exact boundary values for min and max rules', function (): void {
     Condition::factory()->create([
         'name' => 'exact-range-deal',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-12%',
         'is_global' => true,
         'is_active' => true,
@@ -820,7 +861,8 @@ it('removes deactivated global conditions from active carts', function (): void 
         'name' => 'flash-sale',
         'display_name' => 'Flash Sale 25% Off',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-25%',
         'is_global' => true,
         'is_active' => true,
@@ -846,7 +888,8 @@ it('removes deactivated dynamic global conditions from active carts', function (
         'name' => 'limited-time-bulk-discount',
         'display_name' => 'Limited Time: 15% Off 3+ Items',
         'type' => 'discount',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
+        'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
         'value' => '-15%',
         'is_global' => true,
         'is_active' => true,

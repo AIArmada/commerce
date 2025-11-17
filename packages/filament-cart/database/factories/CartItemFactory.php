@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Database\Factories;
 
+use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Models\CartItem;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -42,7 +43,8 @@ final class CartItemFactory extends Factory
                 [
                     'name' => 'bulk_discount',
                     'type' => 'discount',
-                    'target' => 'price',
+                    'target' => 'items@item_discount/per-item',
+                    'target_definition' => ConditionTarget::from('items@item_discount/per-item')->toArray(),
                     'value' => '-10%',
                     'order' => 1,
                     'attributes' => [],

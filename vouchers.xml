@@ -3,7 +3,7 @@
          xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
          bootstrap="vendor/autoload.php"
          colors="true"
- >
+>
     <testsuites>
         <testsuite name="Vouchers">
             <directory>tests/src/Vouchers</directory>
@@ -31,4 +31,8 @@
         <env name="SESSION_DRIVER" value="array"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
     </php>
+<<<<<<< HEAD
 </phpunit>
+=======
+</phpunit>
+>>>>>>> expand-condition

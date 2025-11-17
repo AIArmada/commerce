@@ -99,6 +99,9 @@ trait ConditionTrait
     /**
      * Normalize conditions to CartConditionCollection
      */
+    /**
+     * @param  array<string, CartCondition|array<string, mixed>>|Collection  $conditions
+     */
     private function normalizeConditions(array|Collection $conditions): CartConditionCollection
     {
         if ($conditions instanceof CartConditionCollection) {

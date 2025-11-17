@@ -16,7 +16,7 @@ it('can register a dynamic condition with rules', function (): void {
     $condition = new CartCondition(
         name: 'Big Spender Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-10%',
         rules: [
             fn (Cart $cart) => $cart->getRawSubtotalWithoutConditions() > 100,
@@ -34,7 +34,7 @@ it('applies dynamic condition when rules are met', function (): void {
     $condition = new CartCondition(
         name: 'Big Spender Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-10%',
         rules: [
             fn (Cart $cart) => $cart->getRawSubtotalWithoutConditions() > 100,
@@ -56,7 +56,7 @@ it('prevents registering static conditions as dynamic', function (): void {
     $condition = new CartCondition(
         name: 'Static Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-10%'
         // No rules - this is a static condition
     );
@@ -69,7 +69,7 @@ it('can register multiple dynamic conditions with different rules', function ():
     $volumeDiscount = new CartCondition(
         name: 'Volume Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-5%',
         rules: [
             fn (Cart $cart) => $cart->getItems()->count() >= 3,
@@ -79,7 +79,7 @@ it('can register multiple dynamic conditions with different rules', function ():
     $bigSpenderDiscount = new CartCondition(
         name: 'Big Spender Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-10%',
         rules: [
             fn (Cart $cart) => $cart->getRawSubtotalWithoutConditions() > 100,
@@ -96,7 +96,7 @@ it('requires ALL rules to be met before applying condition', function (): void {
     $strictDiscount = new CartCondition(
         name: 'Strict VIP Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-15%',
         rules: [
             fn (Cart $cart) => $cart->getRawSubtotalWithoutConditions() > 100, // Rule 1: Total > $100
@@ -135,7 +135,7 @@ it('applies condition when adding items triggers rules', function (): void {
     $volumeDiscount = new CartCondition(
         name: 'Volume Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-5%',
         rules: [
             fn (Cart $cart) => $cart->getItems()->count() >= 3,
@@ -162,7 +162,7 @@ it('removes condition when removing items breaks rules', function (): void {
     $volumeDiscount = new CartCondition(
         name: 'Volume Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-5%',
         rules: [
             fn (Cart $cart) => $cart->getItems()->count() >= 3,
@@ -190,7 +190,7 @@ it('updates condition when updating quantities affects rules', function (): void
     $bigOrderDiscount = new CartCondition(
         name: 'Big Order Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-10%',
         rules: [
             fn (Cart $cart) => $cart->getItems()->sum('quantity') >= 10,
@@ -223,7 +223,7 @@ it('handles multiple dynamic conditions being applied simultaneously', function 
     $volumeDiscount = new CartCondition(
         name: 'Volume Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-5%',
         rules: [
             fn (Cart $cart) => $cart->getItems()->count() >= 3,
@@ -233,7 +233,7 @@ it('handles multiple dynamic conditions being applied simultaneously', function 
     $bigSpenderDiscount = new CartCondition(
         name: 'Big Spender Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-10%',
         rules: [
             fn (Cart $cart) => $cart->getRawSubtotalWithoutConditions() > 200,
@@ -265,7 +265,7 @@ it('works with item-level dynamic conditions', function (): void {
     $bulkItemDiscount = new CartCondition(
         name: 'Bulk Item Discount',
         type: 'discount',
-        target: 'item',
+        target: 'items@item_discount/per-item',
         value: '-20%',
         rules: [
             fn (Cart $cart, $item) => $item && $item->quantity >= 5,
@@ -294,7 +294,7 @@ it('removes dynamic condition from registry', function (): void {
     $discount = new CartCondition(
         name: 'Test Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-10%',
         rules: [
             fn (Cart $cart) => $cart->getRawSubtotalWithoutConditions() > 50,
@@ -320,7 +320,7 @@ it('handles complex business logic rules', function (): void {
     $vipDiscount = new CartCondition(
         name: 'VIP Customer Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-15%',
         rules: [
             fn (Cart $cart) => $cart->getRawSubtotalWithoutConditions() > 100,
@@ -351,7 +351,7 @@ it('handles edge case with removing item triggers conditions update', function (
     $volumeDiscount = new CartCondition(
         name: 'Volume Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-5%',
         rules: [
             fn (Cart $cart) => $cart->getItems()->count() >= 2,
@@ -379,7 +379,7 @@ it('maintains dynamic conditions after clearing and re-adding items', function (
     $volumeDiscount = new CartCondition(
         name: 'Volume Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-5%',
         rules: [
             fn (Cart $cart) => $cart->getItems()->count() >= 2,
@@ -414,7 +414,7 @@ it('handles conditions with attribute-based rules', function (): void {
     $electronicsDiscount = new CartCondition(
         name: 'Electronics Discount',
         type: 'discount',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '-10%',
         rules: [
             fn (Cart $cart) => $cart->getItems()->filter(fn ($item) => $item->getAttribute('category') === 'electronics'

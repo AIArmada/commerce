@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas;
 
+use AIArmada\Cart\Conditions\ConditionTarget;
+use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use Filament\Infolists\Components\TextEntry;
@@ -61,6 +63,79 @@ final class VoucherInfolist
                                 ->default('Global'),
                         ]),
                 ]),
+
+            Section::make('Condition Target')
+                ->schema([
+                    Grid::make(4)
+                        ->schema([
+                            TextEntry::make('condition_target_preset')
+                                ->label('Preset')
+                                ->state(static function ($record): string {
+                                    $metadata = is_array($record->metadata ?? null) ? $record->metadata : [];
+                                    $definition = $record->target_definition
+                                        ?? ($metadata['target_definition'] ?? null);
+                                    $dsl = is_array($definition)
+                                        ? ConditionTarget::from($definition)->toDsl()
+                                        : ConditionTargetPreset::default()->dsl();
+                                    $preset = ConditionTargetPreset::detect($dsl);
+
+                                    return ($preset ?? ConditionTargetPreset::Custom)->label();
+                                })
+                                ->badge(),
+
+                            TextEntry::make('condition_target_scope')
+                                ->label('Scope')
+                                ->state(static function ($record): string {
+                                    $metadata = is_array($record->metadata ?? null) ? $record->metadata : [];
+                                    $scope = data_get($record, 'target_definition.scope')
+                                        ?? data_get($metadata, 'target_definition.scope')
+                                        ?? 'cart';
+
+                                    return mb_strtoupper((string) $scope);
+                                })
+                                ->badge(),
+
+                            TextEntry::make('condition_target_phase')
+                                ->label('Phase')
+                                ->state(static function ($record): string {
+                                    $metadata = is_array($record->metadata ?? null) ? $record->metadata : [];
+                                    $phase = data_get($record, 'target_definition.phase')
+                                        ?? data_get($metadata, 'target_definition.phase')
+                                        ?? 'cart_subtotal';
+
+                                    return str_replace('_', ' ', (string) $phase);
+                                })
+                                ->badge(),
+
+                            TextEntry::make('condition_target_application')
+                                ->label('Application')
+                                ->state(static function ($record): string {
+                                    $metadata = is_array($record->metadata ?? null) ? $record->metadata : [];
+                                    $application = data_get($record, 'target_definition.application')
+                                        ?? data_get($metadata, 'target_definition.application')
+                                        ?? 'aggregate';
+
+                                    return str_replace('_', ' ', (string) $application);
+                                })
+                                ->badge(),
+
+                            TextEntry::make('condition_target_dsl_display')
+                                ->label('Target DSL')
+                                ->state(static function ($record): string {
+                                    $metadata = is_array($record->metadata ?? null) ? $record->metadata : [];
+                                    $definition = $record->target_definition
+                                        ?? ($metadata['target_definition'] ?? null);
+
+                                    return $definition !== null
+                                        ? ConditionTarget::from($definition)->toDsl()
+                                        : ConditionTargetPreset::default()->dsl();
+                                })
+                                ->copyable()
+                                ->formatStateUsing(static fn (string $state): string => $state)
+                                ->columnSpanFull(),
+                        ]),
+                ])
+                ->collapsible(),
 
             Section::make('Usage Metrics')
                 ->schema([

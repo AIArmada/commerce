@@ -182,6 +182,8 @@ final class NormalizedCartSynchronizer
     ): string {
         $data = $condition->toArray();
 
+        $targetDefinition = $condition->getTargetDefinition();
+
         CartCondition::query()->updateOrCreate(
             [
                 'cart_id' => $cartModel->id,
@@ -191,7 +193,8 @@ final class NormalizedCartSynchronizer
             ],
             [
                 'type' => $data['type'],
-                'target' => $data['target'],
+                'target' => $targetDefinition->toDsl(),
+                'target_definition' => $targetDefinition->toArray(),
                 'value' => (string) $data['value'],
                 'order' => $data['order'],
                 'attributes' => Arr::get($data, 'attributes') ?: null,

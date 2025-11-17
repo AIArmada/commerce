@@ -12,20 +12,24 @@ use JsonSerializable;
 
 final class CartCondition implements Arrayable, Jsonable, JsonSerializable
 {
+    private ConditionTarget $target;
+
     /**
      * @param  array<string, mixed>  $attributes
      * @param  array<string, mixed>|null  $rules
+     * @param  ConditionTarget|string|array<string, mixed>  $target
      */
     public function __construct(
         private string $name,
         private string $type,
-        private string $target,
+        ConditionTarget|string|array $target,
         private string|float $value,
         private array $attributes = [],
         private int $order = 0,
         private ?array $rules = null,
         private ?self $staticConditionCache = null
     ) {
+        $this->target = ConditionTarget::from($target);
         $this->validateCondition();
     }
 
@@ -46,13 +50,20 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
      * Create condition from array
      *
      * @param  array<string, mixed>  $data
+     *                                      Requires `target_definition` (structured array).
      */
     public static function fromArray(array $data): static
     {
+        $targetData = $data['target_definition'] ?? null;
+
+        if ($targetData === null) {
+            throw new InvalidCartConditionException('Condition target_definition is required.');
+        }
+
         return new self(
             name: $data['name'] ?? throw new InvalidCartConditionException('Condition name is required'),
             type: $data['type'] ?? throw new InvalidCartConditionException('Condition type is required'),
-            target: $data['target'] ?? 'subtotal',
+            target: $targetData,
             value: $data['value'] ?? throw new InvalidCartConditionException('Condition value is required'),
             attributes: $data['attributes'] ?? [],
             order: $data['order'] ?? 0,
@@ -79,7 +90,7 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     /**
      * Get condition target
      */
-    public function getTarget(): string
+    public function getTargetDefinition(): ConditionTarget
     {
         return $this->target;
     }
@@ -190,10 +201,13 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
      */
     public function with(array $changes): static
     {
+        $targetInput = $changes['target_definition']
+            ?? $this->target;
+
         return new static(
             name: $changes['name'] ?? $this->name,
             type: $changes['type'] ?? $this->type,
-            target: $changes['target'] ?? $this->target,
+            target: $targetInput,
             value: $changes['value'] ?? $this->value,
             attributes: $changes['attributes'] ?? $this->attributes,
             order: $changes['order'] ?? $this->order,
@@ -283,7 +297,7 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
         return [
             'name' => $this->name,
             'type' => $this->type,
-            'target' => $this->target,
+            'target_definition' => $this->target->toArray(),
             'value' => $this->value,
             'attributes' => $this->attributes,
             'order' => $this->order,
@@ -334,14 +348,6 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
 
         if (empty(mb_trim($this->type))) {
             throw new InvalidCartConditionException('Condition type cannot be empty');
-        }
-
-        if (empty(mb_trim($this->target))) {
-            throw new InvalidCartConditionException('Condition target cannot be empty');
-        }
-
-        if (! in_array($this->target, ['subtotal', 'total', 'item'])) {
-            throw new InvalidCartConditionException('Condition target must be one of: subtotal, total, item');
         }
 
         if ($this->value === '') {

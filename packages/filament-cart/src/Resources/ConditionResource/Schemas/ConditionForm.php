@@ -70,9 +70,9 @@ final class ConditionForm
                                 Select::make('target')
                                     ->label('Apply To')
                                     ->options([
-                                        'subtotal' => 'Cart Subtotal',
-                                        'total' => 'Cart Total',
-                                        'item' => 'Individual Items',
+                                        'cart@cart_subtotal/aggregate' => 'Cart Subtotal',
+                                        'cart@grand_total/aggregate' => 'Cart Total',
+                                        'items@item_discount/per-item' => 'Individual Items',
                                     ])
                                     ->required()
                                     ->native(false)

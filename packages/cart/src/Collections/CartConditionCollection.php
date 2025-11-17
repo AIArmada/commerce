@@ -5,6 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Collections;
 
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\ConditionTarget;
+use AIArmada\Cart\Conditions\Enums\ConditionApplication;
+use AIArmada\Cart\Conditions\Enums\ConditionPhase;
+use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use Akaunting\Money\Money;
 use Illuminate\Support\Collection;
 
@@ -67,11 +71,50 @@ final class CartConditionCollection extends Collection
     }
 
     /**
-     * Filter conditions by target
+     * Filter conditions by target (DSL string or structured definition)
+     *
+     * @param  ConditionTarget|string|array<string, mixed>  $target
      */
-    public function byTarget(string $target): static
+    public function byTarget(ConditionTarget|string|array $target): static
     {
-        return $this->filter(fn (CartCondition $condition) => $condition->getTarget() === $target);
+        $targetDefinition = ConditionTarget::from($target);
+        $dsl = $targetDefinition->toDsl();
+
+        return $this->filter(fn (CartCondition $condition) => $condition->getTargetDefinition()->toDsl() === $dsl);
+    }
+
+    /**
+     * Filter conditions by scope
+     */
+    public function byScope(ConditionScope|string $scope): static
+    {
+        $scope = $scope instanceof ConditionScope ? $scope : ConditionScope::fromString((string) $scope);
+
+        return $this->filter(fn (CartCondition $condition) => $condition->getTargetDefinition()->scope === $scope);
+    }
+
+    /**
+     * Filter conditions by phase
+     */
+    public function byPhase(ConditionPhase|string $phase): static
+    {
+        $phase = $phase instanceof ConditionPhase ? $phase : ConditionPhase::fromString((string) $phase);
+
+        return $this->filter(fn (CartCondition $condition) => $condition->getTargetDefinition()->phase === $phase);
+    }
+
+    /**
+     * Filter conditions by application strategy
+     */
+    public function byApplication(ConditionApplication|string $application): static
+    {
+        $application = $application instanceof ConditionApplication
+            ? $application
+            : ConditionApplication::fromString((string) $application);
+
+        return $this->filter(
+            fn (CartCondition $condition) => $condition->getTargetDefinition()->application === $application
+        );
     }
 
     /**
@@ -197,7 +240,27 @@ final class CartConditionCollection extends Collection
      */
     public function groupByTarget(): Collection
     {
-        return $this->groupBy(fn (CartCondition $condition) => $condition->getTarget());
+        return $this->groupBy(fn (CartCondition $condition) => $condition->getTargetDefinition()->toDsl());
+    }
+
+    /**
+     * Group conditions by scope
+     *
+     * @return Collection<string, static>
+     */
+    public function groupByScope(): Collection
+    {
+        return $this->groupBy(fn (CartCondition $condition) => $condition->getTargetDefinition()->scope->value);
+    }
+
+    /**
+     * Group conditions by phase
+     *
+     * @return Collection<string, static>
+     */
+    public function groupByPhase(): Collection
+    {
+        return $this->groupBy(fn (CartCondition $condition) => $condition->getTargetDefinition()->phase->value);
     }
 
     /**
@@ -248,9 +311,14 @@ final class CartConditionCollection extends Collection
 
     /**
      * Remove conditions by target
+     *
+     * @param  ConditionTarget|string|array<string, mixed>  $target
      */
-    public function removeByTarget(string $target): static
+    public function removeByTarget(ConditionTarget|string|array $target): static
     {
-        return $this->reject(fn (CartCondition $condition) => $condition->getTarget() === $target);
+        $targetDefinition = ConditionTarget::from($target);
+        $dsl = $targetDefinition->toDsl();
+
+        return $this->reject(fn (CartCondition $condition) => $condition->getTargetDefinition()->toDsl() === $dsl);
     }
 }

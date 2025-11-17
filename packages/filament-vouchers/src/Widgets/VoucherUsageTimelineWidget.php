@@ -176,7 +176,7 @@ final class VoucherUsageTimelineWidget extends Widget
         }
 
         // Fallback to identifier
-        return $usage->user_identifier;
+        return (string) ($usage->user_identifier ?? 'Guest');
     }
 
     /**

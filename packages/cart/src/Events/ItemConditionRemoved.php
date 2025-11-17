@@ -77,7 +77,7 @@ final class ItemConditionRemoved
                 'name' => $this->condition->getName(),
                 'type' => $this->condition->getType(),
                 'value' => $this->condition->getValue(),
-                'target' => $this->condition->getTarget(),
+                'target_definition' => $this->condition->getTargetDefinition()->toArray(),
             ],
             'item' => [
                 'id' => $this->itemId,

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Collections;
 
+use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Models\CartItem;
 use Illuminate\Support\Collection;
 
@@ -120,12 +122,19 @@ final class CartCollection extends Collection
     }
 
     /**
-     * Filter items by condition target
+     * Filter items by condition target (DSL string or structured definition)
+     *
+     * @param  ConditionTarget|string|array<string, mixed>  $target
      */
-    public function filterByConditionTarget(string $target): static
+    public function filterByConditionTarget(ConditionTarget|string|array $target): static
     {
-        return $this->filter(function (CartItem $item) use ($target) {
-            return $item->getConditions()->contains(fn ($condition) => $condition->getTarget() === $target);
+        $targetDefinition = ConditionTarget::from($target);
+        $dsl = $targetDefinition->toDsl();
+
+        return $this->filter(function (CartItem $item) use ($dsl) {
+            return $item->getConditions()->contains(
+                fn (CartCondition $condition) => $condition->getTargetDefinition()->toDsl() === $dsl
+            );
         });
     }
 

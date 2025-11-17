@@ -517,7 +517,13 @@ $snapshot = Cart::content();
             'name' => 'discount-10',
             'type' => 'discount',
             'value' => '-10%',
-            'target' => 'subtotal',
+            'target_definition' => [
+                'scope' => 'cart',
+                'phase' => 'cart_subtotal',
+                'application' => 'aggregate',
+                'selector' => null,
+                'meta' => [],
+            ],
         ],
     ],
     'metadata' => [

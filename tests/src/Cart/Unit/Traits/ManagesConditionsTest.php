@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Storage\CacheStorage;
 use Illuminate\Support\Facades\Cache;
 
@@ -19,21 +20,21 @@ describe('ManagesConditions Trait', function (): void {
         $this->cart->addCondition(new CartCondition(
             name: 'tax1',
             type: 'tax',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '+10%'
         ));
 
         $this->cart->addCondition(new CartCondition(
             name: 'tax2',
             type: 'tax',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '+5%'
         ));
 
         $this->cart->addCondition(new CartCondition(
             name: 'discount',
             type: 'discount',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '-20%'
         ));
 
@@ -53,7 +54,7 @@ describe('ManagesConditions Trait', function (): void {
         $this->cart->addCondition(new CartCondition(
             name: 'tax',
             type: 'tax',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '+10%'
         ));
 
@@ -86,7 +87,7 @@ describe('ManagesConditions Trait', function (): void {
         $this->cart->addCondition(new CartCondition(
             name: 'standard_shipping',
             type: 'shipping',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '+15',
             attributes: ['method' => 'standard']
         ));
@@ -102,7 +103,7 @@ describe('ManagesConditions Trait', function (): void {
         $this->cart->addCondition(new CartCondition(
             name: 'tax',
             type: 'tax',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '+10%'
         ));
 
@@ -115,7 +116,7 @@ describe('ManagesConditions Trait', function (): void {
         $this->cart->addCondition(new CartCondition(
             name: 'express_shipping',
             type: 'shipping',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '+25',
             attributes: ['method' => 'express']
         ));
@@ -129,7 +130,7 @@ describe('ManagesConditions Trait', function (): void {
         $this->cart->addCondition(new CartCondition(
             name: 'shipping',
             type: 'shipping',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '+15'
         ));
 
@@ -148,7 +149,7 @@ describe('ManagesConditions Trait', function (): void {
         $this->cart->addCondition(new CartCondition(
             name: 'shipping',
             type: 'shipping',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '+15.50'
         ));
 
@@ -161,7 +162,7 @@ describe('ManagesConditions Trait', function (): void {
         $this->cart->addCondition(new CartCondition(
             name: 'shipping',
             type: 'shipping',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '-10.00'
         ));
 
@@ -174,7 +175,7 @@ describe('ManagesConditions Trait', function (): void {
         $this->cart->addCondition(new CartCondition(
             name: 'shipping',
             type: 'shipping',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '25.99'
         ));
 
@@ -187,7 +188,7 @@ describe('ManagesConditions Trait', function (): void {
         $this->cart->addCondition(new CartCondition(
             name: 'shipping',
             type: 'shipping',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: 20
         ));
 
@@ -206,7 +207,7 @@ describe('ManagesConditions Trait', function (): void {
         $this->cart->addCondition(new CartCondition(
             name: 'shipping',
             type: 'shipping',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '*1.5'
         ));
 
@@ -220,7 +221,7 @@ describe('ManagesConditions Trait', function (): void {
         $this->cart->addCondition(new CartCondition(
             name: 'shipping',
             type: 'shipping',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '%10'
         ));
 
@@ -234,13 +235,13 @@ describe('ManagesConditions Trait', function (): void {
             new CartCondition(
                 name: 'tax1',
                 type: 'tax',
-                target: 'subtotal',
+                target: 'cart@cart_subtotal/aggregate',
                 value: '+10%'
             ),
             new CartCondition(
                 name: 'discount',
                 type: 'discount',
-                target: 'subtotal',
+                target: 'cart@cart_subtotal/aggregate',
                 value: '-5%'
             ),
         ]);
@@ -256,7 +257,8 @@ describe('ManagesConditions Trait', function (): void {
         $conditionArray = [
             'name' => 'tax_from_array',
             'type' => 'tax',
-            'target' => 'subtotal',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'target_definition' => ConditionTarget::from('cart@cart_subtotal/aggregate')->toArray(),
             'value' => '+8%',
         ];
 

@@ -22,7 +22,7 @@ it('prevents adding dynamic conditions using addCondition', function (): void {
     $dynamicCondition = new CartCondition(
         name: 'dynamic_discount',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%',
         rules: [
             fn ($cart) => $cart->subtotalWithoutConditions()->getAmount() >= 100,
@@ -42,7 +42,7 @@ it('allows adding static conditions using addCondition', function (): void {
     $staticCondition = new CartCondition(
         name: 'static_discount',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10',
         rules: null
     );
@@ -60,7 +60,7 @@ it('correctly registers dynamic conditions using registerDynamicCondition', func
     $dynamicCondition = new CartCondition(
         name: 'min_order_discount',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%',
         rules: [
             fn ($cart) => $cart->subtotalWithoutConditions()->getAmount() >= 100,
@@ -86,7 +86,7 @@ it('provides helpful error message about using withoutRules', function (): void 
     $dynamicCondition = new CartCondition(
         name: 'dynamic_fee',
         type: 'fee',
-        target: 'total',
+        target: 'cart@grand_total/aggregate',
         value: '+5',
         rules: [fn ($cart) => true]
     );
@@ -105,7 +105,7 @@ it('allows adding static copy of dynamic condition via withoutRules', function (
     $dynamicCondition = new CartCondition(
         name: 'bypass_validation',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-15%',
         rules: [
             fn ($cart) => $cart->subtotalWithoutConditions()->getAmount() >= 200,
@@ -126,7 +126,7 @@ it('handles array of conditions with mixed static and dynamic', function (): voi
     $staticCondition = new CartCondition(
         name: 'static_tax',
         type: 'tax',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '10%',
         rules: null
     );
@@ -134,7 +134,7 @@ it('handles array of conditions with mixed static and dynamic', function (): voi
     $dynamicCondition = new CartCondition(
         name: 'dynamic_discount',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-5',
         rules: [fn ($cart) => true]
     );
@@ -159,7 +159,7 @@ it('works correctly with VoucherCondition pattern', function (): void {
     $staticVoucher = new CartCondition(
         name: 'voucher_SIMPLE5',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-5',
         rules: null  // Static mode
     );
@@ -171,7 +171,7 @@ it('works correctly with VoucherCondition pattern', function (): void {
     $dynamicVoucher = new CartCondition(
         name: 'voucher_MIN100',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%',
         rules: [
             fn ($cart) => $cart->subtotalWithoutConditions()->getAmount() >= 100,
