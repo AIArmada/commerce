@@ -81,10 +81,10 @@ parameters:
         - message: '#Call to an undefined method PHPUnit\\Framework\\TestCase::actingAs\(\)\.#'
         - message: '#Access to an undefined property PHPUnit\\Framework\\TestCase::\$userClass\.#'
         - message: '#Unable to resolve the template type TValue in call to function expect#'
-        # Ignore collection proxy method calls
+         # Ignore collection proxy method calls
         - message: '#Call to an undefined method Illuminate\\Support\\HigherOrderCollectionProxy.*::markAsRedeemed\(\)\.#'
 
-    # Exclude patterns
+     # Exclude patterns
     excludePaths:
         analyseAndScan:
             # Exclude widget files with property override issues

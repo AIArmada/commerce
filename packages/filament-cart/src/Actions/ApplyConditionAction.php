@@ -196,8 +196,8 @@ final class ApplyConditionAction extends Action
                 Select::make('target')
                     ->label('Apply To')
                     ->options([
-                        'subtotal' => 'Cart Subtotal',
-                        'total' => 'Cart Total',
+                        'cart@cart_subtotal/aggregate' => 'Cart Subtotal',
+                        'cart@grand_total/aggregate' => 'Cart Total',
                     ])
                     ->required()
                     ->native(false)

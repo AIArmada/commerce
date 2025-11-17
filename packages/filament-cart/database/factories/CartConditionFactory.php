@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Database\Factories;
 
+use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Models\CartItem;
@@ -24,14 +25,21 @@ final class CartConditionFactory extends Factory
      */
     public function definition(): array
     {
+
         $type = $this->faker->randomElement(['discount', 'tax', 'fee', 'shipping']);
+        $target = $this->faker->randomElement([
+            'cart@cart_subtotal/aggregate',
+            'cart@grand_total/aggregate',
+            'items@item_discount/per-item',
+        ]);
 
         return [
             'cart_id' => Cart::factory(),
             'cart_item_id' => null, // Cart-level by default
             'name' => $this->faker->words(2, true).'_'.$type,
             'type' => $type,
-            'target' => $this->faker->randomElement(['subtotal', 'total', 'price']),
+            'target' => $target,
+            'target_definition' => ConditionTarget::from($target)->toArray(),
             'value' => $this->generateValue($type),
             'order' => $this->faker->numberBetween(1, 10),
             'attributes' => $this->generateAttributes($type),

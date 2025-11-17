@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Storage;
 
 use Illuminate\Cache\Repository as Cache;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use JsonException;
 
@@ -37,6 +38,12 @@ final readonly class CacheStorage implements StorageInterface
     {
         $this->cache->forget($this->getItemsKey($identifier, $instance));
         $this->cache->forget($this->getConditionsKey($identifier, $instance));
+        $this->clearMetadata($identifier, $instance);
+        $this->cache->forget($this->getVersionKey($identifier, $instance));
+        $this->cache->forget($this->getIdKey($identifier, $instance));
+        $this->cache->forget($this->getCreatedAtKey($identifier, $instance));
+        $this->cache->forget($this->getUpdatedAtKey($identifier, $instance));
+        $this->unregisterInstance($identifier, $instance);
     }
 
     /**
@@ -57,12 +64,14 @@ final readonly class CacheStorage implements StorageInterface
      *
      * @return array<string, mixed>
      */
+    /**
+     * @return array<int, mixed>
+     */
     public function getInstances(string $identifier): array
     {
-        // This is a limitation of cache storage - we can't easily list keys
-        // In production, you might want to maintain a separate index
-        // For now, return empty array
-        return [];
+        $instances = $this->cache->get($this->getInstanceRegistryKey($identifier), []);
+
+        return is_array($instances) ? array_values($instances) : [];
     }
 
     /**
@@ -70,9 +79,13 @@ final readonly class CacheStorage implements StorageInterface
      */
     public function forgetIdentifier(string $identifier): void
     {
-        // This is a limitation of cache storage - we can't easily list keys
-        // In production, you might want to maintain a separate index
-        // For now, we can't efficiently remove all instances for an identifier
+        $instances = $this->getInstances($identifier);
+
+        foreach ($instances as $instance) {
+            $this->forget($identifier, $instance);
+        }
+
+        $this->cache->forget($this->getInstanceRegistryKey($identifier));
     }
 
     /**
@@ -115,12 +128,8 @@ final readonly class CacheStorage implements StorageInterface
     public function putItems(string $identifier, string $instance, array $items): void
     {
         $this->validateDataSize($items, 'items');
-
-        if ($this->useLocking) {
-            $this->putItemsWithLock($identifier, $instance, $items);
-        } else {
-            $this->putItemsSimple($identifier, $instance, $items);
-        }
+        $this->storeItemsPayload($identifier, $instance, $items);
+        $this->touchCart($identifier, $instance);
     }
 
     /**
@@ -131,12 +140,8 @@ final readonly class CacheStorage implements StorageInterface
     public function putConditions(string $identifier, string $instance, array $conditions): void
     {
         $this->validateDataSize($conditions, 'conditions');
-
-        if ($this->useLocking) {
-            $this->putConditionsWithLock($identifier, $instance, $conditions);
-        } else {
-            $this->putConditionsSimple($identifier, $instance, $conditions);
-        }
+        $this->storeConditionsPayload($identifier, $instance, $conditions);
+        $this->touchCart($identifier, $instance);
     }
 
     /**
@@ -147,8 +152,11 @@ final readonly class CacheStorage implements StorageInterface
      */
     public function putBoth(string $identifier, string $instance, array $items, array $conditions): void
     {
-        $this->putItems($identifier, $instance, $items);
-        $this->putConditions($identifier, $instance, $conditions);
+        $this->validateDataSize($items, 'items');
+        $this->validateDataSize($conditions, 'conditions');
+        $this->storeItemsPayload($identifier, $instance, $items);
+        $this->storeConditionsPayload($identifier, $instance, $conditions);
+        $this->touchCart($identifier, $instance);
     }
 
     /**
@@ -171,6 +179,8 @@ final readonly class CacheStorage implements StorageInterface
             $metadataKeys[] = $key;
             $this->cache->put($keysRegistryKey, $metadataKeys, $this->ttl);
         }
+
+        $this->touchCart($identifier, $instance);
     }
 
     /**
@@ -217,6 +227,8 @@ final readonly class CacheStorage implements StorageInterface
             $newKeys = array_unique(array_merge($metadataKeys, array_keys($metadata)));
             $this->cache->put($keysRegistryKey, $newKeys, $this->ttl);
         }
+
+        $this->touchCart($identifier, $instance);
     }
 
     /**
@@ -256,15 +268,8 @@ final readonly class CacheStorage implements StorageInterface
      */
     public function clearMetadata(string $identifier, string $instance): void
     {
-        $keysRegistryKey = "{$this->keyPrefix}.{$identifier}.{$instance}.metadata._keys";
-        $metadataKeys = $this->cache->get($keysRegistryKey, []);
-
-        foreach ($metadataKeys as $key) {
-            $metadataKey = $this->getMetadataKey($identifier, $instance, $key);
-            $this->cache->forget($metadataKey);
-        }
-
-        $this->cache->forget($keysRegistryKey);
+        $this->clearMetadataKeys($identifier, $instance);
+        $this->touchCart($identifier, $instance);
     }
 
     /**
@@ -272,12 +277,10 @@ final readonly class CacheStorage implements StorageInterface
      */
     public function clearAll(string $identifier, string $instance): void
     {
-        // Clear items and conditions
-        $this->cache->put($this->getItemsKey($identifier, $instance), [], $this->ttl);
-        $this->cache->put($this->getConditionsKey($identifier, $instance), [], $this->ttl);
-
-        // Clear metadata
-        $this->clearMetadata($identifier, $instance);
+        $this->storeItemsPayload($identifier, $instance, []);
+        $this->storeConditionsPayload($identifier, $instance, []);
+        $this->clearMetadataKeys($identifier, $instance);
+        $this->touchCart($identifier, $instance);
     }
 
     /**
@@ -286,19 +289,31 @@ final readonly class CacheStorage implements StorageInterface
      */
     public function swapIdentifier(string $oldIdentifier, string $newIdentifier, string $instance): bool
     {
-        // Check if source cart exists
         if (! $this->has($oldIdentifier, $instance)) {
             return false;
         }
 
-        // Get all data from the source identifier
+        // Remove any existing cart for the new identifier to mirror DB behaviour
+        if ($this->has($newIdentifier, $instance)) {
+            $this->forget($newIdentifier, $instance);
+        }
+
         $items = $this->getItems($oldIdentifier, $instance);
         $conditions = $this->getConditions($oldIdentifier, $instance);
+        $metadata = $this->getAllMetadata($oldIdentifier, $instance);
+        $version = $this->getVersion($oldIdentifier, $instance);
+        $id = $this->getId($oldIdentifier, $instance);
+        $createdAt = $this->getCreatedAt($oldIdentifier, $instance);
+        $updatedAt = $this->getUpdatedAt($oldIdentifier, $instance);
 
-        // Transfer source cart to new identifier (swap even if empty to ensure ownership)
         $this->putBoth($newIdentifier, $instance, $items, $conditions);
 
-        // Remove data from old identifier
+        if (! empty($metadata)) {
+            $this->putMetadataBatch($newIdentifier, $instance, $metadata);
+        }
+
+        $this->overwriteCartMetadata($newIdentifier, $instance, $id, $version, $createdAt, $updatedAt);
+
         $this->forget($oldIdentifier, $instance);
 
         return true;
@@ -310,7 +325,9 @@ final readonly class CacheStorage implements StorageInterface
      */
     public function getVersion(string $identifier, string $instance): ?int
     {
-        return null;
+        $version = $this->cache->get($this->getVersionKey($identifier, $instance));
+
+        return $version === null ? null : (int) $version;
     }
 
     /**
@@ -319,7 +336,9 @@ final readonly class CacheStorage implements StorageInterface
      */
     public function getId(string $identifier, string $instance): ?string
     {
-        return null;
+        $id = $this->cache->get($this->getIdKey($identifier, $instance));
+
+        return is_string($id) ? $id : null;
     }
 
     /**
@@ -327,7 +346,9 @@ final readonly class CacheStorage implements StorageInterface
      */
     public function getCreatedAt(string $identifier, string $instance): ?string
     {
-        return null;
+        $timestamp = $this->cache->get($this->getCreatedAtKey($identifier, $instance));
+
+        return is_string($timestamp) ? $timestamp : null;
     }
 
     /**
@@ -335,7 +356,33 @@ final readonly class CacheStorage implements StorageInterface
      */
     public function getUpdatedAt(string $identifier, string $instance): ?string
     {
-        return null;
+        $timestamp = $this->cache->get($this->getUpdatedAtKey($identifier, $instance));
+
+        return is_string($timestamp) ? $timestamp : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $items
+     */
+    private function storeItemsPayload(string $identifier, string $instance, array $items): void
+    {
+        if ($this->useLocking) {
+            $this->putItemsWithLock($identifier, $instance, $items);
+        } else {
+            $this->putItemsSimple($identifier, $instance, $items);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $conditions
+     */
+    private function storeConditionsPayload(string $identifier, string $instance, array $conditions): void
+    {
+        if ($this->useLocking) {
+            $this->putConditionsWithLock($identifier, $instance, $conditions);
+        } else {
+            $this->putConditionsSimple($identifier, $instance, $conditions);
+        }
     }
 
     /**
@@ -423,6 +470,106 @@ final readonly class CacheStorage implements StorageInterface
     }
 
     /**
+     * Register the cart instance for faster lookups.
+     */
+    private function registerInstance(string $identifier, string $instance): void
+    {
+        $instances = $this->cache->get($this->getInstanceRegistryKey($identifier), []);
+        if (! in_array($instance, $instances, true)) {
+            $instances[] = $instance;
+        }
+
+        $this->cache->put($this->getInstanceRegistryKey($identifier), $instances, $this->ttl);
+    }
+
+    /**
+     * Unregister the cart instance.
+     */
+    private function unregisterInstance(string $identifier, string $instance): void
+    {
+        $instances = $this->cache->get($this->getInstanceRegistryKey($identifier), []);
+
+        if ($instances === []) {
+            return;
+        }
+
+        $filtered = array_values(array_filter($instances, fn (string $value) => $value !== $instance));
+        if ($filtered === []) {
+            $this->cache->forget($this->getInstanceRegistryKey($identifier));
+        } else {
+            $this->cache->put($this->getInstanceRegistryKey($identifier), $filtered, $this->ttl);
+        }
+    }
+
+    private function touchCart(string $identifier, string $instance): void
+    {
+        $this->registerInstance($identifier, $instance);
+
+        $now = now()->toIso8601String();
+        $idKey = $this->getIdKey($identifier, $instance);
+        if (! $this->cache->has($idKey)) {
+            $this->cache->put($idKey, (string) Str::uuid(), $this->ttl);
+            $this->cache->put($this->getCreatedAtKey($identifier, $instance), $now, $this->ttl);
+        }
+
+        $this->cache->put($this->getUpdatedAtKey($identifier, $instance), $now, $this->ttl);
+
+        $versionKey = $this->getVersionKey($identifier, $instance);
+        $version = ((int) $this->cache->get($versionKey, 0)) + 1;
+        $this->cache->put($versionKey, $version, $this->ttl);
+    }
+
+    private function overwriteCartMetadata(
+        string $identifier,
+        string $instance,
+        ?string $id,
+        ?int $version,
+        ?string $createdAt,
+        ?string $updatedAt
+    ): void {
+        if ($id !== null) {
+            $this->cache->put($this->getIdKey($identifier, $instance), $id, $this->ttl);
+        }
+
+        if ($version !== null) {
+            $this->cache->put($this->getVersionKey($identifier, $instance), $version, $this->ttl);
+        }
+
+        if ($createdAt !== null) {
+            $this->cache->put($this->getCreatedAtKey($identifier, $instance), $createdAt, $this->ttl);
+        }
+
+        if ($updatedAt !== null) {
+            $this->cache->put($this->getUpdatedAtKey($identifier, $instance), $updatedAt, $this->ttl);
+        }
+    }
+
+    private function getInstanceRegistryKey(string $identifier): string
+    {
+        return "{$this->keyPrefix}.{$identifier}._instances";
+    }
+
+    private function getVersionKey(string $identifier, string $instance): string
+    {
+        return "{$this->keyPrefix}.{$identifier}.{$instance}.version";
+    }
+
+    private function getIdKey(string $identifier, string $instance): string
+    {
+        return "{$this->keyPrefix}.{$identifier}.{$instance}.id";
+    }
+
+    private function getCreatedAtKey(string $identifier, string $instance): string
+    {
+        return "{$this->keyPrefix}.{$identifier}.{$instance}.created_at";
+    }
+
+    private function getUpdatedAtKey(string $identifier, string $instance): string
+    {
+        return "{$this->keyPrefix}.{$identifier}.{$instance}.updated_at";
+    }
+
+    /**
      * Validate data size to prevent memory issues and DoS attacks
      *
      * @param  array<string, mixed>  $data
@@ -472,5 +619,18 @@ final readonly class CacheStorage implements StorageInterface
     private function getMetadataKey(string $identifier, string $instance, string $key): string
     {
         return "{$this->keyPrefix}.{$identifier}.{$instance}.metadata.{$key}";
+    }
+
+    private function clearMetadataKeys(string $identifier, string $instance): void
+    {
+        $keysRegistryKey = "{$this->keyPrefix}.{$identifier}.{$instance}.metadata._keys";
+        $metadataKeys = $this->cache->get($keysRegistryKey, []);
+
+        foreach ($metadataKeys as $key) {
+            $metadataKey = $this->getMetadataKey($identifier, $instance, $key);
+            $this->cache->forget($metadataKey);
+        }
+
+        $this->cache->forget($keysRegistryKey);
     }
 }

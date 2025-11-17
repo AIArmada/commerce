@@ -57,7 +57,7 @@ describe('Cart instantiation', function (): void {
         expect($this->cart->instance())->toBe('bulletproof_test');
         expect($this->cart->getTotalQuantity())->toBe(0);
         expect($this->cart->total()->getAmount())->toBe(0.0);
-        expect($this->cart->subtotal()->getAmount())->toBe(0);
+        expect($this->cart->subtotal()->getAmount())->toBe(0.0);
         expect($this->cart->isEmpty())->toBeTrue();
         expect($this->cart->count())->toBe(0);
     });
@@ -205,14 +205,14 @@ describe('Adding items', function (): void {
         $discount = new CartCondition(
             name: 'summer_discount',
             type: 'discount',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '-15%'
         );
 
         $tax = new CartCondition(
             name: 'vat',
             type: 'tax',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '+20%'
         );
 
@@ -432,8 +432,8 @@ describe('Cart conditions', function (): void {
     });
 
     it('can add and apply global cart conditions', function (): void {
-        $tax = new CartCondition('tax', 'tax', 'subtotal', '+10%');
-        $shipping = new CartCondition('shipping', 'charge', 'subtotal', '+5.99');
+        $tax = new CartCondition('tax', 'tax', 'cart@cart_subtotal/aggregate', '+10%');
+        $shipping = new CartCondition('shipping', 'charge', 'cart@cart_subtotal/aggregate', '+5.99');
 
         $this->cart->addCondition($tax);
         $this->cart->addCondition($shipping);
@@ -447,8 +447,8 @@ describe('Cart conditions', function (): void {
     });
 
     it('can remove specific conditions', function (): void {
-        $tax = new CartCondition('tax', 'tax', 'subtotal', '+10%');
-        $discount = new CartCondition('discount', 'discount', 'subtotal', '-5%');
+        $tax = new CartCondition('tax', 'tax', 'cart@cart_subtotal/aggregate', '+10%');
+        $discount = new CartCondition('discount', 'discount', 'cart@cart_subtotal/aggregate', '-5%');
 
         $this->cart->addCondition($tax);
         $this->cart->addCondition($discount);
@@ -465,8 +465,8 @@ describe('Cart conditions', function (): void {
     });
 
     it('can clear all conditions', function (): void {
-        $tax = new CartCondition('tax', 'tax', 'subtotal', '+10%');
-        $discount = new CartCondition('discount', 'discount', 'subtotal', '-5%');
+        $tax = new CartCondition('tax', 'tax', 'cart@cart_subtotal/aggregate', '+10%');
+        $discount = new CartCondition('discount', 'discount', 'cart@cart_subtotal/aggregate', '-5%');
 
         $this->cart->addCondition($tax);
         $this->cart->addCondition($discount);
@@ -480,9 +480,9 @@ describe('Cart conditions', function (): void {
     });
 
     it('calculates totals correctly with multiple condition types', function (): void {
-        $discount = new CartCondition('discount', 'discount', 'subtotal', '-10%'); // -20
-        $tax = new CartCondition('tax', 'tax', 'total', '+15%'); // Applied to subtotal result
-        $shipping = new CartCondition('shipping', 'charge', 'total', '+9.99'); // Applied to total
+        $discount = new CartCondition('discount', 'discount', 'cart@cart_subtotal/aggregate', '-10%'); // -20
+        $tax = new CartCondition('tax', 'tax', 'cart@grand_total/aggregate', '+15%'); // Applied to subtotal result
+        $shipping = new CartCondition('shipping', 'charge', 'cart@grand_total/aggregate', '+9.99'); // Applied to total
 
         $this->cart->addCondition($discount);
         $this->cart->addCondition($tax);
@@ -494,7 +494,7 @@ describe('Cart conditions', function (): void {
     });
 
     it('can add conditions to specific items', function (): void {
-        $itemDiscount = new CartCondition('item_discount', 'discount', 'subtotal', '-20%');
+        $itemDiscount = new CartCondition('item_discount', 'discount', 'cart@cart_subtotal/aggregate', '-20%');
 
         $result = $this->cart->addItemCondition('product-1', $itemDiscount);
         expect($result)->toBeTrue();
@@ -509,7 +509,7 @@ describe('Cart conditions', function (): void {
     });
 
     it('can remove item-specific conditions', function (): void {
-        $itemDiscount = new CartCondition('item_discount', 'discount', 'subtotal', '-20%');
+        $itemDiscount = new CartCondition('item_discount', 'discount', 'cart@cart_subtotal/aggregate', '-20%');
 
         $this->cart->addItemCondition('product-1', $itemDiscount);
         expect($this->cart->get('product-1')->getConditions())->toHaveCount(1);
@@ -524,8 +524,8 @@ describe('Cart conditions', function (): void {
     });
 
     it('can clear all conditions from specific items', function (): void {
-        $discount1 = new CartCondition('discount1', 'discount', 'subtotal', '-10%');
-        $discount2 = new CartCondition('discount2', 'discount', 'subtotal', '-5%');
+        $discount1 = new CartCondition('discount1', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
+        $discount2 = new CartCondition('discount2', 'discount', 'cart@cart_subtotal/aggregate', '-5%');
 
         $this->cart->addItemCondition('product-1', $discount1);
         $this->cart->addItemCondition('product-1', $discount2);
@@ -576,7 +576,7 @@ describe('Cart information and calculations', function (): void {
 
         expect($this->cart->isEmpty())->toBeTrue();
         expect($this->cart->getTotalQuantity())->toBe(0);
-        expect($this->cart->subtotal()->getAmount())->toBe(0);
+        expect($this->cart->subtotal()->getAmount())->toBe(0.0);
         expect($this->cart->total()->getAmount())->toBe(0.0);
     });
 
@@ -645,11 +645,11 @@ describe('Edge cases and stress tests', function (): void {
 
         // Add multiple overlapping conditions
         $conditions = [
-            new CartCondition('discount1', 'discount', 'subtotal', '-10%'),
-            new CartCondition('discount2', 'discount', 'subtotal', '-5%'),
-            new CartCondition('tax1', 'tax', 'subtotal', '+8%'),
-            new CartCondition('tax2', 'tax', 'subtotal', '+2%'),
-            new CartCondition('fee', 'charge', 'subtotal', '+15.00'),
+            new CartCondition('discount1', 'discount', 'cart@cart_subtotal/aggregate', '-10%'),
+            new CartCondition('discount2', 'discount', 'cart@cart_subtotal/aggregate', '-5%'),
+            new CartCondition('tax1', 'tax', 'cart@cart_subtotal/aggregate', '+8%'),
+            new CartCondition('tax2', 'tax', 'cart@cart_subtotal/aggregate', '+2%'),
+            new CartCondition('fee', 'charge', 'cart@cart_subtotal/aggregate', '+15.00'),
         ];
 
         foreach ($conditions as $condition) {
@@ -844,7 +844,7 @@ describe('Multiple items and array operations', function (): void {
     });
 
     it('handles multiple items with conditions and associated models', function (): void {
-        $discount = new CartCondition('discount', 'discount', 'subtotal', '-10%');
+        $discount = new CartCondition('discount', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
 
         $items = [
             [
@@ -927,7 +927,7 @@ describe('Convenience condition methods', function (): void {
         expect($condition)->toBeInstanceOf(CartCondition::class);
         expect($condition->getType())->toBe('discount');
         expect($condition->getValue())->toBe('-20%'); // Should auto-add negative sign
-        expect($condition->getTarget())->toBe('subtotal');
+        expect($condition->getTargetDefinition()->toDsl())->toBe('cart@cart_subtotal/aggregate');
     });
 
     it('handles discount values that already have negative sign', function (): void {
@@ -951,7 +951,7 @@ describe('Convenience condition methods', function (): void {
         expect($condition)->toBeInstanceOf(CartCondition::class);
         expect($condition->getType())->toBe('fee');
         expect($condition->getValue())->toBe('10.00');
-        expect($condition->getTarget())->toBe('total'); // Fees are now applied to total by default
+        expect($condition->getTargetDefinition()->toDsl())->toBe('cart@grand_total/aggregate'); // Fees are now applied to total by default
     });
 
     it('can add tax using addTax method', function (): void {
@@ -966,20 +966,20 @@ describe('Convenience condition methods', function (): void {
         expect($condition)->toBeInstanceOf(CartCondition::class);
         expect($condition->getType())->toBe('tax');
         expect($condition->getValue())->toBe('21%');
-        expect($condition->getTarget())->toBe('subtotal');
+        expect($condition->getTargetDefinition()->toDsl())->toBe('cart@cart_subtotal/aggregate');
     });
 
     it('can add multiple convenience conditions with different targets', function (): void {
         $this->cart->add('item-1', 'Item 1', 100.00, 1);
 
-        $this->cart->addDiscount('discount', '10%', 'total');
-        $this->cart->addFee('handling', '5.00', 'subtotal');
-        $this->cart->addTax('sales_tax', '8%', 'subtotal');
+        $this->cart->addDiscount('discount', '10%', 'cart@grand_total/aggregate');
+        $this->cart->addFee('handling', '5.00', 'cart@cart_subtotal/aggregate');
+        $this->cart->addTax('sales_tax', '8%', 'cart@cart_subtotal/aggregate');
 
         expect($this->cart->getConditions())->toHaveCount(3);
-        expect($this->cart->getCondition('discount')->getTarget())->toBe('total');
-        expect($this->cart->getCondition('handling')->getTarget())->toBe('subtotal');
-        expect($this->cart->getCondition('sales_tax')->getTarget())->toBe('subtotal');
+        expect($this->cart->getCondition('discount')->getTargetDefinition()->toDsl())->toBe('cart@grand_total/aggregate');
+        expect($this->cart->getCondition('handling')->getTargetDefinition()->toDsl())->toBe('cart@cart_subtotal/aggregate');
+        expect($this->cart->getCondition('sales_tax')->getTargetDefinition()->toDsl())->toBe('cart@cart_subtotal/aggregate');
     });
 });
 

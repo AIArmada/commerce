@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $name
  * @property string $type
  * @property string $target
+ * @property array<mixed>|null $target_definition
  * @property string $value
  * @property int $order
  * @property array<mixed>|null $attributes
@@ -61,6 +62,7 @@ final class CartCondition extends Model
         'name',
         'type',
         'target',
+        'target_definition',
         'value',
         'order',
         'attributes',
@@ -84,6 +86,7 @@ final class CartCondition extends Model
         'order' => 'integer',
         'attributes' => 'array',
         'rules' => 'array',
+        'target_definition' => 'array',
         'is_charge' => 'boolean',
         'is_dynamic' => 'boolean',
         'is_discount' => 'boolean',

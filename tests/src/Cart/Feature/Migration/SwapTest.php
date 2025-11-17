@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Services\CartMigrationService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -72,7 +73,9 @@ it('transfers source cart to target identifier even when target exists', functio
         'user_discount' => [
             'name' => 'user_discount',
             'type' => 'discount',
-            'target' => 'subtotal',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+            'target_definition' => ConditionTarget::from('cart@cart_subtotal/aggregate')->toArray(),
             'value' => '15%',
         ],
     ];
@@ -135,7 +138,9 @@ it('transfers source cart when target cart does not exist', function (): void {
         'discount' => [
             'name' => 'discount',
             'type' => 'discount',
-            'target' => 'subtotal',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+            'target_definition' => ConditionTarget::from('cart@cart_subtotal/aggregate')->toArray(),
             'value' => '10%',
         ],
     ];

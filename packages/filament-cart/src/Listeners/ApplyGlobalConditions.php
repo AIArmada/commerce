@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Listeners;
 
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Events\CartCreated;
 use AIArmada\Cart\Events\ItemAdded;
@@ -73,11 +74,14 @@ final class ApplyGlobalConditions
 
             $globalConditions = Condition::global()->get();
             foreach ($globalConditions as $condition) {
+                $targetDefinition = ConditionTarget::from($condition->target)->toArray();
+
                 // Build condition data
                 $conditionData = [
                     'name' => $condition->name,
                     'type' => $condition->type,
                     'target' => $condition->target,
+                    'target_definition' => $targetDefinition,
                     'value' => $condition->value,
                     'order' => $condition->order,
                     'attributes' => [

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Storage\SessionStorage;
-use Illuminate\Session\Store;
 use Illuminate\Session\ArraySessionHandler;
+use Illuminate\Session\Store;
 
 beforeEach(function (): void {
     $this->session = new Store('testing', new ArraySessionHandler(120));
@@ -75,6 +75,15 @@ describe('SessionStorage', function (): void {
         expect($instances)->toBe([]);
     });
 
+    it('returns stored instances for identifier', function (): void {
+        $this->storage->putItems('cart-123', 'default', ['item' => []]);
+        $this->storage->putItems('cart-123', 'wishlist', ['item' => []]);
+
+        $instances = $this->storage->getInstances('cart-123');
+
+        expect($instances)->toMatchArray(['default', 'wishlist']);
+    });
+
     it('stores and retrieves metadata', function (): void {
         $this->storage->putMetadata('cart-123', 'default', 'notes', 'Customer notes');
 
@@ -99,16 +108,27 @@ describe('SessionStorage', function (): void {
         expect($this->storage->getMetadata('cart-123', 'default', 'user_id'))->toBeNull();
     });
 
-    it('returns null for version', function (): void {
+    it('tracks version, id, and timestamps', function (): void {
+        $this->storage->putItems('cart-123', 'default', ['item' => []]);
+
         $version = $this->storage->getVersion('cart-123', 'default');
-
-        expect($version)->toBeNull();
-    });
-
-    it('returns null for id', function (): void {
         $id = $this->storage->getId('cart-123', 'default');
+        $createdAt = $this->storage->getCreatedAt('cart-123', 'default');
+        $updatedAt = $this->storage->getUpdatedAt('cart-123', 'default');
 
-        expect($id)->toBeNull();
+        expect($version)->toBeInt()->toBeGreaterThan(0);
+        expect($id)->toBeString()->not->toBeEmpty();
+        expect($createdAt)->toBeString();
+        expect($updatedAt)->toBeString();
+
+        $this->storage->putConditions('cart-123', 'default', ['tax' => ['value' => '10%']]);
+
+        $newVersion = $this->storage->getVersion('cart-123', 'default');
+        $newUpdatedAt = $this->storage->getUpdatedAt('cart-123', 'default');
+
+        expect($newVersion)->toBeGreaterThan($version);
+        expect($this->storage->getCreatedAt('cart-123', 'default'))->toBe($createdAt);
+        expect(strtotime($newUpdatedAt))->toBeGreaterThanOrEqual(strtotime($updatedAt));
     });
 
     it('swaps identifier successfully', function (): void {

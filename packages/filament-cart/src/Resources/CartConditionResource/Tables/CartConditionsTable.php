@@ -137,10 +137,9 @@ final class CartConditionsTable
 
                 SelectFilter::make('target')
                     ->options([
-                        'subtotal' => 'Subtotal',
-                        'total' => 'Total',
-                        'price' => 'Price',
-                        'quantity' => 'Quantity',
+                        'cart@cart_subtotal/aggregate' => 'Cart Subtotal',
+                        'cart@grand_total/aggregate' => 'Cart Total',
+                        'items@item_discount/per-item' => 'Item Level',
                     ]),
 
                 SelectFilter::make('instance')

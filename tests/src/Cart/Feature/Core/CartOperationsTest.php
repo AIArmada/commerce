@@ -162,7 +162,7 @@ describe('Cart Conditions', function (): void {
         $taxCondition = new AIArmada\Cart\Conditions\CartCondition(
             name: 'VAT',
             type: 'tax',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '10%'
         );
 
@@ -178,7 +178,7 @@ describe('Cart Conditions', function (): void {
         $taxCondition = new AIArmada\Cart\Conditions\CartCondition(
             name: 'VAT',
             type: 'tax',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '10%'
         );
 

@@ -119,14 +119,8 @@ trait CalculatesTotals
      */
     protected function getSubtotal(): Money
     {
-        $totalAmount = $this->getItems()->sum(fn (CartItem $item) => $item->getRawSubtotal());
-
-        // Apply cart-level conditions targeting 'subtotal'
-        $cartConditions = $this->getConditions();
-        $subtotalConditions = $cartConditions->byTarget('subtotal');
-        $finalAmount = $subtotalConditions->reduce(function ($amount, $condition) {
-            return $condition->apply($amount);
-        }, $totalAmount);
+        $pipelineResult = $this->evaluateConditionPipeline();
+        $finalAmount = $pipelineResult->subtotal();
 
         $currency = config('cart.money.default_currency', 'USD');
 
@@ -161,15 +155,8 @@ trait CalculatesTotals
      */
     protected function getTotal(): Money
     {
-        // Start with subtotal (which already has 'subtotal' conditions applied)
-        $subtotalAmount = $this->getRawSubtotal();
-
-        // Apply cart-level conditions targeting 'total'
-        $cartConditions = $this->getConditions();
-        $totalConditions = $cartConditions->byTarget('total');
-        $finalAmount = $totalConditions->reduce(function ($amount, $condition) {
-            return $condition->apply($amount);
-        }, $subtotalAmount);
+        $pipelineResult = $this->evaluateConditionPipeline();
+        $finalAmount = $pipelineResult->total();
 
         $currency = config('cart.money.default_currency', 'USD');
 

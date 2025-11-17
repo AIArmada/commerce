@@ -108,7 +108,7 @@ describe('Item Condition Events', function (): void {
         Cart::addItemCondition('item', new AIArmada\Cart\Conditions\CartCondition(
             name: 'Item Discount',
             type: 'discount',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '-10%'
         ));
 
@@ -122,7 +122,7 @@ describe('Item Condition Events', function (): void {
         Cart::addItemCondition('item', new AIArmada\Cart\Conditions\CartCondition(
             name: 'Item Discount',
             type: 'discount',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '-10%'
         ));
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Database\Factories;
 
+use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\FilamentCart\Models\Condition;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -17,12 +18,19 @@ final class ConditionFactory extends Factory
 
     public function definition(): array
     {
+        $target = $this->randomFrom([
+            'cart@cart_subtotal/aggregate',
+            'cart@grand_total/aggregate',
+            'items@item_discount/per-item',
+        ]);
+
         return [
             'name' => 'condition_'.Str::lower(Str::random(8)),
             'display_name' => 'Condition '.Str::upper(Str::random(4)),
             'description' => 'Auto generated condition '.Str::lower(Str::random(12)),
             'type' => $this->randomFrom(['discount', 'tax', 'fee', 'shipping', 'surcharge']),
-            'target' => $this->randomFrom(['subtotal', 'total', 'item']),
+            'target' => $target,
+            'target_definition' => ConditionTarget::from($target)->toArray(),
             'value' => $this->generateValue(),
             'order' => random_int(0, 10),
             'attributes' => [],
@@ -33,42 +41,65 @@ final class ConditionFactory extends Factory
 
     public function discount(): static
     {
-        return $this->state(fn () => [
-            'type' => 'discount',
-            'value' => '-'.random_int(5, 50).'%',
-            'target' => $this->randomFrom(['subtotal', 'item']),
-        ]);
+        return $this->state(function () {
+            $target = $this->randomFrom([
+                'cart@cart_subtotal/aggregate',
+                'items@item_discount/per-item',
+            ]);
+
+            return [
+                'type' => 'discount',
+                'value' => '-'.random_int(5, 50).'%',
+                'target' => $target,
+                'target_definition' => ConditionTarget::from($target)->toArray(),
+            ];
+        });
     }
 
     public function tax(): static
     {
-        return $this->state(fn () => [
-            'type' => 'tax',
-            'value' => random_int(5, 15).'%',
-            'target' => 'subtotal',
-        ]);
+        return $this->state(function () {
+            $target = 'cart@cart_subtotal/aggregate';
+
+            return [
+                'type' => 'tax',
+                'value' => random_int(5, 15).'%',
+                'target' => $target,
+                'target_definition' => ConditionTarget::from($target)->toArray(),
+            ];
+        });
     }
 
     public function fee(): static
     {
-        return $this->state(fn () => [
-            'type' => 'fee',
-            'value' => '+'.random_int(200, 5000),
-            'target' => 'subtotal',
-        ]);
+        return $this->state(function () {
+            $target = 'cart@cart_subtotal/aggregate';
+
+            return [
+                'type' => 'fee',
+                'value' => '+'.random_int(200, 5000),
+                'target' => $target,
+                'target_definition' => ConditionTarget::from($target)->toArray(),
+            ];
+        });
     }
 
     public function shipping(): static
     {
-        return $this->state(fn () => [
-            'type' => 'shipping',
-            'value' => '+'.random_int(500, 8000),
-            'target' => 'subtotal',
-            'attributes' => [
-                'method' => $this->randomFrom(['standard', 'express', 'overnight']),
-                'carrier' => $this->randomFrom(['UPS', 'FedEx', 'DHL', 'USPS']),
-            ],
-        ]);
+        return $this->state(function () {
+            $target = 'cart@cart_subtotal/aggregate';
+
+            return [
+                'type' => 'shipping',
+                'value' => '+'.random_int(500, 8000),
+                'target' => $target,
+                'target_definition' => ConditionTarget::from($target)->toArray(),
+                'attributes' => [
+                    'method' => $this->randomFrom(['standard', 'express', 'overnight']),
+                    'carrier' => $this->randomFrom(['UPS', 'FedEx', 'DHL', 'USPS']),
+                ],
+            ];
+        });
     }
 
     public function active(): static
@@ -83,7 +114,10 @@ final class ConditionFactory extends Factory
 
     public function forItems(): static
     {
-        return $this->state(fn () => ['target' => 'item']);
+        return $this->state(fn () => [
+            'target' => 'items@item_discount/per-item',
+            'target_definition' => ConditionTarget::from('items@item_discount/per-item')->toArray(),
+        ]);
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Database\Factories;
 
+use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\FilamentCart\Models\Cart;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Arr;
@@ -133,7 +134,8 @@ final class CartFactory extends Factory
             return [[
                 'name' => 'Sales Tax',
                 'type' => 'tax',
-                'target' => 'total',
+                'target' => 'cart@grand_total/aggregate',
+                'target_definition' => ConditionTarget::from('cart@grand_total/aggregate')->toArray(),
                 'value' => '+600',
                 'order' => 0,
             ]];

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Storage\DatabaseStorage;
@@ -66,7 +67,9 @@ describe('dynamic condition lifecycle', function (): void {
             condition: [
                 'name' => 'vip_discount',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-10%',
                 'attributes' => ['label' => 'VIP'],
             ],
@@ -122,7 +125,9 @@ describe('dynamic condition lifecycle', function (): void {
             condition: [
                 'name' => 'faulty_condition',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-5%',
             ],
             rules: 'throws'
@@ -151,7 +156,9 @@ describe('dynamic condition lifecycle', function (): void {
             condition: [
                 'name' => 'item_discount',
                 'type' => 'discount',
-                'target' => 'item',
+                'target' => 'items@item_discount/per-item',
+                'target_definition' => conditionTargetDefinition('items@item_discount/per-item'),
+
                 'value' => '-10%',
             ],
             rules: 'throws',
@@ -163,7 +170,7 @@ describe('dynamic condition lifecycle', function (): void {
 
         expect($captured)->not->toBeNull();
         expect($captured['operation'])->toBe('evaluate');
-        expect($captured['context']['target'])->toBe('item');
+        expect($captured['context']['scope'])->toBe(ConditionScope::ITEMS->value);
         expect($captured['exception'])->toBeInstanceOf(RuntimeException::class);
     });
 
@@ -178,7 +185,9 @@ describe('dynamic condition lifecycle', function (): void {
             condition: [
                 'name' => 'item_discount',
                 'type' => 'discount',
-                'target' => 'item',
+                'target' => 'items@item_discount/per-item',
+                'target_definition' => conditionTargetDefinition('items@item_discount/per-item'),
+
                 'value' => '-10%',
             ],
             rules: 'always-true',
@@ -203,7 +212,9 @@ describe('dynamic condition lifecycle', function (): void {
             condition: [
                 'name' => 'item_discount',
                 'type' => 'discount',
-                'target' => 'item',
+                'target' => 'items@item_discount/per-item',
+                'target_definition' => conditionTargetDefinition('items@item_discount/per-item'),
+
                 'value' => '-10%',
             ],
             rules: 'min-items',
@@ -230,7 +241,9 @@ describe('dynamic condition lifecycle', function (): void {
             condition: [
                 'name' => 'mixed_discount',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-15%',
             ],
             rules: ['always-true', static fn () => true],
@@ -250,7 +263,9 @@ describe('dynamic condition lifecycle', function (): void {
             condition: [
                 'name' => 'multi_key_discount',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-20%',
             ],
             rules: ['always-true'],
@@ -268,7 +283,9 @@ describe('dynamic condition lifecycle', function (): void {
             condition: [
                 'name' => 'closure_discount',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-5%',
             ],
             rules: static fn () => true,
@@ -288,7 +305,9 @@ describe('dynamic condition lifecycle', function (): void {
             condition: [
                 'name' => 'unknown_discount',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-10%',
             ],
             rules: 'unknown-key',
@@ -304,7 +323,9 @@ describe('dynamic condition lifecycle', function (): void {
             condition: [
                 'name' => 'no_factory_discount',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-10%',
             ],
             rules: 'always-true',
@@ -319,7 +340,7 @@ describe('CartCondition helpers', function (): void {
         $condition = new CartCondition(
             name: 'vip_discount',
             type: 'discount',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '-10%',
             rules: [static fn (): bool => true]
         );
@@ -343,7 +364,9 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             condition: [
                 'name' => 'bad_discount',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-10%',
             ],
             rules: null,
@@ -361,7 +384,9 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             condition: [
                 'name' => 'bad_mixed',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-10%',
             ],
             rules: ['always-true', 123, static fn () => true],
@@ -377,7 +402,9 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             condition: [
                 'name' => 'closure_array',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-10%',
             ],
             rules: static fn () => [static fn () => true],
@@ -395,7 +422,9 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             condition: [
                 'name' => 'empty_rules',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-10%',
             ],
             rules: [static fn () => true],
@@ -412,7 +441,7 @@ describe('ManagesDynamicConditions edge cases', function (): void {
         $staticCondition = new CartCondition(
             name: 'static_cond',
             type: 'discount',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '-10%'
         );
 
@@ -433,7 +462,9 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             condition: [
                 'name' => 'removable',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-10%',
             ],
             rules: 'always-true',
@@ -458,7 +489,9 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             condition: [
                 'name' => 'discount1',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-10%',
             ],
             rules: 'always-true',
@@ -470,7 +503,9 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             condition: [
                 'name' => 'discount2',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-5%',
             ],
             rules: 'always-true',
@@ -499,7 +534,9 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             [
                 'bad_condition' => [
                     'type' => 'discount',
-                    'target' => 'subtotal',
+                    'target' => 'cart@cart_subtotal/aggregate',
+                    'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                     'value' => '-10%',
                     'rule_factory_key' => 'unknown-key',
                 ],
@@ -531,7 +568,9 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             [
                 'no_key_condition' => [
                     'type' => 'discount',
-                    'target' => 'subtotal',
+                    'target' => 'cart@cart_subtotal/aggregate',
+                    'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                     'value' => '-10%',
                 ],
             ]
@@ -551,7 +590,9 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             condition: [
                 'name' => 'multi_key',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-10%',
             ],
             rules: ['always-true', 'min-items'],
@@ -579,7 +620,9 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             condition: [
                 'name' => 'faulty',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-10%',
             ],
             rules: 'throws',
@@ -598,7 +641,9 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             condition: [
                 'name' => 'mixed_no_factory',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-10%',
             ],
             rules: ['always-true', fn () => true], // Mixed: factory key + closure
@@ -616,7 +661,9 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             condition: [
                 'name' => 'unknown_key',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-10%',
             ],
             rules: ['unknown-factory-key', fn () => true], // Mixed: unknown key + closure
@@ -633,7 +680,9 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             condition: [
                 'name' => 'array_no_factory',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-10%',
             ],
             rules: ['always-true', 'min-items'], // Array of factory keys
@@ -651,7 +700,9 @@ describe('ManagesDynamicConditions edge cases', function (): void {
             condition: [
                 'name' => 'unknown_in_array',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
+                'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+
                 'value' => '-10%',
             ],
             rules: ['always-true', 'unknown-key'], // Array with unknown key

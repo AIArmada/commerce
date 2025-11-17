@@ -24,25 +24,26 @@ return new class extends Migration
 
             // Condition definition
             $table->string('type'); // discount, tax, fee, shipping, etc.
-            $table->string('target'); // subtotal, total, item, price
+            $table->string('target'); // cart@cart_subtotal/aggregate, etc. (DSL string for UI/filtering)
+            $jsonType = (string) commerce_json_column_type('cart', 'json');
+            $table->{$jsonType}('target_definition'); // structured scope/phase/application payload
             $table->string('value'); // e.g., "-10%", "+5", "15"
 
-            // Computed fields (like cart_conditions)
+            // Computed fields
             $table->string('operator')->nullable(); // +, -, *, /, %
-            $table->boolean('is_charge')->default(false); // Is this a charge/fee?
-            $table->boolean('is_dynamic')->default(false); // Has rules?
-            $table->boolean('is_discount')->default(false); // Is this a discount?
-            $table->boolean('is_percentage')->default(false); // Percentage-based?
-            $table->string('parsed_value')->nullable(); // Parsed numeric value
+            $table->boolean('is_charge')->default(false);
+            $table->boolean('is_dynamic')->default(false);
+            $table->boolean('is_discount')->default(false);
+            $table->boolean('is_percentage')->default(false);
+            $table->string('parsed_value')->nullable();
 
             // Configuration
             $table->integer('order')->default(0);
-            $jsonType = (string) commerce_json_column_type('cart', 'json');
             $table->{$jsonType}('attributes')->nullable();
-            $table->{$jsonType}('rules')->nullable(); // Dynamic condition rules (if any)
+            $table->{$jsonType}('rules')->nullable();
 
             // Status
-            $table->boolean('is_global')->default(false); // Added from separate migration
+            $table->boolean('is_global')->default(false);
             $table->boolean('is_active')->default(false);
 
             $table->timestamps();
@@ -58,11 +59,11 @@ return new class extends Migration
             $table->index('order');
         });
 
-        // GIN indexes only work with jsonb in PostgreSQL
         if (commerce_json_column_type('cart', 'json') === 'jsonb') {
             Schema::table('conditions', function (Blueprint $table): void {
                 DB::statement('CREATE INDEX conditions_attributes_gin_index ON conditions USING GIN (attributes)');
                 DB::statement('CREATE INDEX conditions_rules_gin_index ON conditions USING GIN (rules)');
+                DB::statement('CREATE INDEX conditions_target_definition_gin_index ON conditions USING GIN (target_definition)');
             });
         }
     }

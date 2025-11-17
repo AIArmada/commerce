@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherUsageResource\Tables;
 
-use AIArmada\FilamentVouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Models\VoucherUsage;
 use Akaunting\Money\Money;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
@@ -18,12 +18,18 @@ final class VoucherUsagesTable
     {
         return $table
             ->defaultSort('used_at', 'desc')
+            ->modifyQueryUsing(fn ($query) => $query->with(['voucher', 'redeemedBy']))
             ->columns([
                 TextColumn::make('redeemedBy.user.email')
                     ->label('User')
                     ->searchable()
-                    ->copyable()
                     ->wrap()
+                    ->placeholder('N/A'),
+
+                TextColumn::make('voucher.code')
+                    ->label('Voucher')
+                    ->searchable()
+                    ->url(fn (VoucherUsage $record): string => $record->voucher ? \AIArmada\FilamentVouchers\Resources\VoucherResource::getUrl('view', ['record' => $record->voucher]) : null)
                     ->placeholder('N/A'),
 
                 TextColumn::make('channel')
@@ -50,12 +56,25 @@ final class VoucherUsagesTable
                     })
                     ->alignEnd(),
 
-                TextColumn::make('redeemedBy.id')
-                    ->label('Order ID')
-                    ->copyable()
+                TextColumn::make('redeemedBy.order_number')
+                    ->label('Order Number')
                     ->toggleable()
                     ->formatStateUsing(fn ($state, VoucherUsage $record) => $record->redeemed_by_type === 'order' ? $state : null
                     )
+                    ->url(function (VoucherUsage $record): ?string {
+                        if ($record->redeemed_by_type !== 'order' || ! $record->redeemedBy) {
+                            return null;
+                        }
+
+                        // Get the OrderResource class dynamically
+                        $orderResourceClass = '\\App\\Filament\\Resources\\Orders\\OrderResource';
+
+                        if (! class_exists($orderResourceClass)) {
+                            return null;
+                        }
+
+                        return $orderResourceClass::getUrl('view', ['record' => $record->redeemedBy]);
+                    })
                     ->placeholder('N/A'),
 
                 TextColumn::make('used_at')

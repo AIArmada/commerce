@@ -2,6 +2,11 @@
 
 Complete, working code examples for common cart scenarios.
 
+> All condition samples assume `use AIArmada\Cart\Conditions\TargetPresets;` and
+> that payloads persist the structured `target_definition`. When a DSL string
+> appears, convert it via `ConditionTarget::from($dsl)->toArray()` or a preset
+> before storing.
+
 ---
 
 ## Table of Contents
@@ -398,7 +403,7 @@ class ApplyBundleDiscounts
             CartCondition::make([
                 'name' => $bundle['name'],
                 'type' => 'discount',
-                'target' => 'total',
+                'target' => 'cart@grand_total/aggregate',
                 'value' => $bundle['discount'],
                 'attributes' => [
                     'bundle_id' => $bundleId,
@@ -465,7 +470,7 @@ class FlashSaleService
             CartCondition::make([
                 'name' => 'Flash Sale',
                 'type' => 'discount',
-                'target' => 'total',
+                'target' => 'cart@grand_total/aggregate',
                 'value' => "-{$sale['discount']}%",
                 'attributes' => [
                     'ends_at' => $sale['ends_at']->toIso8601String(),
@@ -838,7 +843,7 @@ class PromoCodeService
             CartCondition::make([
                 'name' => "Promo: {$promo->code}",
                 'type' => 'discount',
-                'target' => 'total',
+                'target' => 'cart@grand_total/aggregate',
                 'value' => $promo->type === 'percentage' 
                     ? "-{$promo->value}%" 
                     : "-{$promo->value}",
@@ -956,7 +961,7 @@ class LoyaltyPointsService
             CartCondition::make([
                 'name' => 'Loyalty Points',
                 'type' => 'discount',
-                'target' => 'total',
+                'target' => 'cart@grand_total/aggregate',
                 'value' => "-{$discountCents}",
                 'attributes' => [
                     'points_redeemed' => $points,
@@ -1050,7 +1055,7 @@ class ShippingService
                 CartCondition::make([
                     'name' => 'Shipping',
                     'type' => 'shipping',
-                    'target' => 'total',
+                    'target' => 'cart@grand_total/aggregate',
                     'value' => '0',
                     'attributes' => [
                         'region' => $region,
@@ -1066,7 +1071,7 @@ class ShippingService
             CartCondition::make([
                 'name' => 'Shipping',
                 'type' => 'shipping',
-                'target' => 'total',
+                'target' => 'cart@grand_total/aggregate',
                 'value' => "+{$cost}",
                 'attributes' => [
                     'region' => $region,
@@ -1123,7 +1128,7 @@ class TaxService
             CartCondition::make([
                 'name' => "{$state} Tax",
                 'type' => 'tax',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
                 'value' => "+{$rate}%",
                 'order' => 1,
                 'attributes' => [
@@ -1156,7 +1161,7 @@ class TaxService
                 CartCondition::make([
                     'name' => 'GST',
                     'type' => 'tax',
-                    'target' => 'subtotal',
+                    'target' => 'cart@cart_subtotal/aggregate',
                     'value' => "+{$gst}%",
                     'order' => 1,
                 ])
@@ -1168,7 +1173,7 @@ class TaxService
                     CartCondition::make([
                         'name' => 'PST',
                         'type' => 'tax',
-                        'target' => 'subtotal',
+                        'target' => 'cart@cart_subtotal/aggregate',
                         'value' => "+{$pst}%",
                         'order' => 2,
                     ])

@@ -6,7 +6,10 @@ namespace AIArmada\Cart\Traits;
 
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\ConditionTarget;
+use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
+use AIArmada\Cart\Exceptions\InvalidCartConditionException;
 use Closure;
 use Exception;
 use InvalidArgumentException;
@@ -144,57 +147,15 @@ trait ManagesDynamicConditions
         $this->initializeDynamicConditions();
 
         foreach ($this->dynamicConditions as $condition) {
-            if (in_array($condition->getTarget(), ['total', 'subtotal'])) {
-                // Cart-level condition (both 'total' and 'subtotal' targets)
-                $shouldApply = false;
+            $targetDefinition = $condition->getTargetDefinition();
 
-                try {
-                    $shouldApply = $condition->shouldApply($this);
-                } catch (Throwable $exception) {
-                    $this->handleDynamicConditionFailure('evaluate', $condition, $exception, [
-                        'target' => $condition->getTarget(),
-                    ]);
-                    $this->removeCondition($condition->getName());
+            if ($targetDefinition->scope === ConditionScope::ITEMS) {
+                $this->evaluateItemScopedDynamicCondition($condition);
 
-                    continue;
-                }
-
-                if ($shouldApply) {
-                    if (! $this->getConditions()->has($condition->getName())) {
-                        // Create a static version for application (without rules to avoid recursion)
-                        $staticCondition = $condition->withoutRules();
-                        $this->addCondition($staticCondition);
-                    }
-                } else {
-                    $this->removeCondition($condition->getName());
-                }
-            } elseif ($condition->getTarget() === 'item') {
-                // Item-level condition
-                foreach ($this->getItems() as $item) {
-                    $shouldApply = false;
-
-                    try {
-                        $shouldApply = $condition->shouldApply($this, $item);
-                    } catch (Throwable $exception) {
-                        $this->handleDynamicConditionFailure('evaluate', $condition, $exception, [
-                            'target' => 'item',
-                            'item_id' => $item->id,
-                        ]);
-                        $this->removeItemCondition($item->id, $condition->getName());
-
-                        continue;
-                    }
-
-                    if ($shouldApply) {
-                        if (! $item->conditions->has($condition->getName())) {
-                            $staticCondition = $condition->withoutRules();
-                            $this->addItemCondition($item->id, $staticCondition);
-                        }
-                    } else {
-                        $this->removeItemCondition($item->id, $condition->getName());
-                    }
-                }
+                continue;
             }
+
+            $this->evaluateCartScopedDynamicCondition($condition);
         }
     }
 
@@ -228,10 +189,12 @@ trait ManagesDynamicConditions
                 // Handle both single key and array of keys
                 $rules = $this->restoreRulesFromFactoryKey($ruleFactoryKey, $conditionData);
 
+                $targetPayload = $this->resolveDynamicConditionTarget($conditionData);
+
                 $condition = new CartCondition(
                     name: $name,
                     type: $conditionData['type'] ?? 'unknown',
-                    target: $conditionData['target'] ?? 'subtotal',
+                    target: $targetPayload,
                     value: $conditionData['value'] ?? 0,
                     attributes: $conditionData['attributes'] ?? [],
                     order: $conditionData['order'] ?? 0,
@@ -375,7 +338,7 @@ trait ManagesDynamicConditions
     /**
      * Smart helper to create condition from array data with intelligent rule handling.
      *
-     * @param  array<string, mixed>  $data  Condition data
+     * @param  array<string, mixed>  $data  Condition data (requires `target_definition`)
      * @param  array<callable>|string|array<string>|Closure|null  $rules  Rules in any format
      * @param  string|array<string>|null  $ruleFactoryKey  Optional factory key(s)
      *
@@ -392,10 +355,20 @@ trait ManagesDynamicConditions
         // Smart rule evaluation (Filament-style)
         $evaluatedRules = $this->evaluateRules($rules, $ruleFactoryKey, $metadata);
 
+        if (! isset($data['target_definition']) && isset($data['target'])) {
+            $data['target_definition'] = ConditionTarget::from($data['target'])->toArray();
+        }
+
+        $target = $data['target_definition'] ?? null;
+
+        if ($target === null) {
+            throw new InvalidArgumentException('Condition target_definition is required.');
+        }
+
         return new CartCondition(
             name: $data['name'] ?? throw new InvalidArgumentException('Condition name is required'),
             type: $data['type'] ?? 'percentage',
-            target: $data['target'] ?? 'subtotal',
+            target: $target,
             value: $data['value'] ?? 0,
             attributes: $data['attributes'] ?? [],
             order: $data['order'] ?? 0,
@@ -554,7 +527,8 @@ trait ManagesDynamicConditions
 
         $existingMetadata[$condition->getName()] = [
             'type' => $condition->getType(),
-            'target' => $condition->getTarget(),
+            'target_scope' => $condition->getTargetDefinition()->scope->value,
+            'target_definition' => $condition->getTargetDefinition()->toArray(),
             'value' => $condition->getValue(),
             'attributes' => $condition->getAttributes(),
             'order' => $condition->getOrder(),
@@ -608,5 +582,78 @@ trait ManagesDynamicConditions
                 $metadata
             );
         }
+    }
+
+    /**
+     * Handle dynamic conditions targeting cart-level scopes.
+     */
+    private function evaluateCartScopedDynamicCondition(CartCondition $condition): void
+    {
+        try {
+            $shouldApply = $condition->shouldApply($this);
+        } catch (Throwable $exception) {
+            $this->handleDynamicConditionFailure('evaluate', $condition, $exception, [
+                'scope' => $condition->getTargetDefinition()->scope->value,
+            ]);
+
+            $this->removeCondition($condition->getName());
+
+            return;
+        }
+
+        if ($shouldApply) {
+            if (! $this->getConditions()->has($condition->getName())) {
+                $staticCondition = $condition->withoutRules();
+                $this->addCondition($staticCondition);
+            }
+
+            return;
+        }
+
+        $this->removeCondition($condition->getName());
+    }
+
+    /**
+     * Handle dynamic conditions targeting item-level scopes.
+     */
+    private function evaluateItemScopedDynamicCondition(CartCondition $condition): void
+    {
+        foreach ($this->getItems() as $item) {
+            try {
+                $shouldApply = $condition->shouldApply($this, $item);
+            } catch (Throwable $exception) {
+                $this->handleDynamicConditionFailure('evaluate', $condition, $exception, [
+                    'scope' => ConditionScope::ITEMS->value,
+                    'item_id' => $item->id,
+                ]);
+                $this->removeItemCondition($item->id, $condition->getName());
+
+                continue;
+            }
+
+            if ($shouldApply) {
+                if (! $item->conditions->has($condition->getName())) {
+                    $staticCondition = $condition->withoutRules();
+                    $this->addItemCondition($item->id, $staticCondition);
+                }
+
+                continue;
+            }
+
+            $this->removeItemCondition($item->id, $condition->getName());
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $conditionData
+     * @return ConditionTarget|string|array<string, mixed>
+     */
+    private function resolveDynamicConditionTarget(array $conditionData): ConditionTarget|string|array
+    {
+        if (isset($conditionData['target_definition']) && is_array($conditionData['target_definition'])) {
+            return ConditionTarget::from($conditionData['target_definition']);
+        }
+
+        throw new InvalidCartConditionException('Dynamic condition metadata missing target definition.');
     }
 }

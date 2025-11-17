@@ -18,6 +18,7 @@ A comprehensive Filament v5 plugin that provides a futuristic admin experience f
 - 📈 **Dashboard Widget** – Real-time statistics and metrics
 - ⚡ **Bulk Operations** – Activate, deactivate, expire multiple vouchers at once
 - 🔐 **Authorization** – Policy-based access control for granular permissions
+- 🎯 **Condition Targeting** – Configure scope/phase/application via preset or DSL for each voucher
 
 ---
 
@@ -180,17 +181,22 @@ The create form uses a multi-step wizard:
 - Type (fixed, percentage, free_shipping)
 - Value/amount
 
-**Step 2: Usage Limits**
+**Step 2: Condition Targeting**
+- Choose from presets (cart subtotal, grand total, shipments, payments, items) or author a custom DSL such as `cart@cart_subtotal/aggregate`
+- Preview the generated scope/phase/application metadata that will be stored alongside the voucher
+- Advanced users can drop directly into the DSL field; clearing it reverts to the default cart-subtotal targeting
+
+**Step 3: Usage Limits**
 - Total usage limit (optional)
 - Per-user usage limit (optional)
 - Minimum cart total requirement (optional)
 
-**Step 3: Dates & Ownership**
+**Step 4: Dates & Ownership**
 - Valid from date (optional)
 - Valid until date (optional)
 - Owner (multi-staff/store selector)
 
-**Step 4: Preview & Confirm**
+**Step 5: Preview & Confirm**
 - Review all details
 - See calculated discount preview
 - Confirm creation

@@ -330,7 +330,7 @@ use AIArmada\Cart\Conditions\CartCondition;
 $condition = CartCondition::fromArray([
     'name' => 'free-shipping',
     'type' => 'shipping',
-    'target' => 'total',
+    'target' => 'cart@grand_total/aggregate',
     'value' => '-1000', // Remove RM10.00 shipping fee
     'rules' => [
         'min_total' => '10000',  // Requires RM100+ total

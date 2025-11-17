@@ -105,7 +105,7 @@ describe('ItemConditionAdded Event', function (): void {
         $cart = app(CartManager::class)->getCurrentCart();
         $cart->add('item-1', 'Test Item', 100.00, 1);
 
-        $condition = new CartCondition('tax', 'percentage', 'subtotal', '5.0');
+        $condition = new CartCondition('tax', 'percentage', 'cart@cart_subtotal/aggregate', '5.0');
 
         $event = new ItemConditionAdded($condition, $cart, 'item-1');
 
@@ -119,7 +119,7 @@ describe('ItemConditionAdded Event', function (): void {
         $cart = app(CartManager::class)->getCurrentCart();
         $cart->add('item-1', 'Test Item', 100.00, 1);
 
-        $condition = new CartCondition('discount', 'percentage', 'subtotal', '-10.0');
+        $condition = new CartCondition('discount', 'percentage', 'cart@cart_subtotal/aggregate', '-10.0');
 
         $event = new ItemConditionAdded($condition, $cart, 'item-1');
         $array = $event->toArray();
@@ -139,7 +139,7 @@ describe('ItemConditionAdded Event', function (): void {
         $cart = app(CartManager::class)->getCurrentCart();
         $cart->add('item-1', 'Test Item', 100.00, 2); // subtotal 200
 
-        $condition = new CartCondition('discount', 'percentage', 'subtotal', '-10.0');
+        $condition = new CartCondition('discount', 'percentage', 'cart@cart_subtotal/aggregate', '-10.0');
 
         $event = new ItemConditionAdded($condition, $cart, 'item-1');
         $impact = $event->getConditionImpact();
@@ -153,7 +153,7 @@ describe('ItemConditionRemoved Event', function (): void {
         $cart = app(CartManager::class)->getCurrentCart();
         $cart->add('item-1', 'Test Item', 100.00, 1);
 
-        $condition = new CartCondition('tax', 'percentage', 'subtotal', '5.0');
+        $condition = new CartCondition('tax', 'percentage', 'cart@cart_subtotal/aggregate', '5.0');
 
         $event = new ItemConditionRemoved($condition, $cart, 'item-1', 'Tax exemption');
 
@@ -168,7 +168,7 @@ describe('ItemConditionRemoved Event', function (): void {
         $cart = app(CartManager::class)->getCurrentCart();
         $cart->add('item-1', 'Test Item', 100.00, 1);
 
-        $condition = new CartCondition('promo', 'fixed', 'subtotal', '-5.0');
+        $condition = new CartCondition('promo', 'fixed', 'cart@cart_subtotal/aggregate', '-5.0');
 
         $event = new ItemConditionRemoved($condition, $cart, 'item-1', 'Promo expired');
         $array = $event->toArray();
@@ -185,7 +185,7 @@ describe('ItemConditionRemoved Event', function (): void {
         $cart = app(CartManager::class)->getCurrentCart();
         $cart->add('item-1', 'Test Item', 50.00, 1);
 
-        $condition = new CartCondition('discount', 'percentage', 'subtotal', '-10.0');
+        $condition = new CartCondition('discount', 'percentage', 'cart@cart_subtotal/aggregate', '-10.0');
 
         $event = new ItemConditionRemoved($condition, $cart, 'item-1');
 

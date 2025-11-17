@@ -73,14 +73,13 @@ describe('CacheStorage', function (): void {
         expect($this->storage->has('cart-2', 'default'))->toBeFalse();
     });
 
-    it('returns empty array for getInstances due to cache limitation', function (): void {
-        // CacheStorage can't list keys, so it always returns empty array
+    it('returns stored instances for identifier', function (): void {
         $this->storage->putItems('cart-123', 'default', ['item' => []]);
         $this->storage->putItems('cart-123', 'wishlist', ['item' => []]);
 
         $instances = $this->storage->getInstances('cart-123');
 
-        expect($instances)->toBe([]);
+        expect($instances)->toMatchArray(['default', 'wishlist']);
     });
 
     it('returns empty array for non-existent identifier instances', function (): void {
@@ -89,17 +88,15 @@ describe('CacheStorage', function (): void {
         expect($instances)->toBe([]);
     });
 
-    it('forgetIdentifier does nothing due to cache limitation', function (): void {
-        // CacheStorage can't efficiently remove all instances for an identifier
+    it('forgetIdentifier clears all instances for identifier', function (): void {
         $this->storage->putItems('cart-123', 'default', ['item' => []]);
         $this->storage->putItems('cart-123', 'wishlist', ['item' => []]);
         $this->storage->putItems('cart-456', 'default', ['item' => []]);
 
         $this->storage->forgetIdentifier('cart-123');
 
-        // Due to limitation, data remains
-        expect($this->storage->has('cart-123', 'default'))->toBeTrue();
-        expect($this->storage->has('cart-123', 'wishlist'))->toBeTrue();
+        expect($this->storage->has('cart-123', 'default'))->toBeFalse();
+        expect($this->storage->has('cart-123', 'wishlist'))->toBeFalse();
         expect($this->storage->has('cart-456', 'default'))->toBeTrue();
     });
 
@@ -108,6 +105,29 @@ describe('CacheStorage', function (): void {
         $value = $this->storage->getMetadata('cart-123', 'default', 'notes');
 
         expect($value)->toBe('Customer notes here');
+    });
+
+    it('tracks versions, identifiers, and timestamps', function (): void {
+        $this->storage->putItems('cart-123', 'default', ['item' => []]);
+
+        $version = $this->storage->getVersion('cart-123', 'default');
+        $id = $this->storage->getId('cart-123', 'default');
+        $createdAt = $this->storage->getCreatedAt('cart-123', 'default');
+        $updatedAt = $this->storage->getUpdatedAt('cart-123', 'default');
+
+        expect($version)->toBeInt()->toBeGreaterThan(0);
+        expect($id)->toBeString()->not->toBeEmpty();
+        expect($createdAt)->toBeString();
+        expect($updatedAt)->toBeString();
+
+        $this->storage->putConditions('cart-123', 'default', ['tax' => ['value' => '10%']]);
+
+        $newVersion = $this->storage->getVersion('cart-123', 'default');
+        $newUpdatedAt = $this->storage->getUpdatedAt('cart-123', 'default');
+
+        expect($newVersion)->toBeGreaterThan($version);
+        expect($this->storage->getCreatedAt('cart-123', 'default'))->toBe($createdAt);
+        expect(strtotime($newUpdatedAt))->toBeGreaterThanOrEqual(strtotime($updatedAt));
     });
 
     it('returns null for non-existent metadata', function (): void {

@@ -78,7 +78,7 @@ final class CartConditionRemoved
                 'name' => $this->condition->getName(),
                 'type' => $this->condition->getType(),
                 'value' => $this->condition->getValue(),
-                'target' => $this->condition->getTarget(),
+                'target_definition' => $this->condition->getTargetDefinition()->toArray(),
             ],
             'cart' => [
                 'instance' => $this->cart->instance(),

@@ -743,21 +743,21 @@ describe('CartCollection Condition Filtering', function (): void {
         $discountCondition1 = new AIArmada\Cart\Conditions\CartCondition(
             name: 'discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-10%'
         );
 
         $taxCondition = new AIArmada\Cart\Conditions\CartCondition(
             name: 'tax',
             type: 'tax',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '+5%'
         );
 
         $discountCondition2 = new AIArmada\Cart\Conditions\CartCondition(
             name: 'discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-5%'
         );
 
@@ -792,21 +792,21 @@ describe('CartCollection Condition Filtering', function (): void {
         $holidaySale = new AIArmada\Cart\Conditions\CartCondition(
             name: 'holiday-sale',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-20%'
         );
 
         $vat = new AIArmada\Cart\Conditions\CartCondition(
             name: 'vat',
             type: 'tax',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '+15%'
         );
 
         $memberDiscount = new AIArmada\Cart\Conditions\CartCondition(
             name: 'member-discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-10%'
         );
 
@@ -831,21 +831,21 @@ describe('CartCollection Condition Filtering', function (): void {
         $subtotalDiscount = new AIArmada\Cart\Conditions\CartCondition(
             name: 'subtotal-discount',
             type: 'discount',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '-10%'
         );
 
         $itemDiscount = new AIArmada\Cart\Conditions\CartCondition(
             name: 'item-discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-5%'
         );
 
         $subtotalTax = new AIArmada\Cart\Conditions\CartCondition(
             name: 'subtotal-tax',
             type: 'tax',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '+8%'
         );
 
@@ -858,8 +858,8 @@ describe('CartCollection Condition Filtering', function (): void {
         $collection->addItem($item2);
         $collection->addItem($item3);
 
-        $subtotalTargets = $collection->filterByConditionTarget('subtotal');
-        $itemTargets = $collection->filterByConditionTarget('item');
+        $subtotalTargets = $collection->filterByConditionTarget('cart@cart_subtotal/aggregate');
+        $itemTargets = $collection->filterByConditionTarget('items@item_discount/per-item');
 
         expect($subtotalTargets->count())->toBe(2);
         expect($itemTargets->count())->toBe(1);
@@ -870,21 +870,21 @@ describe('CartCollection Condition Filtering', function (): void {
         $discount1 = new AIArmada\Cart\Conditions\CartCondition(
             name: 'discount-1',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-10%'
         );
 
         $discount2 = new AIArmada\Cart\Conditions\CartCondition(
             name: 'discount-2',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-5%'
         );
 
         $discount3 = new AIArmada\Cart\Conditions\CartCondition(
             name: 'discount-3',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-10%'
         );
 
@@ -909,14 +909,14 @@ describe('CartCollection Condition Filtering', function (): void {
         $fixedDiscount = new AIArmada\Cart\Conditions\CartCondition(
             name: 'fixed-discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: -5.00
         );
 
         $fixedTax = new AIArmada\Cart\Conditions\CartCondition(
             name: 'fixed-tax',
             type: 'tax',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: 3.50
         );
 
@@ -940,7 +940,7 @@ describe('CartCollection Condition Filtering', function (): void {
         $discount = new AIArmada\Cart\Conditions\CartCondition(
             name: 'discount',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-10%'
         );
 
@@ -969,14 +969,14 @@ describe('CartCollection Condition Filtering', function (): void {
         $discount1 = new AIArmada\Cart\Conditions\CartCondition(
             name: 'discount-1',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-10%'
         );
 
         $discount2 = new AIArmada\Cart\Conditions\CartCondition(
             name: 'discount-2',
             type: 'discount',
-            target: 'item',
+            target: 'items@item_discount/per-item',
             value: '-20%'
         );
 

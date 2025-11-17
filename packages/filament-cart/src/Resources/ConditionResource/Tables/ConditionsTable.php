@@ -158,9 +158,9 @@ final class ConditionsTable
 
                 SelectFilter::make('target')
                     ->options([
-                        'subtotal' => 'Cart Subtotal',
-                        'total' => 'Cart Total',
-                        'item' => 'Individual Items',
+                        'cart@cart_subtotal/aggregate' => 'Cart Subtotal',
+                        'cart@grand_total/aggregate' => 'Cart Total',
+                        'items@item_discount/per-item' => 'Individual Items',
                     ]),
 
                 SelectFilter::make('is_active')

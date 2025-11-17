@@ -79,7 +79,7 @@ final class Voucher extends BaseVoucher
                 $enumType = $type instanceof VoucherType ? $type : VoucherType::tryFrom((string) $type);
 
                 if ($enumType === VoucherType::Percentage) {
-                    // Value is stored as basis points (e.g., 1050 = 10.50%)
+                    // Value is stored in basis points (e.g., 1000 = 10.00%, 1259 = 12.59%)
                     $percentage = $value / 100;
 
                     return mb_rtrim(mb_rtrim(number_format($percentage, 2), '0'), '.').' %';

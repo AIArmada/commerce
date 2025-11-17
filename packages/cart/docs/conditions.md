@@ -17,7 +17,7 @@ Conditions modify prices at three levels in a predictable order:
 Each condition has:
 - **Name** – Unique identifier
 - **Type** – Category (discount, tax, fee, shipping)
-- **Target** – Where it applies (item, subtotal, total)
+- **Target definition** – Structured `ConditionTarget` describing scope, phase, and application
 - **Value** – How much to adjust (%, fixed amount, multiplier)
 - **Order** – Execution priority (lower = earlier)
 - **Rules** – Conditions for application (optional)
@@ -26,11 +26,12 @@ Each condition has:
 
 ```php
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\TargetPresets;
 
 $condition = new CartCondition(
     name: 'summer-sale',
     type: 'discount',
-    target: 'subtotal',
+    target: TargetPresets::cartSubtotal(),
     value: '-20%',
     attributes: ['campaign' => 'Summer 2024', 'code' => 'SUM20'],
     order: 100,
@@ -54,10 +55,50 @@ Cart::addCondition($condition);
 - Common types: `'discount'`, `'tax'`, `'fee'`, `'shipping'`
 - Not enforced—use any string that fits your domain
 
-**target** (string, required)
-- `'item'` – Applies to individual line items
-- `'subtotal'` – Applies after summing items, before total-level
-- `'total'` – Applies last (typically for taxes)
+**target/target_definition** (ConditionTarget|string|array, required)
+- Pass a `ConditionTarget` instance (recommended), an associative array, or a target DSL string (`scope[:filters]@phase/application`).
+- Targets carry **scope**, **phase**, **application**, and optional **selector/grouping** data.
+- When providing an array payload (e.g. via API/factory) use the `target_definition` key to stay consistent with storage.
+- Example builder usage:
+
+```php
+use AIArmada\Cart\Conditions\Target;
+use AIArmada\Cart\Conditions\Enums\ConditionPhase;
+
+$target = Target::items()
+    ->phase(ConditionPhase::ITEM_DISCOUNT)
+    ->whereAttribute('category', 'electronics')
+    ->applyPerItem()
+    ->build();
+
+$condition = new CartCondition(
+    name: 'electronics-weekend',
+    type: 'discount',
+    target: $target,
+    value: '-15%',
+);
+```
+
+- DSL alternative: `items:attributes.category=electronics@item_discount/per-item`
+- Helper presets are available for common combinations (see **Target Presets** below).
+
+### Target Presets
+
+`AIArmada\Cart\Conditions\TargetPresets` ships with ready-to-use targets that
+cover the most common scenarios:
+
+- `TargetPresets::cartSubtotal()` – cart scope, subtotal phase, aggregate application
+- `TargetPresets::cartGrandTotal()` – cart scope, grand total phase
+- `TargetPresets::cartShipping()` / `::cartTaxable()` / `::cartTax()`
+- `TargetPresets::itemsPerItem()` – item scope, per-item application
+- `TargetPresets::shipmentsPerGroup()` – shipment scope grouped per shipment
+- `TargetPresets::paymentsPerPayment()` and `::fulfillmentsPerGroup()`
+
+Call `->toArray()` when building payloads for persistence or APIs, or pass the
+object instance directly to `CartCondition`.
+
+> Unless stated otherwise, the snippets below assume
+> `use AIArmada\Cart\Conditions\TargetPresets;` is present.
 
 **value** (string, required)
 - Percentage: `'-20%'`, `'+8%'`
@@ -95,6 +136,20 @@ Cart::addDiscount('welcome-10', '-10.00');
 
 // With attributes
 Cart::addDiscount('promo-code', '20%', ['code' => 'SAVE20']);
+
+// Targeted discount using the ConditionTarget builder
+use AIArmada\Cart\Conditions\Enums\ConditionPhase;
+use AIArmada\Cart\Conditions\Target;
+
+Cart::addDiscount(
+    'electronics-weekend',
+    '-15%',
+    Target::items()
+        ->phase(ConditionPhase::ITEM_DISCOUNT)
+        ->whereAttribute('category', 'electronics')
+        ->applyPerItem()
+        ->build()
+);
 ```
 
 ### Taxes
@@ -121,15 +176,34 @@ Cart::addFee('convenience', '+3%');
 
 ```php
 // Flat rate shipping
-Cart::addShipping('standard', '10.00', 'standard', [
-    'eta' => '3-5 business days',
-]);
+Cart::addShipping(
+    'standard',
+    '10.00',
+    target: TargetPresets::cartShipping(),
+    method: 'standard',
+    attributes: ['eta' => '3-5 business days']
+);
 
 // Express shipping
-Cart::addShipping('express', '25.00', 'express', [
-    'eta' => '1-2 business days',
-    'carrier' => 'FedEx',
-]);
+Cart::addShipping(
+    'express',
+    '25.00',
+    target: TargetPresets::cartShipping(),
+    method: 'express',
+    attributes: [
+        'eta' => '1-2 business days',
+        'carrier' => 'FedEx',
+    ]
+);
+
+// Using a builder to target the shipping phase explicitly
+Cart::addShipping(
+    'international',
+    '+35.00',
+    TargetPresets::cartShipping(),
+    method: 'intl',
+    attributes: ['carrier' => 'DHL']
+);
 
 // Get active shipping
 $shipping = Cart::getShipping();
@@ -140,6 +214,27 @@ if ($shipping) {
 
 // Remove shipping
 Cart::removeShipping();
+
+// Provide shipment data so pipeline can calculate charges per shipment
+Cart::resolveShipmentsUsing(fn () => [
+    ['id' => 'domestic', 'base_amount' => 10.00],
+    ['id' => 'express', 'base_amount' => 5.00],
+]);
+// Each shipping condition targeting Phase::SHIPPING is evaluated per shipment
+
+// Payment-specific adjustments (e.g., BNPL surcharge)
+Cart::resolvePaymentsUsing(fn () => [
+    ['id' => 'card', 'base_amount' => 100.00],
+    ['id' => 'bnpl', 'base_amount' => 50.00],
+]);
+Cart::addFee(
+    'bnpl-surcharge',
+    '+2%',
+    Target::cart()
+        ->phase(ConditionPhase::PAYMENT)
+        ->apply(ConditionApplication::PER_PAYMENT)
+        ->build()
+);
 ```
 
 ## 🎨 Value Formats
@@ -151,7 +246,7 @@ Cart::removeShipping();
 Cart::addCondition(new CartCondition(
     'sale',
     'discount',
-    'subtotal',
+    TargetPresets::cartSubtotal(),
     '-15%'  // 15% off
 ));
 
@@ -159,7 +254,7 @@ Cart::addCondition(new CartCondition(
 Cart::addCondition(new CartCondition(
     'tax',
     'tax',
-    'total',
+    TargetPresets::cartGrandTotal(),
     '+8%'  // 8% tax
 ));
 ```
@@ -176,7 +271,7 @@ Cart::addCondition(new CartCondition(
 Cart::addCondition(new CartCondition(
     'coupon',
     'discount',
-    'subtotal',
+    TargetPresets::cartSubtotal(),
     '-10.00'  // $10 off
 ));
 
@@ -184,7 +279,7 @@ Cart::addCondition(new CartCondition(
 Cart::addCondition(new CartCondition(
     'handling',
     'fee',
-    'total',
+    TargetPresets::cartGrandTotal(),
     '+5.00'  // $5 fee
 ));
 ```
@@ -196,7 +291,7 @@ Cart::addCondition(new CartCondition(
 Cart::addCondition(new CartCondition(
     'bulk',
     'discount',
-    'subtotal',
+    TargetPresets::cartSubtotal(),
     '*0.9'  // Multiply by 0.9 (10% off)
 ));
 
@@ -204,7 +299,7 @@ Cart::addCondition(new CartCondition(
 Cart::addCondition(new CartCondition(
     'half-off',
     'discount',
-    'item',
+    TargetPresets::itemsPerItem(),
     '/2'  // Divide by 2
 ));
 ```
@@ -220,7 +315,7 @@ use AIArmada\Cart\Conditions\CartCondition;
 $bulkDiscount = new CartCondition(
     name: 'bulk-discount',
     type: 'discount',
-    target: 'item',
+    target: TargetPresets::itemsPerItem(),
     value: '-10%',
 );
 
@@ -242,7 +337,7 @@ Cart::add('widget-a', 'Widget A', 100.00, 1);
 Cart::add('widget-b', 'Widget B', 100.00, 1);
 
 // Apply discount only to widget-a
-$discount = new CartCondition('item-sale', 'discount', 'item', '-20%');
+$discount = new CartCondition('item-sale', 'discount', TargetPresets::itemsPerItem(), '-20%');
 Cart::addItemCondition('widget-a', $discount);
 
 // Check totals
@@ -279,7 +374,7 @@ $taxes = $item->getConditions()->byType('tax');
 
 ```php
 // Add single condition
-$condition = new CartCondition('loyalty', 'discount', 'subtotal', '-15%');
+$condition = new CartCondition('loyalty', 'discount', TargetPresets::cartSubtotal(), '-15%');
 Cart::addCondition($condition);
 
 // Add multiple conditions
@@ -316,8 +411,8 @@ $taxes = $conditions->taxes();
 $shipping = $conditions->byType('shipping');
 
 // Filter by target
-$subtotalConditions = $conditions->byTarget('subtotal');
-$totalConditions = $conditions->byTarget('total');
+$subtotalConditions = $conditions->byTarget(TargetPresets::cartSubtotal());
+$totalConditions = $conditions->byTarget(TargetPresets::cartGrandTotal());
 
 // Check existence
 if ($conditions->has('promo-code')) {
@@ -335,7 +430,7 @@ Dynamic conditions apply only when their rules evaluate to `true`.
 $tieredDiscount = new CartCondition(
     name: 'spend-200-save-20',
     type: 'discount',
-    target: 'subtotal',
+    target: TargetPresets::cartSubtotal(),
     value: '-20.00',
     attributes: ['threshold' => 200.00],
     rules: [
@@ -363,7 +458,7 @@ All rules must return `true`:
 $vipDiscount = new CartCondition(
     name: 'vip-exclusive',
     type: 'discount',
-    target: 'subtotal',
+    target: TargetPresets::cartSubtotal(),
     value: '-25%',
     rules: [
         fn($cart) => auth()->check(),
@@ -381,7 +476,7 @@ Cart::getCurrentCart()->registerDynamicCondition($vipDiscount);
 $bulkRule = new CartCondition(
     name: 'buy-5-get-10-off',
     type: 'discount',
-    target: 'item',
+    target: TargetPresets::itemsPerItem(),
     value: '-10%',
     rules: [
         fn($cart, $item) => $item->quantity >= 5,
@@ -456,17 +551,35 @@ Cart::add('item-1', 'Laptop', 1000.00, 2);  // $2000
 Cart::add('item-2', 'Mouse', 50.00, 1);     // $50
 
 // Item discount on laptop
-$itemDiscount = new CartCondition('bulk', 'discount', 'item', '-10%', order: 10);
+$itemDiscount = new CartCondition('bulk', 'discount', TargetPresets::itemsPerItem(), '-10%', order: 10);
 Cart::addItemCondition('item-1', $itemDiscount);
 
-// Cart-wide discount
-Cart::addDiscount('promo', '5%', order: 100);
+// Cart-wide discount (explicit order)
+Cart::addCondition(new CartCondition(
+    name: 'promo',
+    type: 'discount',
+    target: TargetPresets::cartSubtotal(),
+    value: '-5%',
+    order: 100
+));
 
 // Shipping
-Cart::addShipping('standard', '15.00', 'standard', order: 200);
+Cart::addCondition(new CartCondition(
+    name: 'shipping-standard',
+    type: 'shipping',
+    target: TargetPresets::cartShipping(),
+    value: '+15.00',
+    order: 200
+));
 
 // Tax
-Cart::addTax('vat', '8%', order: 300);
+Cart::addCondition(new CartCondition(
+    name: 'vat',
+    type: 'tax',
+    target: TargetPresets::cartGrandTotal(),
+    value: '8%',
+    order: 300
+));
 
 // Calculate
 /*
@@ -538,14 +651,14 @@ $details = Cart::getConditions()->toDetailedArray($baseValue);
 ```php
 // 10% off orders $100+
 $tier1 = new CartCondition(
-    'tier-1', 'discount', 'subtotal', '-10%',
+    'tier-1', 'discount', TargetPresets::cartSubtotal(), '-10%',
     rules: [fn($c) => $c->getRawSubtotalWithoutConditions() >= 100.00],
     order: 100
 );
 
 // 20% off orders $200+
 $tier2 = new CartCondition(
-    'tier-2', 'discount', 'subtotal', '-20%',
+    'tier-2', 'discount', TargetPresets::cartSubtotal(), '-20%',
     rules: [fn($c) => $c->getRawSubtotalWithoutConditions() >= 200.00],
     order: 90  // Lower order = higher priority
 );
@@ -563,7 +676,7 @@ Cart::getCurrentCart()->registerDynamicCondition($tier2);
 $bogo = new CartCondition(
     'buy-2-get-1',
     'discount',
-    'item',
+    TargetPresets::itemsPerItem(),
     '-33.33%',
     rules: [
         fn($cart, $item) => $item->quantity >= 3,
@@ -579,7 +692,7 @@ Cart::addItemCondition('widget-001', $bogo);
 $memberDiscount = new CartCondition(
     'member-pricing',
     'discount',
-    'subtotal',
+    TargetPresets::cartSubtotal(),
     '-20%',
     rules: [
         fn($cart) => auth()->check(),
@@ -597,7 +710,7 @@ Cart::getCurrentCart()->registerDynamicCondition($memberDiscount);
 $shipping = new CartCondition(
     'shipping',
     'shipping',
-    'subtotal',
+    TargetPresets::cartShipping(),
     '+10.00',
     rules: [
         fn($cart) => $cart->getRawSubtotalWithoutConditions() < 50.00,
@@ -643,7 +756,7 @@ class VipDiscount extends CartCondition
         parent::__construct(
             name: 'vip-discount',
             type: 'discount',
-            target: 'subtotal',
+            target: TargetPresets::cartSubtotal(),
             value: "-{$percentage}%",
             attributes: ['tier' => 'vip'],
             rules: [
@@ -666,7 +779,7 @@ try {
     $condition = new CartCondition(
         'invalid',
         'discount',
-        'subtotal',
+        TargetPresets::cartSubtotal(),
         'not-a-number'  // Invalid value
     );
 } catch (InvalidCartConditionException $e) {
@@ -678,7 +791,7 @@ try {
 
 ```php
 // Apply condition for checkout preview
-$previewDiscount = new CartCondition('preview', 'discount', 'subtotal', '-10%');
+$previewDiscount = new CartCondition('preview', 'discount', TargetPresets::cartSubtotal(), '-10%');
 Cart::addCondition($previewDiscount);
 
 $previewTotal = Cart::total()->format();

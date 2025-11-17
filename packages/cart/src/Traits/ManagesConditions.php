@@ -6,6 +6,9 @@ namespace AIArmada\Cart\Traits;
 
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\ConditionTarget;
+use AIArmada\Cart\Conditions\Enums\ConditionPhase;
+use AIArmada\Cart\Conditions\Target;
 use AIArmada\Cart\Contracts\CartConditionConvertible;
 use AIArmada\Cart\Events\CartConditionAdded;
 use AIArmada\Cart\Events\CartConditionRemoved;
@@ -222,13 +225,21 @@ trait ManagesConditions
     /**
      * Add a simple discount condition (shopping-cart style)
      */
-    public function addDiscount(string $name, string $value, string $target = 'subtotal'): static
+    /**
+     * @param  ConditionTarget|string|array<string, mixed>|null  $target
+     */
+    public function addDiscount(string $name, string $value, ConditionTarget|string|array|null $target = null): static
     {
         // Ensure discount values are negative
         if (! str_starts_with($value, '-')) {
             $value = '-'.$value;
         }
-        $condition = new CartCondition($name, 'discount', $target, $value);
+        $condition = new CartCondition(
+            name: $name,
+            type: 'discount',
+            target: $this->normalizeConditionTarget($target, Target::cart()->build()),
+            value: $value
+        );
         $this->addCondition($condition);
 
         return $this;
@@ -238,9 +249,20 @@ trait ManagesConditions
      * Add a simple fee condition (shopping-cart style)
      * Fees are applied to the total (after discounts and taxes)
      */
-    public function addFee(string $name, string $value, string $target = 'total'): static
+    /**
+     * @param  ConditionTarget|string|array<string, mixed>|null  $target
+     */
+    public function addFee(string $name, string $value, ConditionTarget|string|array|null $target = null): static
     {
-        $condition = new CartCondition($name, 'fee', $target, $value);
+        $condition = new CartCondition(
+            name: $name,
+            type: 'fee',
+            target: $this->normalizeConditionTarget(
+                $target,
+                Target::cart()->phase(ConditionPhase::GRAND_TOTAL)->applyAggregate()->build()
+            ),
+            value: $value
+        );
         $this->addCondition($condition);
 
         return $this;
@@ -249,9 +271,17 @@ trait ManagesConditions
     /**
      * Add a simple tax condition (shopping-cart style)
      */
-    public function addTax(string $name, string $value, string $target = 'subtotal'): static
+    /**
+     * @param  ConditionTarget|string|array<string, mixed>|null  $target
+     */
+    public function addTax(string $name, string $value, ConditionTarget|string|array|null $target = null): static
     {
-        $condition = new CartCondition($name, 'tax', $target, $value);
+        $condition = new CartCondition(
+            name: $name,
+            type: 'tax',
+            target: $this->normalizeConditionTarget($target, Target::cart()->build()),
+            value: $value
+        );
         $this->addCondition($condition);
 
         return $this;
@@ -263,11 +293,17 @@ trait ManagesConditions
      *
      * @param  string  $name  The name of the shipping condition
      * @param  string|float  $value  The value of the shipping fee (e.g. '15.00', '+15', etc.)
+     * @param  ConditionTarget|string|array<string, mixed>|null  $target  Optional target definition or DSL string
      * @param  string  $method  The shipping method identifier (e.g. 'standard', 'express')
      * @param  array<string, mixed>  $attributes  Additional attributes to store with the condition
      */
-    public function addShipping(string $name, string|float $value, string $method = 'standard', array $attributes = []): static
-    {
+    public function addShipping(
+        string $name,
+        string|float $value,
+        ConditionTarget|string|array|null $target = null,
+        string $method = 'standard',
+        array $attributes = []
+    ): static {
         // Ensure value is prefixed with + if it's a string and doesn't start with an operator
         if (is_string($value) && ! preg_match('/^[+\-*\/%]/', $value)) {
             $value = '+'.$value;
@@ -286,7 +322,10 @@ trait ManagesConditions
         $condition = new CartCondition(
             name: $name,
             type: 'shipping',
-            target: 'total',
+            target: $this->normalizeConditionTarget(
+                $target,
+                Target::cart()->phase(ConditionPhase::SHIPPING)->applyAggregate()->build()
+            ),
             value: $value,
             attributes: $shippingAttributes
         );
@@ -370,6 +409,17 @@ trait ManagesConditions
     }
 
     /**
+     * @param  ConditionTarget|string|array<string, mixed>|null  $target
+     * @param  ConditionTarget|string|array<string, mixed>  $fallback
+     */
+    private function normalizeConditionTarget(
+        ConditionTarget|string|array|null $target,
+        ConditionTarget|string|array $fallback
+    ): ConditionTarget {
+        return ConditionTarget::from($target ?? $fallback);
+    }
+
+    /**
      * Add a cart condition
      */
     private function addCartCondition(CartCondition $condition): void
@@ -416,7 +466,7 @@ trait ManagesConditions
         if ($condition instanceof CartConditionConvertible) {
             $resolved = $condition->toCartCondition();
         } elseif (is_array($condition) && ! array_is_list($condition)) {
-            $resolved = CartCondition::fromArray($condition);
+            $resolved = CartCondition::fromArray($this->normalizeConditionData($condition));
         } else {
             $resolved = $this->getConditionResolver()->resolve($condition);
         }
@@ -428,5 +478,23 @@ trait ManagesConditions
         }
 
         return $resolved;
+    }
+
+    /**
+     * Normalize user-supplied condition arrays to include structured targets.
+     *
+     * @param  array<string, mixed>  $data
+     */
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function normalizeConditionData(array $data): array
+    {
+        if (! isset($data['target_definition']) && isset($data['target'])) {
+            $data['target_definition'] = ConditionTarget::from($data['target'])->toArray();
+        }
+
+        return $data;
     }
 }

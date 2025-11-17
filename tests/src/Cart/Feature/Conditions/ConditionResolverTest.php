@@ -32,7 +32,7 @@ it('accepts conditions implementing CartConditionConvertible', function (): void
             return new CartCondition(
                 name: 'convertible_discount',
                 type: 'discount',
-                target: 'subtotal',
+                target: 'cart@cart_subtotal/aggregate',
                 value: '-10'
             );
         }
@@ -52,7 +52,7 @@ it('resolves conditions using registered resolver callbacks', function (): void 
         return new CartCondition(
             name: 'resolved_discount',
             type: 'discount',
-            target: 'subtotal',
+            target: 'cart@cart_subtotal/aggregate',
             value: '-5'
         );
     });

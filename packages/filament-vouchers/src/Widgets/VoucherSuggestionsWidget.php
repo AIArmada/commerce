@@ -182,7 +182,7 @@ final class VoucherSuggestionsWidget extends Widget
     protected function calculatePotentialSavings(Voucher $voucher, int $cartTotal): int
     {
         $savings = match ($voucher->type) {
-            VoucherType::Percentage => (int) round(($cartTotal * $voucher->value) / 10000), // value is in basis points
+            VoucherType::Percentage => (int) round(($cartTotal * $voucher->value) / 10000), // value is in basis points (1000 = 10%)
             VoucherType::Fixed => $voucher->value, // value is in cents
             VoucherType::FreeShipping => 0, // Can't calculate shipping savings
         };

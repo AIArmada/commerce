@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\ConditionTarget;
 
 it('can add conditions to collection', function (): void {
     $collection = new CartConditionCollection;
@@ -11,7 +12,7 @@ it('can add conditions to collection', function (): void {
     $condition = new CartCondition(
         name: 'Test Condition',
         type: 'discount',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-10%'
     );
 
@@ -25,9 +26,9 @@ it('can add conditions to collection', function (): void {
 it('can filter conditions by type', function (): void {
     $collection = new CartConditionCollection;
 
-    $discount = new CartCondition('Discount', 'discount', 'subtotal', '-10%');
-    $tax = new CartCondition('Tax', 'tax', 'subtotal', '8%');
-    $shipping = new CartCondition('Shipping', 'shipping', 'subtotal', '+15');
+    $discount = new CartCondition('Discount', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
+    $tax = new CartCondition('Tax', 'tax', 'cart@cart_subtotal/aggregate', '8%');
+    $shipping = new CartCondition('Shipping', 'shipping', 'cart@cart_subtotal/aggregate', '+15');
 
     $collection->addCondition($discount);
     $collection->addCondition($tax);
@@ -41,13 +42,13 @@ it('can filter conditions by type', function (): void {
 it('can filter conditions by target', function (): void {
     $collection = new CartConditionCollection;
 
-    $subtotalCondition = new CartCondition('Subtotal Tax', 'tax', 'subtotal', '8%');
-    $totalCondition = new CartCondition('Total Fee', 'fee', 'total', '+5');
+    $subtotalCondition = new CartCondition('Subtotal Tax', 'tax', 'cart@cart_subtotal/aggregate', '8%');
+    $totalCondition = new CartCondition('Total Fee', 'fee', 'cart@grand_total/aggregate', '+5');
 
     $collection->addCondition($subtotalCondition);
     $collection->addCondition($totalCondition);
 
-    $subtotalConditions = $collection->byTarget('subtotal');
+    $subtotalConditions = $collection->byTarget('cart@cart_subtotal/aggregate');
     expect($subtotalConditions->count())->toBe(1);
     expect($subtotalConditions->first())->toBe($subtotalCondition);
 });
@@ -55,8 +56,8 @@ it('can filter conditions by target', function (): void {
 it('can get only discount conditions', function (): void {
     $collection = new CartConditionCollection;
 
-    $discount = new CartCondition('Discount', 'discount', 'subtotal', '-10%');
-    $charge = new CartCondition('Charge', 'fee', 'subtotal', '+5');
+    $discount = new CartCondition('Discount', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
+    $charge = new CartCondition('Charge', 'fee', 'cart@cart_subtotal/aggregate', '+5');
 
     $collection->addCondition($discount);
     $collection->addCondition($charge);
@@ -69,8 +70,8 @@ it('can get only discount conditions', function (): void {
 it('can get only charge conditions', function (): void {
     $collection = new CartConditionCollection;
 
-    $discount = new CartCondition('Discount', 'discount', 'subtotal', '-10%');
-    $charge = new CartCondition('Charge', 'fee', 'subtotal', '+5');
+    $discount = new CartCondition('Discount', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
+    $charge = new CartCondition('Charge', 'fee', 'cart@cart_subtotal/aggregate', '+5');
 
     $collection->addCondition($discount);
     $collection->addCondition($charge);
@@ -84,8 +85,8 @@ it('can apply all conditions to a value', function (): void {
     $collection = new CartConditionCollection;
 
     // Create conditions with specific order
-    $discount = new CartCondition('Discount', 'discount', 'subtotal', '-10%', [], 1);
-    $tax = new CartCondition('Tax', 'tax', 'subtotal', '8%', [], 2);
+    $discount = new CartCondition('Discount', 'discount', 'cart@cart_subtotal/aggregate', '-10%', [], 1);
+    $tax = new CartCondition('Tax', 'tax', 'cart@cart_subtotal/aggregate', '8%', [], 2);
 
     $collection->addCondition($discount);
     $collection->addCondition($tax);
@@ -102,13 +103,17 @@ it('can create collection from array', function (): void {
         [
             'name' => 'Discount',
             'type' => 'discount',
-            'target' => 'subtotal',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+            'target_definition' => ConditionTarget::from('cart@cart_subtotal/aggregate')->toArray(),
             'value' => '-10%',
         ],
         [
             'name' => 'Tax',
             'type' => 'tax',
-            'target' => 'subtotal',
+            'target' => 'cart@cart_subtotal/aggregate',
+            'target_definition' => conditionTargetDefinition('cart@cart_subtotal/aggregate'),
+            'target_definition' => ConditionTarget::from('cart@cart_subtotal/aggregate')->toArray(),
             'value' => '8%',
         ],
     ];
@@ -123,8 +128,8 @@ it('can create collection from array', function (): void {
 it('can get collection summary', function (): void {
     $collection = new CartConditionCollection;
 
-    $discount = new CartCondition('Discount', 'discount', 'subtotal', '-10%');
-    $tax = new CartCondition('Tax', 'tax', 'subtotal', '8%');
+    $discount = new CartCondition('Discount', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
+    $tax = new CartCondition('Tax', 'tax', 'cart@cart_subtotal/aggregate', '8%');
 
     $collection->addCondition($discount);
     $collection->addCondition($tax);
@@ -145,9 +150,9 @@ it('can get collection summary', function (): void {
 it('can group conditions by type', function (): void {
     $collection = new CartConditionCollection;
 
-    $discount1 = new CartCondition('Discount 1', 'discount', 'subtotal', '-10%');
-    $discount2 = new CartCondition('Discount 2', 'discount', 'subtotal', '-5%');
-    $tax = new CartCondition('Tax', 'tax', 'subtotal', '8%');
+    $discount1 = new CartCondition('Discount 1', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
+    $discount2 = new CartCondition('Discount 2', 'discount', 'cart@cart_subtotal/aggregate', '-5%');
+    $tax = new CartCondition('Tax', 'tax', 'cart@cart_subtotal/aggregate', '8%');
 
     $collection->addCondition($discount1);
     $collection->addCondition($discount2);
@@ -164,7 +169,7 @@ it('can group conditions by type', function (): void {
 it('can remove conditions', function (): void {
     $collection = new CartConditionCollection;
 
-    $condition = new CartCondition('Test', 'discount', 'subtotal', '-10%');
+    $condition = new CartCondition('Test', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
     $collection->addCondition($condition);
 
     expect($collection->hasCondition('Test'))->toBeTrue();
@@ -177,9 +182,9 @@ it('can remove conditions', function (): void {
 it('can filter conditions by value', function (): void {
     $collection = new CartConditionCollection;
 
-    $discount1 = new CartCondition('Discount 1', 'discount', 'subtotal', '-10%');
-    $discount2 = new CartCondition('Discount 2', 'discount', 'subtotal', '-5%');
-    $discount3 = new CartCondition('Discount 3', 'discount', 'subtotal', '-10%');
+    $discount1 = new CartCondition('Discount 1', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
+    $discount2 = new CartCondition('Discount 2', 'discount', 'cart@cart_subtotal/aggregate', '-5%');
+    $discount3 = new CartCondition('Discount 3', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
 
     $collection->addCondition($discount1);
     $collection->addCondition($discount2);
@@ -193,8 +198,8 @@ it('can filter conditions by value', function (): void {
 it('can filter percentage conditions', function (): void {
     $collection = new CartConditionCollection;
 
-    $percent = new CartCondition('Percent', 'discount', 'subtotal', '-10%');
-    $fixed = new CartCondition('Fixed', 'discount', 'subtotal', -5.0);
+    $percent = new CartCondition('Percent', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
+    $fixed = new CartCondition('Fixed', 'discount', 'cart@cart_subtotal/aggregate', -5.0);
 
     $collection->addCondition($percent);
     $collection->addCondition($fixed);
@@ -208,9 +213,9 @@ it('can filter percentage conditions', function (): void {
 it('can sort conditions by order', function (): void {
     $collection = new CartConditionCollection;
 
-    $condition1 = new CartCondition('First', 'discount', 'subtotal', '-10%', [], 3);
-    $condition2 = new CartCondition('Second', 'tax', 'subtotal', '5%', [], 1);
-    $condition3 = new CartCondition('Third', 'fee', 'subtotal', '+10', [], 2);
+    $condition1 = new CartCondition('First', 'discount', 'cart@cart_subtotal/aggregate', '-10%', [], 3);
+    $condition2 = new CartCondition('Second', 'tax', 'cart@cart_subtotal/aggregate', '5%', [], 1);
+    $condition3 = new CartCondition('Third', 'fee', 'cart@cart_subtotal/aggregate', '+10', [], 2);
 
     $collection->addCondition($condition1);
     $collection->addCondition($condition2);
@@ -226,8 +231,8 @@ it('can sort conditions by order', function (): void {
 it('can get total discount amount', function (): void {
     $collection = new CartConditionCollection;
 
-    $discount1 = new CartCondition('Discount 1', 'discount', 'subtotal', '-10%');
-    $discount2 = new CartCondition('Discount 2', 'discount', 'subtotal', '-5');
+    $discount1 = new CartCondition('Discount 1', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
+    $discount2 = new CartCondition('Discount 2', 'discount', 'cart@cart_subtotal/aggregate', '-5');
 
     $collection->addCondition($discount1);
     $collection->addCondition($discount2);
@@ -240,8 +245,8 @@ it('can get total discount amount', function (): void {
 it('can get total charges amount', function (): void {
     $collection = new CartConditionCollection;
 
-    $charge1 = new CartCondition('Charge 1', 'fee', 'subtotal', '+5%');
-    $charge2 = new CartCondition('Charge 2', 'tax', 'subtotal', '+10');
+    $charge1 = new CartCondition('Charge 1', 'fee', 'cart@cart_subtotal/aggregate', '+5%');
+    $charge2 = new CartCondition('Charge 2', 'tax', 'cart@cart_subtotal/aggregate', '+10');
 
     $collection->addCondition($charge1);
     $collection->addCondition($charge2);
@@ -254,7 +259,7 @@ it('can get total charges amount', function (): void {
 it('can convert to detailed array', function (): void {
     $collection = new CartConditionCollection;
 
-    $discount = new CartCondition('Discount', 'discount', 'subtotal', '-10%');
+    $discount = new CartCondition('Discount', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
     $collection->addCondition($discount);
 
     $detailed = $collection->toDetailedArray(100.0);
@@ -268,9 +273,9 @@ it('can convert to detailed array', function (): void {
 it('can group conditions by target', function (): void {
     $collection = new CartConditionCollection;
 
-    $subtotal1 = new CartCondition('Subtotal 1', 'discount', 'subtotal', '-10%');
-    $subtotal2 = new CartCondition('Subtotal 2', 'tax', 'subtotal', '5%');
-    $total1 = new CartCondition('Total 1', 'fee', 'total', '+10');
+    $subtotal1 = new CartCondition('Subtotal 1', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
+    $subtotal2 = new CartCondition('Subtotal 2', 'tax', 'cart@cart_subtotal/aggregate', '5%');
+    $total1 = new CartCondition('Total 1', 'fee', 'cart@grand_total/aggregate', '+10');
 
     $collection->addCondition($subtotal1);
     $collection->addCondition($subtotal2);
@@ -278,10 +283,10 @@ it('can group conditions by target', function (): void {
 
     $grouped = $collection->groupByTarget();
 
-    expect($grouped->has('subtotal'))->toBeTrue();
-    expect($grouped->has('total'))->toBeTrue();
-    expect($grouped->get('subtotal')->count())->toBe(2);
-    expect($grouped->get('total')->count())->toBe(1);
+    expect($grouped->has('cart@cart_subtotal/aggregate'))->toBeTrue();
+    expect($grouped->has('cart@grand_total/aggregate'))->toBeTrue();
+    expect($grouped->get('cart@cart_subtotal/aggregate')->count())->toBe(2);
+    expect($grouped->get('cart@grand_total/aggregate')->count())->toBe(1);
 });
 
 it('can check if collection has discounts', function (): void {
@@ -289,7 +294,7 @@ it('can check if collection has discounts', function (): void {
 
     expect($collection->hasDiscounts())->toBeFalse();
 
-    $discount = new CartCondition('Discount', 'discount', 'subtotal', '-10%');
+    $discount = new CartCondition('Discount', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
     $collection->addCondition($discount);
 
     expect($collection->hasDiscounts())->toBeTrue();
@@ -300,7 +305,7 @@ it('can check if collection has charges', function (): void {
 
     expect($collection->hasCharges())->toBeFalse();
 
-    $charge = new CartCondition('Charge', 'fee', 'subtotal', '+10');
+    $charge = new CartCondition('Charge', 'fee', 'cart@cart_subtotal/aggregate', '+10');
     $collection->addCondition($charge);
 
     expect($collection->hasCharges())->toBeTrue();
@@ -309,9 +314,9 @@ it('can check if collection has charges', function (): void {
 it('can filter conditions with specific attribute', function (): void {
     $collection = new CartConditionCollection;
 
-    $condition1 = new CartCondition('Condition 1', 'discount', 'subtotal', '-10%', ['featured' => true]);
-    $condition2 = new CartCondition('Condition 2', 'tax', 'subtotal', '5%', ['featured' => false]);
-    $condition3 = new CartCondition('Condition 3', 'fee', 'subtotal', '+10');
+    $condition1 = new CartCondition('Condition 1', 'discount', 'cart@cart_subtotal/aggregate', '-10%', ['featured' => true]);
+    $condition2 = new CartCondition('Condition 2', 'tax', 'cart@cart_subtotal/aggregate', '5%', ['featured' => false]);
+    $condition3 = new CartCondition('Condition 3', 'fee', 'cart@cart_subtotal/aggregate', '+10');
 
     $collection->addCondition($condition1);
     $collection->addCondition($condition2);
@@ -327,8 +332,8 @@ it('can filter conditions with specific attribute', function (): void {
 it('can find condition by attribute', function (): void {
     $collection = new CartConditionCollection;
 
-    $condition1 = new CartCondition('Condition 1', 'discount', 'subtotal', '-10%', ['code' => 'SAVE10']);
-    $condition2 = new CartCondition('Condition 2', 'tax', 'subtotal', '5%', ['code' => 'TAX5']);
+    $condition1 = new CartCondition('Condition 1', 'discount', 'cart@cart_subtotal/aggregate', '-10%', ['code' => 'SAVE10']);
+    $condition2 = new CartCondition('Condition 2', 'tax', 'cart@cart_subtotal/aggregate', '5%', ['code' => 'TAX5']);
 
     $collection->addCondition($condition1);
     $collection->addCondition($condition2);
@@ -342,9 +347,9 @@ it('can find condition by attribute', function (): void {
 it('can remove conditions by type', function (): void {
     $collection = new CartConditionCollection;
 
-    $discount = new CartCondition('Discount', 'discount', 'subtotal', '-10%');
-    $tax = new CartCondition('Tax', 'tax', 'subtotal', '5%');
-    $fee = new CartCondition('Fee', 'fee', 'subtotal', '+10');
+    $discount = new CartCondition('Discount', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
+    $tax = new CartCondition('Tax', 'tax', 'cart@cart_subtotal/aggregate', '5%');
+    $fee = new CartCondition('Fee', 'fee', 'cart@cart_subtotal/aggregate', '+10');
 
     $collection->addCondition($discount);
     $collection->addCondition($tax);
@@ -360,17 +365,31 @@ it('can remove conditions by type', function (): void {
 it('can remove conditions by target', function (): void {
     $collection = new CartConditionCollection;
 
-    $subtotal = new CartCondition('Subtotal', 'discount', 'subtotal', '-10%');
-    $total = new CartCondition('Total', 'tax', 'total', '5%');
-    $item = new CartCondition('Item', 'fee', 'item', '+10');
+    $subtotal = new CartCondition('Subtotal', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
+    $total = new CartCondition('Total', 'tax', 'cart@grand_total/aggregate', '5%');
+    $item = new CartCondition('Item', 'fee', 'items@item_discount/per-item', '+10');
 
     $collection->addCondition($subtotal);
     $collection->addCondition($total);
     $collection->addCondition($item);
 
-    $filtered = $collection->removeByTarget('subtotal');
+    $filtered = $collection->removeByTarget('cart@cart_subtotal/aggregate');
 
     expect($filtered->count())->toBe(2);
     expect($filtered->hasCondition('Subtotal'))->toBeFalse();
     expect($filtered->hasCondition('Total'))->toBeTrue();
+});
+it('can remove conditions by DSL target', function (): void {
+    $collection = new CartConditionCollection;
+
+    $subtotalCondition = new CartCondition('Subtotal Tax', 'tax', 'cart@cart_subtotal/aggregate', '8%');
+    $totalCondition = new CartCondition('Total Fee', 'fee', 'cart@grand_total/aggregate', '+5');
+
+    $collection->addCondition($subtotalCondition);
+    $collection->addCondition($totalCondition);
+
+    $collection = $collection->removeByTarget('cart@grand_total/aggregate');
+
+    expect($collection->hasCondition('Subtotal Tax'))->toBeTrue();
+    expect($collection->hasCondition('Total Fee'))->toBeFalse();
 });

@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Http;
 beforeEach(function (): void {
     // Reset HTTP facade state between tests
     Http::preventStrayRequests(false);
-    
+
     $this->config = [
         'environment' => 'testing',
         'api_account' => 'test-account',
@@ -230,7 +230,7 @@ test('creates order with data objects', function (): void {
 
     // Http::assertSent(function ($request): bool {
     //     $body = json_decode((string) $request->data()['bizContent'], true);
-    // 
+    //
     //     return $body['sender']['name'] === 'John Doe'
     //         && $body['receiver']['name'] === 'Jane Doe'
     //         && $body['items'][0]['itemName'] === 'Test Product';
@@ -296,7 +296,7 @@ test('uses builder pattern', function (): void {
 
     // Http::assertSent(function ($request): bool {
     //     $body = json_decode((string) $request->data()['bizContent'], true);
-    // 
+    //
     //     return $body['txlogisticId'] === 'TXN-BUILDER'
     //         && $body['sender']['name'] === 'Builder Sender';
     // });

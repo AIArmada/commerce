@@ -62,7 +62,7 @@ describe('cart synchronization', function (): void {
     it('stores both cart-level and item-level conditions', function (): void {
         CartFacade::add('sku-001', 'Product', 8000, 1);
         CartFacade::addDiscount('order-discount', '-10%');
-        $itemCondition = new CoreCondition('bulk', 'discount', 'item', '-15%');
+        $itemCondition = new CoreCondition('bulk', 'discount', 'items@item_discount/per-item', '-15%');
         CartFacade::addItemCondition('sku-001', $itemCondition);
 
         expect(CartCondition::count())->toBe(2);

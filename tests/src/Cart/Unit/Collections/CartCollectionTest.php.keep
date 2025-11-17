@@ -140,7 +140,7 @@ it('can filter items by condition with filterByCondition method', function (): v
             'special' => [
                 'name' => 'special',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
                 'value' => '-10',
                 'attributes' => [],
                 'order' => 0,
@@ -675,7 +675,7 @@ it('can filter items by condition type', function (): void {
             'special-discount' => [
                 'name' => 'special-discount',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
                 'value' => '-10',
                 'attributes' => [],
                 'order' => 0,
@@ -693,7 +693,7 @@ it('can filter items by condition type', function (): void {
             'vat' => [
                 'name' => 'vat',
                 'type' => 'tax',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
                 'value' => '15%',
                 'attributes' => [],
                 'order' => 1,
@@ -725,7 +725,7 @@ it('can filter items by condition target', function (): void {
             'discount' => [
                 'name' => 'discount',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
                 'value' => '-10',
                 'attributes' => [],
                 'order' => 0,
@@ -743,7 +743,7 @@ it('can filter items by condition target', function (): void {
             'shipping' => [
                 'name' => 'shipping',
                 'type' => 'fee',
-                'target' => 'total',
+                'target' => 'cart@grand_total/aggregate',
                 'value' => '5',
                 'attributes' => [],
                 'order' => 1,
@@ -775,7 +775,7 @@ it('can filter items by condition value', function (): void {
             'discount' => [
                 'name' => 'discount',
                 'type' => 'discount',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
                 'value' => '-10',
                 'attributes' => [],
                 'order' => 0,
@@ -793,7 +793,7 @@ it('can filter items by condition value', function (): void {
             'tax' => [
                 'name' => 'tax',
                 'type' => 'tax',
-                'target' => 'subtotal',
+                'target' => 'cart@cart_subtotal/aggregate',
                 'value' => '15%',
                 'attributes' => [],
                 'order' => 1,

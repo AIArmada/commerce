@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas;
 
+use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\FilamentVouchers\Support\OwnerTypeRegistry;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -85,14 +85,14 @@ final class VoucherForm
                                 // Convert from cents/basis points to decimal for display
                                 ->formatStateUsing(fn (?int $state, Get $get): ?string => $state !== null
                                     ? ($get('type') === VoucherType::Percentage->value
-                                        ? number_format($state / 100, 2, '.', '') // Basis points to percentage
+                                        ? number_format($state / 100, 2, '.', '') // Basis points to percentage (1000 -> 10.00)
                                         : number_format($state / 100, 2, '.', '') // Cents to currency
                                     )
                                     : null
                                 )
                                 // Convert from decimal input to cents/basis points for storage
                                 ->dehydrateStateUsing(fn (?string $state, Get $get): ?int => $state !== null && $state !== ''
-                                    ? (int) round((float) $state * 100)
+                                    ? (int) round((float) $state * 100) // Multiply by 100 to store as basis points or cents
                                     : null
                                 ),
 
@@ -103,6 +103,51 @@ final class VoucherForm
                                 ->default($defaultCurrency),
                         ]),
                 ]),
+
+            Section::make('Condition Targeting')
+                ->description('Control which portion of the cart this voucher adjusts.')
+                ->schema([
+                    Grid::make(2)
+                        ->schema([
+                            Select::make('condition_target_preset')
+                                ->label('Preset')
+                                ->options(ConditionTargetPreset::options())
+                                ->default(ConditionTargetPreset::default()->value)
+                                ->live()
+                                ->afterStateHydrated(static function (?string $state, Set $set): void {
+                                    if ($state === null) {
+                                        $set('condition_target_preset', ConditionTargetPreset::default()->value);
+                                        $set('condition_target_dsl', ConditionTargetPreset::default()->dsl());
+
+                                        return;
+                                    }
+                                })
+                                ->afterStateUpdated(static function (?string $state, Set $set): void {
+                                    $preset = $state !== null ? ConditionTargetPreset::tryFrom($state) : null;
+
+                                    if ($preset === null || $preset === ConditionTargetPreset::Custom) {
+                                        return;
+                                    }
+
+                                    $dsl = $preset->dsl();
+
+                                    if ($dsl !== null) {
+                                        $set('condition_target_dsl', $dsl);
+                                    }
+                                })
+                                ->dehydrated(false),
+
+                            TextInput::make('condition_target_dsl')
+                                ->label('Target DSL')
+                                ->default(fn (): ?string => ConditionTargetPreset::default()->dsl())
+                                ->placeholder('cart@cart_subtotal/aggregate')
+                                ->helperText('Advanced targeting syntax. Leave blank to fall back to cart subtotal.')
+                                ->columnSpan(2)
+                                ->extraInputAttributes(['spellcheck' => 'false']),
+                        ])
+                        ->columnSpanFull(),
+                ])
+                ->collapsible(),
 
             Section::make('Usage Rules')
                 ->schema([
@@ -185,22 +230,8 @@ final class VoucherForm
                         ]),
                 ]),
 
-            Section::make('Applicability')
-                ->schema([
-                    TagsInput::make('applicable_products')
-                        ->label('Applicable Products')
-                        ->placeholder('SKU or identifier')
-                        ->helperText('Restrict redemption to specific SKUs'),
-
-                    TagsInput::make('excluded_products')
-                        ->label('Excluded Products')
-                        ->placeholder('SKU or identifier'),
-
-                    TagsInput::make('applicable_categories')
-                        ->label('Applicable Categories')
-                        ->placeholder('Category identifier'),
-                ])
-                ->collapsed(),
+            // Product / category applicability is not persisted in the vouchers table
+            // and has been removed from the current application schema.
         ];
 
         if ($ownerRegistry->hasDefinitions()) {
@@ -249,7 +280,9 @@ final class VoucherForm
             ->schema([
                 KeyValue::make('metadata')
                     ->label('Metadata')
-                    ->helperText('Attach arbitrary key-value pairs for integrations'),
+                    ->helperText('Attach arbitrary key-value pairs. The target_definition column is managed automatically.')
+                    ->keyLabel('Key')
+                    ->valueLabel('Value'),
             ])
             ->collapsed();
 

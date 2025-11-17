@@ -575,22 +575,22 @@ Cart::addCondition(CartCondition|array $condition): self
 
 **Example:**
 
+> These examples assume `use AIArmada\Cart\Conditions\TargetPresets;`.
+
 ```php
 // Using CartCondition object
-Cart::addCondition(
-    CartCondition::make([
-        'name' => 'VAT',
-        'type' => 'tax',
-        'target' => 'total',
-        'value' => '20%',
-    ])
-);
+Cart::addCondition(new CartCondition(
+    name: 'VAT',
+    type: 'tax',
+    target: TargetPresets::cartGrandTotal(),
+    value: '20%',
+));
 
 // Using array
 Cart::addCondition([
     'name' => 'Summer Sale',
     'type' => 'discount',
-    'target' => 'total',
+    'target_definition' => TargetPresets::cartGrandTotal()->toArray(),
     'value' => '-15%',
 ]);
 ```
@@ -615,8 +615,18 @@ Cart::addConditions(array $conditions): self
 
 ```php
 Cart::addConditions([
-    ['name' => 'Tax', 'type' => 'tax', 'target' => 'total', 'value' => '10%'],
-    ['name' => 'Shipping', 'type' => 'shipping', 'target' => 'total', 'value' => '5.00'],
+    [
+        'name' => 'Tax',
+        'type' => 'tax',
+        'target_definition' => TargetPresets::cartGrandTotal()->toArray(),
+        'value' => '10%',
+    ],
+    [
+        'name' => 'Shipping',
+        'type' => 'shipping',
+        'target_definition' => TargetPresets::cartShipping()->toArray(),
+        'value' => '+5.00',
+    ],
 ]);
 ```
 
@@ -1387,7 +1397,7 @@ public static function make(array $attributes): self
 $condition = CartCondition::make([
     'name' => 'VAT',
     'type' => 'tax',
-    'target' => 'total',
+    'target' => 'cart@grand_total/aggregate',
     'value' => '20%',
     'order' => 1,
     'attributes' => [
@@ -1806,7 +1816,7 @@ Cart::add(1, 'Product A', 1000)
     ->addCondition([
         'name' => 'VAT',
         'type' => 'tax',
-        'target' => 'total',
+        'target' => 'cart@grand_total/aggregate',
         'value' => '20%',
     ])
     ->setMetadata(['coupon' => 'SAVE10'])

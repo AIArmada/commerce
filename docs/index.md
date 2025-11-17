@@ -51,6 +51,7 @@ php artisan make:filament-user
 ### First Cart
 
 ```php
+use AIArmada\Cart\Conditions\TargetPresets;
 use AIArmada\Cart\Facades\Cart;
 
 // Add item
@@ -60,8 +61,8 @@ Cart::add('prod-001', 'T-Shirt', 2999, 2);
 Cart::applyCondition([
     'name' => 'Holiday Sale',
     'type' => 'discount',
-    'target' => 'subtotal',
-    'value' => -10, // -10%
+    'target_definition' => TargetPresets::cartSubtotal()->toArray(),
+    'value' => '-10%', // strings keep operator intent
 ]);
 
 // Get total
@@ -213,7 +214,7 @@ $shipping = JNT::calculateRate($address);
 Cart::applyCondition([
     'name' => 'Shipping',
     'type' => 'shipping',
-    'target' => 'total',
+    'target' => 'cart@grand_total/aggregate',
     'value' => $shipping,
     'is_percentage' => false,
 ]);
