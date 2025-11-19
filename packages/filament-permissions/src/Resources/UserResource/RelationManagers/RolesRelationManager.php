@@ -31,6 +31,7 @@ class RolesRelationManager extends RelationManager
                 \Filament\Actions\AttachAction::make()
                     ->preloadRecordSelect()
                     ->recordTitle(fn ($record) => $record->name)
+                    ->recordSelectSearchColumns(['name'])
                     ->recordSelectOptionsQuery(fn ($query) => $query->whereIn('guard_name', $guards))
                     ->after(fn () => app(PermissionRegistrar::class)->forgetCachedPermissions()),
             ])
