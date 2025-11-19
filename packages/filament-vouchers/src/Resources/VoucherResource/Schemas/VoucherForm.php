@@ -247,8 +247,7 @@ final class VoucherForm
                                 ->live()
                                 ->helperText('Determines which vendor or store can manage this voucher')
                                 // Always save as morph map alias
-                                ->dehydrateStateUsing(static fn (?string $state): ?string => 
-                                    $state !== null && $state !== '' ? Relation::getMorphAlias($state) : null
+                                ->dehydrateStateUsing(static fn (?string $state): ?string => $state !== null && $state !== '' ? Relation::getMorphAlias($state) : null
                                 )
                                 // Always load as full class name from morph map alias
                                 ->afterStateHydrated(static function (?string $state, Set $set): void {
