@@ -78,6 +78,7 @@ class PermissionExplorer extends Page
     {
         /** @var class-string<Model> $roleModel */
         $roleModel = config('permission.models.role', 'Spatie\\Permission\\Models\\Role');
+
         return $roleModel::withCount('permissions')->orderBy('name')->get()->map(function ($role) {
             return [
                 'name' => $role->name,

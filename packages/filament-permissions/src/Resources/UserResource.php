@@ -51,13 +51,13 @@ class UserResource extends Resource
             // Get the application's form components
             $appForm = $resource::form($form);
             $components = $appForm->getComponents();
-            
+
             // Add password field if not present
             $hasPassword = collect($components)->contains(function ($component) {
                 return method_exists($component, 'getName') && $component->getName() === 'password';
             });
-            
-            if (!$hasPassword) {
+
+            if (! $hasPassword) {
                 $components[] = Forms\Components\TextInput::make('password')
                     ->password()
                     ->revealable()
@@ -66,7 +66,7 @@ class UserResource extends Resource
                     ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? \Illuminate\Support\Facades\Hash::make($state) : null)
                     ->dehydrated(fn (?string $state): bool => filled($state));
             }
-            
+
             return $form->components($components);
         }
 
@@ -91,21 +91,21 @@ class UserResource extends Resource
             // Get the application's table configuration
             $appTable = $resource::table($table);
             $columns = $appTable->getColumns();
-            
+
             // Check if roles column already exists
             $hasRolesColumn = collect($columns)->contains(function ($column) {
-                return method_exists($column, 'getName') && 
+                return method_exists($column, 'getName') &&
                        (str_contains($column->getName(), 'roles') || $column->getName() === 'roles.name');
             });
-            
+
             // Add roles column if not present
-            if (!$hasRolesColumn) {
+            if (! $hasRolesColumn) {
                 $columns[] = TextColumn::make('roles.name')
                     ->label('Roles')
                     ->badge()
                     ->separator(',');
             }
-            
+
             return $appTable->columns($columns);
         }
 
@@ -129,7 +129,7 @@ class UserResource extends Resource
         if ($resource = static::getAppUserResource()) {
             $relations = $resource::getRelations();
         }
-        
+
         // Always add package's relation managers
         $relations[] = RelationManagers\RolesRelationManager::class;
         $relations[] = RelationManagers\PermissionsRelationManager::class;
@@ -140,6 +140,15 @@ class UserResource extends Resource
         }
 
         return $relations;
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListUsers::route('/'),
+            'create' => Pages\CreateUser::route('/create'),
+            'edit' => Pages\EditUser::route('/{record}/edit'),
+        ];
     }
 
     protected static function getAppUserResource(): ?string
@@ -156,14 +165,5 @@ class UserResource extends Resource
         }
 
         return null;
-    }
-
-    public static function getPages(): array
-    {
-        return [
-            'index' => Pages\ListUsers::route('/'),
-            'create' => Pages\CreateUser::route('/create'),
-            'edit' => Pages\EditUser::route('/{record}/edit'),
-        ];
     }
 }
