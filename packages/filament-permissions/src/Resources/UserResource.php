@@ -47,22 +47,75 @@ class UserResource extends Resource
 
     public static function form(Schema $form): Schema
     {
+        if ($resource = static::getAppUserResource()) {
+            // Get the application's form components
+            $appForm = $resource::form($form);
+            $components = $appForm->getComponents();
+            
+            // Add password field if not present
+            $hasPassword = collect($components)->contains(function ($component) {
+                return method_exists($component, 'getName') && $component->getName() === 'password';
+            });
+            
+            if (!$hasPassword) {
+                $components[] = Forms\Components\TextInput::make('password')
+                    ->password()
+                    ->revealable()
+                    ->rule('min:8')
+                    ->required(fn (string $operation): bool => $operation === 'create')
+                    ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? \Illuminate\Support\Facades\Hash::make($state) : null)
+                    ->dehydrated(fn (?string $state): bool => filled($state));
+            }
+            
+            return $form->components($components);
+        }
+
         return $form->schema([
             Section::make('User')->schema([
                 Forms\Components\TextInput::make('name')->required(),
                 Forms\Components\TextInput::make('email')->email()->required()->unique(ignoreRecord: true),
+                Forms\Components\TextInput::make('password')
+                    ->password()
+                    ->revealable()
+                    ->rule('min:8')
+                    ->required(fn (string $operation): bool => $operation === 'create')
+                    ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? \Illuminate\Support\Facades\Hash::make($state) : null)
+                    ->dehydrated(fn (?string $state): bool => filled($state)),
             ])->columns(2),
         ]);
     }
 
     public static function table(Table $table): Table
     {
+        if ($resource = static::getAppUserResource()) {
+            // Get the application's table configuration
+            $appTable = $resource::table($table);
+            $columns = $appTable->getColumns();
+            
+            // Check if roles column already exists
+            $hasRolesColumn = collect($columns)->contains(function ($column) {
+                return method_exists($column, 'getName') && 
+                       (str_contains($column->getName(), 'roles') || $column->getName() === 'roles.name');
+            });
+            
+            // Add roles column if not present
+            if (!$hasRolesColumn) {
+                $columns[] = TextColumn::make('roles.name')
+                    ->label('Roles')
+                    ->badge()
+                    ->separator(',');
+            }
+            
+            return $appTable->columns($columns);
+        }
+
         return $table->columns([
             TextColumn::make('name')->searchable()->sortable(),
             TextColumn::make('email')->searchable()->sortable(),
-            TextColumn::make('roles')
-                ->getStateUsing(fn ($record) => $record->roles->pluck('name')->join(', '))
-                ->label('Roles'),
+            TextColumn::make('roles.name')
+                ->label('Roles')
+                ->badge()
+                ->separator(','),
             TextColumn::make('updated_at')->since()->sortable()->toggleable(isToggledHiddenByDefault: true),
         ])->actions([
             \Filament\Actions\EditAction::make()->authorize(fn (Model $record) => auth()->user()?->can('user.update')),
@@ -71,10 +124,38 @@ class UserResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
-            RelationManagers\RolesRelationManager::class,
-            RelationManagers\PermissionsRelationManager::class,
+        $relations = [];
+
+        if ($resource = static::getAppUserResource()) {
+            $relations = $resource::getRelations();
+        }
+        
+        // Always add package's relation managers
+        $relations[] = RelationManagers\RolesRelationManager::class;
+        $relations[] = RelationManagers\PermissionsRelationManager::class;
+
+        // Add vouchers relation manager if filament-vouchers package is installed
+        if (class_exists(\AIArmada\FilamentVouchers\Models\Voucher::class)) {
+            $relations[] = RelationManagers\VouchersRelationManager::class;
+        }
+
+        return $relations;
+    }
+
+    protected static function getAppUserResource(): ?string
+    {
+        $candidates = [
+            'App\Filament\Resources\UserResource',
+            'App\Filament\Resources\Users\UserResource',
         ];
+
+        foreach ($candidates as $candidate) {
+            if (class_exists($candidate) && is_subclass_of($candidate, Resource::class)) {
+                return $candidate;
+            }
+        }
+
+        return null;
     }
 
     public static function getPages(): array

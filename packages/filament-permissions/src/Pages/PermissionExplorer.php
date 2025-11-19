@@ -7,8 +7,8 @@ namespace AIArmada\FilamentPermissions\Pages;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 class PermissionExplorer extends Page
 {
@@ -25,9 +25,23 @@ class PermissionExplorer extends Page
 
     public static function canAccess(): bool
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
-        return $user?->can('permission.viewAny') || $user?->hasRole(config('filament-permissions.super_admin_role'));
+        if (! $user) {
+            return false;
+        }
+
+        $canView = false;
+        if (method_exists($user, 'can')) {
+            $canView = $user->can('permission.viewAny'); // @phpstan-ignore-line
+        }
+
+        $isSuperAdmin = false;
+        if (method_exists($user, 'hasRole')) {
+            $isSuperAdmin = $user->hasRole(config('filament-permissions.super_admin_role')); // @phpstan-ignore-line
+        }
+
+        return $canView || $isSuperAdmin;
     }
 
     /**
@@ -35,7 +49,9 @@ class PermissionExplorer extends Page
      */
     public function getPermissionsGrouped(): array
     {
-        $permissions = Permission::orderBy('name')->get();
+        /** @var class-string<Model> $permissionModel */
+        $permissionModel = config('permission.models.permission', 'Spatie\\Permission\\Models\\Permission');
+        $permissions = $permissionModel::orderBy('name')->get();
 
         return $permissions->groupBy(function ($permission) {
             $parts = explode('.', $permission->name);
@@ -60,7 +76,9 @@ class PermissionExplorer extends Page
      */
     public function getRolesWithPermissionCounts(): array
     {
-        return Role::withCount('permissions')->orderBy('name')->get()->map(function ($role) {
+        /** @var class-string<Model> $roleModel */
+        $roleModel = config('permission.models.role', 'Spatie\\Permission\\Models\\Role');
+        return $roleModel::withCount('permissions')->orderBy('name')->get()->map(function ($role) {
             return [
                 'name' => $role->name,
                 'guard_name' => $role->guard_name,
