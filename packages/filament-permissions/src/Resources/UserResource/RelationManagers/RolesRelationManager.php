@@ -20,6 +20,7 @@ class RolesRelationManager extends RelationManager
     public function table(Table $table): Table
     {
         $guards = (array) config('filament-permissions.guards');
+        $defaultGuard = config('filament-permissions.default_guard_name', $guards[0] ?? 'web');
 
         return $table
             ->columns([
@@ -29,7 +30,8 @@ class RolesRelationManager extends RelationManager
             ->headerActions([
                 \Filament\Actions\AttachAction::make()
                     ->preloadRecordSelect()
-                    ->recordSelectOptionsQuery(fn ($query) => $query->where('guard_name', config('filament-permissions.default_guard_name')))
+                    ->recordTitle(fn ($record) => $record->name)
+                    ->recordSelectOptionsQuery(fn ($query) => $query->whereIn('guard_name', $guards))
                     ->after(fn () => app(PermissionRegistrar::class)->forgetCachedPermissions()),
             ])
             ->recordActions([
