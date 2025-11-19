@@ -19,6 +19,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 final class VoucherForm
 {
@@ -244,7 +245,17 @@ final class VoucherForm
                                 ->options($ownerRegistry->options())
                                 ->placeholder('Global voucher (no owner)')
                                 ->live()
-                                ->helperText('Determines which vendor or store can manage this voucher'),
+                                ->helperText('Determines which vendor or store can manage this voucher')
+                                // Always save as morph map alias
+                                ->dehydrateStateUsing(static fn (?string $state): ?string => 
+                                    $state !== null && $state !== '' ? Relation::getMorphAlias($state) : null
+                                )
+                                // Always load as full class name from morph map alias
+                                ->afterStateHydrated(static function (?string $state, Set $set): void {
+                                    if ($state !== null && $state !== '') {
+                                        $set('owner_type', Relation::getMorphedModel($state));
+                                    }
+                                }),
 
                             Select::make('owner_id')
                                 ->label('Owner')

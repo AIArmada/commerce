@@ -76,5 +76,10 @@ final class FilamentVouchersServiceProvider extends PackageServiceProvider
             'a-i-armada.filament-vouchers.widgets.voucher-suggestions-widget',
             Widgets\VoucherSuggestionsWidget::class
         );
+
+        Livewire::component(
+            'a-i-armada.filament-vouchers.widgets.voucher-wallet-stats-widget',
+            Widgets\VoucherWalletStatsWidget::class
+        );
     }
 }
