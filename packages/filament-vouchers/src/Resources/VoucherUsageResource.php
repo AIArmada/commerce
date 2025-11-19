@@ -35,6 +35,15 @@ final class VoucherUsageResource extends Resource
         ];
     }
 
+    public static function getGloballySearchableAttributes(): array
+    {
+        // The resource's record title is provided by an accessor (`user_identifier`),
+        // which is not a database column. Prevent Filament global search from
+        // attempting to query that non-existent column by limiting searchable
+        // attributes to a real DB column.
+        return ['id'];
+    }
+
     public static function getNavigationGroup(): string|UnitEnum|null
     {
         return config('filament-vouchers.navigation_group');
