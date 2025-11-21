@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherWallet;
 use AIArmada\Vouchers\Services\VoucherService;
-use AIArmada\Vouchers\Traits\HasVoucherWallet;
+use AIArmada\Vouchers\Traits\HasVouchers;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Schema;
@@ -23,12 +23,12 @@ beforeEach(function (): void {
         });
     }
 
-    // Create test model class that uses HasVoucherWallet
+    // Create test model class that uses HasVouchers (which now includes wallet logic)
     if (! class_exists(TestWalletUser::class)) {
         eval('
             class TestWalletUser extends Illuminate\Database\Eloquent\Model
             {
-                use AIArmada\Vouchers\Traits\HasVoucherWallet;
+                use AIArmada\Vouchers\Traits\HasVouchers;
                 protected $table = "users";
                 protected $guarded = [];
             }

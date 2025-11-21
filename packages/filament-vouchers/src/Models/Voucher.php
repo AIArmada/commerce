@@ -52,7 +52,7 @@ final class Voucher extends BaseVoucher
                     return null;
                 }
 
-                $timesUsed = (int) $this->getAttribute('times_used');
+                $timesUsed = $this->times_used;
 
                 return min(100, ($timesUsed / $usageLimit) * 100);
             }

@@ -146,8 +146,9 @@ final class VoucherInfolist
                                 ->badge()
                                 ->tooltip('Number of times this voucher has been applied to carts'),
 
-                            TextEntry::make('times_used')
+                            TextEntry::make('usages_count')
                                 ->label('Redeemed')
+                                ->state(static fn ($record): int => $record->usages()->count())
                                 ->badge(),
 
                             TextEntry::make('remaining_uses')

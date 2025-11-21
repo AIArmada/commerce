@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources;
 
-use AIArmada\FilamentVouchers\Models\Voucher;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Pages\CreateVoucher;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Pages\EditVoucher;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Pages\ListVouchers;
@@ -14,6 +13,7 @@ use AIArmada\FilamentVouchers\Resources\VoucherResource\RelationManagers\WalletE
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas\VoucherForm;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas\VoucherInfolist;
 use AIArmada\FilamentVouchers\Resources\VoucherResource\Tables\VouchersTable;
+use AIArmada\Vouchers\Models\Voucher;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
-use AIArmada\FilamentVouchers\Models\Voucher;
+use AIArmada\Vouchers\Models\Voucher;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;

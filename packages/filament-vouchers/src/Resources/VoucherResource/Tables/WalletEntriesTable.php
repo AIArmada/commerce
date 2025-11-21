@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Tables;
 
 use AIArmada\Vouchers\Models\VoucherWallet;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\DeleteBulkAction;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -158,11 +160,7 @@ final class WalletEntriesTable
                     ->visible(fn (VoucherWallet $record): bool => ! $record->is_redeemed)
                     ->action(function (VoucherWallet $record): void {
                         $record->markAsRedeemed();
-                    })
-                    ->successNotification(
-                        title: 'Marked as Redeemed',
-                        body: 'The voucher has been marked as redeemed.',
-                    ),
+                    }),
 
                 Action::make('removeFromWallet')
                     ->label('Remove')
@@ -171,11 +169,7 @@ final class WalletEntriesTable
                     ->requiresConfirmation()
                     ->action(function (VoucherWallet $record): void {
                         $record->delete();
-                    })
-                    ->successNotification(
-                        title: 'Removed from Wallet',
-                        body: 'The voucher has been removed from the wallet.',
-                    ),
+                    }),
 
                 Action::make('viewMetadata')
                     ->label('View Metadata')
@@ -190,25 +184,17 @@ final class WalletEntriesTable
                     ->visible(fn (VoucherWallet $record): bool => ! empty($record->metadata)),
             ])
             ->bulkActions([
-                \Filament\Tables\Actions\BulkAction::make('markAsRedeemed')
+                BulkAction::make('markAsRedeemed')
                     ->label('Mark as Redeemed')
                     ->icon(Heroicon::OutlinedCheckBadge)
                     ->color('success')
                     ->requiresConfirmation()
                     ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
                         $records->each->markAsRedeemed();
-                    })
-                    ->successNotification(
-                        title: 'Marked as Redeemed',
-                        body: fn (\Illuminate\Database\Eloquent\Collection $records): string => "{$records->count()} voucher(s) have been marked as redeemed.",
-                    ),
+                    }),
 
-                \Filament\Tables\Actions\DeleteBulkAction::make()
-                    ->label('Remove from Wallets')
-                    ->successNotification(
-                        title: 'Removed from Wallets',
-                        body: fn (int $count): string => "{$count} voucher(s) have been removed from wallets.",
-                    ),
+                DeleteBulkAction::make()
+                    ->label('Remove from Wallets'),
             ])
             ->recordUrl(null);
     }

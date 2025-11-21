@@ -54,7 +54,7 @@ test('validates inactive voucher', function (): void {
     $result = $validator->validate('inactive', $cart);
 
     expect($result->isValid)->toBeFalse()
-        ->and($result->reason)->toBe('Voucher is not active.');
+        ->and($result->reason)->toBe('Voucher is paused.');
 });
 
 test('validates voucher not started', function (): void {

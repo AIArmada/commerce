@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Services;
 
-use AIArmada\FilamentVouchers\Models\Voucher;
-use AIArmada\FilamentVouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Enums\VoucherStatus;
+use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Models\VoucherUsage;
 
 final class VoucherStatsAggregator
 {

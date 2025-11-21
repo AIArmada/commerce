@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
-use AIArmada\FilamentVouchers\Models\Voucher;
 use AIArmada\Vouchers\Exceptions\VoucherException;
+use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Services\VoucherService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Tables;
 
 use AIArmada\Cart\Conditions\ConditionTarget;
-use AIArmada\FilamentVouchers\Models\Voucher;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Models\Voucher;
 use Akaunting\Money\Money;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
@@ -21,6 +21,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 final class VouchersTable
@@ -28,6 +29,7 @@ final class VouchersTable
     public static function configure(Table $table): Table
     {
         return $table
+            ->modifyQueryUsing(fn (Builder $query) => $query->withCount('usages'))
             ->columns([
                 TextColumn::make('code')
                     ->label('Code')
@@ -97,8 +99,9 @@ final class VouchersTable
                     ->color('info')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('times_used')
+                TextColumn::make('usages_count')
                     ->label('Redeemed')
+                    ->counts('usages')
                     ->alignCenter()
                     ->sortable(),
 

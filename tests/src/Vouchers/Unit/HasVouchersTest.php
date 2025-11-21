@@ -348,7 +348,7 @@ it('collects voucher conditions from cart conditions', function (): void {
     $cartCondition = new AIArmada\Cart\Conditions\CartCondition(
         name: 'voucher_cartcond',
         type: 'voucher',
-        target: 'subtotal',
+        target: 'cart@cart_subtotal/aggregate',
         value: '-25',
         attributes: [
             'voucher_id' => '43',

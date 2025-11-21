@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources;
 
-use AIArmada\FilamentVouchers\Models\VoucherUsage;
 use AIArmada\FilamentVouchers\Resources\VoucherUsageResource\Pages\ListVoucherUsages;
 use AIArmada\FilamentVouchers\Resources\VoucherUsageResource\Tables\VoucherUsagesTable;
+use AIArmada\Vouchers\Models\VoucherUsage;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
