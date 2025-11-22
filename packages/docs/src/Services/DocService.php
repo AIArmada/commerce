@@ -266,7 +266,7 @@ class DocService
     {
         $docType = $doc->doc_type ?? 'invoice';
         $basePath = $this->resolveStoragePath($docType);
-        $filename = Str::slug($doc->doc_number).'.pdf';
+        $filename = $doc->doc_number.'.pdf';
 
         return "{$basePath}/{$filename}";
     }
