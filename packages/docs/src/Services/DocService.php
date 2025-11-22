@@ -10,7 +10,6 @@ use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Numbering\NumberStrategyRegistry;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Spatie\LaravelPdf\Facades\Pdf;
 
 class DocService
