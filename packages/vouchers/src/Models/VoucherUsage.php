@@ -49,7 +49,10 @@ class VoucherUsage extends Model
 
     public function getTable(): string
     {
-        return config('vouchers.table_names.voucher_usage', 'voucher_usage');
+        /** @var string $table */
+        $table = config('vouchers.table_names.voucher_usage', 'voucher_usage');
+
+        return $table;
     }
 
     public function voucher(): BelongsTo
@@ -79,12 +82,18 @@ class VoucherUsage extends Model
 
                 // If it's a user model, return email
                 if ($this->redeemed_by_type === 'user' && method_exists($redeemedBy, 'getAttribute')) {
-                    return $redeemedBy->getAttribute('email') ?? 'N/A';
+                    /** @var string|null $email */
+                    $email = $redeemedBy->getAttribute('email');
+
+                    return $email ?? 'N/A';
                 }
 
                 // For other types, try to get an identifier
                 if (method_exists($redeemedBy, 'getAttribute')) {
-                    return $redeemedBy->getAttribute('id') ?? 'N/A';
+                    /** @var string|int|null $id */
+                    $id = $redeemedBy->getAttribute('id');
+
+                    return $id !== null ? (string) $id : 'N/A';
                 }
 
                 return 'N/A';

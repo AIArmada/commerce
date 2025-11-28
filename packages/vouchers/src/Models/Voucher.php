@@ -6,6 +6,7 @@ namespace AIArmada\Vouchers\Models;
 
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
+use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -27,6 +28,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int|null $usage_limit
  * @property int|null $usage_limit_per_user
  * @property int $applied_count Number of times the voucher has been applied to carts
+ * @property bool $allows_manual_redemption
+ * @property string|null $owner_type
+ * @property int|string|null $owner_id
  * @property \Illuminate\Support\Carbon|null $starts_at
  * @property \Illuminate\Support\Carbon|null $expires_at
  * @property VoucherStatus $status
@@ -34,6 +38,15 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property array<string, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read int $times_used
+ * @property-read float|null $usageProgress
+ * @property-read string|null $owner_display_name
+ * @property-read int|null $remaining_uses
+ * @property-read string $value_label
+ * @property-read int $wallet_entries_count
+ * @property-read int $wallet_claimed_count
+ * @property-read int $wallet_redeemed_count
+ * @property-read int $wallet_available_count
  */
 class Voucher extends Model
 {
@@ -63,7 +76,10 @@ class Voucher extends Model
 
     public function getTable(): string
     {
-        return config('vouchers.table_names.vouchers', 'vouchers');
+        /** @var string $table */
+        $table = config('vouchers.table_names.vouchers', 'vouchers');
+
+        return $table;
     }
 
     public function usages(): HasMany
@@ -153,9 +169,10 @@ class Voucher extends Model
 
     public function getRemainingUses(): ?int
     {
+        /** @var int|null $usageLimit */
         $usageLimit = $this->getAttribute('usage_limit');
 
-        if (! $usageLimit) {
+        if ($usageLimit === null) {
             return null;
         }
 
@@ -180,6 +197,7 @@ class Voucher extends Model
      */
     public function getConversionRate(): ?float
     {
+        /** @var int $appliedCount */
         $appliedCount = $this->getAttribute('applied_count') ?? 0;
 
         if ($appliedCount === 0) {
@@ -198,10 +216,11 @@ class Voucher extends Model
      */
     public function getAbandonedCount(): int
     {
+        /** @var int $appliedCount */
         $appliedCount = $this->getAttribute('applied_count') ?? 0;
         $usageCount = $this->times_used;
 
-        return max(0, $appliedCount - $usageCount);
+        return (int) max(0, $appliedCount - $usageCount);
     }
 
     /**
@@ -211,6 +230,7 @@ class Voucher extends Model
      */
     public function getStatistics(): array
     {
+        /** @var int $appliedCount */
         $appliedCount = $this->getAttribute('applied_count') ?? 0;
         $usageCount = $this->times_used;
 
@@ -225,7 +245,10 @@ class Voucher extends Model
 
     public function getTimesUsedAttribute(): int
     {
-        return (int) ($this->getAttribute('usages_count') ?? $this->usages()->count());
+        /** @var int|null $usagesCount */
+        $usagesCount = $this->getAttribute('usages_count');
+
+        return $usagesCount ?? $this->usages()->count();
     }
 
     public function canBeRedeemed(): bool
@@ -238,6 +261,7 @@ class Voucher extends Model
 
     public function getUsageProgressAttribute(): ?float
     {
+        /** @var int|null $usageLimit */
         $usageLimit = $this->getAttribute('usage_limit');
 
         if (! $usageLimit) {
@@ -258,18 +282,82 @@ class Voucher extends Model
         }
 
         if (method_exists($owner, 'getAttribute')) {
-            return $owner->getAttribute('name')
-                ?? $owner->getAttribute('display_name')
-                ?? $owner->getAttribute('email')
-                ?? class_basename($owner).':'.$owner->getKey();
+            /** @var string|null $name */
+            $name = $owner->getAttribute('name');
+            /** @var string|null $displayName */
+            $displayName = $owner->getAttribute('display_name');
+            /** @var string|null $email */
+            $email = $owner->getAttribute('email');
+            /** @var int|string $key */
+            $key = $owner->getKey();
+
+            return $name ?? $displayName ?? $email ?? class_basename($owner).':'.(string) $key;
         }
 
-        return class_basename($owner).':'.$owner->getKey();
+        /** @var int|string $key */
+        $key = $owner->getKey();
+
+        return class_basename($owner).':'.(string) $key;
     }
 
     public function getRemainingUsesAttribute(): ?int
     {
         return $this->getRemainingUses();
+    }
+
+    /**
+     * Get the human-readable value label (e.g., "10.50 %" or "RM 50.00").
+     */
+    public function getValueLabelAttribute(): string
+    {
+        $value = (int) $this->getAttribute('value');
+        $type = $this->getAttribute('type');
+
+        $enumType = $type instanceof VoucherType ? $type : VoucherType::tryFrom((string) $type);
+
+        if ($enumType === VoucherType::Percentage) {
+            // Value is stored in basis points (e.g., 1000 = 10.00%, 1259 = 12.59%)
+            $percentage = $value / 100;
+
+            return mb_rtrim(mb_rtrim(number_format($percentage, 2), '0'), '.').' %';
+        }
+
+        // Value is stored as cents
+        $currency = mb_strtoupper((string) ($this->getAttribute('currency') ?? config('vouchers.default_currency', 'MYR')));
+
+        return (string) Money::{$currency}($value);
+    }
+
+    /**
+     * Get the total number of wallet entries for this voucher.
+     */
+    public function getWalletEntriesCountAttribute(): int
+    {
+        return $this->walletEntries()->count();
+    }
+
+    /**
+     * Get the number of claimed wallet entries.
+     */
+    public function getWalletClaimedCountAttribute(): int
+    {
+        return $this->walletEntries()->where('is_claimed', true)->count();
+    }
+
+    /**
+     * Get the number of redeemed wallet entries.
+     */
+    public function getWalletRedeemedCountAttribute(): int
+    {
+        return $this->walletEntries()->where('is_redeemed', true)->count();
+    }
+
+    /**
+     * Get the number of available (not redeemed) wallet entries.
+     */
+    public function getWalletAvailableCountAttribute(): int
+    {
+        return $this->walletEntries()->where('is_redeemed', false)->count();
     }
 
     protected function casts(): array

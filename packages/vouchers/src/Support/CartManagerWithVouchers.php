@@ -106,19 +106,23 @@ final class CartManagerWithVouchers extends CartManager
             throw new RuntimeException('Unable to initialize CartManager current cart.', 0, $e);
         }
 
+        // @phpstan-ignore booleanNot.alwaysTrue (property can be initialized by getCurrentCart())
         if (! $property->isInitialized($object)) {
             throw new RuntimeException('CartManager current cart remains uninitialized.');
         }
     }
 
     /**
-     * @return iterable<ReflectionClass>
+     * @return iterable<\ReflectionClass<object>>
      */
     private static function walkClassHierarchy(ReflectionClass $class): iterable
     {
-        while ($class !== false) {
-            yield $class;
-            $class = $class->getParentClass();
+        $current = $class;
+
+        while ($current instanceof ReflectionClass) {
+            yield $current;
+            $parent = $current->getParentClass();
+            $current = $parent === false ? null : $parent;
         }
     }
 

@@ -44,9 +44,15 @@ class VoucherWallet extends Model
 
     public function getTable(): string
     {
-        return config('vouchers.table_names.voucher_wallets', 'voucher_wallets');
+        /** @var string $table */
+        $table = config('vouchers.table_names.voucher_wallets', 'voucher_wallets');
+
+        return $table;
     }
 
+    /**
+     * @return BelongsTo<Voucher, $this>
+     */
     public function voucher(): BelongsTo
     {
         return $this->belongsTo(Voucher::class);
@@ -88,7 +94,10 @@ class VoucherWallet extends Model
 
     public function isExpired(): bool
     {
-        return $this->voucher->isExpired();
+        /** @var Voucher|null $voucher */
+        $voucher = $this->voucher;
+
+        return $voucher !== null && $voucher->isExpired();
     }
 
     public function canBeUsed(): bool
@@ -101,11 +110,14 @@ class VoucherWallet extends Model
             return false;
         }
 
-        if (! $this->voucher->isActive()) {
+        /** @var Voucher|null $voucher */
+        $voucher = $this->voucher;
+
+        if ($voucher === null || ! $voucher->isActive()) {
             return false;
         }
 
-        if (! $this->voucher->hasStarted()) {
+        if (! $voucher->hasStarted()) {
             return false;
         }
 

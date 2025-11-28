@@ -72,7 +72,10 @@ final class VoucherRulesFactory implements RulesFactoryInterface
     private function resolveContext(array $metadata): array
     {
         if (array_key_exists('context', $metadata) && is_array($metadata['context'])) {
-            return $metadata['context'];
+            /** @var array<string, mixed> $context */
+            $context = $metadata['context'];
+
+            return $context;
         }
 
         return $metadata;

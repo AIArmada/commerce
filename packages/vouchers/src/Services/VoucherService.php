@@ -51,7 +51,9 @@ class VoucherService
      */
     public function create(array $data): VoucherData
     {
-        $data['code'] = $this->normalizeCode($data['code']);
+        /** @var string $code */
+        $code = $data['code'];
+        $data['code'] = $this->normalizeCode($code);
         $data['status'] ??= VoucherStatus::Active;
 
         if (
@@ -82,12 +84,17 @@ class VoucherService
             ->firstOrFail();
 
         if (isset($data['code'])) {
-            $data['code'] = $this->normalizeCode($data['code']);
+            /** @var string $newCode */
+            $newCode = $data['code'];
+            $data['code'] = $this->normalizeCode($newCode);
         }
 
         $voucher->update($data);
 
-        return VoucherData::fromModel($voucher->fresh());
+        /** @var VoucherModel $freshVoucher */
+        $freshVoucher = $voucher->fresh();
+
+        return VoucherData::fromModel($freshVoucher);
     }
 
     public function delete(string $code): bool
@@ -96,7 +103,7 @@ class VoucherService
             ->where('code', $this->normalizeCode($code))
             ->first();
 
-        return $voucher ? $voucher->delete() : false;
+        return $voucher !== null && $voucher->delete();
     }
 
     public function validate(string $code, mixed $cart): VoucherValidationResult
@@ -226,6 +233,7 @@ class VoucherService
             throw ManualRedemptionNotAllowedException::forVoucher($voucher->code);
         }
 
+        /** @var string $channel */
         $channel = config('vouchers.redemption.manual_channel', 'manual');
 
         $this->recordUsage(

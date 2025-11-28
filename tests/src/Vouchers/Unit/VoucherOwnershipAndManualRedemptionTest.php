@@ -70,7 +70,7 @@ it('redeems voucher manually when allowed', function (): void {
     $usage = VoucherUsage::first();
 
     expect($usage)->not->toBeNull()
-        ->and($usage->channel)->toBe(config('vouchers.redemption.channels.manual'))
+        ->and($usage->channel)->toBe(config('vouchers.redemption.manual_channel'))
         ->and($usage->metadata['reference'])->toBe('offline-001')
         ->and($usage->metadata['source'])->toBe('counter')
         ->and($usage->notes)->toBe('Redeemed at counter')

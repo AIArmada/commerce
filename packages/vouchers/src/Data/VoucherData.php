@@ -35,7 +35,7 @@ readonly class VoucherData
         public ?array $metadata,
     ) {}
 
-    public static function fromModel(mixed $voucher): self
+    public static function fromModel(\AIArmada\Vouchers\Models\Voucher $voucher): self
     {
         $type = $voucher->type;
 
@@ -77,36 +77,75 @@ readonly class VoucherData
      */
     public static function fromArray(array $data): self
     {
-        $startsAt = isset($data['starts_at'])
-            ? CarbonImmutable::parse((string) $data['starts_at'])
+        $startsAt = isset($data['starts_at']) && is_string($data['starts_at'])
+            ? CarbonImmutable::parse($data['starts_at'])
             : null;
 
-        $expiresAt = isset($data['expires_at'])
-            ? CarbonImmutable::parse((string) $data['expires_at'])
+        $expiresAt = isset($data['expires_at']) && is_string($data['expires_at'])
+            ? CarbonImmutable::parse($data['expires_at'])
             : null;
+
+        /** @var string|int $typeValue */
+        $typeValue = $data['type'] ?? VoucherType::Fixed->value;
+        /** @var string|int $statusValue */
+        $statusValue = $data['status'] ?? VoucherStatus::Active->value;
+
+        /** @var int|string|null $ownerId */
+        $ownerId = $data['owner_id'] ?? null;
+
+        /** @var array<string, mixed>|null $targetDefinition */
+        $targetDefinition = isset($data['target_definition']) && is_array($data['target_definition'])
+            ? $data['target_definition']
+            : null;
+
+        /** @var array<string, mixed>|null $metadata */
+        $metadata = isset($data['metadata']) && is_array($data['metadata'])
+            ? $data['metadata']
+            : null;
+
+        /** @var scalar|null $id */
+        $id = $data['id'] ?? '';
+        /** @var scalar|null $code */
+        $code = $data['code'] ?? '';
+        /** @var scalar|null $name */
+        $name = $data['name'] ?? '';
+        /** @var scalar|null $description */
+        $description = $data['description'] ?? null;
+        /** @var scalar|null $value */
+        $value = $data['value'] ?? 0.0;
+        /** @var scalar|null $currency */
+        $currency = $data['currency'] ?? 'MYR';
+        /** @var scalar|null $minCartValue */
+        $minCartValue = $data['min_cart_value'] ?? null;
+        /** @var scalar|null $maxDiscount */
+        $maxDiscount = $data['max_discount'] ?? null;
+        /** @var scalar|null $usageLimit */
+        $usageLimit = $data['usage_limit'] ?? null;
+        /** @var scalar|null $usageLimitPerUser */
+        $usageLimitPerUser = $data['usage_limit_per_user'] ?? null;
+        /** @var scalar|null $ownerType */
+        $ownerType = $data['owner_type'] ?? null;
 
         return new self(
-            id: isset($data['id']) ? (string) $data['id'] : '',
-            code: (string) ($data['code'] ?? ''),
-            name: (string) ($data['name'] ?? ''),
-            description: isset($data['description']) ? (string) $data['description'] : null,
-            type: VoucherType::from($data['type'] ?? VoucherType::Fixed->value),
-            value: isset($data['value']) ? (float) $data['value'] : 0.0,
-            currency: (string) ($data['currency'] ?? 'MYR'),
-            minCartValue: isset($data['min_cart_value']) ? (float) $data['min_cart_value'] : null,
-            maxDiscount: isset($data['max_discount']) ? (float) $data['max_discount'] : null,
-            usageLimit: isset($data['usage_limit']) ? (int) $data['usage_limit'] : null,
-            usageLimitPerUser: isset($data['usage_limit_per_user']) ? (int) $data['usage_limit_per_user'] : null,
-            allowsManualRedemption: (bool) ($data['allows_manual_redemption'] ?? false),
-            ownerId: $data['owner_id'] ?? null,
-            ownerType: isset($data['owner_type']) ? (string) $data['owner_type'] : null,
+            id: (string) $id,
+            code: (string) $code,
+            name: (string) $name,
+            description: $description !== null ? (string) $description : null,
+            type: VoucherType::from($typeValue),
+            value: (float) $value,
+            currency: (string) $currency,
+            minCartValue: $minCartValue !== null ? (float) $minCartValue : null,
+            maxDiscount: $maxDiscount !== null ? (float) $maxDiscount : null,
+            usageLimit: $usageLimit !== null ? (int) $usageLimit : null,
+            usageLimitPerUser: $usageLimitPerUser !== null ? (int) $usageLimitPerUser : null,
+            allowsManualRedemption: isset($data['allows_manual_redemption']) && (bool) $data['allows_manual_redemption'],
+            ownerId: $ownerId,
+            ownerType: $ownerType !== null ? (string) $ownerType : null,
             startsAt: $startsAt,
             expiresAt: $expiresAt,
-            status: VoucherStatus::from($data['status'] ?? VoucherStatus::Active->value),
-            targetDefinition: isset($data['target_definition']) && is_array($data['target_definition'])
-                ? $data['target_definition']
-                : null,
-            metadata: isset($data['metadata']) && is_array($data['metadata']) ? $data['metadata'] : null,
+            status: VoucherStatus::from($statusValue),
+            targetDefinition: $targetDefinition,
+            metadata: $metadata,
         );
     }
 
