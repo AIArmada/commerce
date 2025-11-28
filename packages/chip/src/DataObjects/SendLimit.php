@@ -46,21 +46,6 @@ final class SendLimit
         );
     }
 
-    public function getAmountInMajorUnits(): float
-    {
-        return $this->amount / 100;
-    }
-
-    public function getFeeInMajorUnits(): float
-    {
-        return $this->fee / 100;
-    }
-
-    public function getNetAmountInMajorUnits(): float
-    {
-        return $this->net_amount / 100;
-    }
-
     public function getCreatedAt(): Carbon
     {
         return $this->parseTimestamp($this->created_at);

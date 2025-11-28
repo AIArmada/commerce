@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\ClientResource\Schemas;
 
-use AIArmada\FilamentChip\Models\ChipClient;
+use AIArmada\Chip\Models\Client;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Fieldset;
 use Filament\Schemas\Components\Grid;
@@ -99,7 +99,7 @@ final class ClientInfolist
                                 ->formatStateUsing(fn (?string $state): ?string => $state !== null && $state !== '' && $state !== '0' ? mb_strtoupper($state) : null)
                                 ->placeholder('—'),
                         ])
-                        ->visible(fn (ChipClient $record): bool => filled(array_filter([
+                        ->visible(fn (Client $record): bool => filled(array_filter([
                             $record->shipping_street_address,
                             $record->shipping_city,
                             $record->shipping_state,
@@ -125,7 +125,7 @@ final class ClientInfolist
                                 ->label('Tax #')
                                 ->placeholder('—'),
                         ])
-                        ->visible(fn (ChipClient $record): bool => filled(array_filter([
+                        ->visible(fn (Client $record): bool => filled(array_filter([
                             $record->legal_name,
                             $record->brand_name,
                             $record->registration_number,
@@ -141,7 +141,7 @@ final class ClientInfolist
                                 ->label('Bank Code')
                                 ->placeholder('—'),
                         ])
-                        ->visible(fn (ChipClient $record): bool => filled(array_filter([
+                        ->visible(fn (Client $record): bool => filled(array_filter([
                             $record->bank_account,
                             $record->bank_code,
                         ]))),
@@ -162,7 +162,7 @@ final class ClientInfolist
                         ->placeholder('—'),
                 ])
                 ->collapsible()
-                ->collapsed(fn (ChipClient $record): bool => array_filter([
+                ->collapsed(fn (Client $record): bool => array_filter([
                     $record->cc,
                     $record->bcc,
                 ]) === []),

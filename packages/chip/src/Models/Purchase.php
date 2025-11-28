@@ -2,58 +2,78 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentChip\Models;
+namespace AIArmada\Chip\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 
 /**
- * @property array<string, mixed> $purchase
- * @property array<string, mixed> $client
- * @property array<array<string, mixed>> $timeline
+ * @property string|null $status
+ * @property array<string, mixed>|null $purchase
+ * @property array<string, mixed>|null $client
+ * @property array<string, mixed>|null $payment
+ * @property array<string, mixed>|null $issuer_details
+ * @property array<string, mixed>|null $transaction_data
+ * @property array<array<string, mixed>>|null $status_history
+ * @property array<string, mixed>|null $currency_conversion
+ * @property array<string>|null $payment_method_whitelist
+ * @property bool $send_receipt
+ * @property bool $is_test
+ * @property bool $is_recurring_token
+ * @property bool $skip_capture
+ * @property bool $force_recurring
+ * @property bool $marked_as_paid
+ * @property int|null $created_on
+ * @property int|null $updated_on
+ * @property int|null $due
+ * @property int|null $viewed_on
  */
-final class ChipPurchase extends ChipModel
+class Purchase extends ChipModel
 {
-    public $incrementing = false;
-
-    protected $keyType = 'string';
-
+    /** @return Attribute<int|null, never> */
     public function amount(): Attribute
     {
-        return Attribute::get(fn () => Arr::get($this->purchase, 'amount'));
+        return Attribute::get(fn (): ?int => Arr::get($this->purchase, 'amount'));
     }
 
+    /** @return Attribute<string|null, never> */
     public function currency(): Attribute
     {
-        return Attribute::get(fn () => Arr::get($this->purchase, 'currency'));
+        return Attribute::get(fn (): ?string => Arr::get($this->purchase, 'currency'));
     }
 
+    /** @return Attribute<Carbon|null, never> */
     public function createdOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?\Illuminate\Support\Carbon => $this->toTimestamp($attributes['created_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['created_on'] ?? null));
     }
 
+    /** @return Attribute<Carbon|null, never> */
     public function updatedOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?\Illuminate\Support\Carbon => $this->toTimestamp($attributes['updated_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['updated_on'] ?? null));
     }
 
+    /** @return Attribute<Carbon|null, never> */
     public function dueOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?\Illuminate\Support\Carbon => $this->toTimestamp($attributes['due'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['due'] ?? null));
     }
 
+    /** @return Attribute<Carbon|null, never> */
     public function viewedOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?\Illuminate\Support\Carbon => $this->toTimestamp($attributes['viewed_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['viewed_on'] ?? null));
     }
 
+    /** @return Attribute<string|null, never> */
     public function clientEmail(): Attribute
     {
-        return Attribute::get(fn () => Arr::get($this->client, 'email'));
+        return Attribute::get(fn (): ?string => Arr::get($this->client, 'email'));
     }
 
+    /** @return Attribute<string|null, never> */
     public function formattedTotal(): Attribute
     {
         return Attribute::get(function (): ?string {
@@ -94,6 +114,9 @@ final class ChipPurchase extends ChipModel
         return (string) str($this->status ?? 'unknown')->headline();
     }
 
+    /**
+     * @return Attribute<array<int, array{status: string, timestamp: Carbon|null, translated: string}>, never>
+     */
     public function timeline(): Attribute
     {
         return Attribute::get(function (): array {
@@ -104,7 +127,7 @@ final class ChipPurchase extends ChipModel
                 ->map(fn (array $entry): array => [
                     'status' => $entry['status'] ?? 'unknown',
                     'timestamp' => isset($entry['timestamp']) ? Carbon::createFromTimestampUTC((int) $entry['timestamp']) : null,
-                    'translated' => str($entry['status'] ?? 'unknown')->headline(),
+                    'translated' => (string) str($entry['status'] ?? 'unknown')->headline(),
                 ])
                 ->all();
         });
@@ -115,6 +138,9 @@ final class ChipPurchase extends ChipModel
         return 'purchases';
     }
 
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources;
 
-use AIArmada\FilamentChip\Models\ChipPayment;
+use AIArmada\Chip\Models\Payment;
 use AIArmada\FilamentChip\Resources\PaymentResource\Pages\ListPayments;
 use AIArmada\FilamentChip\Resources\PaymentResource\Pages\ViewPayment;
 use AIArmada\FilamentChip\Resources\PaymentResource\Schemas\PaymentInfolist;
@@ -27,7 +27,7 @@ use Override;
 
 final class PaymentResource extends BaseChipResource
 {
-    protected static ?string $model = ChipPayment::class;
+    protected static ?string $model = Payment::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
 
@@ -112,7 +112,7 @@ final class PaymentResource extends BaseChipResource
                     ]),
                 SelectFilter::make('currency')
                     ->label('Currency')
-                    ->options(fn () => ChipPayment::query()
+                    ->options(fn () => Payment::query()
                         ->select('currency')
                         ->distinct()
                         ->orderBy('currency')

@@ -13,6 +13,9 @@ use Laravel\Cashier\Subscription;
 
 /**
  * Wrapper for Stripe subscription.
+ *
+ * This class wraps a Laravel Cashier Subscription model and adapts it
+ * to the unified SubscriptionContract interface.
  */
 class StripeSubscription implements SubscriptionContract
 {
@@ -182,16 +185,17 @@ class StripeSubscription implements SubscriptionContract
      */
     public function items(): Collection
     {
-        return $this->subscription->items->map(function ($item) {
-            return new StripeSubscriptionItem($item);
-        });
+        return $this->subscription->items->map(fn ($item) => new StripeSubscriptionItem($item));
     }
 
     /**
      * Get the owner of the subscription.
+     *
+     * @return BillableContract
      */
     public function owner(): BillableContract
     {
+        /** @var BillableContract */
         return $this->subscription->owner;
     }
 

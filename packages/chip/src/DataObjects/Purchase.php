@@ -69,31 +69,49 @@ class Purchase
     ) {}
 
     /**
-     * Magic property accessor for convenient access to nested properties
-     *
-     * @param  string  $name
-     * @return mixed
+     * Get the checkout URL for this purchase.
      */
-    public function __get($name)
+    public function getCheckoutUrl(): ?string
     {
-        return match ($name) {
-            'amountInCents' => $this->purchase->getTotalInCents(),
-            'amount' => $this->purchase->total,
-            'currency' => $this->purchase->currency,
-            'checkoutUrl' => $this->checkout_url,
-            'metadata' => ($this->purchase->metadata !== null && count($this->purchase->metadata) > 0) ? $this->purchase->metadata : null,
-            'clientId' => $this->client_id,
-            'isRecurring' => $this->is_recurring_token,
-            default => null,
-        };
+        return $this->checkout_url;
     }
 
     /**
-     * @param  string  $name
+     * Get the currency code for this purchase.
      */
-    public function __isset($name): bool
+    public function getCurrency(): string
     {
-        return in_array($name, ['amountInCents', 'amount', 'currency', 'checkoutUrl', 'isRecurring', 'metadata', 'clientId']);
+        return $this->purchase->currency;
+    }
+
+    /**
+     * Get the client ID associated with this purchase.
+     */
+    public function getClientId(): ?string
+    {
+        return $this->client_id;
+    }
+
+    /**
+     * Check if this purchase uses a recurring token.
+     */
+    public function isRecurring(): bool
+    {
+        return $this->is_recurring_token;
+    }
+
+    /**
+     * Get the purchase metadata.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function getMetadata(): ?array
+    {
+        if ($this->purchase->metadata === null || count($this->purchase->metadata) === 0) {
+            return null;
+        }
+
+        return $this->purchase->metadata;
     }
 
     /**
@@ -223,13 +241,7 @@ class Purchase
         return $this->purchase->getTotalInCents();
     }
 
-    /**
-     * @deprecated Use getAmount() or getAmountInCents() instead
-     */
-    public function getAmountInMajorUnits(): float
-    {
-        return $this->purchase->total->getAmount() / 100;
-    }
+
 
     public function getCreatedAt(): Carbon
     {
@@ -327,21 +339,7 @@ class Purchase
         return (int) $this->refundable_amount->getAmount();
     }
 
-    /**
-     * @deprecated Use getAmount() instead
-     */
-    public function getAmountInCurrency(): float
-    {
-        return $this->purchase->total->getAmount() / 100;
-    }
 
-    /**
-     * @deprecated Use getRefundableAmount() instead
-     */
-    public function getRefundableAmountInCurrency(): float
-    {
-        return $this->refundable_amount->getAmount() / 100;
-    }
 
     /**
      * @return array<string, mixed>

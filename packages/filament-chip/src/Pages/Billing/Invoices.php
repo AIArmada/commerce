@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Pages\Billing;
 
-use AIArmada\CashierChip\Invoice;
+use AIArmada\FilamentChip\Concerns\InteractsWithBillable;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Collection;
+use Symfony\Component\HttpFoundation\Response;
 
 class Invoices extends Page
 {
+    use InteractsWithBillable;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
 
     protected static ?int $navigationSort = 30;
@@ -29,11 +32,17 @@ class Invoices extends Page
         return (bool) config('filament-chip.billing.features.invoices', true);
     }
 
+<<<<<<< Updated upstream
     public function getTitle(): string|Htmlable
     {
         return __('Billing History');
     }
 
+=======
+    /**
+     * @return array<string, mixed>
+     */
+>>>>>>> Stashed changes
     public function getViewData(): array
     {
         return [
@@ -42,6 +51,7 @@ class Invoices extends Page
         ];
     }
 
+<<<<<<< Updated upstream
     public function downloadInvoice(string $invoiceId): mixed
     {
         $billable = $this->getBillable();
@@ -106,8 +116,10 @@ class Invoices extends Page
         return $user;
     }
 
+=======
+>>>>>>> Stashed changes
     /**
-     * @return Collection<int, Invoice>
+     * @return Collection<int, mixed>
      */
     protected function getInvoices(): Collection
     {
@@ -119,4 +131,50 @@ class Invoices extends Page
 
         return $billable->invoices();
     }
+<<<<<<< Updated upstream
+=======
+
+    public function downloadInvoice(string $invoiceId): Response
+    {
+        $billable = $this->getBillable();
+
+        if (! $billable || ! method_exists($billable, 'findInvoice')) {
+            abort(404);
+        }
+
+        $invoice = $billable->findInvoice($invoiceId);
+
+        if (! $invoice) {
+            abort(404);
+        }
+
+        return $invoice->download([
+            'vendor' => config('filament-chip.billing.invoice.vendor_name', config('app.name')),
+            'product' => config('filament-chip.billing.invoice.product_name', 'Subscription'),
+        ]);
+    }
+
+    public function formatInvoiceStatus(string $status): string
+    {
+        $statuses = [
+            'paid' => __('Paid'),
+            'open' => __('Open'),
+            'void' => __('Void'),
+            'uncollectible' => __('Uncollectible'),
+            'draft' => __('Draft'),
+        ];
+
+        return $statuses[strtolower($status)] ?? ucfirst($status);
+    }
+
+    public function getStatusColor(string $status): string
+    {
+        return match (strtolower($status)) {
+            'paid' => 'success',
+            'open' => 'warning',
+            'void', 'uncollectible' => 'danger',
+            default => 'gray',
+        };
+    }
+>>>>>>> Stashed changes
 }

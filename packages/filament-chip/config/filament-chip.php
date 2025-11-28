@@ -49,8 +49,20 @@ return [
         // Path prefix for the billing portal (e.g., /billing)
         'path' => 'billing',
 
+        // Brand name displayed in the portal
+        'brand_name' => env('CHIP_BILLING_BRAND_NAME', 'Billing Portal'),
+
+        // Primary color for the portal theme
+        'primary_color' => env('CHIP_BILLING_PRIMARY_COLOR', '#6366f1'),
+
+        // Enable login page for the billing portal
+        'login_enabled' => env('CHIP_BILLING_LOGIN_ENABLED', true),
+
         // Authentication guard for the billing portal
         'auth_guard' => 'web',
+
+        // Allowed roles for accessing the billing portal (empty = all authenticated users)
+        'allowed_roles' => [],
 
         // The billable model (user or team)
         'billable_model' => null, // e.g., App\Models\User::class

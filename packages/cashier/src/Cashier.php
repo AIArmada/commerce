@@ -5,13 +5,20 @@ declare(strict_types=1);
 namespace AIArmada\Cashier;
 
 use AIArmada\Cashier\Contracts\GatewayContract;
+<<<<<<< Updated upstream
 use AIArmada\Cashier\Models\Subscription;
 use AIArmada\Cashier\Models\SubscriptionItem;
 use Akaunting\Money\Money;
 use Closure;
+=======
+>>>>>>> Stashed changes
 
 /**
  * Main Cashier class for multi-gateway payment management.
+ *
+ * This is a wrapper/adapter layer that delegates to underlying gateway packages
+ * (laravel/cashier for Stripe, aiarmada/cashier-chip for CHIP).
+ * No tables are created - subscriptions are stored in the respective package's tables.
  */
 class Cashier
 {
@@ -19,16 +26,6 @@ class Cashier
      * The customer model class.
      */
     public static string $customerModel = 'App\\Models\\User';
-
-    /**
-     * The Subscription model class.
-     */
-    public static string $subscriptionModel = Subscription::class;
-
-    /**
-     * The SubscriptionItem model class.
-     */
-    public static string $subscriptionItemModel = SubscriptionItem::class;
 
     /**
      * Indicates if past due subscriptions should be considered inactive.
@@ -46,6 +43,7 @@ class Cashier
     public static bool $registersRoutes = true;
 
     /**
+<<<<<<< Updated upstream
      * Indicates if Cashier migrations will be run.
      */
     public static bool $runsMigrations = true;
@@ -56,6 +54,8 @@ class Cashier
     protected static ?Closure $formatCurrencyUsing = null;
 
     /**
+=======
+>>>>>>> Stashed changes
      * Get the GatewayManager instance.
      */
     public static function gateway(?string $gateway = null): GatewayContract
@@ -80,27 +80,19 @@ class Cashier
     }
 
     /**
-     * Set the Subscription model class.
-     */
-    public static function useSubscriptionModel(string $model): void
-    {
-        static::$subscriptionModel = $model;
-    }
-
-    /**
-     * Set the SubscriptionItem model class.
-     */
-    public static function useSubscriptionItemModel(string $model): void
-    {
-        static::$subscriptionItemModel = $model;
-    }
-
-    /**
      * Set whether past due subscriptions should be considered inactive.
      */
     public static function deactivatePastDue(bool $deactivate = true): void
     {
         static::$deactivatePastDue = $deactivate;
+
+        // Sync to underlying packages if available
+        if (class_exists(\Laravel\Cashier\Cashier::class)) {
+            \Laravel\Cashier\Cashier::$deactivatePastDue = $deactivate;
+        }
+        if (class_exists(\AIArmada\CashierChip\CashierChip::class)) {
+            \AIArmada\CashierChip\CashierChip::$deactivatePastDue = $deactivate;
+        }
     }
 
     /**
@@ -109,6 +101,14 @@ class Cashier
     public static function deactivateIncomplete(bool $deactivate = true): void
     {
         static::$deactivateIncomplete = $deactivate;
+
+        // Sync to underlying packages if available
+        if (class_exists(\Laravel\Cashier\Cashier::class)) {
+            \Laravel\Cashier\Cashier::$deactivateIncomplete = $deactivate;
+        }
+        if (class_exists(\AIArmada\CashierChip\CashierChip::class)) {
+            \AIArmada\CashierChip\CashierChip::$deactivateIncomplete = $deactivate;
+        }
     }
 
     /**
@@ -143,14 +143,6 @@ class Cashier
     }
 
     /**
-     * Configure Cashier to not run its migrations.
-     */
-    public static function ignoreMigrations(): void
-    {
-        static::$runsMigrations = false;
-    }
-
-    /**
      * Get the default currency.
      */
     public static function defaultCurrency(): string
@@ -174,5 +166,15 @@ class Cashier
     public static function availableGateways(): array
     {
         return array_keys(config('cashier.gateways', []));
+    }
+
+    /**
+     * Get supported gateways (alias for facade compatibility).
+     *
+     * @return array<string>
+     */
+    public static function supportedGateways(): array
+    {
+        return static::availableGateways();
     }
 }

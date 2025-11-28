@@ -8,6 +8,11 @@ use Illuminate\Support\ServiceProvider;
 
 /**
  * Service provider for the unified multi-gateway Cashier package.
+ *
+ * This package provides a unified interface for multiple payment gateways.
+ * It does NOT create its own tables - subscriptions are stored in the
+ * respective gateway package's tables (subscriptions for Stripe,
+ * chip_subscriptions for CHIP).
  */
 class CashierServiceProvider extends ServiceProvider
 {
@@ -31,7 +36,6 @@ class CashierServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->registerPublishing();
-        $this->registerMigrations();
         $this->registerRoutes();
     }
 
@@ -57,20 +61,6 @@ class CashierServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__.'/../config/cashier.php' => $this->app->configPath('cashier.php'),
             ], 'cashier-config');
-
-            $this->publishes([
-                __DIR__.'/../database/migrations' => $this->app->databasePath('migrations'),
-            ], 'cashier-migrations');
-        }
-    }
-
-    /**
-     * Register the package's migrations.
-     */
-    protected function registerMigrations(): void
-    {
-        if (Cashier::$runsMigrations && $this->app->runningInConsole()) {
-            $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         }
     }
 

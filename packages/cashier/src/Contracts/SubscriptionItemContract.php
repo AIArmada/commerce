@@ -4,17 +4,32 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Contracts;
 
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Contracts\Support\Arrayable;
 
 /**
- * Contract for subscription item models.
+ * Contract for subscription item wrappers.
+ *
+ * This contract defines the interface for subscription item wrappers that adapt
+ * underlying gateway subscription items to a unified interface.
+ *
+ * @extends Arrayable<string, mixed>
  */
-interface SubscriptionItemContract
+interface SubscriptionItemContract extends Arrayable
 {
+    /**
+     * Get the item's local ID.
+     */
+    public function id(): string;
+
     /**
      * Get the item's gateway ID.
      */
     public function gatewayId(): string;
+
+    /**
+     * Get the gateway name.
+     */
+    public function gateway(): string;
 
     /**
      * Get the item's price ID.
@@ -29,47 +44,32 @@ interface SubscriptionItemContract
     /**
      * Get the item's quantity.
      */
-    public function quantity(): int;
-
-    /**
-     * Get the item's unit amount in cents.
-     */
-    public function unitAmount(): ?int;
+    public function quantity(): ?int;
 
     /**
      * Update the quantity.
      */
-    public function updateQuantity(int $quantity): self;
+    public function updateQuantity(int $quantity): static;
 
     /**
      * Increment the quantity.
      */
-    public function incrementQuantity(int $count = 1): self;
+    public function incrementQuantity(int $count = 1): static;
 
     /**
      * Decrement the quantity.
      */
-    public function decrementQuantity(int $count = 1): self;
+    public function decrementQuantity(int $count = 1): static;
 
     /**
      * Swap to a new price.
      *
      * @param  array<string, mixed>  $options
      */
-    public function swap(string $price, array $options = []): self;
+    public function swap(string $price, array $options = []): static;
 
     /**
-     * Get the parent subscription.
+     * Get the underlying gateway subscription item.
      */
-    public function subscription(): BelongsTo;
-
-    /**
-     * Determine if the item is on trial.
-     */
-    public function onTrial(): bool;
-
-    /**
-     * Determine if the item is on grace period.
-     */
-    public function onGracePeriod(): bool;
+    public function asGatewayItem(): mixed;
 }

@@ -52,11 +52,6 @@ final class SendInstruction
         return Carbon::parse($this->updated_at);
     }
 
-    public function getAmountInMajorUnits(): float
-    {
-        return (float) $this->amount;
-    }
-
     public function getAmountInMinorUnits(): int
     {
         return (int) (((float) $this->amount) * 100);

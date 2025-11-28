@@ -64,10 +64,6 @@ class BillingPanelProvider extends PanelProvider
             $panel->login();
         }
 
-        if ((bool) config('filament-chip.billing.registration_enabled', false)) {
-            $panel->registration();
-        }
-
         $guard = config('filament-chip.billing.auth_guard', 'web');
         if ($guard) {
             $panel->authGuard($guard);

@@ -5,21 +5,33 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Contracts;
 
 use Carbon\CarbonInterface;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Contracts\Support\Jsonable;
+use Illuminate\Support\Collection;
 
 /**
- * Contract for subscription models.
+ * Contract for subscription wrappers.
+ *
+ * This contract defines the interface for subscription wrappers that adapt
+ * underlying gateway subscriptions (Laravel Cashier, CashierChip) to a
+ * unified interface.
+ *
+ * @extends Arrayable<string, mixed>
  */
-interface SubscriptionContract
+interface SubscriptionContract extends Arrayable, Jsonable
 {
     /**
-     * Get the subscription's gateway.
+     * Get the subscription ID (local database ID).
+     */
+    public function id(): string;
+
+    /**
+     * Get the subscription's gateway name.
      */
     public function gateway(): string;
 
     /**
-     * Get the subscription's gateway ID.
+     * Get the subscription's gateway ID (e.g., Stripe subscription ID).
      */
     public function gatewayId(): string;
 
@@ -27,11 +39,6 @@ interface SubscriptionContract
      * Get the subscription type.
      */
     public function type(): string;
-
-    /**
-     * Get the subscription status.
-     */
-    public function status(): string;
 
     /**
      * Determine if the subscription is active.
@@ -84,14 +91,14 @@ interface SubscriptionContract
     public function incomplete(): bool;
 
     /**
+     * Determine if the subscription has an incomplete payment.
+     */
+    public function hasIncompletePayment(): bool;
+
+    /**
      * Determine if the subscription has a specific price.
      */
     public function hasPrice(string $price): bool;
-
-    /**
-     * Determine if the subscription has a specific product.
-     */
-    public function hasProduct(string $product): bool;
 
     /**
      * Get the trial end date.
@@ -99,23 +106,24 @@ interface SubscriptionContract
     public function trialEndsAt(): ?CarbonInterface;
 
     /**
-     * Get the end date.
+     * Get the subscription end date.
      */
     public function endsAt(): ?CarbonInterface;
 
     /**
-     * Cancel the subscription at period end.
+     * Get the current period start.
      */
-    public function cancel(): self;
+    public function currentPeriodStart(): ?CarbonInterface;
 
     /**
-     * Cancel the subscription immediately.
+     * Get the current period end.
      */
-    public function cancelNow(): self;
+    public function currentPeriodEnd(): ?CarbonInterface;
 
     /**
-     * Cancel the subscription immediately and invoice.
+     * Get the subscription quantity.
      */
+<<<<<<< Updated upstream
     public function cancelNowAndInvoice(): self;
 
     /**
@@ -159,21 +167,64 @@ interface SubscriptionContract
      * Get the quantity.
      */
     public function quantity(?string $price = null): int;
+=======
+    public function quantity(): ?int;
+>>>>>>> Stashed changes
 
     /**
      * Get the subscription items.
+     *
+     * @return Collection<int, SubscriptionItemContract>
      */
-    public function items(): HasMany;
+    public function items(): Collection;
 
     /**
      * Get the owner of the subscription.
      */
-    public function owner(): BelongsTo;
+    public function owner(): BillableContract;
 
     /**
-     * Sync the subscription with the gateway.
+     * Cancel the subscription at period end.
      */
-    public function syncFromGateway(): self;
+    public function cancel(): static;
+
+    /**
+     * Cancel the subscription immediately.
+     */
+    public function cancelNow(): static;
+
+    /**
+     * Cancel the subscription immediately and invoice.
+     */
+    public function cancelNowAndInvoice(): static;
+
+    /**
+     * Resume a canceled subscription.
+     */
+    public function resume(): static;
+
+    /**
+     * Swap to a new price.
+     *
+     * @param  string|array<string>  $prices
+     * @param  array<string, mixed>  $options
+     */
+    public function swap(string|array $prices, array $options = []): static;
+
+    /**
+     * Update the quantity.
+     */
+    public function updateQuantity(int $quantity, ?string $price = null): static;
+
+    /**
+     * Increment the quantity.
+     */
+    public function incrementQuantity(int $count = 1, ?string $price = null): static;
+
+    /**
+     * Decrement the quantity.
+     */
+    public function decrementQuantity(int $count = 1, ?string $price = null): static;
 
     /**
      * Get the underlying gateway subscription object.

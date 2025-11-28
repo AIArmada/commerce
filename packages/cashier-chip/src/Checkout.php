@@ -4,14 +4,21 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip;
 
+<<<<<<< Updated upstream
 use AIArmada\Chip\Facades\ChipCollect;
+=======
+use AIArmada\Chip\DataObjects\Purchase;
+>>>>>>> Stashed changes
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use JsonSerializable;
+<<<<<<< Updated upstream
 use ReturnTypeWillChange;
+=======
+>>>>>>> Stashed changes
 
 /**
  * CHIP Checkout wrapper class.
@@ -28,23 +35,31 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     protected $owner;
 
     /**
+<<<<<<< Updated upstream
      * The CHIP purchase data (checkout session).
+=======
+     * The CHIP purchase instance.
+>>>>>>> Stashed changes
      */
-    protected array $purchase;
+    protected Purchase $purchase;
 
     /**
      * Create a new checkout instance.
      *
      * @param  \Illuminate\Database\Eloquent\Model|null  $owner
+<<<<<<< Updated upstream
      * @return void
+=======
+>>>>>>> Stashed changes
      */
-    public function __construct($owner, array $purchase)
+    public function __construct($owner, Purchase $purchase)
     {
         $this->owner = $owner;
         $this->purchase = $purchase;
     }
 
     /**
+<<<<<<< Updated upstream
      * Dynamically get values from the purchase data.
      *
      * @return mixed
@@ -55,6 +70,8 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     }
 
     /**
+=======
+>>>>>>> Stashed changes
      * Begin a new guest checkout session.
      */
     public static function guest(): CheckoutBuilder
@@ -77,53 +94,79 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
      *
      * @param  \Illuminate\Database\Eloquent\Model|null  $owner
      * @param  int  $amount  Amount in cents
+<<<<<<< Updated upstream
+=======
+     * @param  array<string, mixed>  $options
+>>>>>>> Stashed changes
      */
     public static function create($owner, int $amount, array $options = []): self
     {
-        $purchaseData = [
-            'products' => $options['products'] ?? [[
-                'name' => $options['reference'] ?? 'Payment',
-                'price' => $amount / 100, // Convert cents to decimal
-                'quantity' => 1,
-            ]],
-            'currency' => $options['currency'] ?? config('cashier-chip.currency', 'MYR'),
-            'send_receipt' => $options['send_receipt'] ?? true,
-            'success_callback' => $options['success_url'] ?? config('cashier-chip.success_url', url('/checkout/success')),
-            'failure_callback' => $options['cancel_url'] ?? config('cashier-chip.cancel_url', url('/checkout/cancel')),
-            'callback_url' => $options['webhook_url'] ?? config('cashier-chip.webhook_url'),
-        ];
+        $builder = CashierChip::chip()->purchase()
+            ->currency($options['currency'] ?? config('cashier-chip.currency', 'MYR'));
+
+        // Add products
+        if (isset($options['products'])) {
+            foreach ($options['products'] as $product) {
+                $builder->addProduct(
+                    $product['name'],
+                    $product['price'],
+                    $product['quantity'] ?? 1
+                );
+            }
+        } else {
+            $builder->addProduct(
+                $options['reference'] ?? 'Payment',
+                $amount
+            );
+        }
 
         // Add client information if owner exists
         if ($owner) {
-            $purchaseData['client'] = [
-                'email' => $owner->email ?? null,
-                'full_name' => $owner->name ?? null,
-                'phone' => $owner->phone ?? null,
-            ];
-
-            // Add CHIP client ID if exists
-            if ($chipId = $owner->chipId()) {
-                $purchaseData['client']['id'] = $chipId;
+            if (method_exists($owner, 'chipId') && $owner->chipId()) {
+                $builder->clientId($owner->chipId());
+            } else {
+                $builder->customer(
+                    email: $owner->email ?? '',
+                    fullName: $owner->name ?? null,
+                    phone: $owner->phone ?? null
+                );
             }
+        }
+
+        // Add redirect URLs
+        if (isset($options['success_url'])) {
+            $builder->successUrl($options['success_url']);
+        }
+
+        if (isset($options['cancel_url'])) {
+            $builder->failureUrl($options['cancel_url']);
+        }
+
+        if (isset($options['webhook_url'])) {
+            $builder->webhook($options['webhook_url']);
+        }
+
+        // Configure receipt
+        if (isset($options['send_receipt'])) {
+            $builder->sendReceipt($options['send_receipt']);
         }
 
         // Add recurring token request if specified
         if ($options['recurring'] ?? false) {
-            $purchaseData['send_recurring_token'] = true;
+            $builder->forceRecurring(true);
         }
 
         // Add reference
         if (isset($options['reference'])) {
-            $purchaseData['reference'] = $options['reference'];
+            $builder->reference($options['reference']);
         }
 
         // Merge any additional metadata
         if (isset($options['metadata'])) {
-            $purchaseData['metadata'] = $options['metadata'];
+            $builder->metadata($options['metadata']);
         }
 
-        // Create the purchase via CHIP API
-        $purchase = ChipCollect::createPurchase($purchaseData);
+        $purchase = $builder->create();
 
         return new static($owner, $purchase);
     }
@@ -133,15 +176,15 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
      */
     public function url(): ?string
     {
-        return $this->purchase['checkout_url'] ?? null;
+        return $this->purchase->getCheckoutUrl();
     }
 
     /**
      * Get the purchase ID.
      */
-    public function id(): ?string
+    public function id(): string
     {
-        return $this->purchase['id'] ?? null;
+        return $this->purchase->id;
     }
 
     /**
@@ -149,7 +192,7 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
      */
     public function redirect(): RedirectResponse
     {
-        return Redirect::to($this->url(), 303);
+        return Redirect::to($this->url() ?? '', 303);
     }
 
     /**
@@ -174,9 +217,13 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     }
 
     /**
+<<<<<<< Updated upstream
      * Get the underlying CHIP purchase data.
+=======
+     * Get the underlying CHIP purchase.
+>>>>>>> Stashed changes
      */
-    public function asChipPurchase(): array
+    public function asChipPurchase(): Purchase
     {
         return $this->purchase;
     }
@@ -191,16 +238,24 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
     /**
      * Get the instance as an array.
+<<<<<<< Updated upstream
+=======
+     *
+     * @return array<string, mixed>
+>>>>>>> Stashed changes
      */
     public function toArray(): array
     {
-        return $this->purchase;
+        return $this->purchase->toArray();
     }
 
     /**
      * Convert the object to its JSON representation.
+<<<<<<< Updated upstream
      *
      * @param  int  $options
+=======
+>>>>>>> Stashed changes
      */
     public function toJson($options = 0): string
     {
@@ -209,10 +264,28 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
     /**
      * Convert the object into something JSON serializable.
+<<<<<<< Updated upstream
+=======
+     *
+     * @return array<string, mixed>
+>>>>>>> Stashed changes
      */
     #[ReturnTypeWillChange]
     public function jsonSerialize(): array
     {
         return $this->toArray();
     }
+<<<<<<< Updated upstream
+=======
+
+    /**
+     * Dynamically get values from the purchase.
+     *
+     * @return mixed
+     */
+    public function __get(string $key)
+    {
+        return $this->purchase->{$key} ?? null;
+    }
+>>>>>>> Stashed changes
 }

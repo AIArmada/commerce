@@ -1,93 +1,33 @@
 # AIArmada Cart Documentation
 
-Welcome to the complete documentation for AIArmada Cart—a modern, production-grade shopping cart engine for Laravel 12. This documentation guides you from installation through advanced deployment scenarios.
+Welcome to the documentation for AIArmada Cart—a modern shopping cart engine for Laravel 12.
 
-## 📖 About This Documentation
+## Quick Links
 
-This documentation is organized into four main sections:
+| Guide | Description |
+|-------|-------------|
+| [Getting Started](getting-started.md) | Installation, configuration, first cart operation |
+| [Cart Operations](cart-operations.md) | Adding, updating, removing items; totals and metadata |
+| [Conditions & Pricing](conditions.md) | Discounts, taxes, fees, shipping, dynamic rules |
+| [Storage Drivers](storage.md) | Session, cache, database; choosing the right driver |
+| [Configuration](configuration.md) | Complete configuration reference |
+| [Payment Integration](payment-integration.md) | Connect to CHIP, Stripe, or custom gateways |
+| [Money & Currency](money-and-currency.md) | Precise financial calculations |
+| [User Migration](identifiers-and-migration.md) | Guest-to-user cart migration |
+| [Concurrency](concurrency.md) | Handling concurrent modifications |
+| [Events](events.md) | Cart lifecycle events |
+| [Buyable Products](buyable-products.md) | Integrating product models |
+| [API Reference](api-reference.md) | Complete method signatures |
+| [Examples](examples.md) | Real-world code patterns |
+| [Troubleshooting](troubleshooting.md) | Common issues and solutions |
 
-1. **Essentials** – Get started and understand core concepts
-2. **Core Features** – Master day-to-day cart operations
-3. **Advanced Topics** – Handle complex scenarios and scaling
-4. **Reference** – Quick lookups and troubleshooting
+## Key Concepts
 
-## 🎯 Choose Your Path
-
-### New to AIArmada Cart?
-Start here to get up and running quickly:
-1. [Installation & Setup](getting-started.md) – Install and configure the package
-2. [Cart Operations](cart-operations.md) – Learn the core API
-3. [Quick Examples](examples.md) – Copy-paste common scenarios
-
-### Building a Feature?
-Jump directly to the relevant guide:
-- **Pricing & Discounts** → [Conditions & Pricing](conditions.md)
-- **Payment Checkout** → [Payment Integration](payment-integration.md)
-- **User Login Flow** → [User Migration](identifiers-and-migration.md)
-- **Multi-Device Carts** → [Storage Drivers](storage.md)
-- **High Traffic** → [Concurrency Control](concurrency.md)
-
-### Deploying to Production?
-Review these essential guides:
-1. [Storage Drivers](storage.md) – Choose the right storage backend
-2. [Concurrency Control](concurrency.md) – Handle concurrent access
-
-## 📚 Complete Documentation Index
-
-### Essentials
-
-Get started and understand the fundamentals.
-
-| Guide | What You'll Learn |
-|-------|------------------|
-| **[Installation & Setup](getting-started.md)** | Install the package, run your first cart operation, verify everything works |
-| **[Configuration](configuration.md)** | Complete reference of all configuration options with examples |
-
-### Core Features
-
-Master the day-to-day operations you'll use most frequently.
-
-| Guide | What You'll Learn |
-|-------|------------------|
-| **[Cart Operations](cart-operations.md)** | Add, update, remove items; calculate totals; manage metadata; work with collections |
-| **[Conditions & Pricing](conditions.md)** | Create discounts, taxes, fees, shipping rules; build dynamic conditions; understand calculation order |
-| **[Storage Drivers](storage.md)** | Choose between session, cache, or database; understand trade-offs; implement custom drivers |
-| **[Money & Currency](money-and-currency.md)** | Work with Money objects; format for display; handle multi-currency scenarios |
-| **[Payment Integration](payment-integration.md)** | Connect to payment gateways (CHIP, Stripe, etc.); implement CheckoutableInterface; handle webhooks |
-
-### Advanced Topics
-
-Handle complex scenarios, scaling, and production deployments.
-
-| Guide | What You'll Learn |
-|-------|------------------|
-| **[User Migration](identifiers-and-migration.md)** | Migrate guest carts to authenticated users; understand merge strategies; handle edge cases |
-| **[Concurrency Control](concurrency.md)** | Prevent race conditions; handle conflicts; implement retry logic; use optimistic locking |
-| **[Event System](events.md)** | Listen to cart events; build audit trails; integrate with external systems; test events |
-
-### Reference
-
-Quick lookups, troubleshooting, and complete API documentation.
-
-| Guide | What You'll Learn |
-|-------|------------------|
-| **[API Reference](api-reference.md)** | Complete method signatures; facade methods; collections; exceptions |
-| **[Quick Examples](examples.md)** | Copy-paste recipes for common scenarios and patterns |
-| **[Troubleshooting](troubleshooting.md)** | Solutions to common issues; debugging tips |
-
-## 💡 Key Concepts
-
-Before diving into the guides, familiarize yourself with these core concepts:
-
-### Carts vs Instances
-- A **cart** is a collection of items for a specific user
-- An **instance** is a named cart bucket (e.g., `'default'`, `'wishlist'`, `'quote'`)
-- Users can have multiple instances simultaneously without collision
+### Instances
+A cart **instance** is a named bucket (e.g., `default`, `wishlist`, `quote`). Users can have multiple instances simultaneously.
 
 ### Identifiers
-- **Identifier** determines *who* owns the cart (user ID or session ID)
-- Automatically resolved from authenticated user or session
-- Can be explicitly set for custom scenarios
+The **identifier** determines cart ownership—automatically resolved from authenticated user or session.
 
 ### Storage Drivers
 - **Session**: Fast, ephemeral, single-device
@@ -95,85 +35,44 @@ Before diving into the guides, familiarize yourself with these core concepts:
 - **Database**: Persistent, cross-device, analytics-ready
 
 ### Conditions
-- Modify prices at three levels: **item**, **subtotal**, **total**
-- Support percentages, fixed amounts, and dynamic rules
-- Execute in predictable order based on target and priority
+Modify prices at three levels: **item**, **subtotal**, **total**. Support percentages, fixed amounts, and dynamic rules.
 
 ### Money Objects
-All monetary values use [`Akaunting\Money`](https://github.com/akaunting/money) for precision:
-- `->format()` for display: `"$1,234.56"`
-- `->getAmount()` for calculations: `1234.56`
-- Avoids floating-point precision issues
+All monetary values use `Akaunting\Money` for precision—no floating-point errors.
 
-## 🎓 Learning Paths
-
-### For E-commerce Developers
-1. [Installation & Setup](getting-started.md)
-2. [Cart Operations](cart-operations.md)
-3. [Conditions & Pricing](conditions.md)
-4. [User Migration](identifiers-and-migration.md)
-5. [Quick Examples](examples.md)
-
-### For API Developers
-1. [Installation & Setup](getting-started.md)
-2. [Storage Drivers](storage.md) (use cache or database)
-3. [API Reference](api-reference.md)
-4. [Concurrency Control](concurrency.md)
-
-### For Enterprise Teams
-1. [Storage Drivers](storage.md) (use database)
-2. [Concurrency Control](concurrency.md)
-3. [Event System](events.md)
-4. [Examples](examples.md)
-
-## 🔍 Quick Reference
-
-### Common Tasks
-
-| Task | Method |
-|------|--------|
-| Add item | `Cart::add($id, $name, $price, $qty, $attributes)` |
-| Update quantity | `Cart::update($id, ['quantity' => $qty])` |
-| Remove item | `Cart::remove($id)` |
-| Get total | `Cart::total()->format()` |
-| Apply discount | `Cart::addDiscount($name, '-10%')` |
-| Add tax | `Cart::addTax($name, '8%')` |
-| Switch instance | `Cart::instance('wishlist')` |
-| Clear cart | `Cart::clear()` |
-
-### Storage Configuration
+## Quick Start
 
 ```php
-// config/cart.php
-'storage' => 'database', // session, cache, or database
+use AIArmada\Cart\Facades\Cart;
+
+// Add item
+Cart::add('sku-001', 'Product Name', 29.99, 2, ['size' => 'L']);
+
+// Apply discount
+Cart::addDiscount('promo', '10%');
+
+// Get total
+echo Cart::total()->format(); // "$53.98"
+
+// Switch instance
+Cart::instance('wishlist')->add('sku-002', 'Another Product', 49.99);
 ```
 
-### Migration Configuration
+## Installation
 
-```php
-// config/cart.php
-'migration' => [
-    'auto_migrate_on_login' => true,
-    'merge_strategy' => 'add_quantities',
-],
+```bash
+composer require aiarmada/cart
+php artisan vendor:publish --tag=cart-config
+php artisan vendor:publish --tag=cart-migrations
+php artisan migrate
 ```
 
-## 🆘 Need Help?
+## Getting Help
 
-- **Can't find what you're looking for?** Check the [Troubleshooting](troubleshooting.md) guide
-- **Found a bug?** Open an issue on [GitHub](https://github.com/aiarmada/cart/issues)
-- **Have a question?** Start a [discussion](https://github.com/aiarmada/cart/discussions)
-- **Security concern?** Email security@aiarmada.dev
-
-## 📝 Contributing to Documentation
-
-Found an error or want to improve the docs? Contributions are welcome!
-
-1. Fork the repository
-2. Edit files in the `docs/` directory
-3. Follow the existing structure and style
-4. Submit a pull request
+- Check [Troubleshooting](troubleshooting.md) for common issues
+- Review [Examples](examples.md) for code patterns
+- Open an issue on GitHub for bugs
 
 ---
 
-**Ready to start?** Begin with [Installation & Setup](getting-started.md) →
+**Ready?** Start with [Getting Started](getting-started.md) →

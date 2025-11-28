@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Pages\Billing;
 
-use AIArmada\CashierChip\PaymentMethod;
+use AIArmada\FilamentChip\Concerns\InteractsWithBillable;
 use BackedEnum;
 use Exception;
 use Filament\Actions\Action;
@@ -12,10 +12,11 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Support\Collection;
 
 class PaymentMethods extends Page
 {
+    use InteractsWithBillable;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCreditCard;
 
     protected static ?int $navigationSort = 20;
@@ -32,22 +33,27 @@ class PaymentMethods extends Page
         return (bool) config('filament-chip.billing.features.payment_methods', true);
     }
 
+<<<<<<< Updated upstream
     public function getTitle(): string|Htmlable
     {
         return __('Payment Methods');
     }
 
+=======
+    /**
+     * @return array<string, mixed>
+     */
+>>>>>>> Stashed changes
     public function getViewData(): array
     {
-        $billable = $this->getBillable();
-
         return [
-            'billable' => $billable,
+            'billable' => $this->getBillable(),
             'paymentMethods' => $this->getPaymentMethods(),
-            'defaultPaymentMethod' => $billable?->defaultPaymentMethod(),
+            'defaultPaymentMethod' => $this->getDefaultPaymentMethod(),
         ];
     }
 
+<<<<<<< Updated upstream
     public function setAsDefault(string $paymentMethodId): void
     {
         $billable = $this->getBillable();
@@ -142,20 +148,11 @@ class PaymentMethods extends Page
         return $user;
     }
 
+=======
+>>>>>>> Stashed changes
     /**
-     * @return Collection<int, PaymentMethod>
+     * @return array<Action>
      */
-    protected function getPaymentMethods(): Collection
-    {
-        $billable = $this->getBillable();
-
-        if (! $billable || ! method_exists($billable, 'paymentMethods')) {
-            return collect();
-        }
-
-        return $billable->paymentMethods();
-    }
-
     protected function getHeaderActions(): array
     {
         return [
@@ -168,7 +165,7 @@ class PaymentMethods extends Page
         ];
     }
 
-    protected function getAddPaymentMethodUrl(): string
+    public function getAddPaymentMethodUrl(): string
     {
         $billable = $this->getBillable();
 
@@ -176,7 +173,7 @@ class PaymentMethods extends Page
             return '#';
         }
 
-        $panelId = config('filament-chip.billing.panel_id', 'billing');
+        $panelId = $this->getBillingPanelId();
         $successUrl = config('filament-chip.billing.redirects.after_payment_method_added')
             ?? route("filament.{$panelId}.pages.payment-methods");
 

@@ -1,368 +1,317 @@
 # Buyable Products
 
-The Cart package provides a `BuyableInterface` contract and supporting traits for integrating your product models with the cart system. This provides automatic validation for stock, quantity limits, and purchasability.
+Integrate Eloquent models with the cart using `BuyableInterface`.
 
 ## Quick Start
 
-### 1. Implement BuyableInterface on Your Model
+### 1. Implement BuyableInterface
 
 ```php
 use AIArmada\Cart\Contracts\BuyableInterface;
-use AIArmada\Cart\Concerns\Buyable;
+use Akaunting\Money\Money;
 
 class Product extends Model implements BuyableInterface
 {
-    use Buyable;
+    public function getBuyableIdentifier(): string
+    {
+        return $this->id;
+    }
     
-    // The trait provides default implementations
-    // Override methods as needed for your specific requirements
+    public function getBuyableName(): string
+    {
+        return $this->name;
+    }
+    
+    public function getBuyablePrice(): Money
+    {
+        return Money::MYR($this->price);
+    }
+    
+    public function getBuyableMetadata(): array
+    {
+        return [
+            'sku' => $this->sku,
+            'weight' => $this->weight,
+            'image' => $this->image_url,
+        ];
+    }
 }
 ```
 
-### 2. Add Products to Cart
+### 2. Add to Cart
 
 ```php
-use AIArmada\Cart\Facades\Cart;
-
 $product = Product::find(1);
 
-// Add with validation
-Cart::addBuyable($product, quantity: 2);
+// Add directly - extracts buyable properties automatically
+Cart::addBuyable($product, 2);
 
-// Add with extra attributes
+// With extra metadata
 Cart::addBuyable($product, 1, [
     'gift_wrap' => true,
     'message' => 'Happy Birthday!',
 ]);
 ```
 
-## BuyableInterface Methods
-
-| Method | Description | Required |
-|--------|-------------|----------|
-| `getBuyableIdentifier()` | Unique ID (used as cart item ID) | Yes |
-| `getBuyableName()` | Display name | Yes |
-| `getBuyablePrice()` | Unit price as Money object | Yes |
-| `canBePurchased(?int $quantity)` | Check if purchasable | Yes |
-| `getBuyableAttributes()` | Extra attributes for cart item | Yes |
-| `getBuyableDescription()` | For receipts/invoices | Optional |
-| `getBuyableSku()` | Product SKU/code | Optional |
-| `getBuyableStock()` | Available quantity | Optional |
-| `getBuyableWeight()` | Weight in grams | Optional |
-| `getBuyableDimensions()` | L×W×H in mm | Optional |
-| `getMinimumQuantity()` | Min qty per order | Optional |
-| `getMaximumQuantity()` | Max qty per order | Optional |
-| `getQuantityIncrement()` | Qty must be multiple of | Optional |
-| `isTaxable()` | Subject to tax? | Optional |
-| `getTaxCategory()` | Tax class/category | Optional |
-
-## The Buyable Trait
-
-The `Buyable` trait provides sensible defaults for all interface methods. It maps common model properties:
+### 3. Retrieve Product from Item
 
 ```php
-// The trait looks for these properties on your model:
-$model->id           // → getBuyableIdentifier()
-$model->name         // → getBuyableName()
-$model->price        // → getBuyablePrice() (in cents)
-$model->is_active    // → canBePurchased()
-$model->stock        // → getBuyableStock()
-$model->weight       // → getBuyableWeight()
-$model->sku          // → getBuyableSku()
-$model->min_quantity // → getMinimumQuantity()
-$model->max_quantity // → getMaximumQuantity()
+$item = Cart::get('product-1');
+
+// Get the original model
+$product = $item->getBuyable(); // Product instance
+
+// Refresh price from database
+$currentPrice = $product->getBuyablePrice();
 ```
 
-### Customizing the Trait
-
-Override methods for custom behavior:
+## Interface Methods
 
 ```php
-class Product extends Model implements BuyableInterface
+interface BuyableInterface
 {
-    use Buyable;
+    /**
+     * Unique identifier (typically model ID or SKU)
+     */
+    public function getBuyableIdentifier(): string;
     
-    // Custom pricing (e.g., sale prices)
-    public function getBuyablePrice(): Money
-    {
-        $price = $this->sale_price ?? $this->price;
-        return Money::MYR($price);
-    }
+    /**
+     * Display name for cart item
+     */
+    public function getBuyableName(): string;
     
-    // Custom stock check (e.g., reserved stock)
-    public function getBuyableStock(): ?int
-    {
-        if (!$this->tracks_inventory) {
-            return null;
-        }
-        
-        return max(0, $this->stock - $this->reserved_stock);
-    }
+    /**
+     * Current price as Money object
+     */
+    public function getBuyablePrice(): Money;
     
-    // Custom purchasability (e.g., pre-orders)
-    public function canBePurchased(?int $quantity = null): bool
-    {
-        if (!$this->is_active && !$this->is_preorder) {
-            return false;
-        }
-        
-        // Pre-orders always available
-        if ($this->is_preorder) {
-            return true;
-        }
-        
-        return parent::canBePurchased($quantity);
-    }
+    /**
+     * Additional data to store with cart item
+     */
+    public function getBuyableMetadata(): array;
 }
-```
-
-## Cart Methods for Buyables
-
-### Adding Products
-
-```php
-// Basic add
-Cart::addBuyable($product);
-
-// With quantity
-Cart::addBuyable($product, 3);
-
-// With extra attributes
-Cart::addBuyable($product, 1, [
-    'variant_id' => 'blue-xl',
-    'engraving' => 'Custom Text',
-]);
-```
-
-### Updating Quantity
-
-```php
-// Set absolute quantity (with validation)
-Cart::updateBuyable($product, 5);
-
-// Remove if quantity is 0 or less
-Cart::updateBuyable($product, 0); // Removes item
-```
-
-### Checking Cart Contents
-
-```php
-// Check if product is in cart
-if (Cart::hasBuyable($product)) {
-    $item = Cart::getBuyable($product);
-    echo "Quantity: " . $item->quantity;
-}
-
-// Remove product
-Cart::removeBuyable($product);
-```
-
-## Validation
-
-The cart automatically validates before adding/updating:
-
-### Validation Checks
-
-1. **Purchasability** - `canBePurchased()` returns true
-2. **Stock** - Quantity ≤ available stock (if tracking inventory)
-3. **Minimum Quantity** - Quantity ≥ `getMinimumQuantity()`
-4. **Maximum Quantity** - Quantity ≤ `getMaximumQuantity()`
-5. **Quantity Increment** - Quantity is multiple of `getQuantityIncrement()`
-
-### Handling Validation Errors
-
-```php
-use AIArmada\Cart\Exceptions\ProductNotPurchasableException;
-
-try {
-    Cart::addBuyable($product, 100);
-} catch (ProductNotPurchasableException $e) {
-    echo $e->reason;           // "Insufficient stock"
-    echo $e->productId;        // "123"
-    echo $e->productName;      // "Widget"
-    echo $e->requestedQuantity; // 100
-    echo $e->availableStock;   // 5
-}
-```
-
-### Exception Types
-
-```php
-// Out of stock
-ProductNotPurchasableException::outOfStock($id, $name, $requested, $available);
-
-// Product inactive
-ProductNotPurchasableException::inactive($id, $name);
-
-// Below minimum
-ProductNotPurchasableException::minimumNotMet($id, $name, $requested, $minimum);
-
-// Above maximum
-ProductNotPurchasableException::maximumExceeded($id, $name, $requested, $maximum);
-
-// Invalid increment
-ProductNotPurchasableException::invalidIncrement($id, $name, $requested, $increment);
-```
-
-## Refreshing Prices
-
-Refresh all cart prices when products may have changed:
-
-```php
-// Refresh prices from database
-$changes = Cart::refreshBuyablePrices(function ($product) {
-    return $product->fresh(); // Get fresh instance
-});
-
-// $changes = [
-//     'product-1' => ['old' => 1000, 'new' => 900],
-//     'product-3' => ['old' => 500, 'new' => 550],
-// ]
-
-foreach ($changes as $itemId => $change) {
-    echo "Price changed from {$change['old']} to {$change['new']}";
-}
-```
-
-## Validating Cart at Checkout
-
-Validate all items before checkout:
-
-```php
-$errors = Cart::validateAllBuyables(function ($product) {
-    return $product->fresh();
-});
-
-if (!empty($errors)) {
-    foreach ($errors as $itemId => $exception) {
-        // Handle each error
-        echo "Item {$itemId}: {$exception->reason}";
-        
-        // Optionally remove invalid items
-        Cart::remove($itemId);
-    }
-}
-```
-
-## Shipping Weight
-
-Calculate total weight for shipping:
-
-```php
-$totalWeight = Cart::getTotalWeight(); // in grams
-
-// Use with shipping calculator
-$shippingCost = ShippingCalculator::forWeight($totalWeight)
-    ->toAddress($address)
-    ->calculate();
 ```
 
 ## Product Variants
 
-Handle product variants with attributes:
-
 ```php
 class ProductVariant extends Model implements BuyableInterface
 {
-    use Buyable;
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
+    }
     
     public function getBuyableIdentifier(): string
     {
-        // Unique ID per variant
-        return "product-{$this->product_id}-variant-{$this->id}";
+        return "variant-{$this->id}";
     }
     
     public function getBuyableName(): string
     {
-        return "{$this->product->name} ({$this->options})";
+        return "{$this->product->name} - {$this->name}";
     }
     
-    public function getBuyableAttributes(): array
+    public function getBuyablePrice(): Money
     {
-        return array_merge(parent::getBuyableAttributes(), [
-            'variant_id' => $this->id,
+        return Money::MYR($this->price ?? $this->product->price);
+    }
+    
+    public function getBuyableMetadata(): array
+    {
+        return [
             'product_id' => $this->product_id,
-            'color' => $this->color,
+            'variant_id' => $this->id,
             'size' => $this->size,
+            'color' => $this->color,
+            'sku' => $this->sku,
+        ];
+    }
+}
+```
+
+Usage:
+
+```php
+$variant = ProductVariant::find(42);
+Cart::addBuyable($variant, 1);
+```
+
+## Subscription Products
+
+```php
+class SubscriptionPlan extends Model implements BuyableInterface
+{
+    public function getBuyableIdentifier(): string
+    {
+        return "plan-{$this->id}";
+    }
+    
+    public function getBuyableName(): string
+    {
+        return "{$this->name} ({$this->billing_cycle})";
+    }
+    
+    public function getBuyablePrice(): Money
+    {
+        return Money::MYR($this->price);
+    }
+    
+    public function getBuyableMetadata(): array
+    {
+        return [
+            'billing_cycle' => $this->billing_cycle,
+            'features' => $this->features,
+            'trial_days' => $this->trial_days,
+        ];
+    }
+}
+```
+
+## Digital Downloads
+
+```php
+class DigitalProduct extends Model implements BuyableInterface
+{
+    public function getBuyableMetadata(): array
+    {
+        return [
+            'type' => 'digital',
+            'file_size' => $this->file_size,
+            'format' => $this->format,
+            'download_limit' => 3,
+        ];
+    }
+}
+```
+
+## Price Refresh
+
+Prices may change after items are added. Refresh before checkout:
+
+```php
+// Check single item
+$item = Cart::get('product-1');
+$product = Product::find($item->getMetadata('product_id'));
+$storedPrice = $item->getPrice();
+$currentPrice = $product->getBuyablePrice();
+
+if (!$storedPrice->equals($currentPrice)) {
+    Cart::update('product-1', ['price' => $currentPrice]);
+}
+
+// Refresh all items
+foreach (Cart::getContent() as $item) {
+    $buyable = $item->getBuyable();
+    if ($buyable && !$item->getPrice()->equals($buyable->getBuyablePrice())) {
+        Cart::update($item->getIdentifier(), [
+            'price' => $buyable->getBuyablePrice(),
         ]);
     }
 }
 ```
 
-## Example: Full E-commerce Product
+## Stock Validation
+
+Validate stock before checkout:
 
 ```php
-class Product extends Model implements BuyableInterface
+class CartValidator
 {
-    use Buyable;
-    
-    protected $casts = [
-        'is_active' => 'boolean',
-        'is_taxable' => 'boolean',
-        'tracks_inventory' => 'boolean',
-    ];
-    
-    public function getBuyablePrice(): Money
+    public function validateStock(): array
     {
-        // Check for active sale
-        if ($this->isOnSale()) {
-            return Money::MYR($this->sale_price);
+        $errors = [];
+        
+        foreach (Cart::getContent() as $item) {
+            $product = Product::find($item->getMetadata('product_id'));
+            
+            if (!$product) {
+                $errors[] = "Product no longer available: {$item->getName()}";
+                continue;
+            }
+            
+            if ($product->stock < $item->getQuantity()) {
+                $errors[] = "Insufficient stock for {$item->getName()}: " .
+                           "requested {$item->getQuantity()}, available {$product->stock}";
+            }
         }
         
-        // Check for member pricing
-        if (auth()->check() && auth()->user()->is_member) {
-            return Money::MYR($this->member_price ?? $this->price);
-        }
-        
-        return Money::MYR($this->price);
-    }
-    
-    public function canBePurchased(?int $quantity = null): bool
-    {
-        // Check active status
-        if (!$this->is_active) {
-            return false;
-        }
-        
-        // Check publish dates
-        if ($this->publish_at && $this->publish_at->isFuture()) {
-            return false;
-        }
-        
-        // Check inventory
-        if ($quantity !== null && $this->tracks_inventory) {
-            $available = $this->stock - $this->reserved_stock;
-            return $available >= $quantity;
-        }
-        
-        return true;
-    }
-    
-    public function getBuyableAttributes(): array
-    {
-        return [
-            'sku' => $this->sku,
-            'weight' => $this->weight,
-            'brand' => $this->brand?->name,
-            'category' => $this->category?->name,
-            'taxable' => $this->is_taxable,
-            'tax_category' => $this->tax_category,
-            'image' => $this->featured_image_url,
-        ];
-    }
-    
-    protected function isOnSale(): bool
-    {
-        return $this->sale_price 
-            && $this->sale_starts_at?->isPast()
-            && $this->sale_ends_at?->isFuture();
+        return $errors;
     }
 }
 ```
 
-## Related Documentation
+## Mixed Buyables
 
-- [Cart Operations](cart-operations.md) - Basic cart methods
-- [Conditions & Pricing](conditions.md) - Discounts and taxes
-- [Payment Integration](payment-integration.md) - Checkout with gateways
-- [Events](events.md) - Inventory reservation via events
+Cart can hold different buyable types:
+
+```php
+$product = Product::find(1);
+$variant = ProductVariant::find(42);
+$subscription = SubscriptionPlan::find(3);
+$addon = ServiceAddon::find(5);
+
+Cart::addBuyable($product, 2);
+Cart::addBuyable($variant, 1);
+Cart::addBuyable($subscription, 1);
+Cart::addBuyable($addon, 1);
+
+// Filter by type
+$physicalItems = Cart::getContent()->filter(
+    fn ($item) => $item->getMetadata('type') !== 'digital'
+);
+```
+
+## Service Container Integration
+
+Register a buyable resolver:
+
+```php
+// AppServiceProvider
+$this->app->bind('buyable.resolver', function () {
+    return new class {
+        public function resolve(string $identifier): ?BuyableInterface
+        {
+            [$type, $id] = explode('-', $identifier, 2);
+            
+            return match ($type) {
+                'product' => Product::find($id),
+                'variant' => ProductVariant::find($id),
+                'plan' => SubscriptionPlan::find($id),
+                default => null,
+            };
+        }
+    };
+});
+```
+
+## Testing
+
+```php
+it('adds buyable product to cart', function () {
+    $product = Product::factory()->create([
+        'name' => 'Test Product',
+        'price' => 5999, // RM59.99
+    ]);
+    
+    Cart::addBuyable($product, 2);
+    
+    expect(Cart::count())->toBe(2);
+    expect(Cart::total()->getAmount())->toBe(11998);
+});
+
+it('stores buyable metadata', function () {
+    $product = Product::factory()->create(['sku' => 'TEST-001']);
+    
+    Cart::addBuyable($product, 1);
+    
+    $item = Cart::get($product->getBuyableIdentifier());
+    expect($item->getMetadata('sku'))->toBe('TEST-001');
+});
+```
+
+## Next Steps
+
+- [Cart Operations](cart-operations.md) – Item management
+- [Payment Integration](payment-integration.md) – Checkout flow
+- [API Reference](api-reference.md) – Complete methods

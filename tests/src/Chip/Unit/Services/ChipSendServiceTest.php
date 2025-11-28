@@ -167,7 +167,7 @@ describe('ChipSendService', function (): void {
 
         expect($limit)->toBeInstanceOf(SendLimit::class);
         expect($limit->currency)->toBe('MYR');
-        expect($limit->getNetAmountInMajorUnits())->toBe(99.0);
+        expect($limit->net_amount)->toBe(9900);
     });
 
     it('manages bank account lifecycle', function (): void {

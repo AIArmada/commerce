@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Cashier\Cashier;
 use AIArmada\Cashier\GatewayManager;
-use AIArmada\Cashier\Models\Subscription;
-use AIArmada\Cashier\Models\SubscriptionItem;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use AIArmada\Commerce\Tests\Cashier\Fixtures\User;
 
@@ -43,6 +41,7 @@ describe('Cashier', function (): void {
         expect(Cashier::$customerModel)->toBe(User::class);
     });
 
+<<<<<<< Updated upstream
     it('can use a custom subscription model', function (): void {
         Cashier::useSubscriptionModel(Subscription::class);
 
@@ -56,6 +55,9 @@ describe('Cashier', function (): void {
     });
 
     it('can configure deactivate past due setting', function (): void {
+=======
+    it('can configure deactivate past due setting', function () {
+>>>>>>> Stashed changes
         Cashier::deactivatePastDue(true);
         expect(Cashier::$deactivatePastDue)->toBeTrue();
 
@@ -76,10 +78,13 @@ describe('Cashier', function (): void {
 
         expect(Cashier::$registersRoutes)->toBeFalse();
     });
+<<<<<<< Updated upstream
 
     it('can ignore migrations', function (): void {
         Cashier::ignoreMigrations();
 
         expect(Cashier::$runsMigrations)->toBeFalse();
     });
+=======
+>>>>>>> Stashed changes
 });

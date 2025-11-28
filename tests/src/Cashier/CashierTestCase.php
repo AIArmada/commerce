@@ -7,13 +7,18 @@ namespace AIArmada\Commerce\Tests\Cashier;
 use AIArmada\Cashier\Cashier;
 use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\Cashier\GatewayManager;
-use AIArmada\Cashier\Models\Subscription;
-use AIArmada\Cashier\Models\SubscriptionItem;
 use AIArmada\Commerce\Tests\Cashier\Fixtures\User;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
 
+/**
+ * Base test case for Cashier package tests.
+ *
+ * Note: This package is a wrapper/adapter layer that delegates to underlying
+ * gateway packages (laravel/cashier for Stripe, aiarmada/cashier-chip for CHIP).
+ * Tests here focus on the wrapper functionality, not the underlying models.
+ */
 abstract class CashierTestCase extends Orchestra
 {
     protected ?GatewayManager $gatewayManager = null;
@@ -25,8 +30,6 @@ abstract class CashierTestCase extends Orchestra
         $this->setUpDatabase();
 
         Cashier::useCustomerModel(User::class);
-        Cashier::useSubscriptionModel(Subscription::class);
-        Cashier::useSubscriptionItemModel(SubscriptionItem::class);
 
         if ($this->app->bound(GatewayManager::class)) {
             $this->gatewayManager = $this->app->make(GatewayManager::class);
@@ -91,17 +94,13 @@ abstract class CashierTestCase extends Orchestra
             ],
         ]);
 
-        // Configure models
-        $app['config']->set('cashier.models', [
-            'customer' => User::class,
-            'subscription' => Subscription::class,
-            'subscription_item' => SubscriptionItem::class,
-        ]);
+        // Configure customer model
+        $app['config']->set('cashier.customer_model', User::class);
     }
 
     protected function setUpDatabase(): void
     {
-        // Users table
+        // Users table - for testing billable functionality
         Schema::create('users', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
@@ -115,38 +114,11 @@ abstract class CashierTestCase extends Orchestra
             $table->timestamps();
         });
 
-        // Gateway subscriptions table
-        Schema::create('gateway_subscriptions', function (Blueprint $table): void {
-            $table->id();
-            $table->morphs('billable');
-            $table->string('gateway')->default('stripe')->index();
-            $table->string('gateway_id')->index();
-            $table->string('gateway_status')->nullable();
-            $table->string('gateway_price')->nullable();
-            $table->string('type')->index();
-            $table->integer('quantity')->nullable();
-            $table->timestamp('trial_ends_at')->nullable();
-            $table->timestamp('next_billing_at')->nullable();
-            $table->string('billing_interval')->nullable();
-            $table->timestamp('ends_at')->nullable();
-            $table->timestamps();
-
-            $table->unique(['billable_type', 'billable_id', 'type', 'gateway']);
-        });
-
-        // Gateway subscription items table
-        Schema::create('gateway_subscription_items', function (Blueprint $table): void {
-            $table->id();
-            $table->foreignId('subscription_id')->constrained('gateway_subscriptions')->cascadeOnDelete();
-            $table->string('gateway_id')->index();
-            $table->string('gateway_product')->nullable();
-            $table->string('gateway_price')->index();
-            $table->integer('quantity')->nullable();
-            $table->integer('unit_amount')->nullable();
-            $table->timestamps();
-
-            $table->unique(['subscription_id', 'gateway_price']);
-        });
+        // Note: Subscription tables are NOT created here.
+        // In production, they come from laravel/cashier (subscriptions)
+        // and aiarmada/cashier-chip (chip_subscriptions).
+        // For unit tests that need to test adapters/wrappers, mock the
+        // underlying packages instead.
     }
 
     protected function createUser(array $attributes = []): User
@@ -154,32 +126,6 @@ abstract class CashierTestCase extends Orchestra
         return User::create(array_merge([
             'name' => 'Test User',
             'email' => 'test@example.com',
-        ], $attributes));
-    }
-
-    protected function createSubscription(User $user, array $attributes = []): Subscription
-    {
-        return Subscription::create(array_merge([
-            'billable_type' => User::class,
-            'billable_id' => $user->id,
-            'type' => 'default',
-            'gateway' => 'stripe',
-            'gateway_id' => 'sub_'.uniqid(),
-            'gateway_status' => Subscription::STATUS_ACTIVE,
-            'gateway_price' => 'price_xxx',
-            'quantity' => 1,
-        ], $attributes));
-    }
-
-    protected function createSubscriptionItem(Subscription $subscription, array $attributes = []): SubscriptionItem
-    {
-        return SubscriptionItem::create(array_merge([
-            'subscription_id' => $subscription->id,
-            'gateway_id' => 'si_'.uniqid(),
-            'gateway_product' => 'prod_xxx',
-            'gateway_price' => 'price_xxx',
-            'quantity' => 1,
-            'unit_amount' => 1000,
         ], $attributes));
     }
 }

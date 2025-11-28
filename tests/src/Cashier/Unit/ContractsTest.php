@@ -74,8 +74,9 @@ describe('Contracts', function (): void {
             $reflection = new ReflectionClass(SubscriptionContract::class);
             $methods = array_map(fn ($m) => $m->getName(), $reflection->getMethods());
 
-            expect($methods)->toContain('gatewayId')
-                ->and($methods)->toContain('status')
+            expect($methods)->toContain('id')
+                ->and($methods)->toContain('gatewayId')
+                ->and($methods)->toContain('gateway')
                 ->and($methods)->toContain('valid')
                 ->and($methods)->toContain('active')
                 ->and($methods)->toContain('onTrial')
@@ -84,7 +85,9 @@ describe('Contracts', function (): void {
                 ->and($methods)->toContain('ended')
                 ->and($methods)->toContain('cancel')
                 ->and($methods)->toContain('cancelNow')
-                ->and($methods)->toContain('resume');
+                ->and($methods)->toContain('resume')
+                ->and($methods)->toContain('items')
+                ->and($methods)->toContain('owner');
         });
     });
 
@@ -115,13 +118,15 @@ describe('Contracts', function (): void {
             $reflection = new ReflectionClass(SubscriptionItemContract::class);
             $methods = array_map(fn ($m) => $m->getName(), $reflection->getMethods());
 
-            expect($methods)->toContain('gatewayId')
-                ->and($methods)->toContain('subscription')
+            expect($methods)->toContain('id')
+                ->and($methods)->toContain('gatewayId')
+                ->and($methods)->toContain('gateway')
                 ->and($methods)->toContain('quantity')
                 ->and($methods)->toContain('incrementQuantity')
                 ->and($methods)->toContain('decrementQuantity')
                 ->and($methods)->toContain('updateQuantity')
-                ->and($methods)->toContain('swap');
+                ->and($methods)->toContain('swap')
+                ->and($methods)->toContain('asGatewayItem');
         });
     });
 

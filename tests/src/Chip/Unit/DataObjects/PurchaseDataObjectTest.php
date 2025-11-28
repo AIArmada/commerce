@@ -22,13 +22,13 @@ describe('Purchase data object', function (): void {
         $purchase = Purchase::fromArray($data);
 
         expect($purchase->id)->toBe('purchase_123');
-        expect($purchase->amountInCents)->toBe(10000);
-        expect($purchase->currency)->toBe('MYR');
+        expect($purchase->getAmountInCents())->toBe(10000);
+        expect($purchase->getCurrency())->toBe('MYR');
         expect($purchase->reference)->toBe('ORDER_001');
-        expect($purchase->checkoutUrl)->toBe('https://gate.chip-in.asia/checkout/purchase_123');
+        expect($purchase->getCheckoutUrl())->toBe('https://gate.chip-in.asia/checkout/purchase_123');
         expect($purchase->status)->toBe('created');
-        expect($purchase->isRecurring)->toBeFalse();
-        expect($purchase->metadata)->toBe(['order_id' => '123']);
+        expect($purchase->isRecurring())->toBeFalse();
+        expect($purchase->getMetadata())->toBe(['order_id' => '123']);
     });
 
     it('handles nullable fields correctly', function (): void {
@@ -42,12 +42,12 @@ describe('Purchase data object', function (): void {
         $purchase = Purchase::fromArray($data);
 
         expect($purchase->reference)->toBeNull();
-        expect($purchase->checkoutUrl)->toBeNull();
-        expect($purchase->metadata)->toBeNull();
-        expect($purchase->clientId)->toBeNull();
+        expect($purchase->getCheckoutUrl())->toBeNull();
+        expect($purchase->getMetadata())->toBeNull();
+        expect($purchase->getClientId())->toBeNull();
     });
 
-    it('calculates amount in major currency units', function (): void {
+    it('returns amount as Money object', function (): void {
         $purchase = Purchase::fromArray([
             'id' => 'purchase_123',
             'amount_in_cents' => 12345,
@@ -55,7 +55,8 @@ describe('Purchase data object', function (): void {
             'status' => 'created',
         ]);
 
-        expect($purchase->getAmountInMajorUnits())->toBe(123.45);
+        expect($purchase->getAmount()->getAmount())->toBe(12345)
+            ->and($purchase->getAmountInCents())->toBe(12345);
     });
 
     it('exposes status helpers and array representation', function (): void {
@@ -89,7 +90,8 @@ describe('Purchase data object', function (): void {
         expect($purchase->canBeRefunded())->toBeTrue();
         expect($purchase->canBePartiallyRefunded())->toBeTrue();
         expect($purchase->getDueDate()?->toDateString())->toBe('2024-02-10');
-        expect($purchase->getRefundableAmountInCurrency())->toBe(25.0);
+        expect($purchase->getRefundableAmount()->getAmount())->toBe(2500)
+            ->and($purchase->getRefundableAmountInCents())->toBe(2500);
         expect($purchase->toArray())->toMatchArray([
             'id' => 'purchase_789',
             'status' => 'paid',

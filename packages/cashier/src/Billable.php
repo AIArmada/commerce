@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Cashier;
 
 use AIArmada\Cashier\Concerns\ManagesGateway;
-use AIArmada\Cashier\Models\Subscription;
+use AIArmada\Cashier\Contracts\SubscriptionContract;
+use Illuminate\Support\Collection;
 
 /**
  * Unified Billable trait for multi-gateway payment support.
@@ -13,14 +14,20 @@ use AIArmada\Cashier\Models\Subscription;
  * This trait provides a unified interface for interacting with multiple
  * payment gateways (Stripe, CHIP, etc.) through a single API.
  *
+ * IMPORTANT: This trait should be used ALONGSIDE the gateway-specific traits:
+ * - \Laravel\Cashier\Billable for Stripe
+ * - \AIArmada\CashierChip\Billable for CHIP
+ *
  * Add this trait to your User model (or any billable model):
  *
  * ```php
- * use AIArmada\Cashier\Billable;
+ * use AIArmada\Cashier\Billable as CashierBillable;
+ * use Laravel\Cashier\Billable as StripeBillable;
+ * use AIArmada\CashierChip\Billable as ChipBillable;
  *
  * class User extends Authenticatable
  * {
- *     use Billable;
+ *     use StripeBillable, ChipBillable, CashierBillable;
  * }
  * ```
  *
@@ -32,6 +39,9 @@ use AIArmada\Cashier\Models\Subscription;
  *
  * // Use specific gateway
  * $user->gateway('chip')->subscription($user, 'default', 'price_xxx')->create();
+ *
+ * // Get all subscriptions across gateways
+ * $user->allSubscriptions();
  * ```
  */
 trait Billable
@@ -39,53 +49,76 @@ trait Billable
     use ManagesGateway;
 
     /**
-     * Get all subscriptions for the billable.
+     * Get all subscriptions across all gateways.
      *
-     * This returns the local Eloquent relationship for subscriptions.
-     * For gateway-specific subscriptions, use gatewaySubscriptions().
+     * @return Collection<int, SubscriptionContract>
      */
-    public function subscriptions()
+    public function allSubscriptions(): Collection
     {
-        return $this->morphMany(
-            Cashier::$subscriptionModel ?? Subscription::class,
-            'billable'
-        )->orderBy('created_at', 'desc');
-    }
+        $subscriptions = collect();
 
-    /**
-     * Get a subscription by type.
-     */
-    public function subscription(string $type = 'default'): ?Subscription
-    {
-        return $this->subscriptions->first(fn ($sub) => $sub->type === $type);
-    }
-
-    /**
-     * Determine if the billable is subscribed to a given type.
-     */
-    public function subscribed(string $type = 'default', ?string $price = null): bool
-    {
-        $subscription = $this->subscription($type);
-
-        if (! $subscription || ! $subscription->valid()) {
-            return false;
+        foreach (Cashier::availableGateways() as $gateway) {
+            try {
+                $gatewaySubscriptions = $this->gateway($gateway)->subscriptions($this);
+                $subscriptions = $subscriptions->merge($gatewaySubscriptions);
+            } catch (\Exception) {
+                // Gateway not available, skip
+            }
         }
 
-        return $price ? $subscription->hasPrice($price) : true;
+        return $subscriptions->sortByDesc(fn ($sub) => $sub->createdAt());
     }
 
     /**
-     * Check if on trial.
+     * Get a subscription by type from any gateway.
      */
-    public function onTrial(string $type = 'default', ?string $price = null): bool
+    public function findSubscription(string $type = 'default'): ?SubscriptionContract
     {
-        $subscription = $this->subscription($type);
-
-        if (! $subscription) {
-            return false;
+        foreach (Cashier::availableGateways() as $gateway) {
+            try {
+                $subscription = $this->gatewaySubscription($type, $gateway);
+                if ($subscription) {
+                    return $subscription;
+                }
+            } catch (\Exception) {
+                // Gateway not available, skip
+            }
         }
 
-        return $subscription->onTrial();
+        return null;
+    }
+
+    /**
+     * Determine if the billable is subscribed to a given type on any gateway.
+     */
+    public function subscribedOnAny(string $type = 'default', ?string $price = null): bool
+    {
+        foreach (Cashier::availableGateways() as $gateway) {
+            if ($this->subscribedViaGateway($type, $price, $gateway)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if on trial on any gateway.
+     */
+    public function onTrialOnAny(string $type = 'default'): bool
+    {
+        foreach (Cashier::availableGateways() as $gateway) {
+            try {
+                $subscription = $this->gatewaySubscription($type, $gateway);
+                if ($subscription && $subscription->onTrial()) {
+                    return true;
+                }
+            } catch (\Exception) {
+                // Gateway not available, skip
+            }
+        }
+
+        return false;
     }
 
     /**

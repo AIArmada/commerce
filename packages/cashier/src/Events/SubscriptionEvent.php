@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Events;
 
-use AIArmada\Cashier\Models\Subscription;
+use AIArmada\Cashier\Contracts\SubscriptionContract;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
 /**
  * Base event for subscription-related events with gateway support.
+ *
+ * This event works with subscriptions from any underlying package
+ * (Laravel Cashier for Stripe, CashierChip, etc.) through the
+ * SubscriptionContract interface.
  */
 abstract class SubscriptionEvent
 {
@@ -19,14 +23,18 @@ abstract class SubscriptionEvent
      * Create a new event instance.
      */
     public function __construct(
-        public readonly Subscription $subscription,
+        public readonly SubscriptionContract $subscription,
         public readonly mixed $billable = null,
     ) {}
 
     /**
      * Get the subscription instance.
      */
+<<<<<<< Updated upstream
     final public function subscription(): Subscription
+=======
+    public function subscription(): SubscriptionContract
+>>>>>>> Stashed changes
     {
         return $this->subscription;
     }
@@ -36,7 +44,7 @@ abstract class SubscriptionEvent
      */
     final public function gateway(): string
     {
-        return $this->subscription->gateway;
+        return $this->subscription->gateway();
     }
 
     /**
@@ -44,6 +52,6 @@ abstract class SubscriptionEvent
      */
     final public function billable(): mixed
     {
-        return $this->billable ?? $this->subscription->owner;
+        return $this->billable ?? $this->subscription->owner();
     }
 }

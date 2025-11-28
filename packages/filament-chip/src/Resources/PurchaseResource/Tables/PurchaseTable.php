@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\PurchaseResource\Tables;
 
-use AIArmada\FilamentChip\Models\ChipPurchase;
+use AIArmada\Chip\Models\Purchase;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\IconColumn;
@@ -58,14 +58,14 @@ final class PurchaseTable
                                 ->weight(FontWeight::SemiBold),
                             TextColumn::make('purchase.subtotal.amount')
                                 ->label('Subtotal')
-                                ->formatStateUsing(fn (?int $state, ChipPurchase $record): ?string => self::formatAmount(
+                                ->formatStateUsing(fn (?int $state, Purchase $record): ?string => self::formatAmount(
                                     $state,
                                     $record->purchase['subtotal']['currency'] ?? $record->purchase['currency'] ?? null,
                                 ))
                                 ->icon('heroicon-o-banknotes'),
                             TextColumn::make('purchase.taxes.amount')
                                 ->label('Taxes')
-                                ->formatStateUsing(fn (?int $state, ChipPurchase $record): ?string => self::formatAmount(
+                                ->formatStateUsing(fn (?int $state, Purchase $record): ?string => self::formatAmount(
                                     $state,
                                     $record->purchase['taxes']['currency'] ?? $record->purchase['currency'] ?? null,
                                 ))
@@ -77,8 +77,8 @@ final class PurchaseTable
                         TextColumn::make('status')
                             ->label('Status')
                             ->badge()
-                            ->color(fn (ChipPurchase $record): string => $record->statusColor())
-                            ->formatStateUsing(fn (ChipPurchase $record): string => $record->statusBadge()),
+                            ->color(fn (Purchase $record): string => $record->statusColor())
+                            ->formatStateUsing(fn (Purchase $record): string => $record->statusBadge()),
                         TextColumn::make('created_on')
                             ->label('Created')
                             ->dateTime(config('filament-chip.tables.created_on_format', 'Y-m-d H:i:s'))

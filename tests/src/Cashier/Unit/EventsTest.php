@@ -2,7 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\PaymentContract;
+use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Events\PaymentEvent;
 use AIArmada\Cashier\Events\PaymentFailed;
 use AIArmada\Cashier\Events\PaymentRefunded;
@@ -21,7 +23,15 @@ uses(CashierTestCase::class);
 describe('Events', function (): void {
     beforeEach(function (): void {
         $this->user = $this->createUser();
-        $this->subscription = $this->createSubscription($this->user);
+
+        // Mock BillableContract for the owner return
+        $this->billableMock = Mockery::mock(BillableContract::class);
+
+        // Mock SubscriptionContract for testing events
+        // The owner() method now returns BillableContract directly (not a relation)
+        $this->subscription = Mockery::mock(SubscriptionContract::class);
+        $this->subscription->shouldReceive('gateway')->andReturn('stripe');
+        $this->subscription->shouldReceive('owner')->andReturn($this->billableMock);
     });
 
     describe('PaymentEvent (base)', function (): void {
@@ -73,11 +83,16 @@ describe('Events', function (): void {
                 ->and($event->billable())->toBe($this->user);
         });
 
+<<<<<<< Updated upstream
         it('accepts subscription without explicit billable', function (): void {
             // When no billable is passed, the event should still be creatable
+=======
+        it('accepts subscription without explicit billable', function () {
+>>>>>>> Stashed changes
             $event = new class($this->subscription) extends SubscriptionEvent {};
 
-            expect($event->subscription())->toBe($this->subscription);
+            expect($event->subscription())->toBe($this->subscription)
+                ->and($event->billable())->toBe($this->billableMock);
         });
     });
 

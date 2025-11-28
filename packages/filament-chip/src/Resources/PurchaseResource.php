@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources;
 
-use AIArmada\FilamentChip\Models\ChipPurchase;
+use AIArmada\Chip\Models\Purchase;
 use AIArmada\FilamentChip\Resources\PurchaseResource\Pages\ListPurchases;
 use AIArmada\FilamentChip\Resources\PurchaseResource\Pages\ViewPurchase;
 use AIArmada\FilamentChip\Resources\PurchaseResource\Schemas\PurchaseInfolist;
@@ -17,7 +17,7 @@ use Override;
 
 final class PurchaseResource extends BaseChipResource
 {
-    protected static ?string $model = ChipPurchase::class;
+    protected static ?string $model = Purchase::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
 

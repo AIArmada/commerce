@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentChip\Models;
+namespace AIArmada\Chip\Models;
 
-final class ChipSendWebhook extends ChipModel
+/**
+ * @property string|null $url
+ * @property array<string>|null $event_hooks
+ */
+class SendWebhook extends ChipModel
 {
     public $timestamps = false;
 
@@ -13,6 +17,9 @@ final class ChipSendWebhook extends ChipModel
         return 'send_webhooks';
     }
 
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [

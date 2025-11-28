@@ -2,72 +2,90 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentChip\Models;
+namespace AIArmada\Chip\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
+ * @property string $purchase_id
+ * @property string|null $type
+ * @property string|null $status
  * @property int $amount
  * @property string $currency
  * @property int $net_amount
  * @property int $fee_amount
  * @property int $pending_amount
+ * @property bool $is_outgoing
+ * @property int|null $paid_on
+ * @property int|null $remote_paid_on
+ * @property int|null $created_on
+ * @property int|null $updated_on
+ * @property int|null $pending_unfreeze_on
  */
-final class ChipPayment extends ChipModel
+class Payment extends ChipModel
 {
-    public $incrementing = false;
-
-    protected $keyType = 'string';
-
+    /** @return Attribute<Carbon|null, never> */
     public function paidOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?\Illuminate\Support\Carbon => $this->toTimestamp($attributes['paid_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['paid_on'] ?? null));
     }
 
+    /** @return Attribute<Carbon|null, never> */
     public function remotePaidOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?\Illuminate\Support\Carbon => $this->toTimestamp($attributes['remote_paid_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['remote_paid_on'] ?? null));
     }
 
+    /** @return Attribute<Carbon|null, never> */
     public function createdOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?\Illuminate\Support\Carbon => $this->toTimestamp($attributes['created_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['created_on'] ?? null));
     }
 
+    /** @return Attribute<Carbon|null, never> */
     public function updatedOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?\Illuminate\Support\Carbon => $this->toTimestamp($attributes['updated_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['updated_on'] ?? null));
     }
 
+    /** @return Attribute<string|null, never> */
     public function formattedAmount(): Attribute
     {
         return Attribute::get(fn (): ?string => $this->formatMoney($this->amount, $this->currency));
     }
 
+    /** @return Attribute<string|null, never> */
     public function formattedNetAmount(): Attribute
     {
         return Attribute::get(fn (): ?string => $this->formatMoney($this->net_amount, $this->currency));
     }
 
+    /** @return Attribute<string|null, never> */
     public function formattedFeeAmount(): Attribute
     {
         return Attribute::get(fn (): ?string => $this->formatMoney($this->fee_amount, $this->currency));
     }
 
+    /** @return Attribute<string|null, never> */
     public function formattedPendingAmount(): Attribute
     {
         return Attribute::get(fn (): ?string => $this->formatMoney($this->pending_amount, $this->currency));
     }
 
+    /** @return Attribute<Carbon|null, never> */
     public function pendingUnfreezeOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?\Illuminate\Support\Carbon => $this->toTimestamp($attributes['pending_unfreeze_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['pending_unfreeze_on'] ?? null));
     }
 
+    /**
+     * @return BelongsTo<Purchase, $this>
+     */
     public function purchase(): BelongsTo
     {
-        return $this->belongsTo(ChipPurchase::class, 'purchase_id');
+        return $this->belongsTo(Purchase::class, 'purchase_id');
     }
 
     protected static function tableSuffix(): string
@@ -75,6 +93,9 @@ final class ChipPayment extends ChipModel
         return 'payments';
     }
 
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [

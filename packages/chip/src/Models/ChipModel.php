@@ -2,14 +2,17 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentChip\Models;
+namespace AIArmada\Chip\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Override;
 
 abstract class ChipModel extends Model
 {
+    use HasUuids;
+
     public $timestamps = false;
 
     protected $guarded = [];
@@ -21,7 +24,7 @@ abstract class ChipModel extends Model
     {
         $prefix = (string) config('chip.database.table_prefix', 'chip_');
 
-        return $prefix.static::tableSuffix();
+        return $prefix . static::tableSuffix();
     }
 
     protected function toTimestamp(?int $value): ?Carbon
@@ -35,7 +38,7 @@ abstract class ChipModel extends Model
             return null;
         }
 
-        $precision = (int) config('filament-chip.tables.amount_precision', 2);
+        $precision = (int) config('chip.database.amount_precision', 2);
         $value = $divideBy > 0 ? $amount / $divideBy : $amount;
         $formatted = number_format($value, $precision, '.', ',');
 

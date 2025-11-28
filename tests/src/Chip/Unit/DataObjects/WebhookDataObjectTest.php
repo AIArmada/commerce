@@ -60,7 +60,7 @@ describe('Webhook data object', function (): void {
 
         expect($purchase)->toBeInstanceOf(Purchase::class);
         expect($purchase->id)->toBe('purchase_123');
-        expect($purchase->amountInCents)->toBe(10000);
+        expect($purchase->getAmountInCents())->toBe(10000);
     });
 
     it('returns null for non-purchase webhook events', function (): void {

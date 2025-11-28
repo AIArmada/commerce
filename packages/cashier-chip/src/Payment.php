@@ -5,11 +5,18 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip;
 
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
+<<<<<<< Updated upstream
+=======
+use AIArmada\Chip\DataObjects\Purchase;
+>>>>>>> Stashed changes
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Support\Traits\ForwardsCalls;
 use JsonSerializable;
+<<<<<<< Updated upstream
 use ReturnTypeWillChange;
+=======
+>>>>>>> Stashed changes
 
 /**
  * CHIP Payment (Purchase) wrapper class.
@@ -58,22 +65,24 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     protected $customer;
 
     /**
+<<<<<<< Updated upstream
      * The CHIP purchase data.
+=======
+     * The CHIP purchase instance.
+>>>>>>> Stashed changes
      */
-    protected array $purchase;
+    protected Purchase $purchase;
 
     /**
      * Create a new Payment instance.
-     *
-     * @param  array  $purchase  The CHIP purchase response data
-     * @return void
      */
-    public function __construct(array $purchase)
+    public function __construct(Purchase $purchase)
     {
         $this->purchase = $purchase;
     }
 
     /**
+<<<<<<< Updated upstream
      * Dynamically get values from the purchase data.
      *
      * @param  string  $key
@@ -85,15 +94,21 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
+=======
+>>>>>>> Stashed changes
      * Get the purchase ID.
      */
-    public function id(): ?string
+    public function id(): string
     {
-        return $this->purchase['id'] ?? null;
+        return $this->purchase->id;
     }
 
     /**
+<<<<<<< Updated upstream
      * Get the total amount that will be paid.
+=======
+     * Get the total amount that will be paid (formatted).
+>>>>>>> Stashed changes
      */
     public function amount(): string
     {
@@ -101,6 +116,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
+<<<<<<< Updated upstream
      * Get the raw total amount that will be paid.
      */
     public function rawAmount(): int
@@ -109,6 +125,13 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
         $amount = $this->purchase['purchase']['total'] ?? $this->purchase['amount'] ?? 0;
 
         return (int) ($amount * 100);
+=======
+     * Get the raw total amount that will be paid (in cents/minor units).
+     */
+    public function rawAmount(): int
+    {
+        return $this->purchase->getAmountInCents();
+>>>>>>> Stashed changes
     }
 
     /**
@@ -116,7 +139,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function currency(): string
     {
-        return $this->purchase['purchase']['currency'] ?? $this->purchase['currency'] ?? config('cashier-chip.currency', 'MYR');
+        return $this->purchase->getCurrency();
     }
 
     /**
@@ -124,15 +147,15 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function checkoutUrl(): ?string
     {
-        return $this->purchase['checkout_url'] ?? null;
+        return $this->purchase->getCheckoutUrl();
     }
 
     /**
      * Get the status of the purchase.
      */
-    public function status(): ?string
+    public function status(): string
     {
-        return $this->purchase['status'] ?? null;
+        return $this->purchase->status;
     }
 
     /**
@@ -196,14 +219,18 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function recurringToken(): ?string
     {
-        return $this->purchase['recurring_token'] ?? null;
+        return $this->purchase->recurring_token;
     }
 
     /**
      * Validate if the payment was successful and throw an exception if not.
      *
+<<<<<<< Updated upstream
      *
      * @throws IncompletePayment
+=======
+     * @throws \AIArmada\CashierChip\Exceptions\IncompletePayment
+>>>>>>> Stashed changes
      */
     public function validate(): void
     {
@@ -229,7 +256,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
             return $this->customer;
         }
 
-        $clientId = $this->purchase['client']['id'] ?? $this->purchase['client_id'] ?? null;
+        $clientId = $this->purchase->getClientId();
 
         if ($clientId) {
             return $this->customer = CashierChip::findBillable($clientId);
@@ -244,7 +271,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      * @param  Billable  $customer
      * @return $this
      */
-    public function setCustomer($customer)
+    public function setCustomer($customer): self
     {
         $this->customer = $customer;
 
@@ -252,25 +279,37 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
+<<<<<<< Updated upstream
      * Get the underlying purchase data.
+=======
+     * Get the underlying CHIP Purchase DataObject.
+>>>>>>> Stashed changes
      */
-    public function asChipPurchase(): array
+    public function asChipPurchase(): Purchase
     {
         return $this->purchase;
     }
 
     /**
      * Get the instance as an array.
+<<<<<<< Updated upstream
+=======
+     *
+     * @return array<string, mixed>
+>>>>>>> Stashed changes
      */
     public function toArray(): array
     {
-        return $this->purchase;
+        return $this->purchase->toArray();
     }
 
     /**
      * Convert the object to its JSON representation.
+<<<<<<< Updated upstream
      *
      * @param  int  $options
+=======
+>>>>>>> Stashed changes
      */
     public function toJson($options = 0): string
     {
@@ -279,10 +318,28 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Convert the object into something JSON serializable.
+<<<<<<< Updated upstream
+=======
+     *
+     * @return array<string, mixed>
+>>>>>>> Stashed changes
      */
     #[ReturnTypeWillChange]
     public function jsonSerialize(): array
     {
         return $this->toArray();
     }
+<<<<<<< Updated upstream
+=======
+
+    /**
+     * Dynamically get values from the purchase.
+     *
+     * @return mixed
+     */
+    public function __get(string $key)
+    {
+        return $this->purchase->{$key} ?? null;
+    }
+>>>>>>> Stashed changes
 }

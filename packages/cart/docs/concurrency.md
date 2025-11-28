@@ -1,392 +1,263 @@
-# ⚡ Concurrency & Conflict Resolution
+# Concurrency
 
-> **Handle concurrent cart modifications with optimistic locking—prevent lost updates in high-traffic scenarios.**
+Handle concurrent cart modifications with optimistic locking.
 
-When multiple requests modify the same cart simultaneously, conflicts can occur. The cart package uses optimistic locking with version numbers to detect and handle these conflicts.
+## The Problem
 
-## 📋 Table of Contents
+Multiple requests modifying the same cart simultaneously can cause:
 
-- [Understanding Concurrency](#understanding-concurrency)
-- [Optimistic Locking](#optimistic-locking)
-- [CartConflictException](#cartconflictexception)
-- [Retry Patterns](#retry-patterns)
-- [Testing Concurrency](#testing-concurrency)
-- [Troubleshooting](#troubleshooting)
+- Lost updates (changes overwritten)
+- Inconsistent totals
+- Duplicate items
 
----
+```php
+// Tab 1: Add item A
+Cart::add('item-a', 'Product A', Money::MYR(1000), 1);
 
-## Understanding Concurrency
+// Tab 2: Add item B (same time)
+Cart::add('item-b', 'Product B', Money::MYR(2000), 1);
 
-### What Is Concurrency?
-
-Concurrency occurs when multiple operations attempt to modify the same cart at the same time:
-
-```
-Time →
-
-[Request A] ─────▶ Read Cart (v1) ─────▶ Update Qty ─────▶ Save (v2) ✅
-                      │
-                      └───────────────▶ Read Cart (v1) ─────▶ Remove Item ─────▶ Save (v2?) ❌ CONFLICT!
-[Request B]
+// Without locking, one add may be lost
 ```
 
-**Without concurrency control:** Request B's changes might overwrite Request A's changes (lost update problem).
+## Solution: Optimistic Locking
 
-**With concurrency control:** Request B detects the conflict and retries with the latest data.
+The cart uses version-based optimistic locking:
 
-### Why Concurrency Matters
+1. Each cart has a `version` number
+2. On load, current version is stored
+3. On save, version is checked and incremented
+4. If versions don't match, a conflict is detected
 
-| Scenario | Without Control | With Control |
-|----------|----------------|--------------|
-| User adds item twice (rapid clicks) | Quantity becomes 1 (lost update) | Quantity becomes 2 (correct) |
-| API + Frontend updates | One update lost | Both updates applied |
-| Multiple devices (same user) | Data inconsistency | Consistent across devices |
-
----
-
-## Optimistic Locking
-
-### How It Works
-
-The database storage driver uses a `version` column to track cart changes:
-
-1. Read cart (version = 5)
-2. Modify cart in memory
-3. Save with version check: `UPDATE carts SET ... WHERE id = ? AND version = 5`
-4. If no rows updated → conflict detected → throw `CartConflictException`
-
-### Database Schema
-
-```sql
-CREATE TABLE carts (
-    id BIGINT AUTO_INCREMENT PRIMARY KEY,
-    identifier VARCHAR(255) NOT NULL,
-    instance VARCHAR(255) NOT NULL DEFAULT 'default',
-    items JSON NOT NULL,
-    conditions JSON NOT NULL,
-    metadata JSON NOT NULL,
-    version INT UNSIGNED NOT NULL DEFAULT 1,
-    created_at TIMESTAMP NULL,
-    updated_at TIMESTAMP NULL,
-    UNIQUE KEY carts_identifier_instance_unique (identifier, instance),
-    INDEX carts_identifier_index (identifier)
-);
-```
-
-### Configuration
+## Configuration
 
 ```php
 // config/cart.php
-return [
-    'storage' => [
-        'driver' => 'database', // Required for optimistic locking
-    ],
-    
-    'database' => [
-        'connection' => null, // Use default connection
-        'table' => 'carts',
-    ],
-];
+'concurrency' => [
+    'enabled' => true,
+    'max_retries' => 3,
+    'retry_delay' => 100, // milliseconds
+],
 ```
 
-### When Conflicts Occur
+## Handling Conflicts
 
-Conflicts happen when:
-- User clicks "Add to Cart" rapidly (double-click)
-- Same cart modified from multiple devices/sessions
-- Background jobs update cart while user is active
-- High-traffic checkout pages
+### Automatic Retry (Default)
 
----
-
-## CartConflictException
-
-### Exception Details
+The cart automatically retries failed operations:
 
 ```php
-namespace AIArmada\Cart\Exceptions;
-
-final class CartConflictException extends CartException
-{
-    // Thrown when optimistic lock fails
-    // Message: "Cart conflict detected. Another process modified the cart."
-}
+// This will retry up to 3 times if conflicts occur
+Cart::add('sku-123', 'Product', Money::MYR(5000), 1);
 ```
 
-### Handling Conflicts
+### Manual Handling
 
 ```php
-use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Exceptions\CartConflictException;
+use AIArmada\Cart\Exceptions\ConcurrencyException;
 
 try {
-    Cart::add('product-1', 'Product 1', 1999, 1);
-} catch (CartConflictException $e) {
-    // Cart was modified by another process
-    // Retry the operation with fresh data
-    Cart::refresh(); // Re-fetch latest cart state
-    Cart::add('product-1', 'Product 1', 1999, 1);
+    Cart::add('sku-123', 'Product', Money::MYR(5000), 1);
+} catch (ConcurrencyException $e) {
+    // Refresh cart and retry manually
+    Cart::refresh();
+    Cart::add('sku-123', 'Product', Money::MYR(5000), 1);
 }
 ```
 
----
-
-## Retry Patterns
-
-### Simple Retry
+### Transaction Wrapper
 
 ```php
-$maxAttempts = 3;
-$attempt = 0;
-
-while ($attempt < $maxAttempts) {
-    try {
-        Cart::add('product-1', 'Product 1', 1999, 1);
-        break; // Success
-    } catch (CartConflictException $e) {
-        $attempt++;
-        if ($attempt >= $maxAttempts) {
-            throw $e; // Give up after max attempts
-        }
-        usleep(100000); // Wait 100ms before retry
-    }
-}
-```
-
-### Exponential Backoff
-
-```php
-use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Exceptions\CartConflictException;
-
-function retryWithBackoff(callable $operation, int $maxAttempts = 3): mixed
-{
-    $attempt = 0;
-    
-    while ($attempt < $maxAttempts) {
-        try {
-            return $operation();
-        } catch (CartConflictException $e) {
-            $attempt++;
-            if ($attempt >= $maxAttempts) {
-                throw $e;
-            }
-            
-            // Exponential backoff: 100ms, 200ms, 400ms
-            $delay = 100000 * (2 ** ($attempt - 1));
-            usleep($delay);
-        }
-    }
-}
-
-// Usage
-retryWithBackoff(fn() => Cart::add('product-1', 'Product 1', 1999, 1));
-```
-
-### Controller Example
-
-```php
-namespace App\Http\Controllers;
-
-use Illuminate\Http\Request;
-use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Exceptions\CartConflictException;
-
-class CartController extends Controller
-{
-    public function add(Request $request)
-    {
-        $validated = $request->validate([
-            'id' => 'required|string',
-            'name' => 'required|string',
-            'price' => 'required|numeric|min:0',
-            'quantity' => 'required|integer|min:1',
-        ]);
-
-        $maxAttempts = 3;
-        $attempt = 0;
-
-        while ($attempt < $maxAttempts) {
-            try {
-                Cart::add(
-                    $validated['id'],
-                    $validated['name'],
-                    $validated['price'],
-                    $validated['quantity']
-                );
-                
-                return response()->json([
-                    'success' => true,
-                    'cart' => [
-                        'count' => Cart::count(),
-                        'total' => Cart::total()->format(),
-                    ],
-                ]);
-            } catch (CartConflictException $e) {
-                $attempt++;
-                if ($attempt >= $maxAttempts) {
-                    return response()->json([
-                        'success' => false,
-                        'message' => 'Cart is busy. Please try again.',
-                    ], 409);
-                }
-                usleep(100000 * $attempt); // Backoff
-            }
-        }
-    }
-}
-```
-
----
-
-## Testing Concurrency
-
-### Simulate Conflicts
-
-```php
-use Illuminate\Support\Facades\DB;
-use AIArmada\Cart\Facades\Cart;
-use AIArmada\Cart\Exceptions\CartConflictException;
-
-it('detects cart conflicts', function () {
-    // Requires database driver
-    config(['cart.storage.driver' => 'database']);
-    
-    Cart::add('product-1', 'Product 1', 1000, 1);
-    
-    // Simulate concurrent modification by manually updating version
-    DB::table('carts')
-        ->where('identifier', Cart::getIdentifier())
-        ->where('instance', 'default')
-        ->update(['version' => DB::raw('version + 1')]);
-    
-    // Next cart operation should detect conflict
-    expect(fn() => Cart::add('product-2', 'Product 2', 2000, 1))
-        ->toThrow(CartConflictException::class);
+Cart::transaction(function ($cart) {
+    $cart->add('item-1', 'Product 1', Money::MYR(1000), 1);
+    $cart->add('item-2', 'Product 2', Money::MYR(2000), 1);
+    $cart->applyCondition(new CartCondition([...]));
 });
+// All changes committed atomically or rolled back
 ```
 
-### Test Retry Logic
+## Storage Driver Support
 
-```php
-it('retries on conflict', function () {
-    $attempts = 0;
-    $maxAttempts = 3;
-    
-    while ($attempts < $maxAttempts) {
-        try {
-            Cart::add('product-1', 'Product 1', 1000, 1);
-            break;
-        } catch (CartConflictException $e) {
-            $attempts++;
-            if ($attempts >= $maxAttempts) {
-                throw $e;
-            }
-        }
-    }
-    
-    expect(Cart::has('product-1'))->toBeTrue();
-    expect($attempts)->toBeLessThan($maxAttempts);
-});
-```
+| Driver | Concurrency Support | Mechanism |
+|--------|---------------------|-----------|
+| Database | ✅ Full | Version column with atomic UPDATE |
+| Redis | ✅ Full | WATCH/MULTI transactions |
+| Session | ⚠️ Limited | Session locking |
+| Array | ❌ None | Single-process only |
 
----
+### Database Implementation
 
-## Troubleshooting
-
-### Issue: Frequent Conflicts
-
-**Symptoms:**
-- Many `CartConflictException` errors
-- Users report "cart is busy" messages
-
-**Solutions:**
-
-1. **Reduce rapid clicks:**
-```javascript
-// Debounce add-to-cart button
-let addToCartTimer;
-document.querySelector('#add-to-cart').addEventListener('click', (e) => {
-    clearTimeout(addToCartTimer);
-    addToCartTimer = setTimeout(() => {
-        fetch('/cart/add', { method: 'POST', /* ... */ });
-    }, 300); // Wait 300ms between clicks
-});
-```
-
-2. **Increase retry attempts:**
-```php
-// config/cart.php (custom config)
-'concurrency' => [
-    'max_retries' => 5, // Increase from 3
-],
-```
-
-3. **Check database performance:**
-```bash
-# Monitor slow queries
-php artisan db:show
-php artisan db:monitor
-```
-
-### Issue: Version Mismatch
-
-**Symptoms:**
-- Cart operations fail silently
-- Version column stuck at 0
-
-**Solutions:**
-
-1. **Verify migration ran:**
-```bash
-php artisan migrate:status
-```
-
-2. **Check table schema:**
 ```sql
-DESCRIBE carts;
--- Ensure 'version' column exists and is INT UNSIGNED NOT NULL DEFAULT 1
+-- Atomic update with version check
+UPDATE carts 
+SET content = ?, version = version + 1 
+WHERE identifier = ? AND version = ?
+
+-- If rows_affected = 0, conflict detected
 ```
 
-3. **Reset cart:**
+### Redis Implementation
+
 ```php
-Cart::clear();
-Cart::clearMetadata();
+// WATCH key for changes
+$redis->watch("cart:{$identifier}");
+
+// Start transaction
+$redis->multi();
+$redis->set("cart:{$identifier}", $serialized);
+$redis->incr("cart:{$identifier}:version");
+
+// Execute (fails if key changed)
+$result = $redis->exec();
 ```
 
-### Issue: Conflicts with Session Driver
+## Conflict Strategies
 
-**Symptoms:**
-- `CartConflictException` thrown with session driver
-
-**Solution:**
-
-Optimistic locking only works with the **database driver**:
+### Last Write Wins
 
 ```php
 // config/cart.php
-'storage' => [
-    'driver' => 'database', // Required for concurrency control
+'concurrency' => [
+    'strategy' => 'last-write-wins',
 ],
 ```
 
-Session and cache drivers don't support versioning. Switch to database driver for high-traffic scenarios.
+Fastest option, but may lose data. Suitable for low-conflict scenarios.
 
----
+### Optimistic Retry
+
+```php
+// config/cart.php
+'concurrency' => [
+    'strategy' => 'optimistic',
+    'max_retries' => 3,
+],
+```
+
+Default. Retries with exponential backoff.
+
+### Merge
+
+```php
+// config/cart.php
+'concurrency' => [
+    'strategy' => 'merge',
+],
+```
+
+Attempts to merge conflicting changes automatically.
+
+## Real-World Scenarios
+
+### AJAX Add to Cart
+
+```javascript
+// Client-side debounce
+const addToCart = debounce(async (sku, qty) => {
+    const response = await fetch('/cart/add', {
+        method: 'POST',
+        body: JSON.stringify({ sku, quantity: qty }),
+    });
+    
+    if (response.status === 409) {
+        // Conflict - refresh and retry
+        location.reload();
+    }
+}, 300);
+```
+
+### Bulk Operations
+
+```php
+// Disable concurrency for bulk imports
+Cart::withoutLocking(function () {
+    foreach ($items as $item) {
+        Cart::add($item['sku'], $item['name'], $item['price'], $item['qty']);
+    }
+});
+```
+
+### Background Jobs
+
+```php
+class ProcessCartJob implements ShouldQueue
+{
+    public $tries = 3;
+    
+    public function handle(): void
+    {
+        Cart::setIdentifier($this->cartId);
+        
+        try {
+            Cart::applyCondition($this->condition);
+        } catch (ConcurrencyException $e) {
+            // Release back to queue
+            $this->release(5);
+        }
+    }
+}
+```
+
+## Monitoring Conflicts
+
+```php
+use AIArmada\Cart\Events\ConcurrencyConflict;
+
+Event::listen(ConcurrencyConflict::class, function ($event) {
+    Log::warning('Cart conflict', [
+        'identifier' => $event->identifier,
+        'expected_version' => $event->expectedVersion,
+        'actual_version' => $event->actualVersion,
+        'retries' => $event->retryCount,
+    ]);
+    
+    // Track metrics
+    Metrics::increment('cart.conflicts');
+});
+```
+
+## Testing
+
+```php
+it('handles concurrent modifications', function () {
+    Cart::setIdentifier('test-cart');
+    Cart::add('sku-1', 'Product', Money::MYR(1000), 1);
+    
+    // Simulate concurrent modification
+    $version = Cart::getVersion();
+    
+    // Another process updates
+    DB::table('carts')
+        ->where('identifier', 'test-cart')
+        ->update(['version' => $version + 1]);
+    
+    // This should retry and succeed
+    Cart::add('sku-2', 'Product 2', Money::MYR(2000), 1);
+    
+    expect(Cart::count())->toBe(2);
+});
+
+it('throws after max retries', function () {
+    Cart::setIdentifier('test-cart');
+    
+    // Mock persistent conflicts
+    Cart::shouldReceive('save')
+        ->andThrow(ConcurrencyException::class);
+    
+    Cart::add('sku-1', 'Product', Money::MYR(1000), 1);
+})->throws(ConcurrencyException::class);
+```
 
 ## Best Practices
 
-1. **Use database driver** for production (enables optimistic locking)
-2. **Implement retry logic** with exponential backoff in controllers
-3. **Debounce user interactions** (buttons, rapid clicks)
-4. **Monitor conflict rate** - high rates indicate performance issues
-5. **Test concurrency scenarios** in your test suite
-6. **Handle exceptions gracefully** - show user-friendly messages
+1. **Keep operations atomic** - Group related changes in transactions
+2. **Use short-lived carts** - Clear after checkout
+3. **Monitor conflict rates** - High rates indicate architecture issues
+4. **Prefer database/Redis** - For multi-server deployments
+5. **Implement client-side debouncing** - Reduce rapid-fire requests
 
----
+## Next Steps
 
-## Additional Resources
-
-- [Storage Drivers](storage.md) – Choose the right storage backend
-- [Configuration](configuration.md) – Database storage configuration
-- [Troubleshooting](troubleshooting.md) – General cart issues
+- [Storage](storage.md) – Driver configuration
+- [Events](events.md) – Monitor cart changes
+- [Troubleshooting](troubleshooting.md) – Common issues

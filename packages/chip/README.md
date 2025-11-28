@@ -1,24 +1,16 @@
 # CHIP for Laravel
 
-> Seamless Laravel 12 integration for the [CHIP](https://docs.chip-in.asia/) payment platform – covering both **CHIP Collect** (payments) and **CHIP Send** (disbursements).
+Laravel 12 integration for [CHIP](https://docs.chip-in.asia/) payment platform – **CHIP Collect** (payments) and **CHIP Send** (disbursements).
 
-[![Packagist](https://img.shields.io/packagist/v/aiarmada/chip.svg?style=flat-square)](https://packagist.org/packages/aiarmada/chip)
-[![Tests](https://img.shields.io/github/actions/workflow/status/aiarmada/chip/tests.yml?branch=main&label=tests&style=flat-square)](https://github.com/aiarmada/chip/actions?query=workflow%3Atests)
-[![Pint](https://img.shields.io/github/actions/workflow/status/aiarmada/chip/pint.yml?branch=main&label=pint&style=flat-square)](https://github.com/aiarmada/chip/actions?query=workflow%3Apint)
+## Features
 
-## Why this package?
-
-- **Complete API coverage** – purchases, refunds, subscriptions, payouts, webhooks, statements.  
-- **Universal Gateway Interface** – implements `PaymentGatewayInterface` for easy provider switching.
-- **First-class Laravel DX** – facades, fluent builders, data objects, events, queues, health checks.  
-- **Production ready** – PHP 8.4 / Laravel 12, PHPStan level 8, Pest v4 test suite.  
-- **Secure by default** – webhook signature verification, optional masking of request/response logs.
-
-📚 **Documentation:**
-- [`docs/payment-gateway.md`](docs/payment-gateway.md) – Universal payment gateway interface
-- [`docs/CHIP_API_REFERENCE.md`](docs/CHIP_API_REFERENCE.md) – Complete CHIP API reference
-
----
+- **Fully independent** – works standalone without requiring other commerce packages
+- **Seamless integration** – auto-integrates with Cart when installed together
+- **Universal Gateway** – implements `PaymentGatewayInterface` for provider switching
+- **Complete API coverage** – purchases, refunds, subscriptions, payouts, webhooks
+- **Laravel DX** – facades, fluent builders, typed data objects, events
+- **Production ready** – PHP 8.4, PHPStan level 6, Pest test suite
+- **Secure** – webhook signature verification, sensitive data masking
 
 ## Installation
 
@@ -26,72 +18,44 @@
 composer require aiarmada/chip
 ```
 
-Publish configuration and (optionally) package migrations:
+Publish config and migrations:
 
 ```bash
 php artisan vendor:publish --tag="chip-config"
-php artisan vendor:publish --tag="chip-migrations" # optional persistence
+php artisan vendor:publish --tag="chip-migrations"
 php artisan migrate
 ```
 
-### Database JSON type (PostgreSQL)
-
-Migrations default to portable `json` columns. To opt into `jsonb` on a fresh install, set one of the following BEFORE running migrations:
-
-```env
-COMMERCE_JSON_COLUMN_TYPE=jsonb
-# or per-package override
-CHIP_JSON_COLUMN_TYPE=jsonb
-```
-
-Or run the interactive setup:
-
-```bash
-php artisan commerce:configure-database
-```
-
-When using PostgreSQL + `jsonb`, a GIN index is created automatically on `purchases.metadata`. Other JSON fields are left unindexed by default; add indexes based on your query patterns.
-
-### Environment variables
+## Configuration
 
 ```env
 # CHIP Collect
-CHIP_COLLECT_API_KEY=your-collect-api-key
+CHIP_COLLECT_API_KEY=your-api-key
 CHIP_COLLECT_BRAND_ID=your-brand-id
-CHIP_COLLECT_BASE_URL=https://gate.chip-in.asia/api/v1/
-CHIP_COLLECT_ENVIRONMENT=sandbox # or production
 
 # CHIP Send
 CHIP_SEND_API_KEY=your-send-api-key
 CHIP_SEND_API_SECRET=your-send-api-secret
-CHIP_SEND_ENVIRONMENT=sandbox # or production
 
-# Webhooks & logging
-CHIP_WEBHOOK_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----..."
+# Environment
+CHIP_ENVIRONMENT=sandbox
+
+# Webhooks
+CHIP_COMPANY_PUBLIC_KEY="-----BEGIN PUBLIC KEY-----..."
 CHIP_WEBHOOK_VERIFY_SIGNATURE=true
-CHIP_LOGGING_ENABLED=false
 ```
 
-All options live in `config/chip.php`, including timeout/retry settings, default currency, webhook middleware and cache TTLs.
+## Quick Start
 
----
+### Payment Gateway (Recommended)
 
-## Usage
-
-### Universal Payment Gateway (Recommended)
-
-Use the `PaymentGatewayInterface` for provider-agnostic checkout:
+Works with any `CheckoutableInterface` – Cart, Order, or custom implementations:
 
 ```php
 use AIArmada\Chip\Gateways\ChipGateway;
-use AIArmada\Cart\Facades\Cart;
 
-// Your cart implements CheckoutableInterface
-$cart = app(\AIArmada\Cart\Cart::class);
-
-// Create payment through the gateway
 $gateway = app(ChipGateway::class);
-$payment = $gateway->createPayment($cart, $customer, [
+$payment = $gateway->createPayment($checkoutable, $customer, [
     'success_url' => route('checkout.success'),
     'failure_url' => route('checkout.failed'),
 ]);
@@ -99,98 +63,79 @@ $payment = $gateway->createPayment($cart, $customer, [
 return redirect($payment->getCheckoutUrl());
 ```
 
-See [`docs/payment-gateway.md`](docs/payment-gateway.md) for full documentation.
+When `aiarmada/cart` is installed, Cart automatically implements `CheckoutableInterface`:
 
-### CHIP Collect (payments)
+```php
+$cart = app(\AIArmada\Cart\Cart::class);
+$payment = $gateway->createPayment($cart, $customer, $options);
+```
+
+### CHIP Collect
 
 ```php
 use AIArmada\Chip\Facades\Chip;
 
+// Create purchase
 $purchase = Chip::createPurchase([
-    'client' => [
-        'email' => 'customer@example.com',
-        'full_name' => 'Jane Customer',
-    ],
+    'client' => ['email' => 'customer@example.com'],
     'purchase' => [
         'currency' => 'MYR',
-        'products' => [
-            ['name' => 'Pro Plan', 'price' => 12900],
-        ],
-        'success_redirect' => route('payments.success'),
-        'failure_redirect' => route('payments.failed'),
+        'products' => [['name' => 'Product', 'price' => 9900]],
     ],
 ]);
 
-return redirect($purchase->checkout_url);
+// Fluent builder
+$purchase = Chip::purchase()
+    ->customer('customer@example.com', 'John Doe')
+    ->addProduct('Product', 9900)
+    ->successUrl(route('success'))
+    ->create();
 ```
 
-Need the fluent builder?  
-`Chip::purchase()->brand('brand-id')->customer('user@example.com')->addProduct('Add-on', 500)->create();`
-
-### CHIP Send (payouts)
+### CHIP Send
 
 ```php
 use AIArmada\Chip\Facades\ChipSend;
 
 $instruction = ChipSend::createSendInstruction(
-    amountInCents: 10500,
+    amountInCents: 10000,
     currency: 'MYR',
-    recipientBankAccountId: 'bank_acc_123',
-    description: 'Affiliate Commission',
-    reference: 'AFF-2025-0001',
-    email: 'affiliate@example.com',
+    recipientBankAccountId: 'bank_123',
+    description: 'Payout',
+    reference: 'PAY-001',
+    email: 'recipient@example.com',
 );
 ```
 
-### Webhook verification
+### Webhooks
 
 ```php
-use AIArmada\Chip\Http\Requests\WebhookRequest;
-
-Route::post('/chip/webhook', function (WebhookRequest $request) {
-    $payload = $request->getWebhookPayload();
-
+Route::post('/chip/webhook', function (Request $request) {
+    $handler = app(ChipGateway::class)->getWebhookHandler();
+    $payload = $handler->verify($request);
+    
     if ($payload->event === 'purchase.paid') {
-        // handle success
+        // Handle payment
     }
-
+    
     return response('OK');
-})->middleware(['verify-chip-signature']);
+});
 ```
 
-The package automatically verifies signatures when `CHIP_WEBHOOK_VERIFY_SIGNATURE=true`. Configure allowed events and middleware stack inside `config/chip.php`.
-
-### Health check command
+## Health Check
 
 ```bash
 php artisan chip:health
 ```
 
-Outputs Collect/Send connectivity status, configuration summary (with `-v`), and exits with `1` if any check fails – ideal for CI or uptime probes.
+## Documentation
 
----
-
-## Documentation & Examples
-
-- [`docs/CHIP_API_REFERENCE.md`](docs/CHIP_API_REFERENCE.md) – curated endpoint reference.  
-- [`tests/`](tests) – Pest-powered examples of purchases, payouts, webhooks, CLI commands.  
-- [`src/Builders/PurchaseBuilder.php`](src/Builders/PurchaseBuilder.php) – fluent API for advanced purchase creation.  
-- [`src/Services`](src/Services) – typed service layer the facades delegate to.
-
----
-
-## Contributing
-
-1. Fork & clone the repository.  
-2. Install dependencies: `composer install`.  
-3. Run the test suite: `vendor/bin/pest`.  
-4. Apply formatting: `vendor/bin/pint`.  
-5. Submit a pull request with a clear description and, ideally, a link to the relevant CHIP documentation.
-
-Bug reports and feature requests are welcome via GitHub issues. Please include reproduction steps and API responses (redacted for sensitive data).
-
----
+- [Payment Gateway](docs/payment-gateway.md) – Universal gateway interface
+- [CHIP Collect](docs/chip-collect.md) – Payments and purchases
+- [CHIP Send](docs/chip-send.md) – Disbursements and payouts
+- [Webhooks](docs/webhooks.md) – Event handling
+- [API Reference](docs/api-reference.md) – Complete method reference
 
 ## License
 
-Released under the MIT License. See [LICENSE](LICENSE.md) for details.
+MIT License. See [LICENSE](LICENSE) for details.

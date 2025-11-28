@@ -101,29 +101,7 @@ final class Payment
         return $this->pending_unfreeze_on ? Carbon::createFromTimestamp($this->pending_unfreeze_on) : null;
     }
 
-    /**
-     * @deprecated Use getAmountInCents() or $this->amount directly
-     */
-    public function getAmountInMajorUnits(): float
-    {
-        return $this->amount->getAmount() / 100;
-    }
 
-    /**
-     * @deprecated Use getNetAmountInCents() or $this->net_amount directly
-     */
-    public function getNetAmountInMajorUnits(): float
-    {
-        return $this->net_amount->getAmount() / 100;
-    }
-
-    /**
-     * @deprecated Use getFeeAmountInCents() or $this->fee_amount directly
-     */
-    public function getFeeAmountInMajorUnits(): float
-    {
-        return $this->fee_amount->getAmount() / 100;
-    }
 
     public function isPaid(): bool
     {

@@ -67,8 +67,8 @@ describe('Payment data object', function (): void {
             'remote_paid_on' => 1640995800,
         ]);
 
-        expect($payment->getNetAmountInMajorUnits())->toBe(99.50);
-        expect($payment->getFeeAmountInMajorUnits())->toBe(0.50);
+        expect($payment->getNetAmountInCents())->toBe(9950);
+        expect($payment->getFeeAmountInCents())->toBe(50);
     });
 
     it('exposes paid timestamps and array output', function (): void {

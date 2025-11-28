@@ -70,19 +70,6 @@ describe('Payment data object with Money', function (): void {
             ->and($array['is_outgoing'])->toBeTrue();
     });
 
-    it('maintains backward compatibility with deprecated methods', function (): void {
-        $payment = Payment::fromArray([
-            'amount' => 10000,
-            'net_amount' => 9700,
-            'fee_amount' => 300,
-            'currency' => 'MYR',
-        ]);
-
-        expect($payment->getAmountInMajorUnits())->toBe(100.0)
-            ->and($payment->getNetAmountInMajorUnits())->toBe(97.0)
-            ->and($payment->getFeeAmountInMajorUnits())->toBe(3.0);
-    });
-
     it('handles paid status with Money amounts', function (): void {
         $paidPayment = Payment::fromArray([
             'amount' => 10000,

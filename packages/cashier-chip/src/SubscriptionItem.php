@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip;
 
+use AIArmada\CashierChip\Database\Factories\SubscriptionItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -15,7 +16,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class SubscriptionItem extends Model
 {
+    /** @use HasFactory<SubscriptionItemFactory> */
     use HasFactory;
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): SubscriptionItemFactory
+    {
+        return SubscriptionItemFactory::new();
+    }
 
     /**
      * The table associated with the model.

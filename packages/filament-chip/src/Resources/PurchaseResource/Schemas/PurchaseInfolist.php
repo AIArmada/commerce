@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\PurchaseResource\Schemas;
 
-use AIArmada\FilamentChip\Models\ChipPurchase;
+use AIArmada\Chip\Models\Purchase;
 use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Fieldset;
@@ -37,8 +37,8 @@ final class PurchaseInfolist
                             TextEntry::make('status')
                                 ->label('Status')
                                 ->badge()
-                                ->color(fn (ChipPurchase $record): string => $record->statusColor())
-                                ->formatStateUsing(fn (ChipPurchase $record): string => $record->statusBadge()),
+                                ->color(fn (Purchase $record): string => $record->statusColor())
+                                ->formatStateUsing(fn (Purchase $record): string => $record->statusBadge()),
                         ]),
                     Grid::make(3)
                         ->schema([
@@ -100,7 +100,7 @@ final class PurchaseInfolist
                                 ->badge()
                                 ->placeholder('—'),
                         ])
-                        ->visible(fn (ChipPurchase $record): bool => Arr::hasAny($record->client ?? [], [
+                        ->visible(fn (Purchase $record): bool => Arr::hasAny($record->client ?? [], [
                             'shipping_street_address',
                             'shipping_city',
                             'shipping_country',
@@ -113,14 +113,14 @@ final class PurchaseInfolist
                         ->schema([
                             TextEntry::make('purchase.subtotal.amount')
                                 ->label('Subtotal')
-                                ->formatStateUsing(fn (?int $state, ChipPurchase $record): ?string => self::formatAmount(
+                                ->formatStateUsing(fn (?int $state, Purchase $record): ?string => self::formatAmount(
                                     $state,
                                     Arr::get($record->purchase, 'subtotal.currency', Arr::get($record->purchase, 'currency')),
                                 ))
                                 ->icon(Heroicon::OutlinedBanknotes),
                             TextEntry::make('purchase.discount.amount')
                                 ->label('Discount')
-                                ->formatStateUsing(fn (?int $state, ChipPurchase $record): ?string => self::formatAmount(
+                                ->formatStateUsing(fn (?int $state, Purchase $record): ?string => self::formatAmount(
                                     $state,
                                     Arr::get($record->purchase, 'discount.currency', Arr::get($record->purchase, 'currency')),
                                 ))
@@ -128,7 +128,7 @@ final class PurchaseInfolist
                                 ->placeholder('—'),
                             TextEntry::make('purchase.taxes.amount')
                                 ->label('Taxes')
-                                ->formatStateUsing(fn (?int $state, ChipPurchase $record): ?string => self::formatAmount(
+                                ->formatStateUsing(fn (?int $state, Purchase $record): ?string => self::formatAmount(
                                     $state,
                                     Arr::get($record->purchase, 'taxes.currency', Arr::get($record->purchase, 'currency')),
                                 ))
@@ -136,7 +136,7 @@ final class PurchaseInfolist
                                 ->icon(Heroicon::OutlinedSparkles),
                             TextEntry::make('purchase.shipping.amount')
                                 ->label('Shipping')
-                                ->formatStateUsing(fn (?int $state, ChipPurchase $record): ?string => self::formatAmount(
+                                ->formatStateUsing(fn (?int $state, Purchase $record): ?string => self::formatAmount(
                                     $state,
                                     Arr::get($record->purchase, 'shipping.currency', Arr::get($record->purchase, 'currency')),
                                 ))
@@ -173,7 +173,7 @@ final class PurchaseInfolist
                                 ->columnSpanFull(),
                         ])
                         ->grid(1)
-                        ->visible(fn (ChipPurchase $record): bool => filled($record->purchase['line_items'] ?? [])),
+                        ->visible(fn (Purchase $record): bool => filled($record->purchase['line_items'] ?? [])),
                 ])
                 ->collapsible(),
 
@@ -197,7 +197,7 @@ final class PurchaseInfolist
                                 ->placeholder('—'),
                         ])
                         ->grid(1)
-                        ->visible(fn (ChipPurchase $record): bool => filled($record->timeline)),
+                        ->visible(fn (Purchase $record): bool => filled($record->timeline)),
                 ])
                 ->collapsible(),
 
@@ -206,17 +206,17 @@ final class PurchaseInfolist
                     TextEntry::make('purchase')
                         ->label('Purchase JSON')
                         ->formatStateUsing(fn ($state) => json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES))
-                        ->visible(fn (ChipPurchase $record): bool => filled($record->purchase))
+                        ->visible(fn (Purchase $record): bool => filled($record->purchase))
                         ->columnSpanFull(),
                     TextEntry::make('payment')
                         ->label('Payment JSON')
                         ->formatStateUsing(fn ($state) => json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES))
-                        ->visible(fn (ChipPurchase $record): bool => filled($record->payment ?? []))
+                        ->visible(fn (Purchase $record): bool => filled($record->payment ?? []))
                         ->columnSpanFull(),
                     TextEntry::make('transaction_data')
                         ->label('Transaction Data JSON')
                         ->formatStateUsing(fn ($state) => json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES))
-                        ->visible(fn (ChipPurchase $record): bool => filled($record->transaction_data ?? []))
+                        ->visible(fn (Purchase $record): bool => filled($record->transaction_data ?? []))
                         ->columnSpanFull(),
                 ])
                 ->collapsible()

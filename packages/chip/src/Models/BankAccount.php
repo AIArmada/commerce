@@ -2,20 +2,29 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentChip\Models;
+namespace AIArmada\Chip\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Carbon;
 
 /**
- * @property string $status
+ * @property string|null $status
+ * @property string|null $account_number
+ * @property string|null $bank_code
+ * @property string|null $bank_name
+ * @property string|null $holder_name
+ * @property bool $is_debiting_account
+ * @property bool $is_crediting_account
  */
-final class ChipBankAccount extends ChipModel
+class BankAccount extends ChipModel
 {
     public $timestamps = true;
 
     public function statusColor(): string
     {
-        return match ($this->status) {
+        $status = $this->status ?? '';
+
+        return match ($status) {
             'approved', 'active' => 'success',
             'pending', 'verifying' => 'warning',
             'rejected', 'disabled' => 'danger',
@@ -25,9 +34,10 @@ final class ChipBankAccount extends ChipModel
 
     public function statusLabel(): string
     {
-        return (string) str($this->status)->headline();
+        return (string) str($this->status ?? 'unknown')->headline();
     }
 
+    /** @return Attribute<bool, never> */
     public function isActive(): Attribute
     {
         return Attribute::get(fn (): bool => $this->status === 'active' || $this->status === 'approved');
@@ -38,6 +48,9 @@ final class ChipBankAccount extends ChipModel
         return 'bank_accounts';
     }
 
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [

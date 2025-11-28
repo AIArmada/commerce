@@ -1,75 +1,191 @@
-# AIArmada Cart Core Package
+# AIArmada Cart
 
-This package contains the core implementation that powers **AIArmada Cart**. It is published as `aiarmada/cart` on Packagist and intended for Laravel 12 applications seeking a feature-rich shopping cart engine.
+A modern, production-grade shopping cart engine for Laravel 12 applications.
 
-## Highlights
+## Features
 
-- 📦 **Pluggable storage** – session, cache, and database drivers that implement a shared interface.
-- 🛒 **Composable cart architecture** – traits manage items, totals, metadata, and conditions.
-- 🔁 **Multi-instance by default** – support any number of cart buckets per user or session.
-- 🧮 **Accurate calculations** – Money integration for precise totals and rounding (via `aiarmada/commerce-support`).
-- 💳 **Payment gateway ready** – implements `CheckoutableInterface` for seamless integration with any payment provider.
-- 📈 **Observability hooks** – metrics, conflict tracking, and per-operation performance measurements.
+- **Multiple Storage Drivers** – Session, cache, and database storage with seamless switching
+- **Multi-Instance Carts** – Support multiple cart buckets per user (cart, wishlist, compare)
+- **Precision Calculations** – Money objects via `akaunting/money` for accurate financial math
+- **Flexible Conditions** – Discounts, taxes, fees, and shipping with targeted application
+- **Payment Gateway Ready** – Implements `CheckoutableInterface` for any payment provider
+- **Concurrency Safe** – Optimistic locking prevents race conditions
+- **Event-Driven** – Hooks for logging, analytics, and business logic
 
-## Documentation
+## Requirements
 
-The full project documentation lives in the repository root under [`docs/`](../../docs/index.md). Start with:
+- PHP 8.4+
+- Laravel 12.x
 
-- [Getting Started](docs/getting-started.md)
-- [Cart Operations](docs/cart-operations.md)
-- [Configuration Reference](docs/configuration.md)
-- [Conditions & Discounts](docs/conditions.md)
-- [Payment Integration](docs/payment-integration.md)
-- [Money & Currency](docs/money-and-currency.md)
+## Installation
 
-## JSON vs JSONB (PostgreSQL)
+```bash
+composer require aiarmada/cart
+```
 
-Migrations default to portable `json` columns. To opt into `jsonb` on a fresh install, set one of the following BEFORE running migrations:
+Laravel auto-discovers the service provider. To publish configuration:
+
+```bash
+php artisan vendor:publish --tag=cart-config
+```
+
+For database storage, publish and run migrations:
+
+```bash
+php artisan vendor:publish --tag=cart-migrations
+php artisan migrate
+```
+
+## Quick Start
+
+```php
+use AIArmada\Cart\Facades\Cart;
+
+// Add items
+Cart::add('laptop-001', 'MacBook Pro 16"', 2499.00, 1, [
+    'sku' => 'MBP16-2024',
+    'color' => 'Space Gray',
+]);
+
+// Get totals
+echo Cart::count();           // Total quantity
+echo Cart::total()->format(); // "$2,499.00"
+
+// Apply conditions
+Cart::addDiscount('promo', '10%');
+Cart::addTax('vat', '8%');
+Cart::addShipping('standard', '15.00');
+
+// Work with items
+$item = Cart::get('laptop-001');
+Cart::update('laptop-001', ['quantity' => 2]);
+Cart::remove('laptop-001');
+
+// Multiple instances
+Cart::instance('wishlist')->add('monitor-001', 'Display', 599.00);
+```
+
+## Storage Drivers
+
+| Driver | Best For | Persistence |
+|--------|----------|-------------|
+| `session` | Simple apps, development | Session lifetime |
+| `cache` | High traffic, API backends | TTL-based |
+| `database` | E-commerce, multi-device | Permanent |
+
+```php
+// config/cart.php
+'storage' => env('CART_STORAGE', 'database'),
+```
+
+## Conditions
+
+Apply discounts, taxes, and fees at different calculation phases:
+
+```php
+use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\TargetPresets;
+
+// Percentage discount
+Cart::addDiscount('summer-sale', '20%');
+
+// Fixed amount
+Cart::addDiscount('welcome', '-10.00');
+
+// Custom condition
+$condition = new CartCondition(
+    name: 'vip-discount',
+    type: 'discount',
+    target: TargetPresets::cartSubtotal(),
+    value: '-15%',
+    rules: [fn($cart) => auth()->user()?->isVip()],
+);
+Cart::addCondition($condition);
+```
+
+## Payment Integration
+
+Cart implements `CheckoutableInterface` for seamless payment gateway integration:
+
+```php
+use AIArmada\Chip\Gateways\ChipGateway;
+
+$gateway = app(ChipGateway::class);
+$cart = app(\AIArmada\Cart\Cart::class);
+
+$payment = $gateway->createPayment($cart, $customer, [
+    'success_url' => route('checkout.success'),
+    'failure_url' => route('checkout.failed'),
+]);
+
+return redirect($payment->getCheckoutUrl());
+```
+
+## Guest to User Migration
+
+Automatically migrate guest carts when users log in:
+
+```php
+// config/cart.php
+'migration' => [
+    'auto_migrate_on_login' => true,
+    'merge_strategy' => 'add_quantities', // or keep_highest_quantity, keep_user_cart
+],
+```
+
+## Events
+
+Listen to cart lifecycle events:
+
+- `CartCreated`, `CartCleared`, `CartDestroyed`, `CartMerged`
+- `ItemAdded`, `ItemUpdated`, `ItemRemoved`
+- `CartConditionAdded`, `CartConditionRemoved`
+- `ItemConditionAdded`, `ItemConditionRemoved`
+- `MetadataAdded`, `MetadataRemoved`, `MetadataBatchAdded`, `MetadataCleared`
+
+```php
+use AIArmada\Cart\Events\ItemAdded;
+
+Event::listen(ItemAdded::class, function ($event) {
+    Log::info('Item added', ['item' => $event->cartItem->id]);
+});
+```
+
+## JSON Column Type
+
+Migrations default to `json` columns. For PostgreSQL with `jsonb`:
 
 ```env
 COMMERCE_JSON_COLUMN_TYPE=jsonb
-# or per-package override
+# or per-package
 CART_JSON_COLUMN_TYPE=jsonb
 ```
 
-Or run the interactive setup:
+## Documentation
 
-```bash
-php artisan commerce:configure-database
-```
+Full documentation is available in the [`docs/`](docs/index.md) directory:
 
-When using PostgreSQL + `jsonb`, GIN indexes are created automatically on `items`, `conditions`, and `metadata`.
+- [Getting Started](docs/getting-started.md)
+- [Cart Operations](docs/cart-operations.md)
+- [Conditions & Pricing](docs/conditions.md)
+- [Storage Drivers](docs/storage.md)
+- [Payment Integration](docs/payment-integration.md)
+- [Configuration](docs/configuration.md)
 
-## Local Development
-
-Clone the monorepo and install dependencies:
+## Development
 
 ```bash
 composer install
 vendor/bin/pest
+vendor/bin/pint --dirty
 ```
-
-When editing code:
-
-- Keep strict types and typed signatures.
-- Honour `StorageInterface` when extending storage implementations.
-- Update or add tests for behavioural changes.
-- Format using `vendor/bin/pint --dirty`.
 
 ## Testing
 
-Run the unit suite for the core package:
-
 ```bash
-vendor/bin/pest tests/Unit
+vendor/bin/pest tests/src/Cart --parallel
 ```
-
-Use Pest filters (`--group`, `--filter`) to target specific areas.
-
-## Contributing
-
-Please review the [Laravel Cart Coding Guidelines](../../.ai/guidelines/cart.blade.php) before submitting PRs. Contributions from the community are welcome—issues, bug reports, and feature suggestions keep the project healthy.
 
 ## License
 
-AIArmada Cart is released under the [MIT license](../../LICENSE).
+MIT License. See [LICENSE](../../LICENSE).

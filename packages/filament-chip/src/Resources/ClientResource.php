@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources;
 
-use AIArmada\FilamentChip\Models\ChipClient;
+use AIArmada\Chip\Models\Client;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ListClients;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ViewClient;
 use AIArmada\FilamentChip\Resources\ClientResource\Schemas\ClientInfolist;
@@ -26,7 +26,7 @@ use Override;
 
 final class ClientResource extends BaseChipResource
 {
-    protected static ?string $model = ChipClient::class;
+    protected static ?string $model = Client::class;
 
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
@@ -104,7 +104,7 @@ final class ClientResource extends BaseChipResource
             ->filters([
                 SelectFilter::make('country')
                     ->label('Country')
-                    ->options(fn () => ChipClient::query()
+                    ->options(fn () => Client::query()
                         ->select('country')
                         ->distinct()
                         ->whereNotNull('country')

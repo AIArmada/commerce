@@ -65,7 +65,6 @@ describe('SendInstruction data object', function (): void {
 
         expect($instruction->getCreatedAt()->toDateTimeString())->toBe('2023-07-20 12:00:00');
         expect($instruction->getUpdatedAt()->toDateTimeString())->toBe('2023-07-20 12:05:00');
-        expect($instruction->getAmountInMajorUnits())->toBe(125.50);
         expect($instruction->getAmountInMinorUnits())->toBe(12550);
         expect($instruction->isPending())->toBeTrue();
         expect($instruction->toArray())->toMatchArray([

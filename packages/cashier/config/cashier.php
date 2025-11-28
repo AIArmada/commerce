@@ -51,15 +51,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Gateway Per Model/Subscription Type
+    | Customer Model
     |--------------------------------------------------------------------------
     |
-    | You may configure different gateways for different subscription types.
-    | This allows you to use Stripe for some subscriptions and CHIP for others.
-    | If a subscription type is not listed, it will use the default gateway.
+    | Configure the customer model class used by Cashier.
     |
     */
 
+<<<<<<< Updated upstream
     'subscription_gateways' => [
         // 'premium' => 'stripe',
         // 'local' => 'chip',
@@ -80,6 +79,9 @@ return [
         'subscription' => AIArmada\Cashier\Models\Subscription::class,
         'subscription_item' => AIArmada\Cashier\Models\SubscriptionItem::class,
     ],
+=======
+    'customer_model' => env('CASHIER_MODEL', 'App\\Models\\User'),
+>>>>>>> Stashed changes
 
     /*
     |--------------------------------------------------------------------------
@@ -119,7 +121,10 @@ return [
     */
 
     'invoices' => [
+<<<<<<< Updated upstream
         'renderer' => AIArmada\Cashier\Invoices\DompdfInvoiceRenderer::class,
+=======
+>>>>>>> Stashed changes
         'paper' => 'letter',
         'logo' => null,
         'vendor' => [

@@ -13,6 +13,9 @@ use Illuminate\Support\Collection;
 
 /**
  * Wrapper for CHIP subscription.
+ *
+ * This class wraps a CashierChip Subscription model and adapts it
+ * to the unified SubscriptionContract interface.
  */
 class ChipSubscription implements SubscriptionContract
 {
@@ -191,16 +194,17 @@ class ChipSubscription implements SubscriptionContract
      */
     public function items(): Collection
     {
-        return $this->subscription->items->map(function ($item) {
-            return new ChipSubscriptionItem($item);
-        });
+        return $this->subscription->items->map(fn ($item) => new ChipSubscriptionItem($item));
     }
 
     /**
      * Get the owner of the subscription.
+     *
+     * @return BillableContract
      */
     public function owner(): BillableContract
     {
+        /** @var BillableContract */
         return $this->subscription->owner;
     }
 

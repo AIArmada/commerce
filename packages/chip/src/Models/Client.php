@@ -2,12 +2,21 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\FilamentChip\Models;
+namespace AIArmada\Chip\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Carbon;
 
 /**
+ * @property string|null $email
+ * @property string|null $full_name
+ * @property string|null $phone
+ * @property string|null $street_address
+ * @property string|null $city
+ * @property string|null $state
+ * @property string|null $zip_code
+ * @property string|null $country
  * @property string|null $shipping_street_address
  * @property string|null $shipping_city
  * @property string|null $shipping_state
@@ -21,25 +30,26 @@ use Illuminate\Support\Arr;
  * @property string|null $bank_code
  * @property array<string>|null $cc
  * @property array<string>|null $bcc
+ * @property int|null $created_on
+ * @property int|null $updated_on
  */
-final class ChipClient extends ChipModel
+class Client extends ChipModel
 {
-    public $incrementing = false;
-
     public $timestamps = true;
 
-    protected $keyType = 'string';
-
+    /** @return Attribute<Carbon|null, never> */
     public function createdOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?\Illuminate\Support\Carbon => $this->toTimestamp($attributes['created_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['created_on'] ?? null));
     }
 
+    /** @return Attribute<Carbon|null, never> */
     public function updatedOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?\Illuminate\Support\Carbon => $this->toTimestamp($attributes['updated_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['updated_on'] ?? null));
     }
 
+    /** @return Attribute<string|null, never> */
     public function location(): Attribute
     {
         return Attribute::get(function (): ?string {
@@ -53,6 +63,7 @@ final class ChipClient extends ChipModel
         });
     }
 
+    /** @return Attribute<string|null, never> */
     public function shippingLocation(): Attribute
     {
         return Attribute::get(function (): ?string {
@@ -71,6 +82,9 @@ final class ChipClient extends ChipModel
         return 'clients';
     }
 
+    /**
+     * @return array<string, string>
+     */
     protected function casts(): array
     {
         return [

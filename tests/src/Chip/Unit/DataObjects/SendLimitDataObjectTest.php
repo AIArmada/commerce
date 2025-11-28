@@ -36,10 +36,6 @@ describe('SendLimit data object', function (): void {
             ->and($limit->approvals_received)->toBe(1)
             ->and($limit->from_settlement)->toBe('2024-04-01');
 
-        expect($limit->getAmountInMajorUnits())->toBe(123.45)
-            ->and($limit->getFeeInMajorUnits())->toBe(1.0)
-            ->and($limit->getNetAmountInMajorUnits())->toBe(122.45);
-
         expect($limit->getCreatedAt()->toIso8601ZuluString())->toBe('2024-04-01T12:00:00Z')
             ->and($limit->getUpdatedAt()->toIso8601ZuluString())->toBe('2024-04-02T12:00:00Z');
 
