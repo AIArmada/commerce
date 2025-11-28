@@ -160,7 +160,7 @@ abstract class TestCase extends Orchestra
         $app['config']->set('filament-permissions.super_admin_role', 'Super Admin');
 
         // Configure auth to use our test User model
-        $app['config']->set('auth.providers.users.model', \AIArmada\Commerce\Tests\Fixtures\Models\User::class);
+        $app['config']->set('auth.providers.users.model', Fixtures\Models\User::class);
     }
 
     protected function defineDatabaseMigrations(): void

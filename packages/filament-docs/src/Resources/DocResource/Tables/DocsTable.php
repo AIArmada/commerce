@@ -7,7 +7,6 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\Tables;
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
-use AIArmada\FilamentDocs\Resources\DocResource;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;

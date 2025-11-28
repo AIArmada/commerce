@@ -15,11 +15,6 @@ class DocStatusHistory extends Model
     use HasFactory;
     use HasUuids;
 
-    public function getTable(): string
-    {
-        return config('docs.database.tables.doc_status_histories', 'doc_status_histories');
-    }
-
     protected $fillable = [
         'doc_id',
         'status',
@@ -30,6 +25,11 @@ class DocStatusHistory extends Model
     protected $casts = [
         'status' => DocStatus::class,
     ];
+
+    public function getTable(): string
+    {
+        return config('docs.database.tables.doc_status_histories', 'doc_status_histories');
+    }
 
     public function doc(): BelongsTo
     {
