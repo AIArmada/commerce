@@ -20,6 +20,7 @@ use AIArmada\Cashier\Gateways\Stripe\StripePayment;
 use AIArmada\Cashier\Gateways\Stripe\StripePaymentMethod;
 use AIArmada\Cashier\Gateways\Stripe\StripeSubscription;
 use AIArmada\Cashier\Gateways\Stripe\StripeSubscriptionBuilder;
+use Exception;
 use Illuminate\Support\Collection;
 use Laravel\Cashier\Cashier;
 use Stripe\StripeClient;
@@ -156,8 +157,8 @@ class StripeGateway extends AbstractGateway
         try {
             $session = $this->client()->checkout->sessions->retrieve($sessionId);
 
-            return new \AIArmada\Cashier\Gateways\Stripe\StripeCheckout($session);
-        } catch (\Exception) {
+            return new Stripe\StripeCheckout($session);
+        } catch (Exception) {
             return null;
         }
     }
@@ -171,7 +172,7 @@ class StripeGateway extends AbstractGateway
             $subscription = $this->client()->subscriptions->retrieve($subscriptionId);
 
             return new StripeSubscription($subscription);
-        } catch (\Exception) {
+        } catch (Exception) {
             return null;
         }
     }
@@ -185,7 +186,7 @@ class StripeGateway extends AbstractGateway
             $paymentIntent = $this->client()->paymentIntents->retrieve($paymentId);
 
             return new StripePayment(new \Laravel\Cashier\Payment($paymentIntent));
-        } catch (\Exception) {
+        } catch (Exception) {
             return null;
         }
     }
@@ -199,7 +200,7 @@ class StripeGateway extends AbstractGateway
             $invoice = $this->client()->invoices->retrieve($invoiceId);
 
             return new StripeInvoice($invoice);
-        } catch (\Exception) {
+        } catch (Exception) {
             return null;
         }
     }
@@ -294,7 +295,7 @@ class StripeGateway extends AbstractGateway
             Webhook::constructEvent($payload, $signature, $this->webhookSecret());
 
             return true;
-        } catch (\Exception) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -304,7 +305,6 @@ class StripeGateway extends AbstractGateway
      *
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $headers
-     * @return mixed
      */
     public function handleWebhook(array $payload, array $headers = []): mixed
     {

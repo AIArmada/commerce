@@ -7,7 +7,7 @@ use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
 uses(CashierChipTestCase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = $this->createUser([
         'chip_id' => 'cli_test123',
     ]);
@@ -20,8 +20,8 @@ beforeEach(function () {
     ]);
 });
 
-describe('createSetupPurchase', function () {
-    it('creates a zero-amount preauthorization purchase', function () {
+describe('createSetupPurchase', function (): void {
+    it('creates a zero-amount preauthorization purchase', function (): void {
         $purchase = $this->user->createSetupPurchase();
 
         expect($purchase)->not->toBeNull();
@@ -29,7 +29,7 @@ describe('createSetupPurchase', function () {
         expect($purchase->checkout_url)->toContain('https://gate.chip-in.asia/checkout/');
     });
 
-    it('creates setup purchase with custom options', function () {
+    it('creates setup purchase with custom options', function (): void {
         $purchase = $this->user->createSetupPurchase([
             'product_name' => 'Card Verification',
             'success_url' => 'https://example.com/success',
@@ -40,7 +40,7 @@ describe('createSetupPurchase', function () {
         expect($purchase->checkout_url)->not->toBeEmpty();
     });
 
-    it('creates purchase with skip_capture and force_recurring flags', function () {
+    it('creates purchase with skip_capture and force_recurring flags', function (): void {
         // The fake client's createPurchase method stores the data
         // We can verify the purchase was created with correct parameters
         $purchase = $this->user->createSetupPurchase();
@@ -51,15 +51,15 @@ describe('createSetupPurchase', function () {
     });
 });
 
-describe('setupPaymentMethodUrl', function () {
-    it('returns checkout URL for setup purchase', function () {
+describe('setupPaymentMethodUrl', function (): void {
+    it('returns checkout URL for setup purchase', function (): void {
         $url = $this->user->setupPaymentMethodUrl();
 
         expect($url)->not->toBeEmpty();
         expect($url)->toContain('https://gate.chip-in.asia/checkout/');
     });
 
-    it('includes success and cancel URLs in options', function () {
+    it('includes success and cancel URLs in options', function (): void {
         $url = $this->user->setupPaymentMethodUrl([
             'success_url' => 'https://example.com/success',
             'cancel_url' => 'https://example.com/cancel',

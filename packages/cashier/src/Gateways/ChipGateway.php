@@ -21,6 +21,7 @@ use AIArmada\Cashier\Gateways\Chip\ChipSubscription;
 use AIArmada\Cashier\Gateways\Chip\ChipSubscriptionBuilder;
 use AIArmada\CashierChip\CashierChip;
 use AIArmada\Chip\Services\ChipCollectService;
+use Exception;
 use Illuminate\Support\Collection;
 
 /**
@@ -148,8 +149,8 @@ class ChipGateway extends AbstractGateway
         try {
             $purchase = $this->client()->getPurchase($sessionId);
 
-            return new \AIArmada\Cashier\Gateways\Chip\ChipCheckout($purchase);
-        } catch (\Exception) {
+            return new Chip\ChipCheckout($purchase);
+        } catch (Exception) {
             return null;
         }
     }
@@ -168,7 +169,7 @@ class ChipGateway extends AbstractGateway
             }
 
             return new ChipSubscription($subscription);
-        } catch (\Exception) {
+        } catch (Exception) {
             return null;
         }
     }
@@ -182,7 +183,7 @@ class ChipGateway extends AbstractGateway
             $purchase = $this->client()->getPurchase($paymentId);
 
             return new ChipPayment(new \AIArmada\CashierChip\Payment($purchase));
-        } catch (\Exception) {
+        } catch (Exception) {
             return null;
         }
     }
@@ -196,8 +197,8 @@ class ChipGateway extends AbstractGateway
         try {
             $purchase = $this->client()->getPurchase($invoiceId);
 
-            return new \AIArmada\Cashier\Gateways\Chip\ChipInvoice($purchase);
-        } catch (\Exception) {
+            return new Chip\ChipInvoice($purchase);
+        } catch (Exception) {
             return null;
         }
     }
@@ -226,7 +227,7 @@ class ChipGateway extends AbstractGateway
         $includePending = is_bool($parameters) ? $parameters : ($parameters['include_pending'] ?? false);
 
         return $billable->invoices($includePending)->map(function ($invoice) {
-            return new \AIArmada\Cashier\Gateways\Chip\ChipInvoice($invoice);
+            return new Chip\ChipInvoice($invoice);
         });
     }
 
@@ -300,7 +301,7 @@ class ChipGateway extends AbstractGateway
                 $publicKey,
                 OPENSSL_ALGO_SHA256
             ) === 1;
-        } catch (\Exception) {
+        } catch (Exception) {
             return false;
         }
     }
@@ -310,7 +311,6 @@ class ChipGateway extends AbstractGateway
      *
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $headers
-     * @return mixed
      */
     public function handleWebhook(array $payload, array $headers = []): mixed
     {

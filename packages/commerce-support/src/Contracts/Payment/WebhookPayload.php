@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Contracts\Payment;
 
+use DateTimeInterface;
+
 /**
  * Standardized webhook payload from any payment gateway.
  */
@@ -18,7 +20,7 @@ final readonly class WebhookPayload
         public PaymentStatus $status,
         public ?string $reference,
         public string $gatewayName,
-        public \DateTimeInterface $occurredAt,
+        public DateTimeInterface $occurredAt,
         public array $rawData = [],
     ) {}
 

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Resources\JntWebhookLogResource\Tables;
 
-use AIArmada\Jnt\Models\JntWebhookLog;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\TextColumn;

@@ -3,11 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\Product;
-use AIArmada\Stock\Contracts\StockableInterface;
 use AIArmada\Stock\Models\StockReservation;
 use AIArmada\Stock\Models\StockTransaction;
 use AIArmada\Stock\Services\StockService;
-use AIArmada\Stock\Traits\HasStock;
 
 describe('StockableInterface Implementation', function (): void {
     beforeEach(function (): void {

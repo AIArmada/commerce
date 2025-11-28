@@ -11,51 +11,51 @@ use AIArmada\Commerce\Tests\Cashier\Fixtures\User;
 
 uses(CashierTestCase::class);
 
-describe('Cashier', function () {
-    it('can get the gateway manager instance', function () {
+describe('Cashier', function (): void {
+    it('can get the gateway manager instance', function (): void {
         $manager = Cashier::manager();
 
         expect($manager)->toBeInstanceOf(GatewayManager::class);
     });
 
-    it('can get the default gateway', function () {
+    it('can get the default gateway', function (): void {
         $defaultGateway = Cashier::defaultGateway();
 
         expect($defaultGateway)->toBe('stripe');
     });
 
-    it('can get available gateways', function () {
+    it('can get available gateways', function (): void {
         $gateways = Cashier::availableGateways();
 
         expect($gateways)->toContain('stripe')
             ->and($gateways)->toContain('chip');
     });
 
-    it('can get the default currency', function () {
+    it('can get the default currency', function (): void {
         $currency = Cashier::defaultCurrency();
 
         expect($currency)->toBe('USD');
     });
 
-    it('can use a custom customer model', function () {
+    it('can use a custom customer model', function (): void {
         Cashier::useCustomerModel(User::class);
 
         expect(Cashier::$customerModel)->toBe(User::class);
     });
 
-    it('can use a custom subscription model', function () {
+    it('can use a custom subscription model', function (): void {
         Cashier::useSubscriptionModel(Subscription::class);
 
         expect(Cashier::$subscriptionModel)->toBe(Subscription::class);
     });
 
-    it('can use a custom subscription item model', function () {
+    it('can use a custom subscription item model', function (): void {
         Cashier::useSubscriptionItemModel(SubscriptionItem::class);
 
         expect(Cashier::$subscriptionItemModel)->toBe(SubscriptionItem::class);
     });
 
-    it('can configure deactivate past due setting', function () {
+    it('can configure deactivate past due setting', function (): void {
         Cashier::deactivatePastDue(true);
         expect(Cashier::$deactivatePastDue)->toBeTrue();
 
@@ -63,7 +63,7 @@ describe('Cashier', function () {
         expect(Cashier::$deactivatePastDue)->toBeFalse();
     });
 
-    it('can configure deactivate incomplete setting', function () {
+    it('can configure deactivate incomplete setting', function (): void {
         Cashier::deactivateIncomplete(true);
         expect(Cashier::$deactivateIncomplete)->toBeTrue();
 
@@ -71,13 +71,13 @@ describe('Cashier', function () {
         expect(Cashier::$deactivateIncomplete)->toBeFalse();
     });
 
-    it('can ignore routes', function () {
+    it('can ignore routes', function (): void {
         Cashier::ignoreRoutes();
 
         expect(Cashier::$registersRoutes)->toBeFalse();
     });
 
-    it('can ignore migrations', function () {
+    it('can ignore migrations', function (): void {
         Cashier::ignoreMigrations();
 
         expect(Cashier::$runsMigrations)->toBeFalse();

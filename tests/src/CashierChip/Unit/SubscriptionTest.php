@@ -10,11 +10,11 @@ use Carbon\Carbon;
 
 uses(CashierChipTestCase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = $this->createUser();
 });
 
-it('can create a subscription', function () {
+it('can create a subscription', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -30,7 +30,7 @@ it('can create a subscription', function () {
     expect($subscription->chip_status)->toBe(Subscription::STATUS_ACTIVE);
 });
 
-it('can determine if subscription is active', function () {
+it('can determine if subscription is active', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -42,7 +42,7 @@ it('can determine if subscription is active', function () {
     expect($subscription->valid())->toBeTrue();
 });
 
-it('can determine if subscription is on trial', function () {
+it('can determine if subscription is on trial', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -55,7 +55,7 @@ it('can determine if subscription is on trial', function () {
     expect($subscription->valid())->toBeTrue();
 });
 
-it('can determine if subscription trial has expired', function () {
+it('can determine if subscription trial has expired', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -68,7 +68,7 @@ it('can determine if subscription trial has expired', function () {
     expect($subscription->hasExpiredTrial())->toBeTrue();
 });
 
-it('can determine if subscription is canceled', function () {
+it('can determine if subscription is canceled', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -81,7 +81,7 @@ it('can determine if subscription is canceled', function () {
     expect($subscription->onGracePeriod())->toBeTrue();
 });
 
-it('can determine if subscription has ended', function () {
+it('can determine if subscription has ended', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -94,7 +94,7 @@ it('can determine if subscription has ended', function () {
     expect($subscription->valid())->toBeFalse();
 });
 
-it('can determine if subscription is incomplete', function () {
+it('can determine if subscription is incomplete', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -105,7 +105,7 @@ it('can determine if subscription is incomplete', function () {
     expect($subscription->incomplete())->toBeTrue();
 });
 
-it('can determine if subscription is past due', function () {
+it('can determine if subscription is past due', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -117,7 +117,7 @@ it('can determine if subscription is past due', function () {
     expect($subscription->hasIncompletePayment())->toBeTrue();
 });
 
-it('can determine if subscription is recurring', function () {
+it('can determine if subscription is recurring', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -128,9 +128,9 @@ it('can determine if subscription is recurring', function () {
     expect($subscription->recurring())->toBeTrue();
 });
 
-it('can cancel subscription at period end', function () {
+it('can cancel subscription at period end', function (): void {
     $nextBilling = Carbon::now()->addMonth();
-    
+
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -145,7 +145,7 @@ it('can cancel subscription at period end', function () {
     expect($subscription->ends_at->toDateString())->toBe($nextBilling->toDateString());
 });
 
-it('can cancel subscription immediately', function () {
+it('can cancel subscription immediately', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -159,7 +159,7 @@ it('can cancel subscription immediately', function () {
     expect($subscription->ended())->toBeTrue();
 });
 
-it('can resume a canceled subscription on grace period', function () {
+it('can resume a canceled subscription on grace period', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -174,7 +174,7 @@ it('can resume a canceled subscription on grace period', function () {
     expect($subscription->chip_status)->toBe(Subscription::STATUS_ACTIVE);
 });
 
-it('cannot resume a subscription that has ended', function () {
+it('cannot resume a subscription that has ended', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -186,7 +186,7 @@ it('cannot resume a subscription that has ended', function () {
     $subscription->resume();
 })->throws(LogicException::class);
 
-it('can skip trial', function () {
+it('can skip trial', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -200,7 +200,7 @@ it('can skip trial', function () {
     expect($subscription->trial_ends_at)->toBeNull();
 });
 
-it('can extend trial', function () {
+it('can extend trial', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -215,7 +215,7 @@ it('can extend trial', function () {
     expect($subscription->trial_ends_at->toDateString())->toBe($newTrialEnd->toDateString());
 });
 
-it('cannot extend trial to past date', function () {
+it('cannot extend trial to past date', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -227,7 +227,7 @@ it('cannot extend trial to past date', function () {
     $subscription->extendTrial(Carbon::now()->subDays(1));
 })->throws(InvalidArgumentException::class);
 
-it('can update quantity', function () {
+it('can update quantity', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -247,7 +247,7 @@ it('can update quantity', function () {
     expect($subscription->quantity)->toBe(5);
 });
 
-it('can increment quantity', function () {
+it('can increment quantity', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -267,7 +267,7 @@ it('can increment quantity', function () {
     expect($subscription->quantity)->toBe(3);
 });
 
-it('can decrement quantity', function () {
+it('can decrement quantity', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -287,7 +287,7 @@ it('can decrement quantity', function () {
     expect($subscription->quantity)->toBe(3);
 });
 
-it('can check for specific price', function () {
+it('can check for specific price', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -299,7 +299,7 @@ it('can check for specific price', function () {
     expect($subscription->hasPrice('price_yearly'))->toBeFalse();
 });
 
-it('can get owner', function () {
+it('can get owner', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -311,7 +311,7 @@ it('can get owner', function () {
     expect($subscription->owner->id)->toBe($this->user->id);
 });
 
-it('has subscription items relationship', function () {
+it('has subscription items relationship', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',
@@ -331,7 +331,7 @@ it('has subscription items relationship', function () {
     expect($subscription->items->first())->toBeInstanceOf(SubscriptionItem::class);
 });
 
-it('can swap prices', function () {
+it('can swap prices', function (): void {
     $subscription = $this->user->subscriptions()->create([
         'type' => 'default',
         'chip_id' => 'test-sub-id',

@@ -1,14 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AIArmada\CashierChip;
 
+use AIArmada\Chip\Facades\ChipCollect;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use JsonSerializable;
-use AIArmada\Chip\Facades\ChipCollect;
+use ReturnTypeWillChange;
 
 /**
  * CHIP Checkout wrapper class.
@@ -20,14 +23,12 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     /**
      * The owner of the checkout session.
      *
-     * @var \AIArmada\CashierChip\Billable|\Illuminate\Database\Eloquent\Model|null
+     * @var Billable|\Illuminate\Database\Eloquent\Model|null
      */
     protected $owner;
 
     /**
      * The CHIP purchase data (checkout session).
-     *
-     * @var array
      */
     protected array $purchase;
 
@@ -35,7 +36,6 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
      * Create a new checkout instance.
      *
      * @param  \Illuminate\Database\Eloquent\Model|null  $owner
-     * @param  array  $purchase
      * @return void
      */
     public function __construct($owner, array $purchase)
@@ -45,9 +45,17 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     }
 
     /**
-     * Begin a new guest checkout session.
+     * Dynamically get values from the purchase data.
      *
-     * @return \AIArmada\CashierChip\CheckoutBuilder
+     * @return mixed
+     */
+    public function __get(string $key)
+    {
+        return $this->purchase[$key] ?? null;
+    }
+
+    /**
+     * Begin a new guest checkout session.
      */
     public static function guest(): CheckoutBuilder
     {
@@ -58,7 +66,6 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
      * Begin a new customer checkout session.
      *
      * @param  \Illuminate\Database\Eloquent\Model  $owner
-     * @return \AIArmada\CashierChip\CheckoutBuilder
      */
     public static function customer($owner): CheckoutBuilder
     {
@@ -70,10 +77,8 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
      *
      * @param  \Illuminate\Database\Eloquent\Model|null  $owner
      * @param  int  $amount  Amount in cents
-     * @param  array  $options
-     * @return \AIArmada\CashierChip\Checkout
      */
-    public static function create($owner, int $amount, array $options = []): Checkout
+    public static function create($owner, int $amount, array $options = []): self
     {
         $purchaseData = [
             'products' => $options['products'] ?? [[
@@ -125,8 +130,6 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
     /**
      * Get the checkout URL.
-     *
-     * @return string|null
      */
     public function url(): ?string
     {
@@ -135,8 +138,6 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
     /**
      * Get the purchase ID.
-     *
-     * @return string|null
      */
     public function id(): ?string
     {
@@ -145,8 +146,6 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
     /**
      * Redirect to the checkout page.
-     *
-     * @return \Illuminate\Http\RedirectResponse
      */
     public function redirect(): RedirectResponse
     {
@@ -176,8 +175,6 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
     /**
      * Get the underlying CHIP purchase data.
-     *
-     * @return array
      */
     public function asChipPurchase(): array
     {
@@ -186,8 +183,6 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
     /**
      * Convert to a Payment instance.
-     *
-     * @return \AIArmada\CashierChip\Payment
      */
     public function asPayment(): Payment
     {
@@ -196,8 +191,6 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
     /**
      * Get the instance as an array.
-     *
-     * @return array
      */
     public function toArray(): array
     {
@@ -208,7 +201,6 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
      * Convert the object to its JSON representation.
      *
      * @param  int  $options
-     * @return string
      */
     public function toJson($options = 0): string
     {
@@ -217,23 +209,10 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
     /**
      * Convert the object into something JSON serializable.
-     *
-     * @return array
      */
-    #[\ReturnTypeWillChange]
+    #[ReturnTypeWillChange]
     public function jsonSerialize(): array
     {
         return $this->toArray();
-    }
-
-    /**
-     * Dynamically get values from the purchase data.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function __get(string $key)
-    {
-        return $this->purchase[$key] ?? null;
     }
 }

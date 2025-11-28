@@ -122,7 +122,7 @@ class StripePayment implements PaymentContract
      */
     public function currency(): string
     {
-        return strtoupper($this->payment->rawAmount()->getCurrency()->getCode());
+        return mb_strtoupper($this->payment->rawAmount()->getCurrency()->getCode());
     }
 
     /**

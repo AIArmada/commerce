@@ -143,7 +143,7 @@ class ChipCheckout implements CheckoutContract
      */
     public function total(): string
     {
-        return number_format($this->rawTotal() / 100, 2).' '.strtoupper($this->currency());
+        return number_format($this->rawTotal() / 100, 2).' '.mb_strtoupper($this->currency());
     }
 
     /**
@@ -151,7 +151,7 @@ class ChipCheckout implements CheckoutContract
      */
     public function currency(): string
     {
-        return strtoupper($this->purchase->purchase->currency);
+        return mb_strtoupper($this->purchase->purchase->currency);
     }
 
     /**

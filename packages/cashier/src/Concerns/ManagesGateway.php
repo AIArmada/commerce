@@ -12,7 +12,6 @@ use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Facades\Cashier;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Collection;
 
 /**

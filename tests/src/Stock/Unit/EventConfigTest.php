@@ -150,7 +150,7 @@ describe('Cleanup Configuration', function (): void {
         config(['stock.cleanup.keep_expired_for_minutes' => 10]);
 
         // Create reservation expired 5 minutes ago (within grace period)
-        \AIArmada\Stock\Models\StockReservation::create([
+        AIArmada\Stock\Models\StockReservation::create([
             'stockable_type' => $this->product->getMorphClass(),
             'stockable_id' => $this->product->id,
             'cart_id' => 'recently-expired',
@@ -159,7 +159,7 @@ describe('Cleanup Configuration', function (): void {
         ]);
 
         // Create reservation expired 15 minutes ago (beyond grace period)
-        \AIArmada\Stock\Models\StockReservation::create([
+        AIArmada\Stock\Models\StockReservation::create([
             'stockable_type' => $this->product->getMorphClass(),
             'stockable_id' => $this->product->id,
             'cart_id' => 'old-expired',
@@ -172,15 +172,15 @@ describe('Cleanup Configuration', function (): void {
 
         // Only the older one should be cleaned
         expect($cleaned)->toBe(1);
-        expect(\AIArmada\Stock\Models\StockReservation::count())->toBe(1);
-        expect(\AIArmada\Stock\Models\StockReservation::first()->cart_id)->toBe('recently-expired');
+        expect(AIArmada\Stock\Models\StockReservation::count())->toBe(1);
+        expect(AIArmada\Stock\Models\StockReservation::first()->cart_id)->toBe('recently-expired');
     });
 
     it('cleans all expired when keep_expired_for_minutes is 0', function (): void {
         config(['stock.cleanup.keep_expired_for_minutes' => 0]);
 
         // Create expired reservations
-        \AIArmada\Stock\Models\StockReservation::create([
+        AIArmada\Stock\Models\StockReservation::create([
             'stockable_type' => $this->product->getMorphClass(),
             'stockable_id' => $this->product->id,
             'cart_id' => 'expired-1',
@@ -188,7 +188,7 @@ describe('Cleanup Configuration', function (): void {
             'expires_at' => now()->subMinutes(1),
         ]);
 
-        \AIArmada\Stock\Models\StockReservation::create([
+        AIArmada\Stock\Models\StockReservation::create([
             'stockable_type' => $this->product->getMorphClass(),
             'stockable_id' => $this->product->id,
             'cart_id' => 'expired-2',
@@ -200,6 +200,6 @@ describe('Cleanup Configuration', function (): void {
         $cleaned = $service->cleanupExpired();
 
         expect($cleaned)->toBe(2);
-        expect(\AIArmada\Stock\Models\StockReservation::count())->toBe(0);
+        expect(AIArmada\Stock\Models\StockReservation::count())->toBe(0);
     });
 });

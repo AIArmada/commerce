@@ -43,6 +43,19 @@ final class StockServiceProvider extends PackageServiceProvider
     }
 
     /**
+     * @return array<int, string>
+     */
+    public function provides(): array
+    {
+        return [
+            StockService::class,
+            StockReservationService::class,
+            'stock',
+            'stock.reservations',
+        ];
+    }
+
+    /**
      * Register cart package integration if available.
      */
     private function registerCartIntegration(): void
@@ -73,11 +86,11 @@ final class StockServiceProvider extends PackageServiceProvider
 
         // Extend CartManager with stock functionality
         $this->app->extend('cart', function ($manager, $app) {
-            if ($manager instanceof \AIArmada\Stock\Cart\CartManagerWithStock) {
+            if ($manager instanceof Cart\CartManagerWithStock) {
                 return $manager;
             }
 
-            $proxy = \AIArmada\Stock\Cart\CartManagerWithStock::fromCartManager($manager);
+            $proxy = Cart\CartManagerWithStock::fromCartManager($manager);
             $proxy->setReservationService($app->make(StockReservationService::class));
 
             // Update container bindings
@@ -125,18 +138,5 @@ final class StockServiceProvider extends PackageServiceProvider
                 Event::listen($eventClass, DeductStockOnPaymentSuccess::class);
             }
         }
-    }
-
-    /**
-     * @return array<int, string>
-     */
-    public function provides(): array
-    {
-        return [
-            StockService::class,
-            StockReservationService::class,
-            'stock',
-            'stock.reservations',
-        ];
     }
 }

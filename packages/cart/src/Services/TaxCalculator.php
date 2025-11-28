@@ -43,6 +43,26 @@ final class TaxCalculator
     ) {}
 
     /**
+     * Create common tax presets.
+     */
+    public static function withDefaults(): self
+    {
+        return (new self())
+            ->registerRate('MY-SST', 8.0, 'Sales & Service Tax (SST)')
+            ->registerRate('MY-SST-6', 6.0, 'Service Tax')
+            ->registerRate('SG-GST', 9.0, 'Goods & Services Tax (GST)')
+            ->registerRate('AU-GST', 10.0, 'Goods & Services Tax (GST)')
+            ->registerRate('US-DEFAULT', 0.0, 'No Tax')
+            ->registerRate('UK-VAT', 20.0, 'VAT', inclusive: true)
+            ->registerRate('UK-VAT-REDUCED', 5.0, 'VAT (Reduced)', inclusive: true)
+            ->registerRate('EU-VAT-STANDARD', 21.0, 'VAT', inclusive: true)
+            ->registerCategoryRate('standard', 8.0)
+            ->registerCategoryRate('food', 0.0)
+            ->registerCategoryRate('digital', 8.0)
+            ->registerCategoryRate('exempt', 0.0);
+    }
+
+    /**
      * Get the default tax rate.
      */
     public function getDefaultRate(): float
@@ -83,7 +103,7 @@ final class TaxCalculator
      * Get the tax rate for a region.
      *
      * @param  string  $region  Region code
-     * @return float  Tax rate as decimal
+     * @return float Tax rate as decimal
      */
     public function getRegionRate(string $region): float
     {
@@ -95,7 +115,7 @@ final class TaxCalculator
      *
      * @param  Money  $amount  The amount to calculate tax on
      * @param  string|null  $region  Optional region code
-     * @return Money  The calculated tax amount
+     * @return Money The calculated tax amount
      */
     public function calculateTax(Money $amount, ?string $region = null): Money
     {
@@ -186,7 +206,7 @@ final class TaxCalculator
      * @param  Cart  $cart  The cart to calculate tax for
      * @param  string  $rateCode  The tax rate code to use
      * @param  string|null  $conditionName  Custom condition name
-     * @return CartCondition|null  The tax condition, or null if rate not found
+     * @return CartCondition|null The tax condition, or null if rate not found
      */
     public function applyToCart(
         Cart $cart,
@@ -282,26 +302,6 @@ final class TaxCalculator
                 'inclusive' => $inclusive,
             ]
         );
-    }
-
-    /**
-     * Create common tax presets.
-     */
-    public static function withDefaults(): self
-    {
-        return (new self())
-            ->registerRate('MY-SST', 8.0, 'Sales & Service Tax (SST)')
-            ->registerRate('MY-SST-6', 6.0, 'Service Tax')
-            ->registerRate('SG-GST', 9.0, 'Goods & Services Tax (GST)')
-            ->registerRate('AU-GST', 10.0, 'Goods & Services Tax (GST)')
-            ->registerRate('US-DEFAULT', 0.0, 'No Tax')
-            ->registerRate('UK-VAT', 20.0, 'VAT', inclusive: true)
-            ->registerRate('UK-VAT-REDUCED', 5.0, 'VAT (Reduced)', inclusive: true)
-            ->registerRate('EU-VAT-STANDARD', 21.0, 'VAT', inclusive: true)
-            ->registerCategoryRate('standard', 8.0)
-            ->registerCategoryRate('food', 0.0)
-            ->registerCategoryRate('digital', 8.0)
-            ->registerCategoryRate('exempt', 0.0);
     }
 
     /**

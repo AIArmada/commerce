@@ -28,19 +28,6 @@ class SubscriptionItem extends Model
     protected $guarded = [];
 
     /**
-     * The attributes that should be cast to native types.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'quantity' => 'integer',
-            'unit_amount' => 'integer',
-        ];
-    }
-
-    /**
      * Get the subscription that this item belongs to.
      */
     public function subscription(): BelongsTo
@@ -126,5 +113,18 @@ class SubscriptionItem extends Model
         ])->save();
 
         return $this;
+    }
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'quantity' => 'integer',
+            'unit_amount' => 'integer',
+        ];
     }
 }

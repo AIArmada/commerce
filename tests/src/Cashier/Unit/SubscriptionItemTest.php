@@ -8,14 +8,14 @@ use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 
 uses(CashierTestCase::class);
 
-describe('SubscriptionItem Model', function () {
-    beforeEach(function () {
+describe('SubscriptionItem Model', function (): void {
+    beforeEach(function (): void {
         $this->user = $this->createUser();
         $this->subscription = $this->createSubscription($this->user);
     });
 
-    describe('creation', function () {
-        it('can create a subscription item', function () {
+    describe('creation', function (): void {
+        it('can create a subscription item', function (): void {
             $item = $this->createSubscriptionItem($this->subscription);
 
             expect($item)->toBeInstanceOf(SubscriptionItem::class)
@@ -23,7 +23,7 @@ describe('SubscriptionItem Model', function () {
                 ->and($item->quantity)->toBe(1);
         });
 
-        it('belongs to a subscription', function () {
+        it('belongs to a subscription', function (): void {
             $item = $this->createSubscriptionItem($this->subscription);
 
             expect($item->subscription)->toBeInstanceOf(Subscription::class)
@@ -31,14 +31,14 @@ describe('SubscriptionItem Model', function () {
         });
     });
 
-    describe('gateway information', function () {
-        it('can get gateway name from parent subscription', function () {
+    describe('gateway information', function (): void {
+        it('can get gateway name from parent subscription', function (): void {
             $item = $this->createSubscriptionItem($this->subscription);
 
             expect($item->gateway())->toBe('stripe');
         });
 
-        it('can get gateway item id', function () {
+        it('can get gateway item id', function (): void {
             $item = $this->createSubscriptionItem($this->subscription, [
                 'gateway_id' => 'si_test123',
             ]);
@@ -46,7 +46,7 @@ describe('SubscriptionItem Model', function () {
             expect($item->gatewayId())->toBe('si_test123');
         });
 
-        it('can get price id', function () {
+        it('can get price id', function (): void {
             $item = $this->createSubscriptionItem($this->subscription, [
                 'gateway_price' => 'price_monthly',
             ]);
@@ -54,7 +54,7 @@ describe('SubscriptionItem Model', function () {
             expect($item->priceId())->toBe('price_monthly');
         });
 
-        it('can get product id', function () {
+        it('can get product id', function (): void {
             $item = $this->createSubscriptionItem($this->subscription, [
                 'gateway_product' => 'prod_test123',
             ]);
@@ -63,8 +63,8 @@ describe('SubscriptionItem Model', function () {
         });
     });
 
-    describe('quantity management', function () {
-        it('can increment quantity', function () {
+    describe('quantity management', function (): void {
+        it('can increment quantity', function (): void {
             $item = $this->createSubscriptionItem($this->subscription, [
                 'quantity' => 5,
             ]);
@@ -75,7 +75,7 @@ describe('SubscriptionItem Model', function () {
             expect($item->quantity)->toBe(8);
         });
 
-        it('can decrement quantity', function () {
+        it('can decrement quantity', function (): void {
             $item = $this->createSubscriptionItem($this->subscription, [
                 'quantity' => 5,
             ]);
@@ -86,7 +86,7 @@ describe('SubscriptionItem Model', function () {
             expect($item->quantity)->toBe(3);
         });
 
-        it('does not decrement below 1', function () {
+        it('does not decrement below 1', function (): void {
             $item = $this->createSubscriptionItem($this->subscription, [
                 'quantity' => 2,
             ]);
@@ -97,7 +97,7 @@ describe('SubscriptionItem Model', function () {
             expect($item->quantity)->toBe(1);
         });
 
-        it('can update quantity directly', function () {
+        it('can update quantity directly', function (): void {
             $item = $this->createSubscriptionItem($this->subscription, [
                 'quantity' => 5,
             ]);
@@ -109,8 +109,8 @@ describe('SubscriptionItem Model', function () {
         });
     });
 
-    describe('swap', function () {
-        it('can swap to a new price', function () {
+    describe('swap', function (): void {
+        it('can swap to a new price', function (): void {
             $item = $this->createSubscriptionItem($this->subscription, [
                 'gateway_price' => 'price_monthly',
             ]);
@@ -121,7 +121,7 @@ describe('SubscriptionItem Model', function () {
             expect($item->gateway_price)->toBe('price_yearly');
         });
 
-        it('can swap to a new price with product', function () {
+        it('can swap to a new price with product', function (): void {
             $item = $this->createSubscriptionItem($this->subscription, [
                 'gateway_price' => 'price_monthly',
                 'gateway_product' => 'prod_basic',
@@ -135,8 +135,8 @@ describe('SubscriptionItem Model', function () {
         });
     });
 
-    describe('casts', function () {
-        it('casts quantity to integer', function () {
+    describe('casts', function (): void {
+        it('casts quantity to integer', function (): void {
             $item = $this->createSubscriptionItem($this->subscription, [
                 'quantity' => '5',
             ]);
@@ -144,7 +144,7 @@ describe('SubscriptionItem Model', function () {
             expect($item->quantity)->toBeInt();
         });
 
-        it('casts unit_amount to integer', function () {
+        it('casts unit_amount to integer', function (): void {
             $item = $this->createSubscriptionItem($this->subscription, [
                 'unit_amount' => '1000',
             ]);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Exceptions;
 
 use Exception;
+use Throwable;
 
 /**
  * Exception thrown when a gateway is not found.
@@ -14,7 +15,7 @@ class GatewayNotFoundException extends Exception
     /**
      * Create a new exception instance.
      */
-    public function __construct(string $message = 'Gateway not found.', int $code = 0, ?\Throwable $previous = null)
+    public function __construct(string $message = 'Gateway not found.', int $code = 0, ?Throwable $previous = null)
     {
         parent::__construct($message, $code, $previous);
     }

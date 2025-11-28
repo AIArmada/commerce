@@ -136,7 +136,6 @@ interface SubscriptionContract
     /**
      * Swap to a new price.
      *
-     * @param  string|array  $prices
      * @param  array<string, mixed>  $options
      */
     public function swap(string|array $prices, array $options = []): self;

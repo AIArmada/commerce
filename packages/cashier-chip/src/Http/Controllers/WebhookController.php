@@ -1,17 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AIArmada\CashierChip\Http\Controllers;
 
+use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Events\PaymentFailed;
+use AIArmada\CashierChip\Events\PaymentSucceeded;
+use AIArmada\CashierChip\Events\WebhookHandled;
+use AIArmada\CashierChip\Events\WebhookReceived;
+use AIArmada\CashierChip\Http\Middleware\VerifyWebhookSignature;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
 use Illuminate\Support\Str;
-use AIArmada\CashierChip\CashierChip;
-use AIArmada\CashierChip\Events\WebhookReceived;
-use AIArmada\CashierChip\Events\WebhookHandled;
-use AIArmada\CashierChip\Events\PaymentSucceeded;
-use AIArmada\CashierChip\Events\PaymentFailed;
-use AIArmada\CashierChip\Events\SubscriptionCreated;
-use AIArmada\CashierChip\Http\Middleware\VerifyWebhookSignature;
 use Symfony\Component\HttpFoundation\Response;
 
 class WebhookController extends Controller
@@ -30,9 +31,6 @@ class WebhookController extends Controller
 
     /**
      * Handle a CHIP webhook call.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     public function __invoke(Request $request): Response
     {
@@ -57,9 +55,6 @@ class WebhookController extends Controller
     /**
      * Handle purchase.paid event.
      * CHIP sends this when a purchase payment is completed successfully.
-     *
-     * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     protected function handlePurchasePaid(array $payload): Response
     {
@@ -69,9 +64,6 @@ class WebhookController extends Controller
     /**
      * Handle purchase.payment_failure event.
      * CHIP sends this when a purchase payment fails.
-     *
-     * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     protected function handlePurchasePaymentFailure(array $payload): Response
     {
@@ -80,9 +72,6 @@ class WebhookController extends Controller
 
     /**
      * Handle purchase.created event.
-     *
-     * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     protected function handlePurchaseCreated(array $payload): Response
     {
@@ -92,9 +81,6 @@ class WebhookController extends Controller
 
     /**
      * Handle purchase.cancelled event.
-     *
-     * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     protected function handlePurchaseCancelled(array $payload): Response
     {
@@ -117,9 +103,6 @@ class WebhookController extends Controller
 
     /**
      * Handle purchase.refunded event.
-     *
-     * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     protected function handlePurchaseRefunded(array $payload): Response
     {
@@ -130,9 +113,6 @@ class WebhookController extends Controller
     /**
      * Handle purchase.hold event.
      * CHIP sends this when payment is placed on hold (skip_capture = true).
-     *
-     * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     protected function handlePurchaseHold(array $payload): Response
     {
@@ -143,9 +123,6 @@ class WebhookController extends Controller
     /**
      * Handle purchase.preauthorized event.
      * CHIP sends this when card is preauthorized (card saved without charge).
-     *
-     * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     protected function handlePurchasePreauthorized(array $payload): Response
     {
@@ -164,9 +141,6 @@ class WebhookController extends Controller
 
     /**
      * Handle purchase.chargeback event.
-     *
-     * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     protected function handlePurchaseChargeback(array $payload): Response
     {
@@ -188,9 +162,6 @@ class WebhookController extends Controller
 
     /**
      * Handle payment.refunded event.
-     *
-     * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     protected function handlePaymentRefunded(array $payload): Response
     {
@@ -199,9 +170,6 @@ class WebhookController extends Controller
 
     /**
      * Handle a purchase payment succeeded event.
-     *
-     * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     protected function handlePaymentSuccess(array $payload): Response
     {
@@ -227,9 +195,6 @@ class WebhookController extends Controller
 
     /**
      * Handle a purchase payment failed event.
-     *
-     * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     protected function handlePaymentFailed(array $payload): Response
     {
@@ -250,9 +215,6 @@ class WebhookController extends Controller
 
     /**
      * Extract subscription type from purchase metadata or reference.
-     *
-     * @param  array  $purchase
-     * @return string|null
      */
     protected function getSubscriptionTypeFromPurchase(array $purchase): ?string
     {
@@ -275,9 +237,6 @@ class WebhookController extends Controller
      * Handle recurring token from a purchase.
      *
      * @param  \AIArmada\CashierChip\Billable  $billable
-     * @param  string  $recurringToken
-     * @param  array  $purchase
-     * @return void
      */
     protected function handleRecurringToken($billable, string $recurringToken, array $purchase): void
     {
@@ -286,10 +245,10 @@ class WebhookController extends Controller
             // Get card details from transaction_data if available
             $transactionData = $purchase['transaction_data'] ?? [];
             $extra = $transactionData['extra'] ?? [];
-            
+
             // Also check for card info at top level (test format)
             $card = $purchase['card'] ?? [];
-            
+
             $billable->forceFill([
                 'default_pm_id' => $recurringToken,
                 'pm_type' => $card['brand'] ?? $extra['card_brand'] ?? $transactionData['payment_method'] ?? 'card',
@@ -302,9 +261,6 @@ class WebhookController extends Controller
      * Handle a subscription payment success.
      *
      * @param  \AIArmada\CashierChip\Billable  $billable
-     * @param  string  $subscriptionType
-     * @param  array  $purchase
-     * @return void
      */
     protected function handleSubscriptionPayment($billable, string $subscriptionType, array $purchase): void
     {
@@ -326,9 +282,6 @@ class WebhookController extends Controller
      * Handle a subscription payment failure.
      *
      * @param  \AIArmada\CashierChip\Billable  $billable
-     * @param  string  $subscriptionType
-     * @param  array  $purchase
-     * @return void
      */
     protected function handleSubscriptionPaymentFailure($billable, string $subscriptionType, array $purchase): void
     {
@@ -343,8 +296,6 @@ class WebhookController extends Controller
 
     /**
      * Handle successful calls on the controller.
-     *
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     protected function successMethod(): Response
     {
@@ -353,9 +304,6 @@ class WebhookController extends Controller
 
     /**
      * Handle calls to missing methods on the controller.
-     *
-     * @param  array  $payload
-     * @return \Symfony\Component\HttpFoundation\Response
      */
     protected function missingMethod(array $payload): Response
     {

@@ -26,7 +26,7 @@ abstract class SubscriptionEvent
     /**
      * Get the subscription instance.
      */
-    public function subscription(): Subscription
+    final public function subscription(): Subscription
     {
         return $this->subscription;
     }
@@ -34,7 +34,7 @@ abstract class SubscriptionEvent
     /**
      * Get the gateway name from the subscription.
      */
-    public function gateway(): string
+    final public function gateway(): string
     {
         return $this->subscription->gateway;
     }
@@ -42,7 +42,7 @@ abstract class SubscriptionEvent
     /**
      * Get the billable model.
      */
-    public function billable(): mixed
+    final public function billable(): mixed
     {
         return $this->billable ?? $this->subscription->owner;
     }

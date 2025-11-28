@@ -8,27 +8,27 @@ use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 
 uses(CashierTestCase::class);
 
-describe('Billable Trait', function () {
-    beforeEach(function () {
+describe('Billable Trait', function (): void {
+    beforeEach(function (): void {
         $this->user = $this->createUser();
     });
 
-    describe('gateway resolution', function () {
-        it('can get the default gateway', function () {
+    describe('gateway resolution', function (): void {
+        it('can get the default gateway', function (): void {
             $gateway = $this->user->gateway();
 
             expect($gateway)->toBeInstanceOf(GatewayContract::class)
                 ->and($gateway->name())->toBe('stripe');
         });
 
-        it('can get a specific gateway by name', function () {
+        it('can get a specific gateway by name', function (): void {
             $gateway = $this->user->gateway('chip');
 
             expect($gateway)->toBeInstanceOf(GatewayContract::class)
                 ->and($gateway->name())->toBe('chip');
         });
 
-        it('can get the gateway customer id', function () {
+        it('can get the gateway customer id', function (): void {
             $this->user->update(['stripe_id' => 'cus_test123']);
 
             $customerId = $this->user->gatewayId('stripe');
@@ -36,7 +36,7 @@ describe('Billable Trait', function () {
             expect($customerId)->toBe('cus_test123');
         });
 
-        it('can check if has gateway id', function () {
+        it('can check if has gateway id', function (): void {
             expect($this->user->hasGatewayId('stripe'))->toBeFalse();
 
             $this->user->update(['stripe_id' => 'cus_test123']);
@@ -45,8 +45,8 @@ describe('Billable Trait', function () {
         });
     });
 
-    describe('subscriptions', function () {
-        it('can get a subscription by type', function () {
+    describe('subscriptions', function (): void {
+        it('can get a subscription by type', function (): void {
             $this->createSubscription($this->user, [
                 'type' => 'premium',
             ]);
@@ -57,20 +57,20 @@ describe('Billable Trait', function () {
                 ->and($result->type)->toBe('premium');
         });
 
-        it('returns null for non-existent subscription', function () {
+        it('returns null for non-existent subscription', function (): void {
             $result = $this->user->subscription('non-existent');
 
             expect($result)->toBeNull();
         });
 
-        it('can get all subscriptions', function () {
+        it('can get all subscriptions', function (): void {
             $this->createSubscription($this->user);
             $this->createSubscription($this->user, ['type' => 'premium']);
 
             expect($this->user->subscriptions)->toHaveCount(2);
         });
 
-        it('can filter subscriptions by gateway', function () {
+        it('can filter subscriptions by gateway', function (): void {
             $this->createSubscription($this->user, ['gateway' => 'stripe']);
             $this->createSubscription($this->user, [
                 'type' => 'premium',
@@ -83,7 +83,7 @@ describe('Billable Trait', function () {
                 ->and($stripeSubscriptions->first()->gateway)->toBe('stripe');
         });
 
-        it('can check if subscribed to any plan', function () {
+        it('can check if subscribed to any plan', function (): void {
             $this->createSubscription($this->user, [
                 'gateway_status' => Subscription::STATUS_ACTIVE,
             ]);
@@ -91,7 +91,7 @@ describe('Billable Trait', function () {
             expect($this->user->subscribed())->toBeTrue();
         });
 
-        it('can check if subscribed to a specific plan type', function () {
+        it('can check if subscribed to a specific plan type', function (): void {
             $this->createSubscription($this->user, [
                 'type' => 'premium',
                 'gateway_status' => Subscription::STATUS_ACTIVE,
@@ -102,8 +102,8 @@ describe('Billable Trait', function () {
         });
     });
 
-    describe('trial', function () {
-        it('can check if on trial', function () {
+    describe('trial', function (): void {
+        it('can check if on trial', function (): void {
             $this->createSubscription($this->user, [
                 'trial_ends_at' => now()->addDays(14),
             ]);
@@ -111,7 +111,7 @@ describe('Billable Trait', function () {
             expect($this->user->onTrial())->toBeTrue();
         });
 
-        it('can check trial for specific subscription', function () {
+        it('can check trial for specific subscription', function (): void {
             $this->createSubscription($this->user, [
                 'type' => 'premium',
                 'trial_ends_at' => now()->addDays(14),
@@ -121,7 +121,7 @@ describe('Billable Trait', function () {
                 ->and($this->user->onTrial('basic'))->toBeFalse();
         });
 
-        it('can check generic trial', function () {
+        it('can check generic trial', function (): void {
             $this->user->update(['trial_ends_at' => now()->addDays(14)]);
 
             expect($this->user->onGenericTrial())->toBeTrue();

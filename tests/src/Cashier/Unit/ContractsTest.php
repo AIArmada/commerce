@@ -18,13 +18,13 @@ use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 
 uses(CashierTestCase::class);
 
-describe('Contracts', function () {
-    describe('GatewayContract', function () {
-        it('exists and is an interface', function () {
+describe('Contracts', function (): void {
+    describe('GatewayContract', function (): void {
+        it('exists and is an interface', function (): void {
             expect(interface_exists(GatewayContract::class))->toBeTrue();
         });
 
-        it('defines required methods', function () {
+        it('defines required methods', function (): void {
             $reflection = new ReflectionClass(GatewayContract::class);
             $methods = array_map(fn ($m) => $m->getName(), $reflection->getMethods());
 
@@ -38,12 +38,12 @@ describe('Contracts', function () {
         });
     });
 
-    describe('BillableContract', function () {
-        it('exists and is an interface', function () {
+    describe('BillableContract', function (): void {
+        it('exists and is an interface', function (): void {
             expect(interface_exists(BillableContract::class))->toBeTrue();
         });
 
-        it('defines required methods', function () {
+        it('defines required methods', function (): void {
             $reflection = new ReflectionClass(BillableContract::class);
             $methods = array_map(fn ($m) => $m->getName(), $reflection->getMethods());
 
@@ -59,18 +59,18 @@ describe('Contracts', function () {
         });
     });
 
-    describe('CustomerContract', function () {
-        it('exists and is an interface', function () {
+    describe('CustomerContract', function (): void {
+        it('exists and is an interface', function (): void {
             expect(interface_exists(CustomerContract::class))->toBeTrue();
         });
     });
 
-    describe('SubscriptionContract', function () {
-        it('exists and is an interface', function () {
+    describe('SubscriptionContract', function (): void {
+        it('exists and is an interface', function (): void {
             expect(interface_exists(SubscriptionContract::class))->toBeTrue();
         });
 
-        it('defines required methods', function () {
+        it('defines required methods', function (): void {
             $reflection = new ReflectionClass(SubscriptionContract::class);
             $methods = array_map(fn ($m) => $m->getName(), $reflection->getMethods());
 
@@ -88,12 +88,12 @@ describe('Contracts', function () {
         });
     });
 
-    describe('SubscriptionBuilderContract', function () {
-        it('exists and is an interface', function () {
+    describe('SubscriptionBuilderContract', function (): void {
+        it('exists and is an interface', function (): void {
             expect(interface_exists(SubscriptionBuilderContract::class))->toBeTrue();
         });
 
-        it('defines fluent builder methods', function () {
+        it('defines fluent builder methods', function (): void {
             $reflection = new ReflectionClass(SubscriptionBuilderContract::class);
             $methods = array_map(fn ($m) => $m->getName(), $reflection->getMethods());
 
@@ -106,12 +106,12 @@ describe('Contracts', function () {
         });
     });
 
-    describe('SubscriptionItemContract', function () {
-        it('exists and is an interface', function () {
+    describe('SubscriptionItemContract', function (): void {
+        it('exists and is an interface', function (): void {
             expect(interface_exists(SubscriptionItemContract::class))->toBeTrue();
         });
 
-        it('defines required methods', function () {
+        it('defines required methods', function (): void {
             $reflection = new ReflectionClass(SubscriptionItemContract::class);
             $methods = array_map(fn ($m) => $m->getName(), $reflection->getMethods());
 
@@ -125,12 +125,12 @@ describe('Contracts', function () {
         });
     });
 
-    describe('PaymentContract', function () {
-        it('exists and is an interface', function () {
+    describe('PaymentContract', function (): void {
+        it('exists and is an interface', function (): void {
             expect(interface_exists(PaymentContract::class))->toBeTrue();
         });
 
-        it('defines required methods', function () {
+        it('defines required methods', function (): void {
             $reflection = new ReflectionClass(PaymentContract::class);
             $methods = array_map(fn ($m) => $m->getName(), $reflection->getMethods());
 
@@ -144,12 +144,12 @@ describe('Contracts', function () {
         });
     });
 
-    describe('PaymentMethodContract', function () {
-        it('exists and is an interface', function () {
+    describe('PaymentMethodContract', function (): void {
+        it('exists and is an interface', function (): void {
             expect(interface_exists(PaymentMethodContract::class))->toBeTrue();
         });
 
-        it('defines required methods', function () {
+        it('defines required methods', function (): void {
             $reflection = new ReflectionClass(PaymentMethodContract::class);
             $methods = array_map(fn ($m) => $m->getName(), $reflection->getMethods());
 
@@ -159,12 +159,12 @@ describe('Contracts', function () {
         });
     });
 
-    describe('InvoiceContract', function () {
-        it('exists and is an interface', function () {
+    describe('InvoiceContract', function (): void {
+        it('exists and is an interface', function (): void {
             expect(interface_exists(InvoiceContract::class))->toBeTrue();
         });
 
-        it('defines required methods', function () {
+        it('defines required methods', function (): void {
             $reflection = new ReflectionClass(InvoiceContract::class);
             $methods = array_map(fn ($m) => $m->getName(), $reflection->getMethods());
 
@@ -179,12 +179,12 @@ describe('Contracts', function () {
         });
     });
 
-    describe('InvoiceLineItemContract', function () {
-        it('exists and is an interface', function () {
+    describe('InvoiceLineItemContract', function (): void {
+        it('exists and is an interface', function (): void {
             expect(interface_exists(InvoiceLineItemContract::class))->toBeTrue();
         });
 
-        it('defines required methods', function () {
+        it('defines required methods', function (): void {
             $reflection = new ReflectionClass(InvoiceLineItemContract::class);
             $methods = array_map(fn ($m) => $m->getName(), $reflection->getMethods());
 
@@ -196,12 +196,12 @@ describe('Contracts', function () {
         });
     });
 
-    describe('CheckoutContract', function () {
-        it('exists and is an interface', function () {
+    describe('CheckoutContract', function (): void {
+        it('exists and is an interface', function (): void {
             expect(interface_exists(CheckoutContract::class))->toBeTrue();
         });
 
-        it('defines required methods', function () {
+        it('defines required methods', function (): void {
             $reflection = new ReflectionClass(CheckoutContract::class);
             $methods = array_map(fn ($m) => $m->getName(), $reflection->getMethods());
 
@@ -214,12 +214,12 @@ describe('Contracts', function () {
         });
     });
 
-    describe('CheckoutBuilderContract', function () {
-        it('exists and is an interface', function () {
+    describe('CheckoutBuilderContract', function (): void {
+        it('exists and is an interface', function (): void {
             expect(interface_exists(CheckoutBuilderContract::class))->toBeTrue();
         });
 
-        it('defines fluent builder methods', function () {
+        it('defines fluent builder methods', function (): void {
             $reflection = new ReflectionClass(CheckoutBuilderContract::class);
             $methods = array_map(fn ($m) => $m->getName(), $reflection->getMethods());
 

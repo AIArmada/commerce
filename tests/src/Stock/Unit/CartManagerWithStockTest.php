@@ -10,7 +10,6 @@ use AIArmada\Stock\Models\StockReservation;
 use AIArmada\Stock\Services\StockReservationService;
 use AIArmada\Stock\Services\StockService;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Event;
 
 describe('CartManagerWithStock', function (): void {
     beforeEach(function (): void {
@@ -21,7 +20,7 @@ describe('CartManagerWithStock', function (): void {
 
         // Create a storage instance for tests
         $this->storage = new DatabaseStorage(DB::connection('testing'), 'carts');
-        $this->events = app(\Illuminate\Contracts\Events\Dispatcher::class);
+        $this->events = app(Illuminate\Contracts\Events\Dispatcher::class);
     });
 
     describe('fromCartManager factory', function (): void {

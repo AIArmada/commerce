@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CommerceSupport\Contracts\Payment;
 
 use Akaunting\Money\Money;
+use DateTimeInterface;
 
 /**
  * Represents a payment intent/purchase created by a payment gateway.
@@ -99,17 +100,17 @@ interface PaymentIntentInterface
     /**
      * Get the timestamp when payment was created.
      */
-    public function getCreatedAt(): \DateTimeInterface;
+    public function getCreatedAt(): DateTimeInterface;
 
     /**
      * Get the timestamp when payment status was last updated.
      */
-    public function getUpdatedAt(): \DateTimeInterface;
+    public function getUpdatedAt(): DateTimeInterface;
 
     /**
      * Get the timestamp when payment was completed (if paid).
      */
-    public function getPaidAt(): ?\DateTimeInterface;
+    public function getPaidAt(): ?DateTimeInterface;
 
     /**
      * Get additional metadata from the gateway response.

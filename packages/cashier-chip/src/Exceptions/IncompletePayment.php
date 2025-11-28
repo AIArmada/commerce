@@ -1,24 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AIArmada\CashierChip\Exceptions;
 
-use Exception;
 use AIArmada\CashierChip\Payment;
+use Exception;
 
 class IncompletePayment extends Exception
 {
     /**
      * The CHIP Payment instance.
-     *
-     * @var \AIArmada\CashierChip\Payment
      */
     public Payment $payment;
 
     /**
      * Create a new IncompletePayment exception.
      *
-     * @param  \AIArmada\CashierChip\Payment  $payment
-     * @param  string  $message
      * @return void
      */
     public function __construct(Payment $payment, string $message = '')
@@ -31,7 +29,6 @@ class IncompletePayment extends Exception
     /**
      * Create a new IncompletePayment exception for a payment that requires redirect.
      *
-     * @param  \AIArmada\CashierChip\Payment  $payment
      * @return static
      */
     public static function requiresRedirect(Payment $payment)
@@ -45,7 +42,6 @@ class IncompletePayment extends Exception
     /**
      * Create a new IncompletePayment exception for a failed payment.
      *
-     * @param  \AIArmada\CashierChip\Payment  $payment
      * @return static
      */
     public static function failed(Payment $payment)
@@ -59,7 +55,6 @@ class IncompletePayment extends Exception
     /**
      * Create a new IncompletePayment exception for an expired payment.
      *
-     * @param  \AIArmada\CashierChip\Payment  $payment
      * @return static
      */
     public static function expired(Payment $payment)
@@ -72,8 +67,6 @@ class IncompletePayment extends Exception
 
     /**
      * Get the CHIP Payment instance.
-     *
-     * @return \AIArmada\CashierChip\Payment
      */
     public function payment(): Payment
     {

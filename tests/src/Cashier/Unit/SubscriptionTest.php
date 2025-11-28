@@ -3,20 +3,19 @@
 declare(strict_types=1);
 
 use AIArmada\Cashier\Models\Subscription;
-use AIArmada\Cashier\Models\SubscriptionItem;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use AIArmada\Commerce\Tests\Cashier\Fixtures\User;
 use Carbon\Carbon;
 
 uses(CashierTestCase::class);
 
-describe('Subscription Model', function () {
-    beforeEach(function () {
+describe('Subscription Model', function (): void {
+    beforeEach(function (): void {
         $this->user = $this->createUser();
     });
 
-    describe('creation', function () {
-        it('can create a subscription', function () {
+    describe('creation', function (): void {
+        it('can create a subscription', function (): void {
             $subscription = $this->createSubscription($this->user);
 
             expect($subscription)->toBeInstanceOf(Subscription::class)
@@ -24,7 +23,7 @@ describe('Subscription Model', function () {
                 ->and($subscription->type)->toBe('default');
         });
 
-        it('can create a subscription with specific gateway', function () {
+        it('can create a subscription with specific gateway', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'gateway' => 'chip',
             ]);
@@ -32,14 +31,14 @@ describe('Subscription Model', function () {
             expect($subscription->gateway)->toBe('chip');
         });
 
-        it('belongs to an owner', function () {
+        it('belongs to an owner', function (): void {
             $subscription = $this->createSubscription($this->user);
 
             expect($subscription->owner)->toBeInstanceOf(User::class)
                 ->and($subscription->owner->id)->toBe($this->user->id);
         });
 
-        it('has subscription items', function () {
+        it('has subscription items', function (): void {
             $subscription = $this->createSubscription($this->user);
             $this->createSubscriptionItem($subscription);
 
@@ -47,8 +46,8 @@ describe('Subscription Model', function () {
         });
     });
 
-    describe('status checks', function () {
-        it('can check if active', function () {
+    describe('status checks', function (): void {
+        it('can check if active', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'gateway_status' => Subscription::STATUS_ACTIVE,
                 'ends_at' => null,
@@ -57,7 +56,7 @@ describe('Subscription Model', function () {
             expect($subscription->active())->toBeTrue();
         });
 
-        it('can check if canceled', function () {
+        it('can check if canceled', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'ends_at' => Carbon::now()->addDays(7),
             ]);
@@ -65,7 +64,7 @@ describe('Subscription Model', function () {
             expect($subscription->canceled())->toBeTrue();
         });
 
-        it('can check if on trial', function () {
+        it('can check if on trial', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'trial_ends_at' => Carbon::now()->addDays(14),
             ]);
@@ -73,7 +72,7 @@ describe('Subscription Model', function () {
             expect($subscription->onTrial())->toBeTrue();
         });
 
-        it('can check if on grace period', function () {
+        it('can check if on grace period', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'ends_at' => Carbon::now()->addDays(5),
             ]);
@@ -81,7 +80,7 @@ describe('Subscription Model', function () {
             expect($subscription->onGracePeriod())->toBeTrue();
         });
 
-        it('can check if ended', function () {
+        it('can check if ended', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'ends_at' => Carbon::now()->subDays(1),
             ]);
@@ -89,7 +88,7 @@ describe('Subscription Model', function () {
             expect($subscription->ended())->toBeTrue();
         });
 
-        it('can check if incomplete', function () {
+        it('can check if incomplete', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'gateway_status' => Subscription::STATUS_INCOMPLETE,
             ]);
@@ -97,7 +96,7 @@ describe('Subscription Model', function () {
             expect($subscription->incomplete())->toBeTrue();
         });
 
-        it('can check if past due', function () {
+        it('can check if past due', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'gateway_status' => Subscription::STATUS_PAST_DUE,
             ]);
@@ -105,7 +104,7 @@ describe('Subscription Model', function () {
             expect($subscription->pastDue())->toBeTrue();
         });
 
-        it('can check if valid', function () {
+        it('can check if valid', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'gateway_status' => Subscription::STATUS_ACTIVE,
                 'ends_at' => null,
@@ -114,7 +113,7 @@ describe('Subscription Model', function () {
             expect($subscription->valid())->toBeTrue();
         });
 
-        it('can check if recurring', function () {
+        it('can check if recurring', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'gateway_status' => Subscription::STATUS_ACTIVE,
                 'trial_ends_at' => null,
@@ -125,8 +124,8 @@ describe('Subscription Model', function () {
         });
     });
 
-    describe('trial management', function () {
-        it('can skip trial', function () {
+    describe('trial management', function (): void {
+        it('can skip trial', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'trial_ends_at' => Carbon::now()->addDays(14),
             ]);
@@ -136,7 +135,7 @@ describe('Subscription Model', function () {
             expect($subscription->trial_ends_at)->toBeNull();
         });
 
-        it('can end trial', function () {
+        it('can end trial', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'trial_ends_at' => Carbon::now()->addDays(14),
             ]);
@@ -147,7 +146,7 @@ describe('Subscription Model', function () {
             expect($subscription->trial_ends_at)->toBeNull();
         });
 
-        it('can extend trial', function () {
+        it('can extend trial', function (): void {
             $newTrialEnd = Carbon::now()->addDays(30);
             $subscription = $this->createSubscription($this->user, [
                 'trial_ends_at' => Carbon::now()->addDays(14),
@@ -159,15 +158,15 @@ describe('Subscription Model', function () {
             expect($subscription->trial_ends_at->toDateString())->toBe($newTrialEnd->toDateString());
         });
 
-        it('throws exception when extending trial with past date', function () {
+        it('throws exception when extending trial with past date', function (): void {
             $subscription = $this->createSubscription($this->user);
 
             $subscription->extendTrial(Carbon::now()->subDays(1));
         })->throws(InvalidArgumentException::class);
     });
 
-    describe('cancellation', function () {
-        it('can cancel at period end', function () {
+    describe('cancellation', function (): void {
+        it('can cancel at period end', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'trial_ends_at' => Carbon::now()->addDays(7),
             ]);
@@ -179,7 +178,7 @@ describe('Subscription Model', function () {
                 ->and($subscription->canceled())->toBeTrue();
         });
 
-        it('can cancel immediately', function () {
+        it('can cancel immediately', function (): void {
             $subscription = $this->createSubscription($this->user);
 
             $subscription->cancelNow();
@@ -189,7 +188,7 @@ describe('Subscription Model', function () {
                 ->and($subscription->ends_at)->not->toBeNull();
         });
 
-        it('can cancel at specific date', function () {
+        it('can cancel at specific date', function (): void {
             $endsAt = Carbon::now()->addDays(10);
             $subscription = $this->createSubscription($this->user);
 
@@ -200,8 +199,8 @@ describe('Subscription Model', function () {
         });
     });
 
-    describe('resume', function () {
-        it('can resume a canceled subscription on grace period', function () {
+    describe('resume', function (): void {
+        it('can resume a canceled subscription on grace period', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'gateway_status' => Subscription::STATUS_ACTIVE,
                 'ends_at' => Carbon::now()->addDays(5),
@@ -214,7 +213,7 @@ describe('Subscription Model', function () {
                 ->and($subscription->gateway_status)->toBe(Subscription::STATUS_ACTIVE);
         });
 
-        it('throws exception when resuming subscription not on grace period', function () {
+        it('throws exception when resuming subscription not on grace period', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'ends_at' => Carbon::now()->subDays(1),
             ]);
@@ -223,8 +222,8 @@ describe('Subscription Model', function () {
         })->throws(LogicException::class);
     });
 
-    describe('scopes', function () {
-        it('can query active subscriptions', function () {
+    describe('scopes', function (): void {
+        it('can query active subscriptions', function (): void {
             $this->createSubscription($this->user, [
                 'gateway_status' => Subscription::STATUS_ACTIVE,
                 'ends_at' => null,
@@ -240,7 +239,7 @@ describe('Subscription Model', function () {
             expect($active)->toHaveCount(1);
         });
 
-        it('can query by gateway', function () {
+        it('can query by gateway', function (): void {
             $this->createSubscription($this->user, ['gateway' => 'stripe']);
             $this->createSubscription($this->user, [
                 'type' => 'premium',
@@ -253,7 +252,7 @@ describe('Subscription Model', function () {
                 ->and($stripeSubscriptions->first()->gateway)->toBe('stripe');
         });
 
-        it('can query canceled subscriptions', function () {
+        it('can query canceled subscriptions', function (): void {
             $this->createSubscription($this->user, [
                 'ends_at' => null,
             ]);
@@ -267,7 +266,7 @@ describe('Subscription Model', function () {
             expect($canceled)->toHaveCount(1);
         });
 
-        it('can query on trial subscriptions', function () {
+        it('can query on trial subscriptions', function (): void {
             $this->createSubscription($this->user, [
                 'trial_ends_at' => Carbon::now()->addDays(14),
             ]);
@@ -282,8 +281,8 @@ describe('Subscription Model', function () {
         });
     });
 
-    describe('prices', function () {
-        it('can check if it has a specific price', function () {
+    describe('prices', function (): void {
+        it('can check if it has a specific price', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'gateway_price' => 'price_monthly',
             ]);
@@ -292,7 +291,7 @@ describe('Subscription Model', function () {
                 ->and($subscription->hasPrice('price_yearly'))->toBeFalse();
         });
 
-        it('can check if it has a single price', function () {
+        it('can check if it has a single price', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'gateway_price' => 'price_monthly',
             ]);
@@ -300,7 +299,7 @@ describe('Subscription Model', function () {
             expect($subscription->hasSinglePrice())->toBeTrue();
         });
 
-        it('can check if it has multiple prices', function () {
+        it('can check if it has multiple prices', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'gateway_price' => null,
             ]);

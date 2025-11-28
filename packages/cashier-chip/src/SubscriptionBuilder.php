@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AIArmada\CashierChip;
 
 use Carbon\Carbon;
@@ -18,63 +20,47 @@ class SubscriptionBuilder
     /**
      * The model that is subscribing.
      *
-     * @var \AIArmada\CashierChip\Billable|\Illuminate\Database\Eloquent\Model
+     * @var Billable|\Illuminate\Database\Eloquent\Model
      */
     protected $owner;
 
     /**
      * The type of the subscription.
-     *
-     * @var string
      */
     protected string $type;
 
     /**
      * The prices the customer is being subscribed to.
-     *
-     * @var array
      */
     protected array $items = [];
 
     /**
      * The date and time the trial will expire.
-     *
-     * @var \Carbon\CarbonInterface|null
      */
     protected ?CarbonInterface $trialExpires = null;
 
     /**
      * Indicates that the trial should end immediately.
-     *
-     * @var bool
      */
     protected bool $skipTrial = false;
 
     /**
      * The billing interval (day, week, month, year).
-     *
-     * @var string
      */
     protected string $billingInterval = 'month';
 
     /**
      * The billing interval count.
-     *
-     * @var int
      */
     protected int $billingIntervalCount = 1;
 
     /**
      * The date on which the billing cycle should be anchored.
-     *
-     * @var \Carbon\CarbonInterface|null
      */
     protected ?CarbonInterface $billingCycleAnchor = null;
 
     /**
      * The metadata to apply to the subscription.
-     *
-     * @var array
      */
     protected array $metadata = [];
 
@@ -82,7 +68,6 @@ class SubscriptionBuilder
      * Create a new subscription builder instance.
      *
      * @param  mixed  $owner
-     * @param  string  $type
      * @param  string|string[]|array[]  $prices
      * @return void
      */
@@ -99,8 +84,6 @@ class SubscriptionBuilder
     /**
      * Set a price on the subscription builder.
      *
-     * @param  string|array  $price
-     * @param  int|null  $quantity
      * @return $this
      */
     public function price(string|array $price, ?int $quantity = 1)
@@ -125,8 +108,6 @@ class SubscriptionBuilder
     /**
      * Specify the quantity of a subscription item.
      *
-     * @param  int|null  $quantity
-     * @param  string|null  $price
      * @return $this
      */
     public function quantity(?int $quantity, ?string $price = null)
@@ -149,7 +130,6 @@ class SubscriptionBuilder
     /**
      * Specify the number of days of the trial.
      *
-     * @param  int  $trialDays
      * @return $this
      */
     public function trialDays(int $trialDays)
@@ -162,7 +142,6 @@ class SubscriptionBuilder
     /**
      * Specify the ending date of the trial.
      *
-     * @param  \Carbon\CarbonInterface  $trialUntil
      * @return $this
      */
     public function trialUntil(CarbonInterface $trialUntil)
@@ -188,7 +167,6 @@ class SubscriptionBuilder
      * Set the billing interval.
      *
      * @param  string  $interval  (day, week, month, year)
-     * @param  int  $count
      * @return $this
      */
     public function billingInterval(string $interval, int $count = 1)
@@ -202,7 +180,6 @@ class SubscriptionBuilder
     /**
      * Set monthly billing.
      *
-     * @param  int  $count
      * @return $this
      */
     public function monthly(int $count = 1)
@@ -213,7 +190,6 @@ class SubscriptionBuilder
     /**
      * Set yearly billing.
      *
-     * @param  int  $count
      * @return $this
      */
     public function yearly(int $count = 1)
@@ -224,7 +200,6 @@ class SubscriptionBuilder
     /**
      * Set weekly billing.
      *
-     * @param  int  $count
      * @return $this
      */
     public function weekly(int $count = 1)
@@ -235,7 +210,6 @@ class SubscriptionBuilder
     /**
      * Set daily billing.
      *
-     * @param  int  $count
      * @return $this
      */
     public function daily(int $count = 1)
@@ -246,7 +220,6 @@ class SubscriptionBuilder
     /**
      * Change the billing cycle anchor on a subscription creation.
      *
-     * @param  \DateTimeInterface|\Carbon\CarbonInterface  $date
      * @return $this
      */
     public function anchorBillingCycleOn(DateTimeInterface|CarbonInterface $date)
@@ -259,7 +232,6 @@ class SubscriptionBuilder
     /**
      * The metadata to apply to a new subscription.
      *
-     * @param  array  $metadata
      * @return $this
      */
     public function withMetadata(array $metadata)
@@ -271,9 +243,6 @@ class SubscriptionBuilder
 
     /**
      * Add a new subscription without immediate payment.
-     *
-     * @param  array  $options
-     * @return \AIArmada\CashierChip\Subscription
      */
     public function add(array $options = []): Subscription
     {
@@ -289,10 +258,8 @@ class SubscriptionBuilder
      * 3. Optionally charge immediately or wait for first billing date
      *
      * @param  string|null  $recurringToken  The CHIP recurring token for payments
-     * @param  array  $options
-     * @return \AIArmada\CashierChip\Subscription
      *
-     * @throws \Exception
+     * @throws Exception
      */
     public function create(?string $recurringToken = null, array $options = []): Subscription
     {
@@ -323,7 +290,7 @@ class SubscriptionBuilder
         $firstItem = Arr::first($this->items);
         $isSinglePrice = count($this->items) === 1;
 
-        /** @var \AIArmada\CashierChip\Subscription $subscription */
+        /** @var Subscription $subscription */
         $subscription = $this->owner->subscriptions()->create([
             'type' => $this->type,
             'chip_id' => Str::uuid()->toString(),
@@ -355,10 +322,7 @@ class SubscriptionBuilder
     /**
      * Create a new subscription and charge immediately.
      *
-     * @param  string|null  $recurringToken
      * @param  int  $amount  Amount in cents
-     * @param  array  $options
-     * @return \AIArmada\CashierChip\Subscription
      */
     public function createAndCharge(?string $recurringToken = null, int $amount = 0, array $options = []): Subscription
     {
@@ -375,8 +339,7 @@ class SubscriptionBuilder
     /**
      * Begin a new Checkout Session for the subscription.
      *
-     * @param  array  $sessionOptions
-     * @return \AIArmada\CashierChip\Checkout
+     * @return Checkout
      */
     public function checkout(array $sessionOptions = [])
     {
@@ -411,9 +374,71 @@ class SubscriptionBuilder
     }
 
     /**
+     * Get the items set on the subscription builder.
+     */
+    public function getItems(): array
+    {
+        return $this->items;
+    }
+
+    /**
+     * Get the subscription type.
+     */
+    public function getType(): string
+    {
+        return $this->type;
+    }
+
+    /**
+     * Get the trial end date.
+     */
+    public function getTrialEnd(): ?CarbonInterface
+    {
+        return $this->trialExpires;
+    }
+
+    /**
+     * Check if the trial will be skipped.
+     */
+    public function getSkipTrial(): bool
+    {
+        return $this->skipTrial;
+    }
+
+    /**
+     * Get the billing interval.
+     */
+    public function getBillingInterval(): string
+    {
+        return $this->billingInterval;
+    }
+
+    /**
+     * Get the billing interval count.
+     */
+    public function getBillingIntervalCount(): int
+    {
+        return $this->billingIntervalCount;
+    }
+
+    /**
+     * Get the billing cycle anchor.
+     */
+    public function getBillingCycleAnchor(): ?CarbonInterface
+    {
+        return $this->billingCycleAnchor;
+    }
+
+    /**
+     * Get the metadata.
+     */
+    public function getMetadata(): array
+    {
+        return $this->metadata;
+    }
+
+    /**
      * Calculate the next billing date.
-     *
-     * @return \Carbon\CarbonInterface
      */
     protected function calculateNextBillingDate(): CarbonInterface
     {
@@ -426,93 +451,11 @@ class SubscriptionBuilder
 
     /**
      * Calculate the total amount from all items.
-     *
-     * @return int
      */
     protected function calculateTotalAmount(): int
     {
         return collect($this->items)->sum(function ($item) {
             return ($item['unit_amount'] ?? 0) * ($item['quantity'] ?? 1);
         });
-    }
-
-    /**
-     * Get the items set on the subscription builder.
-     *
-     * @return array
-     */
-    public function getItems(): array
-    {
-        return $this->items;
-    }
-
-    /**
-     * Get the subscription type.
-     *
-     * @return string
-     */
-    public function getType(): string
-    {
-        return $this->type;
-    }
-
-    /**
-     * Get the trial end date.
-     *
-     * @return \Carbon\CarbonInterface|null
-     */
-    public function getTrialEnd(): ?CarbonInterface
-    {
-        return $this->trialExpires;
-    }
-
-    /**
-     * Check if the trial will be skipped.
-     *
-     * @return bool
-     */
-    public function getSkipTrial(): bool
-    {
-        return $this->skipTrial;
-    }
-
-    /**
-     * Get the billing interval.
-     *
-     * @return string
-     */
-    public function getBillingInterval(): string
-    {
-        return $this->billingInterval;
-    }
-
-    /**
-     * Get the billing interval count.
-     *
-     * @return int
-     */
-    public function getBillingIntervalCount(): int
-    {
-        return $this->billingIntervalCount;
-    }
-
-    /**
-     * Get the billing cycle anchor.
-     *
-     * @return \Carbon\CarbonInterface|null
-     */
-    public function getBillingCycleAnchor(): ?CarbonInterface
-    {
-        return $this->billingCycleAnchor;
-    }
-
-    /**
-     * Get the metadata.
-     *
-     * @return array
-     */
-    public function getMetadata(): array
-    {
-        return $this->metadata;
     }
 }

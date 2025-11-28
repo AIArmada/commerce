@@ -9,13 +9,13 @@ use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
 uses(CashierChipTestCase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = $this->createUser([
         'chip_id' => 'test-client-id',
     ]);
 });
 
-it('can create checkout instance from owner and purchase data', function () {
+it('can create checkout instance from owner and purchase data', function (): void {
     $purchaseData = [
         'id' => 'test-purchase-id',
         'checkout_url' => 'https://chip.com/checkout/test-purchase-id',
@@ -23,168 +23,168 @@ it('can create checkout instance from owner and purchase data', function () {
         'total' => 100.00,
         'currency' => 'MYR',
     ];
-    
+
     $checkout = new Checkout($this->user, $purchaseData);
-    
+
     expect($checkout)->toBeInstanceOf(Checkout::class);
 });
 
-it('can create checkout for guest', function () {
+it('can create checkout for guest', function (): void {
     $builder = Checkout::guest();
-    
+
     expect($builder)->toBeInstanceOf(CheckoutBuilder::class);
 });
 
-it('can create checkout for customer', function () {
+it('can create checkout for customer', function (): void {
     $builder = Checkout::customer($this->user);
-    
+
     expect($builder)->toBeInstanceOf(CheckoutBuilder::class);
 });
 
-it('can get checkout url', function () {
+it('can get checkout url', function (): void {
     $purchaseData = [
         'id' => 'test-purchase-id',
         'checkout_url' => 'https://chip.com/checkout/test-purchase-id',
         'status' => 'created',
     ];
-    
+
     $checkout = new Checkout($this->user, $purchaseData);
-    
+
     expect($checkout->url())->toBe('https://chip.com/checkout/test-purchase-id');
 });
 
-it('can get purchase id', function () {
+it('can get purchase id', function (): void {
     $purchaseData = [
         'id' => 'test-purchase-id',
         'checkout_url' => 'https://chip.com/checkout/test-purchase-id',
     ];
-    
+
     $checkout = new Checkout($this->user, $purchaseData);
-    
+
     expect($checkout->id())->toBe('test-purchase-id');
 });
 
-it('can get owner', function () {
+it('can get owner', function (): void {
     $purchaseData = [
         'id' => 'test-purchase-id',
     ];
-    
+
     $checkout = new Checkout($this->user, $purchaseData);
-    
+
     expect($checkout->owner())->toBe($this->user);
 });
 
-it('can get chip purchase data', function () {
+it('can get chip purchase data', function (): void {
     $purchaseData = [
         'id' => 'test-purchase-id',
         'total' => 100.00,
         'currency' => 'MYR',
     ];
-    
+
     $checkout = new Checkout($this->user, $purchaseData);
-    
+
     expect($checkout->asChipPurchase())->toBe($purchaseData);
 });
 
-it('can convert to payment instance', function () {
+it('can convert to payment instance', function (): void {
     $purchaseData = [
         'id' => 'test-purchase-id',
         'status' => 'created',
         'total' => 100.00,
     ];
-    
+
     $checkout = new Checkout($this->user, $purchaseData);
-    
+
     expect($checkout->asPayment())->toBeInstanceOf(Payment::class);
 });
 
-it('can convert to array', function () {
+it('can convert to array', function (): void {
     $data = [
         'id' => 'test-purchase-id',
         'checkout_url' => 'https://chip.com/checkout/test-purchase-id',
         'status' => 'created',
         'total' => 100.00,
     ];
-    
+
     $checkout = new Checkout($this->user, $data);
-    
+
     expect($checkout->toArray())->toBe($data);
 });
 
-it('can serialize to json', function () {
+it('can serialize to json', function (): void {
     $data = [
         'id' => 'test-purchase-id',
         'checkout_url' => 'https://chip.com/checkout/test-purchase-id',
     ];
-    
+
     $checkout = new Checkout($this->user, $data);
-    
+
     expect($checkout->toJson())->toBe(json_encode($data));
 });
 
-it('can create redirect response', function () {
+it('can create redirect response', function (): void {
     $checkout = new Checkout($this->user, [
         'id' => 'test-purchase-id',
         'checkout_url' => 'https://chip.com/checkout/test-purchase-id',
     ]);
-    
+
     $response = $checkout->redirect();
-    
-    expect($response)->toBeInstanceOf(\Illuminate\Http\RedirectResponse::class);
+
+    expect($response)->toBeInstanceOf(Illuminate\Http\RedirectResponse::class);
     expect($response->getTargetUrl())->toBe('https://chip.com/checkout/test-purchase-id');
 });
 
-it('can access purchase data via magic getter', function () {
+it('can access purchase data via magic getter', function (): void {
     $checkout = new Checkout($this->user, [
         'id' => 'test-purchase-id',
         'total' => 299.99,
         'currency' => 'MYR',
     ]);
-    
+
     expect($checkout->id)->toBe('test-purchase-id');
     expect($checkout->total)->toBe(299.99);
     expect($checkout->currency)->toBe('MYR');
 });
 
-it('returns null for missing properties via magic getter', function () {
+it('returns null for missing properties via magic getter', function (): void {
     $checkout = new Checkout($this->user, [
         'id' => 'test-purchase-id',
     ]);
-    
+
     expect($checkout->nonexistent)->toBeNull();
 });
 
-it('can be json serialized', function () {
+it('can be json serialized', function (): void {
     $data = [
         'id' => 'test-purchase-id',
         'checkout_url' => 'https://chip.com/checkout/test-purchase-id',
     ];
-    
+
     $checkout = new Checkout($this->user, $data);
-    
+
     expect($checkout->jsonSerialize())->toBe($data);
 });
 
-it('can be used as a response', function () {
+it('can be used as a response', function (): void {
     $checkout = new Checkout($this->user, [
         'id' => 'test-purchase-id',
         'checkout_url' => 'https://chip.com/checkout/test-purchase-id',
     ]);
-    
+
     $request = request();
     $response = $checkout->toResponse($request);
-    
-    expect($response)->toBeInstanceOf(\Symfony\Component\HttpFoundation\Response::class);
+
+    expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\Response::class);
 });
 
-it('can create checkout without owner', function () {
+it('can create checkout without owner', function (): void {
     $purchaseData = [
         'id' => 'test-purchase-id',
         'checkout_url' => 'https://chip.com/checkout/test-purchase-id',
     ];
-    
+
     $checkout = new Checkout(null, $purchaseData);
-    
+
     expect($checkout->owner())->toBeNull();
     expect($checkout->id())->toBe('test-purchase-id');
 });

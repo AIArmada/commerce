@@ -13,11 +13,9 @@ use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Collection;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use InvalidArgumentException;
 use LogicException;
-
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * Unified Subscription Model with multi-gateway support.
@@ -63,21 +61,6 @@ class Subscription extends Model
      * @var array<string>
      */
     protected $with = ['items'];
-
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'ends_at' => 'datetime',
-            'quantity' => 'integer',
-            'trial_ends_at' => 'datetime',
-            'next_billing_at' => 'datetime',
-        ];
-    }
 
     /**
      * Get the user that owns the subscription.
@@ -226,9 +209,9 @@ class Subscription extends Model
      */
     public function scopeActive(Builder $query): void
     {
-        $query->where(function ($query) {
+        $query->where(function ($query): void {
             $query->whereNull('ends_at')
-                ->orWhere(function ($query) {
+                ->orWhere(function ($query): void {
                     // On grace period - ends_at is set but in the future
                     $query->whereNotNull('ends_at')
                         ->where('ends_at', '>', Carbon::now());
@@ -503,7 +486,7 @@ class Subscription extends Model
      *
      * @return $this
      *
-     * @throws \LogicException
+     * @throws LogicException
      */
     public function resume()
     {
@@ -571,7 +554,7 @@ class Subscription extends Model
     /**
      * Make sure a price argument is provided when the subscription has multiple prices.
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function guardAgainstMultiplePrices(): void
     {
@@ -580,5 +563,20 @@ class Subscription extends Model
                 'This method requires a price argument since the subscription has multiple prices.'
             );
         }
+    }
+
+    /**
+     * The attributes that should be cast to native types.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'ends_at' => 'datetime',
+            'quantity' => 'integer',
+            'trial_ends_at' => 'datetime',
+            'next_billing_at' => 'datetime',
+        ];
     }
 }

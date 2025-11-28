@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AIArmada\CashierChip\Events;
 
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
-use Illuminate\Database\Eloquent\Model;
 
 class PaymentFailed
 {
@@ -12,23 +14,17 @@ class PaymentFailed
 
     /**
      * The billable entity.
-     *
-     * @var \Illuminate\Database\Eloquent\Model
      */
     public Model $billable;
 
     /**
      * The CHIP purchase data.
-     *
-     * @var array
      */
     public array $purchase;
 
     /**
      * Create a new event instance.
      *
-     * @param  \Illuminate\Database\Eloquent\Model  $billable
-     * @param  array  $purchase
      * @return void
      */
     public function __construct(Model $billable, array $purchase)

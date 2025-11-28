@@ -83,6 +83,39 @@ final class ShippingCalculator
     }
 
     /**
+     * Create with common Malaysian shipping presets.
+     * All amounts in cents (sen).
+     */
+    public static function malaysiaDefaults(): self
+    {
+        return self::create()
+            ->currency('MYR')
+            ->flatRate(800)                          // RM 8.00 base (800 sen)
+            ->freeAbove(15000)                       // Free above RM 150 (15000 sen)
+            ->zoneRate('MY-PENINSULA', 800)          // RM 8.00 West Malaysia
+            ->zoneRate('MY-EAST', 1500)              // RM 15.00 East Malaysia
+            ->zoneRate('SG', 2500)                   // RM 25.00 Singapore
+            ->zoneRate('INTERNATIONAL', 5000)        // RM 50.00 International
+            ->weightRate(100, perGrams: 1000)        // +RM 1.00 per kg (100 sen)
+            ->maximum(10000)                         // Cap at RM 100 (10000 sen)
+            ->named('Standard Shipping');
+    }
+
+    /**
+     * Create with tiered shipping based on order value.
+     * All amounts in cents.
+     */
+    public static function tieredDefaults(): self
+    {
+        return self::create()
+            ->tier(0, 5000, 1500)         // $0-50: $15 shipping (0-5000 cents: 1500 cents)
+            ->tier(5000, 10000, 1000)     // $50-100: $10 shipping
+            ->tier(10000, 20000, 500)     // $100-200: $5 shipping
+            ->tier(20000, null, 0)        // $200+: Free
+            ->named('Tiered Shipping');
+    }
+
+    /**
      * Set flat shipping rate.
      *
      * @param  int  $amount  Shipping rate in cents (e.g., 800 for $8.00)
@@ -210,7 +243,7 @@ final class ShippingCalculator
      *
      * @param  Cart  $cart  The cart to calculate shipping for
      * @param  string|null  $zone  Optional zone override
-     * @return Money  The calculated shipping cost
+     * @return Money The calculated shipping cost
      */
     public function calculate(Cart $cart, ?string $zone = null): Money
     {
@@ -256,27 +289,11 @@ final class ShippingCalculator
     }
 
     /**
-     * Get total weight from cart items.
-     *
-     * @return int  Total weight in grams
-     */
-    private function getTotalWeight(Cart $cart): int
-    {
-        $totalWeight = 0;
-        foreach ($cart->getItems() as $item) {
-            $weight = $item->attributes->get('weight', 0);
-            $totalWeight += (int) $weight * $item->quantity;
-        }
-
-        return $totalWeight;
-    }
-
-    /**
      * Calculate shipping and apply to cart as condition.
      *
      * @param  Cart  $cart  The cart to apply shipping to
      * @param  string|null  $zone  Optional zone override
-     * @return CartCondition  The shipping condition
+     * @return CartCondition The shipping condition
      */
     public function applyToCart(Cart $cart, ?string $zone = null): CartCondition
     {
@@ -326,35 +343,18 @@ final class ShippingCalculator
     }
 
     /**
-     * Create with common Malaysian shipping presets.
-     * All amounts in cents (sen).
+     * Get total weight from cart items.
+     *
+     * @return int Total weight in grams
      */
-    public static function malaysiaDefaults(): self
+    private function getTotalWeight(Cart $cart): int
     {
-        return self::create()
-            ->currency('MYR')
-            ->flatRate(800)                          // RM 8.00 base (800 sen)
-            ->freeAbove(15000)                       // Free above RM 150 (15000 sen)
-            ->zoneRate('MY-PENINSULA', 800)          // RM 8.00 West Malaysia
-            ->zoneRate('MY-EAST', 1500)              // RM 15.00 East Malaysia
-            ->zoneRate('SG', 2500)                   // RM 25.00 Singapore
-            ->zoneRate('INTERNATIONAL', 5000)        // RM 50.00 International
-            ->weightRate(100, perGrams: 1000)        // +RM 1.00 per kg (100 sen)
-            ->maximum(10000)                         // Cap at RM 100 (10000 sen)
-            ->named('Standard Shipping');
-    }
+        $totalWeight = 0;
+        foreach ($cart->getItems() as $item) {
+            $weight = $item->attributes->get('weight', 0);
+            $totalWeight += (int) $weight * $item->quantity;
+        }
 
-    /**
-     * Create with tiered shipping based on order value.
-     * All amounts in cents.
-     */
-    public static function tieredDefaults(): self
-    {
-        return self::create()
-            ->tier(0, 5000, 1500)         // $0-50: $15 shipping (0-5000 cents: 1500 cents)
-            ->tier(5000, 10000, 1000)     // $50-100: $10 shipping
-            ->tier(10000, 20000, 500)     // $100-200: $5 shipping
-            ->tier(20000, null, 0)        // $200+: Free
-            ->named('Tiered Shipping');
+        return $totalWeight;
     }
 }

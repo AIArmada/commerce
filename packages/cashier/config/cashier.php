@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -75,8 +77,8 @@ return [
 
     'models' => [
         'customer' => env('CASHIER_MODEL', 'App\\Models\\User'),
-        'subscription' => \AIArmada\Cashier\Models\Subscription::class,
-        'subscription_item' => \AIArmada\Cashier\Models\SubscriptionItem::class,
+        'subscription' => AIArmada\Cashier\Models\Subscription::class,
+        'subscription_item' => AIArmada\Cashier\Models\SubscriptionItem::class,
     ],
 
     /*
@@ -117,7 +119,7 @@ return [
     */
 
     'invoices' => [
-        'renderer' => \AIArmada\Cashier\Invoices\DompdfInvoiceRenderer::class,
+        'renderer' => AIArmada\Cashier\Invoices\DompdfInvoiceRenderer::class,
         'paper' => 'letter',
         'logo' => null,
         'vendor' => [

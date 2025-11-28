@@ -7,6 +7,7 @@ namespace AIArmada\FilamentChip\Pages\Billing;
 use AIArmada\CashierChip\CashierChip;
 use AIArmada\CashierChip\Subscription;
 use BackedEnum;
+use Exception;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -26,14 +27,14 @@ class Subscriptions extends Page
         return __('Subscriptions');
     }
 
-    public function getTitle(): string|Htmlable
-    {
-        return __('Manage Subscriptions');
-    }
-
     public static function shouldRegisterNavigation(): bool
     {
         return (bool) config('filament-chip.billing.features.subscriptions', true);
+    }
+
+    public function getTitle(): string|Htmlable
+    {
+        return __('Manage Subscriptions');
     }
 
     public function getViewData(): array
@@ -45,6 +46,71 @@ class Subscriptions extends Page
             'subscriptions' => $this->getSubscriptions(),
             'cancelledSubscriptions' => $this->getCancelledSubscriptions(),
         ];
+    }
+
+    public function cancelSubscription(int $subscriptionId): void
+    {
+        $subscription = $this->getBillable()?->subscriptions()->find($subscriptionId);
+
+        if (! $subscription) {
+            Notification::make()
+                ->title(__('Subscription not found'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        try {
+            $subscription->cancel();
+
+            Notification::make()
+                ->title(__('Subscription cancelled'))
+                ->body(__('Your subscription will remain active until the end of the billing period.'))
+                ->success()
+                ->send();
+        } catch (Exception $e) {
+            Notification::make()
+                ->title(__('Failed to cancel subscription'))
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function resumeSubscription(int $subscriptionId): void
+    {
+        $subscription = $this->getBillable()?->subscriptions()->find($subscriptionId);
+
+        if (! $subscription) {
+            Notification::make()
+                ->title(__('Subscription not found'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        try {
+            $subscription->resume();
+
+            Notification::make()
+                ->title(__('Subscription resumed'))
+                ->body(__('Your subscription has been reactivated.'))
+                ->success()
+                ->send();
+        } catch (Exception $e) {
+            Notification::make()
+                ->title(__('Failed to resume subscription'))
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function formatAmount(int $amount): string
+    {
+        return CashierChip::formatAmount($amount);
     }
 
     protected function getBillable(): mixed
@@ -102,70 +168,5 @@ class Subscriptions extends Page
         return $billable->subscriptions()
             ->onGracePeriod()
             ->get();
-    }
-
-    public function cancelSubscription(int $subscriptionId): void
-    {
-        $subscription = $this->getBillable()?->subscriptions()->find($subscriptionId);
-
-        if (! $subscription) {
-            Notification::make()
-                ->title(__('Subscription not found'))
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        try {
-            $subscription->cancel();
-
-            Notification::make()
-                ->title(__('Subscription cancelled'))
-                ->body(__('Your subscription will remain active until the end of the billing period.'))
-                ->success()
-                ->send();
-        } catch (\Exception $e) {
-            Notification::make()
-                ->title(__('Failed to cancel subscription'))
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
-    }
-
-    public function resumeSubscription(int $subscriptionId): void
-    {
-        $subscription = $this->getBillable()?->subscriptions()->find($subscriptionId);
-
-        if (! $subscription) {
-            Notification::make()
-                ->title(__('Subscription not found'))
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        try {
-            $subscription->resume();
-
-            Notification::make()
-                ->title(__('Subscription resumed'))
-                ->body(__('Your subscription has been reactivated.'))
-                ->success()
-                ->send();
-        } catch (\Exception $e) {
-            Notification::make()
-                ->title(__('Failed to resume subscription'))
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
-    }
-
-    public function formatAmount(int $amount): string
-    {
-        return CashierChip::formatAmount($amount);
     }
 }

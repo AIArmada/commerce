@@ -74,22 +74,6 @@ trait HasStock
     }
 
     /**
-     * Get the stock service instance.
-     */
-    protected function getStockService(): StockService
-    {
-        return app(StockService::class);
-    }
-
-    /**
-     * Get the stock reservation service instance.
-     */
-    protected function getReservationService(): StockReservationService
-    {
-        return app(StockReservationService::class);
-    }
-
-    /**
      * Reserve stock for a cart.
      */
     public function reserveStock(int $quantity, string $cartId, int $ttlMinutes = 30): ?StockReservation
@@ -153,5 +137,21 @@ trait HasStock
     public function getStockHistory(int $limit = 50): \Illuminate\Database\Eloquent\Collection
     {
         return $this->getStockService()->getStockHistory($this, $limit);
+    }
+
+    /**
+     * Get the stock service instance.
+     */
+    protected function getStockService(): StockService
+    {
+        return app(StockService::class);
+    }
+
+    /**
+     * Get the stock reservation service instance.
+     */
+    protected function getReservationService(): StockReservationService
+    {
+        return app(StockReservationService::class);
     }
 }

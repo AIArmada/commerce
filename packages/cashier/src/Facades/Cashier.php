@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static array<string, mixed> getGatewayConfig(string $name)
  * @method static static extend(string $driver, \Closure $callback)
  *
- * @see \AIArmada\Cashier\GatewayManager
+ * @see GatewayManager
  */
 class Cashier extends Facade
 {

@@ -113,7 +113,7 @@ final class CartManagerWithVouchers extends CartManager
     }
 
     /**
-     * @return iterable<\ReflectionClass<object>>
+     * @return iterable<ReflectionClass<object>>
      */
     private static function walkClassHierarchy(ReflectionClass $class): iterable
     {

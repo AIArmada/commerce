@@ -41,6 +41,11 @@ class BillingDashboard extends Page
         ];
     }
 
+    public function formatAmount(int $amount): string
+    {
+        return CashierChip::formatAmount($amount);
+    }
+
     protected function getBillable(): mixed
     {
         $user = filament()->auth()->user();
@@ -88,10 +93,5 @@ class BillingDashboard extends Page
         }
 
         return $billable->invoices(false)->take(5);
-    }
-
-    public function formatAmount(int $amount): string
-    {
-        return CashierChip::formatAmount($amount);
     }
 }

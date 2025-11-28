@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AIArmada\CashierChip\Exceptions;
 
 use Exception;
@@ -9,7 +11,6 @@ class InvalidPaymentMethod extends Exception
     /**
      * Create a new InvalidPaymentMethod exception for invalid owner.
      *
-     * @param  string  $paymentMethodId
      * @param  \Illuminate\Database\Eloquent\Model  $owner
      * @return static
      */

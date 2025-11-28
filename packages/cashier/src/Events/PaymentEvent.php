@@ -27,7 +27,7 @@ abstract class PaymentEvent
     /**
      * Get the payment instance.
      */
-    public function payment(): PaymentContract
+    final public function payment(): PaymentContract
     {
         return $this->payment;
     }
@@ -35,7 +35,7 @@ abstract class PaymentEvent
     /**
      * Get the gateway name.
      */
-    public function gateway(): string
+    final public function gateway(): string
     {
         return $this->gateway;
     }
@@ -43,7 +43,7 @@ abstract class PaymentEvent
     /**
      * Get the billable model.
      */
-    public function billable(): mixed
+    final public function billable(): mixed
     {
         return $this->billable;
     }

@@ -17,6 +17,17 @@ use Illuminate\Support\Manager;
 class GatewayManager extends Manager
 {
     /**
+     * Dynamically call the default driver instance.
+     *
+     * @param  string  $method
+     * @param  array<mixed>  $parameters
+     */
+    public function __call($method, $parameters): mixed
+    {
+        return $this->driver()->$method(...$parameters);
+    }
+
+    /**
      * Get the default driver name.
      */
     public function getDefaultDriver(): string
@@ -27,51 +38,12 @@ class GatewayManager extends Manager
     /**
      * Get a gateway instance.
      *
-     * @param  string|null  $name
-     * @return GatewayContract
      *
      * @throws GatewayNotFoundException
      */
     public function gateway(?string $name = null): GatewayContract
     {
         return $this->driver($name);
-    }
-
-    /**
-     * Create a Stripe gateway driver.
-     */
-    protected function createStripeDriver(): GatewayContract
-    {
-        $config = $this->config->get('cashier.gateways.stripe', []);
-
-        return $this->buildGateway('stripe', Gateways\StripeGateway::class, $config);
-    }
-
-    /**
-     * Create a CHIP gateway driver.
-     */
-    protected function createChipDriver(): GatewayContract
-    {
-        $config = $this->config->get('cashier.gateways.chip', []);
-
-        return $this->buildGateway('chip', Gateways\ChipGateway::class, $config);
-    }
-
-    /**
-     * Build a gateway instance.
-     *
-     * @param  string  $name
-     * @param  class-string<GatewayContract>  $class
-     * @param  array<string, mixed>  $config
-     * @return GatewayContract
-     */
-    protected function buildGateway(string $name, string $class, array $config): GatewayContract
-    {
-        if (! class_exists($class)) {
-            throw new GatewayNotFoundException("Gateway class [{$class}] not found. Make sure the required package is installed.");
-        }
-
-        return new $class($config);
     }
 
     /**
@@ -103,14 +75,37 @@ class GatewayManager extends Manager
     }
 
     /**
-     * Dynamically call the default driver instance.
-     *
-     * @param  string  $method
-     * @param  array<mixed>  $parameters
-     * @return mixed
+     * Create a Stripe gateway driver.
      */
-    public function __call($method, $parameters): mixed
+    protected function createStripeDriver(): GatewayContract
     {
-        return $this->driver()->$method(...$parameters);
+        $config = $this->config->get('cashier.gateways.stripe', []);
+
+        return $this->buildGateway('stripe', Gateways\StripeGateway::class, $config);
+    }
+
+    /**
+     * Create a CHIP gateway driver.
+     */
+    protected function createChipDriver(): GatewayContract
+    {
+        $config = $this->config->get('cashier.gateways.chip', []);
+
+        return $this->buildGateway('chip', Gateways\ChipGateway::class, $config);
+    }
+
+    /**
+     * Build a gateway instance.
+     *
+     * @param  class-string<GatewayContract>  $class
+     * @param  array<string, mixed>  $config
+     */
+    protected function buildGateway(string $name, string $class, array $config): GatewayContract
+    {
+        if (! class_exists($class)) {
+            throw new GatewayNotFoundException("Gateway class [{$class}] not found. Make sure the required package is installed.");
+        }
+
+        return new $class($config);
     }
 }
