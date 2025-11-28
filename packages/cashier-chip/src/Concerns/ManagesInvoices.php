@@ -1,0 +1,157 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\CashierChip\Concerns;
+
+use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Invoice;
+use Illuminate\Support\Collection;
+
+trait ManagesInvoices
+{
+    /**
+     * Get all of the invoices for the Billable model.
+     *
+     * @return \Illuminate\Support\Collection<int, \AIArmada\CashierChip\Invoice>
+     */
+    public function invoices(): Collection
+    {
+        if (! $this->hasChipId()) {
+            return collect();
+        }
+
+        // Get all subscriptions and their invoices
+        $invoices = collect();
+
+        foreach ($this->subscriptions as $subscription) {
+            $subscriptionInvoices = $subscription->invoices();
+            $invoices = $invoices->merge($subscriptionInvoices);
+        }
+
+        return $invoices->sortByDesc('created_at');
+    }
+
+    /**
+     * Get all of the invoices for the Billable model, including pending.
+     *
+     * @return \Illuminate\Support\Collection<int, \AIArmada\CashierChip\Invoice>
+     */
+    public function invoicesIncludingPending(): Collection
+    {
+        return $this->invoices();
+    }
+
+    /**
+     * Find an invoice by ID.
+     */
+    public function findInvoice(string $invoiceId): ?Invoice
+    {
+        try {
+            $purchase = CashierChip::chip()->getPurchase($invoiceId);
+
+            return new Invoice($this, $purchase);
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Get the upcoming invoice for the customer.
+     */
+    public function upcomingInvoice(): ?Invoice
+    {
+        $subscription = $this->subscription();
+
+        if (! $subscription) {
+            return null;
+        }
+
+        return $subscription->upcomingInvoice();
+    }
+
+    /**
+     * Add a single invoice item for the customer.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function tab(string $name, int $amount, array $options = []): self
+    {
+        // Store tab items for later invoicing
+        $tabs = $this->tabs ?? [];
+        $tabs[] = [
+            'name' => $name,
+            'price' => $amount,
+            'quantity' => $options['quantity'] ?? 1,
+        ];
+        $this->tabs = $tabs;
+
+        return $this;
+    }
+
+    /**
+     * Invoice the customer for the stored tab items.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function invoice(array $options = []): Invoice
+    {
+        $tabs = $this->tabs ?? [];
+
+        if (empty($tabs)) {
+            throw new \Exception('No items to invoice.');
+        }
+
+        $builder = CashierChip::chip()->purchase()
+            ->currency($this->preferredCurrency());
+
+        foreach ($tabs as $tab) {
+            $builder->addProduct($tab['name'], $tab['price'], $tab['quantity']);
+        }
+
+        if ($this->hasChipId()) {
+            $builder->clientId($this->chip_id);
+        } else {
+            $builder->customer(
+                email: $this->chipEmail() ?? '',
+                fullName: $this->chipName()
+            );
+        }
+
+        if (isset($options['success_url'])) {
+            $builder->successUrl($options['success_url']);
+        }
+
+        if (isset($options['failure_url'])) {
+            $builder->failureUrl($options['failure_url']);
+        }
+
+        $purchase = $builder->create();
+
+        // Clear tabs
+        $this->tabs = [];
+
+        return new Invoice($this, $purchase);
+    }
+
+    /**
+     * Create an invoice for the given price.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function invoicePrice(string $price, int $quantity = 1, array $options = []): Invoice
+    {
+        return $this->tab($price, $options['price'] ?? 0, ['quantity' => $quantity])
+            ->invoice($options);
+    }
+
+    /**
+     * Create an invoice for the given amount.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function invoiceFor(string $name, int $amount, array $options = []): Invoice
+    {
+        return $this->tab($name, $amount, $options)->invoice($options);
+    }
+}

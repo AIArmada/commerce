@@ -1,0 +1,204 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\CashierChip\Concerns;
+
+use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Checkout;
+use AIArmada\CashierChip\Exceptions\IncompletePayment;
+use AIArmada\CashierChip\Payment;
+use AIArmada\Chip\DataObjects\Purchase;
+
+trait PerformsCharges
+{
+    /**
+     * Make a "one off" charge on the customer for the given amount.
+     *
+     * @param  array<string, mixed>  $options
+     *
+     * @throws \AIArmada\CashierChip\Exceptions\IncompletePayment
+     */
+    public function charge(int $amount, ?string $recurringToken = null, array $options = []): Payment
+    {
+        $builder = CashierChip::chip()->purchase()
+            ->currency($this->preferredCurrency());
+
+        // Add the product
+        $productName = $options['product_name'] ?? 'One-time charge';
+        $builder->addProduct($productName, $amount);
+
+        // Add customer details
+        if ($this->hasChipId()) {
+            $builder->clientId($this->chip_id);
+        } else {
+            $builder->customer(
+                email: $this->chipEmail() ?? '',
+                fullName: $this->chipName()
+            );
+        }
+
+        // Add redirect URLs if provided
+        if (isset($options['success_url'])) {
+            $builder->successUrl($options['success_url']);
+        }
+
+        if (isset($options['failure_url'])) {
+            $builder->failureUrl($options['failure_url']);
+        }
+
+        // Create the purchase
+        $purchase = $builder->create();
+
+        // If we have a recurring token, charge it immediately
+        if ($recurringToken) {
+            $purchase = CashierChip::chip()->chargePurchase($purchase->id, $recurringToken);
+        }
+
+        $payment = new Payment($purchase);
+
+        if ($recurringToken) {
+            $payment->validate();
+        }
+
+        return $payment;
+    }
+
+    /**
+     * Create a new PaymentIntent-like instance (purchase in CHIP terms).
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function pay(int $amount, array $options = []): Payment
+    {
+        return $this->createPayment($amount, $options);
+    }
+
+    /**
+     * Create a new Payment instance with a CHIP purchase.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function createPayment(int $amount, array $options = []): Payment
+    {
+        $builder = CashierChip::chip()->purchase()
+            ->currency($options['currency'] ?? $this->preferredCurrency());
+
+        // Add the product
+        $productName = $options['product_name'] ?? 'Payment';
+        $builder->addProduct($productName, $amount);
+
+        // Add customer details
+        if ($this->hasChipId()) {
+            $builder->clientId($this->chip_id);
+        } else {
+            $builder->customer(
+                email: $this->chipEmail() ?? '',
+                fullName: $this->chipName()
+            );
+        }
+
+        // Add redirect URLs if provided
+        if (isset($options['success_url'])) {
+            $builder->successUrl($options['success_url']);
+        }
+
+        if (isset($options['failure_url'])) {
+            $builder->failureUrl($options['failure_url']);
+        }
+
+        if (isset($options['cancel_url'])) {
+            $builder->cancelUrl($options['cancel_url']);
+        }
+
+        if (isset($options['webhook_url'])) {
+            $builder->webhook($options['webhook_url']);
+        }
+
+        // Handle pre-authorization
+        if (isset($options['skip_capture']) && $options['skip_capture']) {
+            $builder->preAuthorize(true);
+        }
+
+        // Force recurring if needed
+        if (isset($options['force_recurring']) && $options['force_recurring']) {
+            $builder->forceRecurring(true);
+        }
+
+        // Create the purchase
+        $purchase = $builder->create();
+
+        return new Payment($purchase);
+    }
+
+    /**
+     * Find a payment (purchase) by ID.
+     */
+    public function findPayment(string $id): ?Payment
+    {
+        try {
+            $purchase = CashierChip::chip()->getPurchase($id);
+
+            return new Payment($purchase);
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    /**
+     * Charge using a recurring token (for subscription renewals, etc.).
+     *
+     * @param  array<string, mixed>  $options
+     *
+     * @throws \AIArmada\CashierChip\Exceptions\IncompletePayment
+     */
+    public function chargeWithRecurringToken(int $amount, ?string $recurringToken = null, array $options = []): Payment
+    {
+        // Use the charge method which already supports recurring tokens
+        return $this->charge($amount, $recurringToken, $options);
+    }
+
+    /**
+     * Refund a customer for a charge.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function refund(string $purchaseId, ?int $amount = null): Purchase
+    {
+        return CashierChip::chip()->refundPurchase($purchaseId, $amount);
+    }
+
+    /**
+     * Begin a new checkout session.
+     *
+     * @param  array<string>|string  $items
+     * @param  array<string, mixed>  $sessionOptions
+     * @param  array<string, mixed>  $customerOptions
+     */
+    public function checkout(string|array $items, array $sessionOptions = [], array $customerOptions = []): Checkout
+    {
+        return Checkout::customer($this)->create($items, $sessionOptions, $customerOptions);
+    }
+
+    /**
+     * Begin a new checkout session for a "one-off" charge.
+     *
+     * @param  array<string, mixed>  $sessionOptions
+     * @param  array<string, mixed>  $customerOptions
+     */
+    public function checkoutCharge(
+        int $amount,
+        string $name,
+        int $quantity = 1,
+        array $sessionOptions = [],
+        array $customerOptions = []
+    ): Checkout {
+        return $this->checkout([
+            [
+                'name' => $name,
+                'price' => $amount,
+                'quantity' => $quantity,
+            ],
+        ], $sessionOptions, $customerOptions);
+    }
+}
