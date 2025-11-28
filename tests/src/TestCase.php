@@ -153,6 +153,7 @@ abstract class TestCase extends Orchestra
             $table->json('conditions')->nullable();
             $table->json('metadata')->nullable();
             $table->bigInteger('version')->default(1)->index();
+            $table->timestamp('expires_at')->nullable()->index();
             $table->timestamps();
 
             $table->unique(['identifier', 'instance']);
@@ -223,6 +224,22 @@ abstract class TestCase extends Orchestra
             $table->text('note')->nullable();
             $table->timestamp('transaction_date')->useCurrent();
             $table->timestamps();
+        });
+
+        // Stock reservations table
+        Schema::dropIfExists('stock_reservations');
+        Schema::create('stock_reservations', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuidMorphs('stockable');
+            $table->string('cart_id')->nullable()->index();
+            $table->string('session_id')->nullable()->index();
+            $table->integer('quantity');
+            $table->timestamp('expires_at')->index();
+            $table->string('reference_type')->nullable();
+            $table->string('reference_id')->nullable();
+            $table->timestamps();
+
+            $table->index(['stockable_type', 'stockable_id', 'cart_id']);
         });
 
         // Test support table for stock testing

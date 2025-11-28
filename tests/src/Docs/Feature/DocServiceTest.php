@@ -19,14 +19,15 @@ test('it can generate doc numbers', function (): void {
 
 test('default strategy respects numbering format overrides', function (): void {
     $service = app(DocService::class);
-    $original = config('docs.types.invoice.numbering.format');
+    $originalFormat = config('docs.numbering.format');
+    $originalPrefix = config('docs.types.invoice.numbering.prefix');
 
-    config()->set('docs.types.invoice.numbering.format', [
-        'prefix' => 'BILL',
+    config()->set('docs.numbering.format', [
         'year_format' => 'Y',
         'separator' => '/',
         'suffix_length' => 4,
     ]);
+    config()->set('docs.types.invoice.numbering.prefix', 'BILL');
 
     try {
         $number = $service->generateDocNumber('invoice');
@@ -35,7 +36,8 @@ test('default strategy respects numbering format overrides', function (): void {
             ->toBeString()
             ->toMatch('/^BILL\d{4}\/[A-Z0-9]{4}$/');
     } finally {
-        config()->set('docs.types.invoice.numbering.format', $original);
+        config()->set('docs.numbering.format', $originalFormat);
+        config()->set('docs.types.invoice.numbering.prefix', $originalPrefix);
     }
 });
 

@@ -1,0 +1,48 @@
+providers:
+  - Laravel\Boost\BoostServiceProvider
+  - AIArmada\Cart\CartServiceProvider
+  - AIArmada\Chip\ChipServiceProvider
+  - AIArmada\CashierChip\CashierChipServiceProvider
+  # Note: AIArmada\Cashier\CashierServiceProvider conflicts with CashierChip (both add chip_id column)
+  # - AIArmada\Cashier\CashierServiceProvider
+  - AIArmada\Docs\DocsServiceProvider
+  - AIArmada\Jnt\JntServiceProvider
+  - AIArmada\Stock\StockServiceProvider
+  - AIArmada\Vouchers\VoucherServiceProvider
+  - AIArmada\FilamentCart\FilamentCartServiceProvider
+  - AIArmada\FilamentChip\FilamentChipServiceProvider
+  - AIArmada\FilamentVouchers\FilamentVouchersServiceProvider
+
+env:
+  - DB_CONNECTION=sqlite
+  - DB_DATABASE=database/database.sqlite
+  - CACHE_STORE=file
+
+migrations:
+  - packages/cart/database/migrations
+  # Note: packages/cashier/database/migrations conflicts with cashier-chip (both add chip_id column)
+  # Use cashier-chip migrations instead which has full CHIP support
+  - packages/cashier-chip/database/migrations
+  - packages/chip/database/migrations
+  - packages/docs/database/migrations
+  - packages/jnt/database/migrations
+  - packages/stock/database/migrations
+  - packages/vouchers/database/migrations
+
+workbench:
+  start: '/'
+  health: false
+  auth: true
+  discovers:
+    web: true
+    api: true
+    commands: true
+    components: false
+    factories: true
+    views: true
+  build:
+    - purge-skeleton
+    - create-sqlite-db
+    - db-wipe
+    - migrate:fresh
+  sync: []

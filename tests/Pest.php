@@ -22,6 +22,9 @@ pest()->extend(TestCase::class)->in(
     'src/Vouchers',
 );
 
+// CashierChip tests use their own CashierChipTestCase via uses() in each test file
+// Cashier (unified) tests use their own CashierTestCase via uses() in each test file
+
 /*
 |--------------------------------------------------------------------------
 | Expectations

@@ -18,6 +18,7 @@ return new class extends Migration
             $table->json('conditions')->nullable();
             $table->json('metadata')->nullable();
             $table->bigInteger('version')->default(1)->index();
+            $table->timestamp('expires_at')->nullable()->index();
             $table->timestamps();
 
             $table->unique(['identifier', 'instance']);
