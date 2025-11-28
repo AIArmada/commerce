@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Contracts\Payment;
 
+use AIArmada\CommerceSupport\Exceptions\PaymentGatewayException;
 use Akaunting\Money\Money;
 
 /**
