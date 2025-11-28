@@ -18,5 +18,5 @@ Use `--parallel` flag to speed up test execution:
 ./vendor/bin/phpunit package.xml --coverage
 ```
 
-- All packages must achieve **minimum 85% coverage**.
+- All non filament packages must achieve **minimum 85% coverage**.
 - Verify with `./vendor/bin/pest --coverage --min=85` for workspace-wide checks when applicable.

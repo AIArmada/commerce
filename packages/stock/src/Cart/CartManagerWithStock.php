@@ -10,6 +10,8 @@ use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Stock\Services\StockReservationService;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Model;
+use ReflectionClass;
+use RuntimeException;
 
 /**
  * Extends CartManager with stock-aware functionality.
@@ -35,7 +37,7 @@ final class CartManagerWithStock extends CartManager
      */
     public static function fromCartManager(CartManager $manager): self
     {
-        $reflection = new \ReflectionClass($manager);
+        $reflection = new ReflectionClass($manager);
 
         // Extract constructor dependencies from the parent
         $storage = null;
@@ -62,7 +64,7 @@ final class CartManagerWithStock extends CartManager
         }
 
         if ($storage === null) {
-            throw new \RuntimeException('Cannot create CartManagerWithStock: storage is required');
+            throw new RuntimeException('Cannot create CartManagerWithStock: storage is required');
         }
 
         $instance = new self($storage, $events, $eventsEnabled, $conditionResolver);

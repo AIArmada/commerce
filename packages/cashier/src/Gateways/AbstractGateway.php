@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier\Gateways;
 
-use Akaunting\Money\Money;
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
@@ -15,6 +14,7 @@ use AIArmada\Cashier\Contracts\PaymentContract;
 use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
+use Akaunting\Money\Money;
 use Illuminate\Support\Collection;
 
 /**
@@ -48,80 +48,6 @@ abstract class AbstractGateway implements GatewayContract
     abstract public function name(): string;
 
     /**
-     * Get the gateway display name.
-     */
-    public function displayName(): string
-    {
-        return ucfirst($this->name());
-    }
-
-    /**
-     * Check if the gateway is available.
-     */
-    public function isAvailable(): bool
-    {
-        return true;
-    }
-
-    /**
-     * Get a configuration value.
-     */
-    protected function getConfig(string $key, mixed $default = null): mixed
-    {
-        return data_get($this->config, $key, $default);
-    }
-
-    /**
-     * Get the default currency.
-     */
-    public function currency(): string
-    {
-        return strtoupper($this->getConfig('currency', 'USD'));
-    }
-
-    /**
-     * Get the currency locale for formatting.
-     */
-    public function currencyLocale(): string
-    {
-        return $this->getConfig('currency_locale', $this->getLocale());
-    }
-
-    /**
-     * Format an amount in cents to a displayable string.
-     */
-    public function formatAmount(int $amount, ?string $currency = null): string
-    {
-        $currency = $currency ?? $this->currency();
-
-        return Money::$currency($amount, true)->format($this->getLocale());
-    }
-
-    /**
-     * Get the locale for formatting.
-     */
-    protected function getLocale(): string
-    {
-        return $this->getConfig('locale', config('app.locale', 'en_US'));
-    }
-
-    /**
-     * Determine if the gateway is in test mode.
-     */
-    public function isTestMode(): bool
-    {
-        return (bool) $this->getConfig('test_mode', false);
-    }
-
-    /**
-     * Get the webhook secret.
-     */
-    public function webhookSecret(): ?string
-    {
-        return $this->getConfig('webhook_secret');
-    }
-
-    /**
      * Verify a webhook signature.
      *
      * @param  array<string, mixed>  $headers
@@ -133,45 +59,8 @@ abstract class AbstractGateway implements GatewayContract
      *
      * @param  array<string, mixed>  $payload
      * @param  array<string, mixed>  $headers
-     * @return mixed
      */
     abstract public function handleWebhook(array $payload, array $headers = []): mixed;
-
-    /**
-     * Get the billable model class.
-     *
-     * @return class-string
-     */
-    protected function billableModel(): string
-    {
-        return $this->getConfig('model', config('cashier.models.billable', 'App\\Models\\User'));
-    }
-
-    /**
-     * Find a billable by gateway customer ID.
-     */
-    public function findBillable(string $gatewayId): ?BillableContract
-    {
-        $model = $this->billableModel();
-
-        return $model::where($this->gatewayIdColumn(), $gatewayId)->first();
-    }
-
-    /**
-     * Get the gateway ID column name.
-     */
-    protected function gatewayIdColumn(): string
-    {
-        return $this->name().'_id';
-    }
-
-    /**
-     * Create a new subscription builder.
-     */
-    public function newSubscription(BillableContract $billable, string $type, string|array $prices = []): SubscriptionBuilderContract
-    {
-        return $this->subscription($billable, $type, $prices);
-    }
 
     /**
      * Create a new subscription builder (alias).
@@ -204,25 +93,9 @@ abstract class AbstractGateway implements GatewayContract
     abstract public function retrievePayment(string $paymentId): ?PaymentContract;
 
     /**
-     * Find a payment by ID.
-     */
-    public function findPayment(string $paymentId): ?PaymentContract
-    {
-        return $this->retrievePayment($paymentId);
-    }
-
-    /**
      * Retrieve an invoice.
      */
     abstract public function retrieveInvoice(string $invoiceId): ?InvoiceContract;
-
-    /**
-     * Find an invoice for a billable.
-     */
-    public function findInvoice(BillableContract $billable, string $invoiceId): ?InvoiceContract
-    {
-        return $this->retrieveInvoice($invoiceId);
-    }
 
     /**
      * Get all subscriptions for a customer.
@@ -290,4 +163,130 @@ abstract class AbstractGateway implements GatewayContract
      * Get the underlying gateway client.
      */
     abstract public function client(): mixed;
+
+    /**
+     * Get the gateway display name.
+     */
+    final public function displayName(): string
+    {
+        return ucfirst($this->name());
+    }
+
+    /**
+     * Check if the gateway is available.
+     */
+    final public function isAvailable(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Get the default currency.
+     */
+    final public function currency(): string
+    {
+        return mb_strtoupper($this->getConfig('currency', 'USD'));
+    }
+
+    /**
+     * Get the currency locale for formatting.
+     */
+    final public function currencyLocale(): string
+    {
+        return $this->getConfig('currency_locale', $this->getLocale());
+    }
+
+    /**
+     * Format an amount in cents to a displayable string.
+     */
+    final public function formatAmount(int $amount, ?string $currency = null): string
+    {
+        $currency = $currency ?? $this->currency();
+
+        return Money::$currency($amount, true)->format($this->getLocale());
+    }
+
+    /**
+     * Determine if the gateway is in test mode.
+     */
+    final public function isTestMode(): bool
+    {
+        return (bool) $this->getConfig('test_mode', false);
+    }
+
+    /**
+     * Get the webhook secret.
+     */
+    final public function webhookSecret(): ?string
+    {
+        return $this->getConfig('webhook_secret');
+    }
+
+    /**
+     * Find a billable by gateway customer ID.
+     */
+    final public function findBillable(string $gatewayId): ?BillableContract
+    {
+        $model = $this->billableModel();
+
+        return $model::where($this->gatewayIdColumn(), $gatewayId)->first();
+    }
+
+    /**
+     * Create a new subscription builder.
+     */
+    final public function newSubscription(BillableContract $billable, string $type, string|array $prices = []): SubscriptionBuilderContract
+    {
+        return $this->subscription($billable, $type, $prices);
+    }
+
+    /**
+     * Find a payment by ID.
+     */
+    final public function findPayment(string $paymentId): ?PaymentContract
+    {
+        return $this->retrievePayment($paymentId);
+    }
+
+    /**
+     * Find an invoice for a billable.
+     */
+    final public function findInvoice(BillableContract $billable, string $invoiceId): ?InvoiceContract
+    {
+        return $this->retrieveInvoice($invoiceId);
+    }
+
+    /**
+     * Get a configuration value.
+     */
+    protected function getConfig(string $key, mixed $default = null): mixed
+    {
+        return data_get($this->config, $key, $default);
+    }
+
+    /**
+     * Get the locale for formatting.
+     */
+    protected function getLocale(): string
+    {
+        return $this->getConfig('locale', config('app.locale', 'en_US'));
+    }
+
+    /**
+     * Get the billable model class.
+     *
+     * @return class-string
+     */
+    protected function billableModel(): string
+    {
+        return $this->getConfig('model', config('cashier.models.billable', 'App\\Models\\User'));
+    }
+
+    /**
+     * Get the gateway ID column name.
+     */
+    protected function gatewayIdColumn(): string
+    {
+        return $this->name().'_id';
+    }
 }

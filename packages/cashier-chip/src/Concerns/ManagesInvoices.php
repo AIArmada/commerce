@@ -6,6 +6,7 @@ namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\CashierChip;
 use AIArmada\CashierChip\Invoice;
+use Exception;
 use Illuminate\Support\Collection;
 
 trait ManagesInvoices
@@ -13,7 +14,7 @@ trait ManagesInvoices
     /**
      * Get all of the invoices for the Billable model.
      *
-     * @return \Illuminate\Support\Collection<int, \AIArmada\CashierChip\Invoice>
+     * @return Collection<int, Invoice>
      */
     public function invoices(): Collection
     {
@@ -35,7 +36,7 @@ trait ManagesInvoices
     /**
      * Get all of the invoices for the Billable model, including pending.
      *
-     * @return \Illuminate\Support\Collection<int, \AIArmada\CashierChip\Invoice>
+     * @return Collection<int, Invoice>
      */
     public function invoicesIncludingPending(): Collection
     {
@@ -51,7 +52,7 @@ trait ManagesInvoices
             $purchase = CashierChip::chip()->getPurchase($invoiceId);
 
             return new Invoice($this, $purchase);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return null;
         }
     }
@@ -99,7 +100,7 @@ trait ManagesInvoices
         $tabs = $this->tabs ?? [];
 
         if (empty($tabs)) {
-            throw new \Exception('No items to invoice.');
+            throw new Exception('No items to invoice.');
         }
 
         $builder = CashierChip::chip()->purchase()

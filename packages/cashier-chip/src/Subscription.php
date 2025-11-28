@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AIArmada\CashierChip;
 
 use Carbon\Carbon;
@@ -11,7 +13,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Collection;
 use InvalidArgumentException;
 use LogicException;
 
@@ -21,19 +22,26 @@ use LogicException;
  * Unlike Stripe, CHIP doesn't have native subscription management.
  * This model manages subscriptions locally with CHIP recurring tokens for payment.
  *
- * @property \AIArmada\CashierChip\Billable&\Illuminate\Database\Eloquent\Model $owner
+ * @property Billable&Model $owner
  */
 class Subscription extends Model
 {
     use HasFactory;
 
     public const STATUS_ACTIVE = 'active';
+
     public const STATUS_CANCELED = 'canceled';
+
     public const STATUS_INCOMPLETE = 'incomplete';
+
     public const STATUS_INCOMPLETE_EXPIRED = 'incomplete_expired';
+
     public const STATUS_PAST_DUE = 'past_due';
+
     public const STATUS_TRIALING = 'trialing';
+
     public const STATUS_UNPAID = 'unpaid';
+
     public const STATUS_PAUSED = 'paused';
 
     /**
@@ -71,8 +79,6 @@ class Subscription extends Model
 
     /**
      * Get the user that owns the subscription.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function user(): BelongsTo
     {
@@ -81,8 +87,6 @@ class Subscription extends Model
 
     /**
      * Get the model related to the subscription.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function owner(): BelongsTo
     {
@@ -93,8 +97,6 @@ class Subscription extends Model
 
     /**
      * Get the subscription items related to the subscription.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\HasMany
      */
     public function items(): HasMany
     {
@@ -103,8 +105,6 @@ class Subscription extends Model
 
     /**
      * Determine if the subscription has multiple prices.
-     *
-     * @return bool
      */
     public function hasMultiplePrices(): bool
     {
@@ -113,8 +113,6 @@ class Subscription extends Model
 
     /**
      * Determine if the subscription has a single price.
-     *
-     * @return bool
      */
     public function hasSinglePrice(): bool
     {
@@ -123,9 +121,6 @@ class Subscription extends Model
 
     /**
      * Determine if the subscription has a specific product.
-     *
-     * @param  string  $product
-     * @return bool
      */
     public function hasProduct(string $product): bool
     {
@@ -136,9 +131,6 @@ class Subscription extends Model
 
     /**
      * Determine if the subscription has a specific price.
-     *
-     * @param  string  $price
-     * @return bool
      */
     public function hasPrice(string $price): bool
     {
@@ -154,8 +146,6 @@ class Subscription extends Model
     /**
      * Get the subscription item for the given price.
      *
-     * @param  string  $price
-     * @return \AIArmada\CashierChip\SubscriptionItem
      *
      * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
@@ -166,8 +156,6 @@ class Subscription extends Model
 
     /**
      * Determine if the subscription is active, on trial, or within its grace period.
-     *
-     * @return bool
      */
     public function valid(): bool
     {
@@ -176,8 +164,6 @@ class Subscription extends Model
 
     /**
      * Determine if the subscription is incomplete.
-     *
-     * @return bool
      */
     public function incomplete(): bool
     {
@@ -188,7 +174,6 @@ class Subscription extends Model
      * Filter query by incomplete.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return void
      */
     public function scopeIncomplete(Builder $query): void
     {
@@ -197,8 +182,6 @@ class Subscription extends Model
 
     /**
      * Determine if the subscription is past due.
-     *
-     * @return bool
      */
     public function pastDue(): bool
     {
@@ -209,7 +192,6 @@ class Subscription extends Model
      * Filter query by past due.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return void
      */
     public function scopePastDue(Builder $query): void
     {
@@ -218,8 +200,6 @@ class Subscription extends Model
 
     /**
      * Determine if the subscription is active.
-     *
-     * @return bool
      */
     public function active(): bool
     {
@@ -234,13 +214,12 @@ class Subscription extends Model
      * Filter query by active.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return void
      */
     public function scopeActive(Builder $query): void
     {
-        $query->where(function ($query) {
+        $query->where(function ($query): void {
             $query->whereNull('ends_at')
-                ->orWhere(function ($query) {
+                ->orWhere(function ($query): void {
                     $query->onGracePeriod();
                 });
         })->where('chip_status', '!=', self::STATUS_INCOMPLETE_EXPIRED)
@@ -257,8 +236,6 @@ class Subscription extends Model
 
     /**
      * Determine if the subscription is recurring and not on trial.
-     *
-     * @return bool
      */
     public function recurring(): bool
     {
@@ -269,7 +246,6 @@ class Subscription extends Model
      * Filter query by recurring.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return void
      */
     public function scopeRecurring(Builder $query): void
     {
@@ -278,8 +254,6 @@ class Subscription extends Model
 
     /**
      * Determine if the subscription is no longer active.
-     *
-     * @return bool
      */
     public function canceled(): bool
     {
@@ -290,7 +264,6 @@ class Subscription extends Model
      * Filter query by canceled.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return void
      */
     public function scopeCanceled(Builder $query): void
     {
@@ -301,7 +274,6 @@ class Subscription extends Model
      * Filter query by not canceled.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return void
      */
     public function scopeNotCanceled(Builder $query): void
     {
@@ -310,8 +282,6 @@ class Subscription extends Model
 
     /**
      * Determine if the subscription has ended and the grace period has expired.
-     *
-     * @return bool
      */
     public function ended(): bool
     {
@@ -322,7 +292,6 @@ class Subscription extends Model
      * Filter query by ended.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return void
      */
     public function scopeEnded(Builder $query): void
     {
@@ -331,8 +300,6 @@ class Subscription extends Model
 
     /**
      * Determine if the subscription is within its trial period.
-     *
-     * @return bool
      */
     public function onTrial(): bool
     {
@@ -343,7 +310,6 @@ class Subscription extends Model
      * Filter query by on trial.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return void
      */
     public function scopeOnTrial(Builder $query): void
     {
@@ -352,8 +318,6 @@ class Subscription extends Model
 
     /**
      * Determine if the subscription's trial has expired.
-     *
-     * @return bool
      */
     public function hasExpiredTrial(): bool
     {
@@ -364,7 +328,6 @@ class Subscription extends Model
      * Filter query by expired trial.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return void
      */
     public function scopeExpiredTrial(Builder $query): void
     {
@@ -375,7 +338,6 @@ class Subscription extends Model
      * Filter query by not on trial.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return void
      */
     public function scopeNotOnTrial(Builder $query): void
     {
@@ -384,8 +346,6 @@ class Subscription extends Model
 
     /**
      * Determine if the subscription is within its grace period after cancellation.
-     *
-     * @return bool
      */
     public function onGracePeriod(): bool
     {
@@ -396,7 +356,6 @@ class Subscription extends Model
      * Filter query by on grace period.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return void
      */
     public function scopeOnGracePeriod(Builder $query): void
     {
@@ -407,7 +366,6 @@ class Subscription extends Model
      * Filter query by not on grace period.
      *
      * @param  \Illuminate\Database\Eloquent\Builder  $query
-     * @return void
      */
     public function scopeNotOnGracePeriod(Builder $query): void
     {
@@ -417,8 +375,6 @@ class Subscription extends Model
     /**
      * Increment the quantity of the subscription.
      *
-     * @param  int  $count
-     * @param  string|null  $price
      * @return $this
      */
     public function incrementQuantity(int $count = 1, ?string $price = null)
@@ -439,8 +395,6 @@ class Subscription extends Model
     /**
      * Decrement the quantity of the subscription.
      *
-     * @param  int  $count
-     * @param  string|null  $price
      * @return $this
      */
     public function decrementQuantity(int $count = 1, ?string $price = null)
@@ -461,8 +415,6 @@ class Subscription extends Model
     /**
      * Update the quantity of the subscription.
      *
-     * @param  int  $quantity
-     * @param  string|null  $price
      * @return $this
      */
     public function updateQuantity(int $quantity, ?string $price = null)
@@ -524,7 +476,6 @@ class Subscription extends Model
     /**
      * Extend an existing subscription's trial period.
      *
-     * @param  \Carbon\CarbonInterface  $date
      * @return $this
      */
     public function extendTrial(CarbonInterface $date)
@@ -542,8 +493,6 @@ class Subscription extends Model
     /**
      * Swap the subscription to new prices.
      *
-     * @param  string|array  $prices
-     * @param  array  $options
      * @return $this
      */
     public function swap(string|array $prices, array $options = [])
@@ -609,7 +558,6 @@ class Subscription extends Model
     /**
      * Cancel the subscription at a specific moment in time.
      *
-     * @param  \DateTimeInterface|int  $endsAt
      * @return $this
      */
     public function cancelAt(DateTimeInterface|int $endsAt)
@@ -641,7 +589,6 @@ class Subscription extends Model
     /**
      * Mark the subscription as canceled.
      *
-     * @return void
      *
      * @internal
      */
@@ -658,7 +605,7 @@ class Subscription extends Model
      *
      * @return $this
      *
-     * @throws \LogicException
+     * @throws LogicException
      */
     public function resume()
     {
@@ -679,9 +626,6 @@ class Subscription extends Model
 
     /**
      * Get the current period start date for the subscription.
-     *
-     * @param  \DateTimeZone|string|int|null  $timezone
-     * @return \Carbon\CarbonInterface|null
      */
     public function currentPeriodStart(DateTimeZone|string|int|null $timezone = null): ?CarbonInterface
     {
@@ -698,9 +642,6 @@ class Subscription extends Model
 
     /**
      * Get the current period end date for the subscription.
-     *
-     * @param  \DateTimeZone|string|int|null  $timezone
-     * @return \Carbon\CarbonInterface|null
      */
     public function currentPeriodEnd(DateTimeZone|string|int|null $timezone = null): ?CarbonInterface
     {
@@ -714,8 +655,7 @@ class Subscription extends Model
     /**
      * Charge the subscription using the default payment method (recurring token).
      *
-     * @param  int|null  $amount
-     * @return \AIArmada\CashierChip\Payment
+     * @return Payment
      */
     public function charge(?int $amount = null)
     {
@@ -731,23 +671,7 @@ class Subscription extends Model
     }
 
     /**
-     * Calculate the total subscription amount based on items.
-     *
-     * @return int
-     */
-    protected function calculateSubscriptionAmount(): int
-    {
-        // This should be implemented based on your pricing logic
-        // For now, return a default value that should be overridden
-        return $this->items->sum(function ($item) {
-            return ($item->unit_amount ?? 0) * ($item->quantity ?? 1);
-        });
-    }
-
-    /**
      * Get the recurring token (payment method) for this subscription.
-     *
-     * @return string|null
      */
     public function recurringToken(): ?string
     {
@@ -757,7 +681,6 @@ class Subscription extends Model
     /**
      * Set the recurring token for this subscription.
      *
-     * @param  string  $token
      * @return $this
      */
     public function setRecurringToken(string $token)
@@ -770,8 +693,6 @@ class Subscription extends Model
 
     /**
      * Determine if the subscription has an incomplete payment.
-     *
-     * @return bool
      */
     public function hasIncompletePayment(): bool
     {
@@ -781,14 +702,13 @@ class Subscription extends Model
     /**
      * Make sure a subscription is not incomplete when performing changes.
      *
-     * @return void
      *
-     * @throws \AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure
+     * @throws Exceptions\SubscriptionUpdateFailure
      */
     public function guardAgainstIncomplete(): void
     {
         if ($this->incomplete()) {
-            throw new \AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure(
+            throw new Exceptions\SubscriptionUpdateFailure(
                 'Cannot update an incomplete subscription.'
             );
         }
@@ -797,9 +717,8 @@ class Subscription extends Model
     /**
      * Make sure a price argument is provided when the subscription is a subscription with multiple prices.
      *
-     * @return void
      *
-     * @throws \InvalidArgumentException
+     * @throws InvalidArgumentException
      */
     public function guardAgainstMultiplePrices(): void
     {
@@ -808,5 +727,17 @@ class Subscription extends Model
                 'This method requires a price argument since the subscription has multiple prices.'
             );
         }
+    }
+
+    /**
+     * Calculate the total subscription amount based on items.
+     */
+    protected function calculateSubscriptionAmount(): int
+    {
+        // This should be implemented based on your pricing logic
+        // For now, return a default value that should be overridden
+        return $this->items->sum(function ($item) {
+            return ($item->unit_amount ?? 0) * ($item->quantity ?? 1);
+        });
     }
 }

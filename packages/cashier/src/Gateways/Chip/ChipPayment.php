@@ -180,7 +180,7 @@ class ChipPayment implements PaymentContract
         }
 
         // Requires redirect if created/pending and has checkout URL
-        return in_array($this->payment->status, ['created', 'viewed']) 
+        return in_array($this->payment->status, ['created', 'viewed'])
             && ! empty($this->payment->checkout_url);
     }
 
@@ -203,6 +203,7 @@ class ChipPayment implements PaymentContract
     {
         if ($this->payment instanceof Payment) {
             $purchase = $this->payment->purchase;
+
             return $purchase?->invoice_url ?? null;
         }
 

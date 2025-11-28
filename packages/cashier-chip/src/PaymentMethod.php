@@ -1,16 +1,18 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AIArmada\CashierChip;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use JsonSerializable;
-use LogicException;
+use ReturnTypeWillChange;
 
 /**
  * CHIP Payment Method (Recurring Token) wrapper class.
  *
- * CHIP uses "Recurring Token" for saved payment methods, 
+ * CHIP uses "Recurring Token" for saved payment methods,
  * similar to Stripe's PaymentMethod.
  */
 class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
@@ -18,14 +20,12 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
     /**
      * The owner of the payment method.
      *
-     * @var \AIArmada\CashierChip\Billable|\Illuminate\Database\Eloquent\Model
+     * @var Billable|\Illuminate\Database\Eloquent\Model
      */
     protected $owner;
 
     /**
      * The CHIP recurring token data.
-     *
-     * @var array
      */
     protected array $recurringToken;
 
@@ -43,9 +43,17 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
-     * Get the recurring token ID.
+     * Dynamically get values from the recurring token data.
      *
-     * @return string|null
+     * @return mixed
+     */
+    public function __get(string $key)
+    {
+        return $this->recurringToken[$key] ?? null;
+    }
+
+    /**
+     * Get the recurring token ID.
      */
     public function id(): ?string
     {
@@ -54,8 +62,6 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Get the card brand (if available).
-     *
-     * @return string|null
      */
     public function brand(): ?string
     {
@@ -64,8 +70,6 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Get the last four digits of the card (if available).
-     *
-     * @return string|null
      */
     public function lastFour(): ?string
     {
@@ -74,8 +78,6 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Get the expiration month (if available).
-     *
-     * @return int|null
      */
     public function expirationMonth(): ?int
     {
@@ -84,8 +86,6 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Get the expiration year (if available).
-     *
-     * @return int|null
      */
     public function expirationYear(): ?int
     {
@@ -94,8 +94,6 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Get the type of payment method.
-     *
-     * @return string
      */
     public function type(): string
     {
@@ -104,8 +102,6 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Determine if this is the default payment method.
-     *
-     * @return bool
      */
     public function isDefault(): bool
     {
@@ -116,8 +112,6 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Delete the payment method.
-     *
-     * @return void
      */
     public function delete(): void
     {
@@ -136,8 +130,6 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Get the underlying recurring token data.
-     *
-     * @return array
      */
     public function asChipRecurringToken(): array
     {
@@ -146,8 +138,6 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Get the instance as an array.
-     *
-     * @return array
      */
     public function toArray(): array
     {
@@ -158,7 +148,6 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
      * Convert the object to its JSON representation.
      *
      * @param  int  $options
-     * @return string
      */
     public function toJson($options = 0): string
     {
@@ -167,23 +156,10 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Convert the object into something JSON serializable.
-     *
-     * @return array
      */
-    #[\ReturnTypeWillChange]
+    #[ReturnTypeWillChange]
     public function jsonSerialize(): array
     {
         return $this->toArray();
-    }
-
-    /**
-     * Dynamically get values from the recurring token data.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function __get(string $key)
-    {
-        return $this->recurringToken[$key] ?? null;
     }
 }

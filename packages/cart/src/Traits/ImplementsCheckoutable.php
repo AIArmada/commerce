@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Traits;
 
-use AIArmada\Cart\Models\CartItem;
 use AIArmada\CommerceSupport\Contracts\Payment\LineItemInterface;
 use Akaunting\Money\Money;
 

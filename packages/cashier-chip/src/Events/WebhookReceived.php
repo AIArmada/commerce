@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AIArmada\CashierChip\Events;
 
 use Illuminate\Foundation\Events\Dispatchable;
@@ -11,15 +13,12 @@ class WebhookReceived
 
     /**
      * The webhook payload.
-     *
-     * @var array
      */
     public array $payload;
 
     /**
      * Create a new event instance.
      *
-     * @param  array  $payload
      * @return void
      */
     public function __construct(array $payload)

@@ -209,7 +209,7 @@ describe('ChipPaymentIntent', function (): void {
             $purchase = Purchase::fromArray($data);
             $intent = new ChipPaymentIntent($purchase);
 
-            expect($intent->getCreatedAt())->toBeInstanceOf(\DateTimeInterface::class);
+            expect($intent->getCreatedAt())->toBeInstanceOf(DateTimeInterface::class);
         });
 
         it('returns updated at timestamp', function (): void {
@@ -218,7 +218,7 @@ describe('ChipPaymentIntent', function (): void {
             $purchase = Purchase::fromArray($data);
             $intent = new ChipPaymentIntent($purchase);
 
-            expect($intent->getUpdatedAt())->toBeInstanceOf(\DateTimeInterface::class);
+            expect($intent->getUpdatedAt())->toBeInstanceOf(DateTimeInterface::class);
         });
     });
 

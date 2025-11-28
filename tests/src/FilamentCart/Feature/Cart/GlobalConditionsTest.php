@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Facades\Cart as CartFacade;
 use AIArmada\FilamentCart\Models\CartCondition as SnapshotCondition;
-use AIArmada\FilamentCart\Models\Condition;
+use AIArmada\Cart\Models\Condition;
 
 it('applies active global conditions to new carts', function (): void {
     Condition::factory()->create([

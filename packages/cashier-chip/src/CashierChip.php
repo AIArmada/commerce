@@ -19,11 +19,6 @@ class CashierChip
     public const VERSION = '1.0.0';
 
     /**
-     * The custom currency formatter.
-     */
-    protected static $formatCurrencyUsing;
-
-    /**
      * Indicates if Cashier routes will be registered.
      */
     public static bool $registersRoutes = true;
@@ -54,6 +49,11 @@ class CashierChip
     public static string $subscriptionItemModel = SubscriptionItem::class;
 
     /**
+     * The custom currency formatter.
+     */
+    protected static $formatCurrencyUsing;
+
+    /**
      * The fake CHIP service for testing.
      */
     protected static ?FakeChipCollectService $fakeChip = null;
@@ -66,7 +66,7 @@ class CashierChip
     /**
      * Get the customer instance by its CHIP ID.
      *
-     * @return \AIArmada\CashierChip\Billable|null
+     * @return Billable|null
      */
     public static function findBillable(?string $chipId)
     {
@@ -85,8 +85,6 @@ class CashierChip
 
     /**
      * Get the CHIP Collect service client.
-     *
-     * @return \AIArmada\Chip\Services\ChipCollectService|\AIArmada\CashierChip\Testing\FakeChipCollectService
      */
     public static function chip(): ChipCollectService|FakeChipCollectService
     {
@@ -99,8 +97,6 @@ class CashierChip
 
     /**
      * Enable fake CHIP client for testing.
-     *
-     * @return \AIArmada\CashierChip\Testing\FakeChipCollectService
      */
     public static function fake(?FakeChipClient $fakeClient = null): FakeChipCollectService
     {
@@ -112,8 +108,6 @@ class CashierChip
 
     /**
      * Get the fake CHIP service.
-     *
-     * @return \AIArmada\CashierChip\Testing\FakeChipCollectService|null
      */
     public static function getFake(): ?FakeChipCollectService
     {
@@ -166,7 +160,7 @@ class CashierChip
             return call_user_func(static::$formatCurrencyUsing, $amount, $currency, $locale, $options);
         }
 
-        $currency = strtoupper($currency ?? config('cashier-chip.currency', 'MYR'));
+        $currency = mb_strtoupper($currency ?? config('cashier-chip.currency', 'MYR'));
         $locale = $locale ?? config('cashier-chip.currency_locale', 'ms_MY');
 
         // Akaunting\Money expects amount in cents/minor units

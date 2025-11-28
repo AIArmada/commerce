@@ -130,7 +130,7 @@ class StripeCheckout implements CheckoutContract
      */
     public function total(): string
     {
-        return number_format($this->rawTotal() / 100, 2).' '.strtoupper($this->currency());
+        return number_format($this->rawTotal() / 100, 2).' '.mb_strtoupper($this->currency());
     }
 
     /**
@@ -138,7 +138,7 @@ class StripeCheckout implements CheckoutContract
      */
     public function currency(): string
     {
-        return strtoupper($this->session->currency ?? 'USD');
+        return mb_strtoupper($this->session->currency ?? 'USD');
     }
 
     /**

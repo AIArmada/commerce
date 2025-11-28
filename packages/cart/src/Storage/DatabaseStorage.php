@@ -25,18 +25,6 @@ final readonly class DatabaseStorage implements StorageInterface
     ) {}
 
     /**
-     * Calculate the expiration timestamp based on TTL.
-     */
-    private function calculateExpiresAt(): ?string
-    {
-        if ($this->ttl === null) {
-            return null;
-        }
-
-        return now()->addSeconds($this->ttl)->toDateTimeString();
-    }
-
-    /**
      * Retrieve cart items from storage
      *
      * @return array<string, mixed>
@@ -412,6 +400,18 @@ final readonly class DatabaseStorage implements StorageInterface
         }
 
         return now()->isAfter($expiresAt);
+    }
+
+    /**
+     * Calculate the expiration timestamp based on TTL.
+     */
+    private function calculateExpiresAt(): ?string
+    {
+        if ($this->ttl === null) {
+            return null;
+        }
+
+        return now()->addSeconds($this->ttl)->toDateTimeString();
     }
 
     /**

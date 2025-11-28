@@ -8,13 +8,13 @@ use Carbon\Carbon;
 
 uses(CashierTestCase::class);
 
-describe('Multi-Gateway Subscriptions', function () {
-    beforeEach(function () {
+describe('Multi-Gateway Subscriptions', function (): void {
+    beforeEach(function (): void {
         $this->user = $this->createUser();
     });
 
-    describe('creating subscriptions on different gateways', function () {
-        it('can have subscriptions on multiple gateways', function () {
+    describe('creating subscriptions on different gateways', function (): void {
+        it('can have subscriptions on multiple gateways', function (): void {
             $stripeSubscription = $this->createSubscription($this->user, [
                 'type' => 'stripe-plan',
                 'gateway' => 'stripe',
@@ -32,7 +32,7 @@ describe('Multi-Gateway Subscriptions', function () {
                 ->and($chipSubscription->gateway)->toBe('chip');
         });
 
-        it('can filter subscriptions by gateway', function () {
+        it('can filter subscriptions by gateway', function (): void {
             $this->createSubscription($this->user, ['type' => 'plan-a', 'gateway' => 'stripe']);
             $this->createSubscription($this->user, ['type' => 'plan-b', 'gateway' => 'stripe']);
             $this->createSubscription($this->user, ['type' => 'plan-c', 'gateway' => 'chip']);
@@ -44,7 +44,7 @@ describe('Multi-Gateway Subscriptions', function () {
                 ->and($chipSubscriptions)->toHaveCount(1);
         });
 
-        it('resolves correct gateway for subscription operations', function () {
+        it('resolves correct gateway for subscription operations', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'gateway' => 'chip',
                 'gateway_id' => 'sub_chip789',
@@ -54,8 +54,8 @@ describe('Multi-Gateway Subscriptions', function () {
         });
     });
 
-    describe('subscription lifecycle across gateways', function () {
-        it('manages independent subscription states', function () {
+    describe('subscription lifecycle across gateways', function (): void {
+        it('manages independent subscription states', function (): void {
             $stripeSubscription = $this->createSubscription($this->user, [
                 'type' => 'stripe-plan',
                 'gateway' => 'stripe',
@@ -75,7 +75,7 @@ describe('Multi-Gateway Subscriptions', function () {
                 ->and($chipSubscription->onTrial())->toBeTrue();
         });
 
-        it('can cancel subscription on specific gateway', function () {
+        it('can cancel subscription on specific gateway', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'gateway' => 'stripe',
                 'gateway_status' => Subscription::STATUS_ACTIVE,
@@ -89,7 +89,7 @@ describe('Multi-Gateway Subscriptions', function () {
                 ->and($subscription->onGracePeriod())->toBeTrue();
         });
 
-        it('maintains gateway association after operations', function () {
+        it('maintains gateway association after operations', function (): void {
             $subscription = $this->createSubscription($this->user, [
                 'gateway' => 'chip',
                 'trial_ends_at' => Carbon::now()->addDays(7),
@@ -102,8 +102,8 @@ describe('Multi-Gateway Subscriptions', function () {
         });
     });
 
-    describe('querying subscriptions', function () {
-        it('can query active subscriptions across all gateways', function () {
+    describe('querying subscriptions', function (): void {
+        it('can query active subscriptions across all gateways', function (): void {
             $this->createSubscription($this->user, [
                 'type' => 'plan-a',
                 'gateway' => 'stripe',
@@ -130,7 +130,7 @@ describe('Multi-Gateway Subscriptions', function () {
             expect($activeSubscriptions)->toHaveCount(2);
         });
 
-        it('can query subscriptions on trial for specific gateway', function () {
+        it('can query subscriptions on trial for specific gateway', function (): void {
             $this->createSubscription($this->user, [
                 'type' => 'plan-a',
                 'gateway' => 'stripe',
@@ -150,8 +150,8 @@ describe('Multi-Gateway Subscriptions', function () {
         });
     });
 
-    describe('customer ids per gateway', function () {
-        it('stores separate customer ids for each gateway', function () {
+    describe('customer ids per gateway', function (): void {
+        it('stores separate customer ids for each gateway', function (): void {
             $this->user->update([
                 'stripe_id' => 'cus_stripe_abc',
                 'chip_id' => 'cus_chip_xyz',
@@ -161,7 +161,7 @@ describe('Multi-Gateway Subscriptions', function () {
                 ->and($this->user->gatewayId('chip'))->toBe('cus_chip_xyz');
         });
 
-        it('returns null for gateway without customer id', function () {
+        it('returns null for gateway without customer id', function (): void {
             $this->user->update(['stripe_id' => 'cus_stripe_abc']);
 
             expect($this->user->gatewayId('stripe'))->toBe('cus_stripe_abc')

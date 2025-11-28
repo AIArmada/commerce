@@ -6,6 +6,7 @@ namespace AIArmada\FilamentChip\Pages\Billing;
 
 use AIArmada\CashierChip\PaymentMethod;
 use BackedEnum;
+use Exception;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
@@ -26,14 +27,14 @@ class PaymentMethods extends Page
         return __('Payment Methods');
     }
 
-    public function getTitle(): string|Htmlable
-    {
-        return __('Payment Methods');
-    }
-
     public static function shouldRegisterNavigation(): bool
     {
         return (bool) config('filament-chip.billing.features.payment_methods', true);
+    }
+
+    public function getTitle(): string|Htmlable
+    {
+        return __('Payment Methods');
     }
 
     public function getViewData(): array
@@ -45,6 +46,79 @@ class PaymentMethods extends Page
             'paymentMethods' => $this->getPaymentMethods(),
             'defaultPaymentMethod' => $billable?->defaultPaymentMethod(),
         ];
+    }
+
+    public function setAsDefault(string $paymentMethodId): void
+    {
+        $billable = $this->getBillable();
+
+        if (! $billable) {
+            Notification::make()
+                ->title(__('Unable to update payment method'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        try {
+            $billable->updateDefaultPaymentMethod($paymentMethodId);
+
+            Notification::make()
+                ->title(__('Default payment method updated'))
+                ->success()
+                ->send();
+        } catch (Exception $e) {
+            Notification::make()
+                ->title(__('Failed to update default payment method'))
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function deletePaymentMethod(string $paymentMethodId): void
+    {
+        $billable = $this->getBillable();
+
+        if (! $billable) {
+            Notification::make()
+                ->title(__('Unable to delete payment method'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        try {
+            $billable->deletePaymentMethod($paymentMethodId);
+
+            Notification::make()
+                ->title(__('Payment method deleted'))
+                ->success()
+                ->send();
+        } catch (Exception $e) {
+            Notification::make()
+                ->title(__('Failed to delete payment method'))
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function formatCardBrand(string $brand): string
+    {
+        $brands = [
+            'visa' => 'Visa',
+            'mastercard' => 'Mastercard',
+            'amex' => 'American Express',
+            'discover' => 'Discover',
+            'jcb' => 'JCB',
+            'diners' => 'Diners Club',
+            'unionpay' => 'UnionPay',
+        ];
+
+        return $brands[mb_strtolower($brand)] ?? ucfirst($brand);
     }
 
     protected function getBillable(): mixed
@@ -110,78 +184,5 @@ class PaymentMethods extends Page
             'success_url' => $successUrl,
             'cancel_url' => route("filament.{$panelId}.pages.payment-methods"),
         ]);
-    }
-
-    public function setAsDefault(string $paymentMethodId): void
-    {
-        $billable = $this->getBillable();
-
-        if (! $billable) {
-            Notification::make()
-                ->title(__('Unable to update payment method'))
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        try {
-            $billable->updateDefaultPaymentMethod($paymentMethodId);
-
-            Notification::make()
-                ->title(__('Default payment method updated'))
-                ->success()
-                ->send();
-        } catch (\Exception $e) {
-            Notification::make()
-                ->title(__('Failed to update default payment method'))
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
-    }
-
-    public function deletePaymentMethod(string $paymentMethodId): void
-    {
-        $billable = $this->getBillable();
-
-        if (! $billable) {
-            Notification::make()
-                ->title(__('Unable to delete payment method'))
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        try {
-            $billable->deletePaymentMethod($paymentMethodId);
-
-            Notification::make()
-                ->title(__('Payment method deleted'))
-                ->success()
-                ->send();
-        } catch (\Exception $e) {
-            Notification::make()
-                ->title(__('Failed to delete payment method'))
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
-    }
-
-    public function formatCardBrand(string $brand): string
-    {
-        $brands = [
-            'visa' => 'Visa',
-            'mastercard' => 'Mastercard',
-            'amex' => 'American Express',
-            'discover' => 'Discover',
-            'jcb' => 'JCB',
-            'diners' => 'Diners Club',
-            'unionpay' => 'UnionPay',
-        ];
-
-        return $brands[strtolower($brand)] ?? ucfirst($brand);
     }
 }

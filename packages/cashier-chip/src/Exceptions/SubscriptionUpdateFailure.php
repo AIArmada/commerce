@@ -1,24 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AIArmada\CashierChip\Exceptions;
 
-use Exception;
 use AIArmada\CashierChip\Subscription;
+use Exception;
 
 class SubscriptionUpdateFailure extends Exception
 {
     /**
      * The CHIP subscription instance.
-     *
-     * @var \AIArmada\CashierChip\Subscription|null
      */
     public ?Subscription $subscription;
 
     /**
      * Create a new SubscriptionUpdateFailure exception.
      *
-     * @param  string  $message
-     * @param  \AIArmada\CashierChip\Subscription|null  $subscription
      * @return void
      */
     public function __construct(string $message = '', ?Subscription $subscription = null)
@@ -31,7 +29,6 @@ class SubscriptionUpdateFailure extends Exception
     /**
      * Create a new SubscriptionUpdateFailure for an incomplete subscription.
      *
-     * @param  \AIArmada\CashierChip\Subscription  $subscription
      * @return static
      */
     public static function incompleteSubscription(Subscription $subscription)
@@ -45,8 +42,6 @@ class SubscriptionUpdateFailure extends Exception
     /**
      * Create a new SubscriptionUpdateFailure for a duplicate price.
      *
-     * @param  \AIArmada\CashierChip\Subscription  $subscription
-     * @param  string  $price
      * @return static
      */
     public static function duplicatePrice(Subscription $subscription, string $price)
@@ -60,7 +55,6 @@ class SubscriptionUpdateFailure extends Exception
     /**
      * Create a new SubscriptionUpdateFailure for attempting to delete the last price.
      *
-     * @param  \AIArmada\CashierChip\Subscription  $subscription
      * @return static
      */
     public static function cannotDeleteLastPrice(Subscription $subscription)
@@ -73,8 +67,6 @@ class SubscriptionUpdateFailure extends Exception
 
     /**
      * Get the subscription instance if available.
-     *
-     * @return \AIArmada\CashierChip\Subscription|null
      */
     public function subscription(): ?Subscription
     {

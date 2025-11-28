@@ -8,7 +8,7 @@ use AIArmada\Chip\DataObjects\Purchase;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentIntentInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;
 use Akaunting\Money\Money;
-use Carbon\Carbon;
+use DateTimeInterface;
 
 /**
  * Adapter that wraps a CHIP Purchase to implement PaymentIntentInterface.
@@ -97,17 +97,17 @@ final readonly class ChipPaymentIntent implements PaymentIntentInterface
         return 'chip';
     }
 
-    public function getCreatedAt(): \DateTimeInterface
+    public function getCreatedAt(): DateTimeInterface
     {
         return $this->purchase->getCreatedAt();
     }
 
-    public function getUpdatedAt(): \DateTimeInterface
+    public function getUpdatedAt(): DateTimeInterface
     {
         return $this->purchase->getUpdatedAt();
     }
 
-    public function getPaidAt(): ?\DateTimeInterface
+    public function getPaidAt(): ?DateTimeInterface
     {
         return $this->purchase->payment?->getPaidAt();
     }

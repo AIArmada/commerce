@@ -6,6 +6,7 @@ namespace AIArmada\Cashier\Gateways\Chip;
 
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\PaymentMethodContract;
+use Exception;
 
 /**
  * Wrapper for CHIP payment method (recurring token).
@@ -123,7 +124,7 @@ class ChipPaymentMethod implements PaymentMethodContract
             $this->billable->deletePaymentMethod($this->id());
 
             return true;
-        } catch (\Exception) {
+        } catch (Exception) {
             return false;
         }
     }

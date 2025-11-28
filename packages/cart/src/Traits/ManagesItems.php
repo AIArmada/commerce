@@ -202,22 +202,6 @@ trait ManagesItems
     }
 
     /**
-     * Handle cart when it becomes empty based on configured behavior.
-     */
-    private function handleEmptyCart(): void
-    {
-        $behavior = EmptyCartBehavior::tryFrom(
-            config('cart.empty_cart_behavior', 'destroy')
-        ) ?? EmptyCartBehavior::Destroy;
-
-        match ($behavior) {
-            EmptyCartBehavior::Destroy => $this->destroy(),
-            EmptyCartBehavior::Clear => $this->clear(),
-            EmptyCartBehavior::Preserve => null, // Do nothing, keep conditions and metadata
-        };
-    }
-
-    /**
      * Get cart item by ID
      */
     public function get(string|int $id): ?CartItem
@@ -245,6 +229,22 @@ trait ManagesItems
     public function search(callable $callback): CartCollection
     {
         return $this->getItems()->filter($callback);
+    }
+
+    /**
+     * Handle cart when it becomes empty based on configured behavior.
+     */
+    private function handleEmptyCart(): void
+    {
+        $behavior = EmptyCartBehavior::tryFrom(
+            config('cart.empty_cart_behavior', 'destroy')
+        ) ?? EmptyCartBehavior::Destroy;
+
+        match ($behavior) {
+            EmptyCartBehavior::Destroy => $this->destroy(),
+            EmptyCartBehavior::Clear => $this->clear(),
+            EmptyCartBehavior::Preserve => null, // Do nothing, keep conditions and metadata
+        };
     }
 
     /**

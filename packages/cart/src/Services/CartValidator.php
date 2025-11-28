@@ -53,6 +53,18 @@ final class CartValidator
     }
 
     /**
+     * Create with common checkout validation rules.
+     */
+    public static function forCheckout(): self
+    {
+        return self::create()
+            ->requireNonEmpty()
+            ->validateQuantityLimits()
+            ->validatePrices()
+            ->validateAvailability();
+    }
+
+    /**
      * Stop validation on first error encountered.
      */
     public function stopOnFirstError(bool $stop = true): self
@@ -259,18 +271,6 @@ final class CartValidator
         };
 
         return $this;
-    }
-
-    /**
-     * Create with common checkout validation rules.
-     */
-    public static function forCheckout(): self
-    {
-        return self::create()
-            ->requireNonEmpty()
-            ->validateQuantityLimits()
-            ->validatePrices()
-            ->validateAvailability();
     }
 
     /**

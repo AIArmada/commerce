@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier;
 
-use Akaunting\Money\Money;
 use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Models\Subscription;
 use AIArmada\Cashier\Models\SubscriptionItem;
+use Akaunting\Money\Money;
+use Closure;
 
 /**
  * Main Cashier class for multi-gateway payment management.
@@ -40,11 +41,6 @@ class Cashier
     public static bool $deactivateIncomplete = true;
 
     /**
-     * The custom currency formatter.
-     */
-    protected static ?\Closure $formatCurrencyUsing = null;
-
-    /**
      * Indicates if Cashier routes will be registered.
      */
     public static bool $registersRoutes = true;
@@ -53,6 +49,11 @@ class Cashier
      * Indicates if Cashier migrations will be run.
      */
     public static bool $runsMigrations = true;
+
+    /**
+     * The custom currency formatter.
+     */
+    protected static ?Closure $formatCurrencyUsing = null;
 
     /**
      * Get the GatewayManager instance.
@@ -113,7 +114,7 @@ class Cashier
     /**
      * Set a custom currency formatter.
      */
-    public static function formatCurrencyUsing(\Closure $callback): void
+    public static function formatCurrencyUsing(Closure $callback): void
     {
         static::$formatCurrencyUsing = $callback;
     }
@@ -127,7 +128,7 @@ class Cashier
             return (static::$formatCurrencyUsing)($amount, $currency, $locale);
         }
 
-        $currency = strtoupper($currency ?? config('cashier.currency', 'USD'));
+        $currency = mb_strtoupper($currency ?? config('cashier.currency', 'USD'));
         $locale = $locale ?? config('cashier.locale', config('app.locale', 'en'));
 
         return Money::$currency($amount, true)->format($locale);

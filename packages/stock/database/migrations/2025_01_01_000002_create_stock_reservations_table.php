@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('stock_reservations', function (Blueprint $table) {
+        Schema::create('stock_reservations', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuidMorphs('stockable');
             $table->string('cart_id')->index();

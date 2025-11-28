@@ -8,18 +8,20 @@ use AIArmada\CashierChip\CashierChip;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
 use AIArmada\CashierChip\Subscription;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
+use RuntimeException;
 
 /**
  * Command to process subscription renewals for CHIP.
- * 
+ *
  * Since CHIP doesn't have native subscriptions, this command must be
  * scheduled to run periodically (e.g., daily or hourly) to process
  * subscription renewals by charging stored recurring tokens.
- * 
+ *
  * Add to your scheduler in app/Console/Kernel.php:
- * 
+ *
  *     $schedule->command('cashier-chip:renew-subscriptions')->hourly();
  */
 class RenewSubscriptionsCommand extends Command
@@ -56,7 +58,7 @@ class RenewSubscriptionsCommand extends Command
 
         // Get all active subscriptions due for renewal
         $dueDate = now()->subHours($graceHours);
-        
+
         $subscriptions = Subscription::query()
             ->active()
             ->whereNotNull('next_billing_at')
@@ -66,6 +68,7 @@ class RenewSubscriptionsCommand extends Command
 
         if ($subscriptions->isEmpty()) {
             $this->info('No subscriptions due for renewal.');
+
             return self::SUCCESS;
         }
 
@@ -76,43 +79,45 @@ class RenewSubscriptionsCommand extends Command
 
         foreach ($subscriptions as $subscription) {
             $owner = $subscription->owner;
-            
+
             if (! $owner) {
                 $this->warn("Subscription {$subscription->id} has no owner, skipping.");
+
                 continue;
             }
 
             $this->line("Processing: {$subscription->type} for {$owner->chipEmail()}");
 
             if ($dryRun) {
-                $this->info("  → Would charge: " . $this->formatAmount($subscription));
+                $this->info('  → Would charge: '.$this->formatAmount($subscription));
                 $renewed++;
+
                 continue;
             }
 
             try {
                 $payment = $this->chargeSubscription($subscription);
-                
+
                 if ($payment && $payment->isSucceeded()) {
-                    $this->info("  ✓ Renewed successfully");
+                    $this->info('  ✓ Renewed successfully');
                     $renewed++;
-                    
+
                     SubscriptionRenewed::dispatch($subscription, $payment);
                 } else {
-                    $this->error("  ✗ Payment requires action or is pending");
+                    $this->error('  ✗ Payment requires action or is pending');
                     $this->markAsPastDue($subscription);
                     $failed++;
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $this->error("  ✗ Failed: {$e->getMessage()}");
-                Log::error("Subscription renewal failed", [
+                Log::error('Subscription renewal failed', [
                     'subscription_id' => $subscription->id,
                     'error' => $e->getMessage(),
                 ]);
-                
+
                 $this->markAsPastDue($subscription);
                 $failed++;
-                
+
                 SubscriptionRenewalFailed::dispatch($subscription, $e->getMessage());
             }
         }
@@ -132,14 +137,14 @@ class RenewSubscriptionsCommand extends Command
         $recurringToken = $owner->defaultPaymentMethod();
 
         if (! $recurringToken) {
-            throw new \RuntimeException('No payment method available for renewal');
+            throw new RuntimeException('No payment method available for renewal');
         }
 
         // Calculate amount from subscription items or stored price
         $amount = $subscription->calculateSubscriptionAmount();
 
         if ($amount <= 0) {
-            throw new \RuntimeException('Invalid subscription amount');
+            throw new RuntimeException('Invalid subscription amount');
         }
 
         // Charge using the recurring token
@@ -171,7 +176,7 @@ class RenewSubscriptionsCommand extends Command
     {
         $amount = $subscription->calculateSubscriptionAmount();
         $currency = $subscription->owner?->preferredCurrency() ?? 'MYR';
-        
+
         return CashierChip::formatAmount($amount, $currency);
     }
 }

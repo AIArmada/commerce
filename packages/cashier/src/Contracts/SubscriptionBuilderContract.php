@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Contracts;
 
 use Carbon\CarbonInterface;
+use DateTimeInterface;
 
 /**
  * Contract for subscription builders.
@@ -18,8 +19,6 @@ interface SubscriptionBuilderContract
 
     /**
      * Set a price on the subscription.
-     *
-     * @param  string|array  $price
      */
     public function price(string|array $price, ?int $quantity = 1): self;
 
@@ -71,7 +70,7 @@ interface SubscriptionBuilderContract
     /**
      * Anchor the billing cycle to a date.
      */
-    public function anchorBillingCycleOn(\DateTimeInterface|CarbonInterface $date): self;
+    public function anchorBillingCycleOn(DateTimeInterface|CarbonInterface $date): self;
 
     /**
      * Set the coupon/promotion code.

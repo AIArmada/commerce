@@ -13,7 +13,8 @@
   },
   "autoload": {
     "psr-4": {
-      "AIArmada\\Docs\\": "src/"
+      "AIArmada\\Docs\\": "src/",
+      "AIArmada\\Docs\\Database\\Factories\\": "database/factories/"
     }
   },
   "extra": {

@@ -1,6 +1,6 @@
-# J&T Express Webhooks
+# Webhooks
 
-Complete guide to receiving and processing J&T tracking status updates via webhooks.
+Receive real-time tracking status updates from J&T Express.
 
 ## Quick Setup
 
@@ -14,13 +14,7 @@ JNT_WEBHOOK_LOG_PAYLOADS=false  # Enable for debugging only
 
 ### 2. Create Event Listener
 
-```bash
-php artisan make:listener UpdateOrderTracking
-```
-
 ```php
-<?php
-
 namespace App\Listeners;
 
 use App\Models\Order;
@@ -57,28 +51,33 @@ protected $listen = [
 
 ### 4. Configure J&T Dashboard
 
-Set webhook URL in J&T dashboard:
+Set your webhook URL:
+
 ```
 https://yourdomain.com/webhooks/jnt/status
 ```
+
+---
 
 ## Event Data
 
 The `TrackingStatusReceived` event provides:
 
 ```php
-$event->trackingNumber;      // J&T tracking number
-$event->orderId;             // Your order ID
-$event->lastStatus;          // Latest status description
-$event->scanTime;            // Timestamp of update
-$event->allStatuses;         // Array of all status updates
-$event->isDelivered();       // true if delivered
-$event->hasProblem();        // true if issue detected
+$event->trackingNumber;   // J&T tracking number
+$event->orderId;          // Your order ID
+$event->lastStatus;       // Latest status description
+$event->scanTime;         // Timestamp of update
+$event->allStatuses;      // Array of all status updates
+$event->isDelivered();    // true if delivered
+$event->hasProblem();     // true if issue detected
 ```
+
+---
 
 ## Common Patterns
 
-### Send Customer Notifications
+### Customer Notifications
 
 ```php
 class NotifyCustomer
@@ -87,14 +86,16 @@ class NotifyCustomer
     {
         $order = Order::where('tracking_number', $event->trackingNumber)->first();
         
-        if (!$order) return;
+        if (!$order) {
+            return;
+        }
 
-        match(true) {
+        match (true) {
             $event->isDelivered() => 
                 $order->user->notify(new OrderDelivered($order)),
             $event->hasProblem() => 
                 $order->user->notify(new OrderHasProblem($order)),
-            default => null
+            default => null,
         };
     }
 }
@@ -107,11 +108,11 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 
 class ProcessWebhook implements ShouldQueue
 {
-    public $queue = 'webhooks';
+    public string $queue = 'webhooks';
     
     public function handle(TrackingStatusReceived $event): void
     {
-        // Heavy processing here
+        // Heavy processing runs in background
     }
 }
 ```
@@ -136,22 +137,22 @@ class LogTrackingHistory
 }
 ```
 
-## Testing
+---
 
-### Local Testing with Tunnels
+## Testing Locally
+
+### Using Tunnels
 
 ```bash
-# Using Cloudflare Tunnel (recommended)
+# Cloudflare Tunnel
 cloudflared tunnel run your-tunnel
 
-# Or using ngrok
+# Or ngrok
 ngrok http 8000
 
-# Or using Expose
+# Or Expose
 expose share http://localhost:8000
 ```
-
-Configure tunnel URL in J&T dashboard.
 
 ### Manual Testing
 
@@ -167,11 +168,13 @@ curl -X POST https://yourdomain.com/webhooks/jnt/status \
   -d "{\"digest\":\"${SIGNATURE}\",\"bizContent\":${BIZCONTENT}}"
 ```
 
+---
+
 ## Troubleshooting
 
 ### Webhooks Not Received
 
-**Check route:**
+**Check route exists:**
 ```bash
 php artisan route:list | grep jnt
 # Expected: POST | webhooks/jnt/status
@@ -212,11 +215,11 @@ php artisan tinker
 JNT_PRIVATE_KEY=your_key_here
 
 # Wrong
-JNT_PRIVATE_KEY="your_key_here"  # Extra quotes
-JNT_PRIVATE_KEY= your_key_here    # Extra space
+JNT_PRIVATE_KEY="your_key_here"
+JNT_PRIVATE_KEY= your_key_here
 ```
 
-**Clear config after fixing:**
+**Clear config:**
 ```bash
 php artisan config:clear
 ```
@@ -247,57 +250,29 @@ Check logs:
 tail -f storage/logs/laravel.log | grep "J&T"
 ```
 
-### Performance Issues
-
-**Use queued listeners:**
-```php
-class ProcessWebhook implements ShouldQueue
-{
-    // Processing happens in background
-}
-```
-
-**Limit database queries:**
-```php
-// Bad - N+1 queries
-foreach ($event->allStatuses as $status) {
-    TrackingEvent::create($status);
-}
-
-// Good - Bulk insert
-TrackingEvent::insert($event->allStatuses);
-```
+---
 
 ## Security
 
 ### Signature Verification
 
-Automatic signature verification via middleware. To disable (not recommended):
+Automatic via middleware. To disable (not recommended):
 
 ```php
 // config/jnt.php
 'webhooks' => [
-    'verify_signature' => false,  // Not recommended for production
+    'verify_signature' => false,
 ],
 ```
 
 ### IP Whitelisting
 
 ```php
-// bootstrap/app.php
-->withMiddleware(function (Middleware $middleware) {
-    $middleware->web(append: [
-        \App\Http\Middleware\WhitelistJntIPs::class,
-    ]);
-})
-```
-
-```php
 // app/Http/Middleware/WhitelistJntIPs.php
 class WhitelistJntIPs
 {
-    protected $whitelist = [
-        // Add J&T IP addresses from documentation
+    protected array $whitelist = [
+        // Add J&T IP addresses
     ];
 
     public function handle($request, $next)
@@ -312,14 +287,7 @@ class WhitelistJntIPs
 }
 ```
 
-## Best Practices
-
-1. **Always verify signatures** - Don't disable in production
-2. **Use queued listeners** - For heavy processing
-3. **Log webhook payloads** - Only in debugging, contains sensitive data
-4. **Handle idempotency** - Same webhook may be sent multiple times
-5. **Return 200 quickly** - Process in background if needed
-6. **Monitor webhook failures** - Set up alerts for failed webhooks
+---
 
 ## Configuration Reference
 
@@ -334,8 +302,13 @@ class WhitelistJntIPs
 ],
 ```
 
-## Related Documentation
+---
 
-- [README.md](../README.md) - Package overview and basic usage
-- [API_REFERENCE.md](API_REFERENCE.md) - Complete API documentation
-- [BATCH_OPERATIONS.md](BATCH_OPERATIONS.md) - Batch processing guide
+## Best Practices
+
+1. **Always verify signatures** in production
+2. **Use queued listeners** for heavy processing
+3. **Log payloads** only for debugging
+4. **Handle idempotency** – webhooks may be sent multiple times
+5. **Return 200 quickly** – process in background
+6. **Monitor failures** – set up alerts

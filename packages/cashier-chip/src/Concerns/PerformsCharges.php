@@ -9,6 +9,7 @@ use AIArmada\CashierChip\Checkout;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment;
 use AIArmada\Chip\DataObjects\Purchase;
+use Exception;
 
 trait PerformsCharges
 {
@@ -17,7 +18,7 @@ trait PerformsCharges
      *
      * @param  array<string, mixed>  $options
      *
-     * @throws \AIArmada\CashierChip\Exceptions\IncompletePayment
+     * @throws IncompletePayment
      */
     public function charge(int $amount, ?string $recurringToken = null, array $options = []): Payment
     {
@@ -140,7 +141,7 @@ trait PerformsCharges
             $purchase = CashierChip::chip()->getPurchase($id);
 
             return new Payment($purchase);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return null;
         }
     }
@@ -150,7 +151,7 @@ trait PerformsCharges
      *
      * @param  array<string, mixed>  $options
      *
-     * @throws \AIArmada\CashierChip\Exceptions\IncompletePayment
+     * @throws IncompletePayment
      */
     public function chargeWithRecurringToken(int $amount, ?string $recurringToken = null, array $options = []): Payment
     {

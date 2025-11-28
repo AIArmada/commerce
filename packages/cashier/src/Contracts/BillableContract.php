@@ -100,8 +100,6 @@ interface BillableContract
 
     /**
      * Begin a new subscription.
-     *
-     * @param  string|array  $prices
      */
     public function newSubscription(string $type, string|array $prices = [], ?string $gateway = null): SubscriptionBuilderContract;
 
@@ -142,15 +140,11 @@ interface BillableContract
 
     /**
      * Determine if the billable is subscribed to a product.
-     *
-     * @param  string|array  $products
      */
     public function subscribedToProduct(string|array $products, string $type = 'default'): bool;
 
     /**
      * Determine if the billable is subscribed to a price.
-     *
-     * @param  string|array  $prices
      */
     public function subscribedToPrice(string|array $prices, string $type = 'default'): bool;
 
@@ -205,7 +199,6 @@ interface BillableContract
     /**
      * Create a checkout session.
      *
-     * @param  string|array  $items
      * @param  array<string, mixed>  $sessionOptions
      * @param  array<string, mixed>  $customerOptions
      */

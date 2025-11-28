@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AIArmada\CashierChip;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -9,7 +11,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * CHIP Subscription Item Model
  *
- * @property \AIArmada\CashierChip\Subscription|null $subscription
+ * @property Subscription|null $subscription
  */
 class SubscriptionItem extends Model
 {
@@ -41,8 +43,6 @@ class SubscriptionItem extends Model
 
     /**
      * Get the subscription that the item belongs to.
-     *
-     * @return \Illuminate\Database\Eloquent\Relations\BelongsTo
      */
     public function subscription(): BelongsTo
     {
@@ -54,7 +54,6 @@ class SubscriptionItem extends Model
     /**
      * Increment the quantity of the subscription item.
      *
-     * @param  int  $count
      * @return $this
      */
     public function incrementQuantity(int $count = 1)
@@ -67,7 +66,6 @@ class SubscriptionItem extends Model
     /**
      * Decrement the quantity of the subscription item.
      *
-     * @param  int  $count
      * @return $this
      */
     public function decrementQuantity(int $count = 1)
@@ -80,7 +78,6 @@ class SubscriptionItem extends Model
     /**
      * Update the quantity of the subscription item.
      *
-     * @param  int  $quantity
      * @return $this
      */
     public function updateQuantity(int $quantity)
@@ -103,8 +100,6 @@ class SubscriptionItem extends Model
     /**
      * Swap the subscription item to a new price.
      *
-     * @param  string  $price
-     * @param  array  $options
      * @return $this
      */
     public function swap(string $price, array $options = [])
@@ -128,8 +123,6 @@ class SubscriptionItem extends Model
 
     /**
      * Determine if the subscription item is currently within its trial period.
-     *
-     * @return bool
      */
     public function onTrial(): bool
     {
@@ -138,8 +131,6 @@ class SubscriptionItem extends Model
 
     /**
      * Determine if the subscription item is on a grace period after cancellation.
-     *
-     * @return bool
      */
     public function onGracePeriod(): bool
     {
@@ -148,8 +139,6 @@ class SubscriptionItem extends Model
 
     /**
      * Get the total amount for this item (unit_amount * quantity).
-     *
-     * @return int
      */
     public function totalAmount(): int
     {

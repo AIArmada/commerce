@@ -14,6 +14,7 @@ use AIArmada\CommerceSupport\Contracts\Payment\WebhookPayload;
 use AIArmada\CommerceSupport\Exceptions\WebhookVerificationException;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Throwable;
 
 /**
  * CHIP webhook handler implementing the universal WebhookHandlerInterface.
@@ -99,13 +100,13 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
             $purchase = Purchase::fromArray($payload);
 
             return new ChipPaymentIntent($purchase);
-        } catch (\Throwable) {
+        } catch (Throwable) {
             // If parsing fails, try fetching from API
             try {
                 $purchase = $this->collectService->getPurchase($payload['id']);
 
                 return new ChipPaymentIntent($purchase);
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 return null;
             }
         }

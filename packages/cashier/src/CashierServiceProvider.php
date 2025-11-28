@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier;
 
-use Illuminate\Filesystem\Filesystem;
-use Illuminate\Support\Collection;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -35,6 +33,19 @@ class CashierServiceProvider extends ServiceProvider
         $this->registerPublishing();
         $this->registerMigrations();
         $this->registerRoutes();
+    }
+
+    /**
+     * Get the services provided by the provider.
+     *
+     * @return array<string>
+     */
+    public function provides(): array
+    {
+        return [
+            GatewayManager::class,
+            'cashier',
+        ];
     }
 
     /**
@@ -71,18 +82,5 @@ class CashierServiceProvider extends ServiceProvider
         if (Cashier::$registersRoutes) {
             $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
         }
-    }
-
-    /**
-     * Get the services provided by the provider.
-     *
-     * @return array<string>
-     */
-    public function provides(): array
-    {
-        return [
-            GatewayManager::class,
-            'cashier',
-        ];
     }
 }

@@ -146,7 +146,7 @@ class StripeInvoice implements InvoiceContract
      */
     public function currency(): string
     {
-        return strtoupper($this->getStripeInvoice()->currency);
+        return mb_strtoupper($this->getStripeInvoice()->currency);
     }
 
     /**
@@ -258,26 +258,6 @@ class StripeInvoice implements InvoiceContract
     }
 
     /**
-     * Get the Stripe invoice object.
-     */
-    protected function getStripeInvoice(): StripeInvoiceObject
-    {
-        if ($this->invoice instanceof Invoice) {
-            return $this->invoice->asStripeInvoice();
-        }
-
-        return $this->invoice;
-    }
-
-    /**
-     * Format an amount.
-     */
-    protected function formatAmount(int $amount): string
-    {
-        return number_format($amount / 100, 2).' '.strtoupper($this->currency());
-    }
-
-    /**
      * Convert to array.
      *
      * @return array<string, mixed>
@@ -311,5 +291,25 @@ class StripeInvoice implements InvoiceContract
     public function toJson($options = 0): string
     {
         return json_encode($this->toArray(), $options);
+    }
+
+    /**
+     * Get the Stripe invoice object.
+     */
+    protected function getStripeInvoice(): StripeInvoiceObject
+    {
+        if ($this->invoice instanceof Invoice) {
+            return $this->invoice->asStripeInvoice();
+        }
+
+        return $this->invoice;
+    }
+
+    /**
+     * Format an amount.
+     */
+    protected function formatAmount(int $amount): string
+    {
+        return number_format($amount / 100, 2).' '.mb_strtoupper($this->currency());
     }
 }

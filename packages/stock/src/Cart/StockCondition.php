@@ -30,6 +30,47 @@ final class StockCondition implements ConditionInterface
     ) {}
 
     /**
+     * Create from cart items.
+     *
+     * @param  iterable<\AIArmada\Cart\Models\CartItem>  $items
+     */
+    public static function fromCartItems(
+        string $cartId,
+        iterable $items,
+        StockReservationService $reservationService
+    ): self {
+        $condition = new self($cartId);
+        $issues = [];
+
+        foreach ($items as $item) {
+            $model = $item->getAssociatedModel();
+
+            if (! $model instanceof Model) {
+                continue;
+            }
+
+            $availableStock = $reservationService->getAvailableStock($model);
+
+            // Exclude own reservation from availability check
+            $ownReservation = $reservationService->getReservation($model, $cartId);
+
+            if ($ownReservation) {
+                $availableStock += $ownReservation->quantity;
+            }
+
+            if ($availableStock < $item->quantity) {
+                $issues[$item->id] = [
+                    'name' => $item->name,
+                    'requested' => $item->quantity,
+                    'available' => $availableStock,
+                ];
+            }
+        }
+
+        return $condition->setIssues($issues);
+    }
+
+    /**
      * Get condition name.
      */
     public function getName(): string
@@ -134,46 +175,5 @@ final class StockCondition implements ConditionInterface
             order: $this->getOrder(),
             attributes: $this->getAttributes()
         );
-    }
-
-    /**
-     * Create from cart items.
-     *
-     * @param  iterable<\AIArmada\Cart\Models\CartItem>  $items
-     */
-    public static function fromCartItems(
-        string $cartId,
-        iterable $items,
-        StockReservationService $reservationService
-    ): self {
-        $condition = new self($cartId);
-        $issues = [];
-
-        foreach ($items as $item) {
-            $model = $item->getAssociatedModel();
-
-            if (! $model instanceof Model) {
-                continue;
-            }
-
-            $availableStock = $reservationService->getAvailableStock($model);
-
-            // Exclude own reservation from availability check
-            $ownReservation = $reservationService->getReservation($model, $cartId);
-
-            if ($ownReservation) {
-                $availableStock += $ownReservation->quantity;
-            }
-
-            if ($availableStock < $item->quantity) {
-                $issues[$item->id] = [
-                    'name' => $item->name,
-                    'requested' => $item->quantity,
-                    'available' => $availableStock,
-                ];
-            }
-        }
-
-        return $condition->setIssues($issues);
     }
 }

@@ -3,12 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Gateways\ChipGateway;
-use AIArmada\Chip\Gateways\ChipPaymentIntent;
 use AIArmada\Chip\Gateways\ChipWebhookHandler;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\WebhookService;
-use AIArmada\CommerceSupport\Contracts\Payment\CheckoutableInterface;
-use AIArmada\CommerceSupport\Contracts\Payment\CustomerInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentGatewayInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\WebhookHandlerInterface;
 

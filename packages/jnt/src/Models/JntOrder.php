@@ -178,6 +178,20 @@ class JntOrder extends Model
     }
 
     /**
+     * Boot the model and register cascade delete handlers.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (JntOrder $order): void {
+            // Application-level cascade delete
+            $order->items()->delete();
+            $order->parcels()->delete();
+            $order->trackingEvents()->delete();
+            $order->webhookLogs()->update(['order_id' => null]);
+        });
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
@@ -200,19 +214,5 @@ class JntOrder extends Model
             'response_payload' => 'array',
             'metadata' => 'array',
         ];
-    }
-
-    /**
-     * Boot the model and register cascade delete handlers.
-     */
-    protected static function booted(): void
-    {
-        static::deleting(function (JntOrder $order): void {
-            // Application-level cascade delete
-            $order->items()->delete();
-            $order->parcels()->delete();
-            $order->trackingEvents()->delete();
-            $order->webhookLogs()->update(['order_id' => null]);
-        });
     }
 }

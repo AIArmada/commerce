@@ -6,6 +6,7 @@ namespace AIArmada\Cashier\Gateways\Stripe;
 
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\PaymentMethodContract;
+use Exception;
 use Laravel\Cashier\PaymentMethod;
 
 /**
@@ -108,7 +109,7 @@ class StripePaymentMethod implements PaymentMethodContract
             $this->paymentMethod->delete();
 
             return true;
-        } catch (\Exception) {
+        } catch (Exception) {
             return false;
         }
     }

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -12,7 +14,7 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('api')->prefix('cashier')->name('cashier.')->group(function () {
+Route::middleware('api')->prefix('cashier')->name('cashier.')->group(function (): void {
     // Stripe webhooks (if using laravel/cashier, it will register its own routes)
     // Route::post('stripe/webhook', [StripeWebhookController::class, 'handleWebhook'])->name('stripe.webhook');
 

@@ -98,6 +98,6 @@ describe('CleanupExpiredReservationsCommand', function (): void {
         // Verify the command is schedulable
         $command = new CleanupExpiredReservationsCommand();
 
-        expect($command)->toBeInstanceOf(\Illuminate\Console\Command::class);
+        expect($command)->toBeInstanceOf(Illuminate\Console\Command::class);
     });
 });

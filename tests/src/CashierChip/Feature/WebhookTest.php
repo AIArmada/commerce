@@ -2,11 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\CashierChip\CashierChip;
-use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\CashierChip\Events\PaymentFailed;
-use AIArmada\CashierChip\Events\WebhookReceived;
+use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\CashierChip\Events\WebhookHandled;
+use AIArmada\CashierChip\Events\WebhookReceived;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Illuminate\Support\Facades\Event;
@@ -14,19 +13,19 @@ use Illuminate\Support\Facades\Route;
 
 uses(CashierChipTestCase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     Event::fake();
-    
+
     $this->user = $this->createUser([
         'chip_id' => 'test-client-id',
     ]);
-    
+
     // Manually register the webhook route for testing
-    Route::post('/chip/webhook', \AIArmada\CashierChip\Http\Controllers\WebhookController::class)
+    Route::post('/chip/webhook', AIArmada\CashierChip\Http\Controllers\WebhookController::class)
         ->name('cashier-chip.webhook');
 });
 
-it('handles webhook received event', function () {
+it('handles webhook received event', function (): void {
     $payload = [
         'event_type' => 'purchase.paid',
         'purchase' => [
@@ -39,13 +38,13 @@ it('handles webhook received event', function () {
     $response = $this->postJson('/chip/webhook', $payload);
 
     $response->assertStatus(200);
-    
+
     Event::assertDispatched(WebhookReceived::class, function ($event) use ($payload) {
         return $event->payload['event_type'] === $payload['event_type'];
     });
 });
 
-it('handles payment success webhook', function () {
+it('handles payment success webhook', function (): void {
     $payload = [
         'event_type' => 'purchase.paid',
         'purchase' => [
@@ -60,15 +59,15 @@ it('handles payment success webhook', function () {
     $response = $this->postJson('/chip/webhook', $payload);
 
     $response->assertStatus(200);
-    
+
     Event::assertDispatched(PaymentSucceeded::class, function ($event) {
         return $event->billable->id === $this->user->id;
     });
-    
+
     Event::assertDispatched(WebhookHandled::class);
 });
 
-it('handles payment failed webhook', function () {
+it('handles payment failed webhook', function (): void {
     $payload = [
         'event_type' => 'purchase.payment_failure',
         'purchase' => [
@@ -81,13 +80,13 @@ it('handles payment failed webhook', function () {
     $response = $this->postJson('/chip/webhook', $payload);
 
     $response->assertStatus(200);
-    
+
     Event::assertDispatched(PaymentFailed::class, function ($event) {
         return $event->billable->id === $this->user->id;
     });
 });
 
-it('handles purchase completed webhook', function () {
+it('handles purchase completed webhook', function (): void {
     $payload = [
         'event_type' => 'purchase.paid',
         'purchase' => [
@@ -100,16 +99,16 @@ it('handles purchase completed webhook', function () {
     $response = $this->postJson('/chip/webhook', $payload);
 
     $response->assertStatus(200);
-    
+
     Event::assertDispatched(PaymentSucceeded::class);
 });
 
-it('stores recurring token from webhook when no default payment method', function () {
+it('stores recurring token from webhook when no default payment method', function (): void {
     Event::fake([WebhookReceived::class, WebhookHandled::class, PaymentSucceeded::class]);
-    
+
     // User starts without a default payment method
     expect($this->user->default_pm_id)->toBeNull();
-    
+
     $payload = [
         'event_type' => 'purchase.paid',
         'purchase' => [
@@ -127,17 +126,17 @@ it('stores recurring token from webhook when no default payment method', functio
     $response = $this->postJson('/chip/webhook', $payload);
 
     $response->assertStatus(200);
-    
+
     $this->user->refresh();
-    
+
     expect($this->user->default_pm_id)->toBe('new-recurring-token');
     expect($this->user->pm_type)->toBe('Visa');
     expect($this->user->pm_last_four)->toBe('4242');
 });
 
-it('updates subscription on payment success', function () {
+it('updates subscription on payment success', function (): void {
     Event::fake([WebhookReceived::class, WebhookHandled::class, PaymentSucceeded::class]);
-    
+
     // Create a subscription
     $this->user->subscriptions()->create([
         'type' => 'default',
@@ -163,16 +162,16 @@ it('updates subscription on payment success', function () {
     $response = $this->postJson('/chip/webhook', $payload);
 
     $response->assertStatus(200);
-    
+
     $subscription = $this->user->subscription('default');
-    
+
     expect($subscription->chip_status)->toBe(Subscription::STATUS_ACTIVE);
     expect($subscription->next_billing_at)->not->toBeNull();
 });
 
-it('updates subscription to past due on payment failure', function () {
+it('updates subscription to past due on payment failure', function (): void {
     Event::fake([WebhookReceived::class, WebhookHandled::class, PaymentFailed::class]);
-    
+
     // Create a subscription
     $this->user->subscriptions()->create([
         'type' => 'default',
@@ -196,13 +195,13 @@ it('updates subscription to past due on payment failure', function () {
     $response = $this->postJson('/chip/webhook', $payload);
 
     $response->assertStatus(200);
-    
+
     $subscription = $this->user->subscription('default');
-    
+
     expect($subscription->chip_status)->toBe(Subscription::STATUS_PAST_DUE);
 });
 
-it('handles unknown webhook events gracefully', function () {
+it('handles unknown webhook events gracefully', function (): void {
     $payload = [
         'event_type' => 'unknown.event',
         'data' => ['some' => 'data'],
@@ -214,7 +213,7 @@ it('handles unknown webhook events gracefully', function () {
     $response->assertSee('Webhook received');
 });
 
-it('handles missing client id gracefully', function () {
+it('handles missing client id gracefully', function (): void {
     $payload = [
         'event_type' => 'purchase.paid',
         'purchase' => [
@@ -227,11 +226,11 @@ it('handles missing client id gracefully', function () {
     $response = $this->postJson('/chip/webhook', $payload);
 
     $response->assertStatus(200);
-    
+
     Event::assertNotDispatched(PaymentSucceeded::class);
 });
 
-it('handles non-existent billable gracefully', function () {
+it('handles non-existent billable gracefully', function (): void {
     $payload = [
         'event_type' => 'purchase.paid',
         'purchase' => [
@@ -244,6 +243,6 @@ it('handles non-existent billable gracefully', function () {
     $response = $this->postJson('/chip/webhook', $payload);
 
     $response->assertStatus(200);
-    
+
     Event::assertNotDispatched(PaymentSucceeded::class);
 });

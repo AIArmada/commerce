@@ -1,12 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AIArmada\CashierChip;
 
+use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Support\Traits\ForwardsCalls;
 use JsonSerializable;
-use AIArmada\CashierChip\Exceptions\IncompletePayment;
+use ReturnTypeWillChange;
 
 /**
  * CHIP Payment (Purchase) wrapper class.
@@ -21,27 +24,27 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      * The status for a successful purchase.
      */
     public const STATUS_SUCCESS = 'success';
-    
+
     /**
      * The status for a pending purchase.
      */
     public const STATUS_PENDING = 'pending';
-    
+
     /**
      * The status for an expired purchase.
      */
     public const STATUS_EXPIRED = 'expired';
-    
+
     /**
      * The status for a failed purchase.
      */
     public const STATUS_FAILED = 'failed';
-    
+
     /**
      * The status for a cancelled purchase.
      */
     public const STATUS_CANCELLED = 'cancelled';
-    
+
     /**
      * The status for a refunded purchase.
      */
@@ -50,14 +53,12 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     /**
      * The related customer instance.
      *
-     * @var \AIArmada\CashierChip\Billable|null
+     * @var Billable|null
      */
     protected $customer;
 
     /**
      * The CHIP purchase data.
-     *
-     * @var array
      */
     protected array $purchase;
 
@@ -73,9 +74,18 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
-     * Get the purchase ID.
+     * Dynamically get values from the purchase data.
      *
-     * @return string|null
+     * @param  string  $key
+     * @return mixed
+     */
+    public function __get($key)
+    {
+        return $this->purchase[$key] ?? null;
+    }
+
+    /**
+     * Get the purchase ID.
      */
     public function id(): ?string
     {
@@ -84,8 +94,6 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Get the total amount that will be paid.
-     *
-     * @return string
      */
     public function amount(): string
     {
@@ -94,21 +102,17 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Get the raw total amount that will be paid.
-     *
-     * @return int
      */
     public function rawAmount(): int
     {
         // CHIP returns amount in decimal, convert to cents
         $amount = $this->purchase['purchase']['total'] ?? $this->purchase['amount'] ?? 0;
-        
+
         return (int) ($amount * 100);
     }
 
     /**
      * Get the currency.
-     *
-     * @return string
      */
     public function currency(): string
     {
@@ -117,8 +121,6 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Get the checkout URL for completing the payment.
-     *
-     * @return string|null
      */
     public function checkoutUrl(): ?string
     {
@@ -127,8 +129,6 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Get the status of the purchase.
-     *
-     * @return string|null
      */
     public function status(): ?string
     {
@@ -137,8 +137,6 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Determine if the payment is successful.
-     *
-     * @return bool
      */
     public function isSucceeded(): bool
     {
@@ -147,8 +145,6 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Determine if the payment is pending.
-     *
-     * @return bool
      */
     public function isPending(): bool
     {
@@ -157,8 +153,6 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Determine if the payment has expired.
-     *
-     * @return bool
      */
     public function isExpired(): bool
     {
@@ -167,8 +161,6 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Determine if the payment has failed.
-     *
-     * @return bool
      */
     public function isFailed(): bool
     {
@@ -177,8 +169,6 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Determine if the payment was cancelled.
-     *
-     * @return bool
      */
     public function isCancelled(): bool
     {
@@ -187,8 +177,6 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Determine if the payment was refunded.
-     *
-     * @return bool
      */
     public function isRefunded(): bool
     {
@@ -197,8 +185,6 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Determine if the payment requires a redirect to checkout.
-     *
-     * @return bool
      */
     public function requiresRedirect(): bool
     {
@@ -207,8 +193,6 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Get the recurring token from this purchase (if available).
-     *
-     * @return string|null
      */
     public function recurringToken(): ?string
     {
@@ -218,17 +202,18 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     /**
      * Validate if the payment was successful and throw an exception if not.
      *
-     * @return void
      *
-     * @throws \AIArmada\CashierChip\Exceptions\IncompletePayment
+     * @throws IncompletePayment
      */
     public function validate(): void
     {
         if ($this->requiresRedirect()) {
             throw IncompletePayment::requiresRedirect($this);
-        } elseif ($this->isFailed()) {
+        }
+        if ($this->isFailed()) {
             throw IncompletePayment::failed($this);
-        } elseif ($this->isExpired()) {
+        }
+        if ($this->isExpired()) {
             throw IncompletePayment::expired($this);
         }
     }
@@ -236,7 +221,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     /**
      * Retrieve the related customer for the payment if one exists.
      *
-     * @return \AIArmada\CashierChip\Billable|null
+     * @return Billable|null
      */
     public function customer()
     {
@@ -256,7 +241,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     /**
      * Set the customer instance.
      *
-     * @param  \AIArmada\CashierChip\Billable  $customer
+     * @param  Billable  $customer
      * @return $this
      */
     public function setCustomer($customer)
@@ -268,8 +253,6 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Get the underlying purchase data.
-     *
-     * @return array
      */
     public function asChipPurchase(): array
     {
@@ -278,8 +261,6 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Get the instance as an array.
-     *
-     * @return array
      */
     public function toArray(): array
     {
@@ -290,7 +271,6 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      * Convert the object to its JSON representation.
      *
      * @param  int  $options
-     * @return string
      */
     public function toJson($options = 0): string
     {
@@ -299,23 +279,10 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
      * Convert the object into something JSON serializable.
-     *
-     * @return array
      */
-    #[\ReturnTypeWillChange]
+    #[ReturnTypeWillChange]
     public function jsonSerialize(): array
     {
         return $this->toArray();
-    }
-
-    /**
-     * Dynamically get values from the purchase data.
-     *
-     * @param  string  $key
-     * @return mixed
-     */
-    public function __get($key)
-    {
-        return $this->purchase[$key] ?? null;
     }
 }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Stock\Services;
 
-use AIArmada\Stock\Contracts\StockableInterface;
 use AIArmada\Stock\Events\LowStockDetected;
 use AIArmada\Stock\Events\OutOfStock;
 use AIArmada\Stock\Events\StockDeducted;
@@ -26,14 +25,6 @@ final class StockReservationService
     public function __construct(
         private readonly StockService $stockService
     ) {}
-
-    /**
-     * Check if an event type is enabled in config.
-     */
-    private function isEventEnabled(string $type): bool
-    {
-        return (bool) config("stock.events.{$type}", true);
-    }
 
     /**
      * Reserve stock for a cart.
@@ -321,6 +312,14 @@ final class StockReservationService
         $reservation->extend($minutes);
 
         return $reservation;
+    }
+
+    /**
+     * Check if an event type is enabled in config.
+     */
+    private function isEventEnabled(string $type): bool
+    {
+        return (bool) config("stock.events.{$type}", true);
     }
 
     /**

@@ -3,81 +3,79 @@
 declare(strict_types=1);
 
 use AIArmada\Cashier\Gateways\AbstractGateway;
-use AIArmada\Cashier\Gateways\ChipGateway;
-use AIArmada\Cashier\Gateways\StripeGateway;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 
 uses(CashierTestCase::class);
 
-describe('Gateways', function () {
-    describe('AbstractGateway', function () {
-        it('is an abstract class implementing GatewayContract', function () {
+describe('Gateways', function (): void {
+    describe('AbstractGateway', function (): void {
+        it('is an abstract class implementing GatewayContract', function (): void {
             $reflection = new ReflectionClass(AbstractGateway::class);
 
             expect($reflection->isAbstract())->toBeTrue()
-                ->and($reflection->implementsInterface(\AIArmada\Cashier\Contracts\GatewayContract::class))->toBeTrue();
+                ->and($reflection->implementsInterface(AIArmada\Cashier\Contracts\GatewayContract::class))->toBeTrue();
         });
 
-        it('defines name as abstract method', function () {
+        it('defines name as abstract method', function (): void {
             $reflection = new ReflectionClass(AbstractGateway::class);
             $method = $reflection->getMethod('name');
 
             expect($method->isAbstract())->toBeTrue();
         });
 
-        it('provides currency method', function () {
+        it('provides currency method', function (): void {
             $gateway = $this->gatewayManager->gateway('stripe');
 
             expect($gateway->currency())->toBe('USD');
         });
     });
 
-    describe('StripeGateway', function () {
-        it('returns correct name', function () {
+    describe('StripeGateway', function (): void {
+        it('returns correct name', function (): void {
             $gateway = $this->gatewayManager->gateway('stripe');
 
             expect($gateway->name())->toBe('stripe');
         });
 
-        it('extends AbstractGateway', function () {
+        it('extends AbstractGateway', function (): void {
             $gateway = $this->gatewayManager->gateway('stripe');
 
             expect($gateway)->toBeInstanceOf(AbstractGateway::class);
         });
 
-        it('implements GatewayContract', function () {
+        it('implements GatewayContract', function (): void {
             $gateway = $this->gatewayManager->gateway('stripe');
 
-            expect($gateway)->toBeInstanceOf(\AIArmada\Cashier\Contracts\GatewayContract::class);
+            expect($gateway)->toBeInstanceOf(AIArmada\Cashier\Contracts\GatewayContract::class);
         });
 
-        it('returns correct currency', function () {
+        it('returns correct currency', function (): void {
             $gateway = $this->gatewayManager->gateway('stripe');
 
             expect($gateway->currency())->toBe('USD');
         });
     });
 
-    describe('ChipGateway', function () {
-        it('returns correct name', function () {
+    describe('ChipGateway', function (): void {
+        it('returns correct name', function (): void {
             $gateway = $this->gatewayManager->gateway('chip');
 
             expect($gateway->name())->toBe('chip');
         });
 
-        it('extends AbstractGateway', function () {
+        it('extends AbstractGateway', function (): void {
             $gateway = $this->gatewayManager->gateway('chip');
 
             expect($gateway)->toBeInstanceOf(AbstractGateway::class);
         });
 
-        it('implements GatewayContract', function () {
+        it('implements GatewayContract', function (): void {
             $gateway = $this->gatewayManager->gateway('chip');
 
-            expect($gateway)->toBeInstanceOf(\AIArmada\Cashier\Contracts\GatewayContract::class);
+            expect($gateway)->toBeInstanceOf(AIArmada\Cashier\Contracts\GatewayContract::class);
         });
 
-        it('returns correct currency', function () {
+        it('returns correct currency', function (): void {
             $gateway = $this->gatewayManager->gateway('chip');
 
             expect($gateway->currency())->toBe('MYR');

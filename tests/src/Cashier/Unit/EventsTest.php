@@ -14,19 +14,18 @@ use AIArmada\Cashier\Events\SubscriptionRenewed;
 use AIArmada\Cashier\Events\SubscriptionResumed;
 use AIArmada\Cashier\Events\SubscriptionTrialEnding;
 use AIArmada\Cashier\Events\SubscriptionUpdated;
-use AIArmada\Cashier\Models\Subscription;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 
 uses(CashierTestCase::class);
 
-describe('Events', function () {
-    beforeEach(function () {
+describe('Events', function (): void {
+    beforeEach(function (): void {
         $this->user = $this->createUser();
         $this->subscription = $this->createSubscription($this->user);
     });
 
-    describe('PaymentEvent (base)', function () {
-        it('provides access to payment data', function () {
+    describe('PaymentEvent (base)', function (): void {
+        it('provides access to payment data', function (): void {
             $payment = Mockery::mock(PaymentContract::class);
             $event = new class($payment, 'stripe', $this->user) extends PaymentEvent {};
 
@@ -36,8 +35,8 @@ describe('Events', function () {
         });
     });
 
-    describe('PaymentSucceeded', function () {
-        it('can be instantiated', function () {
+    describe('PaymentSucceeded', function (): void {
+        it('can be instantiated', function (): void {
             $payment = Mockery::mock(PaymentContract::class);
             $event = new PaymentSucceeded($payment, 'stripe', $this->user);
 
@@ -46,8 +45,8 @@ describe('Events', function () {
         });
     });
 
-    describe('PaymentFailed', function () {
-        it('can be instantiated', function () {
+    describe('PaymentFailed', function (): void {
+        it('can be instantiated', function (): void {
             $payment = Mockery::mock(PaymentContract::class);
             $event = new PaymentFailed($payment, 'chip', $this->user);
 
@@ -56,8 +55,8 @@ describe('Events', function () {
         });
     });
 
-    describe('PaymentRefunded', function () {
-        it('can be instantiated', function () {
+    describe('PaymentRefunded', function (): void {
+        it('can be instantiated', function (): void {
             $payment = Mockery::mock(PaymentContract::class);
             $event = new PaymentRefunded($payment, 'stripe', $this->user);
 
@@ -65,8 +64,8 @@ describe('Events', function () {
         });
     });
 
-    describe('SubscriptionEvent (base)', function () {
-        it('provides access to subscription data', function () {
+    describe('SubscriptionEvent (base)', function (): void {
+        it('provides access to subscription data', function (): void {
             $event = new class($this->subscription, $this->user) extends SubscriptionEvent {};
 
             expect($event->subscription())->toBe($this->subscription)
@@ -74,7 +73,7 @@ describe('Events', function () {
                 ->and($event->billable())->toBe($this->user);
         });
 
-        it('accepts subscription without explicit billable', function () {
+        it('accepts subscription without explicit billable', function (): void {
             // When no billable is passed, the event should still be creatable
             $event = new class($this->subscription) extends SubscriptionEvent {};
 
@@ -82,8 +81,8 @@ describe('Events', function () {
         });
     });
 
-    describe('SubscriptionCreated', function () {
-        it('can be instantiated', function () {
+    describe('SubscriptionCreated', function (): void {
+        it('can be instantiated', function (): void {
             $event = new SubscriptionCreated($this->subscription, $this->user);
 
             expect($event)->toBeInstanceOf(SubscriptionCreated::class)
@@ -91,8 +90,8 @@ describe('Events', function () {
         });
     });
 
-    describe('SubscriptionUpdated', function () {
-        it('can be instantiated', function () {
+    describe('SubscriptionUpdated', function (): void {
+        it('can be instantiated', function (): void {
             $event = new SubscriptionUpdated($this->subscription);
 
             expect($event)->toBeInstanceOf(SubscriptionUpdated::class)
@@ -100,32 +99,32 @@ describe('Events', function () {
         });
     });
 
-    describe('SubscriptionCanceled', function () {
-        it('can be instantiated', function () {
+    describe('SubscriptionCanceled', function (): void {
+        it('can be instantiated', function (): void {
             $event = new SubscriptionCanceled($this->subscription);
 
             expect($event)->toBeInstanceOf(SubscriptionCanceled::class);
         });
     });
 
-    describe('SubscriptionResumed', function () {
-        it('can be instantiated', function () {
+    describe('SubscriptionResumed', function (): void {
+        it('can be instantiated', function (): void {
             $event = new SubscriptionResumed($this->subscription);
 
             expect($event)->toBeInstanceOf(SubscriptionResumed::class);
         });
     });
 
-    describe('SubscriptionRenewed', function () {
-        it('can be instantiated', function () {
+    describe('SubscriptionRenewed', function (): void {
+        it('can be instantiated', function (): void {
             $event = new SubscriptionRenewed($this->subscription);
 
             expect($event)->toBeInstanceOf(SubscriptionRenewed::class);
         });
     });
 
-    describe('SubscriptionTrialEnding', function () {
-        it('can be instantiated', function () {
+    describe('SubscriptionTrialEnding', function (): void {
+        it('can be instantiated', function (): void {
             $event = new SubscriptionTrialEnding($this->subscription);
 
             expect($event)->toBeInstanceOf(SubscriptionTrialEnding::class);

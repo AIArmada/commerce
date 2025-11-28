@@ -1,9 +1,10 @@
 <?php
 
+declare(strict_types=1);
+
 namespace AIArmada\CashierChip;
 
 use Illuminate\Support\Traits\Conditionable;
-use AIArmada\Chip\Facades\ChipCollect;
 
 /**
  * Fluent builder for creating CHIP checkout sessions.
@@ -15,56 +16,42 @@ class CheckoutBuilder
     /**
      * The model that is checking out.
      *
-     * @var \AIArmada\CashierChip\Billable|\Illuminate\Database\Eloquent\Model|null
+     * @var Billable|\Illuminate\Database\Eloquent\Model|null
      */
     protected $owner;
 
     /**
      * Whether to request a recurring token.
-     *
-     * @var bool
      */
     protected bool $recurring = false;
 
     /**
      * The success URL.
-     *
-     * @var string|null
      */
     protected ?string $successUrl = null;
 
     /**
      * The cancel URL.
-     *
-     * @var string|null
      */
     protected ?string $cancelUrl = null;
 
     /**
      * The webhook URL.
-     *
-     * @var string|null
      */
     protected ?string $webhookUrl = null;
 
     /**
      * The metadata for the checkout session.
-     *
-     * @var array
      */
     protected array $metadata = [];
 
     /**
      * The products for the checkout session.
-     *
-     * @var array
      */
     protected array $products = [];
 
     /**
      * The currency for the checkout.
-     *
-     * @var string|null
      */
     protected ?string $currency = null;
 
@@ -82,7 +69,6 @@ class CheckoutBuilder
     /**
      * Request a recurring token for future payments.
      *
-     * @param  bool  $recurring
      * @return $this
      */
     public function recurring(bool $recurring = true)
@@ -95,7 +81,6 @@ class CheckoutBuilder
     /**
      * Set the success URL.
      *
-     * @param  string  $url
      * @return $this
      */
     public function successUrl(string $url)
@@ -108,7 +93,6 @@ class CheckoutBuilder
     /**
      * Set the cancel URL.
      *
-     * @param  string  $url
      * @return $this
      */
     public function cancelUrl(string $url)
@@ -121,7 +105,6 @@ class CheckoutBuilder
     /**
      * Set the webhook URL.
      *
-     * @param  string  $url
      * @return $this
      */
     public function webhookUrl(string $url)
@@ -134,7 +117,6 @@ class CheckoutBuilder
     /**
      * Set the metadata for the checkout session.
      *
-     * @param  array  $metadata
      * @return $this
      */
     public function withMetadata(array $metadata)
@@ -147,9 +129,7 @@ class CheckoutBuilder
     /**
      * Add a product to the checkout.
      *
-     * @param  string  $name
      * @param  int  $price  Price in cents
-     * @param  int  $quantity
      * @return $this
      */
     public function addProduct(string $name, int $price, int $quantity = 1)
@@ -166,7 +146,6 @@ class CheckoutBuilder
     /**
      * Set the products for checkout.
      *
-     * @param  array  $products
      * @return $this
      */
     public function products(array $products)
@@ -179,7 +158,6 @@ class CheckoutBuilder
     /**
      * Set the currency.
      *
-     * @param  string  $currency
      * @return $this
      */
     public function currency(string $currency)
@@ -193,8 +171,6 @@ class CheckoutBuilder
      * Create the checkout session.
      *
      * @param  int  $amount  Amount in cents
-     * @param  array  $options
-     * @return \AIArmada\CashierChip\Checkout
      */
     public function create(int $amount, array $options = []): Checkout
     {
@@ -209,7 +185,7 @@ class CheckoutBuilder
         ], $options);
 
         // Remove null values
-        $options = array_filter($options, fn($value) => ! is_null($value));
+        $options = array_filter($options, fn ($value) => ! is_null($value));
 
         return Checkout::create($this->owner, $amount, $options);
     }
@@ -218,9 +194,6 @@ class CheckoutBuilder
      * Create a checkout for a single charge.
      *
      * @param  int  $amount  Amount in cents
-     * @param  string  $description
-     * @param  array  $options
-     * @return \AIArmada\CashierChip\Checkout
      */
     public function charge(int $amount, string $description = 'Payment', array $options = []): Checkout
     {

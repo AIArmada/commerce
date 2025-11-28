@@ -80,7 +80,7 @@ class StripeInvoiceLineItem implements InvoiceLineItemContract
      */
     public function currency(): string
     {
-        return strtoupper($this->item->currency);
+        return mb_strtoupper($this->item->currency);
     }
 
     /**
@@ -97,14 +97,6 @@ class StripeInvoiceLineItem implements InvoiceLineItemContract
     public function priceId(): ?string
     {
         return $this->item->pricing?->price_id ?? $this->item->price?->id;
-    }
-
-    /**
-     * Format an amount.
-     */
-    protected function formatAmount(int $amount): string
-    {
-        return number_format($amount / 100, 2).' '.strtoupper($this->currency());
     }
 
     /**
@@ -126,5 +118,13 @@ class StripeInvoiceLineItem implements InvoiceLineItemContract
             'is_proration' => $this->isProration(),
             'price_id' => $this->priceId(),
         ];
+    }
+
+    /**
+     * Format an amount.
+     */
+    protected function formatAmount(int $amount): string
+    {
+        return number_format($amount / 100, 2).' '.mb_strtoupper($this->currency());
     }
 }

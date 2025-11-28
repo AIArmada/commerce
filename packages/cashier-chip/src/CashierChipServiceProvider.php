@@ -83,7 +83,7 @@ class CashierChipServiceProvider extends ServiceProvider
                 'prefix' => config('cashier-chip.path'),
                 'namespace' => 'AIArmada\CashierChip\Http\Controllers',
                 'as' => 'cashier-chip.',
-            ], function () {
+            ], function (): void {
                 $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
             });
         }

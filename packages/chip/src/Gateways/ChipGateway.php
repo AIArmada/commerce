@@ -4,19 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Gateways;
 
-use AIArmada\Chip\DataObjects\Purchase;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\WebhookService;
 use AIArmada\CommerceSupport\Contracts\Payment\CheckoutableInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\CustomerInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentGatewayInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentIntentInterface;
-use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;
 use AIArmada\CommerceSupport\Contracts\Payment\WebhookHandlerInterface;
-use AIArmada\CommerceSupport\Contracts\Payment\WebhookPayload;
 use AIArmada\CommerceSupport\Exceptions\PaymentGatewayException;
 use Akaunting\Money\Money;
-use Illuminate\Http\Request;
+use Throwable;
 
 /**
  * CHIP payment gateway implementation.
@@ -112,7 +109,7 @@ final class ChipGateway implements PaymentGatewayInterface
             $purchase = $builder->create();
 
             return new ChipPaymentIntent($purchase);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             throw PaymentGatewayException::creationFailed(
                 gatewayName: $this->getName(),
                 message: $e->getMessage(),
@@ -132,7 +129,7 @@ final class ChipGateway implements PaymentGatewayInterface
             $purchase = $this->service->getPurchase($paymentId);
 
             return new ChipPaymentIntent($purchase);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             throw PaymentGatewayException::notFound($this->getName(), $paymentId);
         }
     }
@@ -143,7 +140,7 @@ final class ChipGateway implements PaymentGatewayInterface
             $purchase = $this->service->cancelPurchase($paymentId);
 
             return new ChipPaymentIntent($purchase);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             throw PaymentGatewayException::cancellationFailed(
                 gatewayName: $this->getName(),
                 paymentId: $paymentId,
@@ -160,7 +157,7 @@ final class ChipGateway implements PaymentGatewayInterface
             $purchase = $this->service->refundPurchase($paymentId, $amountInCents);
 
             return new ChipPaymentIntent($purchase);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             throw PaymentGatewayException::refundFailed(
                 gatewayName: $this->getName(),
                 paymentId: $paymentId,
@@ -178,7 +175,7 @@ final class ChipGateway implements PaymentGatewayInterface
             $purchase = $this->service->capturePurchase($paymentId, $amountInCents);
 
             return new ChipPaymentIntent($purchase);
-        } catch (\Throwable $e) {
+        } catch (Throwable $e) {
             throw PaymentGatewayException::captureFailed(
                 gatewayName: $this->getName(),
                 paymentId: $paymentId,

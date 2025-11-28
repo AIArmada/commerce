@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests;
 
 use AIArmada\Cart\CartServiceProvider;
+use AIArmada\FilamentPermissions\FilamentPermissionsServiceProvider;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\ViewErrorBag;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Spatie\Permission\PermissionServiceProvider;
 
 abstract class TestCase extends Orchestra
 {
@@ -53,6 +55,8 @@ abstract class TestCase extends Orchestra
             \AIArmada\Vouchers\VoucherServiceProvider::class,
             \AIArmada\FilamentCart\FilamentCartServiceProvider::class,
             \AIArmada\FilamentChip\FilamentChipServiceProvider::class,
+            PermissionServiceProvider::class,
+            FilamentPermissionsServiceProvider::class,
             TestPanelProvider::class,
         ];
     }
@@ -133,16 +137,120 @@ abstract class TestCase extends Orchestra
         $app['config']->set('filament-chip.navigation_group', 'CHIP Operations');
         $app['config']->set('filament-chip.navigation_badge_color', 'primary');
         $app['config']->set('filament-chip.polling_interval', '45s');
+
+        // Configure Spatie Permission settings for testing
+        $app['config']->set('permission.models.permission', \Spatie\Permission\Models\Permission::class);
+        $app['config']->set('permission.models.role', \Spatie\Permission\Models\Role::class);
+        $app['config']->set('permission.table_names', [
+            'roles' => 'roles',
+            'permissions' => 'permissions',
+            'model_has_permissions' => 'model_has_permissions',
+            'model_has_roles' => 'model_has_roles',
+            'role_has_permissions' => 'role_has_permissions',
+        ]);
+        $app['config']->set('permission.column_names', [
+            'role_pivot_key' => 'role_id',
+            'permission_pivot_key' => 'permission_id',
+            'model_morph_key' => 'model_id',
+            'team_foreign_key' => 'team_id',
+        ]);
+
+        // Configure filament-permissions settings for testing
+        $app['config']->set('filament-permissions.guards', ['web', 'admin']);
+        $app['config']->set('filament-permissions.super_admin_role', 'Super Admin');
+
+        // Configure auth to use our test User model
+        $app['config']->set('auth.providers.users.model', \AIArmada\Commerce\Tests\Fixtures\Models\User::class);
     }
 
     protected function defineDatabaseMigrations(): void
     {
         $this->loadMigrationsFrom(__DIR__.'/../../packages/chip/database/migrations');
         $this->loadMigrationsFrom(__DIR__.'/../../packages/vouchers/database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../../vendor/spatie/laravel-permission/database/migrations');
     }
 
     protected function setUpDatabase(): void
     {
+        // Users table for permission tests
+        Schema::dropIfExists('users');
+        Schema::create('users', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('email')->unique();
+            $table->string('password');
+            $table->timestamps();
+        });
+
+        // Spatie Permission tables
+        Schema::dropIfExists('role_has_permissions');
+        Schema::dropIfExists('model_has_roles');
+        Schema::dropIfExists('model_has_permissions');
+        Schema::dropIfExists('roles');
+        Schema::dropIfExists('permissions');
+
+        Schema::create('permissions', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('guard_name');
+            $table->timestamps();
+
+            $table->unique(['name', 'guard_name']);
+        });
+
+        Schema::create('roles', function (Blueprint $table): void {
+            $table->id();
+            $table->string('name');
+            $table->string('guard_name');
+            $table->timestamps();
+
+            $table->unique(['name', 'guard_name']);
+        });
+
+        Schema::create('model_has_permissions', function (Blueprint $table): void {
+            $table->unsignedBigInteger('permission_id');
+            $table->string('model_type');
+            $table->unsignedBigInteger('model_id');
+
+            $table->index(['model_id', 'model_type'], 'model_has_permissions_model_id_model_type_index');
+            $table->foreign('permission_id')
+                ->references('id')
+                ->on('permissions')
+                ->onDelete('cascade');
+
+            $table->primary(['permission_id', 'model_id', 'model_type'], 'model_has_permissions_permission_model_type_primary');
+        });
+
+        Schema::create('model_has_roles', function (Blueprint $table): void {
+            $table->unsignedBigInteger('role_id');
+            $table->string('model_type');
+            $table->unsignedBigInteger('model_id');
+
+            $table->index(['model_id', 'model_type'], 'model_has_roles_model_id_model_type_index');
+            $table->foreign('role_id')
+                ->references('id')
+                ->on('roles')
+                ->onDelete('cascade');
+
+            $table->primary(['role_id', 'model_id', 'model_type'], 'model_has_roles_role_model_type_primary');
+        });
+
+        Schema::create('role_has_permissions', function (Blueprint $table): void {
+            $table->unsignedBigInteger('permission_id');
+            $table->unsignedBigInteger('role_id');
+
+            $table->foreign('permission_id')
+                ->references('id')
+                ->on('permissions')
+                ->onDelete('cascade');
+            $table->foreign('role_id')
+                ->references('id')
+                ->on('roles')
+                ->onDelete('cascade');
+
+            $table->primary(['permission_id', 'role_id'], 'role_has_permissions_permission_id_role_id_primary');
+        });
+
         // Cart tables
         Schema::dropIfExists('carts');
         Schema::create('carts', function (Blueprint $table): void {

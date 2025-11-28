@@ -8,17 +8,23 @@
         "source": "https://github.com/aiarmada/commerce"
     },
     "require": {
-        "aiarmada/commerce-support": "self.version",
+        "php": "^8.4",
         "aiarmada/cart": "self.version",
-        "aiarmada/stock": "self.version",
-        "aiarmada/vouchers": "self.version",
+        "aiarmada/cashier": "self.version",
+        "aiarmada/cashier-chip": "self.version",
         "aiarmada/chip": "self.version",
-        "aiarmada/jnt": "self.version",
+        "aiarmada/commerce-support": "self.version",
         "aiarmada/docs": "self.version",
         "aiarmada/filament-cart": "self.version",
         "aiarmada/filament-chip": "self.version",
+        "aiarmada/filament-docs": "self.version",
+        "aiarmada/filament-jnt": "self.version",
         "aiarmada/filament-permissions": "self.version",
-        "aiarmada/filament-vouchers": "self.version"
+        "aiarmada/filament-stock": "self.version",
+        "aiarmada/filament-vouchers": "self.version",
+        "aiarmada/jnt": "self.version",
+        "aiarmada/stock": "self.version",
+        "aiarmada/vouchers": "self.version"
     },
     "config": {
         "sort-packages": true

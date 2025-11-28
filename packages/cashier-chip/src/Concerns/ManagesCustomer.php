@@ -28,23 +28,11 @@ trait ManagesCustomer
     }
 
     /**
-     * Determine if the customer has a CHIP customer ID and throw an exception if not.
-     *
-     * @throws \AIArmada\CashierChip\Exceptions\InvalidCustomer
-     */
-    protected function assertCustomerExists(): void
-    {
-        if (! $this->hasChipId()) {
-            throw InvalidCustomer::notYetCreated($this);
-        }
-    }
-
-    /**
      * Create a CHIP customer for the given model.
      *
      * @param  array<string, mixed>  $options
      *
-     * @throws \AIArmada\CashierChip\Exceptions\CustomerAlreadyCreated
+     * @throws CustomerAlreadyCreated
      */
     public function createAsChipCustomer(array $options = []): Client
     {
@@ -206,6 +194,18 @@ trait ManagesCustomer
     public function preferredCurrency(): string
     {
         return config('cashier-chip.currency', 'MYR');
+    }
+
+    /**
+     * Determine if the customer has a CHIP customer ID and throw an exception if not.
+     *
+     * @throws InvalidCustomer
+     */
+    protected function assertCustomerExists(): void
+    {
+        if (! $this->hasChipId()) {
+            throw InvalidCustomer::notYetCreated($this);
+        }
     }
 
     /**

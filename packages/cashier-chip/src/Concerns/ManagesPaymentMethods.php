@@ -6,6 +6,7 @@ namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\CashierChip;
 use AIArmada\CashierChip\PaymentMethod;
+use Exception;
 use Illuminate\Support\Collection;
 
 trait ManagesPaymentMethods
@@ -13,7 +14,7 @@ trait ManagesPaymentMethods
     /**
      * Get the customer's recurring tokens (payment methods).
      *
-     * @return \Illuminate\Support\Collection<int, \AIArmada\CashierChip\PaymentMethod>
+     * @return Collection<int, PaymentMethod>
      */
     public function paymentMethods(): Collection
     {
@@ -41,7 +42,7 @@ trait ManagesPaymentMethods
             $token = CashierChip::chip()->getClientRecurringToken($this->chip_id, $paymentMethodId);
 
             return new PaymentMethod($this, $token);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             return null;
         }
     }
@@ -157,7 +158,6 @@ trait ManagesPaymentMethods
      * event with the recurring_token that can be used for future charges.
      *
      * @param  array<string, mixed>  $options
-     * @return \AIArmada\Chip\DataObjects\Purchase
      */
     public function createSetupPurchase(array $options = []): \AIArmada\Chip\DataObjects\Purchase
     {

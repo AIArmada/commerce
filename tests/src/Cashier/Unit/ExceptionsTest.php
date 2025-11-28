@@ -15,16 +15,16 @@ use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 
 uses(CashierTestCase::class);
 
-describe('Exceptions', function () {
-    describe('CashierException', function () {
-        it('is the base exception class', function () {
+describe('Exceptions', function (): void {
+    describe('CashierException', function (): void {
+        it('is the base exception class', function (): void {
             $exception = new CashierException('Test message');
 
             expect($exception)->toBeInstanceOf(Exception::class)
                 ->and($exception->getMessage())->toBe('Test message');
         });
 
-        it('can set and get gateway', function () {
+        it('can set and get gateway', function (): void {
             $exception = new CashierException('Test');
             $exception->setGateway('stripe');
 
@@ -32,8 +32,8 @@ describe('Exceptions', function () {
         });
     });
 
-    describe('GatewayNotFoundException', function () {
-        it('can be created with gateway name', function () {
+    describe('GatewayNotFoundException', function (): void {
+        it('can be created with gateway name', function (): void {
             $exception = GatewayNotFoundException::forGateway('unknown');
 
             expect($exception)->toBeInstanceOf(GatewayNotFoundException::class)
@@ -41,15 +41,15 @@ describe('Exceptions', function () {
         });
     });
 
-    describe('InvalidGatewayException', function () {
-        it('can be created for invalid gateway', function () {
+    describe('InvalidGatewayException', function (): void {
+        it('can be created for invalid gateway', function (): void {
             $exception = InvalidGatewayException::create('stripe');
 
             expect($exception)->toBeInstanceOf(InvalidGatewayException::class)
                 ->and($exception->getMessage())->toContain('stripe');
         });
 
-        it('can be created for missing config', function () {
+        it('can be created for missing config', function (): void {
             $exception = InvalidGatewayException::missingConfig('stripe', 'secret');
 
             expect($exception->getMessage())->toContain('stripe')
@@ -57,8 +57,8 @@ describe('Exceptions', function () {
         });
     });
 
-    describe('PaymentFailedException', function () {
-        it('can be created with details', function () {
+    describe('PaymentFailedException', function (): void {
+        it('can be created with details', function (): void {
             $exception = PaymentFailedException::create('stripe', 'Payment declined', [
                 'payment_id' => 'pi_xxx',
                 'error_code' => 'card_declined',
@@ -71,8 +71,8 @@ describe('Exceptions', function () {
         });
     });
 
-    describe('PaymentActionRequired', function () {
-        it('can be created with action details', function () {
+    describe('PaymentActionRequired', function (): void {
+        it('can be created with action details', function (): void {
             $exception = PaymentActionRequired::create(
                 'stripe',
                 'pi_xxx',
@@ -88,8 +88,8 @@ describe('Exceptions', function () {
         });
     });
 
-    describe('CustomerNotFoundException', function () {
-        it('can be created with customer identifier', function () {
+    describe('CustomerNotFoundException', function (): void {
+        it('can be created with customer identifier', function (): void {
             $exception = CustomerNotFoundException::create('stripe', 'cus_xxx');
 
             expect($exception)->toBeInstanceOf(CustomerNotFoundException::class)
@@ -97,7 +97,7 @@ describe('Exceptions', function () {
                 ->and($exception->getMessage())->toContain('cus_xxx');
         });
 
-        it('can be created for not created customer', function () {
+        it('can be created for not created customer', function (): void {
             $exception = CustomerNotFoundException::notCreated('chip');
 
             expect($exception->gateway())->toBe('chip')
@@ -105,15 +105,15 @@ describe('Exceptions', function () {
         });
     });
 
-    describe('SubscriptionNotFoundException', function () {
-        it('can be created with subscription type', function () {
+    describe('SubscriptionNotFoundException', function (): void {
+        it('can be created with subscription type', function (): void {
             $exception = SubscriptionNotFoundException::create('premium');
 
             expect($exception)->toBeInstanceOf(SubscriptionNotFoundException::class)
                 ->and($exception->getMessage())->toContain('premium');
         });
 
-        it('can be created for gateway subscription', function () {
+        it('can be created for gateway subscription', function (): void {
             $exception = SubscriptionNotFoundException::onGateway('stripe', 'sub_xxx');
 
             expect($exception->gateway())->toBe('stripe')
@@ -121,21 +121,21 @@ describe('Exceptions', function () {
         });
     });
 
-    describe('SubscriptionUpdateFailure', function () {
-        it('can be created for incomplete subscription', function () {
+    describe('SubscriptionUpdateFailure', function (): void {
+        it('can be created for incomplete subscription', function (): void {
             $exception = SubscriptionUpdateFailure::incompleteSubscription('default');
 
             expect($exception)->toBeInstanceOf(SubscriptionUpdateFailure::class)
                 ->and($exception->getMessage())->toContain('incomplete');
         });
 
-        it('can be created for canceled subscription', function () {
+        it('can be created for canceled subscription', function (): void {
             $exception = SubscriptionUpdateFailure::subscriptionCanceled();
 
             expect($exception->getMessage())->toContain('canceled');
         });
 
-        it('can be created for duplicate subscription', function () {
+        it('can be created for duplicate subscription', function (): void {
             $exception = SubscriptionUpdateFailure::duplicateSubscription('premium');
 
             expect($exception->getMessage())->toContain('premium')
@@ -143,8 +143,8 @@ describe('Exceptions', function () {
         });
     });
 
-    describe('WebhookVerificationException', function () {
-        it('can be created for invalid signature', function () {
+    describe('WebhookVerificationException', function (): void {
+        it('can be created for invalid signature', function (): void {
             $exception = WebhookVerificationException::invalidSignature('stripe');
 
             expect($exception)->toBeInstanceOf(WebhookVerificationException::class)
@@ -152,7 +152,7 @@ describe('Exceptions', function () {
                 ->and($exception->getMessage())->toContain('signature');
         });
 
-        it('can be created for missing secret', function () {
+        it('can be created for missing secret', function (): void {
             $exception = WebhookVerificationException::missingSecret('chip');
 
             expect($exception->gateway())->toBe('chip')

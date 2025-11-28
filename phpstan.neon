@@ -17,6 +17,7 @@ parameters:
     ignoreErrors:
         - identifier: 'missingType.generics'
         - identifier: 'larastan.noEnvCallsOutsideOfConfig'
+        - identifier: 'return.unusedType'
         - message: '#Trait AIArmada\\Stock\\Traits\\HasStock is used zero times and is not analysed\.#'
           identifier: 'trait.unused'
         - message: '#Call to static method view\(\) on an unknown class Spatie\\LaravelPdf\\Facades\\Pdf\.#'
@@ -65,6 +66,8 @@ parameters:
         - message: '#Parameter .* \$view of function view expects view-string\|null, string given\.#'
         # Ignore unused trait (it's part of the public API)
         - message: '#Trait AIArmada\\Vouchers\\Traits\\HasVoucherWallet is used zero times and is not analysed\.#'
+        # Ignore commerce-support traits (they're part of the public API for other packages)
+        - message: '#Trait AIArmada\\CommerceSupport\\Traits\\ValidatesConfiguration is used zero times and is not analysed\.#'
         # Ignore filament-permissions external dependencies
         - message: '#Class App\\Models\\User not found\.#'
         - message: '#Call to an undefined method Illuminate\\Foundation\\Auth\\User::hasRole\(\)\.#'
