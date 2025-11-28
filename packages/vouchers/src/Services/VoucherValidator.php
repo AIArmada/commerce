@@ -12,7 +12,6 @@ use AIArmada\Vouchers\Models\VoucherUsage;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Session;
 
 class VoucherValidator
@@ -23,8 +22,6 @@ class VoucherValidator
 
     public function validate(string $code, mixed $cart): VoucherValidationResult
     {
-        Log::info('🔍 VoucherValidator::validate() called', ['code' => $code]);
-
         $code = $this->normalizeCode($code);
 
         // Find voucher
@@ -35,20 +32,6 @@ class VoucherValidator
         if (! $voucher) {
             return VoucherValidationResult::invalid('Voucher not found.');
         }
-
-        // Debug logging
-        Log::debug('Voucher validation check', [
-            'code' => $code,
-            'voucher_id' => $voucher->id,
-            'status' => $voucher->status,
-            'hasStarted' => $voucher->hasStarted(),
-            'isExpired' => $voucher->isExpired(),
-            'isActive' => $voucher->isActive(),
-            'starts_at' => $voucher->starts_at,
-            'expires_at' => $voucher->expires_at,
-            'available_from' => $voucher->available_from,
-            'available_until' => $voucher->available_until,
-        ]);
 
         // Check start date (before status check, as time-based validations are more specific)
         if (! $voucher->hasStarted()) {
@@ -164,11 +147,17 @@ class VoucherValidator
     {
         // Handle different cart types
         if (is_object($cart) && method_exists($cart, 'getRawSubtotalWithoutConditions')) {
-            return $cart->getRawSubtotalWithoutConditions();
+            /** @var float $subtotal */
+            $subtotal = $cart->getRawSubtotalWithoutConditions();
+
+            return $subtotal;
         }
 
         if (is_array($cart) && isset($cart['total'])) {
-            return (float) $cart['total'];
+            /** @var scalar $total */
+            $total = $cart['total'];
+
+            return (float) $total;
         }
 
         return 0.0;

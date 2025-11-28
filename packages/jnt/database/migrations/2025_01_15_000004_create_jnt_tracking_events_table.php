@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -12,13 +13,11 @@ return new class extends Migration
     {
         $tables = config('jnt.database.tables', []);
         $prefix = config('jnt.database.table_prefix', 'jnt_');
-
-        $ordersTable = $tables['orders'] ?? $prefix.'orders';
         $trackingEventsTable = $tables['tracking_events'] ?? $prefix.'tracking_events';
 
-        Schema::create($trackingEventsTable, function (Blueprint $table) use ($ordersTable): void {
+        Schema::create($trackingEventsTable, function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('order_id')->nullable()->constrained($ordersTable)->cascadeOnDelete();
+            $table->foreignUuid('order_id')->nullable();
             $table->string('tracking_number', 30)->index();
             $table->string('order_reference', 50)->nullable()->index();
             $table->string('scan_type_code', 32)->nullable()->index();

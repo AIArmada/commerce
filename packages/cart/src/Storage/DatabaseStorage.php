@@ -15,11 +15,25 @@ use stdClass;
 
 final readonly class DatabaseStorage implements StorageInterface
 {
+    /**
+     * @param  int|null  $ttl  Time-to-live in seconds (null = no expiration)
+     */
     public function __construct(
         private Database $database,
-        private string $table = 'carts'
-    ) {
-        //
+        private string $table = 'carts',
+        private ?int $ttl = null,
+    ) {}
+
+    /**
+     * Calculate the expiration timestamp based on TTL.
+     */
+    private function calculateExpiresAt(): ?string
+    {
+        if ($this->ttl === null) {
+            return null;
+        }
+
+        return now()->addSeconds($this->ttl)->toDateTimeString();
     }
 
     /**
@@ -367,6 +381,40 @@ final readonly class DatabaseStorage implements StorageInterface
     }
 
     /**
+     * Get cart expiration timestamp.
+     */
+    public function getExpiresAt(string $identifier, string $instance): ?string
+    {
+        /** @var stdClass|null $cart */
+        $cart = $this->database->table($this->table)
+            ->where('identifier', $identifier)
+            ->where('instance', $instance)
+            ->first(['expires_at']);
+
+        if (! $cart || ! $cart->expires_at) {
+            return null;
+        }
+
+        return $cart->expires_at instanceof DateTimeInterface
+            ? $cart->expires_at->format('c')
+            : (string) $cart->expires_at;
+    }
+
+    /**
+     * Check if a cart has expired.
+     */
+    public function isExpired(string $identifier, string $instance): bool
+    {
+        $expiresAt = $this->getExpiresAt($identifier, $instance);
+
+        if ($expiresAt === null) {
+            return false;
+        }
+
+        return now()->isAfter($expiresAt);
+    }
+
+    /**
      * Apply lockForUpdate to a query if configured
      */
     private function applyLockForUpdate(\Illuminate\Database\Query\Builder $query): \Illuminate\Database\Query\Builder
@@ -495,6 +543,7 @@ final readonly class DatabaseStorage implements StorageInterface
                 $updateData = array_merge($data, [
                     'version' => $current->version + 1,
                     'updated_at' => now(),
+                    'expires_at' => $this->calculateExpiresAt(),
                 ]);
 
                 $updated = $this->database->table($this->table)
@@ -512,6 +561,7 @@ final readonly class DatabaseStorage implements StorageInterface
                     'identifier' => $identifier,
                     'instance' => $instance,
                     'version' => 1,
+                    'expires_at' => $this->calculateExpiresAt(),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);

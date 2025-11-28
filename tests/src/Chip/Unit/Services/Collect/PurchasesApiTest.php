@@ -142,7 +142,7 @@ describe('Collect Purchases API', function (): void {
 
     it('creates checkout purchases with derived options', function (): void {
         $client = ClientDetails::fromArray(['email' => 'buyer@example.com']);
-        $products = [new Product('Service', '1', 2000, 0, 0.0, null)];
+        $products = [Product::fromArray(['name' => 'Service', 'price' => 2000, 'quantity' => '1'])];
 
         $this->client->shouldReceive('getBrandId')
             ->andReturn('brand_checkout');
@@ -243,7 +243,7 @@ describe('Collect Purchases API', function (): void {
             ->andReturn(chipPurchaseResponse(['refundable_amount' => 750]));
 
         $partialCapture = $this->apiWithoutCache->capture('purchase_capture', 250);
-        expect($partialCapture->refundable_amount)->toBe(750);
+        expect($partialCapture->getRefundableAmountInCents())->toBe(750);
 
         $this->client->shouldReceive('post')
             ->once()
@@ -293,7 +293,7 @@ describe('Collect Purchases API', function (): void {
             ->andReturn(chipPurchaseResponse(['id' => 'purchase_123', 'refundable_amount' => 500]));
 
         $purchase = $this->apiWithoutCache->refund('purchase_123', 500);
-        expect($purchase->refundable_amount)->toBe(500);
+        expect($purchase->getRefundableAmountInCents())->toBe(500);
 
         $this->client->shouldReceive('post')
             ->once()

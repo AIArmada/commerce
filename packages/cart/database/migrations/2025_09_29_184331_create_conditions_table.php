@@ -19,7 +19,7 @@ return new class extends Migration
 
             // Core identification
             $table->string('name')->unique();
-            $table->string('display_name');
+            $table->string('display_name')->nullable();
             $table->text('description')->nullable();
 
             // Condition definition

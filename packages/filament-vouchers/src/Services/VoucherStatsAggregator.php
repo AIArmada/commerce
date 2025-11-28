@@ -26,11 +26,7 @@ final class VoucherStatsAggregator
             'total' => Voucher::query()->count(),
             'active' => Voucher::query()->where('status', VoucherStatus::Active)->count(),
             'upcoming' => Voucher::query()
-                ->where(function ($query): void {
-                    $query
-                        ->whereNull('starts_at')
-                        ->orWhere('starts_at', '>', now());
-                })
+                ->where('starts_at', '>', now())
                 ->count(),
             'expired' => Voucher::query()->where('status', VoucherStatus::Expired)->count(),
             'manual_redemptions' => VoucherUsage::query()->where('channel', VoucherUsage::CHANNEL_MANUAL)->count(),

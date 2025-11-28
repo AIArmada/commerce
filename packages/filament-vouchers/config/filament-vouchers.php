@@ -55,6 +55,17 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Order Resource Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configure the Filament resource class for linking to order records from
+    | voucher usage tables. Set to null to disable order linking.
+    |
+    */
+    'order_resource' => null,
+
+    /*
+    |--------------------------------------------------------------------------
     | Owner Type Definitions
     |--------------------------------------------------------------------------
     |

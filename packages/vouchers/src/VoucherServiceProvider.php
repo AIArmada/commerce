@@ -41,9 +41,11 @@ final class VoucherServiceProvider extends PackageServiceProvider
         $this->app->singleton(VoucherValidator::class);
         $this->app->singleton(VoucherRulesFactory::class, static fn () => new VoucherRulesFactory());
 
-        $this->app->singleton(VoucherOwnerResolver::class, function ($app): VoucherOwnerResolver {
+        $this->app->singleton(VoucherOwnerResolver::class, function (\Illuminate\Contracts\Foundation\Application $app): VoucherOwnerResolver {
+            /** @var string $resolverClass */
             $resolverClass = config('vouchers.owner.resolver', NullOwnerResolver::class);
 
+            /** @var object $resolver */
             $resolver = $app->make($resolverClass);
 
             if (! $resolver instanceof VoucherOwnerResolver) {
@@ -72,9 +74,11 @@ final class VoucherServiceProvider extends PackageServiceProvider
                     $code = $payload['voucher_code'] ?? $payload['code'] ?? null;
 
                     if (is_string($code) && $code !== '' && ($voucherData = Voucher::find($code))) {
+                        /** @var int $conditionOrder */
+                        $conditionOrder = config('vouchers.cart.condition_order', 50);
                         $order = isset($payload['order']) && is_int($payload['order'])
                             ? $payload['order']
-                            : config('vouchers.cart.condition_order', 50);
+                            : $conditionOrder;
 
                         return (new VoucherCondition($voucherData, $order, dynamic: false))
                             ->toCartCondition();
@@ -111,6 +115,7 @@ final class VoucherServiceProvider extends PackageServiceProvider
             $proxy = CartManagerWithVouchers::fromCartManager($manager);
 
             // Ensure type-hinting resolution returns the proxied manager
+            /** @var \Illuminate\Contracts\Foundation\Application $app */
             $app->instance(CartManager::class, $proxy);
 
             // Clear cached facade instance so the proxy is used

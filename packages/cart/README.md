@@ -7,17 +7,20 @@ This package contains the core implementation that powers **AIArmada Cart**. It 
 - 📦 **Pluggable storage** – session, cache, and database drivers that implement a shared interface.
 - 🛒 **Composable cart architecture** – traits manage items, totals, metadata, and conditions.
 - 🔁 **Multi-instance by default** – support any number of cart buckets per user or session.
-- 🧮 **Accurate calculations** – Akaunting\Money integration for precise totals and rounding.
+- 🧮 **Accurate calculations** – Money integration for precise totals and rounding (via `aiarmada/commerce-support`).
+- 💳 **Payment gateway ready** – implements `CheckoutableInterface` for seamless integration with any payment provider.
 - 📈 **Observability hooks** – metrics, conflict tracking, and per-operation performance measurements.
 
 ## Documentation
 
 The full project documentation lives in the repository root under [`docs/`](../../docs/index.md). Start with:
 
-- [Getting Started](../../docs/getting-started.md)
-- [Cart Operations](../../docs/cart-operations.md)
-- [Configuration Reference](../../docs/configuration.md)
-- [Conditions & Discounts](../../docs/conditions.md)
+- [Getting Started](docs/getting-started.md)
+- [Cart Operations](docs/cart-operations.md)
+- [Configuration Reference](docs/configuration.md)
+- [Conditions & Discounts](docs/conditions.md)
+- [Payment Integration](docs/payment-integration.md)
+- [Money & Currency](docs/money-and-currency.md)
 
 ## JSON vs JSONB (PostgreSQL)
 

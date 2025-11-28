@@ -46,7 +46,7 @@ describe('cart synchronization', function (): void {
     });
 
     it('removes normalized cart when last item is removed and cart auto-destroys', function (): void {
-        config(['cart.preserve_empty_cart' => false]); // Enable auto-destroy
+        config(['cart.empty_cart_behavior' => 'destroy']); // Enable auto-destroy
 
         CartFacade::add('sku-001', 'Product', 5000, 1);
         expect(CartSnapshot::count())->toBe(1);
@@ -122,7 +122,7 @@ describe('cart synchronization', function (): void {
     });
 
     it('cleans up normalized snapshot when last item is removed and auto-destroy is enabled', function (): void {
-        config(['cart.preserve_empty_cart' => false]);
+        config(['cart.empty_cart_behavior' => 'destroy']);
 
         CartFacade::add('sku-001', 'Product', 1000, 1);
         expect(CartSnapshot::count())->toBe(1);
@@ -135,7 +135,7 @@ describe('cart synchronization', function (): void {
     });
 
     it('syncs empty state when preserve_empty_cart is true', function (): void {
-        config(['cart.preserve_empty_cart' => true]);
+        config(['cart.empty_cart_behavior' => 'preserve']);
 
         CartFacade::add('sku-001', 'Product', 1000, 1);
         expect(CartSnapshot::count())->toBe(1);

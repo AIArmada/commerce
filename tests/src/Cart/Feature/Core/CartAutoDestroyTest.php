@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartDestroyed;
 use AIArmada\Cart\Facades\Cart;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
-    Config::set('cart.preserve_empty_cart', false); // Default to not preserving
-    Event::fake(); // Fake events BEFORE any cart operations so Cart gets EventFake
-    Cart::destroy();
+    Config::set('cart.empty_cart_behavior', 'destroy'); // Default behavior
+    Event::fake();
+    app()->forgetInstance('cart');
 });
 
-describe('Auto-Destroy on Empty Cart', function (): void {
+describe('Auto-Destroy on Empty Cart (default behavior)', function (): void {
     it('destroys cart when last item is removed via remove()', function (): void {
         Cart::add('item1', 'Product 1', 100, 1);
         expect(Cart::has('item1'))->toBeTrue();
 
         Cart::remove('item1');
 
-        // Cart should be destroyed - getItems should return empty collection
         expect(Cart::getItems()->isEmpty())->toBeTrue();
         expect(Cart::count())->toBe(0);
     });
@@ -28,7 +28,6 @@ describe('Auto-Destroy on Empty Cart', function (): void {
     it('destroys cart when last item quantity is zeroed via update()', function (): void {
         Cart::add('item1', 'Product 1', 100, 5);
 
-        // Update with negative quantity to zero it out
         Cart::update('item1', ['quantity' => -5]);
 
         expect(Cart::getItems()->isEmpty())->toBeTrue();
@@ -38,7 +37,6 @@ describe('Auto-Destroy on Empty Cart', function (): void {
     it('destroys cart when last item quantity set to zero via absolute update', function (): void {
         Cart::add('item1', 'Product 1', 100, 5);
 
-        // Absolute quantity update to 0
         Cart::update('item1', ['quantity' => ['value' => 0]]);
 
         expect(Cart::getItems()->isEmpty())->toBeTrue();
@@ -58,47 +56,103 @@ describe('Auto-Destroy on Empty Cart', function (): void {
 
         Cart::remove('item1');
 
-        // Cart should still exist with one item
         expect(Cart::has('item2'))->toBeTrue();
         expect(Cart::count())->toBe(1);
     });
 });
 
-describe('Preserve Empty Cart Config', function (): void {
-    it('preserves empty cart when config is true', function (): void {
-        Config::set('cart.preserve_empty_cart', true);
-
-        Cart::add('item1', 'Product 1', 100, 1);
-        Cart::remove('item1');
-
-        // Cart should be preserved (empty but not destroyed)
-        expect(Cart::getItems()->isEmpty())->toBeTrue();
-        expect(Cart::count())->toBe(0);
+describe('Empty Cart Behavior: destroy', function (): void {
+    beforeEach(function (): void {
+        Config::set('cart.empty_cart_behavior', 'destroy');
+        Event::fake();
     });
 
-    it('does not dispatch CartDestroyed when preserving empty cart', function (): void {
-        // Clear any events from beforeEach
-        Event::fake();
-
-        Config::set('cart.preserve_empty_cart', true);
-
-        // Verify config is set
-        expect(config('cart.preserve_empty_cart'))->toBeTrue();
-
+    it('removes cart entirely from storage', function (): void {
         Cart::add('item1', 'Product 1', 100, 1);
         Cart::remove('item1');
+
+        expect(Cart::exists())->toBeFalse();
+        Event::assertDispatched(CartDestroyed::class);
+    });
+});
+
+describe('Empty Cart Behavior: clear', function (): void {
+    beforeEach(function (): void {
+        Config::set('cart.empty_cart_behavior', 'clear');
+        // Clear Cart singleton so it gets new config
+        app()->forgetInstance('cart');
+        Event::fake();
+    });
+
+    it('keeps cart row but removes items, conditions, and metadata', function (): void {
+        Cart::add('item1', 'Product 1', 100, 1);
+        Cart::setMetadata('affiliate_id', 'AFF123');
+        Cart::addDiscount('VOUCHER10', '-10%');
+
+        Cart::remove('item1');
+
+        // Cart should exist but be empty
+        expect(Cart::getItems()->isEmpty())->toBeTrue();
+        expect(Cart::getConditions()->isEmpty())->toBeTrue();
+        expect(Cart::getMetadata('affiliate_id'))->toBeNull();
+        // Cart structure should still exist
+        expect(Cart::exists())->toBeTrue();
+    });
+});
+
+describe('Empty Cart Behavior: preserve', function (): void {
+    beforeEach(function (): void {
+        Config::set('cart.empty_cart_behavior', 'preserve');
+        // Clear Cart singleton so it gets new config
+        app()->forgetInstance('cart');
+        Event::fake();
+    });
+
+    it('keeps cart with conditions and metadata intact', function (): void {
+        Cart::add('item1', 'Product 1', 100, 1);
+        Cart::setMetadata('affiliate_id', 'AFF123');
+        Cart::addDiscount('VOUCHER10', '-10%');
+
+        Cart::remove('item1');
+
+        // Items should be empty
+        expect(Cart::getItems()->isEmpty())->toBeTrue();
+
+        // Conditions and metadata should be preserved
+        expect(Cart::getCondition('VOUCHER10'))->not->toBeNull();
+        expect(Cart::getMetadata('affiliate_id'))->toBe('AFF123');
 
         Event::assertNotDispatched(CartDestroyed::class);
+        Event::assertNotDispatched(CartCleared::class);
     });
 
-    it('preserves empty cart when last item zeroed via update and config is true', function (): void {
-        Config::set('cart.preserve_empty_cart', true);
+    it('preserves voucher code when customer removes all items', function (): void {
+        // Customer applies voucher first
+        Cart::addDiscount('SUMMER20', '-20%');
 
-        Cart::add('item1', 'Product 1', 100, 5);
-        Cart::update('item1', ['quantity' => -5]);
+        // Then adds items
+        Cart::add('item1', 'Product 1', 100, 1);
+        Cart::add('item2', 'Product 2', 200, 1);
 
-        expect(Cart::getItems()->isEmpty())->toBeTrue();
-        expect(Cart::count())->toBe(0);
+        // Customer removes all items
+        Cart::remove('item1');
+        Cart::remove('item2');
+
+        // Voucher should still be there when they add new items
+        expect(Cart::getCondition('SUMMER20'))->not->toBeNull();
+    });
+
+    it('preserves affiliate tracking when cart is emptied', function (): void {
+        // Affiliate cookie sets metadata
+        Cart::setMetadata('affiliate_id', 'partner-xyz');
+        Cart::setMetadata('utm_source', 'instagram');
+
+        Cart::add('item1', 'Product 1', 100, 1);
+        Cart::remove('item1');
+
+        // Affiliate tracking should be preserved
+        expect(Cart::getMetadata('affiliate_id'))->toBe('partner-xyz');
+        expect(Cart::getMetadata('utm_source'))->toBe('instagram');
     });
 });
 
@@ -109,10 +163,7 @@ describe('Auto-Destroy with Multiple Instances', function (): void {
 
         Cart::setInstance('shopping')->remove('item1');
 
-        // Shopping cart should be destroyed
         expect(Cart::setInstance('shopping')->isEmpty())->toBeTrue();
-
-        // Wishlist should still exist
         expect(Cart::setInstance('wishlist')->has('item2'))->toBeTrue();
     });
 
@@ -123,10 +174,7 @@ describe('Auto-Destroy with Multiple Instances', function (): void {
 
         Cart::setInstance('cart2')->remove('item2');
 
-        // cart2 should be destroyed
         expect(Cart::setInstance('cart2')->isEmpty())->toBeTrue();
-
-        // cart1 and cart3 should remain
         expect(Cart::setInstance('cart1')->has('item1'))->toBeTrue();
         expect(Cart::setInstance('cart3')->has('item3'))->toBeTrue();
     });
@@ -135,7 +183,8 @@ describe('Auto-Destroy with Multiple Instances', function (): void {
 describe('Auto-Destroy with Database Storage', function (): void {
     beforeEach(function (): void {
         Config::set('cart.storage', 'database');
-        Event::fake(); // Re-fake after config change to get new Cart with DB storage
+        Config::set('cart.empty_cart_behavior', 'destroy');
+        Event::fake();
         Cart::destroy();
     });
 
@@ -143,7 +192,6 @@ describe('Auto-Destroy with Database Storage', function (): void {
         $identifier = 'user-123';
         Cart::setIdentifier($identifier)->add('item1', 'Product 1', 100, 1);
 
-        // Verify record exists
         expect(
             Illuminate\Support\Facades\DB::table('carts')
                 ->where('identifier', $identifier)
@@ -153,7 +201,6 @@ describe('Auto-Destroy with Database Storage', function (): void {
 
         Cart::setIdentifier($identifier)->remove('item1');
 
-        // Verify record is deleted
         expect(
             Illuminate\Support\Facades\DB::table('carts')
                 ->where('identifier', $identifier)
@@ -162,16 +209,14 @@ describe('Auto-Destroy with Database Storage', function (): void {
         )->toBeFalse();
     });
 
-    it('keeps database record when preserve_empty_cart is true', function (): void {
-        // Reset events to avoid leakage from beforeEach destroy() call
+    it('keeps database record with preserve behavior', function (): void {
         Event::fake();
-
-        Config::set('cart.preserve_empty_cart', true);
+        Config::set('cart.empty_cart_behavior', 'preserve');
 
         $identifier = 'user-456';
         Cart::setIdentifier($identifier)->add('item1', 'Product 1', 100, 1);
+        Cart::setIdentifier($identifier)->setMetadata('voucher', 'SAVE10');
 
-        // Verify cart was created
         expect(
             Illuminate\Support\Facades\DB::table('carts')
                 ->where('identifier', $identifier)
@@ -181,17 +226,44 @@ describe('Auto-Destroy with Database Storage', function (): void {
 
         Cart::setIdentifier($identifier)->remove('item1');
 
-        // Record should still exist with empty items when preserve_empty_cart is true
         $cart = Illuminate\Support\Facades\DB::table('carts')
             ->where('identifier', $identifier)
             ->where('instance', 'default')
             ->first();
 
-        // Cart should still exist
         expect($cart)->not->toBeNull();
 
-        // Items should be empty array
         $items = json_decode($cart->items ?? '[]', true);
         expect($items)->toBe([]);
+
+        // Metadata should be preserved
+        $metadata = json_decode($cart->metadata ?? '{}', true);
+        expect($metadata['voucher'] ?? null)->toBe('SAVE10');
+    });
+
+    it('clears database record with clear behavior', function (): void {
+        Event::fake();
+        Config::set('cart.empty_cart_behavior', 'clear');
+
+        $identifier = 'user-789';
+        Cart::setIdentifier($identifier)->add('item1', 'Product 1', 100, 1);
+        Cart::setIdentifier($identifier)->setMetadata('voucher', 'SAVE10');
+
+        Cart::setIdentifier($identifier)->remove('item1');
+
+        $cart = Illuminate\Support\Facades\DB::table('carts')
+            ->where('identifier', $identifier)
+            ->where('instance', 'default')
+            ->first();
+
+        // Cart row should exist but be empty
+        expect($cart)->not->toBeNull();
+
+        $items = json_decode($cart->items ?? '[]', true);
+        expect($items)->toBe([]);
+
+        // Metadata should be cleared
+        $metadata = json_decode($cart->metadata ?? '{}', true);
+        expect($metadata)->toBe([]);
     });
 });

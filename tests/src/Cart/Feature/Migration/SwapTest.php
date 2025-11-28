@@ -28,6 +28,7 @@ beforeEach(function (): void {
         $table->longText('conditions')->nullable();
         $table->longText('metadata')->nullable();
         $table->bigInteger('version')->default(1)->index()->comment('Version number for optimistic locking');
+        $table->timestamp('expires_at')->nullable()->index();
         $table->timestamps();
         $table->unique(['identifier', 'instance']);
     });
@@ -206,6 +207,7 @@ it('returns false when swapping non-existent cart', function (): void {
         $table->longText('items')->nullable();
         $table->longText('conditions')->nullable();
         $table->longText('metadata')->nullable();
+        $table->timestamp('expires_at')->nullable()->index();
         $table->timestamps();
         $table->unique(['identifier', 'instance']);
     });

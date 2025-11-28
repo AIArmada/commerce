@@ -22,6 +22,7 @@ Start here to get up and running quickly:
 ### Building a Feature?
 Jump directly to the relevant guide:
 - **Pricing & Discounts** → [Conditions & Pricing](conditions.md)
+- **Payment Checkout** → [Payment Integration](payment-integration.md)
 - **User Login Flow** → [User Migration](identifiers-and-migration.md)
 - **Multi-Device Carts** → [Storage Drivers](storage.md)
 - **High Traffic** → [Concurrency Control](concurrency.md)
@@ -52,6 +53,7 @@ Master the day-to-day operations you'll use most frequently.
 | **[Conditions & Pricing](conditions.md)** | Create discounts, taxes, fees, shipping rules; build dynamic conditions; understand calculation order |
 | **[Storage Drivers](storage.md)** | Choose between session, cache, or database; understand trade-offs; implement custom drivers |
 | **[Money & Currency](money-and-currency.md)** | Work with Money objects; format for display; handle multi-currency scenarios |
+| **[Payment Integration](payment-integration.md)** | Connect to payment gateways (CHIP, Stripe, etc.); implement CheckoutableInterface; handle webhooks |
 
 ### Advanced Topics
 

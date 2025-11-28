@@ -168,27 +168,23 @@ final class VoucherInfolist
                 ->schema([
                     Grid::make(4)
                         ->schema([
-                            TextEntry::make('walletEntriesCount')
+                            TextEntry::make('wallet_entries_count')
                                 ->label('Total in Wallets')
-                                ->state(static fn ($record): int => $record->walletEntriesCount ?? 0)
                                 ->badge()
                                 ->color('primary'),
 
-                            TextEntry::make('walletAvailableCount')
+                            TextEntry::make('wallet_available_count')
                                 ->label('Available')
-                                ->state(static fn ($record): int => $record->walletAvailableCount ?? 0)
                                 ->badge()
                                 ->color('success'),
 
-                            TextEntry::make('walletClaimedCount')
+                            TextEntry::make('wallet_claimed_count')
                                 ->label('Claimed')
-                                ->state(static fn ($record): int => $record->walletClaimedCount ?? 0)
                                 ->badge()
                                 ->color('warning'),
 
-                            TextEntry::make('walletRedeemedCount')
+                            TextEntry::make('wallet_redeemed_count')
                                 ->label('Redeemed')
-                                ->state(static fn ($record): int => $record->walletRedeemedCount ?? 0)
                                 ->badge()
                                 ->color('danger'),
                         ]),

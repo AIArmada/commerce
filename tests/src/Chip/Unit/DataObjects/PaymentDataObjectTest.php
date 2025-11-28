@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\DataObjects\Payment;
+use Akaunting\Money\Money;
 
 describe('Payment data object', function (): void {
     it('creates a payment from array data', function (): void {
@@ -23,10 +24,11 @@ describe('Payment data object', function (): void {
         $payment = Payment::fromArray($data);
 
         expect($payment->payment_type)->toBe('purchase');
-        expect($payment->amount)->toBe(10000);
-        expect($payment->net_amount)->toBe(9950);
-        expect($payment->fee_amount)->toBe(50);
-        expect($payment->currency)->toBe('MYR');
+        expect($payment->amount)->toBeInstanceOf(Money::class);
+        expect($payment->getAmountInCents())->toBe(10000);
+        expect($payment->getNetAmountInCents())->toBe(9950);
+        expect($payment->getFeeAmountInCents())->toBe(50);
+        expect($payment->getCurrency())->toBe('MYR');
         expect($payment->description)->toBe('Test payment');
         expect($payment->paid_on)->toBe(1640995800);
     });

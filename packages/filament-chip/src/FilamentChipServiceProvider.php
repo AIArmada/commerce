@@ -17,7 +17,8 @@ final class FilamentChipServiceProvider extends PackageServiceProvider
     {
         $package
             ->name('filament-chip')
-            ->hasConfigFile();
+            ->hasConfigFile()
+            ->hasViews();
     }
 
     public function packageRegistered(): void

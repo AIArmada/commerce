@@ -7,9 +7,11 @@ namespace AIArmada\Chip;
 use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Clients\ChipSendClient;
 use AIArmada\Chip\Commands\ChipHealthCheckCommand;
+use AIArmada\Chip\Gateways\ChipGateway;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\WebhookService;
+use AIArmada\CommerceSupport\Contracts\Payment\PaymentGatewayInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Spatie\LaravelPackageTools\Package;
@@ -33,6 +35,7 @@ final class ChipServiceProvider extends PackageServiceProvider
     {
         $this->registerServices();
         $this->registerClients();
+        $this->registerGateway();
     }
 
     public function packageBooted(): void
@@ -54,8 +57,11 @@ final class ChipServiceProvider extends PackageServiceProvider
             WebhookService::class,
             ChipCollectClient::class,
             ChipSendClient::class,
+            ChipGateway::class,
+            PaymentGatewayInterface::class,
             'chip.collect',
             'chip.send',
+            'chip.gateway',
         ];
     }
 
@@ -129,5 +135,23 @@ final class ChipServiceProvider extends PackageServiceProvider
                 ])
             );
         });
+    }
+
+    protected function registerGateway(): void
+    {
+        $this->app->singleton(ChipGateway::class, function ($app): ChipGateway {
+            return new ChipGateway(
+                $app->make(ChipCollectService::class),
+                $app->make(WebhookService::class)
+            );
+        });
+
+        // Register as the default PaymentGatewayInterface if no other is bound
+        // This allows other packages to swap it with their own implementation
+        if (! $this->app->bound(PaymentGatewayInterface::class)) {
+            $this->app->bind(PaymentGatewayInterface::class, ChipGateway::class);
+        }
+
+        $this->app->alias(ChipGateway::class, 'chip.gateway');
     }
 }

@@ -1,62 +1,41 @@
-# AIArmada Cart Vouchers
+# AIArmada Vouchers
 
-> Professional voucher and coupon system for AIArmada Cart
+A flexible voucher and coupon system for Laravel with cart integration, multi-tenancy support, and comprehensive usage tracking.
 
-Add powerful voucher functionality to your Laravel shopping cart with support for percentage discounts, fixed amounts, free shipping, usage limits, and advanced validation rules.
+## Features
 
-## ✨ Features
+- **Multiple Voucher Types** — Percentage discounts, fixed amounts, and free shipping
+- **Usage Limits** — Global limits and per-user restrictions
+- **Time-Based Campaigns** — Start and expiry dates for promotions
+- **Voucher Wallet** — Users can save vouchers for later use
+- **Multi-Tenancy** — Scope vouchers to owners/merchants via configurable resolver
+- **Manual Redemption** — Record offline usage with channels, metadata, and attribution
+- **Usage Tracking** — Complete history and conversion analytics
+- **Cart Integration** — Seamless integration with AIArmada Cart
 
-- 🎫 **Multiple Voucher Types** - Percentage, fixed amount, free shipping
-- 🔒 **Usage Limits** - Global limits and per-user restrictions
-- 📅 **Time-Based** - Start and expiry dates for campaigns
-- 💼 **Voucher Wallet** - Save vouchers for later use with polymorphic owner support
-- 💰 **Smart Constraints** - Minimum cart values, maximum discounts
-- 🧑‍🤝‍🧑 **Multi-Owner Aware** - Scope vouchers to the current tenant or merchant using a configurable resolver
-- 🧾 **Manual Redemption** - Record offline usage with channels, metadata, and staff attribution
-- 📊 **Usage Tracking** - Complete history of voucher applications
-- ⚡ **Real-Time Validation** - Instant feedback on voucher validity
-- 🔐 **Secure** - Built-in validation and fraud prevention
+## Requirements
 
-## 📦 Installation
+- PHP 8.2+
+- Laravel 12+
+- AIArmada Cart
+
+## Installation
 
 ```bash
-composer require aiarmada/cart-vouchers
+composer require aiarmada/vouchers
 ```
 
-Publish the configuration and migrations:
+Publish configuration and migrations:
 
 ```bash
 php artisan vendor:publish --tag=vouchers-config
 php artisan vendor:publish --tag=vouchers-migrations
-```
-
-Run migrations:
-
-```bash
 php artisan migrate
 ```
 
-### JSON vs JSONB (PostgreSQL)
+## Quick Start
 
-Migrations default to portable `json` columns. To opt into `jsonb` on a fresh install, set one of the following BEFORE running migrations:
-
-```env
-COMMERCE_JSON_COLUMN_TYPE=jsonb
-# or per-package override
-VOUCHERS_JSON_COLUMN_TYPE=jsonb
-```
-
-Or run the interactive setup:
-
-```bash
-php artisan commerce:configure-database
-```
-
-When using PostgreSQL + `jsonb`, GIN indexes are created automatically on voucher JSON fields: `metadata`.
-
-## 🚀 Quick Start
-
-### Create a Voucher
+### Creating Vouchers
 
 ```php
 use AIArmada\Vouchers\Facades\Voucher;
@@ -67,8 +46,10 @@ $voucher = Voucher::create([
     'name' => 'Summer Sale 2024',
     'description' => '20% off your entire order',
     'type' => VoucherType::Percentage,
-    'value' => 20.00,
-    'min_cart_value' => 50.00,
+    'value' => 2000, // 20.00% (stored as basis points)
+    'currency' => 'MYR',
+    'min_cart_value' => 5000, // RM50.00 minimum (stored as cents)
+    'max_discount' => 10000, // RM100.00 max discount (stored as cents)
     'usage_limit' => 1000,
     'usage_limit_per_user' => 1,
     'starts_at' => now(),
@@ -76,27 +57,94 @@ $voucher = Voucher::create([
 ]);
 ```
 
-### Apply to Cart
+### Applying to Cart
 
 ```php
 use AIArmada\Cart\Facades\Cart;
 
 try {
     Cart::applyVoucher('SUMMER2024');
-    
-    $total = Cart::getTotal();
-    echo "Total with voucher: {$total->format()}";
-    
-} catch (\AIArmada\Vouchers\Exceptions\VoucherNotFoundException $e) {
-    // Voucher doesn't exist
-} catch (\AIArmada\Vouchers\Exceptions\VoucherExpiredException $e) {
-    // Voucher has expired
+    echo "Total: " . Cart::getTotal()->format();
+} catch (\AIArmada\Vouchers\Exceptions\InvalidVoucherException $e) {
+    echo $e->getMessage();
 }
 ```
 
-### Manual Redemption
+### Checking and Removing Vouchers
 
-Record offline usage for POS or concierge scenarios while keeping analytics accurate:
+```php
+// Check if voucher is applied
+if (Cart::hasVoucher('SUMMER2024')) {
+    // Get applied voucher codes
+    $codes = Cart::getAppliedVoucherCodes();
+    
+    // Get total discount
+    $discount = Cart::getVoucherDiscount();
+    
+    // Remove voucher
+    Cart::removeVoucher('SUMMER2024');
+}
+
+// Clear all vouchers
+Cart::clearVouchers();
+```
+
+## Voucher Types
+
+| Type | Enum Value | Description |
+|------|------------|-------------|
+| Percentage | `VoucherType::Percentage` | Reduces cart total by percentage (stored as basis points: 1050 = 10.50%) |
+| Fixed | `VoucherType::Fixed` | Reduces cart total by fixed amount (stored as cents) |
+| Free Shipping | `VoucherType::FreeShipping` | Removes shipping costs |
+
+## Voucher Status
+
+| Status | Description |
+|--------|-------------|
+| `VoucherStatus::Active` | Voucher can be used |
+| `VoucherStatus::Paused` | Temporarily disabled |
+| `VoucherStatus::Expired` | Past expiry date |
+| `VoucherStatus::Depleted` | Usage limit reached |
+
+## Voucher Wallet
+
+Allow users to save vouchers for later use:
+
+```php
+use AIArmada\Vouchers\Traits\HasVouchers;
+
+class User extends Model
+{
+    use HasVouchers;
+}
+```
+
+```php
+// Add voucher to wallet
+$user->addVoucherToWallet('SUMMER2024');
+
+// Check if voucher exists
+$user->hasVoucherInWallet('SUMMER2024');
+
+// Get available vouchers
+$available = $user->getAvailableVouchers();
+
+// Get redeemed vouchers
+$redeemed = $user->getRedeemedVouchers();
+
+// Get expired vouchers
+$expired = $user->getExpiredVouchers();
+
+// Mark as redeemed
+$user->markVoucherAsRedeemed('SUMMER2024');
+
+// Remove from wallet (only if not redeemed)
+$user->removeVoucherFromWallet('SUMMER2024');
+```
+
+## Manual Redemption
+
+Record offline usage for POS or admin-initiated redemptions:
 
 ```php
 use AIArmada\Vouchers\Facades\Voucher;
@@ -104,102 +152,211 @@ use Akaunting\Money\Money;
 
 Voucher::redeemManually(
     code: 'SUMMER2024',
-    userIdentifier: 'order-1001',
-    discountAmount: Money::USD(2500),
-    reference: 'counter-19',
-    metadata: ['source' => 'retail-pos'],
-    notes: 'Awarded during in-store event'
+    discountAmount: Money::MYR(2500), // RM25.00
+    reference: 'POS-001',
+    metadata: ['terminal' => 'store-a'],
+    redeemedBy: $staff,
+    notes: 'In-store promotion'
 );
 ```
 
-### Owner Scoping
+By default, vouchers must have `allows_manual_redemption = true` to be redeemed manually. Configure this in `vouchers.redemption.manual_requires_flag`.
 
-Enable multi-tenant or multi-merchant scoping by registering a resolver that returns the current owner model:
+## Multi-Tenancy (Owner Scoping)
+
+Scope vouchers to specific owners like merchants or stores:
 
 ```php
 // config/vouchers.php
 'owner' => [
     'enabled' => true,
-    'resolver' => App\Support\Vouchers\CurrentOwnerResolver::class,
+    'resolver' => App\Support\CurrentMerchantResolver::class,
+    'include_global' => true, // Also show global vouchers
+    'auto_assign_on_create' => true,
 ],
 ```
 
-When enabled, all lookups automatically constrain vouchers to the resolved owner while optionally including global vouchers. New vouchers created through the service are associated with the current owner for you.
-
-### Voucher Wallet
-
-Allow users (or any model) to save vouchers for later use:
+Create a resolver implementing `VoucherOwnerResolver`:
 
 ```php
-use AIArmada\Vouchers\Traits\HasVoucherWallet;
+use AIArmada\Vouchers\Contracts\VoucherOwnerResolver;
+use Illuminate\Database\Eloquent\Model;
 
-class User extends Model
+class CurrentMerchantResolver implements VoucherOwnerResolver
 {
-    use HasVoucherWallet;
+    public function resolve(): ?Model
+    {
+        return auth()->user()?->merchant;
+    }
 }
-
-// Add voucher to wallet
-$user->addVoucherToWallet('SUMMER2024');
-
-// Check if voucher exists in wallet
-if ($user->hasVoucherInWallet('SUMMER2024')) {
-    // Voucher is saved
-}
-
-// Get available vouchers
-$availableVouchers = $user->getAvailableVouchers();
-
-// Get redeemed vouchers
-$redeemedVouchers = $user->getRedeemedVouchers();
-
-// Get expired vouchers
-$expiredVouchers = $user->getExpiredVouchers();
-
-// Mark as redeemed
-$user->markVoucherAsRedeemed('SUMMER2024');
-
-// Remove from wallet
-$user->removeVoucherFromWallet('SUMMER2024');
 ```
 
-The wallet system tracks claimed and redeemed status with timestamps and supports custom metadata for each entry.
+## Usage Analytics
 
-## 📚 Documentation
+Track voucher performance:
 
-- [Installation & Setup](docs/installation.md)
-- [Creating Vouchers](docs/creating-vouchers.md)
-- [Validation Rules](docs/validation-rules.md)
-- [Cart Integration](docs/cart-integration.md)
-- [Usage Tracking](docs/usage-tracking.md)
-- [API Reference](docs/api-reference.md)
+```php
+$voucher = \AIArmada\Vouchers\Models\Voucher::find($id);
 
-## 🧪 Testing
+// Get conversion rate (redeemed vs applied)
+$conversionRate = $voucher->getConversionRate(); // e.g., 45.5%
+
+// Get abandoned count
+$abandoned = $voucher->getAbandonedCount();
+
+// Get comprehensive statistics
+$stats = $voucher->getStatistics();
+// [
+//     'applied_count' => 100,
+//     'redeemed_count' => 45,
+//     'abandoned_count' => 55,
+//     'conversion_rate' => 45.0,
+//     'remaining_uses' => 955,
+// ]
+```
+
+## Configuration
+
+### Code Settings
+
+```php
+'code' => [
+    // Automatically uppercase codes for case-insensitive matching
+    'auto_uppercase' => env('VOUCHERS_AUTO_UPPERCASE', true),
+],
+```
+
+### Cart Integration
+
+```php
+'cart' => [
+    // Maximum vouchers per cart (0 = disabled, -1 = unlimited)
+    'max_vouchers_per_cart' => env('VOUCHERS_MAX_PER_CART', 1),
+    
+    // Replace oldest voucher when max reached
+    'replace_when_max_reached' => env('VOUCHERS_REPLACE_WHEN_MAX_REACHED', true),
+    
+    // Condition order in calculation chain (lower = earlier)
+    'condition_order' => env('VOUCHERS_CONDITION_ORDER', 50),
+    
+    // Allow vouchers to stack sequentially
+    'allow_stacking' => env('VOUCHERS_ALLOW_STACKING', false),
+],
+```
+
+### Validation
+
+```php
+'validation' => [
+    'check_user_limit' => env('VOUCHERS_CHECK_USER_LIMIT', true),
+    'check_global_limit' => env('VOUCHERS_CHECK_GLOBAL_LIMIT', true),
+    'check_min_cart_value' => env('VOUCHERS_CHECK_MIN_CART_VALUE', true),
+],
+```
+
+### Application Tracking
+
+```php
+'tracking' => [
+    // Track applied_count when voucher is added to cart
+    'track_applications' => env('VOUCHERS_TRACK_APPLICATIONS', true),
+],
+```
+
+### Database Tables
+
+```php
+'table_names' => [
+    'vouchers' => 'vouchers',
+    'voucher_usage' => 'voucher_usage',
+    'voucher_wallets' => 'voucher_wallets',
+    'voucher_assignments' => 'voucher_assignments',
+    'voucher_transactions' => 'voucher_transactions',
+],
+```
+
+### Manual Redemption
+
+```php
+'redemption' => [
+    // Require allows_manual_redemption flag on voucher
+    'manual_requires_flag' => env('VOUCHERS_MANUAL_REQUIRES_FLAG', true),
+    
+    // Channel name for manual redemptions
+    'manual_channel' => 'manual',
+],
+```
+
+## Facade Methods
+
+```php
+use AIArmada\Vouchers\Facades\Voucher;
+
+// CRUD
+Voucher::find(string $code): ?VoucherData
+Voucher::findOrFail(string $code): VoucherData
+Voucher::create(array $data): VoucherData
+Voucher::update(string $code, array $data): VoucherData
+Voucher::delete(string $code): bool
+
+// Validation
+Voucher::validate(string $code, mixed $cart): VoucherValidationResult
+Voucher::isValid(string $code): bool
+Voucher::canBeUsedBy(string $code, ?Model $user = null): bool
+Voucher::getRemainingUses(string $code): int
+
+// Usage
+Voucher::recordUsage(string $code, Money $discountAmount, ...): void
+Voucher::redeemManually(string $code, Money $discountAmount, ...): void
+Voucher::getUsageHistory(string $code): Collection
+
+// Wallet
+Voucher::addToWallet(string $code, Model $owner, ?array $metadata = null): VoucherWallet
+Voucher::removeFromWallet(string $code, Model $owner): bool
+```
+
+## Cart Methods
+
+When using `InteractsWithVouchers` trait (included in Cart by default):
+
+```php
+use AIArmada\Cart\Facades\Cart;
+
+Cart::applyVoucher(string $code, int $order = 100): self
+Cart::removeVoucher(string $code): self
+Cart::clearVouchers(): self
+Cart::hasVoucher(?string $code = null): bool
+Cart::getVoucherCondition(string $code): ?VoucherCondition
+Cart::getAppliedVouchers(): array
+Cart::getAppliedVoucherCodes(): array
+Cart::getVoucherDiscount(): float
+Cart::canAddVoucher(): bool
+Cart::validateAppliedVouchers(): array
+```
+
+## Exceptions
+
+| Exception | Description |
+|-----------|-------------|
+| `VoucherNotFoundException` | Voucher code does not exist |
+| `VoucherExpiredException` | Voucher has expired |
+| `InvalidVoucherException` | Voucher is invalid (inactive, not started, min cart value not met) |
+| `VoucherUsageLimitException` | Usage limit exceeded |
+| `ManualRedemptionNotAllowedException` | Manual redemption not allowed for this voucher |
+
+## Events
+
+| Event | Description |
+|-------|-------------|
+| `VoucherApplied` | Fired when a voucher is applied to cart |
+| `VoucherRemoved` | Fired when a voucher is removed from cart |
+
+## Testing
 
 ```bash
 composer test
 ```
 
-## 📝 Requirements
-
-- PHP 8.2+
-- Laravel 12+
-- AIArmada Cart 2.0+
-
-## 📄 License
+## License
 
 MIT License. See [LICENSE](LICENSE) for details.
-
-## 🤝 Contributing
-
-Contributions are welcome! Please see [CONTRIBUTING.md](../../CONTRIBUTING.md) for details.
-
-## 🔗 Related Packages
-
-- [aiarmada/cart](https://github.com/aiarmada/cart) - Core shopping cart (required)
-- [aiarmada/filament-cart](https://github.com/aiarmada/filament-cart) - Filament admin panel for cart
-
-## 💬 Support
-
-- [Documentation](https://github.com/aiarmada/cart/tree/main/docs)
-- [Issues](https://github.com/aiarmada/cart/issues)
-- [Discussions](https://github.com/aiarmada/cart/discussions)

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\DataObjects;
 
+use Akaunting\Money\Money;
 use Carbon\Carbon;
 
 class Purchase
@@ -39,7 +40,7 @@ class Purchase
         public readonly ?string $issued, // ISO 8601 date string
         public readonly ?int $due, // Unix timestamp or null
         public readonly string $refund_availability,
-        public readonly int $refundable_amount,
+        public readonly Money $refundable_amount,
         public readonly ?CurrencyConversion $currency_conversion,
         /** @var array<string, mixed> */
         public readonly array $payment_method_whitelist,
@@ -76,7 +77,8 @@ class Purchase
     public function __get($name)
     {
         return match ($name) {
-            'amountInCents' => $this->purchase->total,
+            'amountInCents' => $this->purchase->getTotalInCents(),
+            'amount' => $this->purchase->total,
             'currency' => $this->purchase->currency,
             'checkoutUrl' => $this->checkout_url,
             'metadata' => ($this->purchase->metadata !== null && count($this->purchase->metadata) > 0) ? $this->purchase->metadata : null,
@@ -91,7 +93,7 @@ class Purchase
      */
     public function __isset($name): bool
     {
-        return in_array($name, ['amountInCents', 'currency', 'checkoutUrl', 'isRecurring', 'metadata', 'clientId']);
+        return in_array($name, ['amountInCents', 'amount', 'currency', 'checkoutUrl', 'isRecurring', 'metadata', 'clientId']);
     }
 
     /**
@@ -178,7 +180,7 @@ class Purchase
             issued: $data['issued'] ?? null,
             due: $data['due'] ?? null,
             refund_availability: $data['refund_availability'] ?? 'all',
-            refundable_amount: $data['refundable_amount'] ?? 0,
+            refundable_amount: Money::{$purchase->currency}($data['refundable_amount'] ?? 0),
             currency_conversion: isset($data['currency_conversion']) ? CurrencyConversion::fromArray($data['currency_conversion']) : null,
             payment_method_whitelist: $data['payment_method_whitelist'] ?? [],
             success_redirect: $data['success_redirect'] ?? null,
@@ -205,9 +207,28 @@ class Purchase
         );
     }
 
+    /**
+     * Get the total amount as Money object.
+     */
+    public function getAmount(): Money
+    {
+        return $this->purchase->total;
+    }
+
+    /**
+     * Get the total amount in cents for API communication.
+     */
+    public function getAmountInCents(): int
+    {
+        return $this->purchase->getTotalInCents();
+    }
+
+    /**
+     * @deprecated Use getAmount() or getAmountInCents() instead
+     */
     public function getAmountInMajorUnits(): float
     {
-        return $this->purchase->total / 100;
+        return $this->purchase->total->getAmount() / 100;
     }
 
     public function getCreatedAt(): Carbon
@@ -290,14 +311,36 @@ class Purchase
         return $this->referral_code !== null;
     }
 
-    public function getAmountInCurrency(): float
+    /**
+     * Get the refundable amount as Money object.
+     */
+    public function getRefundableAmount(): Money
     {
-        return $this->purchase->total / 100;
+        return $this->refundable_amount;
     }
 
+    /**
+     * Get the refundable amount in cents for API communication.
+     */
+    public function getRefundableAmountInCents(): int
+    {
+        return (int) $this->refundable_amount->getAmount();
+    }
+
+    /**
+     * @deprecated Use getAmount() instead
+     */
+    public function getAmountInCurrency(): float
+    {
+        return $this->purchase->total->getAmount() / 100;
+    }
+
+    /**
+     * @deprecated Use getRefundableAmount() instead
+     */
     public function getRefundableAmountInCurrency(): float
     {
-        return $this->refundable_amount / 100;
+        return $this->refundable_amount->getAmount() / 100;
     }
 
     /**
@@ -335,7 +378,7 @@ class Purchase
             'issued' => $this->issued,
             'due' => $this->due,
             'refund_availability' => $this->refund_availability,
-            'refundable_amount' => $this->refundable_amount,
+            'refundable_amount' => $this->getRefundableAmountInCents(),
             'currency_conversion' => $this->currency_conversion?->toArray(),
             'payment_method_whitelist' => $this->payment_method_whitelist,
             'success_redirect' => $this->success_redirect,

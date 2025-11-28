@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Traits;
 
 use AIArmada\Cart\Collections\CartCollection;
+use AIArmada\Cart\Enums\EmptyCartBehavior;
 use AIArmada\Cart\Events\CartCreated;
 use AIArmada\Cart\Events\ItemAdded;
 use AIArmada\Cart\Events\ItemRemoved;
@@ -192,12 +193,28 @@ trait ManagesItems
         // Evaluate dynamic conditions after removing item
         $this->evaluateDynamicConditions();
 
-        // Destroy cart if empty and not configured to preserve
-        if ($cartItems->isEmpty() && ! config('cart.preserve_empty_cart', false)) {
-            $this->destroy();
+        // Handle empty cart based on configured behavior
+        if ($cartItems->isEmpty()) {
+            $this->handleEmptyCart();
         }
 
         return $item;
+    }
+
+    /**
+     * Handle cart when it becomes empty based on configured behavior.
+     */
+    private function handleEmptyCart(): void
+    {
+        $behavior = EmptyCartBehavior::tryFrom(
+            config('cart.empty_cart_behavior', 'destroy')
+        ) ?? EmptyCartBehavior::Destroy;
+
+        match ($behavior) {
+            EmptyCartBehavior::Destroy => $this->destroy(),
+            EmptyCartBehavior::Clear => $this->clear(),
+            EmptyCartBehavior::Preserve => null, // Do nothing, keep conditions and metadata
+        };
     }
 
     /**

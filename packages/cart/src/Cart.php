@@ -11,6 +11,8 @@ use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Traits\CalculatesTotals;
+use AIArmada\Cart\Traits\ImplementsCheckoutable;
+use AIArmada\Cart\Traits\ManagesBuyables;
 use AIArmada\Cart\Traits\ManagesConditions;
 use AIArmada\Cart\Traits\ManagesDynamicConditions;
 use AIArmada\Cart\Traits\ManagesIdentifier;
@@ -19,11 +21,14 @@ use AIArmada\Cart\Traits\ManagesItems;
 use AIArmada\Cart\Traits\ManagesMetadata;
 use AIArmada\Cart\Traits\ManagesStorage;
 use AIArmada\Cart\Traits\ProvidesConditionScopes;
+use AIArmada\CommerceSupport\Contracts\Payment\CheckoutableInterface;
 use Illuminate\Contracts\Events\Dispatcher;
 
-final class Cart
+final class Cart implements CheckoutableInterface
 {
     use CalculatesTotals;
+    use ImplementsCheckoutable;
+    use ManagesBuyables;
     use ManagesConditions;
     use ManagesDynamicConditions;
     use ManagesIdentifier;

@@ -53,10 +53,12 @@ trait InteractsWithVouchers
             );
         }
 
+        /** @var int $maxVouchers */
         $maxVouchers = config('vouchers.cart.max_vouchers_per_cart', 1);
         $currentVoucherCount = count($this->getAppliedVouchers());
 
         if ($currentVoucherCount >= $maxVouchers && $maxVouchers > 0) {
+            /** @var bool $replaceWhenMaxReached */
             $replaceWhenMaxReached = config('vouchers.cart.replace_when_max_reached', false);
 
             if ($replaceWhenMaxReached) {

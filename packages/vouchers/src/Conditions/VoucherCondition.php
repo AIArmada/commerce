@@ -93,6 +93,7 @@ class VoucherCondition implements Arrayable, CartConditionConvertible
             return null;
         }
 
+        /** @var array<string, mixed> $voucherData */
         $data = VoucherData::fromArray($voucherData);
 
         $instance = new self(
@@ -113,6 +114,9 @@ class VoucherCondition implements Arrayable, CartConditionConvertible
             return $this->cartCondition;
         }
 
+        // Note: When registering dynamic conditions via registerDynamicCondition(),
+        // the rules are recreated by the VoucherRulesFactory using the factory key.
+        // We pass null here and let registerDynamicCondition handle the rules.
         $this->cartCondition = new CartCondition(
             name: $this->name,
             type: $this->type,
@@ -120,7 +124,7 @@ class VoucherCondition implements Arrayable, CartConditionConvertible
             value: $this->value,
             attributes: $this->attributes,
             order: $this->order,
-            rules: $this->isDynamic() ? $this->rules : null
+            rules: $this->rules // @phpstan-ignore argument.type
         );
 
         return $this->cartCondition;

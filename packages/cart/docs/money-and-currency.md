@@ -1,8 +1,10 @@
 # 💰 Money & Currency Handling
 
-> **Precise financial calculations with zero rounding errors—powered by akaunting/laravel-money for production-grade e-commerce.**
+> **Precise financial calculations with zero rounding errors—powered by Money objects for production-grade e-commerce.**
 
-AIArmada Cart uses the **akaunting/laravel-money** package to ensure accurate monetary calculations. All cart totals, subtotals, item prices, and condition amounts are represented as `Money` objects, eliminating floating-point precision issues.
+AIArmada Cart uses `Akaunting\Money\Money` objects (via the `aiarmada/commerce-support` package) to ensure accurate monetary calculations. All cart totals, subtotals, item prices, and condition amounts are represented as `Money` objects, eliminating floating-point precision issues.
+
+> **Note:** The Money integration is provided by `aiarmada/commerce-support`, which is automatically installed as a dependency. You don't need to install `akaunting/laravel-money` directly.
 
 ## 📋 Table of Contents
 

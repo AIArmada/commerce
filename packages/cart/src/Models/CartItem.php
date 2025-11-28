@@ -6,12 +6,14 @@ namespace AIArmada\Cart\Models;
 
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\CommerceSupport\Contracts\Payment\LineItemInterface;
+use Akaunting\Money\Money;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Support\Collection;
 use JsonSerializable;
 
-final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable
+final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, LineItemInterface
 {
     use Traits\AssociatedModelTrait;
     use Traits\AttributeTrait;

@@ -4,20 +4,22 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\DataObjects;
 
+use Akaunting\Money\Money;
+
 final class PurchaseDetails
 {
     public function __construct(
         public readonly string $currency,
         /** @var array<int, Product> */
         public readonly array $products,
-        public readonly int $total,
+        public readonly Money $total,
         public readonly string $language,
         public readonly ?string $notes,
-        public readonly int $debt,
-        public readonly ?int $subtotal_override,
-        public readonly ?int $total_tax_override,
-        public readonly ?int $total_discount_override,
-        public readonly ?int $total_override,
+        public readonly Money $debt,
+        public readonly ?Money $subtotal_override,
+        public readonly ?Money $total_tax_override,
+        public readonly ?Money $total_discount_override,
+        public readonly ?Money $total_override,
         /** @var array<string, mixed> */
         public readonly array $request_client_details,
         public readonly string $timezone,
@@ -28,21 +30,28 @@ final class PurchaseDetails
     ) {}
 
     /**
+     * Create PurchaseDetails from array data (typically from CHIP API response).
+     * Amounts in the array are expected to be in cents (minor units).
+     *
      * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
     {
+        $currency = $data['currency'] ?? 'MYR';
+
         return new self(
-            currency: $data['currency'] ?? 'MYR',
-            products: isset($data['products']) ? array_map(fn ($product) => Product::fromArray($product), $data['products']) : [],
-            total: $data['total'] ?? 0,
+            currency: $currency,
+            products: isset($data['products'])
+                ? array_map(fn ($product) => Product::fromArray($product, $currency), $data['products'])
+                : [],
+            total: Money::{$currency}($data['total'] ?? 0),
             language: $data['language'] ?? 'en',
             notes: $data['notes'] ?? null,
-            debt: $data['debt'] ?? 0,
-            subtotal_override: $data['subtotal_override'] ?? null,
-            total_tax_override: $data['total_tax_override'] ?? null,
-            total_discount_override: $data['total_discount_override'] ?? null,
-            total_override: $data['total_override'] ?? null,
+            debt: Money::{$currency}($data['debt'] ?? 0),
+            subtotal_override: isset($data['subtotal_override']) ? Money::{$currency}($data['subtotal_override']) : null,
+            total_tax_override: isset($data['total_tax_override']) ? Money::{$currency}($data['total_tax_override']) : null,
+            total_discount_override: isset($data['total_discount_override']) ? Money::{$currency}($data['total_discount_override']) : null,
+            total_override: isset($data['total_override']) ? Money::{$currency}($data['total_override']) : null,
             request_client_details: is_array($data['request_client_details'] ?? null) ? $data['request_client_details'] : [],
             timezone: $data['timezone'] ?? 'Asia/Kuala_Lumpur',
             due_strict: $data['due_strict'] ?? false,
@@ -51,19 +60,53 @@ final class PurchaseDetails
         );
     }
 
-    public function getTotalInCurrency(): float
+    /**
+     * Get the total in cents for API communication.
+     */
+    public function getTotalInCents(): int
     {
-        return $this->total / 100;
-    }
-
-    public function getSubtotalInCurrency(): float
-    {
-        return array_reduce($this->products, function ($carry, $product) {
-            return $carry + ($product->price * (float) $product->quantity);
-        }, 0) / 100;
+        return (int) $this->total->getAmount();
     }
 
     /**
+     * Get the calculated subtotal from products as Money.
+     */
+    public function getSubtotal(): Money
+    {
+        $subtotalCents = array_reduce($this->products, function ($carry, Product $product) {
+            return $carry + $product->getPriceInCents() * (float) $product->quantity;
+        }, 0);
+
+        return Money::{$this->currency}((int) $subtotalCents);
+    }
+
+    /**
+     * Get the subtotal in cents for API communication.
+     */
+    public function getSubtotalInCents(): int
+    {
+        return (int) $this->getSubtotal()->getAmount();
+    }
+
+    /**
+     * @deprecated Use getTotalInCents() or $this->total directly
+     */
+    public function getTotalInCurrency(): float
+    {
+        return $this->total->getAmount() / 100;
+    }
+
+    /**
+     * @deprecated Use getSubtotalInCents() or getSubtotal() directly
+     */
+    public function getSubtotalInCurrency(): float
+    {
+        return $this->getSubtotal()->getAmount() / 100;
+    }
+
+    /**
+     * Convert to array for CHIP API (amounts in cents).
+     *
      * @return array<string, mixed>
      */
     public function toArray(): array
@@ -71,14 +114,14 @@ final class PurchaseDetails
         return [
             'currency' => $this->currency,
             'products' => array_map(fn ($product) => $product->toArray(), $this->products),
-            'total' => $this->total,
+            'total' => $this->getTotalInCents(),
             'language' => $this->language,
             'notes' => $this->notes,
-            'debt' => $this->debt,
-            'subtotal_override' => $this->subtotal_override,
-            'total_tax_override' => $this->total_tax_override,
-            'total_discount_override' => $this->total_discount_override,
-            'total_override' => $this->total_override,
+            'debt' => (int) $this->debt->getAmount(),
+            'subtotal_override' => $this->subtotal_override ? (int) $this->subtotal_override->getAmount() : null,
+            'total_tax_override' => $this->total_tax_override ? (int) $this->total_tax_override->getAmount() : null,
+            'total_discount_override' => $this->total_discount_override ? (int) $this->total_discount_override->getAmount() : null,
+            'total_override' => $this->total_override ? (int) $this->total_override->getAmount() : null,
             'request_client_details' => $this->request_client_details,
             'timezone' => $this->timezone,
             'due_strict' => $this->due_strict,

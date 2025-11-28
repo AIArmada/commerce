@@ -1,0 +1,38 @@
+{
+    "name": "aiarmada/cashier-chip",
+    "description": "Laravel Cashier-style billing integration for CHIP payment gateway",
+    "license": "MIT",
+    "homepage": "https://github.com/aiarmada/commerce",
+    "support": {
+        "issues": "https://github.com/aiarmada/commerce/issues",
+        "source": "https://github.com/aiarmada/commerce"
+    },
+    "require": {
+        "aiarmada/chip": "self.version"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\CashierChip\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AIArmada\\CashierChip\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\CashierChip\\CashierChipServiceProvider"
+            ],
+            "aliases": {
+                "CashierChip": "AIArmada\\CashierChip\\Facades\\CashierChip"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

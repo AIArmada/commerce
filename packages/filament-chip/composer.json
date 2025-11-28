@@ -8,8 +8,6 @@
     "source": "https://github.com/aiarmada/commerce"
   },
   "require": {
-    "php": "^8.4",
-    "aiarmada/commerce-support": "self.version",
     "aiarmada/chip": "self.version",
     "filament/filament": "^4.2 || ^5.0"
   },

@@ -1,10 +1,8 @@
-# Package Configuration Guide
+# Configuration Guide
 
-## Table Name Configuration
+Complete configuration reference for the stock package.
 
-The package uses `stock_transactions` as the default table name. You can customize this in the configuration file.
-
-### Publishing Configuration
+## Publishing Configuration
 
 ```bash
 php artisan vendor:publish --tag=stock-config
@@ -12,192 +10,136 @@ php artisan vendor:publish --tag=stock-config
 
 This creates `config/stock.php` in your application.
 
-### Customizing Table Name
+## Configuration Options
 
-If you want to use a different table name (e.g., to match an existing table):
+### Table Name
 
 ```php
-// config/stock.php
-
-return [
-    // Use existing table name
-    'table_name' => env('STOCK_TABLE_NAME', 'inventory_transactions'),
-    
-    // Or keep default
-    'table_name' => env('STOCK_TABLE_NAME', 'stock_transactions'),
-];
+'table_name' => env('STOCK_TABLE_NAME', 'stock_transactions'),
 ```
 
-Then set in your `.env`:
+The database table for stock transactions. Change if you have naming conflicts.
+
+### Low Stock Threshold
+
+```php
+'low_stock_threshold' => env('STOCK_LOW_THRESHOLD', 10),
+```
+
+Default threshold for `isLowStock()` checks. Can be overridden per-call:
+
+```php
+$product->isLowStock();    // Uses config threshold (10)
+$product->isLowStock(25);  // Uses custom threshold (25)
+```
+
+## Cart Integration
+
+```php
+'cart' => [
+    'enabled' => env('STOCK_CART_INTEGRATION', true),
+    'reservation_ttl' => env('STOCK_RESERVATION_TTL', 30),
+],
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `enabled` | `true` | Enable cart package integration |
+| `reservation_ttl` | `30` | Default reservation expiry in minutes |
+
+## Payment Integration
+
+```php
+'payment' => [
+    'auto_deduct' => env('STOCK_AUTO_DEDUCT', true),
+    'events' => [
+        // 'App\Events\OrderPaid',
+    ],
+],
+```
+
+| Option | Default | Description |
+|--------|---------|-------------|
+| `auto_deduct` | `true` | Auto-deduct stock on payment success |
+| `events` | `[]` | Custom payment event classes to listen for |
+
+The package automatically listens to:
+- `AIArmada\CashierChip\Events\PaymentSucceeded`
+- `AIArmada\Cashier\Events\PaymentSucceeded`
+
+Add custom events:
+
+```php
+'events' => [
+    App\Events\OrderPaid::class,
+    App\Events\PaymentCompleted::class,
+],
+```
+
+## Event Dispatching
+
+```php
+'events' => [
+    'low_stock' => env('STOCK_EVENT_LOW_STOCK', true),
+    'out_of_stock' => env('STOCK_EVENT_OUT_OF_STOCK', true),
+    'reserved' => env('STOCK_EVENT_RESERVED', true),
+    'released' => env('STOCK_EVENT_RELEASED', true),
+    'deducted' => env('STOCK_EVENT_DEDUCTED', true),
+],
+```
+
+Disable specific events to reduce overhead:
 
 ```env
-STOCK_TABLE_NAME=inventory_transactions
+STOCK_EVENT_RESERVED=false
+STOCK_EVENT_RELEASED=false
 ```
 
-### Using Existing Table Structure
-
-If you want to use the package with your existing `stock_transactions` table, you need to ensure the columns match:
-
-**Required columns:**
-- `id` (UUID, primary key)
-- `stockable_type` (string) - for polymorphic relationship
-- `stockable_id` (UUID) - for polymorphic relationship  
-- `user_id` (UUID, nullable)
-- `quantity` (integer)
-- `type` (enum: 'in', 'out')
-- `reason` (string, nullable)
-- `note` (text, nullable)
-- `transaction_date` (timestamp)
-- `created_at` (timestamp)
-- `updated_at` (timestamp)
-
-**Your existing table has:**
-- `product_id` (UUID) - instead of polymorphic columns
-- `order_item_id` (UUID, nullable) - additional column
-
-### Option 1: Create New Table (Recommended)
-
-Keep your existing table and create a new one for the package:
-
-```bash
-php artisan migrate
-```
-
-This creates `stock_transactions` table with polymorphic columns.
-
-**Benefits:**
-- No risk to existing data
-- Can migrate gradually
-- Clean separation
-
-### Option 2: Modify Existing Table
-
-Add polymorphic columns to your existing table:
+## Cleanup Settings
 
 ```php
-// In a new migration
-Schema::table('stock_transactions', function (Blueprint $table) {
-    $table->string('stockable_type')->nullable()->after('id');
-    $table->uuid('stockable_id')->nullable()->after('stockable_type');
-    
-    $table->index(['stockable_type', 'stockable_id']);
-});
-
-// Populate new columns from existing data
-DB::statement("
-    UPDATE stock_transactions 
-    SET stockable_type = 'App\\\\Models\\\\Product',
-        stockable_id = product_id
-    WHERE product_id IS NOT NULL
-");
+'cleanup' => [
+    'keep_expired_for_minutes' => env('STOCK_KEEP_EXPIRED', 0),
+],
 ```
 
-Then configure the package:
+| Option | Default | Description |
+|--------|---------|-------------|
+| `keep_expired_for_minutes` | `0` | Grace period before deleting expired reservations |
 
-```php
-// config/stock.php
-return [
-    'table_name' => 'stock_transactions', // Use existing table
-];
-```
-
-## Low Stock Threshold
-
-Configure the default threshold for low stock alerts:
-
-```php
-// config/stock.php
-return [
-    'low_stock_threshold' => env('STOCK_LOW_THRESHOLD', 10),
-];
-```
-
-Then in `.env`:
+Set to a positive value to keep expired reservations for debugging:
 
 ```env
-STOCK_LOW_THRESHOLD=20
+STOCK_KEEP_EXPIRED=60
 ```
 
-**Usage:**
-
-```php
-// Uses config threshold (10 or 20 from env)
-$isLow = $product->isLowStock();
-
-// Override with custom threshold
-$isLow = $product->isLowStock(50);
-```
-
-## Transaction Reasons
-
-Customize available transaction reasons:
-
-```php
-// config/stock.php
-return [
-    'transaction_reasons' => [
-        'restock' => 'Restock',
-        'sale' => 'Sale',
-        'return' => 'Return',
-        'adjustment' => 'Adjustment',
-        'damaged' => 'Damaged',
-        'initial' => 'Initial Stock',
-        // Add custom reasons
-        'transfer' => 'Transfer',
-        'promotion' => 'Promotional Gift',
-    ],
-];
-```
-
-**Usage:**
-
-```php
-$product->addStock(100, 'transfer', 'Transfer from warehouse B');
-$product->removeStock(5, 'promotion', 'Free gift with purchase');
-```
-
-## Transaction Types
-
-The package defines two types:
-
-```php
-// config/stock.php
-return [
-    'transaction_types' => [
-        'in' => 'Stock In',
-        'out' => 'Stock Out',
-    ],
-];
-```
-
-These are fixed and shouldn't be changed, but the labels can be customized for display purposes.
-
-## Soft Deletes
-
-Enable soft deletes for stock transactions:
-
-```php
-// config/stock.php
-return [
-    'use_soft_deletes' => env('STOCK_USE_SOFT_DELETES', false),
-];
-```
-
-**Note:** Currently not implemented in the package. This is a placeholder for future enhancement.
+This keeps expired reservations for 60 minutes before cleanup.
 
 ## Environment Variables Reference
 
-All available environment variables:
-
 ```env
-# Table name
+# Table configuration
 STOCK_TABLE_NAME=stock_transactions
 
-# Low stock threshold
+# Thresholds
 STOCK_LOW_THRESHOLD=10
 
-# Soft deletes (future use)
-STOCK_USE_SOFT_DELETES=false
+# Cart integration
+STOCK_CART_INTEGRATION=true
+STOCK_RESERVATION_TTL=30
+
+# Payment integration
+STOCK_AUTO_DEDUCT=true
+
+# Event dispatching
+STOCK_EVENT_LOW_STOCK=true
+STOCK_EVENT_OUT_OF_STOCK=true
+STOCK_EVENT_RESERVED=true
+STOCK_EVENT_RELEASED=true
+STOCK_EVENT_DEDUCTED=true
+
+# Cleanup
+STOCK_KEEP_EXPIRED=0
 ```
 
 ## Complete Configuration Example
@@ -205,83 +147,30 @@ STOCK_USE_SOFT_DELETES=false
 ```php
 <?php
 
-// config/stock.php
-
 return [
     'table_name' => env('STOCK_TABLE_NAME', 'stock_transactions'),
-    
     'low_stock_threshold' => env('STOCK_LOW_THRESHOLD', 10),
-    
-    'transaction_types' => [
-        'in' => 'Stock In',
-        'out' => 'Stock Out',
+
+    'cart' => [
+        'enabled' => env('STOCK_CART_INTEGRATION', true),
+        'reservation_ttl' => env('STOCK_RESERVATION_TTL', 30),
     ],
-    
-    'transaction_reasons' => [
-        'restock' => 'Restock from Supplier',
-        'sale' => 'Customer Sale',
-        'return' => 'Customer Return',
-        'adjustment' => 'Stock Adjustment',
-        'damaged' => 'Damaged/Lost',
-        'initial' => 'Initial Stock Count',
-        'transfer' => 'Warehouse Transfer',
-        'sample' => 'Sample/Demo',
-        'promotion' => 'Promotional Item',
+
+    'payment' => [
+        'auto_deduct' => env('STOCK_AUTO_DEDUCT', true),
+        'events' => [],
     ],
-    
-    'use_soft_deletes' => env('STOCK_USE_SOFT_DELETES', false),
+
+    'events' => [
+        'low_stock' => env('STOCK_EVENT_LOW_STOCK', true),
+        'out_of_stock' => env('STOCK_EVENT_OUT_OF_STOCK', true),
+        'reserved' => env('STOCK_EVENT_RESERVED', true),
+        'released' => env('STOCK_EVENT_RELEASED', true),
+        'deducted' => env('STOCK_EVENT_DEDUCTED', true),
+    ],
+
+    'cleanup' => [
+        'keep_expired_for_minutes' => env('STOCK_KEEP_EXPIRED', 0),
+    ],
 ];
 ```
-
-## Publishing Migrations
-
-If you want to customize the migration:
-
-```bash
-php artisan vendor:publish --tag=stock-migrations
-```
-
-This copies the migration to your `database/migrations` folder where you can modify it before running.
-
-## Publishing Everything
-
-Publish all package files at once:
-
-```bash
-php artisan vendor:publish --provider="AIArmada\Stock\StockServiceProvider"
-```
-
-This publishes:
-- Configuration file
-- Migrations
-
-## Cache Clearing
-
-After changing configuration, clear the cache:
-
-```bash
-php artisan config:clear
-```
-
-## Multi-Tenancy Considerations
-
-If using multi-tenancy, you might want different table names per tenant:
-
-```php
-// In your tenant configuration
-config(['stock.table_name' => 'tenant_' . $tenantId . '_stock_transactions']);
-```
-
-Or use a global table with tenant_id column (requires custom migration).
-
-## Summary
-
-The package is highly configurable:
-- ✅ Custom table names
-- ✅ Configurable thresholds
-- ✅ Custom transaction reasons
-- ✅ Environment variable support
-- ✅ Easy publishing of files
-- ✅ Compatible with existing tables (with modifications)
-
-Start with defaults and customize as needed! 🎉

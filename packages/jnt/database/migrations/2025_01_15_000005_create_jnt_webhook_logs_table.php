@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
@@ -12,14 +13,12 @@ return new class extends Migration
     {
         $tables = config('jnt.database.tables', []);
         $prefix = config('jnt.database.table_prefix', 'jnt_');
-
-        $ordersTable = $tables['orders'] ?? $prefix.'orders';
         $webhookLogsTable = $tables['webhook_logs'] ?? $prefix.'webhook_logs';
 
-        Schema::create($webhookLogsTable, function (Blueprint $table) use ($ordersTable): void {
+        Schema::create($webhookLogsTable, function (Blueprint $table): void {
             $jsonType = (string) commerce_json_column_type('jnt', 'json');
             $table->uuid('id')->primary();
-            $table->foreignUuid('order_id')->nullable()->constrained($ordersTable)->nullOnDelete();
+            $table->foreignUuid('order_id')->nullable();
             $table->string('tracking_number', 30)->nullable()->index();
             $table->string('order_reference', 50)->nullable()->index();
             $table->string('digest', 255)->nullable();

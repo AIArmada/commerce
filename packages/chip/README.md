@@ -9,11 +9,14 @@
 ## Why this package?
 
 - **Complete API coverage** – purchases, refunds, subscriptions, payouts, webhooks, statements.  
+- **Universal Gateway Interface** – implements `PaymentGatewayInterface` for easy provider switching.
 - **First-class Laravel DX** – facades, fluent builders, data objects, events, queues, health checks.  
-- **Production ready** – PHP 8.4 / Laravel 12, PHPStan level 8, Pest v4 test suite.  
+- **Production ready** – PHP 8.4 / Laravel 12, PHPStan level 8, Pest v4 test suite.  
 - **Secure by default** – webhook signature verification, optional masking of request/response logs.
 
-📚 **Full API reference:** [`docs/CHIP_API_REFERENCE.md`](docs/CHIP_API_REFERENCE.md)
+📚 **Documentation:**
+- [`docs/payment-gateway.md`](docs/payment-gateway.md) – Universal payment gateway interface
+- [`docs/CHIP_API_REFERENCE.md`](docs/CHIP_API_REFERENCE.md) – Complete CHIP API reference
 
 ---
 
@@ -74,6 +77,29 @@ All options live in `config/chip.php`, including timeout/retry settings, default
 ---
 
 ## Usage
+
+### Universal Payment Gateway (Recommended)
+
+Use the `PaymentGatewayInterface` for provider-agnostic checkout:
+
+```php
+use AIArmada\Chip\Gateways\ChipGateway;
+use AIArmada\Cart\Facades\Cart;
+
+// Your cart implements CheckoutableInterface
+$cart = app(\AIArmada\Cart\Cart::class);
+
+// Create payment through the gateway
+$gateway = app(ChipGateway::class);
+$payment = $gateway->createPayment($cart, $customer, [
+    'success_url' => route('checkout.success'),
+    'failure_url' => route('checkout.failed'),
+]);
+
+return redirect($payment->getCheckoutUrl());
+```
+
+See [`docs/payment-gateway.md`](docs/payment-gateway.md) for full documentation.
 
 ### CHIP Collect (payments)
 

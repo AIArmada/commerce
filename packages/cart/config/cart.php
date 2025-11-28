@@ -37,6 +37,11 @@ return [
     'database' => [
         'table' => env('CART_DB_TABLE', 'carts'),
 
+        // Cart expiration time in seconds (default: 30 days)
+        // Set to null to disable automatic expiration
+        // Carts are automatically extended on each update
+        'ttl' => env('CART_DB_TTL', 60 * 60 * 24 * 30),
+
         // Use SELECT ... FOR UPDATE pessimistic locking in addition to optimistic locking (CAS).
         // Default: false (optimistic locking only via version numbers is sufficient for most cases)
         //
@@ -132,8 +137,34 @@ return [
     | Empty Cart Behavior
     |--------------------------------------------------------------------------
     |
-    | Control what happens when a cart becomes empty.
+    | Control what happens when a cart becomes empty (all items removed).
+    |
+    | Options:
+    | - 'destroy'  : Remove cart entirely from storage (default)
+    | - 'clear'    : Keep cart row but remove items, conditions, and metadata
+    | - 'preserve' : Keep cart with conditions and metadata intact
+    |                (useful for voucher codes, affiliate tracking)
     |
     */
-    'preserve_empty_cart' => env('CART_PRESERVE_EMPTY', false),
+    'empty_cart_behavior' => env('CART_EMPTY_BEHAVIOR', 'destroy'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Tax Calculation Settings
+    |--------------------------------------------------------------------------
+    |
+    | Configure the built-in TaxCalculator service for tax calculations.
+    | These settings apply when using the default TaxCalculator.
+    |
+    */
+    'tax' => [
+        // Default tax rate (decimal, e.g., 0.10 for 10%)
+        'default_rate' => env('CART_TAX_DEFAULT_RATE', 0.0),
+
+        // Default region code for tax calculation
+        'default_region' => env('CART_TAX_DEFAULT_REGION'),
+
+        // Whether product prices already include tax (true = tax-inclusive pricing)
+        'prices_include_tax' => env('CART_TAX_PRICES_INCLUDE_TAX', false),
+    ],
 ];

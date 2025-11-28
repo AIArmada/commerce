@@ -1,0 +1,52 @@
+{
+    "name": "aiarmada/cashier",
+    "description": "Unified multi-gateway billing integration for Laravel supporting Stripe and CHIP",
+    "license": "MIT",
+    "homepage": "https://github.com/aiarmada/commerce",
+    "keywords": [
+        "laravel",
+        "billing",
+        "payments",
+        "subscriptions",
+        "stripe",
+        "chip",
+        "multi-gateway",
+        "cashier"
+    ],
+    "support": {
+        "issues": "https://github.com/aiarmada/commerce/issues",
+        "source": "https://github.com/aiarmada/commerce"
+    },
+    "require": {
+        "aiarmada/commerce-support": "self.version"
+    },
+    "suggest": {
+        "aiarmada/cashier-chip": "Required for CHIP payment gateway support",
+        "laravel/cashier": "Required for Stripe payment gateway support"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\Cashier\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AIArmada\\Cashier\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\Cashier\\CashierServiceProvider"
+            ],
+            "aliases": {
+                "Cashier": "AIArmada\\Cashier\\Facades\\Cashier"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

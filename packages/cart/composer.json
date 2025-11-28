@@ -8,9 +8,7 @@
     "source": "https://github.com/aiarmada/commerce"
   },
   "require": {
-    "php": "^8.4",
-    "aiarmada/commerce-support": "self.version",
-    "akaunting/laravel-money": "^6.0"
+    "aiarmada/commerce-support": "self.version"
   },
   "autoload": {
     "psr-4": {

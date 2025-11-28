@@ -9,14 +9,15 @@
 
 ## Features
 
-- � **Purchase Management** – View, filter, refund, and cancel CHIP purchases
+- 💳 **Purchase Management** – View, filter, refund, and cancel CHIP purchases
 - 🏦 **CHIP Send Integration** – Manage payouts, bank accounts, and send instructions
 - 👤 **Client Explorer** – Browse customer profiles and payment history
 - 📊 **Company Statements** – Financial reports and settlement tracking
-- � **Webhook Monitoring** – Real-time webhook event logs and processing status
+- 🔔 **Webhook Monitoring** – Real-time webhook event logs and processing status
 - 📈 **Analytics Dashboard** – Payment metrics, trends, and statistics
 - 🔐 **Read-Only by Default** – Safe data exploration with optional mutation actions
 - ⚡ **Real-Time Sync** – Automatic model updates from CHIP API via events
+- 🏠 **Customer Billing Portal** – Self-hosted billing portal for customers to manage subscriptions, payment methods, and invoices
 
 ---
 
@@ -26,6 +27,7 @@
 - Laravel ^12.0
 - Filament ^5.0
 - aiarmada/chip ^0.1
+- aiarmada/cashier-chip ^0.1 (for Billing Portal)
 
 ---
 
@@ -37,7 +39,7 @@ composer require aiarmada/filament-chip
 
 The service provider auto-registers with Laravel's package discovery.
 
-### Register the Plugin
+### Register the Admin Plugin
 
 Add the plugin to your Filament panel in `app/Providers/Filament/AdminPanelProvider.php`:
 
@@ -49,6 +51,25 @@ public function panel(Panel $panel): Panel
     return $panel
         // ...existing configuration
         ->plugin(FilamentChipPlugin::make());
+}
+```
+
+### Register the Billing Portal (Optional)
+
+To enable the customer-facing billing portal, register the `BillingPanelProvider` in your `AppServiceProvider`:
+
+```php
+use AIArmada\FilamentChip\BillingPanelProvider;
+use Filament\Facades\Filament;
+
+public function boot(): void
+{
+    Filament::registerPanel(
+        BillingPanelProvider::make()
+            ->path('billing')           // URL path (default: /billing)
+            ->authGuard('web')          // Authentication guard
+            ->billableModel(\App\Models\User::class)
+    );
 }
 ```
 
@@ -223,6 +244,131 @@ FilamentChipPlugin::make()
         ChipStatsWidget::class,
     ]);
 ```
+
+---
+
+## Customer Billing Portal
+
+The package includes a self-hosted customer billing portal that provides a Stripe-like billing experience for CHIP payments. Unlike Stripe's native `billingPortalUrl()`, CHIP doesn't offer a hosted portal, so this package implements one as a separate Filament panel.
+
+### Features
+
+- **Dashboard** – Overview of subscriptions, payment methods, and recent invoices
+- **Subscriptions** – View active subscriptions, cancel or resume
+- **Payment Methods** – Add new cards via CHIP's zero-amount preauthorization, set default, delete
+- **Invoices** – View billing history and download invoice PDFs
+
+### Configuration
+
+Configure the billing portal in `config/filament-chip.php`:
+
+```php
+'billing' => [
+    // Enable or disable the billing portal
+    'enabled' => env('CHIP_BILLING_PORTAL_ENABLED', true),
+
+    // Panel ID for the billing portal
+    'panel_id' => 'billing',
+
+    // Path prefix for the billing portal (e.g., /billing)
+    'path' => 'billing',
+
+    // Authentication guard for the billing portal
+    'auth_guard' => 'web',
+
+    // The billable model (user or team)
+    'billable_model' => \App\Models\User::class,
+
+    // Features to enable in the billing portal
+    'features' => [
+        'subscriptions' => true,
+        'payment_methods' => true,
+        'invoices' => true,
+    ],
+
+    // Redirect URLs after actions
+    'redirects' => [
+        'after_payment_method_added' => null,
+        'after_subscription_cancelled' => null,
+    ],
+
+    // Invoice configuration
+    'invoice' => [
+        'vendor_name' => null, // Falls back to config('app.name')
+        'product_name' => 'Subscription',
+    ],
+],
+```
+
+### Getting the Portal URL
+
+In your application, redirect customers to the billing portal using the `customerPortalUrl()` method from the gateway:
+
+```php
+use AIArmada\Cashier\Facades\Gateway;
+
+// Get the billing portal URL
+$url = Gateway::driver('chip')->customerPortalUrl(
+    returnUrl: route('home'),
+    options: ['panel_id' => 'billing']
+);
+
+return redirect($url);
+```
+
+Or use the billable's method if available:
+
+```php
+// From a user/team that uses the Billable trait
+$url = $user->customerPortalUrl();
+```
+
+### Adding Payment Methods
+
+The portal uses CHIP's zero-amount preauthorization to securely add payment methods without charging the customer:
+
+```php
+// Get the URL to add a new payment method
+$url = $user->setupPaymentMethodUrl([
+    'success_url' => route('billing.payment-methods'),
+    'cancel_url' => route('billing.payment-methods'),
+]);
+```
+
+This creates a CHIP purchase with:
+- `total_override = 0` (zero amount)
+- `skip_capture = true` (preauthorization only)
+- `force_recurring = true` (save card for future use)
+
+### Portal Pages
+
+| Page | URL | Description |
+|------|-----|-------------|
+| Dashboard | `/billing` | Overview of account |
+| Subscriptions | `/billing/subscriptions` | Manage subscriptions |
+| Payment Methods | `/billing/payment-methods` | Manage saved cards |
+| Invoices | `/billing/invoices` | Billing history |
+
+### Customizing the Portal
+
+You can extend the billing pages to add custom functionality:
+
+```php
+namespace App\Filament\Billing\Pages;
+
+use AIArmada\FilamentChip\Pages\Billing\BillingDashboard as BaseDashboard;
+
+class BillingDashboard extends BaseDashboard
+{
+    protected string $view = 'filament.billing.dashboard';
+    
+    public function getViewData(): array
+    {
+        return array_merge(parent::getViewData(), [
+            'customData' => $this->getCustomData(),
+        ]);
+    }
+}
 
 ---
 

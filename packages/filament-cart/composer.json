@@ -8,9 +8,7 @@
     "source": "https://github.com/aiarmada/commerce"
   },
   "require": {
-    "php": "^8.4",
     "aiarmada/cart": "self.version",
-    "aiarmada/commerce-support": "self.version",
     "filament/filament": "^4.2 || ^5.0"
   },
   "autoload": {

@@ -8,6 +8,7 @@ use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Services\TaxCalculator;
 use AIArmada\Cart\Storage\CacheStorage;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Cart\Storage\SessionStorage;
@@ -43,6 +44,7 @@ final class CartServiceProvider extends PackageServiceProvider
         $this->registerStorageDrivers();
         $this->registerCartManager();
         $this->registerMigrationService();
+        $this->registerTaxCalculator();
     }
 
     public function bootingPackage(): void
@@ -68,10 +70,12 @@ final class CartServiceProvider extends PackageServiceProvider
             StorageInterface::class,
             CartMigrationService::class,
             CartConditionResolver::class,
+            TaxCalculator::class,
             'cart.condition_resolver',
             'cart.storage.session',
             'cart.storage.cache',
             'cart.storage.database',
+            'cart.tax',
         ];
     }
 
@@ -100,7 +104,8 @@ final class CartServiceProvider extends PackageServiceProvider
 
             return new DatabaseStorage(
                 $connection,
-                config('cart.database.table', 'carts')
+                config('cart.database.table', 'carts'),
+                config('cart.database.ttl'),
             );
         });
 
@@ -158,5 +163,21 @@ final class CartServiceProvider extends PackageServiceProvider
             // Register login listener to handle cart migration
             $dispatcher->listen(Login::class, HandleUserLogin::class);
         }
+    }
+
+    /**
+     * Register tax calculator service
+     */
+    protected function registerTaxCalculator(): void
+    {
+        $this->app->singleton(TaxCalculator::class, function (\Illuminate\Contracts\Foundation\Application $app) {
+            return new TaxCalculator(
+                defaultRate: config('cart.tax.default_rate', 0.0),
+                defaultRegion: config('cart.tax.default_region'),
+                pricesIncludeTax: config('cart.tax.prices_include_tax', false),
+            );
+        });
+
+        $this->app->alias(TaxCalculator::class, 'cart.tax');
     }
 }

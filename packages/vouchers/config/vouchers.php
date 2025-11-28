@@ -89,23 +89,6 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Database Options
-    |--------------------------------------------------------------------------
-    |
-    | Migrations default to portable JSON columns. If you prefer JSONB on
-    | PostgreSQL, set this to true BEFORE running initial migrations. When
-    | enabled and using pgsql, migrations will convert JSON columns to JSONB
-    | and create GIN indexes.
-    |
-    */
-
-    'database' => [
-        // Accepts 'json' or 'jsonb' (pgsql only). Defaults to global COMMERCE_JSON_COLUMN_TYPE.
-        'json_column_type' => env('VOUCHERS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
     | Voucher Ownership (Multi-Tenancy)
     |--------------------------------------------------------------------------
     |

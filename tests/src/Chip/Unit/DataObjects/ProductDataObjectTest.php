@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\DataObjects\Product;
+use Akaunting\Money\Money;
 
 describe('Product data object', function (): void {
     it('calculates price helpers in currency', function (): void {
@@ -17,12 +18,12 @@ describe('Product data object', function (): void {
 
         expect($product->getPriceInCurrency())->toBe(199.0);
         expect($product->getDiscountInCurrency())->toBe(9.90);
-        expect($product->getTotalPrice())->toEqual((19900 - 990) * 2);
+        expect($product->getTotalPrice()->getAmount())->toEqual((19900 - 990) * 2.0);
         expect($product->getTotalPriceInCurrency())->toBe(378.2);
     });
 
     it('exports to array for API payloads', function (): void {
-        $product = new Product('One-time Item', '1', 5000, 0, 0.0, null);
+        $product = Product::make('One-time Item', Money::MYR(5000));
 
         expect($product->toArray())->toBe([
             'name' => 'One-time Item',

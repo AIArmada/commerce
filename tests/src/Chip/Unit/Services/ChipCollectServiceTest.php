@@ -576,7 +576,7 @@ describe('ChipCollectService Purchase Actions', function (): void {
 
         $purchase = $this->service->refundPurchase('purchase_123', 500);
 
-        expect($purchase->refundable_amount)->toBe(500);
+        expect($purchase->getRefundableAmountInCents())->toBe(500);
     });
 
     it('can charge a recurring purchase using a token', function (): void {
@@ -842,7 +842,7 @@ describe('ChipCollectService Utilities', function (): void {
 
     it('creates checkout purchases via the service facade', function (): void {
         $clientDetails = ClientDetails::fromArray(['email' => 'checkout@example.com']);
-        $products = [new Product('Subscription', '1', 5000, 0, 0.0, null)];
+        $products = [Product::fromArray(['name' => 'Subscription', 'price' => 5000, 'quantity' => '1'])];
 
         $this->client->shouldReceive('getBrandId')
             ->andReturn('brand_checkout');

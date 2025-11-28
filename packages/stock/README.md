@@ -1,241 +1,217 @@
-# Stock Management Package for Laravel
+# Laravel Stock
 
-A Laravel package for managing stock/inventory with UUID support, built with PHPStan level 6 compliance.
+A comprehensive inventory and stock management package for Laravel with UUID support, reservation system, and seamless cart integration.
 
 ## Features
 
-- ✅ UUID-based stock transactions
-- ✅ Polymorphic relationships - any model can have stock
-- ✅ `HasStock` trait for easy integration
-- ✅ Stock history tracking
-- ✅ Low stock detection
-- ✅ Multiple transaction types (in/out)
-- ✅ Customizable transaction reasons
-- ✅ PHPStan level 6 compliant
-- ✅ Comprehensive test coverage
-- ✅ Built with Spatie Package Tools
+- **Stock Transactions** - Track all stock movements with full audit trail
+- **Polymorphic Design** - Add stock tracking to any Eloquent model
+- **Reservation System** - Prevent overselling during checkout
+- **Cart Integration** - Automatic integration with `aiarmada/cart`
+- **Payment Integration** - Auto-deduct stock on successful payment
+- **Event-Driven** - Dispatch events for low stock, out of stock, and more
+- **Configurable** - Control thresholds, TTLs, and event dispatching
+- **UUID Support** - First-class UUID support for all models
 
 ## Installation
-
-Install the package via Composer:
 
 ```bash
 composer require aiarmada/stock
 ```
 
-Publish and run the migrations:
+The package auto-discovers and registers itself. Run migrations:
 
 ```bash
 php artisan migrate
 ```
 
-Optionally publish the configuration file:
+Optionally publish the configuration:
 
 ```bash
 php artisan vendor:publish --tag=stock-config
 ```
 
-## Usage
+## Quick Start
 
-### Making a Model Stackable
-
-Add the `HasStock` trait to any model:
+### 1. Add Trait to Your Model
 
 ```php
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use AIArmada\Stock\Contracts\StockableInterface;
 use AIArmada\Stock\Traits\HasStock;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 
-class Product extends Model
+class Product extends Model implements StockableInterface
 {
     use HasUuids, HasStock;
-
-    // ...
 }
 ```
 
-### Adding Stock
+### 2. Manage Stock
 
 ```php
-// Using the trait
 $product = Product::find($id);
+
+// Add stock
 $product->addStock(100, 'restock', 'Supplier delivery');
 
-// Using the facade
+// Remove stock
+$product->removeStock(5, 'sale', 'Order #123');
+
+// Check stock levels
+$current = $product->getCurrentStock();      // 95
+$available = $product->getAvailableStock();  // Accounts for reservations
+
+// Stock checks
+$product->hasStock(10);           // true if >= 10 units
+$product->hasAvailableStock(10);  // true if >= 10 available (minus reservations)
+$product->isLowStock();           // true if below threshold (default: 10)
+```
+
+### 3. Use Facades
+
+```php
 use AIArmada\Stock\Facades\Stock;
+use AIArmada\Stock\Facades\StockReservations;
 
-Stock::addStock($product, 100, 'restock', 'Supplier delivery');
+// Stock management
+Stock::addStock($product, 100, 'restock');
+Stock::removeStock($product, 5, 'sale');
+Stock::getCurrentStock($product);
+Stock::adjustStock($product, 95, 100); // Correction: 95 → 100
 
-// Using the service
-use AIArmada\Stock\Services\StockService;
-
-$stockService = app(StockService::class);
-$stockService->addStock($product, 100, 'restock', 'Supplier delivery');
+// Reservations
+StockReservations::reserve($product, 5, 'cart-123', 30);
+StockReservations::release($product, 'cart-123');
+StockReservations::getAvailableStock($product);
+StockReservations::commitReservations('cart-123', 'order-456');
 ```
 
-### Removing Stock
+## Stock Reservations
+
+Reservations temporarily hold stock during checkout to prevent overselling:
 
 ```php
-// Using the trait
-$product->removeStock(20, 'sale', 'Customer order #123');
+// Reserve stock (expires in 30 minutes)
+$reservation = $product->reserveStock(5, 'cart-123', 30);
 
-// Using the facade
-Stock::removeStock($product, 20, 'sale', 'Customer order #123');
+// Check available stock (current - reserved)
+$available = $product->getAvailableStock();
+
+// Release reservation (cart abandoned)
+$product->releaseReservedStock('cart-123');
+
+// Commit reservation (payment successful)
+StockReservations::commitReservations('cart-123', 'order-456');
 ```
 
-### Getting Current Stock
+## Cart Integration
+
+When installed with `aiarmada/cart`, the package automatically:
+
+1. Extends `CartManager` with stock-aware methods
+2. Releases reservations when carts are cleared
+3. Deducts stock on payment success
 
 ```php
-// Using the trait
-$currentStock = $product->getCurrentStock(); // Returns integer
+use AIArmada\Cart\Facades\Cart;
 
-// Using the facade
-$currentStock = Stock::getCurrentStock($product);
-```
+// Reserve stock for checkout
+$results = Cart::reserveAllStock(30);
 
-### Checking Stock Availability
-
-```php
-// Check if has stock
-if ($product->hasStock(50)) {
-    // Product has at least 50 units
+// Validate stock availability
+$validation = Cart::validateStock();
+if (!$validation['available']) {
+    // Handle insufficient stock
 }
 
-// Check if stock is low
-if ($product->isLowStock()) {
-    // Stock is below threshold (default: 10)
+// Commit after payment
+Cart::commitStock('order-123');
+
+// Release on abandon
+Cart::releaseAllStock();
+```
+
+## Events
+
+The package dispatches events you can listen to:
+
+| Event | Description |
+|-------|-------------|
+| `StockReserved` | Stock reserved for a cart |
+| `StockReleased` | Reservation released |
+| `StockDeducted` | Stock removed (sale complete) |
+| `LowStockDetected` | Stock fell below threshold |
+| `OutOfStock` | Stock reached zero |
+
+```php
+use AIArmada\Stock\Events\LowStockDetected;
+
+class SendLowStockAlert
+{
+    public function handle(LowStockDetected $event): void
+    {
+        // $event->stockable - the product
+        // $event->currentStock - current level
+        // $event->threshold - configured threshold
+    }
 }
-
-// Custom threshold
-if ($product->isLowStock(20)) {
-    // Stock is below 20 units
-}
 ```
 
-### Adjusting Stock
+## Commands
 
-Useful for inventory corrections:
-
-```php
-$currentStock = $product->getCurrentStock(); // 95
-$actualStock = 100; // Counted during stocktake
-
-Stock::adjustStock($product, $currentStock, $actualStock);
-// Creates a transaction of type 'in' with quantity 5
+```bash
+# Clean up expired reservations
+php artisan stock:cleanup-reservations
 ```
 
-### Stock History
+Schedule in `app/Console/Kernel.php`:
 
 ```php
-// Using the trait
-$history = $product->getStockHistory(); // Last 50 transactions
-$history = $product->getStockHistory(100); // Last 100 transactions
-
-// Using the service
-$history = Stock::getStockHistory($product, 50);
-```
-
-### Accessing Stock Transactions
-
-```php
-// Get all stock transactions
-$transactions = $product->stockTransactions;
-
-// Get latest transaction
-$latest = $product->stockTransactions()->latest()->first();
-
-// Filter by type
-$inbound = $product->stockTransactions()->where('type', 'in')->get();
-$outbound = $product->stockTransactions()->where('type', 'out')->get();
+$schedule->command('stock:cleanup-reservations')->everyFiveMinutes();
 ```
 
 ## Configuration
 
-The configuration file is located at `config/stock.php`:
+Key configuration options in `config/stock.php`:
 
 ```php
 return [
-    // Database table name
-    'table_name' => env('STOCK_TABLE_NAME', 'stock_transactions'),
-
-    // Low stock threshold
-    'low_stock_threshold' => env('STOCK_LOW_THRESHOLD', 10),
-
-    // Transaction types
-    'transaction_types' => [
-        'in' => 'Stock In',
-        'out' => 'Stock Out',
+    'low_stock_threshold' => 10,
+    
+    'cart' => [
+        'enabled' => true,
+        'reservation_ttl' => 30,
     ],
-
-    // Transaction reasons
-    'transaction_reasons' => [
-        'restock' => 'Restock',
-        'sale' => 'Sale',
-        'return' => 'Return',
-        'adjustment' => 'Adjustment',
-        'damaged' => 'Damaged',
-        'initial' => 'Initial Stock',
+    
+    'payment' => [
+        'auto_deduct' => true,
     ],
-
-    // Use soft deletes
-    'use_soft_deletes' => env('STOCK_USE_SOFT_DELETES', false),
+    
+    'events' => [
+        'low_stock' => true,
+        'out_of_stock' => true,
+    ],
+    
+    'cleanup' => [
+        'keep_expired_for_minutes' => 0,
+    ],
 ];
 ```
 
-## Database Schema
+## Documentation
 
-The package creates a `stock_transactions` table with the following structure:
-
-- `id` (UUID) - Primary key
-- `stockable_type` (string) - Polymorphic model type
-- `stockable_id` (UUID) - Polymorphic model ID
-- `user_id` (UUID, nullable) - User who performed the transaction
-- `quantity` (integer) - Quantity of stock
-- `type` (enum: 'in', 'out') - Transaction type
-- `reason` (string, nullable) - Reason for transaction
-- `note` (text, nullable) - Additional notes
-- `transaction_date` (timestamp) - When the transaction occurred
-- `created_at` (timestamp)
-- `updated_at` (timestamp)
+- [Configuration Guide](docs/configuration.md)
+- [Cart Integration](docs/cart-integration.md)
+- [Events & Listeners](docs/events.md)
+- [API Reference](docs/api-reference.md)
 
 ## Testing
 
-The package comes with comprehensive tests:
-
 ```bash
-cd packages/commerce/packages/stock
-composer install
-composer test
+./vendor/bin/pest tests/src/Stock
 ```
-
-## Code Quality
-
-### Run PHPStan (Level 6)
-
-```bash
-composer analyse
-```
-
-### Format Code
-
-```bash
-composer format
-```
-
-## Development Tools
-
-This package includes:
-
-- **Rector** for Laravel-specific code refactoring
-- **Larastan** (PHPStan for Laravel) at level 6
-- **Laravel Pint** for code formatting
-- **Pest PHP** for testing
-- **Spatie Package Tools** for service provider
 
 ## License
 
-The MIT License (MIT). Please see [License File](LICENSE) for more information.
-
-## Credits
-
-- [AIArmada](https://github.com/AIArmada)
+MIT License. See [LICENSE](LICENSE) for details.

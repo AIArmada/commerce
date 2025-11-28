@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\DataObjects\Product;
 use AIArmada\Chip\DataObjects\PurchaseDetails;
+use Akaunting\Money\Money;
 
 describe('PurchaseDetails data object', function (): void {
     it('calculates total and subtotal amounts', function (): void {
@@ -38,11 +39,11 @@ describe('PurchaseDetails data object', function (): void {
     it('exports to array with nested products', function (): void {
         $details = new PurchaseDetails(
             currency: 'MYR',
-            products: [new Product('Custom', '1', 1000, 0, 0.0, null)],
-            total: 1000,
+            products: [Product::make('Custom', Money::MYR(1000))],
+            total: Money::MYR(1000),
             language: 'en',
             notes: null,
-            debt: 0,
+            debt: Money::MYR(0),
             subtotal_override: null,
             total_tax_override: null,
             total_discount_override: null,

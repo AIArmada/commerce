@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Stock\Traits;
 
+use AIArmada\Stock\Models\StockReservation;
 use AIArmada\Stock\Models\StockTransaction;
+use AIArmada\Stock\Services\StockReservationService;
+use AIArmada\Stock\Services\StockService;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait HasStock
@@ -19,19 +22,27 @@ trait HasStock
     }
 
     /**
+     * Get all stock reservations for the model.
+     */
+    public function stockReservations(): MorphMany
+    {
+        return $this->morphMany(StockReservation::class, 'stockable');
+    }
+
+    /**
      * Get the current stock level.
      */
     public function getCurrentStock(): int
     {
-        $inbound = $this->stockTransactions()
-            ->where('type', 'in')
-            ->sum('quantity');
+        return $this->getStockService()->getCurrentStock($this);
+    }
 
-        $outbound = $this->stockTransactions()
-            ->where('type', 'out')
-            ->sum('quantity');
-
-        return (int) ($inbound - $outbound);
+    /**
+     * Get available stock (accounting for reservations).
+     */
+    public function getAvailableStock(): int
+    {
+        return $this->getReservationService()->getAvailableStock($this);
     }
 
     /**
@@ -39,14 +50,13 @@ trait HasStock
      */
     public function addStock(int $quantity, string $reason = 'restock', ?string $note = null, ?string $userId = null): StockTransaction
     {
-        return $this->stockTransactions()->create([
-            'quantity' => $quantity,
-            'type' => 'in',
-            'reason' => $reason,
-            'note' => $note,
-            'user_id' => $userId ?? auth()->id(),
-            'transaction_date' => now(),
-        ]);
+        return $this->getStockService()->addStock(
+            model: $this,
+            quantity: $quantity,
+            reason: $reason,
+            note: $note,
+            userId: $userId
+        );
     }
 
     /**
@@ -54,14 +64,61 @@ trait HasStock
      */
     public function removeStock(int $quantity, string $reason = 'adjustment', ?string $note = null, ?string $userId = null): StockTransaction
     {
-        return $this->stockTransactions()->create([
-            'quantity' => $quantity,
-            'type' => 'out',
-            'reason' => $reason,
-            'note' => $note,
-            'user_id' => $userId ?? auth()->id(),
-            'transaction_date' => now(),
-        ]);
+        return $this->getStockService()->removeStock(
+            model: $this,
+            quantity: $quantity,
+            reason: $reason,
+            note: $note,
+            userId: $userId
+        );
+    }
+
+    /**
+     * Get the stock service instance.
+     */
+    protected function getStockService(): StockService
+    {
+        return app(StockService::class);
+    }
+
+    /**
+     * Get the stock reservation service instance.
+     */
+    protected function getReservationService(): StockReservationService
+    {
+        return app(StockReservationService::class);
+    }
+
+    /**
+     * Reserve stock for a cart.
+     */
+    public function reserveStock(int $quantity, string $cartId, int $ttlMinutes = 30): ?StockReservation
+    {
+        return $this->getReservationService()->reserve($this, $quantity, $cartId, $ttlMinutes);
+    }
+
+    /**
+     * Release reserved stock for a cart.
+     */
+    public function releaseReservedStock(string $cartId): bool
+    {
+        return $this->getReservationService()->release($this, $cartId);
+    }
+
+    /**
+     * Get reservation for a specific cart.
+     */
+    public function getReservation(string $cartId): ?StockReservation
+    {
+        return $this->getReservationService()->getReservation($this, $cartId);
+    }
+
+    /**
+     * Get total reserved quantity.
+     */
+    public function getReservedQuantity(): int
+    {
+        return $this->getReservationService()->getReservedQuantity($this);
     }
 
     /**
@@ -69,9 +126,7 @@ trait HasStock
      */
     public function isLowStock(?int $threshold = null): bool
     {
-        $threshold = $threshold ?? config('stock.low_stock_threshold', 10);
-
-        return $this->getCurrentStock() < $threshold;
+        return $this->getStockService()->isLowStock($this, $threshold);
     }
 
     /**
@@ -79,7 +134,15 @@ trait HasStock
      */
     public function hasStock(int $quantity = 1): bool
     {
-        return $this->getCurrentStock() >= $quantity;
+        return $this->getStockService()->hasStock($this, $quantity);
+    }
+
+    /**
+     * Check if available stock is sufficient (accounting for reservations).
+     */
+    public function hasAvailableStock(int $quantity = 1): bool
+    {
+        return $this->getReservationService()->hasAvailableStock($this, $quantity);
     }
 
     /**
@@ -89,11 +152,6 @@ trait HasStock
      */
     public function getStockHistory(int $limit = 50): \Illuminate\Database\Eloquent\Collection
     {
-        return $this->stockTransactions()
-            ->with('user')
-            ->latest('transaction_date')
-            ->latest('id')
-            ->limit($limit)
-            ->get();
+        return $this->getStockService()->getStockHistory($this, $limit);
     }
 }

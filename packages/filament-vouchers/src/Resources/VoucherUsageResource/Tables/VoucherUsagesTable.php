@@ -66,10 +66,10 @@ final class VoucherUsagesTable
                             return null;
                         }
 
-                        // Get the OrderResource class dynamically
-                        $orderResourceClass = '\\App\\Filament\\Resources\\Orders\\OrderResource';
+                        /** @var class-string|null $orderResourceClass */
+                        $orderResourceClass = config('filament-vouchers.order_resource');
 
-                        if (! class_exists($orderResourceClass)) {
+                        if (! $orderResourceClass || ! class_exists($orderResourceClass)) {
                             return null;
                         }
 

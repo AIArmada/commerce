@@ -26,41 +26,80 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Transaction Types
+    | Cart Integration
     |--------------------------------------------------------------------------
     |
-    | The available transaction types for stock movements.
+    | When the cart package (aiarmada/cart) is installed alongside the stock
+    | package, automatic integration is enabled. Stock will be reserved when
+    | items are added to cart and released when the cart is cleared.
     |
     */
-    'transaction_types' => [
-        'in' => 'Stock In',
-        'out' => 'Stock Out',
+    'cart' => [
+        // Enable automatic cart integration
+        'enabled' => env('STOCK_CART_INTEGRATION', true),
+
+        // Default reservation time in minutes
+        'reservation_ttl' => env('STOCK_RESERVATION_TTL', 30),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Transaction Reasons
+    | Payment Integration
     |--------------------------------------------------------------------------
     |
-    | Common reasons for stock transactions. These can be extended.
+    | Automatic stock deduction when payment succeeds. Works with CashierChip
+    | and can be configured for custom payment event classes.
     |
     */
-    'transaction_reasons' => [
-        'restock' => 'Restock',
-        'sale' => 'Sale',
-        'return' => 'Return',
-        'adjustment' => 'Adjustment',
-        'damaged' => 'Damaged',
-        'initial' => 'Initial Stock',
+    'payment' => [
+        // Automatically deduct stock on payment success
+        'auto_deduct' => env('STOCK_AUTO_DEDUCT', true),
+
+        // Additional payment success event classes to listen for
+        'events' => [
+            // 'App\Events\OrderPaid',
+            // 'App\Events\PaymentCompleted',
+        ],
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Use Soft Deletes
+    | Events
     |--------------------------------------------------------------------------
     |
-    | Whether to use soft deletes for stock transactions.
+    | Control which stock events are dispatched.
     |
     */
-    'use_soft_deletes' => env('STOCK_USE_SOFT_DELETES', false),
+    'events' => [
+        // Dispatch LowStockDetected event
+        'low_stock' => env('STOCK_EVENT_LOW_STOCK', true),
+
+        // Dispatch OutOfStock event
+        'out_of_stock' => env('STOCK_EVENT_OUT_OF_STOCK', true),
+
+        // Dispatch StockReserved event
+        'reserved' => env('STOCK_EVENT_RESERVED', true),
+
+        // Dispatch StockReleased event
+        'released' => env('STOCK_EVENT_RELEASED', true),
+
+        // Dispatch StockDeducted event
+        'deducted' => env('STOCK_EVENT_DEDUCTED', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Cleanup
+    |--------------------------------------------------------------------------
+    |
+    | Settings for automatic cleanup of expired reservations.
+    |
+    */
+    'cleanup' => [
+        // Schedule cleanup command (add to app/Console/Kernel.php)
+        // $schedule->command('stock:cleanup-reservations')->everyFiveMinutes();
+
+        // Keep expired reservations for debugging (0 = delete immediately)
+        'keep_expired_for_minutes' => env('STOCK_KEEP_EXPIRED', 0),
+    ],
 ];

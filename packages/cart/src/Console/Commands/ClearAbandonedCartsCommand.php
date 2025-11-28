@@ -19,6 +19,7 @@ final class ClearAbandonedCartsCommand extends Command
      */
     protected $signature = 'cart:clear-abandoned 
                           {--days=7 : Number of days after which cart is considered abandoned}
+                          {--expired : Only delete carts that have passed their expires_at timestamp}
                           {--dry-run : Show what would be deleted without actually deleting}
                           {--batch-size=1000 : Number of records to process in each batch}';
 
@@ -33,20 +34,26 @@ final class ClearAbandonedCartsCommand extends Command
     public function handle(): int
     {
         $days = (int) $this->option('days');
+        $useExpired = $this->option('expired');
         $dryRun = $this->option('dry-run');
         $batchSize = max(1, (int) $this->option('batch-size'));
         $table = config('cart.database.table', 'carts');
 
-        $cutoffDate = now()->subDays($days);
-
-        info("Clearing carts abandoned before: {$cutoffDate->format('Y-m-d H:i:s')}");
+        if ($useExpired) {
+            info('Clearing expired carts (using expires_at column)');
+            $query = DB::table($table)
+                ->whereNotNull('expires_at')
+                ->where('expires_at', '<', now());
+        } else {
+            $cutoffDate = now()->subDays($days);
+            info("Clearing carts abandoned before: {$cutoffDate->format('Y-m-d H:i:s')}");
+            $query = DB::table($table)
+                ->where('updated_at', '<', $cutoffDate);
+        }
 
         if ($dryRun) {
             warning('DRY RUN MODE - No data will be deleted');
         }
-
-        $query = DB::table($table)
-            ->where('updated_at', '<', $cutoffDate);
 
         $totalCount = $query->count();
 

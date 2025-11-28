@@ -4,8 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Builders;
 
+use AIArmada\Chip\DataObjects\Product;
 use AIArmada\Chip\DataObjects\Purchase;
 use AIArmada\Chip\Services\ChipCollectService;
+use AIArmada\CommerceSupport\Contracts\Payment\CheckoutableInterface;
+use AIArmada\CommerceSupport\Contracts\Payment\CustomerInterface;
+use AIArmada\CommerceSupport\Contracts\Payment\LineItemInterface;
+use Akaunting\Money\Money;
 
 final class PurchaseBuilder
 {
@@ -39,7 +44,83 @@ final class PurchaseBuilder
     }
 
     /**
-     * Add a product to the purchase
+     * Add a product using Money objects.
+     *
+     * This is the preferred way to add products as it ensures type-safe
+     * currency handling across all commerce packages.
+     */
+    public function addProductMoney(
+        string $name,
+        Money $price,
+        string|float|int $quantity = 1,
+        ?Money $discount = null,
+        float $taxPercent = 0,
+        ?string $category = null
+    ): self {
+        $currency = $price->getCurrency()->getCurrency();
+
+        // Ensure currency is set on the purchase
+        if (! isset($this->data['purchase']['currency'])) {
+            $this->data['purchase']['currency'] = $currency;
+        }
+
+        $product = [
+            'name' => $name,
+            'price' => (int) $price->getAmount(),
+            'quantity' => (string) $quantity,
+        ];
+
+        if ($discount !== null && $discount->getAmount() > 0) {
+            $product['discount'] = (int) $discount->getAmount();
+        }
+
+        if ($taxPercent > 0) {
+            $product['tax_percent'] = $taxPercent;
+        }
+
+        if ($category !== null) {
+            $product['category'] = $category;
+        }
+
+        $this->data['purchase']['products'][] = $product;
+
+        return $this;
+    }
+
+    /**
+     * Add a Product data object directly.
+     */
+    public function addProductObject(Product $product): self
+    {
+        // Ensure currency is set on the purchase
+        if (! isset($this->data['purchase']['currency'])) {
+            $this->data['purchase']['currency'] = $product->getCurrency();
+        }
+
+        $this->data['purchase']['products'][] = $product->toArray();
+
+        return $this;
+    }
+
+    /**
+     * Add a product from a LineItemInterface (universal contract).
+     */
+    public function addLineItem(LineItemInterface $item): self
+    {
+        return $this->addProductMoney(
+            name: $item->getLineItemName(),
+            price: $item->getLineItemPrice(),
+            quantity: $item->getLineItemQuantity(),
+            discount: $item->getLineItemDiscount(),
+            taxPercent: $item->getLineItemTaxPercent(),
+            category: $item->getLineItemCategory()
+        );
+    }
+
+    /**
+     * Add a product to the purchase (legacy method, accepts cents).
+     *
+     * @deprecated Use addProductMoney() for type-safe Money handling
      */
     public function addProduct(
         string $name,
@@ -68,6 +149,88 @@ final class PurchaseBuilder
         }
 
         $this->data['purchase']['products'][] = $product;
+
+        return $this;
+    }
+
+    /**
+     * Build purchase from a CheckoutableInterface (Cart, Order, etc.).
+     *
+     * This is the recommended way to create a purchase from a cart or order
+     * as it uses the universal contract for maximum portability.
+     */
+    public function fromCheckoutable(CheckoutableInterface $checkoutable): self
+    {
+        $this->currency($checkoutable->getCheckoutCurrency());
+        $this->reference($checkoutable->getCheckoutReference());
+
+        foreach ($checkoutable->getCheckoutLineItems() as $item) {
+            $this->addLineItem($item);
+        }
+
+        if ($checkoutable->getCheckoutNotes() !== null) {
+            $this->notes($checkoutable->getCheckoutNotes());
+        }
+
+        $metadata = $checkoutable->getCheckoutMetadata();
+        if (! empty($metadata)) {
+            $this->metadata($metadata);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Build purchase with customer from interfaces.
+     */
+    public function fromCheckoutWithCustomer(
+        CheckoutableInterface $checkoutable,
+        CustomerInterface $customer
+    ): self {
+        $this->fromCheckoutable($checkoutable);
+        $this->fromCustomer($customer);
+
+        return $this;
+    }
+
+    /**
+     * Set customer details from a CustomerInterface.
+     */
+    public function fromCustomer(CustomerInterface $customer): self
+    {
+        $this->customer(
+            email: $customer->getCustomerEmail(),
+            fullName: $customer->getCustomerName(),
+            phone: $customer->getCustomerPhone(),
+            country: $customer->getCustomerCountry()
+        );
+
+        // Set billing address if available
+        if ($customer->getBillingStreetAddress() !== null) {
+            $this->billingAddress(
+                streetAddress: $customer->getBillingStreetAddress(),
+                city: $customer->getBillingCity() ?? '',
+                zipCode: $customer->getBillingPostalCode() ?? '',
+                state: $customer->getBillingState(),
+                country: $customer->getBillingCountry()
+            );
+        }
+
+        // Set shipping address if different from billing
+        if ($customer->hasShippingAddress() && $customer->getShippingStreetAddress() !== null) {
+            $this->shippingAddress(
+                streetAddress: $customer->getShippingStreetAddress(),
+                city: $customer->getShippingCity() ?? '',
+                zipCode: $customer->getShippingPostalCode() ?? '',
+                state: $customer->getShippingState(),
+                country: $customer->getShippingCountry()
+            );
+        }
+
+        // Use existing gateway customer ID if available
+        if ($customer->getGatewayCustomerId() !== null) {
+            $this->clientId($customer->getGatewayCustomerId());
+        }
 
         return $this;
     }
@@ -289,9 +452,20 @@ final class PurchaseBuilder
     }
 
     /**
-     * Get the built data array (for inspection)
+     * Set metadata for the purchase.
+     *
+     * @param  array<string, mixed>  $metadata
      */
+    public function metadata(array $metadata): self
+    {
+        $this->data['purchase']['metadata'] = $metadata;
+
+        return $this;
+    }
+
     /**
+     * Get the built data array (for inspection)
+     *
      * @return array<string, mixed>
      */
     public function toArray(): array
