@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Facades\Cart as CartFacade;
-use AIArmada\FilamentCart\Models\Condition;
+use AIArmada\Cart\Models\Condition;
 
 it('reproduces total-at-least hang', function (): void {
     Condition::factory()->create([

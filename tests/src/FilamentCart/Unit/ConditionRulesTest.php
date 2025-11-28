@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Conditions\CartCondition as CoreCartCondition;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
-use AIArmada\FilamentCart\Models\Condition;
+use AIArmada\Cart\Models\Condition;
 use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
 
