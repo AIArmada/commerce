@@ -26,11 +26,6 @@ class DocTemplate extends Model
     use HasFactory;
     use HasUuids;
 
-    public function getTable(): string
-    {
-        return config('docs.database.tables.doc_templates', 'doc_templates');
-    }
-
     protected $fillable = [
         'name',
         'slug',
@@ -45,6 +40,11 @@ class DocTemplate extends Model
         'is_default' => 'boolean',
         'settings' => 'array',
     ];
+
+    public function getTable(): string
+    {
+        return config('docs.database.tables.doc_templates', 'doc_templates');
+    }
 
     public function docs(): HasMany
     {

@@ -58,7 +58,7 @@ final class DocTemplateInfolist
                                 TextEntry::make('settings.pdf.format')
                                     ->label('Format')
                                     ->placeholder('a4')
-                                    ->formatStateUsing(fn (?string $state): string => strtoupper($state ?? 'A4')),
+                                    ->formatStateUsing(fn (?string $state): string => mb_strtoupper($state ?? 'A4')),
 
                                 TextEntry::make('settings.pdf.orientation')
                                     ->label('Orientation')

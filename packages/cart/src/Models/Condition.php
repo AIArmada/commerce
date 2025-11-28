@@ -83,37 +83,6 @@ class Condition extends Model
     ];
 
     /**
-     * Get the table associated with the model.
-     */
-    public function getTable(): string
-    {
-        return config('cart.database.conditions_table', 'conditions');
-    }
-
-    /**
-     * Get the attributes that should be cast.
-     *
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'order' => 'integer',
-            'attributes' => 'array',
-            'rules' => 'array',
-            'target_definition' => 'array',
-            'is_charge' => 'boolean',
-            'is_dynamic' => 'boolean',
-            'is_discount' => 'boolean',
-            'is_percentage' => 'boolean',
-            'is_active' => 'boolean',
-            'is_global' => 'boolean',
-            'created_at' => 'datetime',
-            'updated_at' => 'datetime',
-        ];
-    }
-
-    /**
      * @param  array{factory_keys?: array<int, string>, context?: array<string, mixed>}|null  $rules
      * @return array{factory_keys: array<int, string>, context: array<string, mixed>}|null
      */
@@ -156,6 +125,14 @@ class Condition extends Model
             'factory_keys' => $factoryKeys,
             'context' => $context,
         ];
+    }
+
+    /**
+     * Get the table associated with the model.
+     */
+    public function getTable(): string
+    {
+        return config('cart.database.conditions_table', 'conditions');
     }
 
     /**
@@ -420,6 +397,29 @@ class Condition extends Model
                 }
             }
         });
+    }
+
+    /**
+     * Get the attributes that should be cast.
+     *
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'order' => 'integer',
+            'attributes' => 'array',
+            'rules' => 'array',
+            'target_definition' => 'array',
+            'is_charge' => 'boolean',
+            'is_dynamic' => 'boolean',
+            'is_discount' => 'boolean',
+            'is_percentage' => 'boolean',
+            'is_active' => 'boolean',
+            'is_global' => 'boolean',
+            'created_at' => 'datetime',
+            'updated_at' => 'datetime',
+        ];
     }
 
     /**

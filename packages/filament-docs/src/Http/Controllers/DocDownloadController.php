@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Http\Controllers;
 
 use AIArmada\Docs\Models\Doc;
-use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;

@@ -42,18 +42,6 @@ class Doc extends Model
     use HasFactory;
     use HasUuids;
 
-    public function getTable(): string
-    {
-        return config('docs.database.tables.docs', 'docs');
-    }
-
-    protected static function booted(): void
-    {
-        static::deleting(function (Doc $doc): void {
-            $doc->statusHistories()->delete();
-        });
-    }
-
     protected $fillable = [
         'doc_number',
         'doc_type',
@@ -92,6 +80,11 @@ class Doc extends Model
         'items' => 'array',
         'metadata' => 'array',
     ];
+
+    public function getTable(): string
+    {
+        return config('docs.database.tables.docs', 'docs');
+    }
 
     public function docable(): MorphTo
     {
@@ -182,8 +175,15 @@ class Doc extends Model
 
             $this->statusHistories()->create([
                 'status' => DocStatus::OVERDUE,
-                'notes' => "Status changed from {$oldStatus->label()} to ".DocStatus::OVERDUE->label()." (automatic overdue detection)",
+                'notes' => "Status changed from {$oldStatus->label()} to ".DocStatus::OVERDUE->label().' (automatic overdue detection)',
             ]);
         }
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Doc $doc): void {
+            $doc->statusHistories()->delete();
+        });
     }
 }
