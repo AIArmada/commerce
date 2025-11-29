@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\AffiliatePayoutService;
 use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Cart\Facades\Cart;
@@ -78,4 +79,20 @@ test('multi level payouts create upline conversions', function (): void {
 
     expect($upline)->not()->toBeNull()
         ->and($upline->commission_minor)->toBe(5);
+});
+
+test('AffiliatePayoutService updates payout status to paid sets paid_at', function (): void {
+    $payout = AffiliatePayout::create([
+        'reference' => 'PAY123',
+        'status' => 'pending',
+        'total_minor' => 1000,
+        'conversion_count' => 1,
+        'currency' => 'USD',
+    ]);
+
+    $service = app(AffiliatePayoutService::class);
+    $updated = $service->updateStatus($payout, 'paid');
+
+    expect($updated->status)->toBe('paid');
+    expect($updated->paid_at)->not->toBeNull();
 });

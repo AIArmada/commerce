@@ -19,7 +19,7 @@ test('cart payment intent metadata storage and retrieval works', function (): vo
 
     // Verify cart has items
     expect($cart->getItems())->toHaveCount(2);
-    expect($cart->total()->getAmount())->toBe(250.0);
+    expect($cart->total()->getAmount())->toBe(25000);
 
     // Check no payment intent exists initially
     expect($cart->getMetadata('payment_intent'))->toBeNull();

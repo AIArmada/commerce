@@ -12,7 +12,7 @@ beforeEach(function (): void {
 
 describe('CacheStorage', function (): void {
     it('stores and retrieves items', function (): void {
-        $items = ['item-1' => ['name' => 'Test Item', 'price' => 10.00]];
+        $items = ['item-1' => ['name' => 'Test Item', 'price' => 1000]];
 
         $this->storage->putItems('cart-123', 'default', $items);
         $retrieved = $this->storage->getItems('cart-123', 'default');
@@ -347,7 +347,7 @@ describe('CacheStorage', function (): void {
     });
 
     it('handles JSON string data when retrieving items', function (): void {
-        $items = ['item-1' => ['name' => 'Test Item', 'price' => 10.00]];
+        $items = ['item-1' => ['name' => 'Test Item', 'price' => 1000]];
         $jsonData = json_encode($items);
 
         // Mock cache to return JSON string (simulates Redis/Memcached behavior)

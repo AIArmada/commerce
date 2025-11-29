@@ -12,17 +12,17 @@ describe('Cart Operations', function (): void {
     it('can access cart facade and perform basic operations', function (): void {
         expect(Cart::isEmpty())->toBeTrue();
         expect(Cart::count())->toBe(0);
-        expect(Cart::total()->getAmount())->toBe(0.0);
+        expect(Cart::total()->getAmount())->toBe(0);
 
         $item = Cart::add('test-product', 'Test Product', 10.99, 2);
 
         expect(Cart::isEmpty())->toBeFalse();
         expect(Cart::getItems())->toHaveCount(1);
         expect(Cart::getTotalQuantity())->toBe(2);
-        expect(Cart::subtotal()->getAmount())->toBe(21.98);
+        expect(Cart::subtotal()->getAmount())->toBe(2198);
         expect($item->id)->toBe('test-product');
         expect($item->name)->toBe('Test Product');
-        expect($item->price)->toBe(10.99);
+        expect($item->price)->toBe(1099);
         expect($item->quantity)->toBe(2);
     });
 
@@ -33,7 +33,7 @@ describe('Cart Operations', function (): void {
 
         expect(Cart::getItems())->toHaveCount(3);
         expect(Cart::getTotalQuantity())->toBe(6);
-        expect(Cart::subtotal()->getAmount())->toBe(170.00);
+        expect(Cart::subtotal()->getAmount())->toBe(17000);
     });
 
     it('can update item quantities', function (): void {
@@ -43,7 +43,7 @@ describe('Cart Operations', function (): void {
         Cart::update('product-2', ['quantity' => 5]);
 
         expect(Cart::getTotalQuantity())->toBe(8); // 1 + 2+5
-        expect(Cart::subtotal()->getAmount())->toBe(190.00); // 15 + 175
+        expect(Cart::subtotal()->getAmount())->toBe(19000); // 15 + 175
     });
 
     it('can remove items from cart', function (): void {
@@ -54,7 +54,7 @@ describe('Cart Operations', function (): void {
 
         expect(Cart::getItems())->toHaveCount(1);
         expect(Cart::getTotalQuantity())->toBe(2);
-        expect(Cart::subtotal()->getAmount())->toBe(50.00);
+        expect(Cart::subtotal()->getAmount())->toBe(5000);
     });
 
     it('can clear entire cart', function (): void {
@@ -72,7 +72,7 @@ describe('Cart Operations', function (): void {
         Cart::add('product-1', 'Cheap Item', 10.00, 1);
         Cart::add('product-2', 'Expensive Item', 100.00, 1);
 
-        $expensive = Cart::search(fn ($item) => $item->price > 50.00);
+        $expensive = Cart::search(fn ($item) => $item->price > 5000);
 
         expect($expensive)->toHaveCount(1);
         expect($expensive->first()->name)->toBe('Expensive Item');
@@ -108,7 +108,7 @@ describe('Cart Operations', function (): void {
         $item = Cart::add([
             'id' => 'item-1',
             'name' => 'Single Item',
-            'price' => 100.00,
+            'price' => 10000,
             'quantity' => 2,
             'attributes' => ['color' => 'blue'],
         ]);
@@ -116,7 +116,7 @@ describe('Cart Operations', function (): void {
         expect($item)->toBeInstanceOf(AIArmada\Cart\Models\CartItem::class);
         expect(Cart::getItems())->toHaveCount(1);
         expect(Cart::get('item-1')->name)->toBe('Single Item');
-        expect(Cart::get('item-1')->price)->toBe(100.00);
+        expect(Cart::get('item-1')->price)->toBe(10000);
         expect(Cart::get('item-1')->quantity)->toBe(2);
         expect(Cart::get('item-1')->attributes->get('color'))->toBe('blue');
     });
@@ -126,19 +126,19 @@ describe('Cart Operations', function (): void {
             [
                 'id' => 'item-1',
                 'name' => 'Item 1',
-                'price' => 10.00,
+                'price' => 1000,
                 'quantity' => 1,
             ],
             [
                 'id' => 'item-2',
                 'name' => 'Item 2',
-                'price' => 20.00,
+                'price' => 2000,
                 'quantity' => 2,
             ],
             [
                 'id' => 'item-3',
                 'name' => 'Item 3',
-                'price' => 30.00,
+                'price' => 3000,
                 'quantity' => 3,
             ],
         ]);
@@ -147,7 +147,7 @@ describe('Cart Operations', function (): void {
         expect($items)->toHaveCount(3);
         expect(Cart::getItems())->toHaveCount(3);
         expect(Cart::getTotalQuantity())->toBe(6);
-        expect(Cart::subtotal()->getAmount())->toBe(140.00); // 10 + 40 + 90
+        expect(Cart::subtotal()->getAmount())->toBe(14000); // 10 + 40 + 90
     });
 });
 
@@ -169,7 +169,7 @@ describe('Cart Conditions', function (): void {
         Cart::addCondition($taxCondition);
 
         expect(Cart::getConditions())->toHaveCount(1);
-        expect(Cart::total()->getAmount())->toBe(110.00);
+        expect(Cart::total()->getAmount())->toBe(11000);
     });
 
     it('can remove cart conditions', function (): void {
@@ -186,7 +186,7 @@ describe('Cart Conditions', function (): void {
         Cart::removeCondition('VAT');
 
         expect(Cart::getConditions())->toHaveCount(0);
-        expect(Cart::total()->getAmount())->toBe(100.00);
+        expect(Cart::total()->getAmount())->toBe(10000);
     });
 
     it('can add discount conditions', function (): void {
@@ -194,7 +194,7 @@ describe('Cart Conditions', function (): void {
 
         Cart::addDiscount('SAVE10', '10%');
 
-        expect(Cart::total()->getAmount())->toBe(90.00);
+        expect(Cart::total()->getAmount())->toBe(9000);  // 100.00 - 10% = 90.00 as cents
     });
 
     it('can add fee conditions', function (): void {
@@ -203,7 +203,7 @@ describe('Cart Conditions', function (): void {
         Cart::addFee('Processing Fee', '10.00');
 
         $total = Cart::total()->getAmount();
-        expect($total)->toBeGreaterThan(100.00);
+        expect($total)->toBeGreaterThan(10000);  // > 100.00 as cents
     });
 
     it('can add tax conditions', function (): void {
@@ -211,7 +211,7 @@ describe('Cart Conditions', function (): void {
 
         Cart::addTax('Sales Tax', '8.5%');
 
-        expect(Cart::total()->getAmount())->toBe(108.50);
+        expect(Cart::total()->getAmount())->toBe(10850);
     });
 });
 
@@ -228,7 +228,7 @@ describe('Cart Data Export', function (): void {
         expect($cartArray)->toHaveKey('items');
         expect($cartArray['items'])->toHaveCount(1);
         expect($cartArray['quantity'])->toBe(2);
-        expect($cartArray['subtotal'])->toBe(100.00);
+        expect($cartArray['subtotal'])->toBe(10000);
     });
 
     it('includes conditions in export', function (): void {
@@ -239,7 +239,7 @@ describe('Cart Data Export', function (): void {
 
         expect($cartArray)->toHaveKey('conditions');
         expect($cartArray['conditions'])->toHaveCount(1);
-        expect($cartArray['total'])->toBe(110.00);
+        expect($cartArray['total'])->toBe(11000);
     });
 });
 
@@ -253,7 +253,7 @@ describe('Enhanced API', function (): void {
 
         expect(Cart::subtotal())->toBeInstanceOf(Akaunting\Money\Money::class);
         expect(Cart::total())->toBeInstanceOf(Akaunting\Money\Money::class);
-        expect(Cart::subtotal()->getAmount())->toBe(50.00);
+        expect(Cart::subtotal()->getAmount())->toBe(5000);
     });
 
     it('can group items by attributes', function (): void {

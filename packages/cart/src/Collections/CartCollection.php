@@ -141,7 +141,7 @@ final class CartCollection extends Collection
     /**
      * Filter items by condition value
      */
-    public function filterByConditionValue(string|float $value): static
+    public function filterByConditionValue(string|int $value): static
     {
         return $this->filter(function (CartItem $item) use ($value) {
             return $item->getConditions()->contains(fn ($condition) => $condition->getValue() === $value);
@@ -246,9 +246,9 @@ final class CartCollection extends Collection
     }
 
     /**
-     * Get items with price between range
+     * Get items with price between range (in cents)
      */
-    public function wherePriceBetween(float $min, float $max): static
+    public function wherePriceBetween(int $min, int $max): static
     {
         return $this->filter(fn (CartItem $item) => $item->price >= $min && $item->price <= $max);
     }
@@ -262,11 +262,11 @@ final class CartCollection extends Collection
     }
 
     /**
-     * Get total discount amount from all items
+     * Get total discount amount from all items (in cents)
      */
-    public function getTotalDiscount(): float
+    public function getTotalDiscount(): int
     {
-        return $this->sum(function (CartItem $item) {
+        return (int) $this->sum(function (CartItem $item) {
             $discount = $item->getDiscountAmount();
 
             return $discount->getAmount();
@@ -319,22 +319,22 @@ final class CartCollection extends Collection
     }
 
     /**
-     * Get subtotal of all items with item-level conditions applied (raw value)
+     * Get subtotal of all items with item-level conditions applied (in cents)
      *
      * @internal For internal calculations only
      */
-    protected function getSubtotal(): float
+    protected function getSubtotal(): int
     {
-        return $this->sum(fn ($item) => $item->getRawSubtotal());
+        return (int) $this->sum(fn ($item) => $item->getRawSubtotal());
     }
 
     /**
-     * Get subtotal of all items without any conditions (raw value)
+     * Get subtotal of all items without any conditions (in cents)
      *
      * @internal For internal calculations only
      */
-    protected function getSubtotalWithoutConditions(): float
+    protected function getSubtotalWithoutConditions(): int
     {
-        return $this->sum(fn ($item) => $item->getRawSubtotalWithoutConditions());
+        return (int) $this->sum(fn ($item) => $item->getRawSubtotalWithoutConditions());
     }
 }

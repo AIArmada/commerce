@@ -158,13 +158,13 @@ final class CartConditionCollection extends Collection
     }
 
     /**
-     * Apply all conditions to a value
+     * Apply all conditions to a value (in cents)
      */
-    public function applyAll(float $value): Money
+    public function applyAll(int $amountCents): Money
     {
         $result = $this->sortByOrder()->reduce(
-            fn (float $carry, CartCondition $condition) => $condition->apply($carry),
-            $value
+            fn (int $carry, CartCondition $condition) => $condition->apply($carry),
+            $amountCents
         );
 
         // Return as Laravel Money object (default currency from config)
@@ -174,19 +174,19 @@ final class CartConditionCollection extends Collection
     }
 
     /**
-     * Get total discount amount
+     * Get total discount amount (in cents)
      */
-    public function getTotalDiscount(float $baseValue): float
+    public function getTotalDiscount(int $baseValueCents): int
     {
-        return $this->discounts()->sum(fn (CartCondition $condition) => abs($condition->getCalculatedValue($baseValue)));
+        return (int) $this->discounts()->sum(fn (CartCondition $condition) => abs($condition->getCalculatedValue($baseValueCents)));
     }
 
     /**
-     * Get total charges amount
+     * Get total charges amount (in cents)
      */
-    public function getTotalCharges(float $baseValue): float
+    public function getTotalCharges(int $baseValueCents): int
     {
-        return $this->charges()->sum(fn (CartCondition $condition) => $condition->getCalculatedValue($baseValue));
+        return (int) $this->charges()->sum(fn (CartCondition $condition) => $condition->getCalculatedValue($baseValueCents));
     }
 
     /**
@@ -194,16 +194,16 @@ final class CartConditionCollection extends Collection
      *
      * @return array<string, mixed>
      */
-    public function getSummary(float $baseValue = 0): array
+    public function getSummary(int $baseValueCents = 0): array
     {
         return [
             'total_conditions' => $this->count(),
             'discounts' => $this->discounts()->count(),
             'charges' => $this->charges()->count(),
             'percentages' => $this->percentages()->count(),
-            'total_discount_amount' => $baseValue > 0 ? $this->getTotalDiscount($baseValue) : 0,
-            'total_charges_amount' => $baseValue > 0 ? $this->getTotalCharges($baseValue) : 0,
-            'net_adjustment' => $baseValue > 0 ? (float) $this->applyAll($baseValue)->getValue() - $baseValue : 0,
+            'total_discount_amount' => $baseValueCents > 0 ? $this->getTotalDiscount($baseValueCents) : 0,
+            'total_charges_amount' => $baseValueCents > 0 ? $this->getTotalCharges($baseValueCents) : 0,
+            'net_adjustment' => $baseValueCents > 0 ? (int) $this->applyAll($baseValueCents)->getValue() - $baseValueCents : 0,
         ];
     }
 
@@ -212,14 +212,14 @@ final class CartConditionCollection extends Collection
      *
      * @return array<string, mixed>
      */
-    public function toDetailedArray(float $baseValue = 0): array
+    public function toDetailedArray(int $baseValueCents = 0): array
     {
         return [
             'conditions' => $this->map(fn (CartCondition $condition) => [
                 ...$condition->toArray(),
-                'calculated_value' => $baseValue > 0 ? $condition->getCalculatedValue($baseValue) : 0,
+                'calculated_value' => $baseValueCents > 0 ? $condition->getCalculatedValue($baseValueCents) : 0,
             ])->toArray(),
-            'summary' => $this->getSummary($baseValue),
+            'summary' => $this->getSummary($baseValueCents),
         ];
     }
 

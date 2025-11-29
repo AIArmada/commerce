@@ -74,36 +74,40 @@ trait CalculatesTotals
     }
 
     /**
-     * Get raw total as float (for internal use in events and storage serialization)
+     * Get raw total in cents (for internal use in events and storage serialization)
      */
-    public function getRawTotal(): float
+    public function getRawTotal(): int
     {
-        return $this->getTotal()->getAmount();
+        $pipelineResult = $this->evaluateConditionPipeline();
+
+        return $pipelineResult->total();
     }
 
     /**
-     * Get raw subtotal as float (for internal use in events and storage serialization)
+     * Get raw subtotal in cents (for internal use in events and storage serialization)
      */
-    public function getRawSubtotal(): float
+    public function getRawSubtotal(): int
     {
-        return $this->getSubtotal()->getAmount();
+        $pipelineResult = $this->evaluateConditionPipeline();
+
+        return $pipelineResult->subtotal();
     }
 
     /**
-     * Get raw cart subtotal without any conditions (for internal use like events)
+     * Get raw cart subtotal in cents without any conditions (for internal use like events)
      */
-    public function getRawSubtotalWithoutConditions(): float
+    public function getRawSubtotalWithoutConditions(): int
     {
-        return $this->getSubtotalWithoutConditions()->getAmount();
+        return (int) $this->getItems()->sum(fn (CartItem $item) => $item->getRawSubtotalWithoutConditions());
     }
 
     /**
-     * Get raw total without any conditions (for internal use in rule evaluation)
+     * Get raw total in cents without any conditions (for internal use in rule evaluation)
      * This prevents circular dependency when dynamic conditions need to check the total
      */
-    public function getRawTotalWithoutConditions(): float
+    public function getRawTotalWithoutConditions(): int
     {
-        return $this->getTotalWithoutConditions()->getAmount();
+        return $this->getRawSubtotalWithoutConditions();
     }
 
     /**
@@ -132,7 +136,7 @@ trait CalculatesTotals
      */
     protected function getSubtotalWithoutConditions(): Money
     {
-        $totalAmount = $this->getItems()->sum(fn (CartItem $item) => $item->getRawSubtotalWithoutConditions());
+        $totalAmount = (int) $this->getItems()->sum(fn (CartItem $item) => $item->getRawSubtotalWithoutConditions());
         $currency = config('cart.money.default_currency', 'USD');
 
         return Money::{$currency}($totalAmount);
@@ -144,7 +148,7 @@ trait CalculatesTotals
     protected function getTotalWithoutConditions(): Money
     {
         // Same as subtotal without conditions since we're not applying any conditions
-        $totalAmount = $this->getItems()->sum(fn (CartItem $item) => $item->getRawSubtotalWithoutConditions());
+        $totalAmount = (int) $this->getItems()->sum(fn (CartItem $item) => $item->getRawSubtotalWithoutConditions());
         $currency = config('cart.money.default_currency', 'USD');
 
         return Money::{$currency}($totalAmount);

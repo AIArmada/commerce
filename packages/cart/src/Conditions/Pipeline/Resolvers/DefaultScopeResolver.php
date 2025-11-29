@@ -22,12 +22,12 @@ final class DefaultScopeResolver implements ConditionScopeResolverInterface
         ConditionPipelinePhaseContext $phaseContext,
         ConditionScope $scope,
         CartConditionCollection $conditions,
-        float $currentAmount
-    ): float {
+        int $currentAmount
+    ): int {
         return $conditions
             ->sortByOrder()
             ->reduce(
-                static fn (float $amount, CartCondition $condition) => $condition->apply($amount),
+                static fn (int $amount, CartCondition $condition) => $condition->apply($amount),
                 $currentAmount
             );
     }

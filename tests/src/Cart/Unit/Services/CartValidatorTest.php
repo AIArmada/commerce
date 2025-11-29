@@ -154,7 +154,7 @@ describe('CartValidator', function (): void {
             $this->cart->add('product-1', 'Test Product', 5000, 1);
 
             $validator = CartValidator::create()
-                ->addRule('custom', fn ($item) => $item->price > 10000 ? null : 'Price too low');
+                ->addRule('custom', fn ($item) => $item->price > 1000000 ? null : 'Price too low');
 
             $result = $validator->validate($this->cart);
 

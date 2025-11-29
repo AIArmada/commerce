@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
+         xsi:noNamespaceSchemaLocation="../vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="../vendor/autoload.php"
          colors="true"
 >
     <testsuites>
         <testsuite name="Stock">
-            <directory>tests/src/Stock</directory>
+            <directory>../tests/src/Stock</directory>
         </testsuite>
     </testsuites>
     <source>
         <include>
-            <directory>packages/stock/src</directory>
+            <directory>../packages/stock/src</directory>
         </include>
     </source>
     <php>

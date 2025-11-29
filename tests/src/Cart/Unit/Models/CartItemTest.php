@@ -24,13 +24,13 @@ it('can create cart item with basic data', function (): void {
     $item = new CartItem(
         id: 'product-1',
         name: 'Test Product',
-        price: 99.99,
+        price: 9999,
         quantity: 2
     );
 
     expect($item->id)->toBe('product-1')
         ->and($item->name)->toBe('Test Product')
-        ->and($item->price)->toBe(99.99)
+        ->and($item->price)->toBe(9999)
         ->and($item->quantity)->toBe(2)
         ->and($item->attributes)->toBeInstanceOf(Illuminate\Support\Collection::class)
         ->and($item->attributes->toArray())->toBe([])
@@ -46,7 +46,7 @@ it('can create cart item with all data', function (): void {
     $item = new CartItem(
         id: 'product-1',
         name: 'Test Product',
-        price: 99.99,
+        price: 9999,
         quantity: 2,
         attributes: ['color' => 'red', 'size' => 'large'],
         conditions: [$this->condition1, $this->condition2],
@@ -55,7 +55,7 @@ it('can create cart item with all data', function (): void {
 
     expect($item->id)->toBe('product-1')
         ->and($item->name)->toBe('Test Product')
-        ->and($item->price)->toBe(99.99)
+        ->and($item->price)->toBe(9999)
         ->and($item->quantity)->toBe(2)
         ->and($item->attributes->toArray())->toBe(['color' => 'red', 'size' => 'large'])
         ->and($item->conditions->count())->toBe(2)
@@ -66,20 +66,20 @@ it('can calculate price sum', function (): void {
     $item = new CartItem(
         id: 'product-1',
         name: 'Test Product',
-        price: 50.0,
+        price: 5000,
         quantity: 3
     );
 
     expect($item->getSubtotal())
         ->toBeInstanceOf(Akaunting\Money\Money::class)
-        ->and($item->getRawSubtotal())->toBe(150.0);
+        ->and($item->getRawSubtotal())->toBe(15000);
 });
 
 it('can get single attribute', function (): void {
     $item = new CartItem(
         id: 'product-1',
         name: 'Test Product',
-        price: 99.99,
+        price: 9999,
         quantity: 1,
         attributes: ['color' => 'red', 'size' => 'large']
     );
@@ -96,7 +96,7 @@ it('can check if associated with model', function (): void {
     $item = new CartItem(
         id: 'product-1',
         name: 'Test Product',
-        price: 99.99,
+        price: 9999,
         quantity: 1,
         associatedModel: $model
     );
@@ -123,8 +123,8 @@ it('can calculate price with conditions', function (): void {
         conditions: [$this->condition1] // -10%
     );
 
-    expect($item->getRawPrice())->toBe(90.0) // Raw price with conditions applied
-        ->and($item->getRawPriceWithoutConditions())->toBe(100.0); // Price without conditions
+    expect($item->getRawPrice())->toBe(9000) // Raw price with conditions applied
+        ->and($item->getRawPriceWithoutConditions())->toBe(10000); // Price without conditions
 });
 
 it('can calculate price sum with conditions', function (): void {
@@ -136,8 +136,8 @@ it('can calculate price sum with conditions', function (): void {
         conditions: [$this->condition1] // -10%
     );
 
-    expect($item->getRawSubtotal())->toBe(180.0) // Raw subtotal with conditions applied
-        ->and($item->getRawSubtotalWithoutConditions())->toBe(200.0); // Subtotal without conditions
+    expect($item->getRawSubtotal())->toBe(18000) // Raw subtotal with conditions applied
+        ->and($item->getRawSubtotalWithoutConditions())->toBe(20000); // Subtotal without conditions
 });
 
 it('can calculate discount amount', function (): void {
@@ -149,7 +149,7 @@ it('can calculate discount amount', function (): void {
         conditions: [$this->condition1] // -10%
     );
 
-    expect($item->getDiscountAmount()->getAmount())->toBe(20.0); // 200 - 180 = 20
+    expect($item->getDiscountAmount()->getAmount())->toBe(2000); // 200 - 180 = 20
 });
 
 it('can convert to array', function (): void {
@@ -171,7 +171,7 @@ it('can convert to array', function (): void {
     expect($array)->toBeArray()
         ->and($array['id'])->toBe('product-1')
         ->and($array['name'])->toBe('Test Product')
-        ->and($array['price'])->toBe(100.0) // Raw price (not calculated)
+        ->and($array['price'])->toBe(10000) // Raw price (not calculated)
         ->and($array['quantity'])->toBe(2)
         ->and($array['attributes'])->toBe(['color' => 'red'])
         ->and($array['conditions'])->toBeArray()
@@ -187,17 +187,17 @@ it('can convert to array', function (): void {
     ]);
 
     // But calculated values are still accessible via methods
-    expect($item->getSubtotal()->getAmount())->toBe(180.0); // (100 - 10%) * 2 = 180
-    expect($item->getPriceWithoutConditions()->getAmount())->toBe(100.0); // Original price
-    expect($item->getSubtotalWithoutConditions()->getAmount())->toBe(200.0); // Original total
-    expect($item->getDiscountAmount()->getAmount())->toBe(20.0);
+    expect($item->getSubtotal()->getAmount())->toBe(18000); // (100 - 10%) * 2 = 180
+    expect($item->getPriceWithoutConditions()->getAmount())->toBe(10000); // Original price
+    expect($item->getSubtotalWithoutConditions()->getAmount())->toBe(20000); // Original total
+    expect($item->getDiscountAmount()->getAmount())->toBe(2000);
 });
 
 it('can set new quantity', function (): void {
     $item = new CartItem(
         id: 'product-1',
         name: 'Test Product',
-        price: 99.99,
+        price: 9999,
         quantity: 2
     );
 
@@ -212,7 +212,7 @@ it('can add and remove attributes', function (): void {
     $item = new CartItem(
         id: 'product-1',
         name: 'Test Product',
-        price: 99.99,
+        price: 9999,
         quantity: 1
     );
 
@@ -281,7 +281,7 @@ it('can create modified copy with with() method', function (): void {
 
     expect($modified->id)->toBe('product-1');
     expect($modified->name)->toBe('Modified Product');
-    expect($modified->price)->toBe(100.0);
+    expect($modified->price)->toBe(10000);
     expect($modified->quantity)->toBe(5);
     expect($item->name)->toBe('Original Product');
 });
@@ -294,7 +294,7 @@ it('sanitizes string prices with currency symbols', function (): void {
         quantity: 1
     );
 
-    expect($item1->price)->toBe(100.50);
+    expect($item1->price)->toBe(10050);
 
     $item2 = new CartItem(
         id: 'product-2',
@@ -303,7 +303,7 @@ it('sanitizes string prices with currency symbols', function (): void {
         quantity: 1
     );
 
-    expect($item2->price)->toBe(50.99);
+    expect($item2->price)->toBe(5099);
 
     $item3 = new CartItem(
         id: 'product-3',
@@ -312,7 +312,7 @@ it('sanitizes string prices with currency symbols', function (): void {
         quantity: 1
     );
 
-    expect($item3->price)->toBe(1000.00);
+    expect($item3->price)->toBe(100000);
 });
 
 it('sanitizes string prices with various currencies', function (): void {
@@ -323,6 +323,7 @@ it('sanitizes string prices with various currencies', function (): void {
         quantity: 1
     );
 
+    // ¥1000 is parsed - number only is 1000, no decimal so treated as cents
     expect($yenItem->price)->toBe(1000);
 
     $rupeeItem = new CartItem(
@@ -332,7 +333,8 @@ it('sanitizes string prices with various currencies', function (): void {
         quantity: 1
     );
 
-    expect($rupeeItem->price)->toBe(500.50);
+    // Has decimal point, so 500.50 is treated as dollars → 50050 cents
+    expect($rupeeItem->price)->toBe(50050);
 
     $ringgitItem = new CartItem(
         id: 'product-3',
@@ -341,6 +343,7 @@ it('sanitizes string prices with various currencies', function (): void {
         quantity: 1
     );
 
+    // No decimal point, so 250 is treated as cents
     expect($ringgitItem->price)->toBe(250);
 });
 
@@ -364,22 +367,22 @@ it('handles float prices from string with decimal', function (): void {
         quantity: 1
     );
 
-    expect($item->price)->toBe(100.0);
-    expect($item->price)->toBeFloat();
+    expect($item->price)->toBe(10000);
+    expect($item->price)->toBeInt();
 });
 
 it('validates required fields on creation', function (): void {
     expect(fn () => new CartItem(
         id: '',
         name: 'Test Product',
-        price: 99.99,
+        price: 9999,
         quantity: 1
     ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class);
 
     expect(fn () => new CartItem(
         id: 'product-1',
         name: '',
-        price: 99.99,
+        price: 9999,
         quantity: 1
     ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class);
 
@@ -393,7 +396,7 @@ it('validates required fields on creation', function (): void {
     expect(fn () => new CartItem(
         id: 'product-1',
         name: 'Test Product',
-        price: 99.99,
+        price: 9999,
         quantity: -1
     ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class);
 });
@@ -402,7 +405,7 @@ it('can convert to JSON', function (): void {
     $item = new CartItem(
         id: 'product-1',
         name: 'Test Product',
-        price: 99.99,
+        price: 9999,
         quantity: 2
     );
 
@@ -418,7 +421,7 @@ it('can be JSON serialized', function (): void {
     $item = new CartItem(
         id: 'product-1',
         name: 'Test Product',
-        price: 99.99,
+        price: 9999,
         quantity: 2
     );
 
@@ -434,7 +437,7 @@ it('can be converted to string', function (): void {
     $item = new CartItem(
         id: 'product-123',
         name: 'Test Product',
-        price: 99.99,
+        price: 9999,
         quantity: 2
     );
 
@@ -443,7 +446,7 @@ it('can be converted to string', function (): void {
     expect($string)->toBeString()
         ->and($string)->toContain('Test Product')
         ->and($string)->toContain('product-123')
-        ->and($string)->toContain('99.99')
+        ->and($string)->toContain('9999')  // Price is stored as cents
         ->and($string)->toContain('2');
 });
 
@@ -470,12 +473,13 @@ it('handles complex conditions correctly', function (): void {
         conditions: [$discountCondition, $chargeCondition]
     );
 
-    // Original: 200.0
-    // Price after 20% discount: 80.0
-    // Price after $5 charge: 85.0
-    // Sum with conditions: 85.0 * 2 = 170.0
-    expect($item->getRawSubtotal())->toBe(170.0) // Raw subtotal with conditions
-        ->and($item->getDiscountAmount()->getAmount())->toBe(30.0); // 200 - 170
+    // Conditions applied per item, then multiplied by quantity:
+    // Original per-item: 10000 cents
+    // After 20% discount: 10000 - 2000 = 8000 cents
+    // After +5 cent charge: 8000 + 5 = 8005 cents
+    // Subtotal: 8005 * 2 = 16010 cents
+    expect($item->getRawSubtotal())->toBe(16010)
+        ->and($item->getDiscountAmount()->getAmount())->toBe(3990); // 20000 - 16010
 });
 
 it('can set item name', function (): void {
@@ -517,7 +521,7 @@ it('can set item price', function (): void {
 
     $newItem = $item->setPrice(150.0);
 
-    expect($newItem->price)->toBe(150.0)
+    expect($newItem->price)->toBe(15000)
         ->and($newItem->id)->toBe($item->id)
         ->and($newItem->name)->toBe($item->name)
         ->and($newItem->quantity)->toBe($item->quantity)
@@ -1079,7 +1083,7 @@ describe('CartItem Money Methods', function (): void {
         $item = new CartItem(
             id: 'product-2',
             name: 'Test Product 2',
-            price: 50.0,
+            price: 5000,
             quantity: 3
         );
 
@@ -1087,7 +1091,7 @@ describe('CartItem Money Methods', function (): void {
         $getSubtotal = $item->getSubtotal();
 
         expect($total)->toEqual($getSubtotal);
-        expect($total->getAmount())->toBe(150.0);
+        expect($total->getAmount())->toBe(15000);
     });
 
     it('provides discountAmount() as alias for getDiscountAmount()', function (): void {
@@ -1110,7 +1114,7 @@ describe('CartItem Money Methods', function (): void {
         $getDiscountAmount = $item->getDiscountAmount();
 
         expect($discountAmount)->toEqual($getDiscountAmount);
-        expect($discountAmount->getAmount())->toBe(40.0); // 20% of 200
+        expect($discountAmount->getAmount())->toBe(4000); // 20% of 200
     });
 
     it('validates quantity does not exceed maximum limit', function (): void {

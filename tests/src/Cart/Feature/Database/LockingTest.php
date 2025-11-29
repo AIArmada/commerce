@@ -52,7 +52,7 @@ describe('Database Locking with lockForUpdate', function (): void {
         Cart::add('fast-item', 'Fast Item', 25.00, 1);
 
         expect(Cart::get('fast-item'))->not->toBeNull();
-        expect(Cart::total()->getAmount())->toBe(25.00);
+        expect(Cart::total()->getAmount())->toBe(2500);  // 25.00 as cents
     });
 });
 
@@ -131,7 +131,7 @@ describe('Database Storage Operations', function (): void {
         $item = Cart::get('db-item');
         expect($item->id)->toBe('db-item');
         expect($item->name)->toBe('Database Item');
-        expect($item->price)->toBe(75.00);
+        expect($item->price)->toBe(7500);  // 75.00 as cents
         expect($item->quantity)->toBe(2);
     });
 

@@ -21,7 +21,7 @@ it('dispatches CartMerged with correct payload when migrating empty user cart', 
         'product-1' => [
             'id' => 'product-1',
             'name' => 'Test Product',
-            'price' => 10.00,
+            'price' => 1000,
             'quantity' => 2,
             'attributes' => [],
             'conditions' => [],

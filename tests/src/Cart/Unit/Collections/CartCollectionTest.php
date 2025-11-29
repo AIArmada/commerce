@@ -132,7 +132,7 @@ describe('CartCollection Calculations', function (): void {
         $collection = new CartCollection($items);
         $subtotal = $collection->sum(fn ($item) => $item->price * $item->quantity);
 
-        expect($subtotal)->toBe(65.00);
+        expect($subtotal)->toBe(6500);
     });
 
     it('calculates total quantity', function (): void {
@@ -156,7 +156,7 @@ describe('CartCollection Calculations', function (): void {
         ];
 
         $collection = new CartCollection($items);
-        $expensive = $collection->filter(fn ($item) => $item->price > 20.00);
+        $expensive = $collection->filter(fn ($item) => $item->price > 2000);
 
         expect($expensive->count())->toBe(2);
     });
@@ -235,7 +235,7 @@ describe('CartCollection Transformations', function (): void {
         $collection = new CartCollection($items);
         $totals = $collection->map(fn ($item) => $item->price * $item->quantity);
 
-        expect($totals->toArray())->toBe([20.00, 20.00]);
+        expect($totals->toArray())->toBe([2000, 2000]);  // 1000*2, 2000*1 in cents
     });
 
     it('groups items by attribute', function (): void {
@@ -289,7 +289,7 @@ describe('CartCollection Aggregations', function (): void {
         $collection = new CartCollection($items);
         $min = $collection->min(fn ($item) => $item->price);
 
-        expect($min)->toBe(10.00);
+        expect($min)->toBe(1000);
     });
 
     it('calculates maximum price', function (): void {
@@ -302,7 +302,7 @@ describe('CartCollection Aggregations', function (): void {
         $collection = new CartCollection($items);
         $max = $collection->max(fn ($item) => $item->price);
 
-        expect($max)->toBe(50.00);
+        expect($max)->toBe(5000);
     });
 
     it('calculates average price', function (): void {
@@ -315,7 +315,7 @@ describe('CartCollection Aggregations', function (): void {
         $collection = new CartCollection($items);
         $avg = $collection->avg(fn ($item) => $item->price);
 
-        expect($avg)->toBe(20.00);
+        expect($avg)->toBe(2000);
     });
 
     it('reduces collection to single value', function (): void {
@@ -330,7 +330,7 @@ describe('CartCollection Aggregations', function (): void {
             0
         );
 
-        expect($total)->toBe(65.00);
+        expect($total)->toBe(6500);
     });
 });
 
@@ -362,7 +362,7 @@ describe('CartCollection Edge Cases', function (): void {
         $collection = new CartCollection($items);
 
         $result = $collection
-            ->filter(fn ($item) => $item->price > 5.00)
+            ->filter(fn ($item) => $item->price > 500)  // > 5.00 in cents
             ->sortBy(fn ($item) => $item->price)
             ->take(2);
 
@@ -395,7 +395,7 @@ describe('CartCollection Totals and Subtotals', function (): void {
 
         $subtotal = $collection->subtotal();
 
-        expect($subtotal)->toBe(80.00); // (10*2) + (20*3)
+        expect($subtotal)->toBe(8000); // (10*2) + (20*3)
     });
 
     it('calculates total', function (): void {
@@ -408,7 +408,7 @@ describe('CartCollection Totals and Subtotals', function (): void {
 
         $total = $collection->total();
 
-        expect($total)->toBe(65.00); // 15 + (25*2)
+        expect($total)->toBe(6500); // 15 + (25*2)
     });
 
     it('calculates subtotal without conditions', function (): void {
@@ -421,7 +421,7 @@ describe('CartCollection Totals and Subtotals', function (): void {
 
         $subtotal = $collection->subtotalWithoutConditions();
 
-        expect($subtotal)->toBe(30.00);
+        expect($subtotal)->toBe(3000);
     });
 
     it('calculates total without conditions', function (): void {
@@ -434,7 +434,7 @@ describe('CartCollection Totals and Subtotals', function (): void {
 
         $total = $collection->totalWithoutConditions();
 
-        expect($total)->toBe(35.00); // (10*2) + 15
+        expect($total)->toBe(3500); // (10*2) + 15
     });
 
     it('converts to formatted array', function (): void {
@@ -534,16 +534,16 @@ describe('CartCollection Advanced Filtering', function (): void {
     });
 
     it('filters items by price range', function (): void {
-        $item1 = new CartItem('item-1', 'Item 1', 10.00, 1);
-        $item2 = new CartItem('item-2', 'Item 2', 50.00, 1);
-        $item3 = new CartItem('item-3', 'Item 3', 100.00, 1);
+        $item1 = new CartItem('item-1', 'Item 1', 1000, 1);   // $10 in cents
+        $item2 = new CartItem('item-2', 'Item 2', 5000, 1);   // $50 in cents
+        $item3 = new CartItem('item-3', 'Item 3', 10000, 1);  // $100 in cents
 
         $collection = new CartCollection;
         $collection->addItem($item1);
         $collection->addItem($item2);
         $collection->addItem($item3);
 
-        $results = $collection->wherePriceBetween(20.00, 80.00);
+        $results = $collection->wherePriceBetween(2000, 8000);  // $20-$80 in cents
 
         expect($results->count())->toBe(1);
         expect($results->first()->id)->toBe('item-2');
@@ -579,8 +579,8 @@ describe('CartCollection Sorting', function (): void {
         $sorted = $collection->sortByPrice('asc');
         $values = $sorted->values();
 
-        expect($values->first()->price)->toBe(10.00);
-        expect($values->last()->price)->toBe(50.00);
+        expect($values->first()->price)->toBe(1000);  // 10.00 as cents
+        expect($values->last()->price)->toBe(5000);   // 50.00 as cents
     });
 
     it('sorts items by price descending', function (): void {
@@ -596,8 +596,8 @@ describe('CartCollection Sorting', function (): void {
         $sorted = $collection->sortByPrice('desc');
         $values = $sorted->values();
 
-        expect($values->first()->price)->toBe(50.00);
-        expect($values->last()->price)->toBe(10.00);
+        expect($values->first()->price)->toBe(5000);  // 50.00 as cents
+        expect($values->last()->price)->toBe(1000);   // 10.00 as cents
     });
 
     it('sorts items by quantity ascending', function (): void {
@@ -732,9 +732,9 @@ describe('CartCollection Statistics', function (): void {
         ]);
         expect($stats['total_items'])->toBe(3);
         expect($stats['total_quantity'])->toBe(6);
-        expect($stats['average_price'])->toBe(20.00);
-        expect($stats['highest_price'])->toBe(30.00);
-        expect($stats['lowest_price'])->toBe(10.00);
+        expect($stats['average_price'])->toBe(2000);
+        expect($stats['highest_price'])->toBe(3000);
+        expect($stats['lowest_price'])->toBe(1000);
     });
 });
 
@@ -761,9 +761,9 @@ describe('CartCollection Condition Filtering', function (): void {
             value: '-5%'
         );
 
-        $item1 = new CartItem('item-1', 'Item 1', 10.00, 1, [], [$discountCondition1]);
-        $item2 = new CartItem('item-2', 'Item 2', 20.00, 1, [], [$taxCondition]);
-        $item3 = new CartItem('item-3', 'Item 3', 30.00, 1, [], [$discountCondition2]);
+        $item1 = new CartItem('item-1', 'Item 1', 1000, 1, [], [$discountCondition1]);
+        $item2 = new CartItem('item-2', 'Item 2', 2000, 1, [], [$taxCondition]);
+        $item3 = new CartItem('item-3', 'Item 3', 3000, 1, [], [$discountCondition2]);
 
         $collection = new CartCollection;
         $collection->addItem($item1);
@@ -910,25 +910,25 @@ describe('CartCollection Condition Filtering', function (): void {
             name: 'fixed-discount',
             type: 'discount',
             target: 'items@item_discount/per-item',
-            value: -5.00
+            value: -500
         );
 
         $fixedTax = new AIArmada\Cart\Conditions\CartCondition(
             name: 'fixed-tax',
             type: 'tax',
             target: 'items@item_discount/per-item',
-            value: 3.50
+            value: 350
         );
 
-        $item1 = new CartItem('item-1', 'Item 1', 10.00, 1, [], [$fixedDiscount]);
-        $item2 = new CartItem('item-2', 'Item 2', 20.00, 1, [], [$fixedTax]);
+        $item1 = new CartItem('item-1', 'Item 1', 1000, 1, [], [$fixedDiscount]);
+        $item2 = new CartItem('item-2', 'Item 2', 2000, 1, [], [$fixedTax]);
 
         $collection = new CartCollection;
         $collection->addItem($item1);
         $collection->addItem($item2);
 
-        $discount = $collection->filterByConditionValue(-5.00);
-        $tax = $collection->filterByConditionValue(3.50);
+        $discount = $collection->filterByConditionValue(-500);
+        $tax = $collection->filterByConditionValue(350);
 
         expect($discount->count())->toBe(1);
         expect($discount->first()->id)->toBe('item-1');
@@ -1002,7 +1002,7 @@ describe('CartCollection Condition Filtering', function (): void {
 
         $totalDiscount = $collection->getTotalDiscount();
 
-        expect($totalDiscount)->toBe(0.0);
+        expect($totalDiscount)->toBe(0);
     });
 });
 

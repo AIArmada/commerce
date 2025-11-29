@@ -740,14 +740,6 @@ class Subscription extends Model
     }
 
     /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory(): SubscriptionFactory
-    {
-        return SubscriptionFactory::new();
-    }
-
-    /**
      * The "booted" method of the model.
      */
     protected static function booted(): void

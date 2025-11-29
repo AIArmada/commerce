@@ -42,6 +42,12 @@ trait ManagesItems
                 $name = isset($id['name']) && is_string($id['name']) ? $id['name'] : null;
                 /** @var float|int|string|null $price */
                 $price = $id['price'] ?? null;
+                /** @var int $quantity */
+                $quantity = isset($id['quantity']) && is_int($id['quantity']) ? $id['quantity'] : 1;
+                /** @var array<string, mixed> $attributes */
+                $attributes = isset($id['attributes']) && is_array($id['attributes']) ? $id['attributes'] : [];
+                /** @var array<string, mixed>|object|null $conditions */
+                $conditions = $id['conditions'] ?? null;
                 /** @var object|string|null $associatedModel */
                 $associatedModel = $id['associated_model'] ?? null;
 
@@ -49,9 +55,9 @@ trait ManagesItems
                     $id['id'],
                     $name,
                     $price,
-                    $id['quantity'] ?? 1,
-                    $id['attributes'] ?? [],
-                    $id['conditions'] ?? null,
+                    $quantity,
+                    $attributes,
+                    $conditions,
                     $associatedModel
                 );
             }
@@ -326,22 +332,38 @@ trait ManagesItems
     }
 
     /**
-     * Normalize price input (sanitization only, no transformation)
+     * Normalize price input to cents (integer)
+     *
+     * Accepts:
+     * - int: treated as cents (returned as-is)
+     * - float: treated as decimal dollars, converted to cents (e.g., 19.99 → 1999)
+     * - string: sanitized and converted (e.g., "$19.99" → 1999, "500" → 500)
+     * - null: returns 0
      */
-    private function normalizePrice(float|int|string|null $price): float|int
+    private function normalizePrice(float|int|string|null $price): int
     {
-        if (is_null($price)) {
+        if ($price === null) {
             return 0;
         }
 
-        // Only sanitize string input - no transformation
-        if (is_string($price)) {
-            $price = str_replace([',', '$', '€', '£', '¥', '₹', 'RM', ' '], '', $price);
-
-            return str_contains($price, '.') ? (float) $price : (int) $price;
+        if (is_int($price)) {
+            return $price;
         }
 
-        // Return numeric values as-is
-        return $price;
+        if (is_float($price)) {
+            // Float is treated as decimal dollars, convert to cents
+            return (int) round($price * 100);
+        }
+
+        // String: sanitize and convert
+        $sanitized = str_replace([',', '$', '€', '£', '¥', '₹', 'RM', ' '], '', $price);
+
+        if (str_contains($sanitized, '.')) {
+            // Decimal string: treat as dollars, convert to cents
+            return (int) round((float) $sanitized * 100);
+        }
+
+        // Integer string: treat as cents
+        return (int) $sanitized;
     }
 }

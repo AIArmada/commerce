@@ -19,7 +19,7 @@ abstract class AbstractDatasetScopeResolver implements ConditionScopeResolverInt
      */
     abstract protected function fetchDatasets(ConditionPipelinePhaseContext $phaseContext): iterable;
 
-    abstract protected function extractBaseAmount(mixed $dataset): float;
+    abstract protected function extractBaseAmount(mixed $dataset): int;
 
     final public function supports(ConditionScope $scope): bool
     {
@@ -30,8 +30,8 @@ abstract class AbstractDatasetScopeResolver implements ConditionScopeResolverInt
         ConditionPipelinePhaseContext $phaseContext,
         ConditionScope $scope,
         CartConditionCollection $conditions,
-        float $currentAmount
-    ): float {
+        int $currentAmount
+    ): int {
         $datasets = $this->materialize($this->fetchDatasets($phaseContext));
 
         if ($datasets === []) {
@@ -63,25 +63,25 @@ abstract class AbstractDatasetScopeResolver implements ConditionScopeResolverInt
     /**
      * @param  array<mixed>  $datasets
      */
-    protected function initialAmount(float $currentAmount, array $datasets): float
+    protected function initialAmount(int $currentAmount, array $datasets): int
     {
         return $currentAmount;
     }
 
-    private function applyAggregate(CartConditionCollection $conditions, float $base): float
+    private function applyAggregate(CartConditionCollection $conditions, int $base): int
     {
         return $this->applyAdjustment($conditions, $base);
     }
 
-    private function applyCollection(CartConditionCollection $conditions, float $base): float
+    private function applyCollection(CartConditionCollection $conditions, int $base): int
     {
         return $this->applyAdjustment($conditions, $base);
     }
 
-    private function applyAdjustment(CartConditionCollection $conditions, float $base): float
+    private function applyAdjustment(CartConditionCollection $conditions, int $base): int
     {
         $final = $conditions->sortByOrder()->reduce(
-            static fn (float $carry, CartCondition $condition) => $condition->apply($carry),
+            static fn (int $carry, CartCondition $condition) => $condition->apply($carry),
             $base
         );
 

@@ -10,9 +10,9 @@ final class ConditionPhaseResult
 {
     public function __construct(
         public readonly ConditionPhase $phase,
-        public readonly float $baseAmount,
-        public readonly float $finalAmount,
-        public readonly float $adjustment,
+        public readonly int $baseAmount,
+        public readonly int $finalAmount,
+        public readonly int $adjustment,
         public readonly int $appliedConditions
     ) {}
 

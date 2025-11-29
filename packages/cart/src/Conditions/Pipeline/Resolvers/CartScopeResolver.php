@@ -21,8 +21,8 @@ final class CartScopeResolver extends AbstractDatasetScopeResolver
         ];
     }
 
-    protected function extractBaseAmount(mixed $dataset): float
+    protected function extractBaseAmount(mixed $dataset): int
     {
-        return (float) ($dataset['base_amount'] ?? 0);
+        return (int) ($dataset['base_amount'] ?? 0);
     }
 }

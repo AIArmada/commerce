@@ -16,6 +16,6 @@ interface ConditionScopeResolverInterface
         ConditionPipelinePhaseContext $phaseContext,
         ConditionScope $scope,
         CartConditionCollection $conditions,
-        float $currentAmount
-    ): float;
+        int $currentAmount
+    ): int;
 }

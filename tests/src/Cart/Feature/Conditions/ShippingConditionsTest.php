@@ -15,7 +15,7 @@ describe('Shipping Conditions', function (): void {
         Cart::addShipping('Standard Shipping', 10.00);
 
         expect(Cart::getConditions())->toHaveCount(1);
-        expect(Cart::total()->getAmount())->toBe(60.00);
+        expect(Cart::total()->getAmount())->toBe(6000);  // 50 + 10 = 60.00 in cents
 
         $shipping = Cart::getConditions()->first();
         expect($shipping->getName())->toBe('Standard Shipping');
@@ -29,7 +29,7 @@ describe('Shipping Conditions', function (): void {
         Cart::removeShipping();
 
         expect(Cart::getConditionsByType('shipping'))->toHaveCount(0);
-        expect(Cart::total()->getAmount())->toBe(50.00);
+        expect(Cart::total()->getAmount())->toBe(5000);
     });
 
     it('replaces existing shipping when adding new shipping', function (): void {
@@ -41,7 +41,7 @@ describe('Shipping Conditions', function (): void {
 
         expect($shippingConditions)->toHaveCount(1);
         expect($shippingConditions->first()->getName())->toBe('Express');
-        expect(Cart::total()->getAmount())->toBe(75.00);
+        expect(Cart::total()->getAmount())->toBe(7500);  // 50 + 25 = 75.00 in cents
     });
 
     it('handles string shipping values', function (): void {
@@ -49,7 +49,7 @@ describe('Shipping Conditions', function (): void {
 
         Cart::addShipping('Shipping', '15.00');
 
-        expect(Cart::total()->getAmount())->toBe(115.00);
+        expect(Cart::total()->getAmount())->toBe(11500);
     });
 
     it('handles numeric shipping values', function (): void {
@@ -57,7 +57,7 @@ describe('Shipping Conditions', function (): void {
 
         Cart::addShipping('Shipping', 20);
 
-        expect(Cart::total()->getAmount())->toBe(120.00);
+        expect(Cart::total()->getAmount())->toBe(12000);
     });
 
     it('can add percentage-based shipping', function (): void {
@@ -65,7 +65,7 @@ describe('Shipping Conditions', function (): void {
 
         Cart::addShipping('Calculated Shipping', '10%');
 
-        expect(Cart::total()->getAmount())->toBe(110.00);
+        expect(Cart::total()->getAmount())->toBe(11000);
     });
 
     it('works with Cart facade', function (): void {
@@ -73,7 +73,7 @@ describe('Shipping Conditions', function (): void {
 
         Cart::addShipping('Facade Shipping', 5.00);
 
-        expect(Cart::total()->getAmount())->toBe(55.00);
+        expect(Cart::total()->getAmount())->toBe(5500);  // 50 + 5 = 55.00 in cents
     });
 });
 
@@ -88,7 +88,7 @@ describe('Multiple Shipping Scenarios', function (): void {
         Cart::addShipping('Shipping', 15.00);
 
         // 100 - 10% = 90, then 90 + 15 = 105
-        expect(Cart::total()->getAmount())->toBe(105.00);
+        expect(Cart::total()->getAmount())->toBe(10500);
     });
 
     it('applies shipping after tax (shipping targets total)', function (): void {
@@ -98,7 +98,7 @@ describe('Multiple Shipping Scenarios', function (): void {
 
         // Tax applies to subtotal: 100 + 10% = 110
         // Shipping applies to total: 110 + 10 = 120
-        expect(Cart::total()->getAmount())->toBe(120.00);
+        expect(Cart::total()->getAmount())->toBe(12000);
     });
 
     it('calculates free shipping correctly', function (): void {
@@ -106,7 +106,7 @@ describe('Multiple Shipping Scenarios', function (): void {
 
         Cart::addShipping('Free Shipping', 0.00);
 
-        expect(Cart::total()->getAmount())->toBe(100.00);
+        expect(Cart::total()->getAmount())->toBe(10000);
     });
 });
 
@@ -117,9 +117,9 @@ describe('Shipping Methods', function (): void {
 
     it('supports different shipping methods', function (): void {
         $methods = [
-            ['name' => 'Standard', 'cost' => 5.00],
-            ['name' => 'Express', 'cost' => 15.00],
-            ['name' => 'Overnight', 'cost' => 30.00],
+            ['name' => 'Standard', 'cost' => 5.00, 'expected' => 5500],
+            ['name' => 'Express', 'cost' => 15.00, 'expected' => 6500],
+            ['name' => 'Overnight', 'cost' => 30.00, 'expected' => 8000],
         ];
 
         Cart::add('item', 'Item', 50.00, 1);
@@ -129,7 +129,7 @@ describe('Shipping Methods', function (): void {
             Cart::add('item', 'Item', 50.00, 1);
             Cart::addShipping($method['name'], $method['cost']);
 
-            expect(Cart::total()->getAmount())->toBe(50.00 + $method['cost']);
+            expect(Cart::total()->getAmount())->toBe($method['expected']);
         }
     });
 
@@ -141,6 +141,6 @@ describe('Shipping Methods', function (): void {
 
         expect($shipping)->not->toBeNull();
         expect($shipping->getName())->toBe('Express Shipping');
-        expect($shipping->getCalculatedValue(50.00))->toBe(25.00);
+        expect($shipping->getCalculatedValue(5000))->toBe(2500);
     });
 });

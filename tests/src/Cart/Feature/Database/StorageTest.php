@@ -71,7 +71,7 @@ describe('Database Storage Persistence', function (): void {
         $secondTotal = Cart::total()->getAmount();
 
         expect($firstTotal)->toBe($secondTotal);
-        expect($secondTotal)->toBe(150.00);
+        expect($secondTotal)->toBe(15000);  // 75.00 * 2 = 150.00 as cents
     });
 
     it('handles JSON serialization correctly', function (): void {

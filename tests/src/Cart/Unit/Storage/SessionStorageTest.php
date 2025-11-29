@@ -13,7 +13,7 @@ beforeEach(function (): void {
 
 describe('SessionStorage', function (): void {
     it('stores and retrieves items', function (): void {
-        $items = ['item-1' => ['name' => 'Test Item', 'price' => 10.00]];
+        $items = ['item-1' => ['name' => 'Test Item', 'price' => 1000]];
 
         $this->storage->putItems('cart-123', 'default', $items);
         $retrieved = $this->storage->getItems('cart-123', 'default');

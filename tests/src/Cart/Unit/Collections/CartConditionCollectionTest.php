@@ -94,8 +94,8 @@ it('can apply all conditions to a value', function (): void {
     // Start with $100
     // Apply 10% discount: $100 * 0.9 = $90
     // Apply 8% tax: $90 * 1.08 = $97.20
-    $result = $collection->applyAll(100.0);
-    expect($result->getAmount())->toBe(97.2);
+    $result = $collection->applyAll(10000);
+    expect($result->getAmount())->toBe(9720);
 });
 
 it('can create collection from array', function (): void {
@@ -134,7 +134,7 @@ it('can get collection summary', function (): void {
     $collection->addCondition($discount);
     $collection->addCondition($tax);
 
-    $summary = $collection->getSummary(100.0);
+    $summary = $collection->getSummary(10000);
 
     expect($summary)->toHaveKeys([
         'total_conditions', 'discounts', 'charges', 'percentages',
@@ -237,7 +237,7 @@ it('can get total discount amount', function (): void {
     $collection->addCondition($discount1);
     $collection->addCondition($discount2);
 
-    $totalDiscount = $collection->getTotalDiscount(100.0);
+    $totalDiscount = $collection->getTotalDiscount(10000);
 
     expect($totalDiscount)->toBeGreaterThan(0);
 });
@@ -251,7 +251,7 @@ it('can get total charges amount', function (): void {
     $collection->addCondition($charge1);
     $collection->addCondition($charge2);
 
-    $totalCharges = $collection->getTotalCharges(100.0);
+    $totalCharges = $collection->getTotalCharges(10000);
 
     expect($totalCharges)->toBeGreaterThan(0);
 });
@@ -262,7 +262,7 @@ it('can convert to detailed array', function (): void {
     $discount = new CartCondition('Discount', 'discount', 'cart@cart_subtotal/aggregate', '-10%');
     $collection->addCondition($discount);
 
-    $detailed = $collection->toDetailedArray(100.0);
+    $detailed = $collection->toDetailedArray(10000);
 
     expect($detailed)->toBeArray();
     expect($detailed)->toHaveKeys(['conditions', 'summary']);

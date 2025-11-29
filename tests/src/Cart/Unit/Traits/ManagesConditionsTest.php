@@ -189,12 +189,12 @@ describe('ManagesConditions Trait', function (): void {
             name: 'shipping',
             type: 'shipping',
             target: 'cart@cart_subtotal/aggregate',
-            value: 20
+            value: 2000
         ));
 
         $value = $this->cart->getShippingValue();
 
-        expect($value)->toBe(20.0);
+        expect($value)->toBe(2000.0);  // Returns as float
     });
 
     it('returns null for shipping value when no shipping condition exists', function (): void {

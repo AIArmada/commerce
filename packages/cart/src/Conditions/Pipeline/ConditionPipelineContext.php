@@ -10,18 +10,18 @@ use AIArmada\Cart\Models\CartItem;
 
 final class ConditionPipelineContext
 {
-    private ?float $initialAmount = null;
+    private ?int $initialAmount = null;
 
     public function __construct(
         private Cart $cart,
         private ?CartConditionCollection $conditions = null,
-        ?float $initialAmount = null
+        ?int $initialAmount = null
     ) {
         $this->conditions ??= $cart->getConditions();
         $this->initialAmount = $initialAmount;
     }
 
-    public static function fromCart(Cart $cart, ?float $initialAmount = null): self
+    public static function fromCart(Cart $cart, ?int $initialAmount = null): self
     {
         return new self($cart, null, $initialAmount);
     }
@@ -36,15 +36,15 @@ final class ConditionPipelineContext
         return $this->conditions ?? $this->cart->getConditions();
     }
 
-    public function initialAmount(): float
+    public function initialAmount(): int
     {
         if ($this->initialAmount !== null) {
             return $this->initialAmount;
         }
 
         $items = $this->cart->getItems();
-        $this->initialAmount = $items->sum(
-            static fn (CartItem $item) => (float) $item->getRawSubtotal()
+        $this->initialAmount = (int) $items->sum(
+            static fn (CartItem $item) => $item->getRawSubtotal()
         );
 
         return $this->initialAmount;

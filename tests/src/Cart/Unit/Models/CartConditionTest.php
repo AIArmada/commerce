@@ -15,7 +15,7 @@ it('parses valid and invalid percent values', function (): void {
         value: '25%'
     );
     expect($condition->getValue())->toBe('25%');
-    expect($condition->apply(200))->toBe(250.0); // 200 + 25% = 250
+    expect($condition->apply(20000))->toBe(25000); // 200 + 25% = 250 (in cents)
 
     // Valid percent (discount)
     $discountCondition = new CartCondition(
@@ -25,7 +25,7 @@ it('parses valid and invalid percent values', function (): void {
         value: '-25%'
     );
     expect($discountCondition->getValue())->toBe('-25%');
-    expect($discountCondition->apply(200))->toBe(150.0); // 200 - 25% = 150
+    expect($discountCondition->apply(20000))->toBe(15000); // 200 - 25% = 150 (in cents)
 
     // Invalid percent (non-finite)
     expect(fn () => new CartCondition(
@@ -33,7 +33,7 @@ it('parses valid and invalid percent values', function (): void {
         type: 'discount',
         target: 'cart@cart_subtotal/aggregate',
         value: '1e309%'
-    ))->toThrow(InvalidCartConditionException::class, 'Invalid condition value: 1e309%');
+    ))->toThrow(InvalidCartConditionException::class, 'Invalid percentage value: 1e309%');
 });
 
 it('throws for non-finite numericValue in parseValue', function (): void {
@@ -86,8 +86,8 @@ it('can apply percentage discount to value', function (): void {
         value: '-10%'
     );
 
-    $result = $condition->apply(100.0);
-    expect($result)->toBe(90.0);
+    $result = $condition->apply(10000);
+    expect($result)->toBe(9000);
 });
 
 it('can apply fixed amount discount', function (): void {
@@ -95,11 +95,11 @@ it('can apply fixed amount discount', function (): void {
         name: '$5 Discount',
         type: 'discount',
         target: 'cart@cart_subtotal/aggregate',
-        value: '-5'
+        value: '-5.00'  // $5.00 discount
     );
 
-    $result = $condition->apply(100.0);
-    expect($result)->toBe(95.0);
+    $result = $condition->apply(10000);
+    expect($result)->toBe(9500);
 });
 
 it('can apply percentage charge to value', function (): void {
@@ -110,8 +110,8 @@ it('can apply percentage charge to value', function (): void {
         value: '8%'
     );
 
-    $result = $condition->apply(100.0);
-    expect($result)->toBe(108.0);
+    $result = $condition->apply(10000);
+    expect($result)->toBe(10800);
 });
 
 it('can apply fixed amount charge', function (): void {
@@ -119,11 +119,11 @@ it('can apply fixed amount charge', function (): void {
         name: 'Shipping Fee',
         type: 'shipping',
         target: 'cart@cart_subtotal/aggregate',
-        value: '+15'
+        value: '+15.00'  // $15.00 fee
     );
 
-    $result = $condition->apply(100.0);
-    expect($result)->toBe(115.0);
+    $result = $condition->apply(10000);
+    expect($result)->toBe(11500);
 });
 
 it('identifies discount conditions correctly', function (): void {
@@ -215,9 +215,9 @@ it('can get calculated value for display', function (): void {
         value: '-10%'
     );
 
-    $calculatedValue = $condition->getCalculatedValue(100.0);
+    $calculatedValue = $condition->getCalculatedValue(10000);
 
-    expect($calculatedValue)->toBe(-10.0);
+    expect($calculatedValue)->toBe(-1000);
 });
 
 it('identifies percentage-based conditions correctly', function (): void {
@@ -350,13 +350,13 @@ it('validates condition value is not empty', function (): void {
 });
 
 it('validates condition values and handles edge cases', function (): void {
-    // Test that non-numeric strings still work (they cast to 0.0 which is valid)
-    expect(new CartCondition(
+    // Non-numeric strings should throw an exception
+    expect(fn () => new CartCondition(
         name: 'Alpha String',
         type: 'fee',
         target: 'cart@grand_total/aggregate',
         value: 'abc'
-    ))->toBeInstanceOf(CartCondition::class);
+    ))->toThrow(InvalidCartConditionException::class, 'Invalid condition value: abc');
 
     // Test that normal numeric strings work fine
     expect(new CartCondition(
@@ -403,11 +403,11 @@ it('handles different operators correctly', function (): void {
         value: '25.00'
     );
 
-    expect($addition->apply(100.0))->toBe(115.0)
-        ->and($subtraction->apply(100.0))->toBe(90.0)
-        ->and($multiplication->apply(100.0))->toBe(150.0)
-        ->and($division->apply(100.0))->toBe(50.0)
-        ->and($noOperator->apply(100.0))->toBe(125.0); // defaults to addition
+    expect($addition->apply(10000))->toBe(11500)
+        ->and($subtraction->apply(10000))->toBe(9000)
+        ->and($multiplication->apply(10000))->toBe(15000)
+        ->and($division->apply(10000))->toBe(5000)
+        ->and($noOperator->apply(10000))->toBe(12500); // defaults to addition
 });
 
 it('handles division by zero safely', function (): void {
@@ -419,7 +419,7 @@ it('handles division by zero safely', function (): void {
     );
 
     // Should return original value when dividing by zero
-    expect($divisionByZero->apply(100.0))->toBe(100.0);
+    expect($divisionByZero->apply(10000))->toBe(10000);
 });
 
 it('creates conditions from array with fromArray method', function (): void {

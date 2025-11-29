@@ -35,7 +35,7 @@ describe('ItemAdded Event', function (): void {
         expect($array)->toBeArray();
         expect($array)->toHaveKey('item_id', 'item-1');
         expect($array)->toHaveKey('item_name', 'Test Item');
-        expect($array)->toHaveKey('price', 10.00);
+        expect($array)->toHaveKey('price', 1000);  // Price stored as cents
         expect($array)->toHaveKey('quantity', 2);
         expect($array)->toHaveKey('identifier');
         expect($array)->toHaveKey('timestamp');
@@ -64,7 +64,7 @@ describe('ItemRemoved Event', function (): void {
         expect($array)->toBeArray();
         expect($array)->toHaveKey('item_id', 'item-1');
         expect($array)->toHaveKey('item_name', 'Removed Item');
-        expect($array)->toHaveKey('price', 25.00);
+        expect($array)->toHaveKey('price', 2500);  // Price stored as cents
         expect($array)->toHaveKey('quantity', 3);
         expect($array)->toHaveKey('identifier');
         expect($array)->toHaveKey('timestamp');
@@ -93,7 +93,7 @@ describe('ItemUpdated Event', function (): void {
         expect($array)->toBeArray();
         expect($array)->toHaveKey('item_id', 'item-1');
         expect($array)->toHaveKey('item_name', 'Updated Item');
-        expect($array)->toHaveKey('price', 15.00);
+        expect($array)->toHaveKey('price', 1500);  // Price stored as cents
         expect($array)->toHaveKey('quantity', 5);
         expect($array)->toHaveKey('identifier');
         expect($array)->toHaveKey('timestamp');
@@ -144,7 +144,7 @@ describe('ItemConditionAdded Event', function (): void {
         $event = new ItemConditionAdded($condition, $cart, 'item-1');
         $impact = $event->getConditionImpact();
 
-        expect($impact)->toBe(-10.0); // calculated value for this item
+        expect($impact)->toBe(-1000.0); // calculated value for this item (float)
     });
 });
 

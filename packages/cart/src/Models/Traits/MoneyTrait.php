@@ -143,65 +143,45 @@ trait MoneyTrait
     }
 
     // =========================================================================
-    // Raw Price Methods (internal use)
+    // Raw Price Methods (internal use - all values in cents)
     // =========================================================================
 
     /**
-     * Get raw price value - returns price with conditions applied
+     * Get raw price value in cents with conditions applied.
      */
-    public function getRawPrice(): float|int
+    public function getRawPrice(): int
     {
         $price = $this->price;
+
         foreach ($this->conditions as $condition) {
             $price = $condition->apply($price);
         }
-        $result = max(0, $price);
 
-        // Preserve original input type behavior - if original was float, keep as float
-        if (is_float($this->price) || $result !== (int) $result) {
-            return (float) $result;
-        }
-
-        return (int) $result;
+        return max(0, $price);
     }
 
     /**
-     * Get raw price without conditions - returns original numeric value
+     * Get raw price in cents without conditions applied.
      */
-    public function getRawPriceWithoutConditions(): float|int
+    public function getRawPriceWithoutConditions(): int
     {
-        // Return the same type as the original input
         return $this->price;
     }
 
     /**
-     * Get raw subtotal (price × quantity) - returns subtotal with conditions applied
+     * Get raw subtotal in cents (price × quantity) with conditions applied.
      */
-    public function getRawSubtotal(): float|int
+    public function getRawSubtotal(): int
     {
-        $result = $this->getRawPrice() * $this->quantity;
-
-        // If any part is float or result has decimals, return float
-        if (is_float($this->getRawPrice()) || $result !== (int) $result) {
-            return (float) $result;
-        }
-
-        return (int) $result;
+        return $this->getRawPrice() * $this->quantity;
     }
 
     /**
-     * Get raw subtotal without conditions applied - returns original numeric values
+     * Get raw subtotal in cents without conditions applied.
      */
-    public function getRawSubtotalWithoutConditions(): float|int
+    public function getRawSubtotalWithoutConditions(): int
     {
-        $result = $this->price * $this->quantity;
-
-        // If any part is float or result has decimals, return float
-        if (is_float($this->price) || $result !== (int) $result) {
-            return (float) $result;
-        }
-
-        return (int) $result;
+        return $this->price * $this->quantity;
     }
 
     /**

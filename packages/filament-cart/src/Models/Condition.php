@@ -18,12 +18,4 @@ final class Condition extends BaseCondition
 {
     /** @use HasFactory<ConditionFactory> */
     use HasFactory;
-
-    /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory(): BaseConditionFactory
-    {
-        return ConditionFactory::new();
-    }
 }

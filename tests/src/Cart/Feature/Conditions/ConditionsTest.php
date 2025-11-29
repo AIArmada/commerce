@@ -22,7 +22,7 @@ describe('Cart-Level Conditions', function (): void {
 
         Cart::addCondition($condition);
 
-        expect(Cart::total()->getAmount())->toBe(110.00);
+        expect(Cart::total()->getAmount())->toBe(11000);
     });
 
     it('applies multiple conditions in order', function (): void {
@@ -45,7 +45,7 @@ describe('Cart-Level Conditions', function (): void {
         ));
 
         // 100 - 10% = 90, then 90 + 10% = 99
-        expect(Cart::total()->getAmount())->toBe(99.00);
+        expect(Cart::total()->getAmount())->toBe(9900);
     });
 
     it('applies subtotal conditions before total conditions', function (): void {
@@ -66,7 +66,7 @@ describe('Cart-Level Conditions', function (): void {
         ));
 
         // 100 + 5% = 105, then 105 + 10 = 115
-        expect(Cart::total()->getAmount())->toBe(115.00);
+        expect(Cart::total()->getAmount())->toBe(11500);
     });
 
     it('can remove specific conditions', function (): void {
@@ -77,7 +77,7 @@ describe('Cart-Level Conditions', function (): void {
         Cart::removeCondition('VAT');
 
         expect(Cart::getConditions())->toHaveCount(1);
-        expect(Cart::total()->getAmount())->toBe(105.00);
+        expect(Cart::total()->getAmount())->toBe(10500);
     });
 
     it('can clear all conditions', function (): void {
@@ -88,7 +88,7 @@ describe('Cart-Level Conditions', function (): void {
         Cart::clearConditions();
 
         expect(Cart::getConditions())->toHaveCount(0);
-        expect(Cart::total()->getAmount())->toBe(100.00);
+        expect(Cart::total()->getAmount())->toBe(10000);
     });
 
     it('can get conditions by type', function (): void {
@@ -120,7 +120,7 @@ describe('Item-Level Conditions', function (): void {
         ));
 
         // Item 1: 100 - 20% = 80, Item 2: 50
-        expect(Cart::total()->getAmount())->toBe(130.00);
+        expect(Cart::total()->getAmount())->toBe(13000);
     });
 
     it('item conditions do not affect other items', function (): void {
@@ -137,8 +137,8 @@ describe('Item-Level Conditions', function (): void {
         $item1 = Cart::get('item-1');
         $item2 = Cart::get('item-2');
 
-        expect($item1->getSubtotal()->getAmount())->toBe(50.00);
-        expect($item2->getSubtotal()->getAmount())->toBe(100.00);
+        expect($item1->getSubtotal()->getAmount())->toBe(5000);
+        expect($item2->getSubtotal()->getAmount())->toBe(10000);
     });
 
     it('can remove item-specific conditions', function (): void {
@@ -155,7 +155,7 @@ describe('Item-Level Conditions', function (): void {
 
         $item = Cart::get('item');
         expect($item->conditions)->toHaveCount(0);
-        expect(Cart::total()->getAmount())->toBe(100.00);
+        expect(Cart::total()->getAmount())->toBe(10000);
     });
 
     it('can clear all item conditions', function (): void {
@@ -180,28 +180,28 @@ describe('Condition Calculations', function (): void {
         Cart::add('item', 'Item', 100.00, 1);
         Cart::addDiscount('SAVE20', '-20%');
 
-        expect(Cart::total()->getAmount())->toBe(80.00);
+        expect(Cart::total()->getAmount())->toBe(8000);
     });
 
     it('calculates fixed amount discounts correctly', function (): void {
         Cart::add('item', 'Item', 100.00, 1);
         Cart::addDiscount('SAVE15', '-15.00');
 
-        expect(Cart::total()->getAmount())->toBe(85.00);
+        expect(Cart::total()->getAmount())->toBe(8500);
     });
 
     it('calculates percentage fees correctly', function (): void {
         Cart::add('item', 'Item', 100.00, 1);
         Cart::addFee('Service Fee', '5%');
 
-        expect(Cart::total()->getAmount())->toBe(105.00);
+        expect(Cart::total()->getAmount())->toBe(10500);
     });
 
     it('calculates fixed amount fees correctly', function (): void {
         Cart::add('item', 'Item', 100.00, 1);
         Cart::addFee('Handling', '3.50');
 
-        expect(Cart::total()->getAmount())->toBe(103.50);
+        expect(Cart::total()->getAmount())->toBe(10350);
     });
 
     it('prevents negative totals', function (): void {
@@ -225,10 +225,10 @@ describe('Condition Compatibility', function (): void {
 
         Cart::addTax('VAT', '10%');
 
-        expect($subtotalWithoutConditions->getAmount())->toBe(100.00);
-        expect(Cart::subtotalWithoutConditions()->getAmount())->toBe(100.00); // Always 100 (base items)
-        expect(Cart::subtotal()->getAmount())->toBe(110.00); // 100 + 10% tax
-        expect(Cart::total()->getAmount())->toBe(110.00); // Same as subtotal since no total-level conditions
+        expect($subtotalWithoutConditions->getAmount())->toBe(10000);
+        expect(Cart::subtotalWithoutConditions()->getAmount())->toBe(10000); // Always 100 (base items)
+        expect(Cart::subtotal()->getAmount())->toBe(11000); // 100 + 10% tax
+        expect(Cart::total()->getAmount())->toBe(11000); // Same as subtotal since no total-level conditions
     });
 
     it('counts items using count() method', function (): void {

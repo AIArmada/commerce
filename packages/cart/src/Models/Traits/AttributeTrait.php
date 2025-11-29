@@ -84,11 +84,12 @@ trait AttributeTrait
     }
 
     /**
-     * Set item price
+     * Set item price (value will be converted to integer cents).
      */
     public function setPrice(float|int|string $price): static
     {
-        $normalizedPrice = is_string($price) ? $this->sanitizeStringPrice($price) : $price;
+        // Use the normalizeToInt method from CartItem
+        $normalizedPrice = $this->normalizeToInt($price);
 
         if ($normalizedPrice < 0) {
             throw new \AIArmada\Cart\Exceptions\InvalidCartItemException('Price cannot be negative');
