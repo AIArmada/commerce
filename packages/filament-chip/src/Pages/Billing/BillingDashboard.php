@@ -48,6 +48,7 @@ class BillingDashboard extends Page
     }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     public function formatAmount(int $amount): string
     {
         return CashierChip::formatAmount($amount);
@@ -74,6 +75,8 @@ class BillingDashboard extends Page
         return $user;
     }
 
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
     /**

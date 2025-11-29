@@ -34,11 +34,17 @@ class Subscriptions extends Page
     }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     public function getTitle(): string|Htmlable
     {
         return __('Manage Subscriptions');
     }
 
+=======
+    /**
+     * @return array<string, mixed>
+     */
+>>>>>>> Stashed changes
 =======
     /**
      * @return array<string, mixed>
@@ -53,6 +59,7 @@ class Subscriptions extends Page
         ];
     }
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
     public function cancelSubscription(int $subscriptionId): void
     {
@@ -142,6 +149,8 @@ class Subscriptions extends Page
 
 =======
 >>>>>>> Stashed changes
+=======
+>>>>>>> Stashed changes
     /**
      * @return Collection<int, mixed>
      */
@@ -177,6 +186,24 @@ class Subscriptions extends Page
     }
 <<<<<<< Updated upstream
 =======
+
+    /**
+     * Get active subscription statuses.
+     *
+     * @return array<int, string>
+     */
+    protected function getActiveStatuses(): array
+    {
+        if (class_exists('\AIArmada\CashierChip\Subscription')) {
+            return [
+                \AIArmada\CashierChip\Subscription::STATUS_ACTIVE,
+                \AIArmada\CashierChip\Subscription::STATUS_TRIALING,
+                \AIArmada\CashierChip\Subscription::STATUS_PAST_DUE,
+            ];
+        }
+
+        return ['active', 'trialing', 'past_due'];
+    }
 
     /**
      * Get active subscription statuses.

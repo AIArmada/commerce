@@ -6,10 +6,13 @@ namespace AIArmada\Cashier;
 
 use AIArmada\Cashier\Contracts\GatewayContract;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 use AIArmada\Cashier\Models\Subscription;
 use AIArmada\Cashier\Models\SubscriptionItem;
 use Akaunting\Money\Money;
 use Closure;
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 
@@ -44,6 +47,7 @@ class Cashier
 
     /**
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
      * Indicates if Cashier migrations will be run.
      */
     public static bool $runsMigrations = true;
@@ -54,6 +58,8 @@ class Cashier
     protected static ?Closure $formatCurrencyUsing = null;
 
     /**
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
      * Get the GatewayManager instance.

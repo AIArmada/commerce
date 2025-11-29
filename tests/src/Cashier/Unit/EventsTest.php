@@ -84,8 +84,12 @@ describe('Events', function (): void {
         });
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         it('accepts subscription without explicit billable', function (): void {
             // When no billable is passed, the event should still be creatable
+=======
+        it('accepts subscription without explicit billable', function () {
+>>>>>>> Stashed changes
 =======
         it('accepts subscription without explicit billable', function () {
 >>>>>>> Stashed changes

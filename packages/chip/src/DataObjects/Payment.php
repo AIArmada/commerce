@@ -101,8 +101,6 @@ final class Payment
         return $this->pending_unfreeze_on ? Carbon::createFromTimestamp($this->pending_unfreeze_on) : null;
     }
 
-
-
     public function isPaid(): bool
     {
         return $this->paid_on !== null;

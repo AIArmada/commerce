@@ -69,52 +69,6 @@ class Purchase
     ) {}
 
     /**
-     * Get the checkout URL for this purchase.
-     */
-    public function getCheckoutUrl(): ?string
-    {
-        return $this->checkout_url;
-    }
-
-    /**
-     * Get the currency code for this purchase.
-     */
-    public function getCurrency(): string
-    {
-        return $this->purchase->currency;
-    }
-
-    /**
-     * Get the client ID associated with this purchase.
-     */
-    public function getClientId(): ?string
-    {
-        return $this->client_id;
-    }
-
-    /**
-     * Check if this purchase uses a recurring token.
-     */
-    public function isRecurring(): bool
-    {
-        return $this->is_recurring_token;
-    }
-
-    /**
-     * Get the purchase metadata.
-     *
-     * @return array<string, mixed>|null
-     */
-    public function getMetadata(): ?array
-    {
-        if ($this->purchase->metadata === null || count($this->purchase->metadata) === 0) {
-            return null;
-        }
-
-        return $this->purchase->metadata;
-    }
-
-    /**
      * @param  array<string, mixed>  $data
      */
     public static function fromArray(array $data): self
@@ -226,6 +180,52 @@ class Purchase
     }
 
     /**
+     * Get the checkout URL for this purchase.
+     */
+    public function getCheckoutUrl(): ?string
+    {
+        return $this->checkout_url;
+    }
+
+    /**
+     * Get the currency code for this purchase.
+     */
+    public function getCurrency(): string
+    {
+        return $this->purchase->currency;
+    }
+
+    /**
+     * Get the client ID associated with this purchase.
+     */
+    public function getClientId(): ?string
+    {
+        return $this->client_id;
+    }
+
+    /**
+     * Check if this purchase uses a recurring token.
+     */
+    public function isRecurring(): bool
+    {
+        return $this->is_recurring_token;
+    }
+
+    /**
+     * Get the purchase metadata.
+     *
+     * @return array<string, mixed>|null
+     */
+    public function getMetadata(): ?array
+    {
+        if ($this->purchase->metadata === null || count($this->purchase->metadata) === 0) {
+            return null;
+        }
+
+        return $this->purchase->metadata;
+    }
+
+    /**
      * Get the total amount as Money object.
      */
     public function getAmount(): Money
@@ -240,8 +240,6 @@ class Purchase
     {
         return $this->purchase->getTotalInCents();
     }
-
-
 
     public function getCreatedAt(): Carbon
     {
@@ -338,8 +336,6 @@ class Purchase
     {
         return (int) $this->refundable_amount->getAmount();
     }
-
-
 
     /**
      * @return array<string, mixed>

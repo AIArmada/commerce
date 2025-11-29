@@ -40,6 +40,7 @@ class CashierServiceProvider extends ServiceProvider
     }
 
     /**
+>>>>>>> Stashed changes
      * Get the services provided by the provider.
      *
      * @return array<string>
@@ -50,6 +51,30 @@ class CashierServiceProvider extends ServiceProvider
             GatewayManager::class,
             'cashier',
         ];
+    }
+
+    /**
+<<<<<<< Updated upstream
+=======
+     * Register the package's publishable resources.
+     */
+    protected function registerPublishing(): void
+    {
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__.'/../config/cashier.php' => $this->app->configPath('cashier.php'),
+            ], 'cashier-config');
+        }
+    }
+
+    /**
+     * Register the package routes.
+     */
+    protected function registerRoutes(): void
+    {
+        if (Cashier::$registersRoutes) {
+            $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+        }
     }
 
     /**

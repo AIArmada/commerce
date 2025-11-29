@@ -34,11 +34,17 @@ class PaymentMethods extends Page
     }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     public function getTitle(): string|Htmlable
     {
         return __('Payment Methods');
     }
 
+=======
+    /**
+     * @return array<string, mixed>
+     */
+>>>>>>> Stashed changes
 =======
     /**
      * @return array<string, mixed>
@@ -54,6 +60,42 @@ class PaymentMethods extends Page
     }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+    /**
+     * @return array<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('add_payment_method')
+                ->label(__('Add Payment Method'))
+                ->icon(Heroicon::OutlinedPlus)
+                ->color('primary')
+                ->url(fn () => $this->getAddPaymentMethodUrl())
+                ->openUrlInNewTab(false),
+        ];
+    }
+
+    public function getAddPaymentMethodUrl(): string
+    {
+        $billable = $this->getBillable();
+
+        if (! $billable || ! method_exists($billable, 'setupPaymentMethodUrl')) {
+            return '#';
+        }
+
+        $panelId = $this->getBillingPanelId();
+        $successUrl = config('filament-chip.billing.redirects.after_payment_method_added')
+            ?? route("filament.{$panelId}.pages.payment-methods");
+
+        return $billable->setupPaymentMethodUrl([
+            'success_url' => $successUrl,
+            'cancel_url' => route("filament.{$panelId}.pages.payment-methods"),
+        ]);
+    }
+
+>>>>>>> Stashed changes
     public function setAsDefault(string $paymentMethodId): void
     {
         $billable = $this->getBillable();

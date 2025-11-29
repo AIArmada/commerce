@@ -6,6 +6,7 @@ namespace AIArmada\Cashier;
 
 use AIArmada\Cashier\Concerns\ManagesGateway;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
+use Exception;
 use Illuminate\Support\Collection;
 
 /**
@@ -61,7 +62,7 @@ trait Billable
             try {
                 $gatewaySubscriptions = $this->gateway($gateway)->subscriptions($this);
                 $subscriptions = $subscriptions->merge($gatewaySubscriptions);
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Gateway not available, skip
             }
         }
@@ -80,7 +81,7 @@ trait Billable
                 if ($subscription) {
                     return $subscription;
                 }
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Gateway not available, skip
             }
         }
@@ -113,7 +114,7 @@ trait Billable
                 if ($subscription && $subscription->onTrial()) {
                     return true;
                 }
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Gateway not available, skip
             }
         }

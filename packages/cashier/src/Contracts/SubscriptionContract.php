@@ -124,6 +124,7 @@ interface SubscriptionContract extends Arrayable, Jsonable
      * Get the subscription quantity.
      */
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     public function cancelNowAndInvoice(): self;
 
     /**
@@ -167,6 +168,9 @@ interface SubscriptionContract extends Arrayable, Jsonable
      * Get the quantity.
      */
     public function quantity(?string $price = null): int;
+=======
+    public function quantity(): ?int;
+>>>>>>> Stashed changes
 =======
     public function quantity(): ?int;
 >>>>>>> Stashed changes

@@ -59,6 +59,7 @@ return [
     */
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     'subscription_gateways' => [
         // 'premium' => 'stripe',
         // 'local' => 'chip',
@@ -79,6 +80,9 @@ return [
         'subscription' => AIArmada\Cashier\Models\Subscription::class,
         'subscription_item' => AIArmada\Cashier\Models\SubscriptionItem::class,
     ],
+=======
+    'customer_model' => env('CASHIER_MODEL', 'App\\Models\\User'),
+>>>>>>> Stashed changes
 =======
     'customer_model' => env('CASHIER_MODEL', 'App\\Models\\User'),
 >>>>>>> Stashed changes
@@ -122,7 +126,10 @@ return [
 
     'invoices' => [
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
         'renderer' => AIArmada\Cashier\Invoices\DompdfInvoiceRenderer::class,
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
         'paper' => 'letter',

@@ -42,6 +42,7 @@ describe('Cashier', function (): void {
     });
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     it('can use a custom subscription model', function (): void {
         Cashier::useSubscriptionModel(Subscription::class);
 
@@ -56,6 +57,8 @@ describe('Cashier', function (): void {
 
     it('can configure deactivate past due setting', function (): void {
 =======
+=======
+>>>>>>> Stashed changes
     it('can configure deactivate past due setting', function () {
 >>>>>>> Stashed changes
         Cashier::deactivatePastDue(true);
@@ -79,12 +82,15 @@ describe('Cashier', function (): void {
         expect(Cashier::$registersRoutes)->toBeFalse();
     });
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 
     it('can ignore migrations', function (): void {
         Cashier::ignoreMigrations();
 
         expect(Cashier::$runsMigrations)->toBeFalse();
     });
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 });

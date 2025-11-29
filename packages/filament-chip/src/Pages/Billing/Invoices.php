@@ -33,11 +33,17 @@ class Invoices extends Page
     }
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
     public function getTitle(): string|Htmlable
     {
         return __('Billing History');
     }
 
+=======
+    /**
+     * @return array<string, mixed>
+     */
+>>>>>>> Stashed changes
 =======
     /**
      * @return array<string, mixed>
@@ -51,6 +57,7 @@ class Invoices extends Page
         ];
     }
 
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
     public function downloadInvoice(string $invoiceId): mixed
     {
@@ -116,6 +123,8 @@ class Invoices extends Page
         return $user;
     }
 
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
     /**

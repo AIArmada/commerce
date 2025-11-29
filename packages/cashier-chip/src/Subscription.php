@@ -30,14 +30,6 @@ class Subscription extends Model
     /** @use HasFactory<SubscriptionFactory> */
     use HasFactory;
 
-    /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory(): SubscriptionFactory
-    {
-        return SubscriptionFactory::new();
-    }
-
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_CANCELED = 'canceled';
@@ -737,6 +729,14 @@ class Subscription extends Model
                 'This method requires a price argument since the subscription has multiple prices.'
             );
         }
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): SubscriptionFactory
+    {
+        return SubscriptionFactory::new();
     }
 
     /**

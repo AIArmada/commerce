@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip;
 
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 use AIArmada\Chip\Facades\ChipCollect;
+=======
+use AIArmada\Chip\DataObjects\Purchase;
+>>>>>>> Stashed changes
 =======
 use AIArmada\Chip\DataObjects\Purchase;
 >>>>>>> Stashed changes
@@ -16,7 +20,10 @@ use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use JsonSerializable;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 use ReturnTypeWillChange;
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 
@@ -36,7 +43,11 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
     /**
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
      * The CHIP purchase data (checkout session).
+=======
+     * The CHIP purchase instance.
+>>>>>>> Stashed changes
 =======
      * The CHIP purchase instance.
 >>>>>>> Stashed changes
@@ -48,7 +59,10 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
      *
      * @param  \Illuminate\Database\Eloquent\Model|null  $owner
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
      * @return void
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
      */
@@ -60,6 +74,7 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
     /**
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
      * Dynamically get values from the purchase data.
      *
      * @return mixed
@@ -70,6 +85,8 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     }
 
     /**
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
      * Begin a new guest checkout session.
@@ -95,6 +112,10 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
      * @param  \Illuminate\Database\Eloquent\Model|null  $owner
      * @param  int  $amount  Amount in cents
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+     * @param  array<string, mixed>  $options
+>>>>>>> Stashed changes
 =======
      * @param  array<string, mixed>  $options
 >>>>>>> Stashed changes
@@ -218,7 +239,11 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
     /**
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
      * Get the underlying CHIP purchase data.
+=======
+     * Get the underlying CHIP purchase.
+>>>>>>> Stashed changes
 =======
      * Get the underlying CHIP purchase.
 >>>>>>> Stashed changes
@@ -242,6 +267,9 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 =======
      *
      * @return array<string, mixed>
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
      */
     public function toArray(): array
@@ -252,8 +280,11 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     /**
      * Convert the object to its JSON representation.
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
      *
      * @param  int  $options
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
      */
@@ -268,6 +299,9 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 =======
      *
      * @return array<string, mixed>
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
      */
     #[ReturnTypeWillChange]

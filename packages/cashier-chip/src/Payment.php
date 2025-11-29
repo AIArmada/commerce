@@ -6,6 +6,10 @@ namespace AIArmada\CashierChip;
 
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
+=======
+use AIArmada\Chip\DataObjects\Purchase;
+>>>>>>> Stashed changes
 =======
 use AIArmada\Chip\DataObjects\Purchase;
 >>>>>>> Stashed changes
@@ -14,7 +18,10 @@ use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Support\Traits\ForwardsCalls;
 use JsonSerializable;
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
 use ReturnTypeWillChange;
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
 
@@ -66,7 +73,11 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
      * The CHIP purchase data.
+=======
+     * The CHIP purchase instance.
+>>>>>>> Stashed changes
 =======
      * The CHIP purchase instance.
 >>>>>>> Stashed changes
@@ -82,6 +93,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
      * Dynamically get values from the purchase data.
      *
@@ -109,6 +121,17 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 =======
      * Get the total amount that will be paid (formatted).
 >>>>>>> Stashed changes
+=======
+     * Get the purchase ID.
+     */
+    public function id(): string
+    {
+        return $this->purchase->id;
+    }
+
+    /**
+     * Get the total amount that will be paid (formatted).
+>>>>>>> Stashed changes
      */
     public function amount(): string
     {
@@ -116,6 +139,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
+<<<<<<< Updated upstream
 <<<<<<< Updated upstream
      * Get the raw total amount that will be paid.
      */
@@ -125,6 +149,13 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
         $amount = $this->purchase['purchase']['total'] ?? $this->purchase['amount'] ?? 0;
 
         return (int) ($amount * 100);
+=======
+     * Get the raw total amount that will be paid (in cents/minor units).
+     */
+    public function rawAmount(): int
+    {
+        return $this->purchase->getAmountInCents();
+>>>>>>> Stashed changes
 =======
      * Get the raw total amount that will be paid (in cents/minor units).
      */
@@ -226,9 +257,12 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      * Validate if the payment was successful and throw an exception if not.
      *
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
      *
      * @throws IncompletePayment
 =======
+=======
+>>>>>>> Stashed changes
      * @throws \AIArmada\CashierChip\Exceptions\IncompletePayment
 >>>>>>> Stashed changes
      */
@@ -280,7 +314,11 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 
     /**
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
      * Get the underlying purchase data.
+=======
+     * Get the underlying CHIP Purchase DataObject.
+>>>>>>> Stashed changes
 =======
      * Get the underlying CHIP Purchase DataObject.
 >>>>>>> Stashed changes
@@ -296,6 +334,9 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 =======
      *
      * @return array<string, mixed>
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
      */
     public function toArray(): array
@@ -306,8 +347,11 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     /**
      * Convert the object to its JSON representation.
 <<<<<<< Updated upstream
+<<<<<<< Updated upstream
      *
      * @param  int  $options
+=======
+>>>>>>> Stashed changes
 =======
 >>>>>>> Stashed changes
      */
@@ -322,6 +366,9 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
 =======
      *
      * @return array<string, mixed>
+<<<<<<< Updated upstream
+>>>>>>> Stashed changes
+=======
 >>>>>>> Stashed changes
      */
     #[ReturnTypeWillChange]
