@@ -376,6 +376,15 @@ class Voucher extends Model
         });
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Voucher $voucher): void {
+            $voucher->usages()->delete();
+            $voucher->walletEntries()->delete();
+            $voucher->transactions()->delete();
+        });
+    }
+
     protected function casts(): array
     {
         return [
@@ -393,14 +402,5 @@ class Voucher extends Model
             'metadata' => 'array',
             'target_definition' => 'array',
         ];
-    }
-
-    protected static function booted(): void
-    {
-        static::deleting(function (Voucher $voucher): void {
-            $voucher->usages()->delete();
-            $voucher->walletEntries()->delete();
-            $voucher->transactions()->delete();
-        });
     }
 }

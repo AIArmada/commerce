@@ -31,6 +31,7 @@ class Subscription extends Model
 {
     /** @use HasFactory<SubscriptionFactory> */
     use HasFactory;
+
     use HasUuids;
 
     public const STATUS_ACTIVE = 'active';

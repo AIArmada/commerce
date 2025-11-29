@@ -65,6 +65,14 @@ class DocTemplate extends Model
         $this->update(['is_default' => true]);
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (DocTemplate $template): void {
+            // Nullify the template reference on associated docs rather than deleting them
+            $template->docs()->update(['doc_template_id' => null]);
+        });
+    }
+
     /**
      * Scope to get default template
      *
@@ -80,13 +88,5 @@ class DocTemplate extends Model
         }
 
         return $query->first();
-    }
-
-    protected static function booted(): void
-    {
-        static::deleting(function (DocTemplate $template): void {
-            // Nullify the template reference on associated docs rather than deleting them
-            $template->docs()->update(['doc_template_id' => null]);
-        });
     }
 }

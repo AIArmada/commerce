@@ -20,15 +20,8 @@ class SubscriptionItem extends Model
 {
     /** @use HasFactory<SubscriptionItemFactory> */
     use HasFactory;
-    use HasUuids;
 
-    /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory(): SubscriptionItemFactory
-    {
-        return SubscriptionItemFactory::new();
-    }
+    use HasUuids;
 
     /**
      * The table associated with the model.
@@ -160,5 +153,13 @@ class SubscriptionItem extends Model
     public function totalAmount(): int
     {
         return ($this->unit_amount ?? 0) * ($this->quantity ?? 1);
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): SubscriptionItemFactory
+    {
+        return SubscriptionItemFactory::new();
     }
 }
