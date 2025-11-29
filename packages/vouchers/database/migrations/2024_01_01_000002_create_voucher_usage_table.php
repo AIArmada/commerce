@@ -30,6 +30,7 @@ return new class extends Migration
             $table->index('channel'); // For filtering by redemption channel
             $table->index('used_at'); // For sorting by usage date
             $table->index(['voucher_id', 'used_at']); // For voucher usage history
+            $table->index(['voucher_id', 'redeemed_by_type', 'redeemed_by_id'], 'voucher_usage_per_user_index'); // For per-user limit checks
         });
 
         // Optional: create GIN index when using jsonb on PostgreSQL

@@ -12,6 +12,7 @@ use Exception;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 
 trait HasVouchers
 {
@@ -133,26 +134,28 @@ trait HasVouchers
             throw new Exception('Cannot redeem voucher: Insufficient balance or invalid voucher.');
         }
 
-        $walletEntry = $this->resolveVoucherWalletEntry($voucher);
+        return DB::transaction(function () use ($voucher, $amount): VoucherUsage {
+            $walletEntry = $this->resolveVoucherWalletEntry($voucher);
 
-        // 1. Debit wallet
-        $this->grantVoucherCredit($voucher, -$amount, 'Redemption', $walletEntry);
+            // 1. Debit wallet
+            $this->grantVoucherCredit($voucher, -$amount, 'Redemption', $walletEntry);
 
-        if ($walletEntry) {
-            $walletEntry->markAsRedeemed();
-        }
+            if ($walletEntry) {
+                $walletEntry->markAsRedeemed();
+            }
 
-        // 2. Record usage
-        return VoucherUsage::create([
-            'voucher_id' => $voucher->getKey(),
-            'discount_amount' => $amount,
-            'currency' => $voucher->currency,
-            'channel' => 'web', // Default channel, maybe make configurable
-            'redeemed_by_type' => $this->getMorphClass(),
-            'redeemed_by_id' => $this->getKey(),
-            'notes' => 'Redemption via wallet',
-            'used_at' => now(),
-        ]);
+            // 2. Record usage
+            return VoucherUsage::create([
+                'voucher_id' => $voucher->getKey(),
+                'discount_amount' => $amount,
+                'currency' => $voucher->currency,
+                'channel' => 'web', // Default channel, maybe make configurable
+                'redeemed_by_type' => $this->getMorphClass(),
+                'redeemed_by_id' => $this->getKey(),
+                'notes' => 'Redemption via wallet',
+                'used_at' => now(),
+            ]);
+        });
     }
 
     /**

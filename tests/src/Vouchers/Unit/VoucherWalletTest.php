@@ -13,15 +13,15 @@ use Illuminate\Support\Facades\Schema;
 beforeEach(function (): void {
     Config::set('vouchers.wallet.enabled', true);
 
-    // Create users table for testing
-    if (! Schema::hasTable('users')) {
-        Schema::create('users', function ($table): void {
-            $table->id();
-            $table->string('name');
-            $table->string('email');
-            $table->timestamps();
-        });
-    }
+    // Drop and recreate users table for testing to ensure correct schema
+    Schema::dropIfExists('users');
+    Schema::create('users', function ($table): void {
+        $table->id();
+        $table->string('name');
+        $table->string('email');
+        $table->string('password')->nullable();
+        $table->timestamps();
+    });
 
     // Create test model class that uses HasVouchers (which now includes wallet logic)
     if (! class_exists(TestWalletUser::class)) {

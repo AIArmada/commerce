@@ -35,6 +35,11 @@ class WebhookService
         }
 
         if (! $shouldVerify) {
+            Log::channel(config('chip.logging.channel'))
+                ->warning('Webhook signature verification is disabled', [
+                    'environment' => app()->environment(),
+                ]);
+
             return true;
         }
 

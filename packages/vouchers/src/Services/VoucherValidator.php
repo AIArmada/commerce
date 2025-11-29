@@ -95,8 +95,11 @@ class VoucherValidator
             $cartTotal = $this->getCartTotal($cart);
 
             if ($cartTotal < $voucher->min_cart_value) {
+                $currency = mb_strtoupper($voucher->currency ?? config('vouchers.default_currency', 'MYR'));
+                $formattedMinValue = (string) \Akaunting\Money\Money::{$currency}($voucher->min_cart_value);
+
                 return VoucherValidationResult::invalid(
-                    "Minimum cart value of {$voucher->currency} {$voucher->min_cart_value} required.",
+                    "Minimum cart value of {$formattedMinValue} required.",
                     ['min_cart_value' => $voucher->min_cart_value, 'current_cart_value' => $cartTotal]
                 );
             }

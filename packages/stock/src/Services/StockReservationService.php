@@ -95,24 +95,27 @@ final class StockReservationService
      */
     public function release(Model $stockable, string $cartId): bool
     {
-        $reservation = StockReservation::query()
-            ->where('stockable_type', $stockable->getMorphClass())
-            ->where('stockable_id', $stockable->getKey())
-            ->where('cart_id', $cartId)
-            ->first();
+        return DB::transaction(function () use ($stockable, $cartId): bool {
+            $reservation = StockReservation::query()
+                ->where('stockable_type', $stockable->getMorphClass())
+                ->where('stockable_id', $stockable->getKey())
+                ->where('cart_id', $cartId)
+                ->lockForUpdate()
+                ->first();
 
-        if (! $reservation) {
-            return false;
-        }
+            if (! $reservation) {
+                return false;
+            }
 
-        $quantity = $reservation->quantity;
-        $reservation->delete();
+            $quantity = $reservation->quantity;
+            $reservation->delete();
 
-        if ($this->isEventEnabled('released')) {
-            StockReleased::dispatch($stockable, $quantity, $cartId);
-        }
+            if ($this->isEventEnabled('released')) {
+                StockReleased::dispatch($stockable, $quantity, $cartId);
+            }
 
-        return true;
+            return true;
+        });
     }
 
     /**
@@ -120,25 +123,28 @@ final class StockReservationService
      */
     public function releaseAllForCart(string $cartId): int
     {
-        $reservations = StockReservation::query()
-            ->where('cart_id', $cartId)
-            ->get();
+        return DB::transaction(function () use ($cartId): int {
+            $reservations = StockReservation::query()
+                ->where('cart_id', $cartId)
+                ->lockForUpdate()
+                ->get();
 
-        $count = 0;
-        $dispatchEvents = $this->isEventEnabled('released');
+            $count = 0;
+            $dispatchEvents = $this->isEventEnabled('released');
 
-        foreach ($reservations as $reservation) {
-            $stockable = $reservation->stockable;
-            $quantity = $reservation->quantity;
-            $reservation->delete();
-            $count++;
+            foreach ($reservations as $reservation) {
+                $stockable = $reservation->stockable;
+                $quantity = $reservation->quantity;
+                $reservation->delete();
+                $count++;
 
-            if ($stockable && $dispatchEvents) {
-                StockReleased::dispatch($stockable, $quantity, $cartId);
+                if ($stockable && $dispatchEvents) {
+                    StockReleased::dispatch($stockable, $quantity, $cartId);
+                }
             }
-        }
 
-        return $count;
+            return $count;
+        });
     }
 
     /**
@@ -150,48 +156,51 @@ final class StockReservationService
      */
     public function commitReservations(string $cartId, ?string $orderId = null): array
     {
-        $reservations = StockReservation::query()
-            ->where('cart_id', $cartId)
-            ->with('stockable')
-            ->get();
+        return DB::transaction(function () use ($cartId, $orderId): array {
+            $reservations = StockReservation::query()
+                ->where('cart_id', $cartId)
+                ->lockForUpdate()
+                ->with('stockable')
+                ->get();
 
-        $transactions = [];
+            $transactions = [];
 
-        foreach ($reservations as $reservation) {
-            $stockable = $reservation->stockable;
+            foreach ($reservations as $reservation) {
+                $stockable = $reservation->stockable;
 
-            if (! $stockable) {
-                $reservation->delete();
+                if (! $stockable) {
+                    $reservation->delete();
 
-                continue;
-            }
+                    continue;
+                }
 
-            $transaction = $this->stockService->removeStock(
-                model: $stockable,
-                quantity: $reservation->quantity,
-                reason: 'sale',
-                note: $orderId ? "Order #{$orderId}" : "Cart {$cartId}"
-            );
-
-            $transactions[] = $transaction;
-
-            if ($this->isEventEnabled('deducted')) {
-                StockDeducted::dispatch(
-                    $stockable,
-                    $reservation->quantity,
-                    'sale',
-                    $orderId,
-                    $transaction
+                $transaction = $this->stockService->removeStock(
+                    model: $stockable,
+                    quantity: $reservation->quantity,
+                    reason: 'sale',
+                    note: $orderId ? "Order #{$orderId}" : "Cart {$cartId}"
                 );
+
+                $transactions[] = $transaction;
+
+                if ($this->isEventEnabled('deducted')) {
+                    StockDeducted::dispatch(
+                        $stockable,
+                        $reservation->quantity,
+                        'sale',
+                        $orderId,
+                        $transaction
+                    );
+                }
+
+                // Check for low stock or out of stock
+                $this->checkStockLevels($stockable);
+
+                $reservation->delete();
             }
 
-            // Check for low stock or out of stock
-            $this->checkStockLevels($stockable);
-
-            $reservation->delete();
-        }
-
-        return $transactions;
+            return $transactions;
+        });
     }
 
     /**
@@ -302,7 +311,6 @@ final class StockReservationService
     ): ?StockReservation {
         $minutes ??= config('stock.cart.reservation_ttl', 30);
 
-        $reservation = $this->getReservation($stockable, $cartId);
         $reservation = $this->getReservation($stockable, $cartId);
 
         if (! $reservation) {

@@ -81,22 +81,21 @@ final class StockService
 
     /**
      * Get current stock level for a model.
+     *
+     * Uses a single atomic query to prevent race conditions.
      */
     public function getCurrentStock(Model $model): int
     {
-        $inbound = StockTransaction::query()
+        $result = StockTransaction::query()
             ->where('stockable_type', $model->getMorphClass())
             ->where('stockable_id', $model->getKey())
-            ->where('type', 'in')
-            ->sum('quantity');
+            ->selectRaw("
+                COALESCE(SUM(CASE WHEN type = 'in' THEN quantity ELSE 0 END), 0) -
+                COALESCE(SUM(CASE WHEN type = 'out' THEN quantity ELSE 0 END), 0) as stock
+            ")
+            ->value('stock');
 
-        $outbound = StockTransaction::query()
-            ->where('stockable_type', $model->getMorphClass())
-            ->where('stockable_id', $model->getKey())
-            ->where('type', 'out')
-            ->sum('quantity');
-
-        return (int) ($inbound - $outbound);
+        return (int) ($result ?? 0);
     }
 
     /**
@@ -153,10 +152,16 @@ final class StockService
             $note,
             $userId
         ) {
+            // Safely get auth ID - may be null in CLI/queue contexts
+            $resolvedUserId = $userId;
+            if ($resolvedUserId === null && function_exists('auth') && auth()->check()) {
+                $resolvedUserId = (string) auth()->id();
+            }
+
             return StockTransaction::create([
                 'stockable_type' => $model->getMorphClass(),
                 'stockable_id' => $model->getKey(),
-                'user_id' => $userId ?? auth()->id(),
+                'user_id' => $resolvedUserId,
                 'quantity' => $quantity,
                 'type' => $type,
                 'reason' => $reason,

@@ -110,7 +110,7 @@ final class CartServiceProvider extends PackageServiceProvider
         });
 
         // Bind StorageInterface to the configured storage driver
-        $this->app->bind(function (\Illuminate\Contracts\Foundation\Application $app): StorageInterface {
+        $this->app->bind(StorageInterface::class, function (\Illuminate\Contracts\Foundation\Application $app): StorageInterface {
             $driver = config('cart.storage', 'session');
 
             return $app->make(sprintf('cart.storage.%s', $driver));
@@ -142,7 +142,7 @@ final class CartServiceProvider extends PackageServiceProvider
      */
     protected function registerMigrationService(): void
     {
-        $this->app->singleton(function (\Illuminate\Contracts\Foundation\Application $app): CartMigrationService {
+        $this->app->singleton(CartMigrationService::class, function (\Illuminate\Contracts\Foundation\Application $app): CartMigrationService {
             return new CartMigrationService;
         });
     }

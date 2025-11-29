@@ -9,6 +9,7 @@ use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Exception;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Traits\Conditionable;
 use InvalidArgumentException;
@@ -290,33 +291,35 @@ class SubscriptionBuilder
         $firstItem = Arr::first($this->items);
         $isSinglePrice = count($this->items) === 1;
 
-        /** @var Subscription $subscription */
-        $subscription = $this->owner->subscriptions()->create([
-            'type' => $this->type,
-            'chip_id' => Str::uuid()->toString(),
-            'chip_status' => $status,
-            'chip_price' => $isSinglePrice ? ($firstItem['price'] ?? null) : null,
-            'quantity' => $isSinglePrice ? ($firstItem['quantity'] ?? 1) : null,
-            'trial_ends_at' => $trialEndsAt,
-            'next_billing_at' => $nextBillingAt,
-            'billing_interval' => $this->billingInterval,
-            'billing_interval_count' => $this->billingIntervalCount,
-            'recurring_token' => $recurringToken ?? $this->owner->defaultPaymentMethod(),
-            'ends_at' => null,
-        ]);
-
-        // Create subscription items
-        foreach ($this->items as $item) {
-            $subscription->items()->create([
+        return DB::transaction(function () use ($status, $trialEndsAt, $nextBillingAt, $recurringToken, $firstItem, $isSinglePrice): Subscription {
+            /** @var Subscription $subscription */
+            $subscription = $this->owner->subscriptions()->create([
+                'type' => $this->type,
                 'chip_id' => Str::uuid()->toString(),
-                'chip_product' => $item['product'] ?? null,
-                'chip_price' => $item['price'] ?? null,
-                'quantity' => $item['quantity'] ?? 1,
-                'unit_amount' => $item['unit_amount'] ?? null,
+                'chip_status' => $status,
+                'chip_price' => $isSinglePrice ? ($firstItem['price'] ?? null) : null,
+                'quantity' => $isSinglePrice ? ($firstItem['quantity'] ?? 1) : null,
+                'trial_ends_at' => $trialEndsAt,
+                'next_billing_at' => $nextBillingAt,
+                'billing_interval' => $this->billingInterval,
+                'billing_interval_count' => $this->billingIntervalCount,
+                'recurring_token' => $recurringToken ?? $this->owner->defaultPaymentMethod(),
+                'ends_at' => null,
             ]);
-        }
 
-        return $subscription;
+            // Create subscription items
+            foreach ($this->items as $item) {
+                $subscription->items()->create([
+                    'chip_id' => Str::uuid()->toString(),
+                    'chip_product' => $item['product'] ?? null,
+                    'chip_price' => $item['price'] ?? null,
+                    'quantity' => $item['quantity'] ?? 1,
+                    'unit_amount' => $item['unit_amount'] ?? null,
+                ]);
+            }
+
+            return $subscription;
+        });
     }
 
     /**

@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Stock\Cart;
 
 use AIArmada\Cart\Conditions\CartCondition;
-use AIArmada\Cart\Contracts\ConditionInterface;
+use AIArmada\Cart\Conditions\Enums\ConditionPhase;
+use AIArmada\Cart\Conditions\Target;
+use AIArmada\Cart\Contracts\CartConditionConvertible;
 use AIArmada\Stock\Services\StockReservationService;
 use Illuminate\Database\Eloquent\Model;
 
@@ -15,7 +17,7 @@ use Illuminate\Database\Eloquent\Model;
  * This condition doesn't modify the cart total, but blocks checkout
  * if any item has insufficient stock.
  */
-final class StockCondition implements ConditionInterface
+final class StockCondition implements CartConditionConvertible
 {
     private bool $hasIssues = false;
 
@@ -168,12 +170,20 @@ final class StockCondition implements ConditionInterface
      */
     public function toCartCondition(): CartCondition
     {
+        // Use cart scope with grand_total phase since this is a validation condition
+        // that should run after all calculations but has no monetary effect (value = 0)
+        $target = Target::cart()
+            ->phase(ConditionPhase::GRAND_TOTAL)
+            ->applyAggregate()
+            ->build();
+
         return new CartCondition(
             name: $this->getName(),
             type: $this->getType(),
+            target: $target,
             value: $this->getValue(),
-            order: $this->getOrder(),
-            attributes: $this->getAttributes()
+            attributes: $this->getAttributes(),
+            order: $this->getOrder()
         );
     }
 }

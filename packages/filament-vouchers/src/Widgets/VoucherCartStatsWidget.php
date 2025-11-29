@@ -75,11 +75,14 @@ final class VoucherCartStatsWidget extends BaseWidget
 
             // Search for this voucher code in cart conditions metadata
             // Vouchers are stored as conditions with the voucher code in metadata
+            // Escape special LIKE characters in voucher code
+            $escapedCode = str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], $voucher->code);
+
             return $cartModel::query()
                 ->whereNotNull('conditions')
-                ->where(function ($query) use ($voucher): void {
+                ->where(function ($query) use ($voucher, $escapedCode): void {
                     $query->whereJsonContains('conditions', ['voucher' => $voucher->code])
-                        ->orWhereRaw('conditions::text LIKE ?', ['%"code":"'.$voucher->code.'"%']);
+                        ->orWhereRaw('conditions::text LIKE ?', ['%"code":"'.$escapedCode.'"%']);
                 })
                 ->count();
         } catch (Throwable $exception) {

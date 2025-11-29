@@ -52,7 +52,6 @@ If no matches, remove the config.
 
 ## Primary Keys
 - All tables must use `uuid('id')->primary()` for primary key.
-- **Exception**: `cashier-chip` package uses integer IDs (`$table->id()`) to maintain API compatibility with `laravel/cashier` (Stripe). This is intentional.
 
 ## Foreign Keys
 - Use `foreignUuid('relation_id')` for foreign key columns.

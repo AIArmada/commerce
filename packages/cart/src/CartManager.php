@@ -144,6 +144,8 @@ class CartManager
 
     /**
      * Get session storage access for session-specific operations
+     *
+     * @throws RuntimeException If session is not available
      */
     public function session(?string $sessionKey = null): StorageInterface
     {
@@ -152,6 +154,10 @@ class CartManager
         }
 
         // If not using session storage, create a temporary session storage instance
+        if (! app()->bound('session')) {
+            throw new RuntimeException('Session service is not available');
+        }
+
         $session = app(\Illuminate\Session\SessionManager::class)->driver();
 
         return new Storage\SessionStorage($session, $sessionKey ?? config('cart.session.key', 'cart'));

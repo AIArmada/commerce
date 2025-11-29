@@ -81,7 +81,7 @@ class JntServiceProvider extends PackageServiceProvider
     protected function registerServices(): void
     {
         // Register main J&T Express service
-        $this->app->singleton(function (Application $app): JntExpressService {
+        $this->app->singleton(JntExpressService::class, function (Application $app): JntExpressService {
             $config = $app['config']['jnt'];
 
             return new JntExpressService(

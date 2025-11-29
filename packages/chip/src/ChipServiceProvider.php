@@ -67,20 +67,20 @@ final class ChipServiceProvider extends PackageServiceProvider
 
     protected function registerServices(): void
     {
-        $this->app->singleton(function ($app): ChipCollectService {
+        $this->app->singleton(ChipCollectService::class, function ($app): ChipCollectService {
             return new ChipCollectService(
                 $app->make(ChipCollectClient::class),
                 $app->make(CacheRepository::class)
             );
         });
 
-        $this->app->singleton(function ($app): ChipSendService {
+        $this->app->singleton(ChipSendService::class, function ($app): ChipSendService {
             return new ChipSendService(
                 $app->make(ChipSendClient::class)
             );
         });
 
-        $this->app->singleton(function ($app): WebhookService {
+        $this->app->singleton(WebhookService::class, function ($app): WebhookService {
             return new WebhookService;
         });
 
@@ -91,7 +91,7 @@ final class ChipServiceProvider extends PackageServiceProvider
 
     protected function registerClients(): void
     {
-        $this->app->singleton(function (): ChipCollectClient {
+        $this->app->singleton(ChipCollectClient::class, function (): ChipCollectClient {
             $apiKey = config('chip.collect.api_key');
             $brandId = config('chip.collect.brand_id');
 
@@ -116,7 +116,7 @@ final class ChipServiceProvider extends PackageServiceProvider
             );
         });
 
-        $this->app->singleton(function (): ChipSendClient {
+        $this->app->singleton(ChipSendClient::class, function (): ChipSendClient {
             $apiKey = config('chip.send.api_key');
             $apiSecret = config('chip.send.api_secret');
 

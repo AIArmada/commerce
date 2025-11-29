@@ -122,11 +122,13 @@ final class CartValidator
         $this->cartRules['minimum_total'] = function (Cart $cart) use ($minimum, $message): ?ValidationError {
             $total = (int) $cart->getRawTotal();
             if ($total < $minimum) {
-                $formatted = number_format($minimum / 100, 2);
+                $currency = config('cart.money.default_currency', 'USD');
+                $formattedMin = (string) \Akaunting\Money\Money::{$currency}($minimum);
+                $formattedCurrent = (string) \Akaunting\Money\Money::{$currency}($total);
 
                 return ValidationError::cart(
                     'minimum_total',
-                    $message ?? "Minimum order total is \${$formatted}. Current: \$".number_format($total / 100, 2)
+                    $message ?? "Minimum order total is {$formattedMin}. Current: {$formattedCurrent}"
                 );
             }
 
@@ -146,11 +148,13 @@ final class CartValidator
         $this->cartRules['maximum_total'] = function (Cart $cart) use ($maximum, $message): ?ValidationError {
             $total = (int) $cart->getRawTotal();
             if ($total > $maximum) {
-                $formatted = number_format($maximum / 100, 2);
+                $currency = config('cart.money.default_currency', 'USD');
+                $formattedMax = (string) \Akaunting\Money\Money::{$currency}($maximum);
+                $formattedCurrent = (string) \Akaunting\Money\Money::{$currency}($total);
 
                 return ValidationError::cart(
                     'maximum_total',
-                    $message ?? "Maximum order total is \${$formatted}. Current: \$".number_format($total / 100, 2)
+                    $message ?? "Maximum order total is {$formattedMax}. Current: {$formattedCurrent}"
                 );
             }
 

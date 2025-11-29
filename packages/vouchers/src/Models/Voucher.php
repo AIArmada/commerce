@@ -98,6 +98,14 @@ class Voucher extends Model
         return $relation;
     }
 
+    public function transactions(): HasMany
+    {
+        /** @var HasMany<VoucherTransaction, Voucher> $relation */
+        $relation = $this->hasMany(VoucherTransaction::class);
+
+        return $relation;
+    }
+
     public function owner(): MorphTo
     {
         return $this->morphTo();
@@ -384,6 +392,7 @@ class Voucher extends Model
         static::deleting(function (Voucher $voucher): void {
             $voucher->usages()->delete();
             $voucher->walletEntries()->delete();
+            $voucher->transactions()->delete();
         });
     }
 }

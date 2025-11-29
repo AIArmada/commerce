@@ -9,6 +9,7 @@ use AIArmada\CashierChip\Exceptions\InvalidPaymentMethod;
 use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
 use AIArmada\CashierChip\Payment;
 use AIArmada\CashierChip\Subscription;
+use AIArmada\Chip\DataObjects\Purchase;
 
 it('can create customer already created exception', function (): void {
     $owner = new class
@@ -48,11 +49,11 @@ it('can create invalid payment method exception for not found', function (): voi
 });
 
 it('can create incomplete payment exception for redirect', function (): void {
-    $payment = new Payment([
+    $payment = new Payment(Purchase::fromArray([
         'id' => 'test-id',
         'status' => 'pending',
         'checkout_url' => 'https://chip.com/checkout',
-    ]);
+    ]));
 
     $exception = IncompletePayment::requiresRedirect($payment);
 
@@ -62,10 +63,10 @@ it('can create incomplete payment exception for redirect', function (): void {
 });
 
 it('can create incomplete payment exception for failed', function (): void {
-    $payment = new Payment([
+    $payment = new Payment(Purchase::fromArray([
         'id' => 'test-id',
         'status' => 'failed',
-    ]);
+    ]));
 
     $exception = IncompletePayment::failed($payment);
 
@@ -74,10 +75,10 @@ it('can create incomplete payment exception for failed', function (): void {
 });
 
 it('can create incomplete payment exception for expired', function (): void {
-    $payment = new Payment([
+    $payment = new Payment(Purchase::fromArray([
         'id' => 'test-id',
         'status' => 'expired',
-    ]);
+    ]));
 
     $exception = IncompletePayment::expired($payment);
 

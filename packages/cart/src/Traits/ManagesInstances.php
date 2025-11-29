@@ -36,7 +36,8 @@ trait ManagesInstances
             $this->identifier,
             $this->events,
             $name,
-            $this->eventsEnabled
+            $this->eventsEnabled,
+            $this->conditionResolver
         );
     }
 
