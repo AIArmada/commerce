@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip;
 
 use AIArmada\CashierChip\Database\Factories\SubscriptionItemFactory;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\DB;
 
 /**
  * CHIP Subscription Item Model
@@ -18,6 +20,7 @@ class SubscriptionItem extends Model
 {
     /** @use HasFactory<SubscriptionItemFactory> */
     use HasFactory;
+    use HasUuids;
 
     /**
      * Create a new factory instance for the model.
@@ -94,17 +97,19 @@ class SubscriptionItem extends Model
     {
         $this->subscription->guardAgainstIncomplete();
 
-        $this->fill([
-            'quantity' => $quantity,
-        ])->save();
-
-        if ($this->subscription->hasSinglePrice()) {
-            $this->subscription->fill([
+        return DB::transaction(function () use ($quantity) {
+            $this->fill([
                 'quantity' => $quantity,
             ])->save();
-        }
 
-        return $this;
+            if ($this->subscription->hasSinglePrice()) {
+                $this->subscription->fill([
+                    'quantity' => $quantity,
+                ])->save();
+            }
+
+            return $this;
+        });
     }
 
     /**
@@ -116,19 +121,21 @@ class SubscriptionItem extends Model
     {
         $this->subscription->guardAgainstIncomplete();
 
-        $this->fill([
-            'chip_product' => $options['product'] ?? $this->chip_product,
-            'chip_price' => $price,
-            'unit_amount' => $options['unit_amount'] ?? $this->unit_amount,
-        ])->save();
-
-        if ($this->subscription->hasSinglePrice()) {
-            $this->subscription->fill([
+        return DB::transaction(function () use ($price, $options) {
+            $this->fill([
+                'chip_product' => $options['product'] ?? $this->chip_product,
                 'chip_price' => $price,
+                'unit_amount' => $options['unit_amount'] ?? $this->unit_amount,
             ])->save();
-        }
 
-        return $this;
+            if ($this->subscription->hasSinglePrice()) {
+                $this->subscription->fill([
+                    'chip_price' => $price,
+                ])->save();
+            }
+
+            return $this;
+        });
     }
 
     /**
@@ -153,13 +160,5 @@ class SubscriptionItem extends Model
     public function totalAmount(): int
     {
         return ($this->unit_amount ?? 0) * ($this->quantity ?? 1);
-    }
-
-    /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory(): SubscriptionItemFactory
-    {
-        return SubscriptionItemFactory::new();
     }
 }

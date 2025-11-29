@@ -10,10 +10,12 @@ use Carbon\CarbonInterface;
 use DateTimeInterface;
 use DateTimeZone;
 use Illuminate\Contracts\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LogicException;
 
@@ -29,6 +31,7 @@ class Subscription extends Model
 {
     /** @use HasFactory<SubscriptionFactory> */
     use HasFactory;
+    use HasUuids;
 
     /**
      * Create a new factory instance for the model.
@@ -449,17 +452,19 @@ class Subscription extends Model
 
         $this->guardAgainstMultiplePrices();
 
-        $this->fill([
-            'quantity' => $quantity,
-        ])->save();
+        return DB::transaction(function () use ($quantity) {
+            $this->fill([
+                'quantity' => $quantity,
+            ])->save();
 
-        $singleSubscriptionItem = $this->items()->firstOrFail();
+            $singleSubscriptionItem = $this->items()->firstOrFail();
 
-        $singleSubscriptionItem->fill([
-            'quantity' => $quantity,
-        ])->save();
+            $singleSubscriptionItem->fill([
+                'quantity' => $quantity,
+            ])->save();
 
-        return $this;
+            return $this;
+        });
     }
 
     /**
@@ -523,35 +528,37 @@ class Subscription extends Model
 
         $this->guardAgainstIncomplete();
 
-        $isSinglePrice = count($prices) === 1;
-        $firstPrice = is_string(array_values($prices)[0])
-            ? array_values($prices)[0]
-            : array_keys($prices)[0];
+        return DB::transaction(function () use ($prices, $options) {
+            $isSinglePrice = count($prices) === 1;
+            $firstPrice = is_string(array_values($prices)[0])
+                ? array_values($prices)[0]
+                : array_keys($prices)[0];
 
-        // Delete existing items and create new ones
-        $this->items()->delete();
+            // Delete existing items and create new ones
+            $this->items()->delete();
 
-        foreach ($prices as $priceKey => $priceValue) {
-            $price = is_string($priceValue) ? $priceValue : $priceKey;
-            $quantity = is_array($priceValue) ? ($priceValue['quantity'] ?? 1) : 1;
+            foreach ($prices as $priceKey => $priceValue) {
+                $price = is_string($priceValue) ? $priceValue : $priceKey;
+                $quantity = is_array($priceValue) ? ($priceValue['quantity'] ?? 1) : 1;
 
-            $this->items()->create([
-                'chip_id' => 'si_'.uniqid().'_'.time(),
-                'chip_product' => $options['product'] ?? null,
-                'chip_price' => $price,
-                'quantity' => $quantity,
-            ]);
-        }
+                $this->items()->create([
+                    'chip_id' => 'si_'.uniqid().'_'.time(),
+                    'chip_product' => $options['product'] ?? null,
+                    'chip_price' => $price,
+                    'quantity' => $quantity,
+                ]);
+            }
 
-        $this->fill([
-            'chip_price' => $isSinglePrice ? $firstPrice : null,
-            'quantity' => $isSinglePrice ? ($this->items()->first()->quantity ?? null) : null,
-            'ends_at' => null,
-        ])->save();
+            $this->fill([
+                'chip_price' => $isSinglePrice ? $firstPrice : null,
+                'quantity' => $isSinglePrice ? ($this->items()->first()->quantity ?? null) : null,
+                'ends_at' => null,
+            ])->save();
 
-        $this->unsetRelation('items');
+            $this->unsetRelation('items');
 
-        return $this;
+            return $this;
+        });
     }
 
     /**
