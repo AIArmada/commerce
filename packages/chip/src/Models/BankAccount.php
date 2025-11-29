@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string|null $status

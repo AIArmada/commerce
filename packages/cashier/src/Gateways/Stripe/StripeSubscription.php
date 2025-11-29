@@ -190,6 +190,8 @@ class StripeSubscription implements SubscriptionContract
 
     /**
      * Get the owner of the subscription.
+     *
+     * @return BillableContract
      */
     public function owner(): BillableContract
     {

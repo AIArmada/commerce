@@ -30,6 +30,14 @@ class Subscription extends Model
     /** @use HasFactory<SubscriptionFactory> */
     use HasFactory;
 
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): SubscriptionFactory
+    {
+        return SubscriptionFactory::new();
+    }
+
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_CANCELED = 'canceled';
