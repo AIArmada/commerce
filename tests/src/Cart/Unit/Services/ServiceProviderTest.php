@@ -61,6 +61,7 @@ describe('CartServiceProvider', function (): void {
         $app = mock(Application::class);
         $app->shouldReceive('singleton')->withArgs(['cart', Mockery::type('callable')])->once();
         $app->shouldReceive('alias')->withArgs(['cart', AIArmada\Cart\CartManager::class])->once();
+        $app->shouldReceive('alias')->withArgs(['cart', AIArmada\Cart\Contracts\CartManagerInterface::class])->once();
 
         $provider = new CartServiceProvider($app);
 
@@ -177,8 +178,8 @@ it('integration: registers cart manager and aliases', function (): void {
     $provider = new CartServiceProvider($app);
     $provider->register();
 
-    expect($app->make('cart'))->toBeInstanceOf(AIArmada\Cart\CartManager::class);
-    expect($app->make(AIArmada\Cart\CartManager::class))->toBeInstanceOf(AIArmada\Cart\CartManager::class);
+    expect($app->make('cart'))->toBeInstanceOf(AIArmada\Cart\Contracts\CartManagerInterface::class);
+    expect($app->make(AIArmada\Cart\Contracts\CartManagerInterface::class))->toBeInstanceOf(AIArmada\Cart\Contracts\CartManagerInterface::class);
 });
 
 it('integration: registers migration service', function (): void {

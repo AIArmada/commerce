@@ -96,4 +96,12 @@ class AffiliateAttribution extends Model
             $this->save();
         }
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $attribution): void {
+            $attribution->touchpoints()->delete();
+            $attribution->conversions()->update(['affiliate_attribution_id' => null]);
+        });
+    }
 }

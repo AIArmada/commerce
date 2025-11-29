@@ -31,6 +31,7 @@ return new class extends Migration
             $table->index(['is_redeemed', 'is_claimed']); // For available vouchers queries
             $table->index('claimed_at'); // For sorting by claim date
             $table->index('redeemed_at'); // For sorting by redemption date
+            $table->index(['voucher_id', 'is_claimed', 'is_redeemed'], 'voucher_wallets_available_idx');
 
             // Unique constraint: one voucher per owner (only for non-redeemed entries)
             $table->unique(['voucher_id', 'owner_type', 'owner_id', 'is_redeemed']);

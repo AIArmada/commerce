@@ -47,12 +47,6 @@ return new class extends Migration
             $table->index(['purchase_id', 'payment_type']);
             $table->index(['created_on', 'payment_type']);
             $table->index('paid_on');
-
-            // Foreign key constraint
-            $table->foreign('purchase_id')
-                ->references('id')
-                ->on($tablePrefix.'purchases')
-                ->onDelete('cascade');
         });
     }
 

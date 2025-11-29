@@ -23,6 +23,7 @@ return new class extends Migration
             $table->unique(['voucher_id', 'assignee_type', 'assignee_id'], 'voucher_assignee_unique');
             $table->index('voucher_id');
             $table->index(['voucher_id', 'assigned_at']);
+            $table->index('expires_at');
             $table->timestamps();
         });
     }

@@ -54,6 +54,8 @@ return new class extends Migration
             // Note: nullableUuidMorphs('owner') already creates index on ['owner_type', 'owner_id']
             $table->index('type'); // For filtering by voucher type
             $table->index('expires_at'); // For expiration checks
+            $table->index(['status', 'starts_at', 'expires_at'], 'vouchers_active_lookup_idx');
+            $table->index('currency');
         });
 
         // Optional: create GIN indexes when using jsonb on PostgreSQL

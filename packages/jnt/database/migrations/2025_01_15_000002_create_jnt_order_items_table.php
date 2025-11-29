@@ -18,14 +18,14 @@ return new class extends Migration
         Schema::create($orderItemsTable, function (Blueprint $table): void {
             $jsonType = (string) commerce_json_column_type('jnt', 'json');
             $table->uuid('id')->primary();
-            $table->foreignUuid('order_id');
+            $table->foreignUuid('order_id')->index();
             $table->string('name', 200);
             $table->string('english_name', 200)->nullable();
             $table->text('description')->nullable();
             $table->unsignedInteger('quantity');
             $table->unsignedInteger('weight_grams');
             $table->decimal('unit_price', 12, 2);
-            $table->string('currency', 3)->default('MYR');
+            $table->string('currency', 3)->default('MYR')->index();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestamps();
 

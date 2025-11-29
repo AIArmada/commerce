@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart;
 
+use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Storage\StorageInterface;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -13,7 +14,7 @@ use Throwable;
 /**
  * Cart Manager handles global instance switching for the Cart facade
  */
-class CartManager
+class CartManager implements CartManagerInterface
 {
     private Cart $currentCart;
 

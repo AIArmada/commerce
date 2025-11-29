@@ -14,21 +14,17 @@ return new class extends Migration
 
         Schema::create(config('affiliates.table_names.touchpoints', 'affiliate_touchpoints'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('affiliate_attribution_id')
-                ->constrained(table: config('affiliates.table_names.attributions', 'affiliate_attributions'))
-                ->cascadeOnDelete();
-            $table->foreignUuid('affiliate_id')
-                ->constrained(table: config('affiliates.table_names.affiliates', 'affiliates'))
-                ->cascadeOnDelete();
+            $table->foreignUuid('affiliate_attribution_id')->index();
+            $table->foreignUuid('affiliate_id')->index();
             $table->string('affiliate_code', 64)->index();
-            $table->string('source', 64)->nullable();
-            $table->string('medium', 64)->nullable();
-            $table->string('campaign', 64)->nullable();
+            $table->string('source', 64)->nullable()->index();
+            $table->string('medium', 64)->nullable()->index();
+            $table->string('campaign', 64)->nullable()->index();
             $table->string('term', 64)->nullable();
             $table->string('content', 64)->nullable();
             $table->{$jsonType}('metadata')->nullable();
-            $table->timestampTz('touched_at')->nullable()->index();
-            $table->timestampsTz();
+            $table->timestamp('touched_at')->nullable()->index();
+            $table->timestamps();
         });
     }
 

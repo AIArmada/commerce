@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers;
 
 use AIArmada\Cart\CartManager;
+use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart as CartFacade;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
@@ -107,7 +108,7 @@ final class VoucherServiceProvider extends PackageServiceProvider
         // Register event listener for tracking voucher applications
         Event::listen(VoucherApplied::class, IncrementVoucherAppliedCount::class);
 
-        $this->app->extend('cart', function (CartManager $manager, $app): CartManager {
+        $this->app->extend('cart', function (CartManagerInterface $manager, $app): CartManagerInterface {
             if ($manager instanceof CartManagerWithVouchers) {
                 return $manager;
             }
@@ -117,6 +118,7 @@ final class VoucherServiceProvider extends PackageServiceProvider
             // Ensure type-hinting resolution returns the proxied manager
             /** @var \Illuminate\Contracts\Foundation\Application $app */
             $app->instance(CartManager::class, $proxy);
+            $app->instance(CartManagerInterface::class, $proxy);
 
             // Clear cached facade instance so the proxy is used
             CartFacade::clearResolvedInstance('cart');

@@ -24,6 +24,8 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['subscription_id', 'chip_price']);
+            $table->index('subscription_id');
+            $table->index('chip_product');
         });
     }
 

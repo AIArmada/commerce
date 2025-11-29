@@ -17,7 +17,7 @@ return new class extends Migration
 
         Schema::create($trackingEventsTable, function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('order_id')->nullable();
+            $table->foreignUuid('order_id')->nullable()->index();
             $table->string('tracking_number', 30)->index();
             $table->string('order_reference', 50)->nullable()->index();
             $table->string('scan_type_code', 32)->nullable()->index();
@@ -38,7 +38,7 @@ return new class extends Migration
             $table->string('next_network_city_name', 128)->nullable();
             $table->string('next_network_area_name', 128)->nullable();
             $table->string('remark', 255)->nullable();
-            $table->string('problem_type', 128)->nullable();
+            $table->string('problem_type', 128)->nullable()->index();
             $table->string('payment_status', 64)->nullable();
             $table->string('payment_method', 64)->nullable();
             $table->decimal('actual_weight', 10, 3)->nullable();
@@ -57,6 +57,9 @@ return new class extends Migration
             $jsonType = (string) commerce_json_column_type('jnt', 'json');
             $table->{$jsonType}('payload')->nullable();
             $table->timestamps();
+
+            $table->index(['tracking_number', 'scan_time'], 'jnt_tracking_events_timeline_idx');
+            $table->index(['order_id', 'scan_time'], 'jnt_tracking_events_order_history_idx');
         });
 
         // GIN indexes only work with jsonb in PostgreSQL

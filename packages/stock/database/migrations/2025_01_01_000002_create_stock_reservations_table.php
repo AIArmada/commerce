@@ -13,7 +13,9 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('stock_reservations', function (Blueprint $table): void {
+        $tableName = config('stock.reservations_table', 'stock_reservations');
+
+        Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuidMorphs('stockable');
             $table->string('cart_id')->index();
@@ -23,6 +25,7 @@ return new class extends Migration
 
             // Unique constraint: One reservation per product per cart
             $table->unique(['stockable_type', 'stockable_id', 'cart_id'], 'stock_reservations_unique');
+            $table->index(['stockable_type', 'stockable_id', 'expires_at'], 'stock_reservations_expiry_idx');
         });
     }
 
@@ -31,6 +34,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('stock_reservations');
+        Schema::dropIfExists(config('stock.reservations_table', 'stock_reservations'));
     }
 };

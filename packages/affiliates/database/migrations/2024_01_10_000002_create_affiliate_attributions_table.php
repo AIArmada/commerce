@@ -15,9 +15,7 @@ return new class extends Migration
 
         Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('affiliate_id')->constrained(
-                table: config('affiliates.table_names.affiliates', 'affiliates')
-            );
+            $table->foreignUuid('affiliate_id')->index();
             $table->string('affiliate_code', 64)->index();
             $table->string('cart_identifier')->nullable();
             $table->string('cart_instance')->default('default');
@@ -32,18 +30,20 @@ return new class extends Migration
             $table->string('referrer_url')->nullable();
             $table->string('user_agent')->nullable();
             $table->string('ip_address', 64)->nullable();
-            $table->uuid('user_id')->nullable();
+            $table->uuid('user_id')->nullable()->index();
             $table->string('owner_type')->nullable();
             $table->uuid('owner_id')->nullable();
             $table->{$jsonType}('metadata')->nullable();
-            $table->timestampTz('first_seen_at')->nullable();
-            $table->timestampTz('last_seen_at')->nullable();
-            $table->timestampTz('last_cookie_seen_at')->nullable();
-            $table->timestampTz('expires_at')->nullable();
-            $table->timestampsTz();
+            $table->timestamp('first_seen_at')->nullable();
+            $table->timestamp('last_seen_at')->nullable();
+            $table->timestamp('last_cookie_seen_at')->nullable();
+            $table->timestamp('expires_at')->nullable()->index();
+            $table->timestamps();
 
             $table->index(['cart_identifier', 'cart_instance'], 'affiliate_attributions_cart_index');
             $table->index('cookie_value', 'affiliate_attributions_cookie_index');
+            $table->index(['owner_type', 'owner_id'], 'affiliate_attributions_owner_idx');
+            $table->index(['affiliate_id', 'first_seen_at'], 'affiliate_attributions_timeline_idx');
         });
     }
 

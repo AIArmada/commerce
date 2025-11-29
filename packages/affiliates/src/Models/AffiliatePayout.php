@@ -51,4 +51,12 @@ class AffiliatePayout extends Model
     {
         return $this->hasMany(AffiliatePayoutEvent::class, 'affiliate_payout_id')->latest();
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $payout): void {
+            $payout->events()->delete();
+            $payout->conversions()->update(['affiliate_payout_id' => null]);
+        });
+    }
 }

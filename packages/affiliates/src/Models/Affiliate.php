@@ -127,5 +127,11 @@ class Affiliate extends Model
                 $affiliate->owner_id = $owner->getKey();
             }
         });
+
+        static::deleting(function (self $affiliate): void {
+            $affiliate->attributions()->delete();
+            $affiliate->conversions()->delete();
+            $affiliate->children()->update(['parent_affiliate_id' => null]);
+        });
     }
 }

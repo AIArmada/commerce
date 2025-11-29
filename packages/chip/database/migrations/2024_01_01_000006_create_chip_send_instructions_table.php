@@ -36,12 +36,6 @@ return new class extends Migration
             $table->timestamp('created_at'); // API: created_at
             $table->timestamp('updated_at'); // API: updated_at
 
-            // Foreign key constraint
-            $table->foreign('bank_account_id')
-                ->references('id')
-                ->on($tablePrefix.'bank_accounts')
-                ->onDelete('cascade');
-
             // Indexes for optimal query performance
             $table->index(['state', 'created_at']);
             $table->index('bank_account_id');

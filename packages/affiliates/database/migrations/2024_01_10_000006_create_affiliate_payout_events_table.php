@@ -14,14 +14,14 @@ return new class extends Migration
 
         Schema::create(config('affiliates.table_names.payout_events', 'affiliate_payout_events'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('affiliate_payout_id')
-                ->constrained(table: config('affiliates.table_names.payouts', 'affiliate_payouts'))
-                ->cascadeOnDelete();
+            $table->foreignUuid('affiliate_payout_id')->index();
             $table->string('from_status', 32)->nullable();
-            $table->string('to_status', 32);
+            $table->string('to_status', 32)->index();
             $table->{$jsonType}('metadata')->nullable();
             $table->text('notes')->nullable();
-            $table->timestampsTz();
+            $table->timestamps();
+
+            $table->index('created_at');
         });
     }
 

@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart as CartClass;
-use AIArmada\Cart\CartManager;
+use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
 
 require_once __DIR__.'/../../../../../packages/cart/src/helpers.php';
 
 it('returns current cart instance when no name is given', function (): void {
     $manager = app('cart');
-    expect($manager)->toBeInstanceOf(CartManager::class);
+    expect($manager)->toBeInstanceOf(CartManagerInterface::class);
 
     $cart = cart();
 

@@ -19,9 +19,9 @@ return new class extends Migration
             $table->string('name', 120);
             $table->text('description')->nullable();
             $table->string('status', 32)->default('draft')->index();
-            $table->string('commission_type', 24)->default('percentage');
+            $table->string('commission_type', 24)->default('percentage')->index();
             $table->unsignedInteger('commission_rate')->default(0); // cents or basis points
-            $table->string('currency', 3)->default(config('affiliates.currency.default', 'USD'));
+            $table->string('currency', 3)->default(config('affiliates.currency.default', 'USD'))->index();
             $table->uuid('parent_affiliate_id')->nullable()->index();
             $table->string('default_voucher_code', 64)->nullable();
             $table->string('contact_email')->nullable();
@@ -31,10 +31,11 @@ return new class extends Migration
             $table->string('owner_type')->nullable()->index();
             $table->uuid('owner_id')->nullable()->index();
             $table->{$jsonType}('metadata')->nullable();
-            $table->timestampTz('activated_at')->nullable();
-            $table->timestampsTz();
+            $table->timestamp('activated_at')->nullable();
+            $table->timestamps();
 
             $table->index(['owner_type', 'owner_id'], 'affiliates_owner_index');
+            $table->index(['status', 'activated_at'], 'affiliates_active_idx');
         });
     }
 

@@ -18,7 +18,7 @@ return new class extends Migration
         Schema::create($webhookLogsTable, function (Blueprint $table): void {
             $jsonType = (string) commerce_json_column_type('jnt', 'json');
             $table->uuid('id')->primary();
-            $table->foreignUuid('order_id')->nullable();
+            $table->foreignUuid('order_id')->nullable()->index();
             $table->string('tracking_number', 30)->nullable()->index();
             $table->string('order_reference', 50)->nullable()->index();
             $table->string('digest', 255)->nullable();
@@ -28,6 +28,8 @@ return new class extends Migration
             $table->text('processing_error')->nullable();
             $table->timestamp('processed_at')->nullable();
             $table->timestamps();
+
+            $table->index(['processing_status', 'created_at'], 'jnt_webhook_logs_pending_idx');
         });
 
         // GIN indexes only work with jsonb in PostgreSQL

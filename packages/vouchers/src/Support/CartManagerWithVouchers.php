@@ -6,20 +6,24 @@ namespace AIArmada\Vouchers\Support;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\CartManager;
-use Closure;
-use ReflectionClass;
-use ReflectionException;
-use ReflectionProperty;
-use RuntimeException;
-use Throwable;
+use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Storage\StorageInterface;
 
-final class CartManagerWithVouchers extends CartManager
+/**
+ * CartManager decorator that adds voucher functionality.
+ *
+ * Uses composition pattern to wrap any CartManagerInterface implementation,
+ * enabling stacking with other decorators (e.g., CartManagerWithAffiliates).
+ */
+final class CartManagerWithVouchers implements CartManagerInterface
 {
-    private function __construct()
-    {
-        // Prevent direct instantiation. Use fromCartManager().
-    }
+    public function __construct(
+        private CartManagerInterface $manager
+    ) {}
 
+    /**
+     * @param  array<string, mixed>  $arguments
+     */
     public function __call(string $method, array $arguments): mixed
     {
         if (method_exists(CartWithVouchers::class, $method)) {
@@ -28,120 +32,87 @@ final class CartManagerWithVouchers extends CartManager
             return $wrapper->{$method}(...$arguments);
         }
 
-        return parent::__call($method, $arguments);
+        return $this->manager->{$method}(...$arguments);
     }
 
-    public static function fromCartManager(CartManager $manager): self
+    public static function fromCartManager(CartManagerInterface $manager): self
     {
-        $reflection = new ReflectionClass($manager);
-        $proxyReflection = new ReflectionClass(self::class);
-
-        /** @var self $instance */
-        $instance = $proxyReflection->newInstanceWithoutConstructor();
-
-        $currentCartProperty = self::resolveProperty($reflection, 'currentCart');
-
-        if ($currentCartProperty === null) {
-            throw new RuntimeException('Unable to locate CartManager::$currentCart property.');
+        if ($manager instanceof self) {
+            return $manager;
         }
 
-        self::ensurePropertyInitialized($manager, $currentCartProperty);
+        return new self($manager);
+    }
 
-        foreach (self::walkClassHierarchy($reflection) as $class) {
-            foreach ($class->getProperties() as $property) {
-                if ($property->isStatic() || ! $property->isInitialized($manager)) {
-                    continue;
-                }
-
-                $value = self::readPropertyValue($manager, $property);
-                self::writePropertyValue($instance, $property, $value);
-            }
+    /**
+     * Get the underlying CartManager (unwraps all decorators if needed)
+     */
+    public function getBaseManager(): CartManagerInterface
+    {
+        if ($this->manager instanceof self) {
+            return $this->manager->getBaseManager();
         }
 
-        if (! $currentCartProperty->isInitialized($instance)) {
-            throw new RuntimeException('Failed to initialize CartManager proxy current cart instance.');
-        }
-
-        $instance->ensureVoucherRulesFactory($instance->getCurrentCart());
-
-        return $instance;
+        return $this->manager;
     }
 
     public function getCurrentCart(): Cart
     {
-        return $this->ensureVoucherRulesFactory(parent::getCurrentCart());
+        return $this->ensureVoucherRulesFactory($this->manager->getCurrentCart());
     }
 
     public function getCartInstance(string $name, ?string $identifier = null): Cart
     {
-        $cart = parent::getCartInstance($name, $identifier);
+        $cart = $this->manager->getCartInstance($name, $identifier);
 
         return $this->ensureVoucherRulesFactory($cart);
     }
 
-    private static function resolveProperty(ReflectionClass $class, string $name): ?ReflectionProperty
+    public function instance(): string
     {
-        while ($class !== false) {
-            try {
-                return $class->getProperty($name);
-            } catch (ReflectionException $e) {
-                $class = $class->getParentClass();
-            }
-        }
-
-        return null;
+        return $this->manager->instance();
     }
 
-    private static function ensurePropertyInitialized(object $object, ReflectionProperty $property): void
+    public function setInstance(string $name): static
     {
-        if ($property->isInitialized($object)) {
-            return;
-        }
+        $this->manager->setInstance($name);
 
-        try {
-            if ($property->getName() === 'currentCart' && method_exists($object, 'getCurrentCart')) {
-                $object->getCurrentCart();
-            }
-        } catch (Throwable $e) {
-            throw new RuntimeException('Unable to initialize CartManager current cart.', 0, $e);
-        }
-
-        // @phpstan-ignore booleanNot.alwaysTrue (property can be initialized by getCurrentCart())
-        if (! $property->isInitialized($object)) {
-            throw new RuntimeException('CartManager current cart remains uninitialized.');
-        }
+        return $this;
     }
 
-    /**
-     * @return iterable<ReflectionClass<object>>
-     */
-    private static function walkClassHierarchy(ReflectionClass $class): iterable
+    public function setIdentifier(string $identifier): static
     {
-        $current = $class;
+        $this->manager->setIdentifier($identifier);
 
-        while ($current instanceof ReflectionClass) {
-            yield $current;
-            $parent = $current->getParentClass();
-            $current = $parent === false ? null : $parent;
+        return $this;
+    }
+
+    public function forgetIdentifier(): static
+    {
+        $this->manager->forgetIdentifier();
+
+        return $this;
+    }
+
+    public function session(?string $sessionKey = null): StorageInterface
+    {
+        return $this->manager->session($sessionKey);
+    }
+
+    public function getById(string $uuid): ?Cart
+    {
+        $cart = $this->manager->getById($uuid);
+
+        if ($cart === null) {
+            return null;
         }
+
+        return $this->ensureVoucherRulesFactory($cart);
     }
 
-    private static function readPropertyValue(object $object, ReflectionProperty $property): mixed
+    public function swap(string $oldIdentifier, string $newIdentifier, string $instance = 'default'): bool
     {
-        $reader = Closure::bind(static function (object $instance, string $name) {
-            return $instance->{$name};
-        }, null, $property->getDeclaringClass()->getName());
-
-        return $reader($object, $property->getName());
-    }
-
-    private static function writePropertyValue(object $object, ReflectionProperty $property, mixed $value): void
-    {
-        $writer = Closure::bind(static function (object $instance, string $name, mixed $val): void {
-            $instance->{$name} = $val;
-        }, null, $property->getDeclaringClass()->getName());
-
-        $writer($object, $property->getName(), $value);
+        return $this->manager->swap($oldIdentifier, $newIdentifier, $instance);
     }
 
     private function ensureVoucherRulesFactory(Cart $cart): Cart

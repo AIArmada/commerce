@@ -14,8 +14,8 @@ return new class extends Migration
         Schema::create('cart_snapshot_conditions', function (Blueprint $table): void {
             $jsonType = (string) commerce_json_column_type('cart', 'json');
             $table->uuid('id')->primary();
-            $table->foreignUuid('cart_id')->constrained('cart_snapshots')->onDelete('cascade');
-            $table->foreignUuid('cart_item_id')->nullable()->constrained('cart_snapshot_items')->onDelete('cascade');
+            $table->foreignUuid('cart_id');
+            $table->foreignUuid('cart_item_id')->nullable();
             $table->string('name');
             $table->string('type'); // discount, tax, fee, shipping, etc.
             $table->string('target'); // subtotal, total, price, etc.

@@ -18,13 +18,16 @@ return new class extends Migration
             $table->string('status', 32)->default('draft')->index();
             $table->unsignedBigInteger('total_minor')->default(0);
             $table->unsignedInteger('conversion_count')->default(0);
-            $table->string('currency', 3)->default(config('affiliates.payouts.currency', 'USD'));
+            $table->string('currency', 3)->default(config('affiliates.payouts.currency', 'USD'))->index();
             $table->{$jsonType}('metadata')->nullable();
             $table->string('owner_type')->nullable()->index();
             $table->uuid('owner_id')->nullable()->index();
-            $table->timestampTz('scheduled_at')->nullable();
-            $table->timestampTz('paid_at')->nullable();
-            $table->timestampsTz();
+            $table->timestamp('scheduled_at')->nullable()->index();
+            $table->timestamp('paid_at')->nullable()->index();
+            $table->timestamps();
+
+            $table->index(['owner_type', 'owner_id'], 'affiliate_payouts_owner_idx');
+            $table->index(['status', 'scheduled_at'], 'affiliate_payouts_pending_idx');
         });
     }
 

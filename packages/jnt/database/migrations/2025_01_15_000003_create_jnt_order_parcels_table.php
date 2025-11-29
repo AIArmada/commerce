@@ -18,8 +18,8 @@ return new class extends Migration
         Schema::create($orderParcelsTable, function (Blueprint $table): void {
             $jsonType = (string) commerce_json_column_type('jnt', 'json');
             $table->uuid('id')->primary();
-            $table->foreignUuid('order_id');
-            $table->unsignedInteger('sequence')->default(0);
+            $table->foreignUuid('order_id')->index();
+            $table->unsignedInteger('sequence')->default(0)->index();
             $table->string('tracking_number', 30);
             $table->decimal('actual_weight', 10, 3)->nullable();
             $table->decimal('length', 8, 2)->nullable();

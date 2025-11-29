@@ -15,14 +15,9 @@ return new class extends Migration
 
         Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('affiliate_id')->constrained(
-                table: config('affiliates.table_names.affiliates', 'affiliates')
-            );
-            $table->foreignUuid('affiliate_attribution_id')
-                ->nullable()
-                ->constrained(
-                    table: config('affiliates.table_names.attributions', 'affiliate_attributions')
-                );
+            $table->foreignUuid('affiliate_id')->index();
+            $table->foreignUuid('affiliate_attribution_id')->nullable()->index();
+            $table->foreignUuid('affiliate_payout_id')->nullable()->index();
             $table->string('affiliate_code', 64)->index();
             $table->string('cart_identifier')->nullable();
             $table->string('cart_instance')->nullable();
@@ -31,17 +26,19 @@ return new class extends Migration
             $table->unsignedBigInteger('subtotal_minor')->default(0);
             $table->unsignedBigInteger('total_minor')->default(0);
             $table->unsignedBigInteger('commission_minor')->default(0);
-            $table->string('commission_currency', 3)->default(config('affiliates.currency.default', 'USD'));
+            $table->string('commission_currency', 3)->default(config('affiliates.currency.default', 'USD'))->index();
             $table->string('status', 32)->default(config('affiliates.commissions.default_status', 'pending'))->index();
             $table->string('channel')->nullable();
             $table->string('owner_type')->nullable();
             $table->uuid('owner_id')->nullable();
             $table->{$jsonType}('metadata')->nullable();
-            $table->timestampTz('occurred_at')->nullable();
-            $table->timestampTz('approved_at')->nullable();
-            $table->timestampsTz();
+            $table->timestamp('occurred_at')->nullable()->index();
+            $table->timestamp('approved_at')->nullable()->index();
+            $table->timestamps();
 
             $table->index(['owner_type', 'owner_id'], 'affiliate_conversions_owner_index');
+            $table->index(['affiliate_id', 'status'], 'affiliate_conversions_affiliate_status_idx');
+            $table->index(['status', 'occurred_at'], 'affiliate_conversions_status_date_idx');
         });
     }
 

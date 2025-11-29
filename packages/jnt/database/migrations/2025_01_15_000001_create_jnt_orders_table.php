@@ -44,10 +44,10 @@ return new class extends Migration
                 ->comment('Original order creation time reported by J&T');
             $table->timestamp('last_synced_at')->nullable();
             $table->timestamp('last_tracked_at')->nullable();
-            $table->timestamp('delivered_at')->nullable();
-            $table->string('last_status_code', 32)->nullable();
+            $table->timestamp('delivered_at')->nullable()->index();
+            $table->string('last_status_code', 32)->nullable()->index();
             $table->string('last_status', 128)->nullable();
-            $table->boolean('has_problem')->default(false);
+            $table->boolean('has_problem')->default(false)->index();
             $table->text('remark')->nullable();
             $table->{$jsonType}('sender')->nullable();
             $table->{$jsonType}('receiver')->nullable();
@@ -58,6 +58,9 @@ return new class extends Migration
             $table->{$jsonType}('response_payload')->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestamps();
+
+            $table->index(['status', 'customer_code'], 'jnt_orders_customer_status_idx');
+            $table->index(['status', 'created_at'], 'jnt_orders_status_date_idx');
         });
 
         // GIN indexes only work with jsonb in PostgreSQL

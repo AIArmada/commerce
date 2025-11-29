@@ -6,13 +6,24 @@ namespace AIArmada\Affiliates\Support;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\CartManager;
+use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Storage\StorageInterface;
 
-final class CartManagerWithAffiliates
+/**
+ * CartManager decorator that adds affiliate tracking functionality.
+ *
+ * Uses composition pattern to wrap any CartManagerInterface implementation,
+ * enabling stacking with other decorators (e.g., CartManagerWithVouchers).
+ */
+final class CartManagerWithAffiliates implements CartManagerInterface
 {
     public function __construct(
-        private CartManager $manager
+        private CartManagerInterface $manager
     ) {}
 
+    /**
+     * @param  array<string, mixed>  $arguments
+     */
     public function __call(string $method, array $arguments): mixed
     {
         if (method_exists(CartWithAffiliates::class, $method)) {
@@ -24,9 +35,25 @@ final class CartManagerWithAffiliates
         return $this->manager->{$method}(...$arguments);
     }
 
-    public static function fromCartManager(CartManager $manager): self
+    public static function fromCartManager(CartManagerInterface $manager): self
     {
+        if ($manager instanceof self) {
+            return $manager;
+        }
+
         return new self($manager);
+    }
+
+    /**
+     * Get the underlying CartManager (unwraps all decorators if needed)
+     */
+    public function getBaseManager(): CartManagerInterface
+    {
+        if ($this->manager instanceof self) {
+            return $this->manager->getBaseManager();
+        }
+
+        return $this->manager;
     }
 
     public function getCurrentCart(): Cart
@@ -39,15 +66,14 @@ final class CartManagerWithAffiliates
         return (new CartWithAffiliates($this->manager->getCartInstance($name, $identifier)))->getCart();
     }
 
-    // Delegate core methods
     public function instance(): string
     {
         return $this->manager->instance();
     }
 
-    public function setInstance(string $instance): static
+    public function setInstance(string $name): static
     {
-        $this->manager->setInstance($instance);
+        $this->manager->setInstance($name);
 
         return $this;
     }
@@ -57,5 +83,27 @@ final class CartManagerWithAffiliates
         $this->manager->setIdentifier($identifier);
 
         return $this;
+    }
+
+    public function forgetIdentifier(): static
+    {
+        $this->manager->forgetIdentifier();
+
+        return $this;
+    }
+
+    public function session(?string $sessionKey = null): StorageInterface
+    {
+        return $this->manager->session($sessionKey);
+    }
+
+    public function getById(string $uuid): ?Cart
+    {
+        return $this->manager->getById($uuid);
+    }
+
+    public function swap(string $oldIdentifier, string $newIdentifier, string $instance = 'default'): bool
+    {
+        return $this->manager->swap($oldIdentifier, $newIdentifier, $instance);
     }
 }

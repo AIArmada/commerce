@@ -30,6 +30,13 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['user_id', 'chip_status']);
+            $table->index('user_id');
+            $table->index('type');
+            $table->index('recurring_token');
+            $table->index('trial_ends_at');
+            $table->index('next_billing_at');
+            $table->index('ends_at');
+            $table->index(['user_id', 'type'], 'chip_subscriptions_user_type_idx');
         });
     }
 

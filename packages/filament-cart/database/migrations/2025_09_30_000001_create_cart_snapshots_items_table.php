@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('cart_snapshot_items', function (Blueprint $table): void {
             $jsonType = (string) commerce_json_column_type('cart', 'json');
             $table->uuid('id')->primary();
-            $table->foreignUuid('cart_id')->constrained('cart_snapshots')->onDelete('cascade');
+            $table->foreignUuid('cart_id');
             $table->string('item_id')->index(); // The original cart item ID
             $table->string('name');
             $table->unsignedInteger('price'); // Price in cents (from Money object)

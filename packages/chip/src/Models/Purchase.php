@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Carbon;
 
@@ -136,6 +137,21 @@ class Purchase extends ChipModel
     protected static function tableSuffix(): string
     {
         return 'purchases';
+    }
+
+    /**
+     * @return HasMany<Payment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(Payment::class, 'purchase_id');
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $purchase): void {
+            $purchase->payments()->delete();
+        });
     }
 
     /**

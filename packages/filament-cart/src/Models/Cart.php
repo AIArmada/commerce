@@ -32,6 +32,12 @@ use Throwable;
  */
 class Cart extends Model
 {
+    /**
+     * This model cannot use cascade deletes because there is a dedicated cart sync manager
+     * that handles the synchronization and cleanup of cart items and conditions.
+     * Cascade handling is managed at the application level through the sync manager.
+     */
+
     /** @use HasFactory<\AIArmada\FilamentCart\Database\Factories\CartFactory> */
     use HasFactory;
 

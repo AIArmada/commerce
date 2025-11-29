@@ -4,88 +4,107 @@ declare(strict_types=1);
 
 namespace AIArmada\Stock\Cart;
 
-use AIArmada\Cart\CartManager;
-use AIArmada\Cart\Services\CartConditionResolver;
+use AIArmada\Cart\Cart;
+use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Stock\Services\StockReservationService;
-use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Model;
-use ReflectionClass;
-use RuntimeException;
 
 /**
- * Extends CartManager with stock-aware functionality.
+ * CartManager decorator that adds stock reservation functionality.
  *
- * When the stock package detects the cart package is installed,
- * it wraps the CartManager with stock reservation capabilities.
+ * Uses composition pattern to wrap any CartManagerInterface implementation,
+ * enabling stacking with other decorators (e.g., CartManagerWithVouchers, CartManagerWithAffiliates).
  */
-final class CartManagerWithStock extends CartManager
+final class CartManagerWithStock implements CartManagerInterface
 {
     private ?StockReservationService $reservationService = null;
 
     public function __construct(
-        StorageInterface $storage,
-        ?Dispatcher $events = null,
-        bool $eventsEnabled = true,
-        ?CartConditionResolver $conditionResolver = null,
-    ) {
-        parent::__construct($storage, $events, $eventsEnabled, $conditionResolver);
+        private CartManagerInterface $manager
+    ) {}
+
+    /**
+     * @param  array<string, mixed>  $arguments
+     */
+    public function __call(string $method, array $arguments): mixed
+    {
+        return $this->manager->{$method}(...$arguments);
     }
 
     /**
-     * Create from existing CartManager.
+     * Create from existing CartManagerInterface.
      */
-    public static function fromCartManager(CartManager $manager): self
+    public static function fromCartManager(CartManagerInterface $manager): self
     {
-        $reflection = new ReflectionClass($manager);
-
-        // Extract constructor dependencies from the parent
-        $storage = null;
-        $events = null;
-        $eventsEnabled = true;
-        $conditionResolver = null;
-
-        foreach ($reflection->getProperties() as $property) {
-            $property->setAccessible(true);
-
-            if (! $property->isInitialized($manager)) {
-                continue;
-            }
-
-            $value = $property->getValue($manager);
-
-            match ($property->getName()) {
-                'storage' => $storage = $value,
-                'events' => $events = $value,
-                'eventsEnabled' => $eventsEnabled = $value,
-                'conditionResolver' => $conditionResolver = $value,
-                default => null,
-            };
+        if ($manager instanceof self) {
+            return $manager;
         }
 
-        if ($storage === null) {
-            throw new RuntimeException('Cannot create CartManagerWithStock: storage is required');
+        return new self($manager);
+    }
+
+    /**
+     * Get the underlying CartManager (unwraps all decorators if needed)
+     */
+    public function getBaseManager(): CartManagerInterface
+    {
+        if ($this->manager instanceof self) {
+            return $this->manager->getBaseManager();
         }
 
-        $instance = new self($storage, $events, $eventsEnabled, $conditionResolver);
+        return $this->manager;
+    }
 
-        // Copy remaining state from existing manager
-        foreach ($reflection->getProperties() as $property) {
-            $property->setAccessible(true);
+    public function getCurrentCart(): Cart
+    {
+        return $this->manager->getCurrentCart();
+    }
 
-            if (! $property->isInitialized($manager)) {
-                continue;
-            }
+    public function getCartInstance(string $name, ?string $identifier = null): Cart
+    {
+        return $this->manager->getCartInstance($name, $identifier);
+    }
 
-            // Skip properties we already set via constructor
-            if (in_array($property->getName(), ['storage', 'events', 'eventsEnabled', 'conditionResolver'], true)) {
-                continue;
-            }
+    public function instance(): string
+    {
+        return $this->manager->instance();
+    }
 
-            $property->setValue($instance, $property->getValue($manager));
-        }
+    public function setInstance(string $name): static
+    {
+        $this->manager->setInstance($name);
 
-        return $instance;
+        return $this;
+    }
+
+    public function setIdentifier(string $identifier): static
+    {
+        $this->manager->setIdentifier($identifier);
+
+        return $this;
+    }
+
+    public function forgetIdentifier(): static
+    {
+        $this->manager->forgetIdentifier();
+
+        return $this;
+    }
+
+    public function session(?string $sessionKey = null): StorageInterface
+    {
+        return $this->manager->session($sessionKey);
+    }
+
+    public function getById(string $uuid): ?Cart
+    {
+        return $this->manager->getById($uuid);
+    }
+
+    public function swap(string $oldIdentifier, string $newIdentifier, string $instance = 'default'): bool
+    {
+        return $this->manager->swap($oldIdentifier, $newIdentifier, $instance);
     }
 
     /**

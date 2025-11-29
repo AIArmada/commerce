@@ -373,14 +373,6 @@ class Voucher extends Model
         static::deleting(function (Voucher $voucher): void {
             $voucher->usages()->delete();
             $voucher->walletEntries()->delete();
-        });
-    }
-
-    protected static function booted(): void
-    {
-        static::deleting(function (Voucher $voucher): void {
-            $voucher->usages()->delete();
-            $voucher->walletEntries()->delete();
             $voucher->transactions()->delete();
         });
     }

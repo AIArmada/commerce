@@ -27,6 +27,10 @@ return new class extends Migration
             $table->timestamps();
             $table->index(['voucher_id', 'walletable_type', 'walletable_id']);
             $table->index('voucher_wallet_id');
+            $table->index('type');
+            $table->index('currency');
+            $table->index('created_at');
+            $table->index(['voucher_id', 'type'], 'voucher_transactions_voucher_type_idx');
         });
     }
 

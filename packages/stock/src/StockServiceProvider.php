@@ -95,6 +95,7 @@ final class StockServiceProvider extends PackageServiceProvider
 
             // Update container bindings
             $app->instance(\AIArmada\Cart\CartManager::class, $proxy);
+            $app->instance(\AIArmada\Cart\Contracts\CartManagerInterface::class, $proxy);
 
             // Clear cached facade instance
             if (class_exists(\AIArmada\Cart\Facades\Cart::class)) {
