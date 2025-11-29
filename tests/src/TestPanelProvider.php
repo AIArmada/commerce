@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests;
 
+use AIArmada\FilamentAffiliates\FilamentAffiliates;
+use AIArmada\FilamentCart\FilamentCartPlugin;
+use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
@@ -32,6 +35,11 @@ class TestPanelProvider extends PanelProvider
             ->discoverResources(in: __DIR__.'/../../packages/filament-chip/src/Resources', for: 'AIArmada\\FilamentChip\\Resources')
             ->discoverPages(in: __DIR__.'/../../packages/filament-chip/src/Pages', for: 'AIArmada\\FilamentChip\\Pages')
             ->discoverWidgets(in: __DIR__.'/../../packages/filament-chip/src/Widgets', for: 'AIArmada\\FilamentChip\\Widgets')
+            ->plugins([
+                FilamentCartPlugin::make(),
+                FilamentVouchersPlugin::make(),
+                FilamentAffiliates::make(),
+            ])
             ->middleware([
                 EncryptCookies::class,
                 AddQueuedCookiesToResponse::class,

@@ -57,6 +57,9 @@ abstract class TestCase extends Orchestra
             \AIArmada\FilamentChip\FilamentChipServiceProvider::class,
             PermissionServiceProvider::class,
             FilamentPermissionsServiceProvider::class,
+            \AIArmada\FilamentVouchers\FilamentVouchersServiceProvider::class,
+            \AIArmada\Affiliates\AffiliatesServiceProvider::class,
+            \AIArmada\FilamentAffiliates\FilamentAffiliatesServiceProvider::class,
             TestPanelProvider::class,
         ];
     }
@@ -168,6 +171,7 @@ abstract class TestCase extends Orchestra
         $this->loadMigrationsFrom(__DIR__.'/../../packages/chip/database/migrations');
         $this->loadMigrationsFrom(__DIR__.'/../../packages/vouchers/database/migrations');
         $this->loadMigrationsFrom(__DIR__.'/../../vendor/spatie/laravel-permission/database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../../packages/affiliates/database/migrations');
     }
 
     protected function setUpDatabase(): void

@@ -1,0 +1,35 @@
+{
+  "name": "aiarmada/filament-affiliates",
+  "description": "Filament admin plugin for managing AIArmada affiliate programs, attributions, and commissions.",
+  "license": "MIT",
+  "homepage": "https://github.com/aiarmada/commerce",
+  "support": {
+    "issues": "https://github.com/aiarmada/commerce/issues",
+    "source": "https://github.com/aiarmada/commerce"
+  },
+  "require": {
+    "php": "^8.4",
+    "aiarmada/affiliates": "self.version",
+    "aiarmada/commerce-support": "self.version",
+    "filament/filament": "^4.2 || ^5.0"
+  },
+  "autoload": {
+    "psr-4": {
+      "AIArmada\\FilamentAffiliates\\": "src/",
+      "AIArmada\\FilamentAffiliates\\Database\\Factories\\": "database/factories/",
+      "AIArmada\\FilamentAffiliates\\Database\\Seeders\\": "database/seeders/"
+    }
+  },
+  "extra": {
+    "laravel": {
+      "providers": [
+        "AIArmada\\FilamentAffiliates\\FilamentAffiliatesServiceProvider"
+      ]
+    }
+  },
+  "config": {
+    "sort-packages": true
+  },
+  "minimum-stability": "dev",
+  "prefer-stable": true
+}

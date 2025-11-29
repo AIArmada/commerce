@@ -1,0 +1,60 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Affiliates\Support\Webhooks;
+
+use Illuminate\Support\Arr;
+use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Str;
+
+class WebhookDispatcher
+{
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    public function dispatch(string $type, array $payload): void
+    {
+        if (! (bool) config('affiliates.events.dispatch_webhooks', false)) {
+            return;
+        }
+
+        $endpoints = Arr::wrap(config("affiliates.webhooks.endpoints.{$type}", []));
+        $headers = (array) config('affiliates.webhooks.headers', []);
+
+        foreach ($endpoints as $url) {
+            $trimmed = trim((string) $url);
+
+            if ($trimmed === '') {
+                continue;
+            }
+
+            $body = [
+                'type' => $type,
+                'id' => (string) Str::uuid(),
+                'data' => $payload,
+                'sent_at' => now()->toIso8601String(),
+            ];
+
+            $signature = $this->sign($body, $headers['X-Affiliates-Signature'] ?? null);
+
+            Http::withHeaders(array_merge($headers, [
+                'X-Affiliates-Webhook-Signature' => $signature,
+            ]))->asJson()->post($trimmed, $body);
+        }
+    }
+
+    /**
+     * @param  array<string, mixed>  $body
+     */
+    private function sign(array $body, ?string $secret): ?string
+    {
+        $secret ??= config('affiliates.webhooks.headers.X-Affiliates-Signature');
+
+        if (! $secret) {
+            return null;
+        }
+
+        return hash_hmac('sha256', json_encode($body, JSON_THROW_ON_ERROR), $secret);
+    }
+}

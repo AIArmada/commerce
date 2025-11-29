@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    public function up(): void
+    {
+        Schema::table(config('affiliates.table_names.conversions', 'affiliate_conversions'), function (Blueprint $table): void {
+            $table->uuid('affiliate_payout_id')
+                ->nullable()
+                ->after('affiliate_attribution_id')
+                ->index();
+        });
+    }
+
+    public function down(): void
+    {
+        Schema::table(config('affiliates.table_names.conversions', 'affiliate_conversions'), function (Blueprint $table): void {
+            $table->dropColumn('affiliate_payout_id');
+        });
+    }
+};

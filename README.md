@@ -23,6 +23,11 @@ php artisan migrate
 
 ---
 
+## Packages in this release
+
+- `aiarmada/affiliates` – Affiliate attribution + commission tracking with optional auto-integration into carts and vouchers. [Learn more](docs/affiliates.md).
+- `aiarmada/filament-affiliates` – Filament v5 plugin that exposes affiliate programs, attributions, conversions, and analytics alongside existing cart/voucher resources.
+
 ## Contributing
 
 Please read our [contributing guide](CONTRIBUTING.md) before submitting a pull request.
