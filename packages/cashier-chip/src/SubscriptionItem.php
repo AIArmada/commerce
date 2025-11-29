@@ -20,14 +20,6 @@ class SubscriptionItem extends Model
     use HasFactory;
 
     /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory(): SubscriptionItemFactory
-    {
-        return SubscriptionItemFactory::new();
-    }
-
-    /**
      * The table associated with the model.
      *
      * @var string
@@ -153,6 +145,14 @@ class SubscriptionItem extends Model
     public function totalAmount(): int
     {
         return ($this->unit_amount ?? 0) * ($this->quantity ?? 1);
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): SubscriptionItemFactory
+    {
+        return SubscriptionItemFactory::new();
     }
 
     /**

@@ -360,6 +360,14 @@ class Voucher extends Model
         return $this->walletEntries()->where('is_redeemed', false)->count();
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (Voucher $voucher): void {
+            $voucher->usages()->delete();
+            $voucher->walletEntries()->delete();
+        });
+    }
+
     protected function casts(): array
     {
         return [
@@ -377,13 +385,5 @@ class Voucher extends Model
             'metadata' => 'array',
             'target_definition' => 'array',
         ];
-    }
-
-    protected static function booted(): void
-    {
-        static::deleting(function (Voucher $voucher): void {
-            $voucher->usages()->delete();
-            $voucher->walletEntries()->delete();
-        });
     }
 }

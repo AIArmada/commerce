@@ -12,6 +12,8 @@ use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use JsonSerializable;
+use NumberFormatter;
+use RuntimeException;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -256,7 +258,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
         $renderer = app(Contracts\InvoiceRenderer::class);
 
         if ($renderer === null) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 'An invoice renderer is required. Please install dompdf/dompdf or configure a custom renderer.'
             );
         }
@@ -298,19 +300,6 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
             'Content-Type' => 'application/pdf',
             'X-Vapor-Base64-Encode' => 'True',
         ]);
-    }
-
-    /**
-     * Format the given amount into a displayable currency.
-     */
-    protected function formatAmount(int $amount): string
-    {
-        $currency = $this->currency();
-        $locale = config('cashier-chip.currency_locale', 'ms_MY');
-
-        $formatter = new \NumberFormatter($locale, \NumberFormatter::CURRENCY);
-
-        return $formatter->formatCurrency($amount / 100, $currency);
     }
 
     /**
@@ -357,5 +346,18 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
     public function jsonSerialize(): array
     {
         return $this->toArray();
+    }
+
+    /**
+     * Format the given amount into a displayable currency.
+     */
+    protected function formatAmount(int $amount): string
+    {
+        $currency = $this->currency();
+        $locale = config('cashier-chip.currency_locale', 'ms_MY');
+
+        $formatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
+
+        return $formatter->formatCurrency($amount / 100, $currency);
     }
 }

@@ -44,21 +44,6 @@ class PaymentMethods extends Page
         ];
     }
 
-    /**
-     * @return array<Action>
-     */
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('add_payment_method')
-                ->label(__('Add Payment Method'))
-                ->icon(Heroicon::OutlinedPlus)
-                ->color('primary')
-                ->url(fn () => $this->getAddPaymentMethodUrl())
-                ->openUrlInNewTab(false),
-        ];
-    }
-
     public function getAddPaymentMethodUrl(): string
     {
         $billable = $this->getBillable();
@@ -148,5 +133,20 @@ class PaymentMethods extends Page
         ];
 
         return $brands[mb_strtolower($brand)] ?? ucfirst($brand);
+    }
+
+    /**
+     * @return array<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('add_payment_method')
+                ->label(__('Add Payment Method'))
+                ->icon(Heroicon::OutlinedPlus)
+                ->color('primary')
+                ->url(fn () => $this->getAddPaymentMethodUrl())
+                ->openUrlInNewTab(false),
+        ];
     }
 }

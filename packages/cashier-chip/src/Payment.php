@@ -72,6 +72,16 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
+     * Dynamically get values from the purchase.
+     *
+     * @return mixed
+     */
+    public function __get(string $key)
+    {
+        return $this->purchase->{$key} ?? null;
+    }
+
+    /**
      * Get the purchase ID.
      */
     public function id(): string
@@ -186,7 +196,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     /**
      * Validate if the payment was successful and throw an exception if not.
      *
-     * @throws \AIArmada\CashierChip\Exceptions\IncompletePayment
+     * @throws IncompletePayment
      */
     public function validate(): void
     {
@@ -269,15 +279,5 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     public function jsonSerialize(): array
     {
         return $this->toArray();
-    }
-
-    /**
-     * Dynamically get values from the purchase.
-     *
-     * @return mixed
-     */
-    public function __get(string $key)
-    {
-        return $this->purchase->{$key} ?? null;
     }
 }
