@@ -24,27 +24,27 @@ final class ShipmentScopeResolver extends AbstractDatasetScopeResolver
     /**
      * @param  array<mixed>  $datasets
      */
-    protected function initialAmount(float $currentAmount, array $datasets): float
+    protected function initialAmount(int $currentAmount, array $datasets): int
     {
         $base = array_sum(array_map(fn ($dataset) => $this->extractBaseAmount($dataset), $datasets));
 
         return $currentAmount + $base;
     }
 
-    protected function extractBaseAmount(mixed $dataset): float
+    protected function extractBaseAmount(mixed $dataset): int
     {
         if (is_array($dataset)) {
-            return (float) ($dataset['base_amount'] ?? $dataset['amount'] ?? 0.0);
+            return (int) ($dataset['base_amount'] ?? $dataset['amount'] ?? 0);
         }
 
         if (is_object($dataset)) {
             foreach (['getBaseAmount', 'baseAmount', 'getAmount', 'amount'] as $method) {
                 if (method_exists($dataset, $method)) {
-                    return (float) $dataset->{$method}();
+                    return (int) $dataset->{$method}();
                 }
             }
         }
 
-        return 0.0;
+        return 0;
     }
 }

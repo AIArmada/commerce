@@ -134,17 +134,17 @@ class Purchase extends ChipModel
         });
     }
 
-    protected static function tableSuffix(): string
-    {
-        return 'purchases';
-    }
-
     /**
      * @return HasMany<Payment, $this>
      */
     public function payments(): HasMany
     {
         return $this->hasMany(Payment::class, 'purchase_id');
+    }
+
+    protected static function tableSuffix(): string
+    {
+        return 'purchases';
     }
 
     protected static function booted(): void

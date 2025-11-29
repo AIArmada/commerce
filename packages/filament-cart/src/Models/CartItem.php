@@ -146,14 +146,6 @@ final class CartItem extends Model
     }
 
     /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory(): \AIArmada\FilamentCart\Database\Factories\CartItemFactory
-    {
-        return \AIArmada\FilamentCart\Database\Factories\CartItemFactory::new();
-    }
-
-    /**
      * Scope to filter by cart instance.
      *
      * @param  Builder<self>  $query

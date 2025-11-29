@@ -11,7 +11,7 @@ final class ConditionPipelinePhaseContext
 {
     public function __construct(
         public readonly ConditionPhase $phase,
-        public readonly float $baseAmount,
+        public readonly int $baseAmount,
         public readonly CartConditionCollection $conditions,
         public readonly ConditionPipelineContext $pipelineContext
     ) {}

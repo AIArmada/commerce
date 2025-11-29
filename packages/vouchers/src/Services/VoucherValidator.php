@@ -146,11 +146,11 @@ class VoucherValidator
         return (string) Session::getId();
     }
 
-    protected function getCartTotal(mixed $cart): float
+    protected function getCartTotal(mixed $cart): int
     {
         // Handle different cart types
         if (is_object($cart) && method_exists($cart, 'getRawSubtotalWithoutConditions')) {
-            /** @var float $subtotal */
+            /** @var int $subtotal */
             $subtotal = $cart->getRawSubtotalWithoutConditions();
 
             return $subtotal;
@@ -160,10 +160,10 @@ class VoucherValidator
             /** @var scalar $total */
             $total = $cart['total'];
 
-            return (float) $total;
+            return (int) $total;
         }
 
-        return 0.0;
+        return 0;
     }
 
     protected function normalizeCode(string $code): string

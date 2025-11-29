@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests;
 
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\MessageBag;
+use Illuminate\Support\Str;
 use Illuminate\Support\ViewErrorBag;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -18,6 +20,10 @@ abstract class TestCase extends Orchestra
     protected function setUp(): void
     {
         parent::setUp();
+
+        Factory::guessFactoryNamesUsing(function (string $modelName) {
+            return Str::replace('Models', 'Database\\Factories', $modelName).'Factory';
+        });
 
         // Start session for Livewire/Filament tests
         $this->app['session']->start();

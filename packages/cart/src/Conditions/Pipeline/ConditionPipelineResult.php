@@ -12,8 +12,8 @@ final class ConditionPipelineResult
      * @param  array<string, ConditionPhaseResult>  $phases
      */
     public function __construct(
-        public readonly float $initialAmount,
-        public readonly float $finalAmount,
+        public readonly int $initialAmount,
+        public readonly int $finalAmount,
         private array $phases
     ) {}
 
@@ -32,14 +32,14 @@ final class ConditionPipelineResult
         return $this->phases[$key] ?? null;
     }
 
-    public function subtotal(): float
+    public function subtotal(): int
     {
         /** @phpstan-ignore-next-line */
         return $this->getPhaseResult(ConditionPhase::CART_SUBTOTAL)?->finalAmount
             ?? $this->initialAmount;
     }
 
-    public function total(): float
+    public function total(): int
     {
         /** @phpstan-ignore-next-line */
         return $this->getPhaseResult(ConditionPhase::GRAND_TOTAL)?->finalAmount

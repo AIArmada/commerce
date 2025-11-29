@@ -371,14 +371,6 @@ class Condition extends Model
     }
 
     /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory(): ConditionFactory
-    {
-        return ConditionFactory::new();
-    }
-
-    /**
      * Boot the model and set up event listeners.
      */
     protected static function booted(): void

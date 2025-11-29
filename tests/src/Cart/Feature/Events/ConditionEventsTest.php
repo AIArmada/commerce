@@ -21,7 +21,7 @@ describe('Condition Added Events', function (): void {
 
         Event::assertDispatched(CartConditionAdded::class, function (CartConditionAdded $event) {
             return $event->condition->getName() === 'VAT' &&
-                   $event->cart->total()->getAmount() === 110.00;
+                   $event->cart->total()->getAmount() === 11000;  // 110.00 as cents
         });
     });
 
@@ -71,7 +71,7 @@ describe('Condition Removed Events', function (): void {
         Event::assertDispatched(CartConditionRemoved::class, function (CartConditionRemoved $event) {
             $impact = abs($event->getConditionImpact());
 
-            return $impact === 20.00; // Lost savings for 20% discount
+            return $impact === 2000.0; // Lost savings for 20% discount on 10000 cents = 2000 cents
         });
     });
 

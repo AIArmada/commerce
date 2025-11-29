@@ -171,11 +171,6 @@ class Cart extends Model
         return (string) Money::{$currency}($amount);
     }
 
-    protected static function newFactory(): \AIArmada\FilamentCart\Database\Factories\CartFactory
-    {
-        return \AIArmada\FilamentCart\Database\Factories\CartFactory::new();
-    }
-
     /**
      * @param  Builder<self>  $query
      */

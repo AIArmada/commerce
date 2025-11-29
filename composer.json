@@ -101,6 +101,7 @@
             "AIArmada\\Jnt\\": "packages/jnt/src",
             "AIArmada\\Jnt\\Tests\\": "packages/jnt/tests/",
             "AIArmada\\Stock\\": "packages/stock/src",
+            "AIArmada\\Stock\\Database\\Factories\\": "packages/stock/database/factories",
             "AIArmada\\Stock\\Tests\\": "packages/stock/tests/",
             "AIArmada\\Vouchers\\": "packages/vouchers/src",
             "AIArmada\\Vouchers\\Tests\\": "packages/vouchers/tests/",

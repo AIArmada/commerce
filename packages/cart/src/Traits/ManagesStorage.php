@@ -33,7 +33,7 @@ trait ManagesStorage
                 $item = new CartItem(
                     $itemData['id'],
                     $itemData['name'],
-                    (float) $itemData['price'], // Ensure price is float
+                    (int) $itemData['price'], // Ensure price is int (cents)
                     $itemData['quantity'],
                     $itemData['attributes'] ?? [],
                     $itemData['conditions'] ?? [],
@@ -119,11 +119,23 @@ trait ManagesStorage
         }
 
         if (is_array($associatedData) && isset($associatedData['class'])) {
-            // Return just the class name if it exists, otherwise null
             $className = $associatedData['class'];
-            if (class_exists($className)) {
-                return $className;
+            if (! class_exists($className)) {
+                return null;
             }
+
+            // If we have an ID and the class is an Eloquent model, fetch it
+            if (isset($associatedData['id']) && is_subclass_of($className, \Illuminate\Database\Eloquent\Model::class)) {
+                try {
+                    return $className::find($associatedData['id']);
+                } catch (\Exception) {
+                    // If fetch fails, return just the class name
+                    return $className;
+                }
+            }
+
+            // Fallback to just returning the class name
+            return $className;
         }
 
         return null;

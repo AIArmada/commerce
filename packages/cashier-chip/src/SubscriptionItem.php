@@ -154,12 +154,4 @@ class SubscriptionItem extends Model
     {
         return ($this->unit_amount ?? 0) * ($this->quantity ?? 1);
     }
-
-    /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory(): SubscriptionItemFactory
-    {
-        return SubscriptionItemFactory::new();
-    }
 }

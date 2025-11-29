@@ -13,12 +13,12 @@ it('applies shipping conditions using shipment resolver data', function (): void
     $storage = new InMemoryStorage();
     $cart = new Cart($storage, 'pipeline-test', events: null);
 
-    $cart->add('sku-1', 'Sample Item', 50, 2); // subtotal 100
+    $cart->add('sku-1', 'Sample Item', 5000, 2); // subtotal 10000 cents ($100)
 
     $cart->resolveShipmentsUsing(function (): iterable {
         return [
-            ['id' => 'domestic', 'base_amount' => 10.0],
-            ['id' => 'express', 'base_amount' => 5.0],
+            ['id' => 'domestic', 'base_amount' => 1000],  // $10 in cents
+            ['id' => 'express', 'base_amount' => 500],    // $5 in cents
         ];
     });
 
@@ -36,19 +36,19 @@ it('applies shipping conditions using shipment resolver data', function (): void
 
     $total = $cart->total()->getAmount();
 
-    expect($total)->toBe(115.0);
+    expect($total)->toBe(11500);  // 10000 + 1000 + 500 = 11500 cents ($115)
 });
 
 it('applies payment surcharges per payment source', function (): void {
     $storage = new InMemoryStorage();
     $cart = new Cart($storage, 'payments-test', events: null);
 
-    $cart->add('sku-1', 'Sample Item', 100, 1);
+    $cart->add('sku-1', 'Sample Item', 10000, 1);  // $100 in cents
 
     $cart->resolvePaymentsUsing(function () {
         return [
-            ['id' => 'card', 'base_amount' => 100.0],
-            ['id' => 'gift-card', 'base_amount' => 25.0],
+            ['id' => 'card', 'base_amount' => 10000],      // $100 in cents
+            ['id' => 'gift-card', 'base_amount' => 2500],  // $25 in cents
         ];
     });
 
@@ -66,6 +66,6 @@ it('applies payment surcharges per payment source', function (): void {
 
     $total = $cart->total()->getAmount();
 
-    // 100 + 25 items + payment surcharge (2% of each payment) = 125 + (2 + 0.5) = 127.5
-    expect($total)->toBe(127.5);
+    // 10000 + 2500 items + payment surcharge (2% of each payment) = 12500 + (200 + 50) = 12750 cents
+    expect($total)->toBe(12750);
 });

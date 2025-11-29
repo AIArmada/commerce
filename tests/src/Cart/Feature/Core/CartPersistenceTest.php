@@ -24,7 +24,7 @@ describe('Cart Persistence', function (): void {
         Cart::addTax('VAT', '10%');
 
         expect(Cart::getConditions())->toHaveCount(1);
-        expect(Cart::total()->getAmount())->toBe(110.00);
+        expect(Cart::total()->getAmount())->toBe(11000);
     });
 
     it('persists metadata across operations', function (): void {
@@ -84,7 +84,7 @@ describe('Storage Drivers', function (): void {
         Cart::add('session-item', 'Session Item', 25.00, 1);
 
         expect(Cart::get('session-item'))->not->toBeNull();
-        expect(Cart::total()->getAmount())->toBe(25.00);
+        expect(Cart::total()->getAmount())->toBe(2500);  // 25.00 as cents
     });
 
     it('works with cache storage', function (): void {
@@ -94,7 +94,7 @@ describe('Storage Drivers', function (): void {
         Cart::add('cache-item', 'Cache Item', 35.00, 1);
 
         expect(Cart::get('cache-item'))->not->toBeNull();
-        expect(Cart::total()->getAmount())->toBe(35.00);
+        expect(Cart::total()->getAmount())->toBe(3500);  // 35.00 as cents
     });
 
     it('works with database storage', function (): void {
@@ -104,7 +104,7 @@ describe('Storage Drivers', function (): void {
         Cart::add('db-item', 'Database Item', 45.00, 1);
 
         expect(Cart::get('db-item'))->not->toBeNull();
-        expect(Cart::total()->getAmount())->toBe(45.00);
+        expect(Cart::total()->getAmount())->toBe(4500);  // 45.00 as cents
     });
 });
 
@@ -121,7 +121,7 @@ describe('Data Integrity', function (): void {
         $retrieved = Cart::get('test-item');
         expect($retrieved->id)->toBe('test-item');
         expect($retrieved->name)->toBe('Test Item');
-        expect($retrieved->price)->toBe(50.00);
+        expect($retrieved->price)->toBe(5000);
         expect($retrieved->quantity)->toBe(2);
         expect($retrieved->getAttribute('color'))->toBe('red');
     });
@@ -140,13 +140,13 @@ describe('Data Integrity', function (): void {
         Cart::add('precise-item', 'Precise Item', 99.99, 1);
         Cart::add('another-item', 'Another Item', 0.01, 1);
 
-        expect(Cart::subtotal()->getAmount())->toBe(100.00);
+        expect(Cart::subtotal()->getAmount())->toBe(10000);
     });
 
     it('handles large quantities', function (): void {
         Cart::add('bulk-item', 'Bulk Item', 1.00, 10000);
 
         expect(Cart::getTotalQuantity())->toBe(10000);
-        expect(Cart::subtotal()->getAmount())->toBe(10000.00);
+        expect(Cart::subtotal()->getAmount())->toBe(1000000);
     });
 });

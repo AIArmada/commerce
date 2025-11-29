@@ -51,7 +51,7 @@ it('transfers source cart to target identifier even when target exists', functio
         'guest-product-1' => [
             'id' => 'guest-product-1',
             'name' => 'Guest Product 1',
-            'price' => 10.00,
+            'price' => 1000,
             'quantity' => 2,
             'attributes' => ['color' => 'red'],
             'conditions' => [],
@@ -63,7 +63,7 @@ it('transfers source cart to target identifier even when target exists', functio
         'user-product-1' => [
             'id' => 'user-product-1',
             'name' => 'User Product 1',
-            'price' => 25.00,
+            'price' => 2500,
             'quantity' => 1,
             'attributes' => ['size' => 'large'],
             'conditions' => [],
@@ -120,7 +120,7 @@ it('transfers source cart when target cart does not exist', function (): void {
         'product-1' => [
             'id' => 'product-1',
             'name' => 'Test Product 1',
-            'price' => 10.00,
+            'price' => 1000,
             'quantity' => 2,
             'attributes' => ['color' => 'red'],
             'conditions' => [],
@@ -128,7 +128,7 @@ it('transfers source cart when target cart does not exist', function (): void {
         'product-2' => [
             'id' => 'product-2',
             'name' => 'Test Product 2',
-            'price' => 15.00,
+            'price' => 1500,
             'quantity' => 1,
             'attributes' => ['size' => 'large'],
             'conditions' => [],
@@ -228,7 +228,7 @@ it('can swap cart ownership for specific instances', function (): void {
         'product-1' => [
             'id' => 'product-1',
             'name' => 'Wishlist Product',
-            'price' => 20.00,
+            'price' => 2000,
             'quantity' => 1,
             'attributes' => [],
             'conditions' => [],
@@ -265,7 +265,7 @@ it('can swap through cart facade', function (): void {
         'product-1' => [
             'id' => 'product-1',
             'name' => 'Facade Test Product',
-            'price' => 25.00,
+            'price' => 2500,
             'quantity' => 3,
             'attributes' => [],
             'conditions' => [],
@@ -298,7 +298,7 @@ it('can swap guest cart using convenience method', function (): void {
         'product-1' => [
             'id' => 'product-1',
             'name' => 'Convenience Test Product',
-            'price' => 12.50,
+            'price' => 1250,
             'quantity' => 2,
             'attributes' => [],
             'conditions' => [],

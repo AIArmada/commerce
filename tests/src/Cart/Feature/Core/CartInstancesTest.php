@@ -31,8 +31,8 @@ describe('Cart Instance Management', function (): void {
         Cart::setInstance('default')->add('item-1', 'Item 1', 10.00, 2);
         Cart::setInstance('wishlist')->add('item-2', 'Item 2', 50.00, 1);
 
-        expect(Cart::setInstance('default')->total()->getAmount())->toBe(20.00);
-        expect(Cart::setInstance('wishlist')->total()->getAmount())->toBe(50.00);
+        expect(Cart::setInstance('default')->total()->getAmount())->toBe(2000);
+        expect(Cart::setInstance('wishlist')->total()->getAmount())->toBe(5000);
     });
 
     it('maintains separate conditions for each instance', function (): void {
@@ -41,8 +41,8 @@ describe('Cart Instance Management', function (): void {
 
         Cart::setInstance('default')->addTax('VAT', '10%');
 
-        expect(Cart::setInstance('default')->total()->getAmount())->toBe(110.00);
-        expect(Cart::setInstance('wishlist')->total()->getAmount())->toBe(100.00);
+        expect(Cart::setInstance('default')->total()->getAmount())->toBe(11000);
+        expect(Cart::setInstance('wishlist')->total()->getAmount())->toBe(10000);
     });
 
     it('returns current instance name', function (): void {
@@ -65,7 +65,7 @@ describe('Cart Instance Management', function (): void {
         Cart::setInstance('default')->add('item-1', 'Item 1', 10.00, 1);
         Cart::setInstance('default')->addTax('VAT', '10%');
 
-        expect(Cart::setInstance('default')->total()->getAmount())->toBe(11.00);
+        expect(Cart::setInstance('default')->total()->getAmount())->toBe(1100);
     });
 });
 
@@ -83,9 +83,9 @@ describe('Instance Isolation', function (): void {
         $otherItem = Cart::setInstance('other')->get('shared-id');
 
         expect($defaultItem->quantity)->toBe(5);
-        expect($defaultItem->price)->toBe(10.00);
+        expect($defaultItem->price)->toBe(1000);  // 10.00 as cents
         expect($otherItem->quantity)->toBe(3);
-        expect($otherItem->price)->toBe(20.00);
+        expect($otherItem->price)->toBe(2000);  // 20.00 as cents
     });
 
     it('isolates metadata between instances', function (): void {

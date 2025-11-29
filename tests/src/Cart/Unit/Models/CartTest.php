@@ -56,8 +56,8 @@ describe('Cart instantiation', function (): void {
         expect($this->cart)->toBeInstanceOf(Cart::class);
         expect($this->cart->instance())->toBe('bulletproof_test');
         expect($this->cart->getTotalQuantity())->toBe(0);
-        expect($this->cart->total()->getAmount())->toBe(0.0);
-        expect($this->cart->subtotal()->getAmount())->toBe(0.0);
+        expect($this->cart->total()->getAmount())->toBe(0);
+        expect($this->cart->subtotal()->getAmount())->toBe(0);
         expect($this->cart->isEmpty())->toBeTrue();
         expect($this->cart->count())->toBe(0);
     });
@@ -152,19 +152,19 @@ describe('Adding items', function (): void {
         $item = $cart->add(
             id: 'product-1',
             name: 'Test Product',
-            price: 10.00,
+            price: 1000,
             quantity: 2
         );
 
         expect($item)->toBeInstanceOf(CartItem::class);
         expect($item->id)->toBe('product-1');
         expect($item->name)->toBe('Test Product');
-        expect($item->price)->toBe(10.00);
+        expect($item->price)->toBe(1000);  // 10.00 as cents
         expect($item->quantity)->toBe(2);
-        expect($item->getRawSubtotal())->toBe(20.00);
+        expect($item->getRawSubtotal())->toBe(2000);
 
         expect($cart->getTotalQuantity())->toBe(2);
-        expect($cart->total()->getAmount())->toBe(20.00);
+        expect($cart->total()->getAmount())->toBe(2000);
         expect($cart->count())->toBe(2);
         expect($cart->getItems())->toHaveCount(1);
 
@@ -219,14 +219,14 @@ describe('Adding items', function (): void {
         $item = $this->cart->add(
             id: 'product-1',
             name: 'Discounted Product',
-            price: 100.00,
+            price: 10000,
             quantity: 1,
             conditions: [$discount, $tax]
         );
 
         expect($item->getConditions())->toHaveCount(2);
         // 100 - 15% = 85, then +20% = 102
-        expect($item->getRawSubtotal())->toBe(102.00);
+        expect($item->getRawSubtotal())->toBe(10200);
     });
 
     it('merges quantities when adding existing items', function (): void {
@@ -284,10 +284,10 @@ describe('Adding items', function (): void {
         // Test with large numbers
         $item = $this->cart->add('product-1', 'Expensive Product', 9999.99, 1000);
 
-        expect($item->price)->toBe(9999.99);
+        expect($item->price)->toBe(999999);  // 9999.99 as cents
         expect($item->quantity)->toBe(1000);
-        expect($item->getRawSubtotal())->toBe(9999990.0);
-        expect($this->cart->total()->getAmount())->toBe(9999990.0);
+        expect($item->getRawSubtotal())->toBe(999999000);
+        expect($this->cart->total()->getAmount())->toBe(999999000);
     });
 
     it('handles decimal prices with precision', function (): void {
@@ -298,7 +298,7 @@ describe('Adding items', function (): void {
         }
 
         expect($this->cart->getItems())->toHaveCount(5);
-        expect($this->cart->get('product-2')->price)->toBe(1.234); // Price stored as provided
+        expect($this->cart->get('product-2')->price)->toBe(123); // Price stored as provided
     });
 });
 
@@ -396,7 +396,7 @@ describe('Cart operations and management', function (): void {
         expect($cart->isEmpty())->toBeTrue();
         expect($cart->getItems())->toHaveCount(0);
         expect($cart->getTotalQuantity())->toBe(0);
-        expect($cart->total()->getAmount())->toBe(0.0);
+        expect($cart->total()->getAmount())->toBe(0);
 
         // Verify clear was successful
         expect($cart->isEmpty())->toBeTrue();
@@ -411,7 +411,7 @@ describe('Cart operations and management', function (): void {
     it('can search and filter cart content', function (): void {
         // Test search functionality
         $expensiveItems = $this->cart->search(function (CartItem $item) {
-            return $item->price > 10.00;
+            return $item->price > 1000;  // > $10 in cents
         });
 
         expect($expensiveItems)->toHaveCount(1);
@@ -443,7 +443,7 @@ describe('Cart conditions', function (): void {
         expect($this->cart->getCondition('shipping'))->toBeInstanceOf(CartCondition::class);
 
         // 200 * 1.1 + 5.99 = 225.99
-        expect($this->cart->total()->getAmount())->toBe(225.99);
+        expect($this->cart->total()->getAmount())->toBe(22599);
     });
 
     it('can remove specific conditions', function (): void {
@@ -476,7 +476,7 @@ describe('Cart conditions', function (): void {
         $result = $this->cart->clearConditions();
         expect($result)->toBeTrue();
         expect($this->cart->getConditions())->toHaveCount(0);
-        expect($this->cart->total()->getAmount())->toBe(200.00); // Back to original total
+        expect($this->cart->total()->getAmount())->toBe(20000); // Back to original total
     });
 
     it('calculates totals correctly with multiple condition types', function (): void {
@@ -489,8 +489,8 @@ describe('Cart conditions', function (): void {
         $this->cart->addCondition($shipping);
 
         // 200 - 10% = 180 (subtotal), then (180 + 15%) + 9.99 = 216.99 (total)
-        expect($this->cart->subtotal()->getAmount())->toBe(180.00);
-        expect($this->cart->total()->getAmount())->toBe(216.99);
+        expect($this->cart->subtotal()->getAmount())->toBe(18000);
+        expect($this->cart->total()->getAmount())->toBe(21699);
     });
 
     it('can add conditions to specific items', function (): void {
@@ -501,7 +501,7 @@ describe('Cart conditions', function (): void {
 
         $item = $this->cart->get('product-1');
         expect($item->getConditions())->toHaveCount(1);
-        expect($item->getRawSubtotal())->toBe(80.00); // 100 - 20%
+        expect($item->getRawSubtotal())->toBe(8000); // 100 - 20%
 
         // Adding to non-existent item should fail
         $result = $this->cart->addItemCondition('nonexistent', $itemDiscount);
@@ -553,7 +553,7 @@ describe('Cart information and calculations', function (): void {
 
     it('calculates correct subtotals', function (): void {
         // (10.99 * 2) + (15.50 * 3) + (8.25 * 1) = 21.98 + 46.50 + 8.25 = 76.73
-        expect($this->cart->subtotal()->getAmount())->toBe(76.73);
+        expect($this->cart->subtotal()->getAmount())->toBe(7673);
     });
 
     it('can get specific items with all properties', function (): void {
@@ -562,9 +562,9 @@ describe('Cart information and calculations', function (): void {
         expect($item)->toBeInstanceOf(CartItem::class);
         expect($item->id)->toBe('product-1');
         expect($item->name)->toBe('Product 1');
-        expect($item->price)->toBe(10.99);
+        expect($item->price)->toBe(1099);
         expect($item->quantity)->toBe(2);
-        expect($item->getRawSubtotal())->toBe(21.98);
+        expect($item->getRawSubtotal())->toBe(2198);
 
         expect($this->cart->get('nonexistent'))->toBeNull();
     });
@@ -576,29 +576,29 @@ describe('Cart information and calculations', function (): void {
 
         expect($this->cart->isEmpty())->toBeTrue();
         expect($this->cart->getTotalQuantity())->toBe(0);
-        expect($this->cart->subtotal()->getAmount())->toBe(0.0);
-        expect($this->cart->total()->getAmount())->toBe(0.0);
+        expect($this->cart->subtotal()->getAmount())->toBe(0);
+        expect($this->cart->total()->getAmount())->toBe(0);
     });
 
     it('provides correct cart state after operations', function (): void {
         // Initial state
         expect($this->cart->getTotalQuantity())->toBe(6);
-        expect($this->cart->subtotal()->getAmount())->toBe(76.73);
+        expect($this->cart->subtotal()->getAmount())->toBe(7673);
 
         // After adding item
         $this->cart->add('product-4', 'Product 4', 20.00, 1);
         expect($this->cart->getTotalQuantity())->toBe(7);
-        expect($this->cart->subtotal()->getAmount())->toBe(96.73);
+        expect($this->cart->subtotal()->getAmount())->toBe(9673);
 
         // After removing item
         $this->cart->remove('product-2');
         expect($this->cart->getTotalQuantity())->toBe(4);
-        expect(round($this->cart->subtotal()->getAmount(), 2))->toBe(50.23);
+        expect($this->cart->subtotal()->getAmount())->toBe(5023);
 
         // After updating quantity
         $this->cart->update('product-1', ['quantity' => ['value' => 5]]);
         expect($this->cart->getTotalQuantity())->toBe(7); // 5 (product-1) + 1 (product-3) + 1 (product-4)
-        expect($this->cart->subtotal()->getAmount())->toBe(83.20);
+        expect($this->cart->subtotal()->getAmount())->toBe(8320);
     });
 
     it('can convert cart to array format', function (): void {
@@ -608,8 +608,8 @@ describe('Cart information and calculations', function (): void {
         expect($cartArray)->toHaveKeys(['items', 'quantity', 'subtotal', 'total', 'conditions']);
         expect($cartArray['items'])->toHaveCount(3);
         expect($cartArray['quantity'])->toBe(6);
-        expect(round($cartArray['subtotal'], 2))->toBe(76.73);
-        expect(round($cartArray['total'], 2))->toBe(76.73);
+        expect($cartArray['subtotal'])->toBe(7673);
+        expect($cartArray['total'])->toBe(7673);
         expect($cartArray['conditions'])->toHaveCount(0);
     });
 });
@@ -621,9 +621,9 @@ describe('Edge cases and stress tests', function (): void {
 
         $item = $this->cart->add('bulk-item', 'Bulk Product', $largePrice, $largeQuantity);
 
-        expect($item->price)->toBe($largePrice);
+        expect($item->price)->toBe(99999999);  // 999999.99 as cents
         expect($item->quantity)->toBe($largeQuantity);
-        expect($this->cart->total()->getAmount())->toBe($largePrice * $largeQuantity);
+        expect($this->cart->total()->getAmount())->toBe(99999999 * $largeQuantity);
     });
 
     it('handles many unique items', function (): void {
@@ -657,7 +657,7 @@ describe('Edge cases and stress tests', function (): void {
         }
 
         expect($this->cart->getConditions())->toHaveCount(5);
-        expect($this->cart->total()->getAmount())->toBeFloat();
+        expect($this->cart->total()->getAmount())->toBeInt();
         expect($this->cart->total()->getAmount())->toBeGreaterThan(0);
     });
 
@@ -725,8 +725,7 @@ describe('Edge cases and stress tests', function (): void {
         }
 
         $total = $this->cart->total();
-        expect($total->getAmount())->toBeFloat();
-        expect(round($total->getAmount(), 2))->toBe($total->getAmount()); // Should already be rounded
+        expect($total->getAmount())->toBeInt();
     });
 });
 
@@ -815,21 +814,21 @@ describe('Multiple items and array operations', function (): void {
             [
                 'id' => 'product-1',
                 'name' => 'Product 1',
-                'price' => 10.00,
+                'price' => 1000,
                 'quantity' => 2,
                 'attributes' => ['color' => 'red'],
             ],
             [
                 'id' => 'product-2',
                 'name' => 'Product 2',
-                'price' => 20.00,
+                'price' => 2000,
                 'quantity' => 1,
                 'attributes' => ['size' => 'large'],
             ],
             [
                 'id' => 'product-3',
                 'name' => 'Product 3',
-                'price' => 15.00,
+                'price' => 1500,
                 'quantity' => 3,
             ],
         ];
@@ -840,7 +839,7 @@ describe('Multiple items and array operations', function (): void {
         expect($result)->toHaveCount(3);
         expect($this->cart->getItems())->toHaveCount(3);
         expect($this->cart->getTotalQuantity())->toBe(6);
-        expect($this->cart->subtotal()->getAmount())->toBe(85.00); // 2*10 + 1*20 + 3*15 = 20 + 20 + 45 = 85
+        expect($this->cart->subtotal()->getAmount())->toBe(8500); // 2*10 + 1*20 + 3*15 = 20 + 20 + 45 = 85
     });
 
     it('handles multiple items with conditions and associated models', function (): void {
@@ -850,7 +849,7 @@ describe('Multiple items and array operations', function (): void {
             [
                 'id' => 'product-1',
                 'name' => 'Product 1',
-                'price' => 100.00,
+                'price' => 10000,
                 'quantity' => 1,
                 'conditions' => [$discount],
                 'associated_model' => new stdClass,
@@ -858,7 +857,7 @@ describe('Multiple items and array operations', function (): void {
             [
                 'id' => 'product-2',
                 'name' => 'Product 2',
-                'price' => 50.00,
+                'price' => 5000,
                 'quantity' => 2,
             ],
         ];
@@ -991,7 +990,7 @@ describe('Content alias methods', function (): void {
         $getSubtotal = $this->cart->subtotal();
 
         expect($subtotal->getAmount())->toBe($getSubtotal->getAmount());
-        expect($subtotal->getAmount())->toBe(51.0);
+        expect($subtotal->getAmount())->toBe(5100);
     });
 
     it('provides total() as alias for getTotal()', function (): void {
@@ -1002,7 +1001,7 @@ describe('Content alias methods', function (): void {
         $getTotal = $this->cart->total();
 
         expect($total->getAmount())->toBe($getTotal->getAmount());
-        expect($total->getAmount())->toBe(120.0);
+        expect($total->getAmount())->toBe(12000);
     });
 });
 
@@ -1010,7 +1009,7 @@ describe('Price normalization', function (): void {
     it('handles string prices with commas', function (): void {
         $item = $this->cart->add('item-1', 'Item 1', '1,234.56', 1);
 
-        expect($item->price)->toBe(1234.56);
+        expect($item->price)->toBe(123456);  // 1234.56 as cents
     });
 
     it('handles null prices', function (): void {
@@ -1031,8 +1030,8 @@ describe('Price normalization', function (): void {
 
         $item = $cart->add('item-1', 'Item 1', 10.12345, 1);
 
-        // Raw price is stored as provided - Money formatting applies when converting to Money objects
-        expect($item->price)->toEqual(10.12345);
+        // Price is normalized to cents (rounded to 2 decimals)
+        expect($item->price)->toBe(1012);  // 10.12 as cents (rounded)
     });
 });
 
@@ -1080,7 +1079,7 @@ describe('Advanced update operations', function (): void {
         $result = $this->cart->update('item-1', ['price' => '25.99']);
 
         expect($result)->toBeInstanceOf(CartItem::class);
-        expect($result->price)->toBe(25.99);
+        expect($result->price)->toBe(2599);  // 25.99 as cents
     });
 });
 

@@ -121,7 +121,7 @@ it('can handle merge conflicts with add quantities strategy', function (): void 
         'product-1' => [
             'id' => 'product-1',
             'name' => 'Test Product',
-            'price' => 10.00,
+            'price' => 1000,
             'quantity' => 3,
             'attributes' => [],
             'conditions' => [],
@@ -152,7 +152,7 @@ it('can handle merge conflicts with keep highest quantity strategy', function ()
         'product-1' => [
             'id' => 'product-1',
             'name' => 'Test Product',
-            'price' => 10.00,
+            'price' => 1000,
             'quantity' => 3,
             'attributes' => [],
             'conditions' => [],
@@ -183,7 +183,7 @@ it('can handle merge conflicts with keep user cart strategy', function (): void 
         'product-1' => [
             'id' => 'product-1',
             'name' => 'Test Product',
-            'price' => 10.00,
+            'price' => 1000,
             'quantity' => 3,
             'attributes' => [],
             'conditions' => [],
@@ -214,7 +214,7 @@ it('can handle merge conflicts with replace with guest strategy', function (): v
         'product-1' => [
             'id' => 'product-1',
             'name' => 'Test Product',
-            'price' => 10.00,
+            'price' => 1000,
             'quantity' => 3,
             'attributes' => [],
             'conditions' => [],
@@ -275,7 +275,7 @@ it('handles user login event automatically when configured', function (): void {
         'product-1' => [
             'id' => 'product-1',
             'name' => 'Test Product',
-            'price' => 10.00,
+            'price' => 1000,
             'quantity' => 2,
             'attributes' => [],
         ],
@@ -356,7 +356,7 @@ it('validates merge strategy configuration', function (): void {
         'product-1' => [
             'id' => 'product-1',
             'name' => 'Test Product',
-            'price' => 10.00,
+            'price' => 1000,
             'quantity' => 3,
             'attributes' => [],
             'conditions' => [],

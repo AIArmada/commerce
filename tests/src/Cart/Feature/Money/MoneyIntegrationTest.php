@@ -143,22 +143,19 @@ beforeEach(function (): void {
 it('demonstrates money integration with cart package', function (): void {
     $cart = createTestCart('shopping');
 
-    // Add items with precise Money prices
-    $itemPrice = 1999.0; // 19.99 in cents
-    $cart->add('product-1', 'Widget', $itemPrice, 2);
-
-    $expensiveItemPrice = 29999.0; // 299.99 in cents
-    $cart->add('product-2', 'Premium Widget', $expensiveItemPrice, 1);
+    // Add items with float prices (treated as dollars, converted to cents)
+    $cart->add('product-1', 'Widget', 19.99, 2);  // $19.99 = 1999 cents
+    $cart->add('product-2', 'Premium Widget', 299.99, 1);  // $299.99 = 29999 cents
 
     // Get items and verify Money objects
     $item1 = $cart->get('product-1');
     $item2 = $cart->get('product-2');
 
-    expect($item1->getPrice()->getAmount())->toBe(1999.0); // 19.99 stored as 1999 cents
-    expect($item1->getSubtotal()->getAmount())->toBe(3998.0); // 39.98 stored as 3998 cents
+    expect($item1->getPrice()->getAmount())->toBe(1999); // $19.99 as 1999 cents
+    expect($item1->getSubtotal()->getAmount())->toBe(3998); // 1999 * 2 = 3998 cents
 
-    expect($item2->getPrice()->getAmount())->toBe(29999.0); // 299.99 stored as 29999 cents
-    expect($item2->getSubtotal()->getAmount())->toBe(29999.0); // 299.99 stored as 29999 cents
+    expect($item2->getPrice()->getAmount())->toBe(29999); // $299.99 as 29999 cents
+    expect($item2->getSubtotal()->getAmount())->toBe(29999); // 29999 * 1 = 29999 cents
 
     // Test cart totals with Money precision
     expect($cart->count())->toBe(3); // Total quantity: 2 + 1 = 3
@@ -174,33 +171,31 @@ it('shows money precision advantages over float arithmetic', function (): void {
     $item = $cart->get('item-1');
 
     // Money maintains precision: 0.1 * 3 = 0.3 exactly
-    expect($item->getSubtotal()->getAmount())->toBe(30.0); // 0.3 stored as 30 cents
+    expect($item->getSubtotal()->getAmount())->toBe(3000); // 0.3 stored as 30 cents
 
     // Compare with float calculation that would lose precision
     $floatResult = 0.1 * 3; // This can be 0.30000000000000004 in some cases
-    expect($item->getSubtotal()->getAmount())->toBe(30.0); // Money is always exact (in cents)
+    expect($item->getSubtotal()->getAmount())->toBe(3000); // Money is always exact (in cents)
 });
 
 it('handles complex cart scenarios with money precision', function (): void {
     $cart = createTestCart('complex_test');
 
-    // Add items with different currencies - Cart uses default currency from config
-    $expensiveItem = 129999.0; // 1299.99 in cents
-    $budgetItem = 599.0; // 5.99 in cents
-    $cart->add('expensive', 'Luxury Item', $expensiveItem, 1);
-    $cart->add('budget', 'Budget Item', $budgetItem, 3);
+    // Add items with float prices (dollars converted to cents)
+    $cart->add('expensive', 'Luxury Item', 1299.99, 1);  // $1299.99 = 129999 cents
+    $cart->add('budget', 'Budget Item', 5.99, 3);  // $5.99 = 599 cents
 
     // Test precision calculations
     $expensiveCartItem = $cart->get('expensive');
     $budgetCartItem = $cart->get('budget');
 
-    expect($expensiveCartItem->getPrice()->getAmount())->toBe(129999.0); // 1299.99 stored as 129999 cents
-    expect($budgetCartItem->getPrice()->getAmount())->toBe(599.0); // 5.99 stored as 599 cents
-    expect($budgetCartItem->getSubtotal()->getAmount())->toBe(1797.0); // 17.97 stored as 1797 cents
+    expect($expensiveCartItem->getPrice()->getAmount())->toBe(129999); // $1299.99 as 129999 cents
+    expect($budgetCartItem->getPrice()->getAmount())->toBe(599); // $5.99 as 599 cents
+    expect($budgetCartItem->getSubtotal()->getAmount())->toBe(1797); // 599 * 3 = 1797 cents
 
     // Total should be precise - Cart returns CartMoney, get amount
     $total = $cart->total()->getAmount();
-    expect($total)->toBe(131796.0); // Cart total() returns cents
+    expect($total)->toBe(131796); // 129999 + 1797 = 131796 cents
 });
 
 it('demonstrates money currency safety', function (): void {
@@ -221,23 +216,24 @@ it('shows item-level money calculations', function (): void {
     $cart = createTestCart('item_calculations');
 
     // Add an item with quantity
-    $itemPrice = 2499.0; // 24.99 in cents
+    // 24.99 as float is treated as $24.99 and converted to 2499 cents
+    $itemPrice = 24.99;
     $cart->add('bulk-item', 'Bulk Purchase', $itemPrice, 5);
 
     $item = $cart->get('bulk-item');
 
     // Verify individual item Money calculations
     expect($item->getPrice())->toBeInstanceOf(Money::class);
-    expect($item->getPrice()->getAmount())->toBe(2499.0); // 24.99 stored as 2499 cents
-    expect($item->getPrice()->getCurrency()->getName())->toBe('US Dollar'); // Currency name for USD
+    expect($item->getPrice()->getAmount())->toBe(2499); // $24.99 stored as 2499 cents
+    expect($item->getPrice()->getCurrency()->getName())->toBe('US Dollar');
 
     // Verify calculated totals
     expect($item->getSubtotal())->toBeInstanceOf(Money::class);
-    expect($item->getSubtotal()->getAmount())->toBe(12495.0); // 124.95 stored as 12495 cents
+    expect($item->getSubtotal()->getAmount())->toBe(12495); // 2499 cents * 5 = 12495 cents
 
     // Test Money arithmetic operations
     $doubled = $item->getPrice()->multiply(2);
-    expect($doubled->getAmount())->toBe(4998.0); // 49.98 stored as 4998 cents
+    expect($doubled->getAmount())->toBe(4998.0); // 2499 cents * 2 = 4998 cents
 
     // Test percentage calculations
     // Manual percentage calculation

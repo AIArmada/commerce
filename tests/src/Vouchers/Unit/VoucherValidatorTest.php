@@ -184,11 +184,11 @@ test('validates voucher with minimum cart value not met', function (): void {
         'value' => 10,
         'currency' => 'MYR',
         'status' => VoucherStatus::Active->value,
-        'min_cart_value' => 200,
+        'min_cart_value' => 20000, // 20000 cents = $200.00
     ]);
 
     $validator = app(VoucherValidator::class);
-    $cart = ['total' => 100.0];
+    $cart = ['total' => 10000]; // 10000 cents = $100.00
 
     $result = $validator->validate('mincart', $cart);
 
@@ -204,14 +204,14 @@ test('validates with object cart', function (): void {
         'value' => 10,
         'currency' => 'MYR',
         'status' => VoucherStatus::Active->value,
-        'min_cart_value' => 50,
+        'min_cart_value' => 5000, // 5000 cents = $50.00
     ]);
 
     $cart = new class
     {
         public function getRawSubtotalWithoutConditions()
         {
-            return 100.0;
+            return 10000; // 10000 cents = $100.00
         }
     };
 

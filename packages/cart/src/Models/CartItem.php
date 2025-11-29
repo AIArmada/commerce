@@ -28,7 +28,7 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
     /** @var Collection<string, mixed> */
     public Collection $attributes;
 
-    public float|int $price;
+    public int $price;
 
     /**
      * @param  array<string, mixed>  $attributes
@@ -37,7 +37,7 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
     public function __construct(
         string|int $id,
         public string $name,
-        float|int|string $price,
+        int|float|string $price,
         public int $quantity,
         array $attributes = [],
         /** @var array|Collection<string, CartCondition> */ array|Collection $conditions = [],
@@ -49,10 +49,33 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
         $this->attributes = new Collection($attributes);
         $this->conditions = $this->normalizeConditions($conditions);
 
-        // Store raw price as-is (no transformation)
-        $this->price = is_string($price) ? $this->sanitizeStringPrice($price) : $price;
+        // Store price as integer cents
+        $this->price = $this->normalizeToInt($price);
 
         $this->validateCartItem();
+    }
+
+    /**
+     * Normalize price to integer cents.
+     *
+     * @param  int|float|string  $price  Price input
+     *                                    - int: treated as cents (returned as-is)
+     *                                    - float: treated as decimal dollars, converted to cents
+     *                                    - string: sanitized and converted
+     */
+    private function normalizeToInt(int|float|string $price): int
+    {
+        if (is_int($price)) {
+            return $price;
+        }
+
+        if (is_float($price)) {
+            // Float is treated as decimal dollars, convert to cents
+            return (int) round($price * 100);
+        }
+
+        // String handling
+        return $this->sanitizeStringPrice($price);
     }
 
     /**
@@ -102,13 +125,19 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
     }
 
     /**
-     * Sanitize string price input
+     * Sanitize string price input and convert to integer cents.
      */
-    private function sanitizeStringPrice(string $price): float|int
+    private function sanitizeStringPrice(string $price): int
     {
-        // Only sanitize string input - no transformation
+        // Remove currency symbols and formatting
         $price = str_replace([',', '$', '€', '£', '¥', '₹', 'RM', ' '], '', $price);
 
-        return str_contains($price, '.') ? (float) $price : (int) $price;
+        // If contains decimal, assume it's in major units (e.g., 99.99) and convert to cents
+        if (str_contains($price, '.')) {
+            return (int) round((float) $price * 100);
+        }
+
+        // Otherwise assume it's already in cents
+        return (int) $price;
     }
 }

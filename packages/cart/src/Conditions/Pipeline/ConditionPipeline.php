@@ -17,7 +17,7 @@ use AIArmada\Cart\Conditions\Pipeline\Resolvers\ShipmentScopeResolver;
 final class ConditionPipeline
 {
     /**
-     * @var array<string, callable(ConditionPipelinePhaseContext): float>
+     * @var array<string, callable(ConditionPipelinePhaseContext): int>
      */
     private array $phaseProcessors = [];
 
@@ -90,12 +90,12 @@ final class ConditionPipeline
         return $phases;
     }
 
-    private function resolvePhaseAmount(ConditionPipelinePhaseContext $context): float
+    private function resolvePhaseAmount(ConditionPipelinePhaseContext $context): int
     {
         $processor = $this->phaseProcessors[$context->phase->value] ?? null;
 
         if ($processor !== null) {
-            return (float) $processor($context);
+            return (int) $processor($context);
         }
 
         if ($context->isEmpty()) {
@@ -105,7 +105,7 @@ final class ConditionPipeline
         return $this->applyScopes($context, $context->conditions);
     }
 
-    private function applyScopes(ConditionPipelinePhaseContext $context, CartConditionCollection $conditions): float
+    private function applyScopes(ConditionPipelinePhaseContext $context, CartConditionCollection $conditions): int
     {
         $grouped = $conditions->groupByScope();
         $amount = $context->baseAmount;

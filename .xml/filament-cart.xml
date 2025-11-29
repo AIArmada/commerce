@@ -1,17 +1,17 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xsi:noNamespaceSchemaLocation="vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
+         xsi:noNamespaceSchemaLocation="../vendor/phpunit/phpunit/phpunit.xsd"
+         bootstrap="../vendor/autoload.php"
          colors="true"
 >
     <testsuites>
         <testsuite name="FilamentCart">
-            <directory>tests/src/FilamentCart</directory>
+            <directory>../tests/src/FilamentCart</directory>
         </testsuite>
     </testsuites>
     <source>
         <include>
-            <directory>packages/filament-cart/src</directory>
+            <directory>../packages/filament-cart/src</directory>
         </include>
     </source>
     <php>

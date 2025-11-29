@@ -60,7 +60,7 @@ describe('Cart Events', function (): void {
         $event = reset($itemAddedEvents);
         expect($event->item->id)->toBe('product-1');
         expect($event->item->name)->toBe('Test Product');
-        expect($event->item->price)->toBe(10.00);
+        expect($event->item->price)->toBe(1000);  // 10.00 as cents
         expect($event->item->quantity)->toBe(2);
     });
 
@@ -103,9 +103,9 @@ describe('Cart Events', function (): void {
         $conditionAddedEvents = array_filter($this->dispatchedEvents, fn ($event) => $event instanceof CartConditionAdded);
         $event = reset($conditionAddedEvents);
 
-        // Impact is calculated on the current subtotal (which includes this discount)
-        // Subtotal after discount: 70, so impact = -30% of 70 = -21
-        expect($event->getConditionImpact())->toBe(-21.0);
+        // Impact is calculated on current subtotal which includes the discount
+        // Subtotal after discount: 70.00 = 7000 cents, so impact = -30% of 7000 = -2100
+        expect($event->getConditionImpact())->toBe(-2100.0);
     });
 
     it('calculates lost savings for condition removed event', function (): void {
@@ -120,7 +120,7 @@ describe('Cart Events', function (): void {
         $conditionRemovedEvents = array_filter($this->dispatchedEvents, fn ($event) => $event instanceof CartConditionRemoved);
         $event = reset($conditionRemovedEvents);
 
-        expect($event->getLostSavings())->toBe(25.0);
+        expect($event->getLostSavings())->toBe(2500.0);  // 25% of 10000 cents = 2500 (positive)
     });
 
     it('does not dispatch condition events when events are disabled', function (): void {
@@ -188,9 +188,9 @@ it('provides comprehensive data in condition added event', function (): void {
 
     expect($data['condition']['name'])->toBe('test_discount');
     expect($data['condition']['type'])->toBe('discount');
-    // Impact is calculated on current subtotal (which includes this discount)
-    // Subtotal after -15%: 85, so impact = -15% of 85 = -12.75
-    expect($data['impact'])->toBe(-12.75);
+    // Impact is calculated on current subtotal which includes this discount
+    // Subtotal after -15%: 8500 cents (85.00), so impact = -15% of 8500 = -1275
+    expect($data['impact'])->toBe(-1275.0);
 });
 
 it('provides comprehensive data in condition removed event', function (): void {
@@ -217,7 +217,7 @@ it('provides comprehensive data in condition removed event', function (): void {
     ]);
 
     expect($data['condition']['name'])->toBe('removal_test');
-    expect($data['lost_savings'])->toBe(20.0);
+    expect($data['lost_savings'])->toBe(2000.0);  // 20% of 10000 cents (positive)
     expect($data['reason'])->toBeNull();
 });
 

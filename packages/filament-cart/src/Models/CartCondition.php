@@ -209,14 +209,6 @@ final class CartCondition extends Model
     }
 
     /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory(): \AIArmada\FilamentCart\Database\Factories\CartConditionFactory
-    {
-        return \AIArmada\FilamentCart\Database\Factories\CartConditionFactory::new();
-    }
-
-    /**
      * Scope to filter by cart instance.
      *
      * @param  Builder<self>  $query

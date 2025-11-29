@@ -14,6 +14,10 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
 {
     private ConditionTarget $target;
 
+    private ?PercentageRate $percentageRate = null;
+
+    private string|int $value;
+
     /**
      * @param  array<string, mixed>  $attributes
      * @param  array<string, mixed>|null  $rules
@@ -23,14 +27,35 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
         private string $name,
         private string $type,
         ConditionTarget|string|array $target,
-        private string|float $value,
+        string|int|float $value,
         private array $attributes = [],
         private int $order = 0,
         private ?array $rules = null,
         private ?self $staticConditionCache = null
     ) {
         $this->target = ConditionTarget::from($target);
+        $this->value = $this->normalizeValue($value);
         $this->validateCondition();
+    }
+
+    /**
+     * Normalize value to string or int.
+     *
+     * Float values (non-percentage) are converted to int cents.
+     * String values (percentages or with operators) are kept as strings.
+     */
+    private function normalizeValue(string|int|float $value): string|int
+    {
+        if (is_string($value)) {
+            return $value;
+        }
+
+        if (is_float($value)) {
+            // Float fixed values: convert to int cents
+            return (int) round($value * 100);
+        }
+
+        return $value;
     }
 
     /**
@@ -98,7 +123,7 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     /**
      * Get condition value
      */
-    public function getValue(): string|float
+    public function getValue(): string|int
     {
         return $this->value;
     }
@@ -138,28 +163,31 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
-     * Apply condition to a value using Money arithmetic for precision
+     * Apply condition to a value using integer arithmetic.
+     *
+     * @param  int  $amountCents  The amount in cents
+     * @return int The result in cents
      */
-    public function apply(float $value): float
+    public function apply(int $amountCents): int
     {
-        $conditionValue = $this->parseValue();
+        $roundingMode = $this->getRoundingMode();
 
         $result = match ($this->getOperator()) {
-            '+' => $value + $conditionValue,
-            '-' => $value - $conditionValue,
-            '*' => $value * abs($conditionValue),
-            '/' => abs($conditionValue) > 0 ? $value / abs($conditionValue) : $value,
-            '%' => $this->applyPercentage($value, $conditionValue),
-            default => $value,
+            '+' => $amountCents + $this->parseFixedValue(),
+            '-' => $amountCents - $this->parseFixedValue(),
+            '*' => $this->applyMultiplier($amountCents, $roundingMode),
+            '/' => $this->applyDivision($amountCents, $roundingMode),
+            '%' => $this->applyPercentage($amountCents, $roundingMode),
+            default => $amountCents,
         };
 
-        return max(0, $result); // Ensure result is not negative
+        return max(0, $result);
     }
 
     /**
-     * Get calculated value for display
+     * Get calculated value for display (adjustment amount).
      */
-    public function getCalculatedValue(float $baseValue): float
+    public function getCalculatedValue(int $baseValue): int
     {
         return $this->apply($baseValue) - $baseValue;
     }
@@ -170,9 +198,16 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     public function isDiscount(): bool
     {
         $operator = $this->getOperator();
-        $value = $this->parseValue();
 
-        return ($operator === '-') || ($operator === '%' && $value < 0);
+        if ($operator === '-') {
+            return true;
+        }
+
+        if ($operator === '%') {
+            return $this->getPercentageRate()->isDiscount();
+        }
+
+        return false;
     }
 
     /**
@@ -181,9 +216,16 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     public function isCharge(): bool
     {
         $operator = $this->getOperator();
-        $value = $this->parseValue();
 
-        return ($operator === '+') || ($operator === '%' && $value > 0);
+        if ($operator === '+') {
+            return true;
+        }
+
+        if ($operator === '%') {
+            return $this->getPercentageRate()->isCharge();
+        }
+
+        return false;
     }
 
     /**
@@ -239,7 +281,7 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     public function shouldApply(\AIArmada\Cart\Cart $cart, ?\AIArmada\Cart\Models\CartItem $item = null): bool
     {
         if (! $this->isDynamic()) {
-            return true; // Static conditions always apply
+            return true;
         }
 
         if ($this->rules === null) {
@@ -290,7 +332,24 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
+     * Get the PercentageRate for this condition (cached).
+     */
+    public function getPercentageRate(): PercentageRate
+    {
+        if ($this->percentageRate === null) {
+            if (! $this->isPercentage()) {
+                throw new InvalidCartConditionException('Cannot get percentage rate for non-percentage condition');
+            }
+            $this->percentageRate = PercentageRate::fromPercentString((string) $this->value);
+        }
+
+        return $this->percentageRate;
+    }
+
+    /**
      * Convert to array
+     *
+     * @return array<string, mixed>
      */
     public function toArray(): array
     {
@@ -303,7 +362,7 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
             'order' => $this->order,
             'rules' => $this->rules,
             'operator' => $this->getOperator(),
-            'parsed_value' => $this->parseValue(),
+            'parsed_value' => $this->isPercentage() ? $this->getPercentageRate()->basisPoints : $this->parseFixedValue(),
             'is_discount' => $this->isDiscount(),
             'is_charge' => $this->isCharge(),
             'is_percentage' => $this->isPercentage(),
@@ -354,8 +413,11 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
             throw new InvalidCartConditionException('Condition value cannot be empty');
         }
 
-        // Validate value format
-        $this->parseValue(); // This will throw exception if invalid
+        if ($this->isPercentage()) {
+            $this->getPercentageRate();
+        } else {
+            $this->parseFixedValue();
+        }
     }
 
     /**
@@ -365,7 +427,8 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     {
         $value = (string) $this->value;
 
-        if (str_ends_with($value, '%')) {
+        // Check for percentage at end (e.g., "10%", "+10%") or start (e.g., "%10")
+        if (str_ends_with($value, '%') || str_starts_with($value, '%')) {
             return '%';
         }
 
@@ -374,62 +437,125 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
             '-' => '-',
             '*' => '*',
             '/' => '/',
-            default => '+', // Default to addition if no operator
+            default => '+',
         };
     }
 
     /**
-     * Parse the numeric value from the condition value
+     * Parse the fixed value (non-percentage) in cents.
+     *
+     * String values with decimals (like '15.50') are treated as dollar amounts
+     * and converted to cents. Integer string values (like '1500') are treated
+     * as already being in cents.
      */
-    private function parseValue(): float
+    private function parseFixedValue(): int
     {
-
         $value = (string) $this->value;
 
-        // Handle percentage
-        if (str_ends_with($value, '%')) {
-            return $this->parsePercentValue($value);
-        }
-
-        // Handle operators
         if (in_array($value[0] ?? '', ['+', '-', '*', '/'])) {
-            $numericValue = (float) mb_substr($value, 1);
+            $numericPart = mb_substr($value, 1);
         } else {
-            $numericValue = (float) $value;
+            $numericPart = $value;
         }
 
-        // Explicitly check for INF, -INF, NAN as strings
-        if (
-            ! is_finite($numericValue) ||
-            in_array(mb_strtoupper(mb_trim($value)), ['INF', '-INF', 'INFINITY', '-INFINITY', 'NAN'], true)
-        ) {
+        if (! is_numeric($numericPart)) {
             throw new InvalidCartConditionException("Invalid condition value: {$this->value}");
         }
 
-        return $numericValue;
-    }
-
-    /**
-     * Parse a percentage value string (e.g., '10%')
-     */
-    private function parsePercentValue(string $value): float
-    {
-        $numericValue = (float) mb_substr($value, 0, -1);
-        if (! is_finite($numericValue)) {
+        // Check for invalid special values (string forms)
+        if (in_array(mb_strtoupper(mb_trim($value)), ['INF', '-INF', 'INFINITY', '-INFINITY', 'NAN'], true)) {
             throw new InvalidCartConditionException("Invalid condition value: {$this->value}");
         }
 
-        return $numericValue / 100;
+        // Check that the numeric value is finite (catches 1e309 etc.)
+        $floatValue = (float) $numericPart;
+        if (! is_finite($floatValue)) {
+            throw new InvalidCartConditionException("Invalid condition value: {$this->value}");
+        }
+
+        // If the value contains a decimal point, treat it as dollars and convert to cents
+        if (str_contains($numericPart, '.')) {
+            return (int) round($floatValue * 100);
+        }
+
+        return (int) $numericPart;
     }
 
     /**
-     * Apply percentage using Money arithmetic for precision
+     * Parse a multiplier/divisor value (not money, just a numeric factor).
      */
-    /**
-     * Apply percentage calculation
-     */
-    private function applyPercentage(float $value, float $percentage): float
+    private function parseMultiplier(): float
     {
-        return $value + ($value * $percentage);
+        $value = (string) $this->value;
+
+        if (in_array($value[0] ?? '', ['*', '/'])) {
+            $numericPart = mb_substr($value, 1);
+        } else {
+            $numericPart = $value;
+        }
+
+        if (! is_numeric($numericPart)) {
+            throw new InvalidCartConditionException("Invalid multiplier value: {$this->value}");
+        }
+
+        return abs((float) $numericPart);
+    }
+
+    /**
+     * Get the rounding mode from config.
+     */
+    private function getRoundingMode(): string
+    {
+        if (function_exists('config')) {
+            return config('cart.money.rounding_mode', 'half_up');
+        }
+
+        return 'half_up';
+    }
+
+    /**
+     * Apply percentage using integer arithmetic via PercentageRate.
+     */
+    private function applyPercentage(int $amountCents, string $roundingMode): int
+    {
+        return $this->getPercentageRate()->apply($amountCents, $roundingMode);
+    }
+
+    /**
+     * Apply multiplier with rounding.
+     */
+    private function applyMultiplier(int $amountCents, string $roundingMode): int
+    {
+        $multiplier = $this->parseMultiplier();
+        $result = $amountCents * $multiplier;
+
+        return match ($roundingMode) {
+            'floor' => (int) floor($result),
+            'ceil' => (int) ceil($result),
+            'half_even' => (int) round($result, 0, PHP_ROUND_HALF_EVEN),
+            default => (int) round($result),  // half_up
+        };
+    }
+
+    /**
+     * Apply division with rounding.
+     */
+    private function applyDivision(int $amountCents, string $roundingMode): int
+    {
+        $divisor = $this->parseMultiplier();
+
+        if ($divisor == 0) {
+            return $amountCents;
+        }
+
+        $result = $amountCents / $divisor;
+
+        return match ($roundingMode) {
+            'floor' => (int) floor($result),
+            'ceil' => (int) ceil($result),
+            'half_even' => (int) round($result, 0, PHP_ROUND_HALF_EVEN),
+            default => (int) round($result, 0, PHP_ROUND_HALF_UP),
+        };
     }
 }
+

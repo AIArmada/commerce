@@ -412,4 +412,42 @@ describe('StockReservationService', function (): void {
             expect($total)->toBe(10);
         });
     });
+
+    describe('deductStock', function (): void {
+        it('can deduct stock directly', function (): void {
+            $product = Product::create(['name' => 'Test Product']);
+            $this->stockService->addStock($product, 100);
+
+            $transaction = $this->service->deductStock($product, 25, 'direct-sale', 'ORDER-DIRECT');
+
+            expect($transaction->quantity)->toBe(25);
+            expect($transaction->reason)->toBe('direct-sale');
+            expect($this->stockService->getCurrentStock($product))->toBe(75);
+        });
+    });
+
+    describe('extend', function (): void {
+        it('can extend reservation', function (): void {
+            $reservation = $this->service->reserve($this->product, 10, 'extend-cart', 30);
+            $oldExpires = $reservation->expires_at;
+
+            $extended = $this->service->extend($this->product, 'extend-cart', 60);
+
+            // expires_at should be approximately 60 minutes from now
+            expect(abs($extended->expires_at->diffInMinutes(now())))->toBeGreaterThan(50);
+            expect($extended->expires_at)->not->toBe($oldExpires);
+        });
+    });
+
+    describe('hasAvailableStock', function (): void {
+        it('checks availability', function (): void {
+            expect($this->service->hasAvailableStock($this->product, 50))->toBeTrue();
+            expect($this->service->hasAvailableStock($this->product, 150))->toBeFalse();
+
+            $this->service->reserve($this->product, 60, 'has-check-cart', 30);
+
+            expect($this->service->hasAvailableStock($this->product, 30))->toBeTrue();
+            expect($this->service->hasAvailableStock($this->product, 50))->toBeFalse();
+        });
+    });
 });

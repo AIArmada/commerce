@@ -186,14 +186,14 @@ test('throws exception when applying voucher below minimum cart value', function
         'code' => 'MIN100',
         'type' => VoucherType::Fixed,
         'status' => VoucherStatus::Active,
-        'value' => 20,
+        'value' => 2000, // 2000 cents = $20.00
         'currency' => 'MYR',
-        'min_cart_value' => 100,
+        'min_cart_value' => 10000, // 10000 cents = $100.00
         'starts_at' => now()->subDay(),
         'expires_at' => now()->addMonth(),
     ]);
 
-    Cart::add('sku-min-100', 'Test Product', 50.00, 1);
+    Cart::add('sku-min-100', 'Test Product', 5000, 1); // 5000 cents = $50.00
 
     Cart::applyVoucher('MIN100');
 })->throws(InvalidVoucherException::class);

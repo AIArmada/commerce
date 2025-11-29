@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Cart;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\Product;
 use AIArmada\Stock\Cart\CartManagerWithStock;
 use AIArmada\Stock\Models\StockReservation;
@@ -176,6 +178,161 @@ describe('CartManagerWithStock', function (): void {
 
             expect($result['available'])->toBeTrue();
             expect($result['issues'])->toBeEmpty();
+        });
+    });
+
+    describe('proxy methods', function (): void {
+        it('proxies __call to underlying manager', function (): void {
+            $manager = CartManagerWithStock::fromCartManager($this->baseManager);
+            $manager->setIdentifier('proxy-test');
+            $manager->add([
+                'id' => 'proxy-item',
+                'name' => 'Proxy Item',
+                'price' => 100,
+                'quantity' => 1,
+            ]);
+
+            expect($manager->getCurrentCart()->count())->toBe(1);
+        });
+
+        it('proxies getById', function (): void {
+            $manager = CartManagerWithStock::fromCartManager($this->baseManager);
+            $manager->setIdentifier('getby-test');
+            // Add an item so the cart gets saved and has an ID
+            $manager->add(['id' => 'getby-item', 'name' => 'GetBy Item', 'price' => 10, 'quantity' => 1]);
+            
+            $cart = $manager->getCurrentCart();
+            $cartId = $cart->getId();
+
+            expect($cartId)->not->toBeNull();
+            
+            $retrieved = $manager->getById($cartId);
+
+            expect($retrieved)->not->toBeNull();
+        });
+
+        it('proxies swap', function (): void {
+            $oldId = 'old-user';
+            $newId = 'new-user';
+
+            $this->baseManager->setIdentifier($oldId);
+            $this->baseManager->add(['id' => 'swapped-item', 'name' => 'Swapped', 'price' => 10, 'quantity' => 1]);
+
+            $manager = CartManagerWithStock::fromCartManager($this->baseManager);
+            $success = $manager->swap($oldId, $newId);
+
+            expect($success)->toBeTrue();
+            
+            // After swap, we need to explicitly set identifier to use the new cart
+            $manager->setIdentifier($newId);
+            expect($manager->getCurrentCart()->getIdentifier())->toBe($newId);
+            // Verify the item was moved to the new identifier
+            expect($manager->getCurrentCart()->count())->toBe(1);
+        });
+    });
+
+    describe('instance management', function (): void {
+        it('proxies setInstance, instance, getCartInstance', function (): void {
+            $manager = CartManagerWithStock::fromCartManager($this->baseManager);
+            $manager->setInstance('custom-instance');
+
+            expect($manager->instance())->toBe('custom-instance');
+            expect($manager->getCartInstance('custom-instance'))->toBeInstanceOf(Cart::class);
+        });
+
+        it('proxies setIdentifier, forgetIdentifier, session', function (): void {
+            $manager = CartManagerWithStock::fromCartManager($this->baseManager);
+            $manager->setIdentifier('test-id');
+            $manager->forgetIdentifier();
+
+            expect($manager->session())->toBeInstanceOf(StorageInterface::class);
+        });
+    });
+
+    describe('decorator unwrapping', function (): void {
+        it('returns base manager recursively', function (): void {
+            $manager1 = CartManagerWithStock::fromCartManager($this->baseManager);
+            $manager2 = CartManagerWithStock::fromCartManager($manager1);
+
+            expect($manager2->getBaseManager())->toBe($this->baseManager);
+        });
+    });
+
+    describe('stock management with real cart items', function (): void {
+        beforeEach(function (): void {
+            $this->stockService->addStock($this->product, 20);
+            $this->manager = CartManagerWithStock::fromCartManager($this->baseManager);
+            $this->manager->setIdentifier('stock-test');
+        });
+
+        it('validateStock detects sufficient stock', function (): void {
+            $this->manager->add([
+                'id' => 'good-item',
+                'name' => 'Good Stock',
+                'price' => 10,
+                'quantity' => 5,
+                'associated_model' => $this->product,
+            ]);
+
+            $result = $this->manager->validateStock();
+
+            expect($result['available'])->toBeTrue();
+            expect($result['issues'])->toBeEmpty();
+        });
+
+        it('validateStock detects insufficient stock', function (): void {
+            // Reset stock to just 3 (already has 100 + 20 = 120 from beforeEach hooks)
+            $currentStock = $this->stockService->getCurrentStock($this->product);
+            $this->stockService->removeStock($this->product, $currentStock - 3); // Leave only 3
+
+            $this->manager->add([
+                'id' => 'low-item',
+                'name' => 'Low Stock',
+                'price' => 10,
+                'quantity' => 5,
+                'associated_model' => $this->product,
+            ]);
+
+            $result = $this->manager->validateStock();
+
+            expect($result['available'])->toBeFalse();
+            expect($result['issues']['low-item']['available'])->toBe(3);
+            expect($result['issues']['low-item']['requested'])->toBe(5);
+        });
+
+        it('reserveAllStock reserves for cart items', function (): void {
+            $this->manager->add([
+                'id' => 'reserve-item',
+                'name' => 'Reserve',
+                'price' => 10,
+                'quantity' => 3,
+                'associated_model' => $this->product,
+            ]);
+
+            $results = $this->manager->reserveAllStock(30);
+
+            expect($results['reserve-item'])->toBeTrue();
+            // Verify a reservation was created for this product
+            expect(StockReservation::where('stockable_type', $this->product->getMorphClass())
+                ->where('stockable_id', $this->product->id)
+                ->count())->toBe(1);
+        });
+
+        it('commitStock deducts after reservation', function (): void {
+            $this->manager->add([
+                'id' => 'commit-item',
+                'name' => 'Commit',
+                'price' => 10,
+                'quantity' => 2,
+                'associated_model' => $this->product,
+            ]);
+
+            $initialStock = $this->stockService->getCurrentStock($this->product);
+            $this->manager->reserveAllStock(30);
+            $transactions = $this->manager->commitStock('ORDER-123');
+
+            expect($transactions)->toHaveCount(1);
+            expect($this->stockService->getCurrentStock($this->product))->toBe($initialStock - 2);
         });
     });
 });
