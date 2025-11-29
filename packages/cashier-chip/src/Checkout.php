@@ -44,6 +44,16 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     }
 
     /**
+     * Dynamically get values from the purchase.
+     *
+     * @return mixed
+     */
+    public function __get(string $key)
+    {
+        return $this->purchase->{$key} ?? null;
+    }
+
+    /**
      * Begin a new guest checkout session.
      */
     public static function guest(): CheckoutBuilder
@@ -228,15 +238,5 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     public function jsonSerialize(): array
     {
         return $this->toArray();
-    }
-
-    /**
-     * Dynamically get values from the purchase.
-     *
-     * @return mixed
-     */
-    public function __get(string $key)
-    {
-        return $this->purchase->{$key} ?? null;
     }
 }

@@ -33,24 +33,6 @@ class Subscription extends Model
     use HasFactory;
     use HasUuids;
 
-    /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory(): SubscriptionFactory
-    {
-        return SubscriptionFactory::new();
-    }
-
-    /**
-     * The "booted" method of the model.
-     */
-    protected static function booted(): void
-    {
-        static::deleting(function (Subscription $subscription): void {
-            $subscription->items()->delete();
-        });
-    }
-
     public const STATUS_ACTIVE = 'active';
 
     public const STATUS_CANCELED = 'canceled';
@@ -754,6 +736,24 @@ class Subscription extends Model
                 'This method requires a price argument since the subscription has multiple prices.'
             );
         }
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): SubscriptionFactory
+    {
+        return SubscriptionFactory::new();
+    }
+
+    /**
+     * The "booted" method of the model.
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function (Subscription $subscription): void {
+            $subscription->items()->delete();
+        });
     }
 
     /**

@@ -47,6 +47,18 @@ class BillingDashboard extends Page
         ];
     }
 
+    public function formatAmount(int $amount): string
+    {
+        if (class_exists('\AIArmada\CashierChip\CashierChip')) {
+            return \AIArmada\CashierChip\CashierChip::formatAmount($amount);
+        }
+
+        // Fallback formatting
+        $currency = config('cashier-chip.currency', 'MYR');
+
+        return $currency.' '.number_format($amount / 100, 2);
+    }
+
     /**
      * @return Collection<int, mixed>
      */
@@ -73,17 +85,5 @@ class BillingDashboard extends Page
         }
 
         return $billable->invoices(false)->take(5);
-    }
-
-    public function formatAmount(int $amount): string
-    {
-        if (class_exists('\AIArmada\CashierChip\CashierChip')) {
-            return \AIArmada\CashierChip\CashierChip::formatAmount($amount);
-        }
-
-        // Fallback formatting
-        $currency = config('cashier-chip.currency', 'MYR');
-
-        return $currency.' '.number_format($amount / 100, 2);
     }
 }

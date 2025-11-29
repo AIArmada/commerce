@@ -8,6 +8,7 @@ use AIArmada\Chip\DataObjects\Product;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use JsonSerializable;
+use NumberFormatter;
 
 /**
  * @implements Arrayable<string, mixed>
@@ -112,19 +113,6 @@ class InvoiceLineItem implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
-     * Format the given amount into a displayable currency.
-     */
-    protected function formatAmount(int $amount): string
-    {
-        $currency = $this->currency();
-        $locale = config('cashier-chip.currency_locale', 'ms_MY');
-
-        $formatter = new \NumberFormatter($locale, \NumberFormatter::CURRENCY);
-
-        return $formatter->formatCurrency($amount / 100, $currency);
-    }
-
-    /**
      * Get the instance as an array.
      *
      * @return array<string, mixed>
@@ -158,5 +146,18 @@ class InvoiceLineItem implements Arrayable, Jsonable, JsonSerializable
     public function jsonSerialize(): array
     {
         return $this->toArray();
+    }
+
+    /**
+     * Format the given amount into a displayable currency.
+     */
+    protected function formatAmount(int $amount): string
+    {
+        $currency = $this->currency();
+        $locale = config('cashier-chip.currency_locale', 'ms_MY');
+
+        $formatter = new NumberFormatter($locale, NumberFormatter::CURRENCY);
+
+        return $formatter->formatCurrency($amount / 100, $currency);
     }
 }

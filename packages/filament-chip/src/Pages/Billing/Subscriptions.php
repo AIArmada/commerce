@@ -44,58 +44,6 @@ class Subscriptions extends Page
         ];
     }
 
-    /**
-     * @return Collection<int, mixed>
-     */
-    protected function getSubscriptions(): Collection
-    {
-        $billable = $this->getBillable();
-
-        if (! $billable || ! method_exists($billable, 'subscriptions')) {
-            return collect();
-        }
-
-        $activeStatuses = $this->getActiveStatuses();
-
-        return $billable->subscriptions()
-            ->whereIn('chip_status', $activeStatuses)
-            ->get();
-    }
-
-    /**
-     * @return Collection<int, mixed>
-     */
-    protected function getCancelledSubscriptions(): Collection
-    {
-        $billable = $this->getBillable();
-
-        if (! $billable || ! method_exists($billable, 'subscriptions')) {
-            return collect();
-        }
-
-        return $billable->subscriptions()
-            ->onGracePeriod()
-            ->get();
-    }
-
-    /**
-     * Get active subscription statuses.
-     *
-     * @return array<int, string>
-     */
-    protected function getActiveStatuses(): array
-    {
-        if (class_exists('\AIArmada\CashierChip\Subscription')) {
-            return [
-                \AIArmada\CashierChip\Subscription::STATUS_ACTIVE,
-                \AIArmada\CashierChip\Subscription::STATUS_TRIALING,
-                \AIArmada\CashierChip\Subscription::STATUS_PAST_DUE,
-            ];
-        }
-
-        return ['active', 'trialing', 'past_due'];
-    }
-
     public function cancelSubscription(string $subscriptionId): void
     {
         $billable = $this->getBillable();
@@ -187,5 +135,57 @@ class Subscriptions extends Page
         $currency = config('cashier-chip.currency', 'MYR');
 
         return $currency.' '.number_format($amount / 100, 2);
+    }
+
+    /**
+     * @return Collection<int, mixed>
+     */
+    protected function getSubscriptions(): Collection
+    {
+        $billable = $this->getBillable();
+
+        if (! $billable || ! method_exists($billable, 'subscriptions')) {
+            return collect();
+        }
+
+        $activeStatuses = $this->getActiveStatuses();
+
+        return $billable->subscriptions()
+            ->whereIn('chip_status', $activeStatuses)
+            ->get();
+    }
+
+    /**
+     * @return Collection<int, mixed>
+     */
+    protected function getCancelledSubscriptions(): Collection
+    {
+        $billable = $this->getBillable();
+
+        if (! $billable || ! method_exists($billable, 'subscriptions')) {
+            return collect();
+        }
+
+        return $billable->subscriptions()
+            ->onGracePeriod()
+            ->get();
+    }
+
+    /**
+     * Get active subscription statuses.
+     *
+     * @return array<int, string>
+     */
+    protected function getActiveStatuses(): array
+    {
+        if (class_exists('\AIArmada\CashierChip\Subscription')) {
+            return [
+                \AIArmada\CashierChip\Subscription::STATUS_ACTIVE,
+                \AIArmada\CashierChip\Subscription::STATUS_TRIALING,
+                \AIArmada\CashierChip\Subscription::STATUS_PAST_DUE,
+            ];
+        }
+
+        return ['active', 'trialing', 'past_due'];
     }
 }

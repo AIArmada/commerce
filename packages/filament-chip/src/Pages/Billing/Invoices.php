@@ -42,20 +42,6 @@ class Invoices extends Page
         ];
     }
 
-    /**
-     * @return Collection<int, mixed>
-     */
-    protected function getInvoices(): Collection
-    {
-        $billable = $this->getBillable();
-
-        if (! $billable || ! method_exists($billable, 'invoices')) {
-            return collect();
-        }
-
-        return $billable->invoices();
-    }
-
     public function downloadInvoice(string $invoiceId): Response
     {
         $billable = $this->getBillable();
@@ -97,5 +83,19 @@ class Invoices extends Page
             'void', 'uncollectible' => 'danger',
             default => 'gray',
         };
+    }
+
+    /**
+     * @return Collection<int, mixed>
+     */
+    protected function getInvoices(): Collection
+    {
+        $billable = $this->getBillable();
+
+        if (! $billable || ! method_exists($billable, 'invoices')) {
+            return collect();
+        }
+
+        return $billable->invoices();
     }
 }

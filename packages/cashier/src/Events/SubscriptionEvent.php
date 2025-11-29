@@ -30,7 +30,7 @@ abstract class SubscriptionEvent
     /**
      * Get the subscription instance.
      */
-    public function subscription(): SubscriptionContract
+    final public function subscription(): SubscriptionContract
     {
         return $this->subscription;
     }
