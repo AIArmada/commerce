@@ -41,26 +41,7 @@ describe('Cashier', function (): void {
         expect(Cashier::$customerModel)->toBe(User::class);
     });
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    it('can use a custom subscription model', function (): void {
-        Cashier::useSubscriptionModel(Subscription::class);
-
-        expect(Cashier::$subscriptionModel)->toBe(Subscription::class);
-    });
-
-    it('can use a custom subscription item model', function (): void {
-        Cashier::useSubscriptionItemModel(SubscriptionItem::class);
-
-        expect(Cashier::$subscriptionItemModel)->toBe(SubscriptionItem::class);
-    });
-
     it('can configure deactivate past due setting', function (): void {
-=======
-=======
->>>>>>> Stashed changes
-    it('can configure deactivate past due setting', function () {
->>>>>>> Stashed changes
         Cashier::deactivatePastDue(true);
         expect(Cashier::$deactivatePastDue)->toBeTrue();
 
@@ -81,16 +62,4 @@ describe('Cashier', function (): void {
 
         expect(Cashier::$registersRoutes)->toBeFalse();
     });
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-
-    it('can ignore migrations', function (): void {
-        Cashier::ignoreMigrations();
-
-        expect(Cashier::$runsMigrations)->toBeFalse();
-    });
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 });

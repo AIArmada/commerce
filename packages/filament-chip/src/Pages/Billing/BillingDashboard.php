@@ -47,38 +47,6 @@ class BillingDashboard extends Page
         ];
     }
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    public function formatAmount(int $amount): string
-    {
-        return CashierChip::formatAmount($amount);
-    }
-
-    protected function getBillable(): mixed
-    {
-        $user = filament()->auth()->user();
-
-        if (! $user) {
-            return null;
-        }
-
-        $billableModel = config('filament-chip.billing.billable_model');
-
-        if ($billableModel && $user instanceof $billableModel) {
-            return $user;
-        }
-
-        if (method_exists($user, 'currentTeam')) {
-            return $user->currentTeam;
-        }
-
-        return $user;
-    }
-
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     /**
      * @return Collection<int, mixed>
      */
@@ -106,8 +74,6 @@ class BillingDashboard extends Page
 
         return $billable->invoices(false)->take(5);
     }
-<<<<<<< Updated upstream
-=======
 
     public function formatAmount(int $amount): string
     {
@@ -120,5 +86,4 @@ class BillingDashboard extends Page
 
         return $currency.' '.number_format($amount / 100, 2);
     }
->>>>>>> Stashed changes
 }

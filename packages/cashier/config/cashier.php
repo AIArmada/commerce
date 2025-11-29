@@ -58,34 +58,7 @@ return [
     |
     */
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    'subscription_gateways' => [
-        // 'premium' => 'stripe',
-        // 'local' => 'chip',
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Models
-    |--------------------------------------------------------------------------
-    |
-    | Configure the model classes used by Cashier. You may extend these models
-    | in your application if you need to customize their behavior.
-    |
-    */
-
-    'models' => [
-        'customer' => env('CASHIER_MODEL', 'App\\Models\\User'),
-        'subscription' => AIArmada\Cashier\Models\Subscription::class,
-        'subscription_item' => AIArmada\Cashier\Models\SubscriptionItem::class,
-    ],
-=======
     'customer_model' => env('CASHIER_MODEL', 'App\\Models\\User'),
->>>>>>> Stashed changes
-=======
-    'customer_model' => env('CASHIER_MODEL', 'App\\Models\\User'),
->>>>>>> Stashed changes
 
     /*
     |--------------------------------------------------------------------------
@@ -125,13 +98,6 @@ return [
     */
 
     'invoices' => [
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-        'renderer' => AIArmada\Cashier\Invoices\DompdfInvoiceRenderer::class,
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
         'paper' => 'letter',
         'logo' => null,
         'vendor' => [

@@ -30,15 +30,7 @@ abstract class SubscriptionEvent
     /**
      * Get the subscription instance.
      */
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    final public function subscription(): Subscription
-=======
     public function subscription(): SubscriptionContract
->>>>>>> Stashed changes
-=======
-    public function subscription(): SubscriptionContract
->>>>>>> Stashed changes
     {
         return $this->subscription;
     }

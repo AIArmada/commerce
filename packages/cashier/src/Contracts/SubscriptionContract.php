@@ -123,57 +123,7 @@ interface SubscriptionContract extends Arrayable, Jsonable
     /**
      * Get the subscription quantity.
      */
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    public function cancelNowAndInvoice(): self;
-
-    /**
-     * Resume a canceled subscription.
-     */
-    public function resume(): self;
-
-    /**
-     * Skip the trial.
-     */
-    public function skipTrial(): self;
-
-    /**
-     * Extend the trial.
-     */
-    public function extendTrial(CarbonInterface $date): self;
-
-    /**
-     * Swap to a new price.
-     *
-     * @param  array<string, mixed>  $options
-     */
-    public function swap(string|array $prices, array $options = []): self;
-
-    /**
-     * Update the quantity.
-     */
-    public function updateQuantity(int $quantity, ?string $price = null): self;
-
-    /**
-     * Increment the quantity.
-     */
-    public function incrementQuantity(int $count = 1, ?string $price = null): self;
-
-    /**
-     * Decrement the quantity.
-     */
-    public function decrementQuantity(int $count = 1, ?string $price = null): self;
-
-    /**
-     * Get the quantity.
-     */
-    public function quantity(?string $price = null): int;
-=======
     public function quantity(): ?int;
->>>>>>> Stashed changes
-=======
-    public function quantity(): ?int;
->>>>>>> Stashed changes
 
     /**
      * Get the subscription items.

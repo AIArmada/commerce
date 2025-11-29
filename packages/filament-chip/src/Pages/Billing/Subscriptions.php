@@ -10,7 +10,6 @@ use Exception;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Support\Collection;
 
 class Subscriptions extends Page
@@ -33,23 +32,9 @@ class Subscriptions extends Page
         return (bool) config('filament-chip.billing.features.subscriptions', true);
     }
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    public function getTitle(): string|Htmlable
-    {
-        return __('Manage Subscriptions');
-    }
-
-=======
     /**
      * @return array<string, mixed>
      */
->>>>>>> Stashed changes
-=======
-    /**
-     * @return array<string, mixed>
-     */
->>>>>>> Stashed changes
     public function getViewData(): array
     {
         return [
@@ -59,98 +44,6 @@ class Subscriptions extends Page
         ];
     }
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-    public function cancelSubscription(int $subscriptionId): void
-    {
-        $subscription = $this->getBillable()?->subscriptions()->find($subscriptionId);
-
-        if (! $subscription) {
-            Notification::make()
-                ->title(__('Subscription not found'))
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        try {
-            $subscription->cancel();
-
-            Notification::make()
-                ->title(__('Subscription cancelled'))
-                ->body(__('Your subscription will remain active until the end of the billing period.'))
-                ->success()
-                ->send();
-        } catch (Exception $e) {
-            Notification::make()
-                ->title(__('Failed to cancel subscription'))
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
-    }
-
-    public function resumeSubscription(int $subscriptionId): void
-    {
-        $subscription = $this->getBillable()?->subscriptions()->find($subscriptionId);
-
-        if (! $subscription) {
-            Notification::make()
-                ->title(__('Subscription not found'))
-                ->danger()
-                ->send();
-
-            return;
-        }
-
-        try {
-            $subscription->resume();
-
-            Notification::make()
-                ->title(__('Subscription resumed'))
-                ->body(__('Your subscription has been reactivated.'))
-                ->success()
-                ->send();
-        } catch (Exception $e) {
-            Notification::make()
-                ->title(__('Failed to resume subscription'))
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
-    }
-
-    public function formatAmount(int $amount): string
-    {
-        return CashierChip::formatAmount($amount);
-    }
-
-    protected function getBillable(): mixed
-    {
-        $user = filament()->auth()->user();
-
-        if (! $user) {
-            return null;
-        }
-
-        $billableModel = config('filament-chip.billing.billable_model');
-
-        if ($billableModel && $user instanceof $billableModel) {
-            return $user;
-        }
-
-        if (method_exists($user, 'currentTeam')) {
-            return $user->currentTeam;
-        }
-
-        return $user;
-    }
-
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
     /**
      * @return Collection<int, mixed>
      */
@@ -184,26 +77,6 @@ class Subscriptions extends Page
             ->onGracePeriod()
             ->get();
     }
-<<<<<<< Updated upstream
-=======
-
-    /**
-     * Get active subscription statuses.
-     *
-     * @return array<int, string>
-     */
-    protected function getActiveStatuses(): array
-    {
-        if (class_exists('\AIArmada\CashierChip\Subscription')) {
-            return [
-                \AIArmada\CashierChip\Subscription::STATUS_ACTIVE,
-                \AIArmada\CashierChip\Subscription::STATUS_TRIALING,
-                \AIArmada\CashierChip\Subscription::STATUS_PAST_DUE,
-            ];
-        }
-
-        return ['active', 'trialing', 'past_due'];
-    }
 
     /**
      * Get active subscription statuses.
@@ -244,7 +117,7 @@ class Subscriptions extends Page
                 ->body(__('Your subscription will remain active until the end of the billing period.'))
                 ->success()
                 ->send();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title(__('Failed to cancel subscription'))
                 ->body($e->getMessage())
@@ -274,7 +147,7 @@ class Subscriptions extends Page
                 ->body(__('Your subscription has been reactivated.'))
                 ->success()
                 ->send();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title(__('Failed to resume subscription'))
                 ->body($e->getMessage())
@@ -293,5 +166,4 @@ class Subscriptions extends Page
 
         return $currency.' '.number_format($amount / 100, 2);
     }
->>>>>>> Stashed changes
 }

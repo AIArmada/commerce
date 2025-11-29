@@ -5,16 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Cashier;
 
 use AIArmada\Cashier\Contracts\GatewayContract;
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-use AIArmada\Cashier\Models\Subscription;
-use AIArmada\Cashier\Models\SubscriptionItem;
 use Akaunting\Money\Money;
 use Closure;
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
 /**
  * Main Cashier class for multi-gateway payment management.
@@ -46,22 +38,11 @@ class Cashier
     public static bool $registersRoutes = true;
 
     /**
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-     * Indicates if Cashier migrations will be run.
-     */
-    public static bool $runsMigrations = true;
-
-    /**
      * The custom currency formatter.
      */
     protected static ?Closure $formatCurrencyUsing = null;
 
     /**
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
      * Get the GatewayManager instance.
      */
     public static function gateway(?string $gateway = null): GatewayContract

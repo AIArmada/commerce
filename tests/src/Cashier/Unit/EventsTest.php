@@ -83,16 +83,7 @@ describe('Events', function (): void {
                 ->and($event->billable())->toBe($this->user);
         });
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
         it('accepts subscription without explicit billable', function (): void {
-            // When no billable is passed, the event should still be creatable
-=======
-        it('accepts subscription without explicit billable', function () {
->>>>>>> Stashed changes
-=======
-        it('accepts subscription without explicit billable', function () {
->>>>>>> Stashed changes
             $event = new class($this->subscription) extends SubscriptionEvent {};
 
             expect($event->subscription())->toBe($this->subscription)

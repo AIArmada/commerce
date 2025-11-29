@@ -4,28 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip;
 
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-use AIArmada\Chip\Facades\ChipCollect;
-=======
 use AIArmada\Chip\DataObjects\Purchase;
->>>>>>> Stashed changes
-=======
-use AIArmada\Chip\DataObjects\Purchase;
->>>>>>> Stashed changes
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Contracts\Support\Responsable;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Support\Facades\Redirect;
 use JsonSerializable;
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
 use ReturnTypeWillChange;
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
 
 /**
  * CHIP Checkout wrapper class.
@@ -42,15 +28,7 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     protected $owner;
 
     /**
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-     * The CHIP purchase data (checkout session).
-=======
      * The CHIP purchase instance.
->>>>>>> Stashed changes
-=======
-     * The CHIP purchase instance.
->>>>>>> Stashed changes
      */
     protected Purchase $purchase;
 
@@ -58,13 +36,6 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
      * Create a new checkout instance.
      *
      * @param  \Illuminate\Database\Eloquent\Model|null  $owner
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-     * @return void
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
      */
     public function __construct($owner, Purchase $purchase)
     {
@@ -73,22 +44,6 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     }
 
     /**
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-     * Dynamically get values from the purchase data.
-     *
-     * @return mixed
-     */
-    public function __get(string $key)
-    {
-        return $this->purchase[$key] ?? null;
-    }
-
-    /**
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
      * Begin a new guest checkout session.
      */
     public static function guest(): CheckoutBuilder
@@ -111,14 +66,7 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
      *
      * @param  \Illuminate\Database\Eloquent\Model|null  $owner
      * @param  int  $amount  Amount in cents
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-=======
      * @param  array<string, mixed>  $options
->>>>>>> Stashed changes
-=======
-     * @param  array<string, mixed>  $options
->>>>>>> Stashed changes
      */
     public static function create($owner, int $amount, array $options = []): self
     {
@@ -238,15 +186,7 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     }
 
     /**
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-     * Get the underlying CHIP purchase data.
-=======
      * Get the underlying CHIP purchase.
->>>>>>> Stashed changes
-=======
-     * Get the underlying CHIP purchase.
->>>>>>> Stashed changes
      */
     public function asChipPurchase(): Purchase
     {
@@ -263,14 +203,8 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
     /**
      * Get the instance as an array.
-<<<<<<< Updated upstream
-=======
      *
      * @return array<string, mixed>
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
      */
     public function toArray(): array
     {
@@ -279,14 +213,6 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
     /**
      * Convert the object to its JSON representation.
-<<<<<<< Updated upstream
-<<<<<<< Updated upstream
-     *
-     * @param  int  $options
-=======
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
      */
     public function toJson($options = 0): string
     {
@@ -295,22 +221,14 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
     /**
      * Convert the object into something JSON serializable.
-<<<<<<< Updated upstream
-=======
      *
      * @return array<string, mixed>
-<<<<<<< Updated upstream
->>>>>>> Stashed changes
-=======
->>>>>>> Stashed changes
      */
     #[ReturnTypeWillChange]
     public function jsonSerialize(): array
     {
         return $this->toArray();
     }
-<<<<<<< Updated upstream
-=======
 
     /**
      * Dynamically get values from the purchase.
@@ -321,5 +239,4 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     {
         return $this->purchase->{$key} ?? null;
     }
->>>>>>> Stashed changes
 }
