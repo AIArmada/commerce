@@ -18,8 +18,10 @@ pest()->extend(TestCase::class)->in(
     'src/FilamentCart',
     'src/FilamentChip',
     'src/FilamentPermissions',
+    'src/FilamentAffiliates',
     'src/Jnt',
     'src/Stock',
+    'src/Affiliates',
     'src/Vouchers',
 );
 
