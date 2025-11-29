@@ -9,9 +9,11 @@
   },
   "require": {
     "aiarmada/commerce-support": "self.version",
-    "aiarmada/cart": "self.version",
     "akaunting/laravel-money": "^6.0",
     "illuminate/database": "^12.0"
+  },
+  "suggest": {
+    "aiarmada/cart": "Required for cart integration features"
   },
   "autoload": {
     "psr-4": {

@@ -13,9 +13,7 @@ return new class extends Migration
     {
         Schema::create(config('vouchers.table_names.voucher_usage', 'voucher_usage'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->foreignUuid('voucher_id')->constrained(
-                config('vouchers.table_names.vouchers', 'vouchers')
-            )->cascadeOnDelete();
+            $table->foreignUuid('voucher_id');
             $table->bigInteger('discount_amount'); // stored in cents
             $table->string('currency', 3);
             $table->string('channel')->nullable();

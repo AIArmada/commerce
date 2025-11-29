@@ -168,7 +168,7 @@ class CartManager
      */
     public function getById(string $uuid): ?Cart
     {
-        $tableName = config('cart.storage.database.table', 'carts');
+        $tableName = config('cart.database.table', 'carts');
 
         $snapshot = app('db')->table($tableName)
             ->where('id', $uuid)

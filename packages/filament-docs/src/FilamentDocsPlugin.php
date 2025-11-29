@@ -6,6 +6,7 @@ namespace AIArmada\FilamentDocs;
 
 use AIArmada\FilamentDocs\Resources\DocResource;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource;
+use AIArmada\FilamentDocs\Widgets\DocStatsWidget;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
@@ -35,6 +36,9 @@ final class FilamentDocsPlugin implements Plugin
             ->resources([
                 DocResource::class,
                 DocTemplateResource::class,
+            ])
+            ->widgets([
+                DocStatsWidget::class,
             ]);
     }
 

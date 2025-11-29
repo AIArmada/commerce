@@ -27,8 +27,6 @@ final class StockReservation extends Model
 {
     use HasUuids;
 
-    protected $table = 'stock_reservations';
-
     /**
      * @var list<string>
      */
@@ -39,6 +37,14 @@ final class StockReservation extends Model
         'quantity',
         'expires_at',
     ];
+
+    /**
+     * Get the table associated with the model.
+     */
+    public function getTable(): string
+    {
+        return config('stock.reservations_table', 'stock_reservations');
+    }
 
     /**
      * Get the stockable model (Product, Variant, etc.)

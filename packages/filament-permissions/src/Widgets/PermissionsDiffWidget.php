@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPermissions\Widgets;
 
+use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Spatie\Permission\Models\Permission;
@@ -17,6 +18,7 @@ class PermissionsDiffWidget extends StatsOverviewWidget
     {
         $user = auth()->user();
 
+        /** @phpstan-ignore method.notFound */
         return $user?->can('permission.viewAny') || $user?->hasRole(config('filament-permissions.super_admin_role'));
     }
 
@@ -28,13 +30,13 @@ class PermissionsDiffWidget extends StatsOverviewWidget
 
         return [
             Stat::make('Total Permissions', $totalPermissions)
-                ->icon('heroicon-o-shield-check')
+                ->icon(Heroicon::ShieldCheck)
                 ->color('primary'),
             Stat::make('Total Roles', $totalRoles)
-                ->icon('heroicon-o-key')
+                ->icon(Heroicon::Key)
                 ->color('success'),
             Stat::make('Unused Permissions', $unusedPermissions)
-                ->icon('heroicon-o-exclamation-triangle')
+                ->icon(Heroicon::ExclamationTriangle)
                 ->color($unusedPermissions > 0 ? 'warning' : 'gray'),
         ];
     }

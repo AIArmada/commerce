@@ -16,7 +16,7 @@ class Subscriptions extends Page
 {
     use InteractsWithBillable;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCreditCard;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowPath;
 
     protected static ?int $navigationSort = 10;
 
@@ -96,9 +96,20 @@ class Subscriptions extends Page
         return ['active', 'trialing', 'past_due'];
     }
 
-    public function cancelSubscription(int $subscriptionId): void
+    public function cancelSubscription(string $subscriptionId): void
     {
-        $subscription = $this->getBillable()?->subscriptions()->find($subscriptionId);
+        $billable = $this->getBillable();
+
+        if (! $billable || ! method_exists($billable, 'subscriptions')) {
+            Notification::make()
+                ->title(__('Subscription not found'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $subscription = $billable->subscriptions()->find($subscriptionId);
 
         if (! $subscription) {
             Notification::make()
@@ -126,9 +137,20 @@ class Subscriptions extends Page
         }
     }
 
-    public function resumeSubscription(int $subscriptionId): void
+    public function resumeSubscription(string $subscriptionId): void
     {
-        $subscription = $this->getBillable()?->subscriptions()->find($subscriptionId);
+        $billable = $this->getBillable();
+
+        if (! $billable || ! method_exists($billable, 'subscriptions')) {
+            Notification::make()
+                ->title(__('Subscription not found'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        $subscription = $billable->subscriptions()->find($subscriptionId);
 
         if (! $subscription) {
             Notification::make()

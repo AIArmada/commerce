@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Exceptions;
 
-use Exception;
 use Throwable;
 
 /**
  * Exception thrown when a payment gateway operation fails.
  */
-class PaymentGatewayException extends Exception
+class PaymentGatewayException extends CommerceException
 {
     /**
      * @param  array<string, mixed>  $context
@@ -18,12 +17,18 @@ class PaymentGatewayException extends Exception
     public function __construct(
         string $message,
         public readonly string $gatewayName,
-        public readonly ?string $errorCode = null,
-        public readonly array $context = [],
+        ?string $errorCode = null,
+        array $context = [],
         int $code = 0,
         ?Throwable $previous = null
     ) {
-        parent::__construct($message, $code, $previous);
+        parent::__construct(
+            message: $message,
+            errorCode: $errorCode,
+            errorData: array_merge(['gateway' => $gatewayName], $context),
+            code: $code,
+            previous: $previous
+        );
     }
 
     /**

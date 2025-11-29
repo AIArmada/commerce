@@ -6,10 +6,38 @@
 
 All configuration options must be actively used or implemented in the codebase.
 
+## Standard Config Order
+
+Config files MUST follow this section order:
+
+### Core Package Configs
+1. Database - Tables, prefixes, JSON column types
+2. Credentials/API - Keys, secrets, environment
+3. Defaults - Currency, tax rates, default values
+4. Features/Behavior - Core feature toggles
+5. Integrations - Other package integrations
+6. HTTP - Timeouts, retries
+7. Webhooks - Webhook configuration
+8. Cache - Caching settings
+9. Logging - Logging configuration
+
+### Filament Package Configs
+1. Navigation - Group, sort order
+2. Tables - Polling, formats
+3. Features - Feature toggles
+4. Resources - Resource-specific settings
+
 ## Rules
 - If a config key is defined but not referenced anywhere, remove it.
 - Publish only necessary configs via `php artisan vendor:publish`.
 - Keep `config/*.php` files minimal and purposeful.
+- Packages with JSON columns in migrations MUST have `json_column_type` config.
+- Use compact section headers (single line description only).
+- Group related settings under nested arrays.
+- Prefer opinionated defaults over excessive configuration.
+
+## Comment Style
+Use compact Laravel-style section headers. Inline comments only for non-obvious values.
 
 ## Verification
 Search codebase for config key usage:
@@ -24,6 +52,7 @@ If no matches, remove the config.
 
 ## Primary Keys
 - All tables must use `uuid('id')->primary()` for primary key.
+- **Exception**: `cashier-chip` package uses integer IDs (`$table->id()`) to maintain API compatibility with `laravel/cashier` (Stripe). This is intentional.
 
 ## Foreign Keys
 - Use `foreignUuid('relation_id')` for foreign key columns.

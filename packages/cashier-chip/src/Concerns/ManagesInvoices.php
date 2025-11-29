@@ -6,6 +6,7 @@ namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\CashierChip;
 use AIArmada\CashierChip\Invoice;
+use AIArmada\Chip\DataObjects\Purchase;
 use Exception;
 use Illuminate\Support\Collection;
 
@@ -49,7 +50,13 @@ trait ManagesInvoices
     public function findInvoice(string $invoiceId): ?Invoice
     {
         try {
-            $purchase = CashierChip::chip()->getPurchase($invoiceId);
+            $purchaseData = CashierChip::chip()->getPurchase($invoiceId);
+
+            if (is_array($purchaseData)) {
+                $purchase = Purchase::fromArray($purchaseData);
+            } else {
+                $purchase = $purchaseData;
+            }
 
             return new Invoice($this, $purchase);
         } catch (Exception $e) {

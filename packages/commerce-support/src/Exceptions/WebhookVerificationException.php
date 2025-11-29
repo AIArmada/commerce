@@ -4,18 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Exceptions;
 
-use Exception;
-
 /**
  * Exception thrown when webhook signature verification fails.
  */
-class WebhookVerificationException extends Exception
+class WebhookVerificationException extends CommerceException
 {
     public function __construct(
         string $message,
         public readonly string $gatewayName = 'unknown',
     ) {
-        parent::__construct($message);
+        parent::__construct(
+            message: $message,
+            errorCode: 'webhook_verification_failed',
+            errorData: ['gateway' => $gatewayName]
+        );
     }
 
     /**

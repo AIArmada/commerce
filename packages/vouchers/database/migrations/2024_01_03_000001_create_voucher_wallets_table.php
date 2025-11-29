@@ -11,20 +11,17 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create(config('vouchers.table_names.voucher_wallets', 'voucher_wallets'), function (Blueprint $table): void {
+            $jsonType = (string) commerce_json_column_type('vouchers', 'json');
+
             $table->uuid('id')->primary();
-            $table->uuid('voucher_id');
+            $table->foreignUuid('voucher_id');
             $table->uuidMorphs('owner');
             $table->boolean('is_claimed')->default(false);
             $table->timestamp('claimed_at')->nullable();
             $table->boolean('is_redeemed')->default(false);
             $table->timestamp('redeemed_at')->nullable();
-            $table->json('metadata')->nullable();
+            $table->{$jsonType}('metadata')->nullable();
             $table->timestamps();
-
-            $table->foreign('voucher_id')
-                ->references('id')
-                ->on(config('vouchers.table_names.vouchers', 'vouchers'))
-                ->cascadeOnDelete();
 
             // Indexes for common queries
             $table->index('voucher_id'); // For querying wallet entries by voucher

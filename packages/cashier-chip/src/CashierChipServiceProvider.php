@@ -7,7 +7,9 @@ namespace AIArmada\CashierChip;
 use AIArmada\CashierChip\Console\RenewSubscriptionsCommand;
 use AIArmada\CashierChip\Console\WebhookCommand;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
+use AIArmada\CashierChip\Invoices\DocsInvoiceRenderer;
 use AIArmada\CashierChip\Invoices\DompdfInvoiceRenderer;
+use AIArmada\Docs\Services\DocService;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -50,14 +52,20 @@ class CashierChipServiceProvider extends ServiceProvider
     protected function bindInvoiceRenderer(): void
     {
         $this->app->bind(InvoiceRenderer::class, function ($app) {
+            // Check for custom renderer first
             $renderer = config('cashier-chip.invoices.renderer');
 
             if ($renderer && class_exists($renderer)) {
                 return $app->make($renderer);
             }
 
-            // Fallback to DompdfInvoiceRenderer if available
-            if (class_exists(DompdfInvoiceRenderer::class)) {
+            // Prefer docs package if available
+            if (class_exists(DocService::class)) {
+                return $app->make(DocsInvoiceRenderer::class);
+            }
+
+            // Fallback to DompdfInvoiceRenderer if dompdf is available
+            if (class_exists(\Dompdf\Dompdf::class)) {
                 return $app->make(DompdfInvoiceRenderer::class);
             }
 

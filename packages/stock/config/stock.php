@@ -5,22 +5,16 @@ declare(strict_types=1);
 return [
     /*
     |--------------------------------------------------------------------------
-    | Stock Transaction Table
+    | Database
     |--------------------------------------------------------------------------
-    |
-    | The name of the database table that stores stock transactions.
-    |
     */
     'table_name' => env('STOCK_TABLE_NAME', 'stock_transactions'),
+    'reservations_table' => env('STOCK_RESERVATIONS_TABLE', 'stock_reservations'),
 
     /*
     |--------------------------------------------------------------------------
-    | Low Stock Threshold
+    | Defaults
     |--------------------------------------------------------------------------
-    |
-    | The default threshold for determining when stock is considered low.
-    | This can be overridden per model if needed.
-    |
     */
     'low_stock_threshold' => env('STOCK_LOW_THRESHOLD', 10),
 
@@ -28,62 +22,32 @@ return [
     |--------------------------------------------------------------------------
     | Cart Integration
     |--------------------------------------------------------------------------
-    |
-    | When the cart package (aiarmada/cart) is installed alongside the stock
-    | package, automatic integration is enabled. Stock will be reserved when
-    | items are added to cart and released when the cart is cleared.
-    |
     */
     'cart' => [
-        // Enable automatic cart integration
         'enabled' => env('STOCK_CART_INTEGRATION', true),
-
-        // Default reservation time in minutes
-        'reservation_ttl' => env('STOCK_RESERVATION_TTL', 30),
+        'reservation_ttl' => env('STOCK_RESERVATION_TTL', 30), // Minutes
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Payment Integration
     |--------------------------------------------------------------------------
-    |
-    | Automatic stock deduction when payment succeeds. Works with CashierChip
-    | and can be configured for custom payment event classes.
-    |
     */
     'payment' => [
-        // Automatically deduct stock on payment success
         'auto_deduct' => env('STOCK_AUTO_DEDUCT', true),
-
-        // Additional payment success event classes to listen for
-        'events' => [
-            // 'App\Events\OrderPaid',
-            // 'App\Events\PaymentCompleted',
-        ],
+        'events' => [],
     ],
 
     /*
     |--------------------------------------------------------------------------
     | Events
     |--------------------------------------------------------------------------
-    |
-    | Control which stock events are dispatched.
-    |
     */
     'events' => [
-        // Dispatch LowStockDetected event
         'low_stock' => env('STOCK_EVENT_LOW_STOCK', true),
-
-        // Dispatch OutOfStock event
         'out_of_stock' => env('STOCK_EVENT_OUT_OF_STOCK', true),
-
-        // Dispatch StockReserved event
         'reserved' => env('STOCK_EVENT_RESERVED', true),
-
-        // Dispatch StockReleased event
         'released' => env('STOCK_EVENT_RELEASED', true),
-
-        // Dispatch StockDeducted event
         'deducted' => env('STOCK_EVENT_DEDUCTED', true),
     ],
 
@@ -91,15 +55,8 @@ return [
     |--------------------------------------------------------------------------
     | Cleanup
     |--------------------------------------------------------------------------
-    |
-    | Settings for automatic cleanup of expired reservations.
-    |
     */
     'cleanup' => [
-        // Schedule cleanup command (add to app/Console/Kernel.php)
-        // $schedule->command('stock:cleanup-reservations')->everyFiveMinutes();
-
-        // Keep expired reservations for debugging (0 = delete immediately)
         'keep_expired_for_minutes' => env('STOCK_KEEP_EXPIRED', 0),
     ],
 ];

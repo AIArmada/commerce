@@ -7,6 +7,7 @@ namespace AIArmada\FilamentJnt;
 use AIArmada\FilamentJnt\Resources\JntOrderResource;
 use AIArmada\FilamentJnt\Resources\JntTrackingEventResource;
 use AIArmada\FilamentJnt\Resources\JntWebhookLogResource;
+use AIArmada\FilamentJnt\Widgets\JntStatsWidget;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
@@ -32,11 +33,15 @@ final class FilamentJntPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
-        $panel->resources([
-            JntOrderResource::class,
-            JntTrackingEventResource::class,
-            JntWebhookLogResource::class,
-        ]);
+        $panel
+            ->resources([
+                JntOrderResource::class,
+                JntTrackingEventResource::class,
+                JntWebhookLogResource::class,
+            ])
+            ->widgets([
+                JntStatsWidget::class,
+            ]);
     }
 
     public function boot(Panel $panel): void

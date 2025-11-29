@@ -9,8 +9,6 @@ return [
     |--------------------------------------------------------------------------
     | Database
     |--------------------------------------------------------------------------
-    | Preferred JSON column type for future database tables that include JSON
-    | data. This mirrors other packages and defaults to the global setting.
     */
     'database' => [
         'json_column_type' => env('DOCS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
@@ -21,40 +19,22 @@ return [
         ],
     ],
 
-    'storage' => [
-        'disk' => env('DOCS_STORAGE_DISK', 'local'),
-        'path' => env('DOCS_STORAGE_PATH', 'docs'),
-        'disks' => [],
-        'paths' => [
-            'invoice' => env('DOCS_STORAGE_PATH_INVOICE', 'docs/invoices'),
-            'receipt' => env('DOCS_STORAGE_PATH_RECEIPT', 'docs/receipts'),
-        ],
-    ],
-
+    /*
+    |--------------------------------------------------------------------------
+    | Defaults
+    |--------------------------------------------------------------------------
+    */
     'defaults' => [
         'currency' => env('DOCS_CURRENCY', 'MYR'),
         'tax_rate' => env('DOCS_TAX_RATE', 0),
         'due_days' => env('DOCS_DUE_DAYS', 30),
     ],
 
-    'numbering' => [
-        'format' => [
-            'year_format' => env('DOCS_NUMBER_YEAR_FORMAT', 'y'),
-            'separator' => env('DOCS_NUMBER_SEPARATOR', '-'),
-            'suffix_length' => (int) env('DOCS_NUMBER_SUFFIX_LENGTH', 6),
-        ],
-    ],
-
     /*
     |--------------------------------------------------------------------------
-    | Doc Types Configuration
+    | Document Types
     |--------------------------------------------------------------------------
-    |
-    | Configuration for different doc types supported by the package.
-    | Currently supports: invoices and receipts (more can be added).
-    |
     */
-
     'types' => [
         'invoice' => [
             'default_template' => 'doc-default',
@@ -74,12 +54,34 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | PDF Configuration
+    | Numbering
     |--------------------------------------------------------------------------
-    |
-    | Configuration for PDF generation via Spatie Laravel PDF
-    |
     */
+    'numbering' => [
+        'format' => [
+            'year_format' => env('DOCS_NUMBER_YEAR_FORMAT', 'y'),
+            'separator' => env('DOCS_NUMBER_SEPARATOR', '-'),
+            'suffix_length' => (int) env('DOCS_NUMBER_SUFFIX_LENGTH', 6),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Storage
+    |--------------------------------------------------------------------------
+    */
+    'storage' => [
+        'disk' => env('DOCS_STORAGE_DISK', 'local'),
+        'path' => env('DOCS_STORAGE_PATH', 'docs'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | PDF
+    |--------------------------------------------------------------------------
+    */
+    'generate_pdf' => env('DOCS_GENERATE_PDF', true),
+
     'pdf' => [
         'format' => 'a4',
         'orientation' => 'portrait',
@@ -89,28 +91,14 @@ return [
             'bottom' => 10,
             'left' => 10,
         ],
+        'full_bleed' => false,
+        'print_background' => true,
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | PDF Generation
+    | Company
     |--------------------------------------------------------------------------
-    |
-    | Control whether PDF files are automatically generated for documents.
-    | When false, documents will be created in the database but no PDF will
-    | be generated (useful for testing or when PDF generation is not needed).
-    |
-    */
-    'generate_pdf' => env('DOCS_GENERATE_PDF', true),
-
-    /*
-    |--------------------------------------------------------------------------
-    | Company Information
-    |--------------------------------------------------------------------------
-    |
-    | Default company information to display on docs. This can be
-    | overridden when creating a doc.
-    |
     */
     'company' => [
         'name' => env('DOCS_COMPANY_NAME', config('app.name')),

@@ -378,4 +378,12 @@ class Voucher extends Model
             'target_definition' => 'array',
         ];
     }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Voucher $voucher): void {
+            $voucher->usages()->delete();
+            $voucher->walletEntries()->delete();
+        });
+    }
 }

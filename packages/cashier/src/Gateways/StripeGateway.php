@@ -64,7 +64,9 @@ class StripeGateway extends AbstractGateway
      */
     public function customer(BillableContract $billable): CustomerContract
     {
-        return new StripeCustomer($billable);
+        $stripeCustomer = $billable->asStripeCustomer();
+
+        return new StripeCustomer($stripeCustomer, $billable);
     }
 
     /**
@@ -76,7 +78,7 @@ class StripeGateway extends AbstractGateway
     {
         $stripeCustomer = $billable->createOrGetStripeCustomer($options);
 
-        return new StripeCustomer($billable, $stripeCustomer);
+        return new StripeCustomer($stripeCustomer, $billable);
     }
 
     /**

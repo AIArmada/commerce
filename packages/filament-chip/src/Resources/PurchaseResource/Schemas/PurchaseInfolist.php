@@ -156,12 +156,14 @@ final class PurchaseInfolist
                                 ->label('Quantity'),
                             TextEntry::make('price.amount')
                                 ->label('Unit Price')
+                                /** @phpstan-ignore-next-line */
                                 ->formatStateUsing(fn (?int $state, array $entry): ?string => self::formatAmount(
                                     $state,
                                     Arr::get($entry, 'price.currency'),
                                 )),
                             TextEntry::make('subtotal.amount')
                                 ->label('Subtotal')
+                                /** @phpstan-ignore-next-line */
                                 ->formatStateUsing(fn (?int $state, array $entry): ?string => self::formatAmount(
                                     $state,
                                     Arr::get($entry, 'subtotal.currency', Arr::get($entry, 'price.currency')),
@@ -169,6 +171,7 @@ final class PurchaseInfolist
                             TextEntry::make('metadata')
                                 ->label('Metadata')
                                 ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : $state)
+                                /** @phpstan-ignore-next-line */
                                 ->visible(fn (array $entry): bool => filled($entry['metadata'] ?? []))
                                 ->columnSpanFull(),
                         ])
