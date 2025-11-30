@@ -2,21 +2,12 @@
     <div class="space-y-6">
         @if($paymentMethods->isEmpty())
             <x-filament::section>
-                <x-filament-panels::placeholder>
-                    <x-slot name="icon">
-                        <x-heroicon-o-credit-card class="h-12 w-12" />
-                    </x-slot>
-
-                    <x-slot name="heading">
-                        {{ __('No payment methods') }}
-                    </x-slot>
-
-                    <x-slot name="description">
-                        {{ __('You have not added any payment methods yet.') }}
-                    </x-slot>
-
-                    <x-slot name="actions">
-                        @if($this->getAddPaymentMethodUrl() !== '#')
+                <div class="text-center py-6">
+                    <x-heroicon-o-credit-card class="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">{{ __('No payment methods') }}</h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('You have not added any payment methods yet.') }}</p>
+                    @if($this->getAddPaymentMethodUrl() !== '#')
+                        <div class="mt-4">
                             <x-filament::button
                                 tag="a"
                                 :href="$this->getAddPaymentMethodUrl()"
@@ -24,9 +15,9 @@
                             >
                                 {{ __('Add Payment Method') }}
                             </x-filament::button>
-                        @endif
-                    </x-slot>
-                </x-filament-panels::placeholder>
+                        </div>
+                    @endif
+                </div>
             </x-filament::section>
         @else
             <x-filament::section>
@@ -41,7 +32,7 @@
                                 <div class="flex items-center gap-4">
                                     <div class="shrink-0">
                                         @php
-                                            $brand = strtolower($method->card_brand ?? 'card');
+                                            $brand = strtolower($method->cardBrand() ?? 'card');
                                         @endphp
                                         @switch($brand)
                                             @case('visa')
@@ -65,15 +56,15 @@
                                     </div>
                                     <div>
                                         <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                            {{ $this->formatCardBrand($method->card_brand ?? 'Card') }} •••• {{ $method->card_last_four ?? '****' }}
+                                            {{ $this->formatCardBrand($method->cardBrand() ?? 'Card') }} •••• {{ $method->cardLastFour() ?? '****' }}
                                         </p>
                                         <p class="text-sm text-gray-500 dark:text-gray-400">
-                                            {{ __('Expires :month/:year', ['month' => str_pad($method->card_exp_month ?? '00', 2, '0', STR_PAD_LEFT), 'year' => substr($method->card_exp_year ?? '00', -2)]) }}
+                                            {{ __('Expires :month/:year', ['month' => str_pad((string) ($method->cardExpMonth() ?? 0), 2, '0', STR_PAD_LEFT), 'year' => substr((string) ($method->cardExpYear() ?? '00'), -2)]) }}
                                         </p>
                                     </div>
                                 </div>
                                 <div class="flex items-center gap-2">
-                                    @if($defaultPaymentMethod && $defaultPaymentMethod->chip_token === $method->chip_token)
+                                    @if($defaultPaymentMethod && $defaultPaymentMethod->chipToken() === $method->chipToken())
                                         <x-filament::badge color="success" size="sm">
                                             {{ __('Default') }}
                                         </x-filament::badge>
@@ -81,7 +72,7 @@
                                         <x-filament::button
                                             color="gray"
                                             size="xs"
-                                            wire:click="setAsDefault('{{ $method->chip_token }}')"
+                                            wire:click="setAsDefault('{{ $method->id() }}')"
                                         >
                                             {{ __('Set as Default') }}
                                         </x-filament::button>
@@ -90,7 +81,7 @@
                                     <x-filament::button
                                         color="danger"
                                         size="xs"
-                                        wire:click="deletePaymentMethod('{{ $method->chip_token }}')"
+                                        wire:click="deletePaymentMethod('{{ $method->id() }}')"
                                         wire:confirm="{{ __('Are you sure you want to delete this payment method?') }}"
                                     >
                                         {{ __('Delete') }}

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Console;
 
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
 use AIArmada\CashierChip\Subscription;
@@ -177,6 +177,6 @@ class RenewSubscriptionsCommand extends Command
         $amount = $subscription->calculateSubscriptionAmount();
         $currency = $subscription->owner?->preferredCurrency() ?? 'MYR';
 
-        return CashierChip::formatAmount($amount, $currency);
+        return Cashier::formatAmount($amount, $currency);
     }
 }

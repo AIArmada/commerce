@@ -123,18 +123,18 @@ return new class extends Migration
         ) {
             $tableName = $tablePrefix.'purchases';
             DB::statement("CREATE INDEX IF NOT EXISTS chip_purchases_metadata_gin_index ON \"{$tableName}\" USING GIN (\"metadata\")");
+
+            // Add optimized expression indexes for cart_id lookups (PostgreSQL only)
+            DB::statement("
+                CREATE INDEX IF NOT EXISTS chip_purchases_metadata_cart_id_idx
+                ON {$tablePrefix}purchases ((metadata->>'cart_id'))
+            ");
+
+            DB::statement("
+                CREATE INDEX IF NOT EXISTS chip_purchases_status_cart_id_idx
+                ON {$tablePrefix}purchases (status, ((metadata->>'cart_id')))
+            ");
         }
-
-        // Add optimized expression indexes for cart_id lookups (faster than GIN for equality)
-        DB::statement("
-            CREATE INDEX chip_purchases_metadata_cart_id_idx
-            ON {$tablePrefix}purchases ((metadata->>'cart_id'))
-        ");
-
-        DB::statement("
-            CREATE INDEX chip_purchases_status_cart_id_idx
-            ON {$tablePrefix}purchases (status, ((metadata->>'cart_id')))
-        ");
     }
 
     public function down(): void

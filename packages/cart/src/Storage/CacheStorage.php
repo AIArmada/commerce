@@ -16,9 +16,45 @@ final readonly class CacheStorage implements StorageInterface
         private string $keyPrefix = 'cart',
         private int $ttl = 86400, // 24 hours
         private bool $useLocking = false, // Enable for multi-server setups with shared cache
-        private int $lockTimeout = 5 // Lock timeout in seconds
+        private int $lockTimeout = 5, // Lock timeout in seconds
+        private ?string $tenantId = null
     ) {
         //
+    }
+
+    /**
+     * Create a new instance scoped to a specific tenant
+     */
+    public function withTenantId(?string $tenantId): static
+    {
+        return new self(
+            cache: $this->cache,
+            keyPrefix: $this->keyPrefix,
+            ttl: $this->ttl,
+            useLocking: $this->useLocking,
+            lockTimeout: $this->lockTimeout,
+            tenantId: $tenantId
+        );
+    }
+
+    /**
+     * Get the current tenant ID
+     */
+    public function getTenantId(): ?string
+    {
+        return $this->tenantId;
+    }
+
+    /**
+     * Get the base key prefix including tenant scope when set
+     */
+    private function getBasePrefix(): string
+    {
+        if ($this->tenantId !== null) {
+            return "{$this->keyPrefix}.tenant.{$this->tenantId}";
+        }
+
+        return $this->keyPrefix;
     }
 
     /**
@@ -173,7 +209,7 @@ final readonly class CacheStorage implements StorageInterface
         }
 
         // Track metadata key in registry for clearMetadata support
-        $keysRegistryKey = "{$this->keyPrefix}.{$identifier}.{$instance}.metadata._keys";
+        $keysRegistryKey = "{$this->getBasePrefix()}.{$identifier}.{$instance}.metadata._keys";
         $metadataKeys = $this->cache->get($keysRegistryKey, []);
         if (! in_array($key, $metadataKeys, true)) {
             $metadataKeys[] = $key;
@@ -194,10 +230,10 @@ final readonly class CacheStorage implements StorageInterface
             return;
         }
 
-        $keysRegistryKey = "{$this->keyPrefix}.{$identifier}.{$instance}.metadata._keys";
+        $keysRegistryKey = "{$this->getBasePrefix()}.{$identifier}.{$instance}.metadata._keys";
 
         if ($this->useLocking && method_exists($this->cache, 'lock')) {
-            $lock = $this->cache->lock("{$this->keyPrefix}.lock.{$identifier}.{$instance}.metadata", 10);
+            $lock = $this->cache->lock("{$this->getBasePrefix()}.lock.{$identifier}.{$instance}.metadata", 10);
 
             try {
                 $lock->block(5);
@@ -248,7 +284,7 @@ final readonly class CacheStorage implements StorageInterface
      */
     public function getAllMetadata(string $identifier, string $instance): array
     {
-        $keysRegistryKey = "{$this->keyPrefix}.{$identifier}.{$instance}.metadata._keys";
+        $keysRegistryKey = "{$this->getBasePrefix()}.{$identifier}.{$instance}.metadata._keys";
         $metadataKeys = $this->cache->get($keysRegistryKey, []);
         $metadata = [];
 
@@ -546,27 +582,27 @@ final readonly class CacheStorage implements StorageInterface
 
     private function getInstanceRegistryKey(string $identifier): string
     {
-        return "{$this->keyPrefix}.{$identifier}._instances";
+        return "{$this->getBasePrefix()}.{$identifier}._instances";
     }
 
     private function getVersionKey(string $identifier, string $instance): string
     {
-        return "{$this->keyPrefix}.{$identifier}.{$instance}.version";
+        return "{$this->getBasePrefix()}.{$identifier}.{$instance}.version";
     }
 
     private function getIdKey(string $identifier, string $instance): string
     {
-        return "{$this->keyPrefix}.{$identifier}.{$instance}.id";
+        return "{$this->getBasePrefix()}.{$identifier}.{$instance}.id";
     }
 
     private function getCreatedAtKey(string $identifier, string $instance): string
     {
-        return "{$this->keyPrefix}.{$identifier}.{$instance}.created_at";
+        return "{$this->getBasePrefix()}.{$identifier}.{$instance}.created_at";
     }
 
     private function getUpdatedAtKey(string $identifier, string $instance): string
     {
-        return "{$this->keyPrefix}.{$identifier}.{$instance}.updated_at";
+        return "{$this->getBasePrefix()}.{$identifier}.{$instance}.updated_at";
     }
 
     /**
@@ -602,7 +638,7 @@ final readonly class CacheStorage implements StorageInterface
      */
     private function getItemsKey(string $identifier, string $instance): string
     {
-        return "{$this->keyPrefix}.{$identifier}.{$instance}.items";
+        return "{$this->getBasePrefix()}.{$identifier}.{$instance}.items";
     }
 
     /**
@@ -610,7 +646,7 @@ final readonly class CacheStorage implements StorageInterface
      */
     private function getConditionsKey(string $identifier, string $instance): string
     {
-        return "{$this->keyPrefix}.{$identifier}.{$instance}.conditions";
+        return "{$this->getBasePrefix()}.{$identifier}.{$instance}.conditions";
     }
 
     /**
@@ -618,12 +654,12 @@ final readonly class CacheStorage implements StorageInterface
      */
     private function getMetadataKey(string $identifier, string $instance, string $key): string
     {
-        return "{$this->keyPrefix}.{$identifier}.{$instance}.metadata.{$key}";
+        return "{$this->getBasePrefix()}.{$identifier}.{$instance}.metadata.{$key}";
     }
 
     private function clearMetadataKeys(string $identifier, string $instance): void
     {
-        $keysRegistryKey = "{$this->keyPrefix}.{$identifier}.{$instance}.metadata._keys";
+        $keysRegistryKey = "{$this->getBasePrefix()}.{$identifier}.{$instance}.metadata._keys";
         $metadataKeys = $this->cache->get($keysRegistryKey, []);
 
         foreach ($metadataKeys as $key) {

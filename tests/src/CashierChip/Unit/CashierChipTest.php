@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
@@ -11,7 +11,7 @@ use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 uses(CashierChipTestCase::class);
 
 it('can format amount with default currency', function (): void {
-    $formatted = CashierChip::formatAmount(10000);
+    $formatted = Cashier::formatAmount(10000);
 
     expect($formatted)->toBeString();
     // 10000 cents = 100.00 in main currency unit
@@ -20,7 +20,7 @@ it('can format amount with default currency', function (): void {
 });
 
 it('can format amount with specific currency', function (): void {
-    $formatted = CashierChip::formatAmount(10000, 'USD', 'en_US');
+    $formatted = Cashier::formatAmount(10000, 'USD', 'en_US');
 
     expect($formatted)->toBeString();
     // 10000 cents = 100.00 USD
@@ -28,61 +28,61 @@ it('can format amount with specific currency', function (): void {
 });
 
 it('can use custom currency formatter', function (): void {
-    CashierChip::formatCurrencyUsing(function ($amount, $currency) {
+    Cashier::formatCurrencyUsing(function ($amount, $currency) {
         return 'CUSTOM: '.$amount.' '.$currency;
     });
 
-    $formatted = CashierChip::formatAmount(10000, 'MYR');
+    $formatted = Cashier::formatAmount(10000, 'MYR');
 
     expect($formatted)->toBe('CUSTOM: 10000 MYR');
 
     // Reset formatter - use a no-op function instead of null
-    CashierChip::formatCurrencyUsing(function ($amount, $currency, $locale, $options) {
+    Cashier::formatCurrencyUsing(function ($amount, $currency, $locale, $options) {
         return (new Akaunting\Money\Money($amount, new Akaunting\Money\Currency($currency ?? 'MYR'), true))->format($locale ?? 'en_US');
     });
 });
 
 it('can set custom customer model', function (): void {
-    CashierChip::useCustomerModel(User::class);
+    Cashier::useCustomerModel(User::class);
 
-    expect(CashierChip::$customerModel)->toBe(User::class);
+    expect(Cashier::$customerModel)->toBe(User::class);
 });
 
 it('can set custom subscription model', function (): void {
-    CashierChip::useSubscriptionModel(Subscription::class);
+    Cashier::useSubscriptionModel(Subscription::class);
 
-    expect(CashierChip::$subscriptionModel)->toBe(Subscription::class);
+    expect(Cashier::$subscriptionModel)->toBe(Subscription::class);
 });
 
 it('can set custom subscription item model', function (): void {
-    CashierChip::useSubscriptionItemModel(SubscriptionItem::class);
+    Cashier::useSubscriptionItemModel(SubscriptionItem::class);
 
-    expect(CashierChip::$subscriptionItemModel)->toBe(SubscriptionItem::class);
+    expect(Cashier::$subscriptionItemModel)->toBe(SubscriptionItem::class);
 });
 
 it('can keep past due subscriptions active', function (): void {
-    CashierChip::keepPastDueSubscriptionsActive();
+    Cashier::keepPastDueSubscriptionsActive();
 
-    expect(CashierChip::$deactivatePastDue)->toBeFalse();
+    expect(Cashier::$deactivatePastDue)->toBeFalse();
 
     // Reset
-    CashierChip::$deactivatePastDue = true;
+    Cashier::$deactivatePastDue = true;
 });
 
 it('can keep incomplete subscriptions active', function (): void {
-    CashierChip::keepIncompleteSubscriptionsActive();
+    Cashier::keepIncompleteSubscriptionsActive();
 
-    expect(CashierChip::$deactivateIncomplete)->toBeFalse();
+    expect(Cashier::$deactivateIncomplete)->toBeFalse();
 
     // Reset
-    CashierChip::$deactivateIncomplete = true;
+    Cashier::$deactivateIncomplete = true;
 });
 
 it('can ignore routes', function (): void {
-    CashierChip::ignoreRoutes();
+    Cashier::ignoreRoutes();
 
-    expect(CashierChip::$registersRoutes)->toBeFalse();
+    expect(Cashier::$registersRoutes)->toBeFalse();
 
     // Reset
-    CashierChip::$registersRoutes = true;
+    Cashier::$registersRoutes = true;
 });

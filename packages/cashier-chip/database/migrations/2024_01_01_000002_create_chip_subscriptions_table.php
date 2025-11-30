@@ -13,6 +13,10 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (Schema::hasTable('chip_subscriptions')) {
+            return;
+        }
+
         Schema::create('chip_subscriptions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id');

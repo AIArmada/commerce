@@ -1,0 +1,230 @@
+{
+    "id": "2fe34fc3-13da-4bfe-af33-df9db40c545c",
+    "due": 1764509304,
+    "type": "purchase",
+    "client": {
+        "cc": [],
+        "bcc": [],
+        "city": "",
+        "email": "saiffil@masyuk.com",
+        "phone": "+60102221057",
+        "state": "",
+        "country": "MY",
+        "zip_code": "",
+        "bank_code": "",
+        "full_name": "Saiffil",
+        "brand_name": "",
+        "legal_name": "",
+        "tax_number": "",
+        "client_type": null,
+        "bank_account": "",
+        "personal_code": "",
+        "shipping_city": "",
+        "shipping_state": "",
+        "street_address": "",
+        "delivery_methods": [
+            {
+                "method": "email",
+                "options": {}
+            },
+            {
+                "method": "text_message",
+                "options": {
+                    "custom_message": ""
+                }
+            }
+        ],
+        "shipping_country": "",
+        "shipping_zip_code": "",
+        "registration_number": "",
+        "shipping_street_address": ""
+    },
+    "issued": "2025-11-30",
+    "status": "paid",
+    "is_test": true,
+    "payment": {
+        "amount": 178200,
+        "paid_on": 1764505707,
+        "currency": "MYR",
+        "fee_amount": 100,
+        "net_amount": 178100,
+        "description": "",
+        "is_outgoing": false,
+        "payment_type": "purchase",
+        "pending_amount": 0,
+        "remote_paid_on": 1764505707,
+        "owned_bank_code": null,
+        "owned_bank_account": null,
+        "pending_unfreeze_on": null,
+        "owned_bank_account_id": null
+    },
+    "product": "purchases",
+    "user_id": null,
+    "brand_id": "b9f03950-4f2d-49b6-a96a-62451d6d45e1",
+    "order_id": null,
+    "platform": "api",
+    "purchase": {
+        "debt": 0,
+        "notes": "",
+        "total": 178200,
+        "currency": "MYR",
+        "language": "en",
+        "metadata": {},
+        "products": [
+            {
+                "name": "SEATING (RUBY) - Row A Seat 17",
+                "price": 57900,
+                "category": "seat",
+                "discount": 0,
+                "quantity": "1.0000",
+                "tax_percent": "0.00",
+                "total_price_override": null
+            },
+            {
+                "name": "Collector Ticket",
+                "price": 1500,
+                "category": "merchandise",
+                "discount": 0,
+                "quantity": "1.0000",
+                "tax_percent": "0.00",
+                "total_price_override": null
+            },
+            {
+                "name": "SEATING (RUBY) - Row A Seat 15",
+                "price": 57900,
+                "category": "seat",
+                "discount": 0,
+                "quantity": "1.0000",
+                "tax_percent": "0.00",
+                "total_price_override": null
+            },
+            {
+                "name": "Collector Ticket",
+                "price": 1500,
+                "category": "merchandise",
+                "discount": 0,
+                "quantity": "1.0000",
+                "tax_percent": "0.00",
+                "total_price_override": null
+            },
+            {
+                "name": "SEATING (RUBY) - Row A Seat 19",
+                "price": 57900,
+                "category": "seat",
+                "discount": 0,
+                "quantity": "1.0000",
+                "tax_percent": "0.00",
+                "total_price_override": null
+            },
+            {
+                "name": "Collector Ticket",
+                "price": 1500,
+                "category": "merchandise",
+                "discount": 0,
+                "quantity": "1.0000",
+                "tax_percent": "0.00",
+                "total_price_override": null
+            }
+        ],
+        "timezone": "UTC",
+        "due_strict": false,
+        "email_message": "",
+        "total_override": null,
+        "shipping_options": [],
+        "subtotal_override": null,
+        "total_tax_override": null,
+        "has_upsell_products": false,
+        "payment_method_details": {},
+        "request_client_details": [],
+        "total_discount_override": null
+    },
+    "client_id": "b7f3be84-2ee3-42b5-946c-eef9d712b36f",
+    "reference": "250bd371-c434-4787-a41b-385f72970d23",
+    "viewed_on": 1764505705,
+    "company_id": "2fe75dee-38a3-4d1f-8dd9-4cdd4f5a110c",
+    "created_on": 1764505704,
+    "event_type": "purchase.paid",
+    "updated_on": 1764505707,
+    "invoice_url": null,
+    "can_retrieve": false,
+    "checkout_url": "https://gate.chip-in.asia/p/2fe34fc3-13da-4bfe-af33-df9db40c545c/invoice/",
+    "send_receipt": false,
+    "skip_capture": false,
+    "creator_agent": "AIArmada/Chip",
+    "referral_code": null,
+    "can_chargeback": false,
+    "issuer_details": {
+        "website": "https://nusavue.my",
+        "brand_name": "NUSAVUE",
+        "legal_city": "KUALA LUMPUR, WILAYAH PERSEKUTUAN",
+        "legal_name": "RA MEDIA RELATIONS SDN. BHD.",
+        "tax_number": "",
+        "bank_accounts": [
+            {
+                "bank_code": "MBBEMYKL",
+                "bank_account": "564801660090"
+            }
+        ],
+        "legal_country": "MY",
+        "legal_zip_code": "60000",
+        "registration_number": "984761W",
+        "legal_street_address": "19B, JALAN WAN KADIR 2, TAMAN TUN DR ISMAIL"
+    },
+    "marked_as_paid": false,
+    "status_history": [
+        {
+            "status": "created",
+            "timestamp": 1764505704
+        },
+        {
+            "status": "viewed",
+            "timestamp": 1764505705
+        },
+        {
+            "status": "paid",
+            "timestamp": 1764505707
+        }
+    ],
+    "cancel_redirect": "https://nusavue.test/checkout/cancelled/250bd371-c434-4787-a41b-385f72970d23",
+    "created_from_ip": "113.211.213.111",
+    "direct_post_url": null,
+    "force_recurring": false,
+    "recurring_token": null,
+    "failure_redirect": "https://nusavue.test/checkout/failed/250bd371-c434-4787-a41b-385f72970d23",
+    "success_callback": "https://local.nusavue.my/api/webhooks/chip",
+    "success_redirect": "https://nusavue.test/checkout/success/250bd371-c434-4787-a41b-385f72970d23",
+    "transaction_data": {
+        "flow": "payform",
+        "extra": {},
+        "country": "MY",
+        "attempts": [
+            {
+                "flow": "payform",
+                "type": "execute",
+                "error": null,
+                "extra": {},
+                "country": "MY",
+                "client_ip": "",
+                "fee_amount": 100,
+                "successful": true,
+                "payment_method": "fpx",
+                "processing_time": 1764505707,
+                "processing_tx_id": "2fe34fc3-13da-4bfe-af33-df9db40c545c"
+            }
+        ],
+        "payment_method": "fpx",
+        "processing_tx_id": "2fe34fc3-13da-4bfe-af33-df9db40c545c"
+    },
+    "upsell_campaigns": [],
+    "refundable_amount": 178200,
+    "is_recurring_token": false,
+    "billing_template_id": null,
+    "currency_conversion": null,
+    "reference_generated": "CH644",
+    "refund_availability": "all",
+    "referral_campaign_id": null,
+    "retain_level_details": null,
+    "referral_code_details": null,
+    "referral_code_generated": null,
+    "payment_method_whitelist": null
+}

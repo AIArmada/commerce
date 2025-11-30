@@ -7,6 +7,7 @@ namespace AIArmada\Cart\Storage;
 use AIArmada\Cart\Exceptions\CartConflictException;
 use DateTimeInterface;
 use Illuminate\Database\ConnectionInterface as Database;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use JsonException;
@@ -17,12 +18,38 @@ final readonly class DatabaseStorage implements StorageInterface
 {
     /**
      * @param  int|null  $ttl  Time-to-live in seconds (null = no expiration)
+     * @param  string|null  $tenantId  Tenant ID for multi-tenancy scoping
+     * @param  string  $tenantColumn  Column name for tenant ID in database
      */
     public function __construct(
         private Database $database,
         private string $table = 'carts',
         private ?int $ttl = null,
+        private ?string $tenantId = null,
+        private string $tenantColumn = 'tenant_id',
     ) {}
+
+    /**
+     * Create a new instance with the specified tenant ID.
+     */
+    public function withTenantId(?string $tenantId): static
+    {
+        return new self(
+            database: $this->database,
+            table: $this->table,
+            ttl: $this->ttl,
+            tenantId: $tenantId,
+            tenantColumn: $this->tenantColumn,
+        );
+    }
+
+    /**
+     * Get the current tenant ID.
+     */
+    public function getTenantId(): ?string
+    {
+        return $this->tenantId;
+    }
 
     /**
      * Retrieve cart items from storage
@@ -90,10 +117,7 @@ final readonly class DatabaseStorage implements StorageInterface
      */
     public function has(string $identifier, string $instance): bool
     {
-        return $this->database->table($this->table)
-            ->where('identifier', $identifier)
-            ->where('instance', $instance)
-            ->exists();
+        return $this->baseQuery($identifier, $instance)->exists();
     }
 
     /**
@@ -101,10 +125,7 @@ final readonly class DatabaseStorage implements StorageInterface
      */
     public function forget(string $identifier, string $instance): void
     {
-        $this->database->table($this->table)
-            ->where('identifier', $identifier)
-            ->where('instance', $instance)
-            ->delete();
+        $this->baseQuery($identifier, $instance)->delete();
     }
 
     /**
@@ -115,7 +136,15 @@ final readonly class DatabaseStorage implements StorageInterface
     {
         // Only allow flush in testing environments to prevent accidental data loss
         if (app()->environment(['testing', 'local'])) {
-            $this->database->table($this->table)->truncate();
+            $query = $this->database->table($this->table);
+
+            // If tenant scoped, only flush tenant's carts
+            if ($this->tenantId !== null) {
+                $query->where($this->tenantColumn, $this->tenantId);
+                $query->delete();
+            } else {
+                $query->truncate();
+            }
         } else {
             throw new RuntimeException('Flush operation is only allowed in testing and local environments');
         }
@@ -128,10 +157,14 @@ final readonly class DatabaseStorage implements StorageInterface
      */
     public function getInstances(string $identifier): array
     {
-        return $this->database->table($this->table)
-            ->where('identifier', $identifier)
-            ->pluck('instance')
-            ->toArray();
+        $query = $this->database->table($this->table)
+            ->where('identifier', $identifier);
+
+        if ($this->tenantId !== null) {
+            $query->where($this->tenantColumn, $this->tenantId);
+        }
+
+        return $query->pluck('instance')->toArray();
     }
 
     /**
@@ -139,9 +172,14 @@ final readonly class DatabaseStorage implements StorageInterface
      */
     public function forgetIdentifier(string $identifier): void
     {
-        $this->database->table($this->table)
-            ->where('identifier', $identifier)
-            ->delete();
+        $query = $this->database->table($this->table)
+            ->where('identifier', $identifier);
+
+        if ($this->tenantId !== null) {
+            $query->where($this->tenantColumn, $this->tenantId);
+        }
+
+        $query->delete();
     }
 
     /**
@@ -151,10 +189,7 @@ final readonly class DatabaseStorage implements StorageInterface
     {
         $this->database->transaction(function () use ($identifier, $instance, $key, $value): void {
             // Get existing metadata
-            $existing = $this->database->table($this->table)
-                ->where('identifier', $identifier)
-                ->where('instance', $instance)
-                ->value('metadata');
+            $existing = $this->baseQuery($identifier, $instance)->value('metadata');
 
             $metadata = $this->decodeData($existing, 'metadata', []);
             $metadata[$key] = $value;
@@ -183,10 +218,7 @@ final readonly class DatabaseStorage implements StorageInterface
 
         $this->database->transaction(function () use ($identifier, $instance, $metadata): void {
             // Get existing metadata
-            $existing = $this->database->table($this->table)
-                ->where('identifier', $identifier)
-                ->where('instance', $instance)
-                ->value('metadata');
+            $existing = $this->baseQuery($identifier, $instance)->value('metadata');
 
             $existingMetadata = $this->decodeData($existing, 'metadata', []);
 
@@ -209,10 +241,7 @@ final readonly class DatabaseStorage implements StorageInterface
      */
     public function getMetadata(string $identifier, string $instance, string $key): mixed
     {
-        $result = $this->database->table($this->table)
-            ->where('identifier', $identifier)
-            ->where('instance', $instance)
-            ->value('metadata');
+        $result = $this->baseQuery($identifier, $instance)->value('metadata');
 
         if (! $result) {
             return null;
@@ -230,10 +259,7 @@ final readonly class DatabaseStorage implements StorageInterface
      */
     public function getAllMetadata(string $identifier, string $instance): array
     {
-        $result = $this->database->table($this->table)
-            ->where('identifier', $identifier)
-            ->where('instance', $instance)
-            ->value('metadata');
+        $result = $this->baseQuery($identifier, $instance)->value('metadata');
 
         if (! $result) {
             return [];
@@ -273,10 +299,7 @@ final readonly class DatabaseStorage implements StorageInterface
      */
     public function getVersion(string $identifier, string $instance): ?int
     {
-        $version = $this->database->table($this->table)
-            ->where('identifier', $identifier)
-            ->where('instance', $instance)
-            ->value('version');
+        $version = $this->baseQuery($identifier, $instance)->value('version');
 
         return $version !== null ? (int) $version : null;
     }
@@ -286,10 +309,7 @@ final readonly class DatabaseStorage implements StorageInterface
      */
     public function getId(string $identifier, string $instance): ?string
     {
-        return $this->database->table($this->table)
-            ->where('identifier', $identifier)
-            ->where('instance', $instance)
-            ->value('id');
+        return $this->baseQuery($identifier, $instance)->value('id');
     }
 
     /**
@@ -308,15 +328,10 @@ final readonly class DatabaseStorage implements StorageInterface
         return $this->database->transaction(function () use ($oldIdentifier, $newIdentifier, $instance) {
             // First, delete any existing cart with the target identifier
             // This ensures the swap always succeeds by removing conflicts
-            $this->database->table($this->table)
-                ->where('identifier', $newIdentifier)
-                ->where('instance', $instance)
-                ->delete();
+            $this->baseQuery($newIdentifier, $instance)->delete();
 
             // Now update the source cart to use the new identifier
-            $updated = $this->database->table($this->table)
-                ->where('identifier', $oldIdentifier)
-                ->where('instance', $instance)
+            $updated = $this->baseQuery($oldIdentifier, $instance)
                 ->update([
                     'identifier' => $newIdentifier,
                     'updated_at' => now(),
@@ -332,10 +347,7 @@ final readonly class DatabaseStorage implements StorageInterface
     public function getCreatedAt(string $identifier, string $instance): ?string
     {
         /** @var stdClass|null $cart */
-        $cart = $this->database->table($this->table)
-            ->where('identifier', $identifier)
-            ->where('instance', $instance)
-            ->first(['created_at']);
+        $cart = $this->baseQuery($identifier, $instance)->first(['created_at']);
 
         if (! $cart || ! $cart->created_at) {
             return null;
@@ -353,10 +365,7 @@ final readonly class DatabaseStorage implements StorageInterface
     public function getUpdatedAt(string $identifier, string $instance): ?string
     {
         /** @var stdClass|null $cart */
-        $cart = $this->database->table($this->table)
-            ->where('identifier', $identifier)
-            ->where('instance', $instance)
-            ->first(['updated_at']);
+        $cart = $this->baseQuery($identifier, $instance)->first(['updated_at']);
 
         if (! $cart || ! $cart->updated_at) {
             return null;
@@ -374,10 +383,7 @@ final readonly class DatabaseStorage implements StorageInterface
     public function getExpiresAt(string $identifier, string $instance): ?string
     {
         /** @var stdClass|null $cart */
-        $cart = $this->database->table($this->table)
-            ->where('identifier', $identifier)
-            ->where('instance', $instance)
-            ->first(['expires_at']);
+        $cart = $this->baseQuery($identifier, $instance)->first(['expires_at']);
 
         if (! $cart || ! $cart->expires_at) {
             return null;
@@ -417,10 +423,29 @@ final readonly class DatabaseStorage implements StorageInterface
     /**
      * Apply lockForUpdate to a query if configured
      */
-    private function applyLockForUpdate(\Illuminate\Database\Query\Builder $query): \Illuminate\Database\Query\Builder
+    private function applyLockForUpdate(Builder $query): Builder
     {
         if (config('cart.database.lock_for_update', false)) {
             return $query->lockForUpdate();
+        }
+
+        return $query;
+    }
+
+    /**
+     * Create a base query with identifier, instance, and optional tenant scoping.
+     *
+     * All database operations should use this method to ensure consistent
+     * query building with proper tenant isolation when multi-tenancy is enabled.
+     */
+    private function baseQuery(string $identifier, string $instance): Builder
+    {
+        $query = $this->database->table($this->table)
+            ->where('identifier', $identifier)
+            ->where('instance', $instance);
+
+        if ($this->tenantId !== null) {
+            $query->where($this->tenantColumn, $this->tenantId);
         }
 
         return $query;
@@ -461,10 +486,7 @@ final readonly class DatabaseStorage implements StorageInterface
      */
     private function getJsonColumn(string $identifier, string $instance, string $column): array
     {
-        $result = $this->database->table($this->table)
-            ->where('identifier', $identifier)
-            ->where('instance', $instance)
-            ->value($column);
+        $result = $this->baseQuery($identifier, $instance)->value($column);
 
         return $this->decodeData($result, $column, []);
     }
@@ -534,9 +556,7 @@ final readonly class DatabaseStorage implements StorageInterface
         $this->database->transaction(function () use ($identifier, $instance, $data, $operationName): void {
             /** @var stdClass|null $current */
             $current = $this->applyLockForUpdate(
-                $this->database->table($this->table)
-                    ->where('identifier', $identifier)
-                    ->where('instance', $instance)
+                $this->baseQuery($identifier, $instance)
             )->first(['id', 'version']);
 
             if ($current) {
@@ -546,9 +566,7 @@ final readonly class DatabaseStorage implements StorageInterface
                     'expires_at' => $this->calculateExpiresAt(),
                 ]);
 
-                $updated = $this->database->table($this->table)
-                    ->where('identifier', $identifier)
-                    ->where('instance', $instance)
+                $updated = $this->baseQuery($identifier, $instance)
                     ->where('version', $current->version)
                     ->update($updateData);
 
@@ -566,6 +584,11 @@ final readonly class DatabaseStorage implements StorageInterface
                     'updated_at' => now(),
                 ]);
 
+                // Include tenant_id in insert if set
+                if ($this->tenantId !== null) {
+                    $insertData[$this->tenantColumn] = $this->tenantId;
+                }
+
                 $this->database->table($this->table)->insert($insertData);
             }
         });
@@ -578,10 +601,7 @@ final readonly class DatabaseStorage implements StorageInterface
     {
         // Get current version for better error details
         /** @var stdClass|null $currentRecord */
-        $currentRecord = $this->database->table($this->table)
-            ->where('identifier', $identifier)
-            ->where('instance', $instance)
-            ->first(['version']);
+        $currentRecord = $this->baseQuery($identifier, $instance)->first(['version']);
 
         $currentVersion = $currentRecord ? $currentRecord->version : $expectedVersion + 1;
 

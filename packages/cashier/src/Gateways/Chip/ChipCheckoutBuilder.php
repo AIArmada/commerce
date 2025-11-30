@@ -8,10 +8,14 @@ use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Gateways\ChipGateway;
+use AIArmada\CashierChip\CheckoutBuilder as ChipNativeCheckoutBuilder;
 use Illuminate\Http\RedirectResponse;
 
 /**
  * Builder for CHIP checkout sessions (purchases).
+ *
+ * This class provides compatibility with the unified cashier interface while
+ * delegating to the native cashier-chip CheckoutBuilder when available.
  */
 class ChipCheckoutBuilder implements CheckoutBuilderContract
 {
@@ -53,6 +57,16 @@ class ChipCheckoutBuilder implements CheckoutBuilderContract
      * The trial days.
      */
     protected ?int $trial = null;
+
+    /**
+     * The coupon code.
+     */
+    protected ?string $couponCode = null;
+
+    /**
+     * Whether to allow promotion codes.
+     */
+    protected bool $allowPromos = false;
 
     /**
      * Create a new checkout builder.
@@ -150,21 +164,27 @@ class ChipCheckoutBuilder implements CheckoutBuilderContract
 
     /**
      * Apply a coupon or promotion code.
-     * Note: CHIP doesn't support coupons natively.
+     *
+     * Uses the vouchers package integration in cashier-chip.
      */
     public function coupon(string $coupon): static
     {
-        // CHIP doesn't support coupons natively
+        $this->couponCode = $coupon;
+        $this->meta['coupon_id'] = $coupon;
+
         return $this;
     }
 
     /**
      * Allow promotion codes.
-     * Note: CHIP doesn't support promotion codes natively.
+     *
+     * Uses the vouchers package integration in cashier-chip.
      */
     public function allowPromotionCodes(bool $allow = true): static
     {
-        // CHIP doesn't support promotion codes natively
+        $this->allowPromos = $allow;
+        $this->meta['allow_promotion_codes'] = $allow;
+
         return $this;
     }
 
@@ -235,12 +255,13 @@ class ChipCheckoutBuilder implements CheckoutBuilderContract
             'brand_id' => $this->gateway->brandId(),
         ];
 
-        if ($this->billable && $this->billable->chipId()) {
-            $options['client_id'] = $this->billable->chipId();
+        // Check for CHIP customer ID using the unified gateway interface
+        if ($this->billable && $this->billable->hasGatewayId('chip')) {
+            $options['client_id'] = $this->billable->gatewayId('chip');
         } elseif ($this->billable) {
             $options['client'] = [
-                'email' => $this->billable->email,
-                'full_name' => $this->billable->name ?? $this->billable->email,
+                'email' => $this->billable->customerEmail(),
+                'full_name' => $this->billable->customerName() ?? $this->billable->customerEmail(),
             ];
         }
 
@@ -263,6 +284,13 @@ class ChipCheckoutBuilder implements CheckoutBuilderContract
             ];
             $options['skip_capture'] = true;
             $options['force_recurring'] = true;
+        }
+
+        // Add coupon metadata if present
+        if ($this->couponCode) {
+            $options['metadata'] = array_merge($options['metadata'] ?? [], [
+                'coupon_id' => $this->couponCode,
+            ]);
         }
 
         $purchase = $this->gateway->client()->createPurchase($options);

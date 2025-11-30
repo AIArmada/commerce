@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Concerns;
 
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Invoice;
 use AIArmada\Chip\DataObjects\Purchase;
 use Exception;
@@ -50,7 +50,7 @@ trait ManagesInvoices
     public function findInvoice(string $invoiceId): ?Invoice
     {
         try {
-            $purchaseData = CashierChip::chip()->getPurchase($invoiceId);
+            $purchaseData = Cashier::chip()->getPurchase($invoiceId);
 
             if (is_array($purchaseData)) {
                 $purchase = Purchase::fromArray($purchaseData);
@@ -110,7 +110,7 @@ trait ManagesInvoices
             throw new Exception('No items to invoice.');
         }
 
-        $builder = CashierChip::chip()->purchase()
+        $builder = Cashier::chip()->purchase()
             ->currency($this->preferredCurrency());
 
         foreach ($tabs as $tab) {

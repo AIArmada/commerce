@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Concerns;
 
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\SubscriptionBuilder;
 use Carbon\Carbon;
@@ -136,7 +136,7 @@ trait ManagesSubscriptions
      */
     public function subscriptions(): HasMany
     {
-        return $this->hasMany(CashierChip::$subscriptionModel, $this->getForeignKey())->orderBy('created_at', 'desc');
+        return $this->hasMany(Cashier::$subscriptionModel, $this->getForeignKey())->orderBy('created_at', 'desc');
     }
 
     /**

@@ -8,12 +8,14 @@ use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Clients\ChipSendClient;
 use AIArmada\Chip\Commands\ChipHealthCheckCommand;
 use AIArmada\Chip\Gateways\ChipGateway;
+use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\WebhookService;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentGatewayInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
+use Illuminate\Support\Facades\Route;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -31,11 +33,22 @@ final class ChipServiceProvider extends PackageServiceProvider
             ->hasCommand(ChipHealthCheckCommand::class);
     }
 
+    public function configureWebhookRoutes(): void
+    {
+        if (! config('chip.webhooks.enabled', true)) {
+            return;
+        }
+
+        Route::middleware(config('chip.webhooks.middleware', ['api']))
+            ->group(fn () => $this->loadRoutesFrom(__DIR__.'/../routes/webhooks.php'));
+    }
+
     public function packageRegistered(): void
     {
         $this->registerServices();
         $this->registerClients();
         $this->registerGateway();
+        $this->registerMiddleware();
     }
 
     public function packageBooted(): void
@@ -44,6 +57,8 @@ final class ChipServiceProvider extends PackageServiceProvider
             'collect.api_key',
             'collect.brand_id',
         ]);
+
+        $this->configureWebhookRoutes();
     }
 
     /**
@@ -63,6 +78,15 @@ final class ChipServiceProvider extends PackageServiceProvider
             'chip.send',
             'chip.gateway',
         ];
+    }
+
+    protected function registerMiddleware(): void
+    {
+        $this->app->singleton(VerifyWebhookSignature::class, function ($app): VerifyWebhookSignature {
+            return new VerifyWebhookSignature(
+                $app->make(WebhookService::class)
+            );
+        });
     }
 
     protected function registerServices(): void

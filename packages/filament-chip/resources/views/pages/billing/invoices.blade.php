@@ -2,19 +2,11 @@
     <div class="space-y-6">
         @if($invoices->isEmpty())
             <x-filament::section>
-                <x-filament-panels::placeholder>
-                    <x-slot name="icon">
-                        <x-heroicon-o-document-text class="h-12 w-12" />
-                    </x-slot>
-
-                    <x-slot name="heading">
-                        {{ __('No invoices') }}
-                    </x-slot>
-
-                    <x-slot name="description">
-                        {{ __('You have no billing history yet.') }}
-                    </x-slot>
-                </x-filament-panels::placeholder>
+                <div class="text-center py-6">
+                    <x-heroicon-o-document-text class="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">{{ __('No invoices') }}</h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('You have no billing history yet.') }}</p>
+                </div>
             </x-filament::section>
         @else
             <x-filament::section>
@@ -47,27 +39,25 @@
                             @foreach($invoices as $invoice)
                                 <tr>
                                     <td class="whitespace-nowrap py-4 pl-0 pr-3 text-sm text-gray-900 dark:text-gray-100">
-                                        {{ $invoice->date()->format('M d, Y') }}
+                                        {{ $invoice->date()?->format('M d, Y') ?? '—' }}
                                     </td>
                                     <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-500 dark:text-gray-400">
-                                        {{ $invoice->number ?? $invoice->id }}
+                                        {{ $invoice->number() ?? $invoice->id() }}
                                     </td>
                                     <td class="whitespace-nowrap px-3 py-4 text-sm text-gray-900 dark:text-gray-100">
                                         {{ $invoice->total() }}
                                     </td>
                                     <td class="whitespace-nowrap px-3 py-4 text-sm">
-                                        <x-filament::badge :color="$this->getStatusColor($invoice->status ?? 'unknown')">
-                                            {{ $this->formatInvoiceStatus($invoice->status ?? 'unknown') }}
+                                        <x-filament::badge :color="$this->getStatusColor($invoice->status() ?? 'unknown')">
+                                            {{ $this->formatInvoiceStatus($invoice->status() ?? 'unknown') }}
                                         </x-filament::badge>
                                     </td>
                                     <td class="relative whitespace-nowrap py-4 pl-3 pr-0 text-right text-sm">
                                         <x-filament::button
-                                            tag="a"
-                                            :href="route('filament.' . config('filament-chip.billing.panel_id', 'billing') . '.pages.invoices') . '?download=' . $invoice->id"
                                             color="gray"
                                             size="xs"
                                             icon="heroicon-o-arrow-down-tray"
-                                            wire:click="downloadInvoice('{{ $invoice->id }}')"
+                                            wire:click="downloadInvoice('{{ $invoice->id() }}')"
                                         >
                                             {{ __('Download') }}
                                         </x-filament::button>

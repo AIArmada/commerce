@@ -146,6 +146,16 @@ it('retrieves applied vouchers from cart conditions', function (): void {
         {
             return null;
         }
+
+        public function withTenantId(?string $tenantId): static
+        {
+            return $this;
+        }
+
+        public function getTenantId(): ?string
+        {
+            return null;
+        }
     };
 
     $cart = new Cart(
@@ -320,6 +330,16 @@ it('collects voucher conditions from cart conditions', function (): void {
         }
 
         public function getUpdatedAt(string $identifier, string $instance): ?string
+        {
+            return null;
+        }
+
+        public function withTenantId(?string $tenantId): static
+        {
+            return $this;
+        }
+
+        public function getTenantId(): ?string
         {
             return null;
         }
@@ -507,6 +527,16 @@ it('applies voucher successfully', function (): void {
         {
             return null;
         }
+
+        public function withTenantId(?string $tenantId): static
+        {
+            return $this;
+        }
+
+        public function getTenantId(): ?string
+        {
+            return null;
+        }
     };
 
     $cart = new Cart(
@@ -671,6 +701,16 @@ it('fails to apply invalid voucher code', function (): void {
         {
             return null;
         }
+
+        public function withTenantId(?string $tenantId): static
+        {
+            return $this;
+        }
+
+        public function getTenantId(): ?string
+        {
+            return null;
+        }
     };
 
     $cart = new Cart(
@@ -819,6 +859,16 @@ it('removes voucher successfully', function (): void {
         }
 
         public function getUpdatedAt(string $identifier, string $instance): ?string
+        {
+            return null;
+        }
+
+        public function withTenantId(?string $tenantId): static
+        {
+            return $this;
+        }
+
+        public function getTenantId(): ?string
         {
             return null;
         }
@@ -990,6 +1040,16 @@ it('removes non-existent voucher gracefully', function (): void {
         {
             return null;
         }
+
+        public function withTenantId(?string $tenantId): static
+        {
+            return $this;
+        }
+
+        public function getTenantId(): ?string
+        {
+            return null;
+        }
     };
 
     $cart = new Cart(
@@ -1140,6 +1200,16 @@ it('calculates voucher discount', function (): void {
         }
 
         public function getUpdatedAt(string $identifier, string $instance): ?string
+        {
+            return null;
+        }
+
+        public function withTenantId(?string $tenantId): static
+        {
+            return $this;
+        }
+
+        public function getTenantId(): ?string
         {
             return null;
         }
@@ -1317,6 +1387,16 @@ it('checks if can add voucher', function (): void {
         {
             return null;
         }
+
+        public function withTenantId(?string $tenantId): static
+        {
+            return $this;
+        }
+
+        public function getTenantId(): ?string
+        {
+            return null;
+        }
     };
 
     $cart = new Cart(
@@ -1470,6 +1550,16 @@ it('validates applied vouchers', function (): void {
         }
 
         public function getUpdatedAt(string $identifier, string $instance): ?string
+        {
+            return null;
+        }
+
+        public function withTenantId(?string $tenantId): static
+        {
+            return $this;
+        }
+
+        public function getTenantId(): ?string
         {
             return null;
         }
@@ -1645,6 +1735,16 @@ it('calculates voucher discount with stacking', function (): void {
         }
 
         public function getUpdatedAt(string $identifier, string $instance): ?string
+        {
+            return null;
+        }
+
+        public function withTenantId(?string $tenantId): static
+        {
+            return $this;
+        }
+
+        public function getTenantId(): ?string
         {
             return null;
         }
@@ -1832,6 +1932,16 @@ it('tests cart with vouchers get underlying cart', function (): void {
         {
             return null;
         }
+
+        public function withTenantId(?string $tenantId): static
+        {
+            return $this;
+        }
+
+        public function getTenantId(): ?string
+        {
+            return null;
+        }
     };
 
     $cart = new Cart(
@@ -1980,6 +2090,16 @@ it('removes static voucher condition', function (): void {
         }
 
         public function getUpdatedAt(string $identifier, string $instance): ?string
+        {
+            return null;
+        }
+
+        public function withTenantId(?string $tenantId): static
+        {
+            return $this;
+        }
+
+        public function getTenantId(): ?string
         {
             return null;
         }

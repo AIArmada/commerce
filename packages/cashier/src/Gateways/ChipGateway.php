@@ -19,7 +19,7 @@ use AIArmada\Cashier\Gateways\Chip\ChipPayment;
 use AIArmada\Cashier\Gateways\Chip\ChipPaymentMethod;
 use AIArmada\Cashier\Gateways\Chip\ChipSubscription;
 use AIArmada\Cashier\Gateways\Chip\ChipSubscriptionBuilder;
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier as CashierChip;
 use AIArmada\Chip\Services\ChipCollectService;
 use Exception;
 use Illuminate\Support\Collection;

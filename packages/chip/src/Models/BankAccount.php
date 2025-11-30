@@ -5,17 +5,21 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
+ * @property int $id
  * @property string|null $status
  * @property string|null $account_number
  * @property string|null $bank_code
- * @property string|null $bank_name
- * @property string|null $holder_name
+ * @property string|null $name
  * @property bool $is_debiting_account
  * @property bool $is_crediting_account
+ * @property int|null $group_id
+ * @property string|null $reference
+ * @property string|null $rejection_reason
  */
-class BankAccount extends ChipModel
+class BankAccount extends ChipIntegerModel
 {
     public $timestamps = true;
 

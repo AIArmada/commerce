@@ -37,10 +37,10 @@ final class FilamentStockServiceProvider extends PackageServiceProvider
 
     public function packageBooted(): void
     {
-        // Register Livewire components for widgets
-        Livewire::component('filament-stock::stock-stats-widget', StockStatsWidget::class);
-        Livewire::component('filament-stock::stock-transaction-timeline-widget', StockTransactionTimelineWidget::class);
-        Livewire::component('filament-stock::low-stock-alerts-widget', LowStockAlertsWidget::class);
+        // Register Livewire components for widgets using class-based naming (Livewire 4 style)
+        Livewire::component('a-i-armada.filament-stock.widgets.stock-stats-widget', StockStatsWidget::class);
+        Livewire::component('a-i-armada.filament-stock.widgets.stock-transaction-timeline-widget', StockTransactionTimelineWidget::class);
+        Livewire::component('a-i-armada.filament-stock.widgets.low-stock-alerts-widget', LowStockAlertsWidget::class);
 
         Filament::registerRenderHook('panels::body.start', static function (): void {
             // Registering the plugin implicitly ensures it is discoverable via Filament's panel registry.

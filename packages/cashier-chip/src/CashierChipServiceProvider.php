@@ -8,9 +8,18 @@ use AIArmada\CashierChip\Console\RenewSubscriptionsCommand;
 use AIArmada\CashierChip\Console\WebhookCommand;
 use AIArmada\CashierChip\Contracts\InvoiceRenderer;
 use AIArmada\CashierChip\Invoices\DocsInvoiceRenderer;
-use AIArmada\CashierChip\Invoices\DompdfInvoiceRenderer;
+use AIArmada\CashierChip\Listeners\HandleBillingCancelled;
+use AIArmada\CashierChip\Listeners\HandlePurchasePaid;
+use AIArmada\CashierChip\Listeners\HandlePurchasePaymentFailure;
+use AIArmada\CashierChip\Listeners\HandlePurchasePreauthorized;
+use AIArmada\CashierChip\Listeners\HandleSubscriptionChargeFailure;
+use AIArmada\Chip\Events\BillingCancelled;
+use AIArmada\Chip\Events\PurchasePaid;
+use AIArmada\Chip\Events\PurchasePaymentFailure;
+use AIArmada\Chip\Events\PurchasePreauthorized;
+use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
 use AIArmada\Docs\Services\DocService;
-use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
 
 class CashierChipServiceProvider extends ServiceProvider
@@ -20,11 +29,10 @@ class CashierChipServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        $this->registerLogger();
-        $this->registerRoutes();
         $this->registerResources();
         $this->registerPublishing();
         $this->registerCommands();
+        $this->registerEventListeners();
     }
 
     /**
@@ -59,42 +67,13 @@ class CashierChipServiceProvider extends ServiceProvider
                 return $app->make($renderer);
             }
 
-            // Prefer docs package if available
+            // Use docs package for invoice rendering
             if (class_exists(DocService::class)) {
                 return $app->make(DocsInvoiceRenderer::class);
             }
 
-            // Fallback to DompdfInvoiceRenderer if dompdf is available
-            if (class_exists(\Dompdf\Dompdf::class)) {
-                return $app->make(DompdfInvoiceRenderer::class);
-            }
-
-            return null;
+            throw new \RuntimeException('Docs package is required for invoice rendering. Install aiarmada/docs.');
         });
-    }
-
-    /**
-     * Register the logger.
-     */
-    protected function registerLogger(): void
-    {
-        // Logger is handled by the chip package
-    }
-
-    /**
-     * Register the package routes.
-     */
-    protected function registerRoutes(): void
-    {
-        if (CashierChip::$registersRoutes) {
-            Route::group([
-                'prefix' => config('cashier-chip.path'),
-                'namespace' => 'AIArmada\CashierChip\Http\Controllers',
-                'as' => 'cashier-chip.',
-            ], function (): void {
-                $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
-            });
-        }
     }
 
     /**
@@ -102,6 +81,7 @@ class CashierChipServiceProvider extends ServiceProvider
      */
     protected function registerResources(): void
     {
+        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
         $this->loadViewsFrom(__DIR__.'/../resources/views', 'cashier-chip');
     }
 
@@ -140,5 +120,24 @@ class CashierChipServiceProvider extends ServiceProvider
                 WebhookCommand::class,
             ]);
         }
+    }
+
+    /**
+     * Register event listeners for chip package events.
+     *
+     * These listeners handle cashier-chip billing logic when chip events fire.
+     */
+    protected function registerEventListeners(): void
+    {
+        // Only register if chip package is available
+        if (! class_exists(PurchasePaid::class)) {
+            return;
+        }
+
+        Event::listen(PurchasePaid::class, HandlePurchasePaid::class);
+        Event::listen(PurchasePaymentFailure::class, HandlePurchasePaymentFailure::class);
+        Event::listen(PurchasePreauthorized::class, HandlePurchasePreauthorized::class);
+        Event::listen(PurchaseSubscriptionChargeFailure::class, HandleSubscriptionChargeFailure::class);
+        Event::listen(BillingCancelled::class, HandleBillingCancelled::class);
     }
 }

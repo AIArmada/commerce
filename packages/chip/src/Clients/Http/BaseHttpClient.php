@@ -229,7 +229,8 @@ abstract class BaseHttpClient
             Log::channel($this->logChannel())
                 ->error('CHIP API Request Failed', [
                     'error' => $exception->getMessage(),
-                    'trace' => $exception->getTraceAsString(),
+                    'exception_class' => $exception::class,
+                    'code' => $exception->getCode(),
                 ]);
         }
 

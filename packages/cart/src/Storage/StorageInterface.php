@@ -7,6 +7,24 @@ namespace AIArmada\Cart\Storage;
 interface StorageInterface
 {
     /**
+     * Set the tenant ID for multi-tenancy scoping.
+     *
+     * Returns a new instance with the tenant ID set, allowing fluent chaining.
+     * When tenant ID is set, all storage operations will be scoped to that tenant.
+     *
+     * @param  string|null  $tenantId  The tenant ID to scope operations to
+     * @return static New instance with tenant ID set
+     */
+    public function withTenantId(?string $tenantId): static;
+
+    /**
+     * Get the current tenant ID.
+     *
+     * @return string|null The current tenant ID or null if not set
+     */
+    public function getTenantId(): ?string;
+
+    /**
      * Check if cart exists in storage
      *
      * @param  string  $identifier  User/session identifier

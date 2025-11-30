@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Concerns;
 
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\PaymentMethod;
 use Exception;
 use Illuminate\Support\Collection;
@@ -22,7 +22,7 @@ trait ManagesPaymentMethods
             return collect();
         }
 
-        $tokens = CashierChip::chip()->listClientRecurringTokens($this->chip_id);
+        $tokens = Cashier::chip()->listClientRecurringTokens($this->chip_id);
 
         return collect($tokens)->map(function ($token) {
             return new PaymentMethod($this, $token);
@@ -39,7 +39,7 @@ trait ManagesPaymentMethods
         }
 
         try {
-            $token = CashierChip::chip()->getClientRecurringToken($this->chip_id, $paymentMethodId);
+            $token = Cashier::chip()->getClientRecurringToken($this->chip_id, $paymentMethodId);
 
             return new PaymentMethod($this, $token);
         } catch (Exception $e) {
@@ -123,7 +123,7 @@ trait ManagesPaymentMethods
             return;
         }
 
-        CashierChip::chip()->deleteClientRecurringToken($this->chip_id, $paymentMethodId);
+        Cashier::chip()->deleteClientRecurringToken($this->chip_id, $paymentMethodId);
 
         // If this was the default, update it
         if ($this->hasDefaultPaymentMethod()) {
@@ -189,7 +189,7 @@ trait ManagesPaymentMethods
             'failure_redirect' => $options['cancel_url'] ?? null,
         ], $options['chip'] ?? []);
 
-        return CashierChip::chip()->createPurchase($purchaseData);
+        return Cashier::chip()->createPurchase($purchaseData);
     }
 
     /**

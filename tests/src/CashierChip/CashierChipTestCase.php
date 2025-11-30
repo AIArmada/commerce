@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\CashierChip;
 
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\CashierChipServiceProvider;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\SubscriptionItem;
@@ -28,20 +28,18 @@ abstract class CashierChipTestCase extends Orchestra
     {
         parent::setUp();
 
-        $this->setUpDatabase();
-
-        CashierChip::useCustomerModel(User::class);
-        CashierChip::useSubscriptionModel(Subscription::class);
-        CashierChip::useSubscriptionItemModel(SubscriptionItem::class);
+        Cashier::useCustomerModel(User::class);
+        Cashier::useSubscriptionModel(Subscription::class);
+        Cashier::useSubscriptionItemModel(SubscriptionItem::class);
 
         // Enable fake CHIP service for all tests
-        $this->fakeChip = CashierChip::fake();
+        $this->fakeChip = Cashier::fake();
     }
 
     protected function tearDown(): void
     {
         // Reset and disable fake after each test
-        CashierChip::unfake();
+        Cashier::unfake();
 
         parent::tearDown();
     }
@@ -94,15 +92,19 @@ abstract class CashierChipTestCase extends Orchestra
         $app['config']->set('cashier-chip.webhooks.verify_signature', false);
     }
 
-    protected function setUpDatabase(): void
+    /**
+     * Define database migrations.
+     */
+    protected function defineDatabaseMigrations(): void
     {
-        // Users table
+        // Create users table first (before cashier-chip migrations run)
         Schema::create('users', function (Blueprint $table): void {
             $table->id();
             $table->string('name');
             $table->string('email')->unique();
             $table->string('phone')->nullable();
             $table->string('chip_id')->nullable()->index();
+            $table->string('chip_default_payment_method')->nullable();
             $table->string('pm_type')->nullable();
             $table->string('pm_last_four', 4)->nullable();
             $table->string('default_pm_id')->nullable();
@@ -110,39 +112,8 @@ abstract class CashierChipTestCase extends Orchestra
             $table->timestamps();
         });
 
-        // Subscriptions table
-        Schema::create('chip_subscriptions', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('user_id');
-            $table->string('type');
-            $table->string('chip_id')->unique();
-            $table->string('chip_status');
-            $table->string('chip_price')->nullable();
-            $table->integer('quantity')->nullable();
-            $table->string('recurring_token')->nullable();
-            $table->string('billing_interval')->default('month');
-            $table->integer('billing_interval_count')->default(1);
-            $table->timestamp('trial_ends_at')->nullable();
-            $table->timestamp('next_billing_at')->nullable();
-            $table->timestamp('ends_at')->nullable();
-            $table->timestamps();
-
-            $table->index(['user_id', 'chip_status']);
-        });
-
-        // Subscription items table
-        Schema::create('chip_subscription_items', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('subscription_id');
-            $table->string('chip_id')->unique();
-            $table->string('chip_product')->nullable();
-            $table->string('chip_price')->nullable();
-            $table->integer('quantity')->nullable();
-            $table->integer('unit_amount')->nullable();
-            $table->timestamps();
-
-            $table->index(['subscription_id', 'chip_price']);
-        });
+        // Load package migrations
+        $this->loadMigrationsFrom(__DIR__.'/../../../packages/cashier-chip/database/migrations');
     }
 
     protected function createUser(array $attributes = []): User

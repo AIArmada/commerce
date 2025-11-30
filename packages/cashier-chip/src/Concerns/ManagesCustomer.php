@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Concerns;
 
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Exceptions\CustomerAlreadyCreated;
 use AIArmada\CashierChip\Exceptions\InvalidCustomer;
 use AIArmada\Chip\DataObjects\Client;
@@ -52,7 +52,7 @@ trait ManagesCustomer
             $options = array_merge($options, $address);
         }
 
-        $client = CashierChip::chip()->createClient(array_filter($options));
+        $client = Cashier::chip()->createClient(array_filter($options));
 
         $this->chip_id = $client->id;
         $this->save();
@@ -69,7 +69,7 @@ trait ManagesCustomer
     {
         $this->assertCustomerExists();
 
-        return CashierChip::chip()->updateClient($this->chip_id, $options);
+        return Cashier::chip()->updateClient($this->chip_id, $options);
     }
 
     /**
@@ -121,7 +121,7 @@ trait ManagesCustomer
     {
         $this->assertCustomerExists();
 
-        return CashierChip::chip()->getClient($this->chip_id);
+        return Cashier::chip()->getClient($this->chip_id);
     }
 
     /**
@@ -197,6 +197,68 @@ trait ManagesCustomer
     }
 
     /**
+     * Get the customer's balance as a formatted string.
+     *
+     * Note: CHIP doesn't natively support customer balances like Stripe.
+     * This returns a formatted zero balance for API compatibility.
+     */
+    public function balance(): string
+    {
+        return $this->formatAmount($this->rawBalance());
+    }
+
+    /**
+     * Get the customer's raw balance in the smallest currency unit.
+     *
+     * Note: CHIP doesn't natively support customer balances like Stripe.
+     * This returns 0 for API compatibility.
+     */
+    public function rawBalance(): int
+    {
+        return 0;
+    }
+
+    /**
+     * Determine if the customer has a positive balance.
+     */
+    public function hasBalance(): bool
+    {
+        return $this->rawBalance() > 0;
+    }
+
+    /**
+     * Determine if the customer has a negative balance (owes money).
+     */
+    public function hasNegativeBalance(): bool
+    {
+        return $this->rawBalance() < 0;
+    }
+
+    /**
+     * Determine if the customer is not invoiceable.
+     */
+    public function isNotTaxExempt(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Determine if the customer is tax exempt.
+     */
+    public function isTaxExempt(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Determine if reverse charge applies to the customer.
+     */
+    public function reverseChargeApplies(): bool
+    {
+        return false;
+    }
+
+    /**
      * Determine if the customer has a CHIP customer ID and throw an exception if not.
      *
      * @throws InvalidCustomer
@@ -213,6 +275,6 @@ trait ManagesCustomer
      */
     protected function formatAmount(int $amount): string
     {
-        return CashierChip::formatAmount($amount, $this->preferredCurrency());
+        return Cashier::formatAmount($amount, $this->preferredCurrency());
     }
 }

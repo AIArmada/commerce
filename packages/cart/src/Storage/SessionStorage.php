@@ -13,9 +13,42 @@ final readonly class SessionStorage implements StorageInterface
 {
     public function __construct(
         private Session $session,
-        private string $keyPrefix = 'cart'
+        private string $keyPrefix = 'cart',
+        private ?string $tenantId = null
     ) {
         //
+    }
+
+    /**
+     * Create a new instance scoped to a specific tenant
+     */
+    public function withTenantId(?string $tenantId): static
+    {
+        return new self(
+            session: $this->session,
+            keyPrefix: $this->keyPrefix,
+            tenantId: $tenantId
+        );
+    }
+
+    /**
+     * Get the current tenant ID
+     */
+    public function getTenantId(): ?string
+    {
+        return $this->tenantId;
+    }
+
+    /**
+     * Get the base key prefix including tenant scope when set
+     */
+    private function getBasePrefix(): string
+    {
+        if ($this->tenantId !== null) {
+            return "{$this->keyPrefix}.tenant.{$this->tenantId}";
+        }
+
+        return $this->keyPrefix;
     }
 
     /**
@@ -47,8 +80,8 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function flush(): void
     {
-        // Remove the entire cart data from session
-        $this->session->forget($this->keyPrefix);
+        // Remove the entire cart data from session for this tenant scope
+        $this->session->forget($this->getBasePrefix());
     }
 
     /**
@@ -221,7 +254,7 @@ final readonly class SessionStorage implements StorageInterface
             return $metadata;
         }
 
-        $metadataPrefix = "{$this->keyPrefix}.{$identifier}.{$instance}.metadata.";
+        $metadataPrefix = "{$this->getBasePrefix()}.{$identifier}.{$instance}.metadata.";
         $allKeys = $this->session->all();
 
         foreach ($allKeys as $key => $value) {
@@ -360,7 +393,7 @@ final readonly class SessionStorage implements StorageInterface
     {
         $instances = [];
         $allSessionData = $this->session->all();
-        $itemsPrefix = "{$this->keyPrefix}.{$identifier}.";
+        $itemsPrefix = "{$this->getBasePrefix()}.{$identifier}.";
 
         foreach (array_keys($allSessionData) as $key) {
             if (str_starts_with((string) $key, $itemsPrefix)) {
@@ -380,7 +413,7 @@ final readonly class SessionStorage implements StorageInterface
 
     private function getInstanceRegistryKey(string $identifier): string
     {
-        return "{$this->keyPrefix}.{$identifier}._instances";
+        return "{$this->getBasePrefix()}.{$identifier}._instances";
     }
 
     private function registerInstance(string $identifier, string $instance): void
@@ -455,27 +488,27 @@ final readonly class SessionStorage implements StorageInterface
 
     private function getVersionKey(string $identifier, string $instance): string
     {
-        return "{$this->keyPrefix}.{$identifier}.{$instance}.version";
+        return "{$this->getBasePrefix()}.{$identifier}.{$instance}.version";
     }
 
     private function getIdKey(string $identifier, string $instance): string
     {
-        return "{$this->keyPrefix}.{$identifier}.{$instance}.id";
+        return "{$this->getBasePrefix()}.{$identifier}.{$instance}.id";
     }
 
     private function getCreatedAtKey(string $identifier, string $instance): string
     {
-        return "{$this->keyPrefix}.{$identifier}.{$instance}.created_at";
+        return "{$this->getBasePrefix()}.{$identifier}.{$instance}.created_at";
     }
 
     private function getUpdatedAtKey(string $identifier, string $instance): string
     {
-        return "{$this->keyPrefix}.{$identifier}.{$instance}.updated_at";
+        return "{$this->getBasePrefix()}.{$identifier}.{$instance}.updated_at";
     }
 
     private function getMetadataRegistryKey(string $identifier, string $instance): string
     {
-        return "{$this->keyPrefix}.{$identifier}.{$instance}.metadata._keys";
+        return "{$this->getBasePrefix()}.{$identifier}.{$instance}.metadata._keys";
     }
 
     private function addMetadataKey(string $identifier, string $instance, string $key): void
@@ -506,7 +539,7 @@ final readonly class SessionStorage implements StorageInterface
         }
 
         // Fallback to legacy scan if registry wasn't available
-        $metadataPrefix = "{$this->keyPrefix}.{$identifier}.{$instance}.metadata.";
+        $metadataPrefix = "{$this->getBasePrefix()}.{$identifier}.{$instance}.metadata.";
         $allSessionData = $this->session->all();
         $keysToRemove = [];
         $this->findMetadataKeys($allSessionData, $metadataPrefix, '', $keysToRemove);
@@ -548,7 +581,7 @@ final readonly class SessionStorage implements StorageInterface
      */
     private function getItemsKey(string $identifier, string $instance): string
     {
-        return "{$this->keyPrefix}.{$identifier}.{$instance}.items";
+        return "{$this->getBasePrefix()}.{$identifier}.{$instance}.items";
     }
 
     /**
@@ -556,7 +589,7 @@ final readonly class SessionStorage implements StorageInterface
      */
     private function getConditionsKey(string $identifier, string $instance): string
     {
-        return "{$this->keyPrefix}.{$identifier}.{$instance}.conditions";
+        return "{$this->getBasePrefix()}.{$identifier}.{$instance}.conditions";
     }
 
     /**
@@ -564,6 +597,6 @@ final readonly class SessionStorage implements StorageInterface
      */
     private function getMetadataKey(string $identifier, string $instance, string $key): string
     {
-        return "{$this->keyPrefix}.{$identifier}.{$instance}.metadata.{$key}";
+        return "{$this->getBasePrefix()}.{$identifier}.{$instance}.metadata.{$key}";
     }
 }

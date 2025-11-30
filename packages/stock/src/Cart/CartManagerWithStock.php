@@ -92,6 +92,16 @@ final class CartManagerWithStock implements CartManagerInterface
         return $this;
     }
 
+    public function forTenant(string $tenantId): static
+    {
+        return new self($this->manager->forTenant($tenantId));
+    }
+
+    public function getTenantId(): ?string
+    {
+        return $this->manager->getTenantId();
+    }
+
     public function session(?string $sessionKey = null): StorageInterface
     {
         return $this->manager->session($sessionKey);

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip;
 
+use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
+use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Database\Factories\SubscriptionItemFactory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,6 +24,8 @@ class SubscriptionItem extends Model
     use HasFactory;
 
     use HasUuids;
+    use InteractsWithPaymentBehavior;
+    use Prorates;
 
     /**
      * The table associated with the model.
@@ -52,7 +56,7 @@ class SubscriptionItem extends Model
      */
     public function subscription(): BelongsTo
     {
-        $model = CashierChip::$subscriptionModel;
+        $model = Cashier::$subscriptionModel;
 
         return $this->belongsTo($model, (new $model)->getForeignKey());
     }
@@ -153,5 +157,15 @@ class SubscriptionItem extends Model
     public function totalAmount(): int
     {
         return ($this->unit_amount ?? 0) * ($this->quantity ?? 1);
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     *
+     * @return \Illuminate\Database\Eloquent\Factories\Factory
+     */
+    protected static function newFactory()
+    {
+        return SubscriptionItemFactory::new();
     }
 }

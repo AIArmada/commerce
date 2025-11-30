@@ -9,6 +9,7 @@ use AIArmada\Chip\DataObjects\BankAccount;
 use AIArmada\Chip\DataObjects\SendInstruction;
 use AIArmada\Chip\DataObjects\SendLimit;
 use AIArmada\Chip\DataObjects\SendWebhook;
+use AIArmada\Chip\Exceptions\ChipValidationException;
 
 class ChipSendService
 {
@@ -24,6 +25,11 @@ class ChipSendService
         return $this->client->get('send/accounts');
     }
 
+    /**
+     * Create a send instruction (payout).
+     *
+     * @throws ChipValidationException If validation fails
+     */
     public function createSendInstruction(
         int $amountInCents,
         string $currency,
@@ -32,6 +38,8 @@ class ChipSendService
         string $reference,
         string $email
     ): SendInstruction {
+        $this->validateSendInstruction($amountInCents, $currency, $email, $description, $reference);
+
         $data = [
             'bank_account_id' => $recipientBankAccountId,
             'amount' => number_format($amountInCents / 100, 2, '.', ''),
@@ -44,6 +52,45 @@ class ChipSendService
         $response = $this->client->post('send/send_instructions', $data);
 
         return SendInstruction::fromArray($response);
+    }
+
+    /**
+     * Validate send instruction parameters.
+     *
+     * @throws ChipValidationException If validation fails
+     */
+    private function validateSendInstruction(
+        int $amountInCents,
+        string $currency,
+        string $email,
+        string $description,
+        string $reference
+    ): void {
+        $errors = [];
+
+        if ($amountInCents <= 0) {
+            $errors['amount'] = ['Amount must be a positive integer'];
+        }
+
+        if (mb_strlen($currency) !== 3) {
+            $errors['currency'] = ['Currency must be a 3-character ISO code'];
+        }
+
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = ['Invalid email address'];
+        }
+
+        if (empty(trim($description))) {
+            $errors['description'] = ['Description is required'];
+        }
+
+        if (empty(trim($reference))) {
+            $errors['reference'] = ['Reference is required'];
+        }
+
+        if (! empty($errors)) {
+            throw new ChipValidationException('Send instruction validation failed', $errors);
+        }
     }
 
     public function getSendInstruction(string $id): SendInstruction

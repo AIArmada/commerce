@@ -6,6 +6,7 @@ namespace AIArmada\Chip\Builders;
 
 use AIArmada\Chip\DataObjects\Product;
 use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Contracts\Payment\CheckoutableInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\CustomerInterface;
@@ -48,6 +49,8 @@ final class PurchaseBuilder
      *
      * This is the preferred way to add products as it ensures type-safe
      * currency handling across all commerce packages.
+     *
+     * @throws ChipValidationException If price is negative
      */
     public function addProductMoney(
         string $name,
@@ -57,6 +60,12 @@ final class PurchaseBuilder
         float $taxPercent = 0,
         ?string $category = null
     ): self {
+        $priceAmount = (int) $price->getAmount();
+
+        if ($priceAmount < 0) {
+            throw new ChipValidationException('Product price cannot be negative', ['price' => $priceAmount]);
+        }
+
         $currency = $price->getCurrency()->getCurrency();
 
         // Ensure currency is set on the purchase
@@ -66,7 +75,7 @@ final class PurchaseBuilder
 
         $product = [
             'name' => $name,
-            'price' => (int) $price->getAmount(),
+            'price' => $priceAmount,
             'quantity' => (string) $quantity,
         ];
 
@@ -121,6 +130,8 @@ final class PurchaseBuilder
      * Add a product to the purchase (legacy method, accepts cents).
      *
      * @deprecated Use addProductMoney() for type-safe Money handling
+     *
+     * @throws ChipValidationException If price is negative
      */
     public function addProduct(
         string $name,
@@ -130,6 +141,10 @@ final class PurchaseBuilder
         float $taxPercent = 0,
         ?string $category = null
     ): self {
+        if ($price < 0) {
+            throw new ChipValidationException('Product price cannot be negative', ['price' => $price]);
+        }
+
         $product = [
             'name' => $name,
             'price' => $price,

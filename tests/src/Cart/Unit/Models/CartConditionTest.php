@@ -611,6 +611,16 @@ it('shouldApply returns true for static and evaluates rules for dynamic', functi
             {
                 return null;
             }
+
+            public function withTenantId(?string $tenantId): static
+            {
+                return $this;
+            }
+
+            public function getTenantId(): ?string
+            {
+                return null;
+            }
         },
         identifier: 'test-user'
     );

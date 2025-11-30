@@ -93,6 +93,46 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
+     * Get the card brand for blade templates (alias for brand).
+     */
+    public function cardBrand(): ?string
+    {
+        return $this->brand();
+    }
+
+    /**
+     * Get the last four digits for blade templates (alias for lastFour).
+     */
+    public function cardLastFour(): ?string
+    {
+        return $this->lastFour();
+    }
+
+    /**
+     * Get the expiration month for blade templates (alias for expirationMonth).
+     */
+    public function cardExpMonth(): ?int
+    {
+        return $this->expirationMonth();
+    }
+
+    /**
+     * Get the expiration year for blade templates (alias for expirationYear).
+     */
+    public function cardExpYear(): ?int
+    {
+        return $this->expirationYear();
+    }
+
+    /**
+     * Get the CHIP token identifier (for blade template compatibility).
+     */
+    public function chipToken(): ?string
+    {
+        return $this->id();
+    }
+
+    /**
      * Get the type of payment method.
      */
     public function type(): string

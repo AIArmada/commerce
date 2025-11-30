@@ -2,19 +2,11 @@
     <div class="space-y-6">
         @if($subscriptions->isEmpty())
             <x-filament::section>
-                <x-filament-panels::placeholder>
-                    <x-slot name="icon">
-                        <x-heroicon-o-credit-card class="h-12 w-12" />
-                    </x-slot>
-
-                    <x-slot name="heading">
-                        {{ __('No subscriptions') }}
-                    </x-slot>
-
-                    <x-slot name="description">
-                        {{ __('You currently have no active subscriptions.') }}
-                    </x-slot>
-                </x-filament-panels::placeholder>
+                <div class="text-center py-6">
+                    <x-heroicon-o-credit-card class="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">{{ __('No subscriptions') }}</h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('You currently have no active subscriptions.') }}</p>
+                </div>
             </x-filament::section>
         @else
             @foreach($subscriptions as $subscription)

@@ -34,6 +34,7 @@ return [
 
     'tables' => [
         'created_on_format' => 'Y-m-d H:i:s',
+        'updated_on_format' => 'Y-m-d H:i:s',
         'amount_precision' => 2,
     ],
 

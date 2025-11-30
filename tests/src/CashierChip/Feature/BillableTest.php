@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;
@@ -46,8 +46,8 @@ it('can get default payment method', function (): void {
         'pm_last_four' => '4242',
     ]);
 
-    // Add a recurring token to the fake client using CashierChip::getFake()
-    $fake = CashierChip::getFake();
+    // Add a recurring token to the fake client using Cashier::getFake()
+    $fake = Cashier::getFake();
     $fake->addRecurringToken($this->user->chip_id, [
         'type' => 'card',
         'card_brand' => 'Visa',
@@ -68,8 +68,8 @@ it('can update default payment method', function (): void {
     // Set up user with chip_id
     $this->user->update(['chip_id' => 'cli_test456']);
 
-    // Add a recurring token to the fake client using CashierChip::getFake()
-    $fake = CashierChip::getFake();
+    // Add a recurring token to the fake client using Cashier::getFake()
+    $fake = Cashier::getFake();
     $token = $fake->addRecurringToken($this->user->chip_id, [
         'type' => 'card',
         'card_brand' => 'Mastercard',

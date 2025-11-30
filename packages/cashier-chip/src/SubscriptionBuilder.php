@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip;
 
+use AIArmada\CashierChip\Concerns\AllowsCoupons;
+use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
+use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
+use AIArmada\CashierChip\Concerns\Prorates;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
@@ -16,7 +20,11 @@ use InvalidArgumentException;
 
 class SubscriptionBuilder
 {
+    use AllowsCoupons;
     use Conditionable;
+    use HandlesPaymentFailures;
+    use InteractsWithPaymentBehavior;
+    use Prorates;
 
     /**
      * The model that is subscribing.
@@ -273,6 +281,23 @@ class SubscriptionBuilder
             $this->owner->createOrGetChipCustomer();
         }
 
+        // Validate coupon if provided
+        $couponId = $this->couponId ?? $this->promotionCodeId;
+        $couponDiscount = 0;
+        $couponDuration = null;
+
+        if ($couponId) {
+            $this->validateCouponForSubscriptionApplication($couponId);
+
+            $coupon = $this->retrieveCoupon($couponId);
+
+            if ($coupon) {
+                $totalAmount = $this->calculateTotalAmount();
+                $couponDiscount = $coupon->calculateDiscount($totalAmount);
+                $couponDuration = $coupon->duration();
+            }
+        }
+
         // Calculate the next billing date
         $nextBillingAt = $this->calculateNextBillingDate();
 
@@ -291,7 +316,7 @@ class SubscriptionBuilder
         $firstItem = Arr::first($this->items);
         $isSinglePrice = count($this->items) === 1;
 
-        return DB::transaction(function () use ($status, $trialEndsAt, $nextBillingAt, $recurringToken, $firstItem, $isSinglePrice): Subscription {
+        return DB::transaction(function () use ($status, $trialEndsAt, $nextBillingAt, $recurringToken, $firstItem, $isSinglePrice, $couponId, $couponDiscount, $couponDuration): Subscription {
             /** @var Subscription $subscription */
             $subscription = $this->owner->subscriptions()->create([
                 'type' => $this->type,
@@ -305,6 +330,10 @@ class SubscriptionBuilder
                 'billing_interval_count' => $this->billingIntervalCount,
                 'recurring_token' => $recurringToken ?? $this->owner->defaultPaymentMethod(),
                 'ends_at' => null,
+                'coupon_id' => $couponId,
+                'coupon_discount' => $couponDiscount,
+                'coupon_duration' => $couponDuration,
+                'coupon_applied_at' => $couponId ? Carbon::now() : null,
             ]);
 
             // Create subscription items
@@ -316,6 +345,11 @@ class SubscriptionBuilder
                     'quantity' => $item['quantity'] ?? 1,
                     'unit_amount' => $item['unit_amount'] ?? null,
                 ]);
+            }
+
+            // Record coupon usage
+            if ($couponId && $couponDiscount > 0) {
+                $this->recordCouponUsage($couponId, $couponDiscount, $this->owner);
             }
 
             return $subscription;
@@ -353,6 +387,20 @@ class SubscriptionBuilder
         // Calculate the total amount from items
         $amount = $this->calculateTotalAmount();
 
+        // Apply coupon discount if present
+        $couponId = $this->couponId ?? $this->promotionCodeId;
+
+        if ($couponId) {
+            $this->validateCouponForCheckout($couponId);
+
+            $coupon = $this->retrieveCoupon($couponId);
+
+            if ($coupon) {
+                $discount = $coupon->calculateDiscount($amount);
+                $amount = max(0, $amount - $discount);
+            }
+        }
+
         // Build the checkout session
         $metadata = array_merge($this->metadata, [
             'subscription_type' => $this->type,
@@ -365,15 +413,33 @@ class SubscriptionBuilder
             $metadata['trial_ends_at'] = $this->trialExpires->toIso8601String();
         }
 
-        return Checkout::customer($this->owner)
+        if ($couponId) {
+            $metadata['coupon_id'] = $couponId;
+        }
+
+        $checkout = Checkout::customer($this->owner)
             ->recurring()
-            ->withMetadata($metadata)
-            ->create(
-                $amount,
-                array_merge([
-                    'reference' => "Subscription: {$this->type}",
-                ], $sessionOptions)
-            );
+            ->withMetadata($metadata);
+
+        // Pass coupon settings to checkout
+        if ($this->couponId) {
+            $checkout->withCoupon($this->couponId);
+        }
+
+        if ($this->promotionCodeId) {
+            $checkout->withPromotionCode($this->promotionCodeId);
+        }
+
+        if ($this->allowPromotionCodes) {
+            $checkout->allowPromotionCodes();
+        }
+
+        return $checkout->create(
+            $amount,
+            array_merge([
+                'reference' => "Subscription: {$this->type}",
+            ], $sessionOptions)
+        );
     }
 
     /**

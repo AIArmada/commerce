@@ -168,6 +168,14 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
+     * Determine if the invoice is paid (alias for consistency with Stripe).
+     */
+    public function isPaid(): bool
+    {
+        return $this->paid();
+    }
+
+    /**
      * Determine if the invoice is open (unpaid).
      */
     public function open(): bool
@@ -176,11 +184,83 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
+     * Determine if the invoice is open (alias for consistency with Stripe).
+     */
+    public function isOpen(): bool
+    {
+        return $this->open();
+    }
+
+    /**
      * Determine if the invoice is voided.
      */
     public function voided(): bool
     {
         return $this->purchase->isCancelled();
+    }
+
+    /**
+     * Determine if the invoice is void (alias for consistency with Stripe).
+     */
+    public function isVoid(): bool
+    {
+        return $this->voided();
+    }
+
+    /**
+     * Determine if the invoice is a draft.
+     */
+    public function isDraft(): bool
+    {
+        return $this->purchase->status === 'created';
+    }
+
+    /**
+     * Determine if the invoice is uncollectible.
+     */
+    public function isUncollectible(): bool
+    {
+        return in_array($this->purchase->status, ['failed', 'expired'], true);
+    }
+
+    /**
+     * Get the amount due for the invoice.
+     */
+    public function amountDue(): string
+    {
+        return $this->formatAmount($this->rawAmountDue());
+    }
+
+    /**
+     * Get the raw amount due for the invoice.
+     */
+    public function rawAmountDue(): int
+    {
+        if ($this->isPaid()) {
+            return 0;
+        }
+
+        return $this->rawTotal();
+    }
+
+    /**
+     * Get the amount paid on the invoice.
+     */
+    public function amountPaid(): string
+    {
+        return $this->formatAmount($this->rawAmountPaid());
+    }
+
+    /**
+     * Get the raw amount paid on the invoice.
+     */
+    public function rawAmountPaid(): int
+    {
+        if ($this->isPaid()) {
+            return $this->rawTotal();
+        }
+
+        return 0;
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Models;
 
+use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -50,28 +51,52 @@ class Payment extends ChipModel
         return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['updated_on'] ?? null));
     }
 
+    /** @return Attribute<Money|null, never> */
+    public function amountMoney(): Attribute
+    {
+        return Attribute::get(fn (): ?Money => $this->toMoney($this->amount, $this->currency));
+    }
+
+    /** @return Attribute<Money|null, never> */
+    public function netAmountMoney(): Attribute
+    {
+        return Attribute::get(fn (): ?Money => $this->toMoney($this->net_amount, $this->currency));
+    }
+
+    /** @return Attribute<Money|null, never> */
+    public function feeAmountMoney(): Attribute
+    {
+        return Attribute::get(fn (): ?Money => $this->toMoney($this->fee_amount, $this->currency));
+    }
+
+    /** @return Attribute<Money|null, never> */
+    public function pendingAmountMoney(): Attribute
+    {
+        return Attribute::get(fn (): ?Money => $this->toMoney($this->pending_amount, $this->currency));
+    }
+
     /** @return Attribute<string|null, never> */
     public function formattedAmount(): Attribute
     {
-        return Attribute::get(fn (): ?string => $this->formatMoney($this->amount, $this->currency));
+        return Attribute::get(fn (): ?string => $this->amountMoney?->format());
     }
 
     /** @return Attribute<string|null, never> */
     public function formattedNetAmount(): Attribute
     {
-        return Attribute::get(fn (): ?string => $this->formatMoney($this->net_amount, $this->currency));
+        return Attribute::get(fn (): ?string => $this->netAmountMoney?->format());
     }
 
     /** @return Attribute<string|null, never> */
     public function formattedFeeAmount(): Attribute
     {
-        return Attribute::get(fn (): ?string => $this->formatMoney($this->fee_amount, $this->currency));
+        return Attribute::get(fn (): ?string => $this->feeAmountMoney?->format());
     }
 
     /** @return Attribute<string|null, never> */
     public function formattedPendingAmount(): Attribute
     {
-        return Attribute::get(fn (): ?string => $this->formatMoney($this->pending_amount, $this->currency));
+        return Attribute::get(fn (): ?string => $this->pendingAmountMoney?->format());
     }
 
     /** @return Attribute<Carbon|null, never> */

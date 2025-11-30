@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip;
 
+use AIArmada\CashierChip\Concerns\AllowsCoupons;
 use Illuminate\Support\Traits\Conditionable;
 
 /**
@@ -11,6 +12,7 @@ use Illuminate\Support\Traits\Conditionable;
  */
 class CheckoutBuilder
 {
+    use AllowsCoupons;
     use Conditionable;
 
     /**
@@ -174,6 +176,24 @@ class CheckoutBuilder
      */
     public function create(int $amount, array $options = []): Checkout
     {
+        // Apply coupon discount if present
+        $couponId = $this->couponId ?? $this->promotionCodeId;
+
+        if ($couponId) {
+            $this->validateCouponForCheckout($couponId);
+
+            $coupon = $this->retrieveCoupon($couponId);
+
+            if ($coupon) {
+                $discount = $coupon->calculateDiscount($amount);
+                $amount = max(0, $amount - $discount);
+
+                // Store coupon in metadata for tracking
+                $this->metadata['coupon_id'] = $couponId;
+                $this->metadata['coupon_discount'] = $discount;
+            }
+        }
+
         $options = array_merge([
             'recurring' => $this->recurring,
             'success_url' => $this->successUrl,
@@ -182,6 +202,7 @@ class CheckoutBuilder
             'metadata' => $this->metadata,
             'products' => $this->products ?: null,
             'currency' => $this->currency,
+            'allow_promotion_codes' => $this->allowPromotionCodes,
         ], $options);
 
         // Remove null values

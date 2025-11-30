@@ -4,35 +4,39 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Models;
 
+use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 
 /**
+ * @property int $id
  * @property int $amount
- * @property string|null $currency
- * @property int $net_amount
  * @property int $fee
+ * @property int $net_amount
+ * @property string $currency
+ * @property string $fee_type
+ * @property string $transaction_type
  * @property string|null $status
+ * @property int $approvals_required
+ * @property int $approvals_received
  */
-class SendLimit extends ChipModel
+class SendLimit extends ChipIntegerModel
 {
-    public $timestamps = false;
-
-    /** @return Attribute<string|null, never> */
-    public function formattedAmount(): Attribute
+    /** @return Attribute<Money|null, never> */
+    public function amountMoney(): Attribute
     {
-        return Attribute::get(fn (): ?string => $this->formatMoney((int) $this->amount, $this->currency));
+        return Attribute::get(fn (): ?Money => $this->toMoney((int) $this->amount, $this->currency));
     }
 
-    /** @return Attribute<string|null, never> */
-    public function formattedNetAmount(): Attribute
+    /** @return Attribute<Money|null, never> */
+    public function netAmountMoney(): Attribute
     {
-        return Attribute::get(fn (): ?string => $this->formatMoney((int) $this->net_amount, $this->currency));
+        return Attribute::get(fn (): ?Money => $this->toMoney((int) $this->net_amount, $this->currency));
     }
 
-    /** @return Attribute<string|null, never> */
-    public function formattedFee(): Attribute
+    /** @return Attribute<Money|null, never> */
+    public function feeMoney(): Attribute
     {
-        return Attribute::get(fn (): ?string => $this->formatMoney((int) $this->fee, $this->currency));
+        return Attribute::get(fn (): ?Money => $this->toMoney((int) $this->fee, $this->currency));
     }
 
     public function statusColor(): string

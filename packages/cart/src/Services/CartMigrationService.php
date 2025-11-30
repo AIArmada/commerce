@@ -64,6 +64,7 @@ class CartMigrationService
      * Migrate guest cart to user cart when user logs in.
      *
      * IMPORTANT: This method works with IDENTIFIERS (who owns the cart) and INSTANCES (which cart type).
+     * When tenancy is enabled, migrations are scoped to the current tenant context.
      *
      * @param  int  $userId  The user ID that will become the new cart IDENTIFIER
      * @param  string  $instance  The cart instance name (e.g., 'default', 'wishlist')
@@ -79,7 +80,8 @@ class CartMigrationService
         $userIdentifier = (string) $userId;
 
         // Get the storage directly to work with specific identifiers
-        $storage = Cart::storage();
+        // Uses injected storage if available (for tenant-scoped operations)
+        $storage = $this->storage ?: Cart::storage();
 
         // Get guest cart items for the specified instance
         $guestItems = $storage->getItems($guestIdentifier, $instance);

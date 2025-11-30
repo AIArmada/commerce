@@ -48,6 +48,16 @@ use Illuminate\Support\Facades\Facade;
  */
 final class Chip extends Facade
 {
+    /**
+     * Get the absolute URL for the CHIP webhook endpoint.
+     */
+    public static function webhookUrl(): string
+    {
+        $route = config('chip.webhooks.route', '/chip/webhook');
+
+        return url($route);
+    }
+
     protected static function getFacadeAccessor(): string
     {
         return ChipCollectService::class;

@@ -18,9 +18,11 @@
             </x-slot>
 
             @if($subscriptions->isEmpty())
-                <x-filament-panels::placeholder>
-                    {{ __('You have no active subscriptions.') }}
-                </x-filament-panels::placeholder>
+                <div class="text-center py-6">
+                    <x-heroicon-o-credit-card class="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">{{ __('No active subscriptions') }}</h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('You have no active subscriptions.') }}</p>
+                </div>
             @else
                 <div class="divide-y divide-gray-200 dark:divide-gray-700">
                     @foreach($subscriptions->take(3) as $subscription)
@@ -34,14 +36,14 @@
                                         @if($subscription->onTrial())
                                             {{ __('Trial ends :date', ['date' => $subscription->trial_ends_at->format('M d, Y')]) }}
                                         @elseif($subscription->active())
-                                            {{ __('Renews :date', ['date' => $subscription->created_at->addMonth()->format('M d, Y')]) }}
+                                            {{ __('Renews :date', ['date' => $subscription->next_billing_at?->format('M d, Y') ?? 'N/A']) }}
                                         @elseif($subscription->cancelled())
                                             {{ __('Cancelled') }}
                                         @endif
                                     </p>
                                 </div>
                                 <div>
-                                    @if($subscription->active())
+                                    @if($subscription->active() && !$subscription->onTrial())
                                         <x-filament::badge color="success">
                                             {{ __('Active') }}
                                         </x-filament::badge>
@@ -49,7 +51,7 @@
                                         <x-filament::badge color="warning">
                                             {{ __('Trial') }}
                                         </x-filament::badge>
-                                    @elseif($subscription->cancelled())
+                                    @elseif($subscription->canceled())
                                         <x-filament::badge color="danger">
                                             {{ __('Cancelled') }}
                                         </x-filament::badge>
@@ -78,9 +80,11 @@
             </x-slot>
 
             @if($paymentMethods->isEmpty())
-                <x-filament-panels::placeholder>
-                    {{ __('No payment methods on file.') }}
-                </x-filament-panels::placeholder>
+                <div class="text-center py-6">
+                    <x-heroicon-o-credit-card class="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">{{ __('No payment methods') }}</h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('No payment methods on file.') }}</p>
+                </div>
             @else
                 <div class="divide-y divide-gray-200 dark:divide-gray-700">
                     @foreach($paymentMethods->take(2) as $method)
@@ -91,14 +95,14 @@
                                 </div>
                                 <div>
                                     <p class="text-sm font-medium text-gray-900 dark:text-gray-100">
-                                        {{ ucfirst($method->card_brand ?? 'Card') }} •••• {{ $method->card_last_four ?? '****' }}
+                                        {{ ucfirst($method->cardBrand() ?? 'Card') }} •••• {{ $method->cardLastFour() ?? '****' }}
                                     </p>
                                     <p class="text-sm text-gray-500 dark:text-gray-400">
-                                        {{ __('Expires :date', ['date' => ($method->card_exp_month ?? '00') . '/' . ($method->card_exp_year ?? '00')]) }}
+                                        {{ __('Expires :date', ['date' => ($method->cardExpMonth() ?? '00') . '/' . ($method->cardExpYear() ?? '00')]) }}
                                     </p>
                                 </div>
                             </div>
-                            @if($defaultPaymentMethod && $defaultPaymentMethod->chip_token === $method->chip_token)
+                            @if($defaultPaymentMethod && $defaultPaymentMethod->chipToken() === $method->chipToken())
                                 <x-filament::badge color="success" size="sm">
                                     {{ __('Default') }}
                                 </x-filament::badge>
@@ -127,11 +131,13 @@
             </x-slot>
 
             @if($invoices->isEmpty())
-                <x-filament-panels::placeholder>
-                    {{ __('No invoices yet.') }}
-                </x-filament-panels::placeholder>
+                <div class="text-center py-6">
+                    <x-heroicon-o-document-text class="mx-auto h-12 w-12 text-gray-400" />
+                    <h3 class="mt-2 text-sm font-medium text-gray-900 dark:text-gray-100">{{ __('No invoices') }}</h3>
+                    <p class="mt-1 text-sm text-gray-500 dark:text-gray-400">{{ __('No invoices yet.') }}</p>
+                </div>
             @else
-                <x-filament::grid :default="1" class="gap-4">
+                <div class="space-y-4">
                     @foreach($invoices->take(5) as $invoice)
                         <div class="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700 last:border-0">
                             <div>
@@ -151,7 +157,7 @@
                             </div>
                         </div>
                     @endforeach
-                </x-filament::grid>
+                </div>
             @endif
         </x-filament::section>
     </div>

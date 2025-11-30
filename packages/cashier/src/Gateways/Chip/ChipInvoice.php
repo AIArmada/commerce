@@ -165,7 +165,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function isPaid(): bool
     {
-        return $this->purchase->status === 'success';
+        return in_array($this->purchase->status, ['paid', 'success', 'cleared', 'settled']);
     }
 
     /**
@@ -173,7 +173,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function isOpen(): bool
     {
-        return $this->purchase->status === 'pending';
+        return in_array($this->purchase->status, ['created', 'sent', 'viewed', 'pending', 'pending_execute', 'pending_capture']);
     }
 
     /**
@@ -181,7 +181,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function isVoid(): bool
     {
-        return $this->purchase->status === 'cancelled';
+        return in_array($this->purchase->status, ['cancelled', 'expired', 'error', 'blocked']);
     }
 
     /**
@@ -205,7 +205,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function hostedUrl(): ?string
     {
-        return $this->purchase->checkoutUrl;
+        return $this->purchase->checkoutUrl ?? $this->purchase->checkout_url ?? null;
     }
 
     /**

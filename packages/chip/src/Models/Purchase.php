@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Models;
 
+use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
@@ -74,11 +75,11 @@ class Purchase extends ChipModel
         return Attribute::get(fn (): ?string => Arr::get($this->client, 'email'));
     }
 
-    /** @return Attribute<string|null, never> */
-    public function formattedTotal(): Attribute
+    /** @return Attribute<Money|null, never> */
+    public function totalMoney(): Attribute
     {
-        return Attribute::get(function (): ?string {
-            $currency = Arr::get($this->purchase, 'currency');
+        return Attribute::get(function (): ?Money {
+            $currency = Arr::get($this->purchase, 'currency', 'MYR');
             $total = Arr::get($this->purchase, 'total');
 
             if ($total === null) {
@@ -94,7 +95,21 @@ class Purchase extends ChipModel
                 return null;
             }
 
-            return $this->formatMoney((int) $total, is_string($currency) ? mb_strtoupper($currency) : null);
+            return $this->toMoney((int) $total, is_string($currency) ? mb_strtoupper($currency) : 'MYR');
+        });
+    }
+
+    /** @return Attribute<string|null, never> */
+    public function formattedTotal(): Attribute
+    {
+        return Attribute::get(function (): ?string {
+            $money = $this->totalMoney;
+
+            if ($money === null) {
+                return null;
+            }
+
+            return $money->format();
         });
     }
 

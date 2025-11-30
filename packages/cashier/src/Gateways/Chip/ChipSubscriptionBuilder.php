@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Gateways\Chip;
 
 use AIArmada\Cashier\Contracts\BillableContract;
+use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\CashierChip\SubscriptionBuilder;
@@ -13,6 +14,9 @@ use DateTimeInterface;
 
 /**
  * Wrapper for CHIP subscription builder.
+ *
+ * This class wraps the CashierChip SubscriptionBuilder and adapts it
+ * to the unified SubscriptionBuilderContract interface.
  */
 class ChipSubscriptionBuilder implements SubscriptionBuilderContract
 {
@@ -31,29 +35,25 @@ class ChipSubscriptionBuilder implements SubscriptionBuilderContract
         protected string $type,
         string|array $prices = []
     ) {
-        $this->builder = $billable->newSubscription($type, $prices);
+        // Directly instantiate the native SubscriptionBuilder to avoid
+        // conflicts with the unified cashier package's method overrides
+        $this->builder = new SubscriptionBuilder($billable, $type, $prices);
+    }
+
+    /**
+     * Get the gateway name.
+     */
+    public function gateway(): string
+    {
+        return 'chip';
     }
 
     /**
      * Set the price for the subscription.
      */
-    public function price(string $price): static
+    public function price(string|array $price, ?int $quantity = 1): self
     {
-        $this->builder->price($price);
-
-        return $this;
-    }
-
-    /**
-     * Set multiple prices for the subscription.
-     *
-     * @param  array<string>  $prices
-     */
-    public function prices(array $prices): static
-    {
-        foreach ($prices as $price) {
-            $this->builder->price($price);
-        }
+        $this->builder->price($price, $quantity);
 
         return $this;
     }
@@ -61,7 +61,7 @@ class ChipSubscriptionBuilder implements SubscriptionBuilderContract
     /**
      * Set the quantity of the subscription.
      */
-    public function quantity(int $quantity, ?string $price = null): static
+    public function quantity(?int $quantity, ?string $price = null): self
     {
         $this->builder->quantity($quantity, $price);
 
@@ -71,9 +71,9 @@ class ChipSubscriptionBuilder implements SubscriptionBuilderContract
     /**
      * Set the trial days.
      */
-    public function trialDays(int $days): static
+    public function trialDays(int $trialDays): self
     {
-        $this->builder->trialDays($days);
+        $this->builder->trialDays($trialDays);
 
         return $this;
     }
@@ -81,9 +81,9 @@ class ChipSubscriptionBuilder implements SubscriptionBuilderContract
     /**
      * Set the trial end date.
      */
-    public function trialUntil(CarbonInterface|DateTimeInterface $date): static
+    public function trialUntil(CarbonInterface $trialUntil): self
     {
-        $this->builder->trialUntil($date);
+        $this->builder->trialUntil($trialUntil);
 
         return $this;
     }
@@ -91,7 +91,7 @@ class ChipSubscriptionBuilder implements SubscriptionBuilderContract
     /**
      * Skip the trial period.
      */
-    public function skipTrial(): static
+    public function skipTrial(): self
     {
         $this->builder->skipTrial();
 
@@ -99,42 +99,99 @@ class ChipSubscriptionBuilder implements SubscriptionBuilderContract
     }
 
     /**
-     * Apply a coupon.
-     * Note: CHIP doesn't have native coupon support, this is for compatibility.
+     * Set the billing interval.
      */
-    public function coupon(string $coupon): static
+    public function billingInterval(string $interval, int $count = 1): self
     {
-        // CHIP doesn't support coupons natively
-        // Could be implemented via metadata or local discount tracking
+        $this->builder->billingInterval($interval, $count);
+
+        return $this;
+    }
+
+    /**
+     * Set monthly billing.
+     */
+    public function monthly(int $count = 1): self
+    {
+        $this->builder->monthly($count);
+
+        return $this;
+    }
+
+    /**
+     * Set yearly billing.
+     */
+    public function yearly(int $count = 1): self
+    {
+        $this->builder->yearly($count);
+
+        return $this;
+    }
+
+    /**
+     * Set weekly billing.
+     */
+    public function weekly(int $count = 1): self
+    {
+        $this->builder->weekly($count);
+
+        return $this;
+    }
+
+    /**
+     * Set daily billing.
+     */
+    public function daily(int $count = 1): self
+    {
+        $this->builder->daily($count);
+
+        return $this;
+    }
+
+    /**
+     * Anchor the billing cycle to a date.
+     */
+    public function anchorBillingCycleOn(DateTimeInterface|CarbonInterface $date): self
+    {
+        $this->builder->anchorBillingCycleOn($date);
+
+        return $this;
+    }
+
+    /**
+     * Apply a coupon.
+     *
+     * Uses the vouchers package integration in cashier-chip.
+     */
+    public function withCoupon(?string $coupon): self
+    {
+        if ($coupon && method_exists($this->builder, 'withCoupon')) {
+            $this->builder->withCoupon($coupon);
+        }
+
         return $this;
     }
 
     /**
      * Apply a promotion code.
-     * Note: CHIP doesn't have native promotion code support.
+     *
+     * Uses the vouchers package integration in cashier-chip.
      */
-    public function promotionCode(string $promotionCode): static
+    public function withPromotionCode(?string $promotionCode): self
     {
-        // CHIP doesn't support promotion codes natively
+        if ($promotionCode && method_exists($this->builder, 'withPromotionCode')) {
+            $this->builder->withPromotionCode($promotionCode);
+        }
+
         return $this;
     }
 
     /**
-     * Allow promotion codes during checkout.
-     * Note: CHIP doesn't have native promotion code support.
-     */
-    public function allowPromotionCodes(bool $allow = true): static
-    {
-        // CHIP doesn't support promotion codes natively
-        return $this;
-    }
-
-    /**
-     * Set metadata.
+     * Set metadata on the subscription.
      *
      * @param  array<string, mixed>  $metadata
      */
-    public function metadata(array $metadata): static
+    public function withMetadata(array $metadata): self
     {
         $this->builder->withMetadata($metadata);
 
@@ -142,36 +199,33 @@ class ChipSubscriptionBuilder implements SubscriptionBuilderContract
     }
 
     /**
-     * Anchor the billing cycle.
+     * Allow incomplete payments / payment failures.
      */
-    public function anchorBillingCycleOn(int $day): static
+    public function allowPaymentFailures(): self
     {
-        $this->builder->anchorBillingCycleOn($day);
+        if (method_exists($this->builder, 'allowPaymentFailures')) {
+            $this->builder->allowPaymentFailures();
+        }
 
         return $this;
     }
 
     /**
-     * Set the payment behavior.
+     * Add a new subscription without immediate payment.
+     *
+     * @param  array<string, mixed>  $options
      */
-    public function paymentBehavior(string $behavior): static
+    public function add(array $options = []): SubscriptionContract
     {
-        // CHIP-specific method - could be extended
-        return $this;
+        $subscription = $this->builder->add($options);
+
+        return new ChipSubscription($subscription);
     }
 
     /**
-     * Set the billing interval.
-     */
-    public function billingInterval(string $interval): static
-    {
-        $this->builder->billingInterval($interval);
-
-        return $this;
-    }
-
-    /**
-     * Create the subscription.
+     * Create the subscription with payment.
+     *
+     * @param  array<string, mixed>  $options
      */
     public function create(?string $paymentMethod = null, array $options = []): SubscriptionContract
     {
@@ -182,10 +236,50 @@ class ChipSubscriptionBuilder implements SubscriptionBuilderContract
 
     /**
      * Create a checkout session for the subscription.
+     *
+     * @param  array<string, mixed>  $sessionOptions
      */
-    public function checkout(array $options = []): mixed
+    public function checkout(array $sessionOptions = []): CheckoutContract
     {
-        return $this->builder->checkout($options);
+        $checkout = $this->builder->checkout($sessionOptions);
+
+        return new ChipCheckout($checkout->purchase);
+    }
+
+    /**
+     * Get the subscription type.
+     */
+    public function getType(): string
+    {
+        return $this->builder->getType();
+    }
+
+    /**
+     * Get the items/prices on the builder.
+     *
+     * @return array<string, mixed>
+     */
+    public function getItems(): array
+    {
+        return $this->builder->getItems();
+    }
+
+    /**
+     * Get the trial end date.
+     */
+    public function getTrialEnd(): ?CarbonInterface
+    {
+        return $this->builder->getTrialEnd();
+    }
+
+    /**
+     * Get the metadata.
+     *
+     * @return array<string, mixed>
+     */
+    public function getMetadata(): array
+    {
+        return $this->builder->getMetadata();
     }
 
     /**

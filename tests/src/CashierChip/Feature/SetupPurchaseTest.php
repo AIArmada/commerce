@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
 uses(CashierChipTestCase::class);
@@ -13,7 +13,7 @@ beforeEach(function (): void {
     ]);
 
     // Add the client to the fake so getClient works
-    CashierChip::getFake()->getFakeClient()->createClient([
+    Cashier::getFake()->getFakeClient()->createClient([
         'id' => $this->user->chip_id,
         'email' => $this->user->email,
         'full_name' => $this->user->name,

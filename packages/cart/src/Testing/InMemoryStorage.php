@@ -32,72 +32,120 @@ class InMemoryStorage implements StorageInterface
     /** @var array<string, array<string, string>> */
     private array $ids = [];
 
+    private ?string $tenantId = null;
+
+    public function __construct(?string $tenantId = null)
+    {
+        $this->tenantId = $tenantId;
+    }
+
+    /**
+     * Create a new instance scoped to a specific tenant
+     */
+    public function withTenantId(?string $tenantId): static
+    {
+        $storage = clone $this;
+        $storage->tenantId = $tenantId;
+
+        return $storage;
+    }
+
+    /**
+     * Get the current tenant ID
+     */
+    public function getTenantId(): ?string
+    {
+        return $this->tenantId;
+    }
+
+    /**
+     * Get the storage key scoped to tenant if set
+     */
+    private function scopedKey(string $identifier): string
+    {
+        if ($this->tenantId !== null) {
+            return "{$this->tenantId}:{$identifier}";
+        }
+
+        return $identifier;
+    }
+
     public function has(string $identifier, string $instance): bool
     {
-        return isset($this->items[$identifier][$instance]) ||
-               isset($this->conditions[$identifier][$instance]);
+        $key = $this->scopedKey($identifier);
+
+        return isset($this->items[$key][$instance]) ||
+               isset($this->conditions[$key][$instance]);
     }
 
     public function getItems(string $identifier, string $instance): array
     {
-        return $this->items[$identifier][$instance] ?? [];
+        $key = $this->scopedKey($identifier);
+
+        return $this->items[$key][$instance] ?? [];
     }
 
     public function putItems(string $identifier, string $instance, array $items): void
     {
-        $this->items[$identifier][$instance] = $items;
-        $this->instances[$identifier][$instance] = true;
+        $key = $this->scopedKey($identifier);
+        $this->items[$key][$instance] = $items;
+        $this->instances[$key][$instance] = true;
         $this->incrementVersion($identifier, $instance);
     }
 
     public function getConditions(string $identifier, string $instance): array
     {
-        return $this->conditions[$identifier][$instance] ?? [];
+        $key = $this->scopedKey($identifier);
+
+        return $this->conditions[$key][$instance] ?? [];
     }
 
     public function putConditions(string $identifier, string $instance, array $conditions): void
     {
-        $this->conditions[$identifier][$instance] = $conditions;
-        $this->instances[$identifier][$instance] = true;
+        $key = $this->scopedKey($identifier);
+        $this->conditions[$key][$instance] = $conditions;
+        $this->instances[$key][$instance] = true;
         $this->incrementVersion($identifier, $instance);
     }
 
     public function forget(string $identifier, string $instance): void
     {
+        $key = $this->scopedKey($identifier);
         unset(
-            $this->items[$identifier][$instance],
-            $this->conditions[$identifier][$instance],
-            $this->metadata[$identifier][$instance],
-            $this->versions[$identifier][$instance],
-            $this->ids[$identifier][$instance]
+            $this->items[$key][$instance],
+            $this->conditions[$key][$instance],
+            $this->metadata[$key][$instance],
+            $this->versions[$key][$instance],
+            $this->ids[$key][$instance]
         );
 
-        if (empty($this->items[$identifier])) {
-            unset($this->items[$identifier]);
+        if (empty($this->items[$key])) {
+            unset($this->items[$key]);
         }
-        if (empty($this->conditions[$identifier])) {
-            unset($this->conditions[$identifier]);
+        if (empty($this->conditions[$key])) {
+            unset($this->conditions[$key]);
         }
-        if (empty($this->metadata[$identifier])) {
-            unset($this->metadata[$identifier]);
+        if (empty($this->metadata[$key])) {
+            unset($this->metadata[$key]);
         }
-        if (empty($this->versions[$identifier])) {
-            unset($this->versions[$identifier]);
+        if (empty($this->versions[$key])) {
+            unset($this->versions[$key]);
         }
-        if (empty($this->ids[$identifier])) {
-            unset($this->ids[$identifier]);
+        if (empty($this->ids[$key])) {
+            unset($this->ids[$key]);
         }
     }
 
     public function forgetIdentifier(string $identifier): void
     {
+        $key = $this->scopedKey($identifier);
         unset(
-            $this->items[$identifier],
-            $this->conditions[$identifier],
-            $this->metadata[$identifier],
-            $this->versions[$identifier],
-            $this->ids[$identifier],
-            $this->instances[$identifier]
+            $this->items[$key],
+            $this->conditions[$key],
+            $this->metadata[$key],
+            $this->versions[$key],
+            $this->ids[$key],
+            $this->instances[$key]
         );
     }
 
@@ -113,12 +161,15 @@ class InMemoryStorage implements StorageInterface
 
     public function getInstances(string $identifier): array
     {
-        return array_keys($this->instances[$identifier] ?? []);
+        $key = $this->scopedKey($identifier);
+
+        return array_keys($this->instances[$key] ?? []);
     }
 
     public function putMetadata(string $identifier, string $instance, string $key, mixed $value): void
     {
-        $this->metadata[$identifier][$instance][$key] = $value;
+        $scopedKey = $this->scopedKey($identifier);
+        $this->metadata[$scopedKey][$instance][$key] = $value;
         $this->incrementVersion($identifier, $instance);
     }
 
@@ -128,15 +179,18 @@ class InMemoryStorage implements StorageInterface
             return;
         }
 
+        $scopedKey = $this->scopedKey($identifier);
         foreach ($metadata as $key => $value) {
-            $this->metadata[$identifier][$instance][$key] = $value;
+            $this->metadata[$scopedKey][$instance][$key] = $value;
         }
         $this->incrementVersion($identifier, $instance);
     }
 
     public function getMetadata(string $identifier, string $instance, string $key): mixed
     {
-        return $this->metadata[$identifier][$instance][$key] ?? null;
+        $scopedKey = $this->scopedKey($identifier);
+
+        return $this->metadata[$scopedKey][$instance][$key] ?? null;
     }
 
     /**
@@ -144,70 +198,80 @@ class InMemoryStorage implements StorageInterface
      */
     public function getAllMetadata(string $identifier, string $instance): array
     {
-        return $this->metadata[$identifier][$instance] ?? [];
+        $key = $this->scopedKey($identifier);
+
+        return $this->metadata[$key][$instance] ?? [];
     }
 
     public function clearMetadata(string $identifier, string $instance): void
     {
-        if (isset($this->metadata[$identifier][$instance])) {
-            unset($this->metadata[$identifier][$instance]);
+        $key = $this->scopedKey($identifier);
+        if (isset($this->metadata[$key][$instance])) {
+            unset($this->metadata[$key][$instance]);
         }
         $this->incrementVersion($identifier, $instance);
     }
 
     public function clearAll(string $identifier, string $instance): void
     {
-        $this->items[$identifier][$instance] = [];
-        $this->conditions[$identifier][$instance] = [];
-        if (isset($this->metadata[$identifier][$instance])) {
-            unset($this->metadata[$identifier][$instance]);
+        $key = $this->scopedKey($identifier);
+        $this->items[$key][$instance] = [];
+        $this->conditions[$key][$instance] = [];
+        if (isset($this->metadata[$key][$instance])) {
+            unset($this->metadata[$key][$instance]);
         }
         $this->incrementVersion($identifier, $instance);
     }
 
     public function getVersion(string $identifier, string $instance): ?int
     {
-        return $this->versions[$identifier][$instance] ?? null;
+        $key = $this->scopedKey($identifier);
+
+        return $this->versions[$key][$instance] ?? null;
     }
 
     public function getId(string $identifier, string $instance): ?string
     {
-        if (! isset($this->ids[$identifier][$instance])) {
-            $this->ids[$identifier][$instance] = uniqid('cart_', true);
+        $key = $this->scopedKey($identifier);
+        if (! isset($this->ids[$key][$instance])) {
+            $this->ids[$key][$instance] = uniqid('cart_', true);
         }
 
-        return $this->ids[$identifier][$instance];
+        return $this->ids[$key][$instance];
     }
 
     public function swapIdentifier(string $oldIdentifier, string $newIdentifier, string $instance): bool
     {
-        if (! isset($this->items[$oldIdentifier][$instance]) && ! isset($this->conditions[$oldIdentifier][$instance])) {
+        $oldKey = $this->scopedKey($oldIdentifier);
+        $newKey = $this->scopedKey($newIdentifier);
+
+        if (! isset($this->items[$oldKey][$instance]) && ! isset($this->conditions[$oldKey][$instance])) {
             return false;
         }
 
-        if (isset($this->items[$oldIdentifier][$instance])) {
-            $this->items[$newIdentifier][$instance] = $this->items[$oldIdentifier][$instance];
-            unset($this->items[$oldIdentifier][$instance]);
+        if (isset($this->items[$oldKey][$instance])) {
+            $this->items[$newKey][$instance] = $this->items[$oldKey][$instance];
+            unset($this->items[$oldKey][$instance]);
         }
 
-        if (isset($this->conditions[$oldIdentifier][$instance])) {
-            $this->conditions[$newIdentifier][$instance] = $this->conditions[$oldIdentifier][$instance];
-            unset($this->conditions[$oldIdentifier][$instance]);
+        if (isset($this->conditions[$oldKey][$instance])) {
+            $this->conditions[$newKey][$instance] = $this->conditions[$oldKey][$instance];
+            unset($this->conditions[$oldKey][$instance]);
         }
 
-        if (isset($this->metadata[$oldIdentifier][$instance])) {
-            $this->metadata[$newIdentifier][$instance] = $this->metadata[$oldIdentifier][$instance];
-            unset($this->metadata[$oldIdentifier][$instance]);
+        if (isset($this->metadata[$oldKey][$instance])) {
+            $this->metadata[$newKey][$instance] = $this->metadata[$oldKey][$instance];
+            unset($this->metadata[$oldKey][$instance]);
         }
 
-        if (isset($this->versions[$oldIdentifier][$instance])) {
-            $this->versions[$newIdentifier][$instance] = $this->versions[$oldIdentifier][$instance];
-            unset($this->versions[$oldIdentifier][$instance]);
+        if (isset($this->versions[$oldKey][$instance])) {
+            $this->versions[$newKey][$instance] = $this->versions[$oldKey][$instance];
+            unset($this->versions[$oldKey][$instance]);
         }
 
-        if (isset($this->ids[$oldIdentifier][$instance])) {
-            $this->ids[$newIdentifier][$instance] = $this->ids[$oldIdentifier][$instance];
-            unset($this->ids[$oldIdentifier][$instance]);
+        if (isset($this->ids[$oldKey][$instance])) {
+            $this->ids[$newKey][$instance] = $this->ids[$oldKey][$instance];
+            unset($this->ids[$oldKey][$instance]);
         }
 
         return true;
@@ -215,9 +279,10 @@ class InMemoryStorage implements StorageInterface
 
     public function putBoth(string $identifier, string $instance, array $items, array $conditions): void
     {
-        $this->items[$identifier][$instance] = $items;
-        $this->conditions[$identifier][$instance] = $conditions;
-        $this->instances[$identifier][$instance] = true;
+        $key = $this->scopedKey($identifier);
+        $this->items[$key][$instance] = $items;
+        $this->conditions[$key][$instance] = $conditions;
+        $this->instances[$key][$instance] = true;
         $this->incrementVersion($identifier, $instance);
     }
 
@@ -239,7 +304,8 @@ class InMemoryStorage implements StorageInterface
 
     private function incrementVersion(string $identifier, string $instance): void
     {
-        $current = $this->versions[$identifier][$instance] ?? 0;
-        $this->versions[$identifier][$instance] = $current + 1;
+        $key = $this->scopedKey($identifier);
+        $current = $this->versions[$key][$instance] ?? 0;
+        $this->versions[$key][$instance] = $current + 1;
     }
 }

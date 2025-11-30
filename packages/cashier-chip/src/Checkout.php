@@ -80,7 +80,7 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
      */
     public static function create($owner, int $amount, array $options = []): self
     {
-        $builder = CashierChip::chip()->purchase()
+        $builder = Cashier::chip()->purchase()
             ->currency($options['currency'] ?? config('cashier-chip.currency', 'MYR'));
 
         // Add products

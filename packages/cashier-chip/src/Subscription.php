@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip;
 
+use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
+use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
+use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Database\Factories\SubscriptionFactory;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
@@ -29,10 +32,14 @@ use LogicException;
  */
 class Subscription extends Model
 {
+    use HandlesPaymentFailures;
+
     /** @use HasFactory<SubscriptionFactory> */
     use HasFactory;
 
     use HasUuids;
+    use InteractsWithPaymentBehavior;
+    use Prorates;
 
     public const STATUS_ACTIVE = 'active';
 
@@ -81,6 +88,8 @@ class Subscription extends Model
         'quantity' => 'integer',
         'trial_ends_at' => 'datetime',
         'next_billing_at' => 'datetime',
+        'coupon_discount' => 'integer',
+        'coupon_applied_at' => 'datetime',
     ];
 
     /**
@@ -96,7 +105,7 @@ class Subscription extends Model
      */
     public function owner(): BelongsTo
     {
-        $model = CashierChip::$customerModel;
+        $model = Cashier::$customerModel;
 
         return $this->belongsTo($model, (new $model)->getForeignKey());
     }
@@ -106,7 +115,7 @@ class Subscription extends Model
      */
     public function items(): HasMany
     {
-        return $this->hasMany(CashierChip::$subscriptionItemModel);
+        return $this->hasMany(Cashier::$subscriptionItemModel);
     }
 
     /**
@@ -210,9 +219,9 @@ class Subscription extends Model
     public function active(): bool
     {
         return ! $this->ended() &&
-            (! CashierChip::$deactivateIncomplete || $this->chip_status !== self::STATUS_INCOMPLETE) &&
+            (! Cashier::$deactivateIncomplete || $this->chip_status !== self::STATUS_INCOMPLETE) &&
             $this->chip_status !== self::STATUS_INCOMPLETE_EXPIRED &&
-            (! CashierChip::$deactivatePastDue || $this->chip_status !== self::STATUS_PAST_DUE) &&
+            (! Cashier::$deactivatePastDue || $this->chip_status !== self::STATUS_PAST_DUE) &&
             $this->chip_status !== self::STATUS_UNPAID;
     }
 
@@ -231,11 +240,11 @@ class Subscription extends Model
         })->where('chip_status', '!=', self::STATUS_INCOMPLETE_EXPIRED)
             ->where('chip_status', '!=', self::STATUS_UNPAID);
 
-        if (CashierChip::$deactivatePastDue) {
+        if (Cashier::$deactivatePastDue) {
             $query->where('chip_status', '!=', self::STATUS_PAST_DUE);
         }
 
-        if (CashierChip::$deactivateIncomplete) {
+        if (Cashier::$deactivateIncomplete) {
             $query->where('chip_status', '!=', self::STATUS_INCOMPLETE);
         }
     }
@@ -710,23 +719,366 @@ class Subscription extends Model
     }
 
     /**
-     * Make sure a subscription is not incomplete when performing changes.
+     * Determine if the subscription has a discount applied.
+     */
+    public function hasDiscount(): bool
+    {
+        return ! is_null($this->coupon_id);
+    }
+
+    /**
+     * The discount that applies to the subscription, if applicable.
+     */
+    public function discount(): ?Discount
+    {
+        if (! $this->hasDiscount()) {
+            return null;
+        }
+
+        return new Discount([
+            'coupon' => $this->coupon_id,
+            'amount' => $this->coupon_discount,
+            'start' => $this->coupon_applied_at,
+            'end' => $this->calculateDiscountEnd(),
+            'currency' => $this->owner->preferredCurrency(),
+        ]);
+    }
+
+    /**
+     * Get all discounts that apply to the subscription.
      *
+     * @return \Illuminate\Support\Collection<int, Discount>
+     */
+    public function discounts(): \Illuminate\Support\Collection
+    {
+        $discount = $this->discount();
+
+        if (! $discount) {
+            return collect();
+        }
+
+        return collect([$discount]);
+    }
+
+    /**
+     * Apply a coupon to the subscription.
+     *
+     * @throws Exceptions\InvalidCoupon
+     */
+    public function applyCoupon(string $couponId): void
+    {
+        $this->validateCouponForApplication($couponId);
+
+        $coupon = $this->retrieveCoupon($couponId);
+
+        if (! $coupon) {
+            throw Exceptions\InvalidCoupon::notFound($couponId);
+        }
+
+        $totalAmount = $this->calculateSubscriptionAmount();
+        $discount = $coupon->calculateDiscount($totalAmount);
+
+        $this->fill([
+            'coupon_id' => $couponId,
+            'coupon_discount' => $discount,
+            'coupon_duration' => $coupon->duration(),
+            'coupon_applied_at' => Carbon::now(),
+        ])->save();
+
+        // Record coupon usage
+        $this->recordCouponUsage($couponId, $discount);
+    }
+
+    /**
+     * Apply a promotion code to the subscription.
+     */
+    public function applyPromotionCode(string $promotionCodeId): void
+    {
+        // For CHIP/Vouchers, promotion codes are the same as coupon codes
+        $this->applyCoupon($promotionCodeId);
+    }
+
+    /**
+     * Remove the discount from the subscription.
+     */
+    public function removeDiscount(): void
+    {
+        $this->fill([
+            'coupon_id' => null,
+            'coupon_discount' => null,
+            'coupon_duration' => null,
+            'coupon_applied_at' => null,
+        ])->save();
+    }
+
+    /**
+     * Validate that a coupon can be applied to the subscription.
+     *
+     * @throws Exceptions\InvalidCoupon
+     */
+    protected function validateCouponForApplication(string $couponId): void
+    {
+        $coupon = $this->retrieveCoupon($couponId);
+
+        if (! $coupon) {
+            throw Exceptions\InvalidCoupon::notFound($couponId);
+        }
+
+        if (! $coupon->isValid()) {
+            throw Exceptions\InvalidCoupon::inactive($couponId);
+        }
+
+        if ($coupon->isForeverAmountOff()) {
+            throw Exceptions\InvalidCoupon::cannotApplyForeverAmountOffToSubscription($couponId);
+        }
+    }
+
+    /**
+     * Retrieve a coupon by its ID (voucher code).
+     */
+    protected function retrieveCoupon(string $couponId): ?Coupon
+    {
+        if (! class_exists(\AIArmada\Vouchers\Services\VoucherService::class)) {
+            return null;
+        }
+
+        /** @var \AIArmada\Vouchers\Services\VoucherService $service */
+        $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
+
+        $voucherData = $service->find($couponId);
+
+        if (! $voucherData) {
+            return null;
+        }
+
+        return new Coupon($voucherData);
+    }
+
+    /**
+     * Record coupon usage.
+     */
+    protected function recordCouponUsage(string $couponId, int $discountAmount): void
+    {
+        if (! class_exists(\AIArmada\Vouchers\Services\VoucherService::class)) {
+            return;
+        }
+
+        /** @var \AIArmada\Vouchers\Services\VoucherService $service */
+        $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
+
+        $currency = $this->owner->preferredCurrency();
+
+        $service->recordUsage(
+            code: $couponId,
+            discountAmount: \Akaunting\Money\Money::$currency($discountAmount),
+            channel: 'subscription',
+            metadata: ['subscription_id' => $this->id],
+            redeemedBy: $this->owner,
+        );
+    }
+
+    /**
+     * Calculate when the discount ends based on duration.
+     */
+    protected function calculateDiscountEnd(): ?\Carbon\CarbonInterface
+    {
+        if (! $this->coupon_applied_at || ! $this->coupon_duration) {
+            return null;
+        }
+
+        return match ($this->coupon_duration) {
+            'once' => $this->next_billing_at,
+            'forever' => null,
+            'repeating' => $this->coupon_applied_at->copy()->addMonths(
+                $this->retrieveCoupon($this->coupon_id)?->durationInMonths() ?? 1
+            ),
+            default => null,
+        };
+    }
+
+    /**
+     * Get the latest payment for a Subscription.
+     */
+    public function latestPayment(): ?Payment
+    {
+        // For CHIP, we would need to track payments separately
+        // This is a placeholder implementation
+        return null;
+    }
+
+    /**
+     * Sync the CHIP status of the subscription.
+     *
+     * Since CHIP doesn't have native subscriptions, this method
+     * recalculates the status based on local state.
+     */
+    public function syncChipStatus(): void
+    {
+        $status = $this->calculateCurrentStatus();
+
+        $this->chip_status = $status;
+        $this->save();
+    }
+
+    /**
+     * Add a new price to the subscription.
+     *
+     * @return $this
+     *
+     * @throws Exceptions\SubscriptionUpdateFailure
+     */
+    public function addPrice(string $price, ?int $quantity = 1, array $options = []): static
+    {
+        $this->guardAgainstIncomplete();
+
+        if ($this->items->contains('chip_price', $price)) {
+            throw Exceptions\SubscriptionUpdateFailure::duplicatePrice($this, $price);
+        }
+
+        $this->items()->create([
+            'chip_id' => 'si_'.uniqid().'_'.time(),
+            'chip_product' => $options['product'] ?? null,
+            'chip_price' => $price,
+            'quantity' => $quantity,
+            'unit_amount' => $options['unit_amount'] ?? null,
+        ]);
+
+        $this->unsetRelation('items');
+
+        if ($this->hasSinglePrice()) {
+            $this->fill([
+                'chip_price' => null,
+                'quantity' => null,
+            ])->save();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Remove a price from the subscription.
+     *
+     * @return $this
+     *
+     * @throws Exceptions\SubscriptionUpdateFailure
+     */
+    public function removePrice(string $price): static
+    {
+        if ($this->hasSinglePrice()) {
+            throw Exceptions\SubscriptionUpdateFailure::cannotDeleteLastPrice($this);
+        }
+
+        $this->items()->where('chip_price', $price)->delete();
+
+        $this->unsetRelation('items');
+
+        if ($this->items()->count() < 2) {
+            $item = $this->items()->first();
+
+            $this->fill([
+                'chip_price' => $item->chip_price,
+                'quantity' => $item->quantity,
+            ])->save();
+        }
+
+        return $this;
+    }
+
+    /**
+     * Get the upcoming invoice for the subscription.
+     */
+    public function upcomingInvoice(): ?Invoice
+    {
+        if ($this->canceled()) {
+            return null;
+        }
+
+        // For CHIP, upcoming invoices would need to be calculated locally
+        // This is a placeholder - implement based on your business logic
+        return null;
+    }
+
+    /**
+     * Get the latest invoice for the subscription.
+     */
+    public function latestInvoice(): ?Invoice
+    {
+        // For CHIP, invoices would need to be tracked separately
+        // This is a placeholder - implement based on your invoice storage
+        return null;
+    }
+
+    /**
+     * Get a collection of the subscription's invoices.
+     *
+     * @return \Illuminate\Support\Collection<int, Invoice>
+     */
+    public function invoices(): \Illuminate\Support\Collection
+    {
+        // For CHIP, invoices would need to be tracked separately
+        return collect();
+    }
+
+    /**
+     * Determine if the subscription is paused.
+     */
+    public function paused(): bool
+    {
+        return $this->chip_status === self::STATUS_PAUSED;
+    }
+
+    /**
+     * Filter query by paused.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder  $query
+     */
+    public function scopePaused(Builder $query): void
+    {
+        $query->where('chip_status', self::STATUS_PAUSED);
+    }
+
+    /**
+     * Pause the subscription.
+     *
+     * @return $this
+     */
+    public function pause(): static
+    {
+        $this->fill([
+            'chip_status' => self::STATUS_PAUSED,
+        ])->save();
+
+        return $this;
+    }
+
+    /**
+     * Unpause the subscription.
+     *
+     * @return $this
+     */
+    public function unpause(): static
+    {
+        $this->fill([
+            'chip_status' => self::STATUS_ACTIVE,
+        ])->save();
+
+        return $this;
+    }
+
+    /**
+     * Make sure a subscription is not incomplete when performing changes.
      *
      * @throws Exceptions\SubscriptionUpdateFailure
      */
     public function guardAgainstIncomplete(): void
     {
         if ($this->incomplete()) {
-            throw new Exceptions\SubscriptionUpdateFailure(
-                'Cannot update an incomplete subscription.'
-            );
+            throw Exceptions\SubscriptionUpdateFailure::incompleteSubscription($this);
         }
     }
 
     /**
      * Make sure a price argument is provided when the subscription is a subscription with multiple prices.
-     *
      *
      * @throws InvalidArgumentException
      */
@@ -754,10 +1106,38 @@ class Subscription extends Model
      */
     protected function calculateSubscriptionAmount(): int
     {
-        // This should be implemented based on your pricing logic
-        // For now, return a default value that should be overridden
         return $this->items->sum(function ($item) {
             return ($item->unit_amount ?? 0) * ($item->quantity ?? 1);
         });
+    }
+
+    /**
+     * Calculate the current status based on subscription state.
+     */
+    protected function calculateCurrentStatus(): string
+    {
+        if ($this->ended()) {
+            return self::STATUS_CANCELED;
+        }
+
+        if ($this->onTrial()) {
+            return self::STATUS_TRIALING;
+        }
+
+        if ($this->onGracePeriod()) {
+            return self::STATUS_CANCELED;
+        }
+
+        return self::STATUS_ACTIVE;
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     *
+     * @return \Illuminate\Database\Eloquent\Factories\Factory
+     */
+    protected static function newFactory()
+    {
+        return SubscriptionFactory::new();
     }
 }

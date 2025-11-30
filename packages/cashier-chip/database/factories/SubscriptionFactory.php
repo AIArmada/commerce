@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Database\Factories;
 
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
 use Carbon\Carbon;
 use DateTimeInterface;
@@ -23,7 +23,7 @@ final class SubscriptionFactory extends Factory
      */
     public function definition(): array
     {
-        $model = CashierChip::$customerModel;
+        $model = Cashier::$customerModel;
 
         return [
             (new $model)->getForeignKey() => ($model)::factory(),

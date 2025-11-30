@@ -88,9 +88,13 @@ return [
     |--------------------------------------------------------------------------
     */
     'webhooks' => [
+        'enabled' => env('CHIP_WEBHOOKS_ENABLED', true),
+        'route' => env('CHIP_WEBHOOK_ROUTE', '/chip/webhook'),
+        'middleware' => ['api'],
         'company_public_key' => env('CHIP_COMPANY_PUBLIC_KEY'),
         'webhook_keys' => $webhookKeys,
         'verify_signature' => env('CHIP_WEBHOOK_VERIFY_SIGNATURE', true),
+        'log_payloads' => env('CHIP_WEBHOOK_LOG_PAYLOADS', false),
     ],
 
     /*

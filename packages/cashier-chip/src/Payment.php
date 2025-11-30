@@ -82,7 +82,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
-     * Get the purchase ID.
+     * Get the payment ID.
      */
     public function id(): string
     {
@@ -94,7 +94,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function amount(): string
     {
-        return CashierChip::formatAmount($this->rawAmount(), $this->currency());
+        return Cashier::formatAmount($this->rawAmount(), $this->currency());
     }
 
     /**
@@ -186,6 +186,73 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
+     * Determine if the payment needs to be captured (pre-authorized).
+     */
+    public function requiresCapture(): bool
+    {
+        return $this->purchase->status === 'preauthorized';
+    }
+
+    /**
+     * Determine if the payment is processing.
+     */
+    public function isProcessing(): bool
+    {
+        return in_array($this->purchase->status, ['pending_execute', 'pending_charge'], true);
+    }
+
+    /**
+     * Capture a payment that is being held for the customer (pre-authorized).
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function capture(array $options = []): self
+    {
+        if (! $this->requiresCapture()) {
+            return $this;
+        }
+
+        $capturedPurchase = Cashier::chip()->capturePurchase(
+            $this->purchase->id,
+            $options['amount'] ?? null
+        );
+
+        $this->purchase = $capturedPurchase;
+
+        return $this;
+    }
+
+    /**
+     * Cancel the payment.
+     *
+     * @param  array<string, mixed>  $options
+     */
+    public function cancel(array $options = []): self
+    {
+        if ($this->isSucceeded() || $this->isCancelled()) {
+            return $this;
+        }
+
+        // CHIP may not support direct cancellation, but we can release pre-auth
+        if ($this->requiresCapture()) {
+            $releasedPurchase = Cashier::chip()->releasePurchase($this->purchase->id);
+            $this->purchase = $releasedPurchase;
+        }
+
+        return $this;
+    }
+
+    /**
+     * Refresh the Payment instance from the CHIP API.
+     */
+    public function refresh(): self
+    {
+        $this->purchase = Cashier::chip()->getPurchase($this->purchase->id);
+
+        return $this;
+    }
+
+    /**
      * Get the recurring token from this purchase (if available).
      */
     public function recurringToken(): ?string
@@ -225,7 +292,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
         $clientId = $this->purchase->getClientId();
 
         if ($clientId) {
-            return $this->customer = CashierChip::findBillable($clientId);
+            return $this->customer = Cashier::findBillable($clientId);
         }
 
         return null;

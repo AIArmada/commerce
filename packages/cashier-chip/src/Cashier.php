@@ -11,7 +11,12 @@ use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
-class CashierChip
+/**
+ * Main Cashier class for CHIP payment gateway.
+ *
+ * Can be referenced as either `Cashier` or `CashierChip` for compatibility.
+ */
+class Cashier
 {
     /**
      * The Cashier Chip library version.
@@ -66,9 +71,9 @@ class CashierChip
     /**
      * Get the customer instance by its CHIP ID.
      *
-     * @return Billable|null
+     * @return (\Illuminate\Database\Eloquent\Model&Billable)|null
      */
-    public static function findBillable(?string $chipId)
+    public static function findBillable(?string $chipId): ?object
     {
         if (! $chipId) {
             return null;

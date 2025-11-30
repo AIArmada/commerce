@@ -144,6 +144,34 @@ class CartManager implements CartManagerInterface
     }
 
     /**
+     * Create a new cart manager instance scoped to a specific tenant
+     *
+     * Use this for admin operations that need to operate on a specific tenant's carts.
+     * The returned manager has isolated storage that only accesses the specified tenant's data.
+     *
+     * @param  string  $tenantId  The tenant identifier to scope operations to
+     */
+    public function forTenant(string $tenantId): static
+    {
+        $scopedStorage = $this->storage->withTenantId($tenantId);
+
+        return new self(
+            storage: $scopedStorage,
+            events: $this->events,
+            eventsEnabled: $this->eventsEnabled,
+            conditionResolver: $this->conditionResolver
+        );
+    }
+
+    /**
+     * Get the current tenant ID if operating in tenant-scoped mode
+     */
+    public function getTenantId(): ?string
+    {
+        return $this->storage->getTenantId();
+    }
+
+    /**
      * Get session storage access for session-specific operations
      *
      * @throws RuntimeException If session is not available

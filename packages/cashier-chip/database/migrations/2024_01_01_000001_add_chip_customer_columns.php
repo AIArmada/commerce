@@ -13,12 +13,30 @@ return new class extends Migration
      */
     public function up(): void
     {
+        if (! Schema::hasTable('users')) {
+            return;
+        }
+
         Schema::table('users', function (Blueprint $table): void {
-            $table->string('chip_id')->nullable()->index();
-            $table->string('chip_default_payment_method')->nullable();
-            $table->string('pm_type')->nullable();
-            $table->string('pm_last_four', 4)->nullable();
-            $table->timestamp('trial_ends_at')->nullable();
+            if (! Schema::hasColumn('users', 'chip_id')) {
+                $table->string('chip_id')->nullable()->index();
+            }
+
+            if (! Schema::hasColumn('users', 'chip_default_payment_method')) {
+                $table->string('chip_default_payment_method')->nullable();
+            }
+
+            if (! Schema::hasColumn('users', 'pm_type')) {
+                $table->string('pm_type')->nullable();
+            }
+
+            if (! Schema::hasColumn('users', 'pm_last_four')) {
+                $table->string('pm_last_four', 4)->nullable();
+            }
+
+            if (! Schema::hasColumn('users', 'trial_ends_at')) {
+                $table->timestamp('trial_ends_at')->nullable();
+            }
         });
     }
 
@@ -27,16 +45,23 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('users', function (Blueprint $table): void {
-            $table->dropIndex(['chip_id']);
+        if (! Schema::hasTable('users')) {
+            return;
+        }
 
-            $table->dropColumn([
-                'chip_id',
-                'chip_default_payment_method',
-                'pm_type',
-                'pm_last_four',
-                'trial_ends_at',
-            ]);
+        Schema::table('users', function (Blueprint $table): void {
+            if (Schema::hasColumn('users', 'chip_id')) {
+                $table->dropIndex(['chip_id']);
+                $table->dropColumn('chip_id');
+            }
+
+            $columns = ['chip_default_payment_method', 'pm_type', 'pm_last_four', 'trial_ends_at'];
+
+            foreach ($columns as $column) {
+                if (Schema::hasColumn('users', $column)) {
+                    $table->dropColumn($column);
+                }
+            }
         });
     }
 };

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Concerns;
 
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Checkout;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment;
@@ -22,7 +22,7 @@ trait PerformsCharges
      */
     public function charge(int $amount, ?string $recurringToken = null, array $options = []): Payment
     {
-        $builder = CashierChip::chip()->purchase()
+        $builder = Cashier::chip()->purchase()
             ->currency($this->preferredCurrency());
 
         // Add the product
@@ -53,7 +53,7 @@ trait PerformsCharges
 
         // If we have a recurring token, charge it immediately
         if ($recurringToken) {
-            $purchase = CashierChip::chip()->chargePurchase($purchase->id, $recurringToken);
+            $purchase = Cashier::chip()->chargePurchase($purchase->id, $recurringToken);
         }
 
         $payment = new Payment($purchase);
@@ -76,13 +76,30 @@ trait PerformsCharges
     }
 
     /**
+     * Create a new Payment for the given payment method types.
+     *
+     * Note: CHIP doesn't support payment method type filtering like Stripe,
+     * but this method is provided for API compatibility.
+     *
+     * @param  array<string>  $paymentMethods
+     * @param  array<string, mixed>  $options
+     */
+    public function payWith(int $amount, array $paymentMethods, array $options = []): Payment
+    {
+        // CHIP doesn't filter by payment method types, but we store them in options
+        $options['payment_methods'] = $paymentMethods;
+
+        return $this->createPayment($amount, $options);
+    }
+
+    /**
      * Create a new Payment instance with a CHIP purchase.
      *
      * @param  array<string, mixed>  $options
      */
     public function createPayment(int $amount, array $options = []): Payment
     {
-        $builder = CashierChip::chip()->purchase()
+        $builder = Cashier::chip()->purchase()
             ->currency($options['currency'] ?? $this->preferredCurrency());
 
         // Add the product
@@ -138,7 +155,7 @@ trait PerformsCharges
     public function findPayment(string $id): ?Payment
     {
         try {
-            $purchase = CashierChip::chip()->getPurchase($id);
+            $purchase = Cashier::chip()->getPurchase($id);
 
             return new Payment($purchase);
         } catch (Exception $e) {
@@ -166,19 +183,19 @@ trait PerformsCharges
      */
     public function refund(string $purchaseId, ?int $amount = null): Purchase
     {
-        return CashierChip::chip()->refundPurchase($purchaseId, $amount);
+        return Cashier::chip()->refundPurchase($purchaseId, $amount);
     }
 
     /**
      * Begin a new checkout session.
      *
-     * @param  array<string>|string  $items
+     * @param  int  $amount  Amount in cents
      * @param  array<string, mixed>  $sessionOptions
      * @param  array<string, mixed>  $customerOptions
      */
-    public function checkout(string|array $items, array $sessionOptions = [], array $customerOptions = []): Checkout
+    public function checkout(int $amount, array $sessionOptions = [], array $customerOptions = []): Checkout
     {
-        return Checkout::customer($this)->create($items, $sessionOptions, $customerOptions);
+        return Checkout::customer($this)->create($amount, array_merge($sessionOptions, $customerOptions));
     }
 
     /**

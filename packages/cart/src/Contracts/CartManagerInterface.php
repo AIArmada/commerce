@@ -47,6 +47,18 @@ interface CartManagerInterface
     public function forgetIdentifier(): static;
 
     /**
+     * Create a new cart manager instance scoped to a specific tenant
+     *
+     * Use this for admin operations that need to operate on a specific tenant's carts.
+     */
+    public function forTenant(string $tenantId): static;
+
+    /**
+     * Get the current tenant ID if operating in tenant-scoped mode
+     */
+    public function getTenantId(): ?string;
+
+    /**
      * Get session storage access for session-specific operations
      */
     public function session(?string $sessionKey = null): StorageInterface;

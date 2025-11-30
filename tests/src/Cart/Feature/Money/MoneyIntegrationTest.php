@@ -130,6 +130,16 @@ function createTestCart(string $instance = 'test'): Cart
             {
                 return null;
             }
+
+            public function withTenantId(?string $tenantId): static
+            {
+                return $this;
+            }
+
+            public function getTenantId(): ?string
+            {
+                return null;
+            }
         },
         identifier: 'test-identifier',
         instanceName: $instance

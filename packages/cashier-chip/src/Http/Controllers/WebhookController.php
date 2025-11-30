@@ -4,31 +4,21 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Http\Controllers;
 
-use AIArmada\CashierChip\CashierChip;
+use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\CashierChip\Events\WebhookHandled;
 use AIArmada\CashierChip\Events\WebhookReceived;
-use AIArmada\CashierChip\Http\Middleware\VerifyWebhookSignature;
+use AIArmada\CashierChip\Subscription;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use Symfony\Component\HttpFoundation\Response;
 
 class WebhookController extends Controller
 {
-    /**
-     * Create a new webhook controller instance.
-     *
-     * @return void
-     */
-    public function __construct()
-    {
-        if (config('cashier-chip.webhooks.verify_signature', true)) {
-            $this->middleware(VerifyWebhookSignature::class);
-        }
-    }
-
     /**
      * Handle a CHIP webhook call.
      */
@@ -38,8 +28,13 @@ class WebhookController extends Controller
 
         WebhookReceived::dispatch($payload);
 
-        $eventType = $payload['event_type'] ?? '';
-        $method = 'handle'.Str::studly(str_replace('.', '_', $eventType));
+        $eventType = $payload['event_type'] ?? null;
+
+        if (! $eventType) {
+            return $this->successMethod('Webhook received');
+        }
+
+        $method = 'handle' . Str::studly(str_replace('.', '_', $eventType));
 
         if (method_exists($this, $method)) {
             $response = $this->{$method}($payload);
@@ -54,258 +49,189 @@ class WebhookController extends Controller
 
     /**
      * Handle purchase.paid event.
-     * CHIP sends this when a purchase payment is completed successfully.
+     *
+     * @param  array<string, mixed>  $payload
      */
     protected function handlePurchasePaid(array $payload): Response
     {
-        return $this->handlePaymentSuccess($payload);
+        $purchase = $payload['purchase'] ?? [];
+        $clientId = $purchase['client']['id'] ?? null;
+
+        if (! $clientId) {
+            return $this->successMethod('Webhook received');
+        }
+
+        $billable = $this->getBillableByChipId($clientId);
+
+        if (! $billable) {
+            return $this->successMethod('Webhook received');
+        }
+
+        // Update default payment method if recurring token provided
+        $this->updatePaymentMethodFromWebhook($billable, $purchase);
+
+        // Update subscription status if applicable
+        $this->updateSubscriptionOnPaymentSuccess($billable, $purchase);
+
+        PaymentSucceeded::dispatch($billable, $purchase);
+
+        return $this->successMethod();
     }
 
     /**
      * Handle purchase.payment_failure event.
-     * CHIP sends this when a purchase payment fails.
+     *
+     * @param  array<string, mixed>  $payload
      */
     protected function handlePurchasePaymentFailure(array $payload): Response
     {
-        return $this->handlePaymentFailed($payload);
-    }
+        $purchase = $payload['purchase'] ?? [];
+        $clientId = $purchase['client']['id'] ?? null;
 
-    /**
-     * Handle purchase.created event.
-     */
-    protected function handlePurchaseCreated(array $payload): Response
-    {
-        // Purchase created - no action needed unless tracking
-        return $this->successMethod();
-    }
-
-    /**
-     * Handle purchase.cancelled event.
-     */
-    protected function handlePurchaseCancelled(array $payload): Response
-    {
-        // Purchase cancelled - may need to update subscription status
-        $purchase = $payload['purchase'] ?? $payload;
-        $clientId = $purchase['client']['id'] ?? $purchase['client_id'] ?? null;
-
-        if ($clientId && $billable = CashierChip::findBillable($clientId)) {
-            // Check if this was a subscription payment
-            if ($subscriptionType = $this->getSubscriptionTypeFromPurchase($purchase)) {
-                $subscription = $billable->subscription($subscriptionType);
-                if ($subscription) {
-                    $subscription->forceFill(['chip_status' => 'past_due'])->save();
-                }
-            }
+        if (! $clientId) {
+            return $this->successMethod('Webhook received');
         }
 
-        return $this->successMethod();
-    }
+        $billable = $this->getBillableByChipId($clientId);
 
-    /**
-     * Handle purchase.refunded event.
-     */
-    protected function handlePurchaseRefunded(array $payload): Response
-    {
-        // Handle refund - may need custom logic
-        return $this->successMethod();
-    }
-
-    /**
-     * Handle purchase.hold event.
-     * CHIP sends this when payment is placed on hold (skip_capture = true).
-     */
-    protected function handlePurchaseHold(array $payload): Response
-    {
-        // Payment is on hold, waiting for capture
-        return $this->successMethod();
-    }
-
-    /**
-     * Handle purchase.preauthorized event.
-     * CHIP sends this when card is preauthorized (card saved without charge).
-     */
-    protected function handlePurchasePreauthorized(array $payload): Response
-    {
-        $purchase = $payload['purchase'] ?? $payload;
-        $clientId = $purchase['client']['id'] ?? $purchase['client_id'] ?? null;
-
-        // Save the recurring token for future use
-        if ($clientId && $billable = CashierChip::findBillable($clientId)) {
-            if ($recurringToken = $purchase['recurring_token'] ?? null) {
-                $this->handleRecurringToken($billable, $recurringToken, $purchase);
-            }
+        if (! $billable) {
+            return $this->successMethod('Webhook received');
         }
 
-        return $this->successMethod();
-    }
+        // Update subscription status to past due
+        $this->updateSubscriptionOnPaymentFailure($billable, $purchase);
 
-    /**
-     * Handle purchase.chargeback event.
-     */
-    protected function handlePurchaseChargeback(array $payload): Response
-    {
-        // Handle chargeback - may need to cancel subscription
-        $purchase = $payload['purchase'] ?? $payload;
-        $clientId = $purchase['client']['id'] ?? $purchase['client_id'] ?? null;
-
-        if ($clientId && $billable = CashierChip::findBillable($clientId)) {
-            if ($subscriptionType = $this->getSubscriptionTypeFromPurchase($purchase)) {
-                $subscription = $billable->subscription($subscriptionType);
-                if ($subscription) {
-                    $subscription->forceFill(['chip_status' => 'unpaid'])->save();
-                }
-            }
-        }
+        PaymentFailed::dispatch($billable, $purchase);
 
         return $this->successMethod();
     }
 
     /**
-     * Handle payment.refunded event.
-     */
-    protected function handlePaymentRefunded(array $payload): Response
-    {
-        return $this->successMethod();
-    }
-
-    /**
-     * Handle a purchase payment succeeded event.
-     */
-    protected function handlePaymentSuccess(array $payload): Response
-    {
-        $purchase = $payload['purchase'] ?? $payload;
-        $clientId = $purchase['client']['id'] ?? $purchase['client_id'] ?? null;
-
-        if ($clientId && $billable = CashierChip::findBillable($clientId)) {
-            PaymentSucceeded::dispatch($billable, $purchase);
-
-            // Handle recurring token if present
-            if ($recurringToken = $purchase['recurring_token'] ?? null) {
-                $this->handleRecurringToken($billable, $recurringToken, $purchase);
-            }
-
-            // Handle subscription charge if this is a subscription payment
-            if ($subscriptionType = $this->getSubscriptionTypeFromPurchase($purchase)) {
-                $this->handleSubscriptionPayment($billable, $subscriptionType, $purchase);
-            }
-        }
-
-        return $this->successMethod();
-    }
-
-    /**
-     * Handle a purchase payment failed event.
-     */
-    protected function handlePaymentFailed(array $payload): Response
-    {
-        $purchase = $payload['purchase'] ?? $payload;
-        $clientId = $purchase['client']['id'] ?? $purchase['client_id'] ?? null;
-
-        if ($clientId && $billable = CashierChip::findBillable($clientId)) {
-            PaymentFailed::dispatch($billable, $purchase);
-
-            // Handle subscription payment failure
-            if ($subscriptionType = $this->getSubscriptionTypeFromPurchase($purchase)) {
-                $this->handleSubscriptionPaymentFailure($billable, $subscriptionType, $purchase);
-            }
-        }
-
-        return $this->successMethod();
-    }
-
-    /**
-     * Extract subscription type from purchase metadata or reference.
-     */
-    protected function getSubscriptionTypeFromPurchase(array $purchase): ?string
-    {
-        // Check metadata first (could be nested or at top level)
-        $metadata = $purchase['metadata'] ?? $purchase['purchase']['metadata'] ?? [];
-        if (isset($metadata['subscription_type'])) {
-            return $metadata['subscription_type'];
-        }
-
-        // Check reference for subscription info
-        $reference = $purchase['reference'] ?? '';
-        if (preg_match('/Subscription (\w+)/', $reference, $matches)) {
-            return $matches[1];
-        }
-
-        return null;
-    }
-
-    /**
-     * Handle recurring token from a purchase.
+     * Update payment method from webhook data.
      *
-     * @param  \AIArmada\CashierChip\Billable  $billable
+     * @param  Model  $billable
+     * @param  array<string, mixed>  $purchase
      */
-    protected function handleRecurringToken($billable, string $recurringToken, array $purchase): void
+    protected function updatePaymentMethodFromWebhook(Model $billable, array $purchase): void
     {
-        // Store the recurring token if not already stored
-        if (! $billable->hasDefaultPaymentMethod()) {
-            // Get card details from transaction_data if available
-            $transactionData = $purchase['transaction_data'] ?? [];
-            $extra = $transactionData['extra'] ?? [];
+        $recurringToken = $purchase['recurring_token'] ?? null;
 
-            // Also check for card info at top level (test format)
-            $card = $purchase['card'] ?? [];
-
-            $billable->forceFill([
-                'default_pm_id' => $recurringToken,
-                'pm_type' => $card['brand'] ?? $extra['card_brand'] ?? $transactionData['payment_method'] ?? 'card',
-                'pm_last_four' => $card['last_4'] ?? $extra['card_last_4'] ?? null,
-            ])->save();
+        if (! $recurringToken) {
+            return;
         }
+
+        // Only update if no default payment method exists
+        if ($billable->default_pm_id) {
+            return;
+        }
+
+        $card = $purchase['card'] ?? [];
+
+        $billable->forceFill([
+            'default_pm_id' => $recurringToken,
+            'pm_type' => $card['brand'] ?? null,
+            'pm_last_four' => $card['last_4'] ?? null,
+        ])->save();
     }
 
     /**
-     * Handle a subscription payment success.
+     * Update subscription status on payment success.
      *
-     * @param  \AIArmada\CashierChip\Billable  $billable
+     * @param  Model  $billable
+     * @param  array<string, mixed>  $purchase
      */
-    protected function handleSubscriptionPayment($billable, string $subscriptionType, array $purchase): void
+    protected function updateSubscriptionOnPaymentSuccess(Model $billable, array $purchase): void
     {
+        $subscriptionType = $purchase['metadata']['subscription_type'] ?? null;
+
+        if (! $subscriptionType) {
+            return;
+        }
+
+        /** @var Subscription|null $subscription */
         $subscription = $billable->subscription($subscriptionType);
 
-        if ($subscription) {
-            // Update next billing date
-            $interval = $subscription->billing_interval ?? 'month';
-            $count = $subscription->billing_interval_count ?? 1;
-
-            $subscription->forceFill([
-                'chip_status' => 'active',
-                'next_billing_at' => now()->add($interval, $count),
-            ])->save();
+        if (! $subscription) {
+            return;
         }
+
+        $subscription->forceFill([
+            'chip_status' => Subscription::STATUS_ACTIVE,
+            'next_billing_at' => $this->calculateNextBillingDate($subscription),
+        ])->save();
     }
 
     /**
-     * Handle a subscription payment failure.
+     * Update subscription status on payment failure.
      *
-     * @param  \AIArmada\CashierChip\Billable  $billable
+     * @param  Model  $billable
+     * @param  array<string, mixed>  $purchase
      */
-    protected function handleSubscriptionPaymentFailure($billable, string $subscriptionType, array $purchase): void
+    protected function updateSubscriptionOnPaymentFailure(Model $billable, array $purchase): void
     {
+        $subscriptionType = $purchase['metadata']['subscription_type'] ?? null;
+
+        if (! $subscriptionType) {
+            return;
+        }
+
+        /** @var Subscription|null $subscription */
         $subscription = $billable->subscription($subscriptionType);
 
-        if ($subscription) {
-            $subscription->forceFill([
-                'chip_status' => 'past_due',
-            ])->save();
+        if (! $subscription) {
+            return;
         }
+
+        $subscription->forceFill([
+            'chip_status' => Subscription::STATUS_PAST_DUE,
+        ])->save();
+    }
+
+    /**
+     * Calculate the next billing date based on subscription interval.
+     */
+    protected function calculateNextBillingDate(Subscription $subscription): Carbon
+    {
+        $interval = $subscription->billing_interval ?? 'month';
+        $intervalCount = $subscription->billing_interval_count ?? 1;
+
+        return match ($interval) {
+            'day' => Carbon::now()->addDays($intervalCount),
+            'week' => Carbon::now()->addWeeks($intervalCount),
+            'month' => Carbon::now()->addMonths($intervalCount),
+            'year' => Carbon::now()->addYears($intervalCount),
+            default => Carbon::now()->addMonth(),
+        };
+    }
+
+    /**
+     * Get the billable instance by CHIP ID.
+     *
+     * @return (Model&\AIArmada\CashierChip\Billable)|null
+     */
+    protected function getBillableByChipId(?string $chipId): ?Model
+    {
+        if (! $chipId) {
+            return null;
+        }
+
+        return Cashier::findBillable($chipId);
     }
 
     /**
      * Handle successful calls on the controller.
      */
-    protected function successMethod(): Response
+    protected function successMethod(string $message = 'Webhook Handled'): Response
     {
-        return new Response('Webhook handled', 200);
+        return new Response($message, 200);
     }
 
     /**
      * Handle calls to missing methods on the controller.
+     *
+     * @param  array<string, mixed>  $parameters
      */
-    protected function missingMethod(array $payload): Response
+    protected function missingMethod(array $parameters = []): Response
     {
         return new Response('Webhook received', 200);
     }

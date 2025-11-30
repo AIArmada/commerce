@@ -50,6 +50,22 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Tenancy
+    |--------------------------------------------------------------------------
+    |
+    | Multi-tenancy support for scoping carts by tenant. When enabled, carts
+    | are isolated per tenant using the configured resolver. The resolver must
+    | implement CartTenantResolverInterface or an exception will be thrown.
+    |
+    */
+    'tenancy' => [
+        'enabled' => env('CART_TENANCY_ENABLED', false),
+        'resolver' => env('CART_TENANT_RESOLVER'), // e.g., App\Support\CartTenantResolver::class
+        'column' => env('CART_TENANT_COLUMN', 'tenant_id'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Limits
     |--------------------------------------------------------------------------
     */

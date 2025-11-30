@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart;
 
+use AIArmada\Cart\Contracts\CartTenantResolverInterface;
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Services\CartConditionResolver;
@@ -17,6 +18,7 @@ use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Auth\Events\Attempting;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Contracts\Events\Dispatcher;
+use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -54,7 +56,44 @@ final class CartServiceProvider extends PackageServiceProvider
             'money.default_currency',
         ]);
 
+        $this->validateTenancyConfiguration();
         $this->registerEventListeners();
+    }
+
+    /**
+     * Validate tenancy configuration (fail-fast pattern)
+     *
+     * @throws RuntimeException If tenancy is enabled but resolver is not configured
+     */
+    protected function validateTenancyConfiguration(): void
+    {
+        if (! config('cart.tenancy.enabled', false)) {
+            return;
+        }
+
+        $resolverClass = config('cart.tenancy.resolver');
+
+        if (empty($resolverClass)) {
+            throw new RuntimeException(
+                'Cart tenancy is enabled but no resolver is configured. '.
+                'Set CART_TENANT_RESOLVER or cart.tenancy.resolver to a class implementing CartTenantResolverInterface.'
+            );
+        }
+
+        if (! class_exists($resolverClass)) {
+            throw new RuntimeException(
+                "Cart tenant resolver class '{$resolverClass}' does not exist."
+            );
+        }
+
+        if (! is_subclass_of($resolverClass, CartTenantResolverInterface::class)) {
+            throw new RuntimeException(
+                "Cart tenant resolver '{$resolverClass}' must implement ".CartTenantResolverInterface::class
+            );
+        }
+
+        // Register the resolver in the container
+        $this->app->singleton(CartTenantResolverInterface::class, $resolverClass);
     }
 
     /**
@@ -85,28 +124,35 @@ final class CartServiceProvider extends PackageServiceProvider
     protected function registerStorageDrivers(): void
     {
         $this->app->bind('cart.storage.session', function (\Illuminate\Contracts\Foundation\Application $app) {
-            return new SessionStorage(
+            $storage = new SessionStorage(
                 $app->make(\Illuminate\Contracts\Session\Session::class),
                 config('cart.session.key', 'cart')
             );
+
+            return $this->applyTenantScope($app, $storage);
         });
 
         $this->app->bind('cart.storage.cache', function (\Illuminate\Contracts\Foundation\Application $app) {
-            return new CacheStorage(
+            $storage = new CacheStorage(
                 $app->make(\Illuminate\Contracts\Cache\Repository::class),
                 config('cart.cache.prefix', 'cart'),
                 config('cart.cache.ttl', 86400)
             );
+
+            return $this->applyTenantScope($app, $storage);
         });
 
         $this->app->bind('cart.storage.database', function (\Illuminate\Contracts\Foundation\Application $app) {
             $connection = $app->make(\Illuminate\Database\ConnectionResolverInterface::class)->connection();
 
-            return new DatabaseStorage(
+            $storage = new DatabaseStorage(
                 $connection,
                 config('cart.database.table', 'carts'),
                 config('cart.database.ttl'),
+                tenantColumn: config('cart.tenancy.column', 'tenant_id'),
             );
+
+            return $this->applyTenantScope($app, $storage);
         });
 
         // Bind StorageInterface to the configured storage driver
@@ -115,6 +161,29 @@ final class CartServiceProvider extends PackageServiceProvider
 
             return $app->make(sprintf('cart.storage.%s', $driver));
         });
+    }
+
+    /**
+     * Apply tenant scope to storage driver if tenancy is enabled
+     */
+    protected function applyTenantScope(\Illuminate\Contracts\Foundation\Application $app, StorageInterface $storage): StorageInterface
+    {
+        if (! config('cart.tenancy.enabled', false)) {
+            return $storage;
+        }
+
+        if (! $app->bound(CartTenantResolverInterface::class)) {
+            return $storage;
+        }
+
+        $resolver = $app->make(CartTenantResolverInterface::class);
+        $tenantId = $resolver->resolve();
+
+        if ($tenantId === null) {
+            return $storage;
+        }
+
+        return $storage->withTenantId($tenantId);
     }
 
     /**

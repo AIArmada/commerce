@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Models;
 
+use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
@@ -32,16 +33,18 @@ abstract class ChipModel extends Model
         return $value !== null ? Carbon::createFromTimestampUTC($value) : null;
     }
 
-    protected function formatMoney(?int $amount, ?string $currency, int $divideBy = 100): ?string
+    /**
+     * Convert an amount in cents to a Money object.
+     *
+     * @param int|null $amount Amount in cents (smallest currency unit)
+     * @param string $currency ISO 4217 currency code (default: MYR)
+     */
+    protected function toMoney(?int $amount, string $currency = 'MYR'): ?Money
     {
         if ($amount === null) {
             return null;
         }
 
-        $precision = (int) config('chip.database.amount_precision', 2);
-        $value = $divideBy > 0 ? $amount / $divideBy : $amount;
-        $formatted = number_format($value, $precision, '.', ',');
-
-        return mb_trim(sprintf('%s %s', $currency ?? '', $formatted));
+        return Money::{$currency}($amount);
     }
 }
