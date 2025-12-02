@@ -109,74 +109,64 @@ final class PurchaseInfolist
 
             Section::make('Amounts')
                 ->schema([
-                    Grid::make(2)
+                    Grid::make(4)
                         ->schema([
-                            TextEntry::make('purchase.subtotal.amount')
-                                ->label('Subtotal')
+                            TextEntry::make('purchase.total')
+                                ->label('Total')
                                 ->formatStateUsing(fn (?int $state, Purchase $record): ?string => self::formatAmount(
                                     $state,
-                                    Arr::get($record->purchase, 'subtotal.currency', Arr::get($record->purchase, 'currency')),
+                                    Arr::get($record->purchase, 'currency', 'MYR'),
                                 ))
-                                ->icon(Heroicon::OutlinedBanknotes),
-                            TextEntry::make('purchase.discount.amount')
+                                ->icon(Heroicon::OutlinedBanknotes)
+                                ->weight(FontWeight::SemiBold),
+                            TextEntry::make('purchase.total_discount_override')
                                 ->label('Discount')
                                 ->formatStateUsing(fn (?int $state, Purchase $record): ?string => self::formatAmount(
                                     $state,
-                                    Arr::get($record->purchase, 'discount.currency', Arr::get($record->purchase, 'currency')),
+                                    Arr::get($record->purchase, 'currency', 'MYR'),
                                 ))
                                 ->color('success')
                                 ->placeholder('—'),
-                            TextEntry::make('purchase.taxes.amount')
+                            TextEntry::make('purchase.total_tax_override')
                                 ->label('Taxes')
                                 ->formatStateUsing(fn (?int $state, Purchase $record): ?string => self::formatAmount(
                                     $state,
-                                    Arr::get($record->purchase, 'taxes.currency', Arr::get($record->purchase, 'currency')),
+                                    Arr::get($record->purchase, 'currency', 'MYR'),
                                 ))
                                 ->placeholder('—')
                                 ->icon(Heroicon::OutlinedSparkles),
-                            TextEntry::make('purchase.shipping.amount')
-                                ->label('Shipping')
+                            TextEntry::make('payment.fee_amount')
+                                ->label('Fee')
                                 ->formatStateUsing(fn (?int $state, Purchase $record): ?string => self::formatAmount(
                                     $state,
-                                    Arr::get($record->purchase, 'shipping.currency', Arr::get($record->purchase, 'currency')),
+                                    Arr::get($record->purchase, 'currency', 'MYR'),
                                 ))
+                                ->color('danger')
                                 ->placeholder('—'),
                         ]),
                 ]),
 
             Section::make('Line Items')
                 ->schema([
-                    RepeatableEntry::make('purchase.line_items')
-                        ->label('Items')
+                    RepeatableEntry::make('purchase.products')
+                        ->label('Products')
                         ->schema([
                             TextEntry::make('name')
                                 ->label('Name')
                                 ->weight(FontWeight::Medium),
                             TextEntry::make('quantity')
-                                ->label('Quantity'),
-                            TextEntry::make('price.amount')
+                                ->label('Qty')
+                                ->formatStateUsing(fn ($state) => is_numeric($state) ? (int) (float) $state : $state),
+                            TextEntry::make('price')
                                 ->label('Unit Price')
-                                /** @phpstan-ignore-next-line */
-                                ->formatStateUsing(fn (?int $state, array $entry): ?string => self::formatAmount(
-                                    $state,
-                                    Arr::get($entry, 'price.currency'),
-                                )),
-                            TextEntry::make('subtotal.amount')
-                                ->label('Subtotal')
-                                /** @phpstan-ignore-next-line */
-                                ->formatStateUsing(fn (?int $state, array $entry): ?string => self::formatAmount(
-                                    $state,
-                                    Arr::get($entry, 'subtotal.currency', Arr::get($entry, 'price.currency')),
-                                )),
-                            TextEntry::make('metadata')
-                                ->label('Metadata')
-                                ->formatStateUsing(fn ($state) => is_array($state) ? json_encode($state, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES) : $state)
-                                /** @phpstan-ignore-next-line */
-                                ->visible(fn (array $entry): bool => filled($entry['metadata'] ?? []))
-                                ->columnSpanFull(),
+                                ->formatStateUsing(fn (?int $state): ?string => self::formatAmount($state, 'MYR')),
+                            TextEntry::make('category')
+                                ->label('Category')
+                                ->badge()
+                                ->color('gray'),
                         ])
                         ->grid(1)
-                        ->visible(fn (Purchase $record): bool => filled($record->purchase['line_items'] ?? [])),
+                        ->visible(fn (Purchase $record): bool => filled($record->purchase['products'] ?? [])),
                 ])
                 ->collapsible(),
 
