@@ -8,14 +8,30 @@ use AIArmada\Affiliates\Models\Affiliate;
 test('Affiliate scopeForOwner filters by owner when enabled', function (): void {
     config(['affiliates.owner.enabled' => true]);
 
-    $owner1 = new class extends \Illuminate\Database\Eloquent\Model {
-        public function getMorphClass() { return 'User'; }
-        public function getKey() { return 1; }
+    $owner1 = new class extends Illuminate\Database\Eloquent\Model
+    {
+        public function getMorphClass()
+        {
+            return 'User';
+        }
+
+        public function getKey()
+        {
+            return 1;
+        }
     };
 
-    $owner2 = new class extends \Illuminate\Database\Eloquent\Model {
-        public function getMorphClass() { return 'User'; }
-        public function getKey() { return 2; }
+    $owner2 = new class extends Illuminate\Database\Eloquent\Model
+    {
+        public function getMorphClass()
+        {
+            return 'User';
+        }
+
+        public function getKey()
+        {
+            return 2;
+        }
     };
 
     $affiliate1 = Affiliate::create([
@@ -95,7 +111,7 @@ test('Affiliate has attributions relationship', function (): void {
         'currency' => 'USD',
     ]);
 
-    expect($affiliate->attributions())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($affiliate->attributions())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
 });
 
 test('Affiliate has conversions relationship', function (): void {
@@ -108,17 +124,17 @@ test('Affiliate has conversions relationship', function (): void {
         'currency' => 'USD',
     ]);
 
-    expect($affiliate->conversions())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($affiliate->conversions())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
 });
 
 test('Affiliate has parent relationship', function (): void {
     $affiliate = new Affiliate();
 
-    expect($affiliate->parent())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+    expect($affiliate->parent())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
 });
 
 test('Affiliate has children relationship', function (): void {
     $affiliate = new Affiliate();
 
-    expect($affiliate->children())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($affiliate->children())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
 });

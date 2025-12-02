@@ -39,19 +39,6 @@ final class OrderItem extends Model
     ];
 
     /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'quantity' => 'integer',
-            'unit_price' => 'integer',
-            'total_price' => 'integer',
-            'options' => 'array',
-        ];
-    }
-
-    /**
      * @return BelongsTo<Order, $this>
      */
     public function order(): BelongsTo
@@ -65,5 +52,18 @@ final class OrderItem extends Model
     public function product(): BelongsTo
     {
         return $this->belongsTo(Product::class);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'quantity' => 'integer',
+            'unit_price' => 'integer',
+            'total_price' => 'integer',
+            'options' => 'array',
+        ];
     }
 }

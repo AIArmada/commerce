@@ -9,10 +9,10 @@ use App\Listeners\HandleChipPaymentSuccess;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use Filament\Support\Facades\FilamentTimezone;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
-use Filament\Support\Facades\FilamentTimezone;
 
 final class AppServiceProvider extends ServiceProvider
 {

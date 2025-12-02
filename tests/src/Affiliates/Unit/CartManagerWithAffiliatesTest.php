@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Support\CartManagerWithAffiliates;
-use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 
 test('CartManagerWithAffiliates fromCartManager returns same instance if already wrapped', function (): void {

@@ -47,7 +47,7 @@ final class TopAffiliates extends BaseWidget
 
                 TextColumn::make('conversions_sum_commission_minor')
                     ->label('Commissions')
-                    ->formatStateUsing(fn ($state): string => 'RM ' . Number::format(($state ?? 0) / 100, 2))
+                    ->formatStateUsing(fn ($state): string => 'RM '.Number::format(($state ?? 0) / 100, 2))
                     ->alignEnd(),
             ])
             ->paginated(false);

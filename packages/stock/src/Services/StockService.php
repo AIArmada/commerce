@@ -13,7 +13,7 @@ use Illuminate\Support\Facades\DB;
 final class StockService
 {
     public function __construct(
-        protected OwnerResolverInterface $ownerResolver
+        private OwnerResolverInterface $ownerResolver
     ) {}
 
     /**
@@ -144,7 +144,7 @@ final class StockService
      *
      * @return Builder<StockTransaction>
      */
-    protected function query(): Builder
+    private function query(): Builder
     {
         return StockTransaction::query()->forOwner(
             $this->resolveOwner(),
@@ -155,7 +155,7 @@ final class StockService
     /**
      * Resolve the current owner.
      */
-    protected function resolveOwner(): ?Model
+    private function resolveOwner(): ?Model
     {
         if (! config('stock.owner.enabled', false)) {
             return null;
@@ -167,7 +167,7 @@ final class StockService
     /**
      * Determine if global records should be included.
      */
-    protected function shouldIncludeGlobal(): bool
+    private function shouldIncludeGlobal(): bool
     {
         return (bool) config('stock.owner.include_global', true);
     }

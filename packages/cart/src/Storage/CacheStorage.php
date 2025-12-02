@@ -57,18 +57,6 @@ final readonly class CacheStorage implements StorageInterface
     }
 
     /**
-     * Get the base key prefix including owner scope when set
-     */
-    private function getBasePrefix(): string
-    {
-        if ($this->ownerType !== null && $this->ownerId !== null) {
-            return "{$this->keyPrefix}.owner.{$this->ownerType}.{$this->ownerId}";
-        }
-
-        return $this->keyPrefix;
-    }
-
-    /**
      * Check if cart exists in storage
      */
     public function has(string $identifier, string $instance): bool
@@ -406,6 +394,18 @@ final readonly class CacheStorage implements StorageInterface
         $timestamp = $this->cache->get($this->getUpdatedAtKey($identifier, $instance));
 
         return is_string($timestamp) ? $timestamp : null;
+    }
+
+    /**
+     * Get the base key prefix including owner scope when set
+     */
+    private function getBasePrefix(): string
+    {
+        if ($this->ownerType !== null && $this->ownerId !== null) {
+            return "{$this->keyPrefix}.owner.{$this->ownerType}.{$this->ownerId}";
+        }
+
+        return $this->keyPrefix;
     }
 
     /**

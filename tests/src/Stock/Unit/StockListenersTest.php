@@ -7,12 +7,12 @@ use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartDestroyed;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Commerce\Tests\Fixtures\Models\Product;
-use AIArmada\Stock\Traits\HasStock;
-use AIArmada\Stock\Listeners\ReleaseStockOnCartClear;
 use AIArmada\Stock\Listeners\DeductStockOnPaymentSuccess;
+use AIArmada\Stock\Listeners\ReleaseStockOnCartClear;
 use AIArmada\Stock\Models\StockReservation;
 use AIArmada\Stock\Services\StockReservationService;
 use AIArmada\Stock\Services\StockService;
+use AIArmada\Stock\Traits\HasStock;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -187,9 +187,14 @@ describe('DeductStockOnPaymentSuccess listener', function (): void {
         $this->reservationService->reserve($this->product, 7, $cartId, 30);
 
         // Use an anonymous class since Cart is final and can't be mocked
-        $cartStub = new class($cartId) {
+        $cartStub = new class($cartId)
+        {
             public function __construct(private string $id) {}
-            public function getId(): string { return $this->id; }
+
+            public function getId(): string
+            {
+                return $this->id;
+            }
         };
         $event = (object) ['cart' => $cartStub];
         $this->listener->handle($event);
@@ -200,8 +205,8 @@ describe('DeductStockOnPaymentSuccess listener', function (): void {
     it('deducts stock from line items fallback', function (): void {
         $event = (object) ['payload' => [
             'line_items' => [
-                ['stockable' => $this->product, 'quantity' => 6]
-            ]
+                ['stockable' => $this->product, 'quantity' => 6],
+            ],
         ]];
         $this->listener->handle($event);
 
@@ -210,13 +215,14 @@ describe('DeductStockOnPaymentSuccess listener', function (): void {
 
     it('skips non-stockable models', function (): void {
         // Create an event with a model that doesn't use HasStock trait
-        $nonStockable = new class(['name' => 'Non-Stockable']) extends Model {
+        $nonStockable = new class(['name' => 'Non-Stockable']) extends Model
+        {
             protected $fillable = ['name'];
         };
         $event = (object) ['payload' => [
             'line_items' => [
-                ['stockable' => $nonStockable, 'quantity' => 1]
-            ]
+                ['stockable' => $nonStockable, 'quantity' => 1],
+            ],
         ]];
         $initialStock = $this->stockService->getCurrentStock($this->product);
         $this->listener->handle($event);
@@ -229,8 +235,8 @@ describe('DeductStockOnPaymentSuccess listener', function (): void {
         // Use the actual product which has HasStock trait
         $event = (object) ['payload' => [
             'line_items' => [
-                ['stockable' => $this->product, 'quantity' => 4]
-            ]
+                ['stockable' => $this->product, 'quantity' => 4],
+            ],
         ]];
         $initialStock = $this->stockService->getCurrentStock($this->product);
         $this->listener->handle($event);

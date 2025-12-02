@@ -200,12 +200,12 @@ describe('CartManagerWithStock', function (): void {
             $manager->setIdentifier('getby-test');
             // Add an item so the cart gets saved and has an ID
             $manager->add(['id' => 'getby-item', 'name' => 'GetBy Item', 'price' => 10, 'quantity' => 1]);
-            
+
             $cart = $manager->getCurrentCart();
             $cartId = $cart->getId();
 
             expect($cartId)->not->toBeNull();
-            
+
             $retrieved = $manager->getById($cartId);
 
             expect($retrieved)->not->toBeNull();
@@ -222,7 +222,7 @@ describe('CartManagerWithStock', function (): void {
             $success = $manager->swap($oldId, $newId);
 
             expect($success)->toBeTrue();
-            
+
             // After swap, we need to explicitly set identifier to use the new cart
             $manager->setIdentifier($newId);
             expect($manager->getCurrentCart()->getIdentifier())->toBe($newId);

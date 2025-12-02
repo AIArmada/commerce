@@ -33,6 +33,7 @@ final class InventoryLevel extends Model
 {
     /** @use HasFactory<\AIArmada\Inventory\Database\Factories\InventoryLevelFactory> */
     use HasFactory;
+
     use HasUuids;
 
     /**
@@ -211,6 +212,24 @@ final class InventoryLevel extends Model
     }
 
     /**
+     * Handle model lifecycle events.
+     */
+    protected static function booted(): void
+    {
+        self::deleting(function (InventoryLevel $level): void {
+            $level->allocations()->delete();
+        });
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): \AIArmada\Inventory\Database\Factories\InventoryLevelFactory
+    {
+        return \AIArmada\Inventory\Database\Factories\InventoryLevelFactory::new();
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -223,23 +242,5 @@ final class InventoryLevel extends Model
             'reorder_point' => 'integer',
             'metadata' => 'array',
         ];
-    }
-
-    /**
-     * Handle model lifecycle events.
-     */
-    protected static function booted(): void
-    {
-        static::deleting(function (InventoryLevel $level): void {
-            $level->allocations()->delete();
-        });
-    }
-
-    /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory(): \AIArmada\Inventory\Database\Factories\InventoryLevelFactory
-    {
-        return \AIArmada\Inventory\Database\Factories\InventoryLevelFactory::new();
     }
 }

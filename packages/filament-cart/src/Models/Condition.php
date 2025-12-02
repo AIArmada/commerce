@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Models;
 
-use AIArmada\Cart\Database\Factories\ConditionFactory as BaseConditionFactory;
 use AIArmada\Cart\Models\Condition as BaseCondition;
 use AIArmada\FilamentCart\Database\Factories\ConditionFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;

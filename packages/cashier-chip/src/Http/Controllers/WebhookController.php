@@ -34,7 +34,7 @@ class WebhookController extends Controller
             return $this->successMethod('Webhook received');
         }
 
-        $method = 'handle' . Str::studly(str_replace('.', '_', $eventType));
+        $method = 'handle'.Str::studly(str_replace('.', '_', $eventType));
 
         if (method_exists($this, $method)) {
             $response = $this->{$method}($payload);
@@ -109,7 +109,6 @@ class WebhookController extends Controller
     /**
      * Update payment method from webhook data.
      *
-     * @param  Model  $billable
      * @param  array<string, mixed>  $purchase
      */
     protected function updatePaymentMethodFromWebhook(Model $billable, array $purchase): void
@@ -137,7 +136,6 @@ class WebhookController extends Controller
     /**
      * Update subscription status on payment success.
      *
-     * @param  Model  $billable
      * @param  array<string, mixed>  $purchase
      */
     protected function updateSubscriptionOnPaymentSuccess(Model $billable, array $purchase): void
@@ -164,7 +162,6 @@ class WebhookController extends Controller
     /**
      * Update subscription status on payment failure.
      *
-     * @param  Model  $billable
      * @param  array<string, mixed>  $purchase
      */
     protected function updateSubscriptionOnPaymentFailure(Model $billable, array $purchase): void

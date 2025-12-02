@@ -28,6 +28,14 @@ class Discount implements Arrayable, Jsonable, JsonSerializable
     public function __construct(protected array $discount) {}
 
     /**
+     * Dynamically get values from the discount.
+     */
+    public function __get(string $key): mixed
+    {
+        return $this->discount[$key] ?? null;
+    }
+
+    /**
      * Get the coupon applied to the discount.
      */
     public function coupon(): ?Coupon
@@ -142,27 +150,6 @@ class Discount implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
-     * Retrieve a coupon by its code.
-     */
-    protected function retrieveCoupon(string $couponId): ?Coupon
-    {
-        if (! class_exists(\AIArmada\Vouchers\Services\VoucherService::class)) {
-            return null;
-        }
-
-        /** @var \AIArmada\Vouchers\Services\VoucherService $service */
-        $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
-
-        $voucherData = $service->find($couponId);
-
-        if (! $voucherData) {
-            return null;
-        }
-
-        return new Coupon($voucherData);
-    }
-
-    /**
      * Get the instance as an array.
      *
      * @return array<string, mixed>
@@ -197,10 +184,23 @@ class Discount implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
-     * Dynamically get values from the discount.
+     * Retrieve a coupon by its code.
      */
-    public function __get(string $key): mixed
+    protected function retrieveCoupon(string $couponId): ?Coupon
     {
-        return $this->discount[$key] ?? null;
+        if (! class_exists(\AIArmada\Vouchers\Services\VoucherService::class)) {
+            return null;
+        }
+
+        /** @var \AIArmada\Vouchers\Services\VoucherService $service */
+        $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
+
+        $voucherData = $service->find($couponId);
+
+        if (! $voucherData) {
+            return null;
+        }
+
+        return new Coupon($voucherData);
     }
 }

@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static int cleanupExpired()
  * @method static \AIArmada\Inventory\Enums\AllocationStrategy getStrategy(\Illuminate\Database\Eloquent\Model $model)
  *
- * @see \AIArmada\Inventory\Services\InventoryAllocationService
+ * @see InventoryAllocationService
  */
 final class InventoryAllocation extends Facade
 {

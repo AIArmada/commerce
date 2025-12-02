@@ -22,7 +22,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \AIArmada\Inventory\Models\InventoryMovement receiveAtDefault(\Illuminate\Database\Eloquent\Model $model, int $quantity, ?string $reason = null, ?string $note = null, ?string $userId = null)
  * @method static \AIArmada\Inventory\Models\InventoryMovement shipFromDefault(\Illuminate\Database\Eloquent\Model $model, int $quantity, ?string $reason = null, ?string $reference = null, ?string $note = null, ?string $userId = null)
  *
- * @see \AIArmada\Inventory\Services\InventoryService
+ * @see InventoryService
  */
 final class Inventory extends Facade
 {

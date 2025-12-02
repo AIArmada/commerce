@@ -13,7 +13,7 @@ return Application::configure(basePath: dirname(__DIR__))
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware): void {        // Set default Filament timezone for every request (fixes Octane state persistence)
-        $middleware->append(\App\Http\Middleware\SetFilamentTimezone::class);
+        $middleware->append(App\Http\Middleware\SetFilamentTimezone::class);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //

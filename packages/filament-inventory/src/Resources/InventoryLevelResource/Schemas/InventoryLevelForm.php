@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources\InventoryLevelResource\Schemas;
 
 use AIArmada\Inventory\Enums\AllocationStrategy;
-use AIArmada\Inventory\Models\InventoryLocation;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;

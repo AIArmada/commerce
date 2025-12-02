@@ -7,6 +7,7 @@ namespace AIArmada\Inventory\Database\Factories;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -95,7 +96,7 @@ class InventoryAllocationFactory extends Factory
     /**
      * Set custom expiry.
      */
-    public function expiresAt(\DateTimeInterface $dateTime): static
+    public function expiresAt(DateTimeInterface $dateTime): static
     {
         return $this->state(fn (array $attributes): array => [
             'expires_at' => $dateTime,

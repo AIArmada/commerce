@@ -7,13 +7,13 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 test('AffiliatePayout has conversions relationship', function (): void {
     $payout = new AffiliatePayout();
 
-    expect($payout->conversions())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($payout->conversions())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
 });
 
 test('AffiliatePayout has events relationship', function (): void {
     $payout = new AffiliatePayout();
 
-    expect($payout->events())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($payout->events())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
 });
 
 test('AffiliatePayout can be created with fillable attributes', function (): void {

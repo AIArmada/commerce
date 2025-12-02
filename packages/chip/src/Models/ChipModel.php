@@ -40,7 +40,7 @@ abstract class ChipModel extends Model
     /**
      * @return MorphTo<Model, $this>
      */
-    public function owner(): MorphTo
+    final public function owner(): MorphTo
     {
         return $this->morphTo();
     }
@@ -49,7 +49,7 @@ abstract class ChipModel extends Model
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
+    final public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
     {
         if (! config('chip.owner.enabled', false)) {
             return $query;
@@ -74,17 +74,17 @@ abstract class ChipModel extends Model
             ->where('owner_id', $owner->getKey());
     }
 
-    public function hasOwner(): bool
+    final public function hasOwner(): bool
     {
         return $this->owner_type !== null && $this->owner_id !== null;
     }
 
-    public function isGlobal(): bool
+    final public function isGlobal(): bool
     {
         return ! $this->hasOwner();
     }
 
-    public function assignOwner(Model $owner): static
+    final public function assignOwner(Model $owner): static
     {
         $this->owner_type = $owner->getMorphClass();
         $this->owner_id = (string) $owner->getKey();
@@ -92,7 +92,7 @@ abstract class ChipModel extends Model
         return $this;
     }
 
-    public function removeOwner(): static
+    final public function removeOwner(): static
     {
         $this->owner_type = null;
         $this->owner_id = null;
@@ -117,8 +117,8 @@ abstract class ChipModel extends Model
     /**
      * Convert an amount in cents to a Money object.
      *
-     * @param int|null $amount Amount in cents (smallest currency unit)
-     * @param string $currency ISO 4217 currency code (default: MYR)
+     * @param  int|null  $amount  Amount in cents (smallest currency unit)
+     * @param  string  $currency  ISO 4217 currency code (default: MYR)
      */
     protected function toMoney(?int $amount, string $currency = 'MYR'): ?Money
     {

@@ -185,15 +185,6 @@ class JntOrder extends Model
         return $this;
     }
 
-    protected function resolveOwner(): ?Model
-    {
-        if (! app()->bound(OwnerResolverInterface::class)) {
-            return null;
-        }
-
-        return app(OwnerResolverInterface::class)->resolve();
-    }
-
     /**
      * Get the items for this order.
      *
@@ -270,6 +261,15 @@ class JntOrder extends Model
             $order->trackingEvents()->delete();
             $order->webhookLogs()->update(['order_id' => null]);
         });
+    }
+
+    protected function resolveOwner(): ?Model
+    {
+        if (! app()->bound(OwnerResolverInterface::class)) {
+            return null;
+        }
+
+        return app(OwnerResolverInterface::class)->resolve();
     }
 
     /**

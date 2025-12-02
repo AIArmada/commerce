@@ -14,6 +14,11 @@ final class InventoryStatsWidget extends StatsOverviewWidget
 
     protected ?string $pollingInterval = '30s';
 
+    public static function canView(): bool
+    {
+        return config('filament-inventory.features.stats_widget', true);
+    }
+
     protected function getStats(): array
     {
         $aggregator = app(InventoryStatsAggregator::class);
@@ -50,10 +55,5 @@ final class InventoryStatsWidget extends StatsOverviewWidget
                 ->icon('heroicon-o-exclamation-triangle')
                 ->color($stats['low_stock_count'] > 0 ? 'danger' : 'success'),
         ];
-    }
-
-    public static function canView(): bool
-    {
-        return config('filament-inventory.features.stats_widget', true);
     }
 }

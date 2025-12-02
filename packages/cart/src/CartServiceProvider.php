@@ -62,6 +62,28 @@ final class CartServiceProvider extends PackageServiceProvider
     }
 
     /**
+     * Get the services provided by the provider.
+     *
+     * @return array<string>
+     */
+    public function provides(): array
+    {
+        return [
+            'cart',
+            Cart::class,
+            StorageInterface::class,
+            CartMigrationService::class,
+            CartConditionResolver::class,
+            TaxCalculator::class,
+            'cart.condition_resolver',
+            'cart.storage.session',
+            'cart.storage.cache',
+            'cart.storage.database',
+            'cart.tax',
+        ];
+    }
+
+    /**
      * Validate owner configuration (fail-fast pattern)
      *
      * @throws RuntimeException If owner is enabled but resolver is not configured
@@ -97,28 +119,6 @@ final class CartServiceProvider extends PackageServiceProvider
         if (! $this->app->bound(OwnerResolverInterface::class)) {
             $this->app->singleton(OwnerResolverInterface::class, $resolverClass);
         }
-    }
-
-    /**
-     * Get the services provided by the provider.
-     *
-     * @return array<string>
-     */
-    public function provides(): array
-    {
-        return [
-            'cart',
-            Cart::class,
-            StorageInterface::class,
-            CartMigrationService::class,
-            CartConditionResolver::class,
-            TaxCalculator::class,
-            'cart.condition_resolver',
-            'cart.storage.session',
-            'cart.storage.cache',
-            'cart.storage.database',
-            'cart.tax',
-        ];
     }
 
     /**

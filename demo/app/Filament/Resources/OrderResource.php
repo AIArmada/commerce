@@ -11,8 +11,8 @@ use BackedEnum;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
-use Filament\Resources\Resource;
 use Filament\Infolists\Components\TextEntry;
+use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Select;
 use Filament\Schemas\Components\Textarea;
@@ -49,7 +49,7 @@ final class OrderResource extends Resource
                         TextInput::make('order_number')
                             ->required()
                             ->unique(ignoreRecord: true)
-                            ->default(fn () => 'ORD-' . strtoupper(uniqid())),
+                            ->default(fn () => 'ORD-'.mb_strtoupper(uniqid())),
 
                         Select::make('status')
                             ->options([
@@ -189,23 +189,23 @@ final class OrderResource extends Resource
                 Section::make('Order Totals')
                     ->schema([
                         TextEntry::make('subtotal')
-                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR ' . number_format($state / 100, 2) : null),
+                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR '.number_format($state / 100, 2) : null),
 
                         TextEntry::make('tax_total')
                             ->label('Tax')
-                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR ' . number_format($state / 100, 2) : null),
+                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR '.number_format($state / 100, 2) : null),
 
                         TextEntry::make('discount_total')
                             ->label('Discount')
-                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR ' . number_format($state / 100, 2) : null),
+                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR '.number_format($state / 100, 2) : null),
 
                         TextEntry::make('shipping_total')
                             ->label('Shipping')
-                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR ' . number_format($state / 100, 2) : null),
+                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR '.number_format($state / 100, 2) : null),
 
                         TextEntry::make('grand_total')
                             ->label('Total')
-                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR ' . number_format($state / 100, 2) : null)
+                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR '.number_format($state / 100, 2) : null)
                             ->size('lg'),
                     ])
                     ->columns(5),
@@ -290,7 +290,7 @@ final class OrderResource extends Resource
 
                 TextColumn::make('grand_total')
                     ->label('Total')
-                    ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR ' . number_format($state / 100, 2) : null)
+                    ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR '.number_format($state / 100, 2) : null)
                     ->sortable(),
 
                 TextColumn::make('created_at')
@@ -350,7 +350,7 @@ final class OrderResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return (string) static::getModel()::where('status', 'pending')->count() ?: null;
+        return (string) self::getModel()::where('status', 'pending')->count() ?: null;
     }
 
     public static function getNavigationBadgeColor(): string|array|null

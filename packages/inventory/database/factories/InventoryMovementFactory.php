@@ -7,6 +7,7 @@ namespace AIArmada\Inventory\Database\Factories;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -26,7 +27,7 @@ class InventoryMovementFactory extends Factory
             'quantity' => $this->faker->numberBetween(1, 100),
             'type' => MovementType::Receipt->value,
             'reason' => $this->faker->randomElement(['purchase', 'return', 'adjustment']),
-            'reference' => strtoupper($this->faker->lexify('REF-??????')),
+            'reference' => mb_strtoupper($this->faker->lexify('REF-??????')),
             'user_id' => null,
             'note' => $this->faker->optional()->sentence(),
             'occurred_at' => now(),
@@ -126,7 +127,7 @@ class InventoryMovementFactory extends Factory
     /**
      * Set occurred at a specific time.
      */
-    public function occurredAt(\DateTimeInterface $dateTime): static
+    public function occurredAt(DateTimeInterface $dateTime): static
     {
         return $this->state(fn (array $attributes): array => [
             'occurred_at' => $dateTime,

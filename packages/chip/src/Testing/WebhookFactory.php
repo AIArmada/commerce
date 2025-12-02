@@ -234,31 +234,6 @@ final class WebhookFactory
     }
 
     /**
-     * Create a payout payload.
-     *
-     * @param  array<string, mixed>  $overrides
-     * @return array<string, mixed>
-     */
-    private static function payoutPayload(string $eventType, string $status, array $overrides = []): array
-    {
-        return array_merge([
-            'id' => $overrides['id'] ?? Str::uuid()->toString(),
-            'type' => 'payout',
-            'event_type' => $eventType,
-            'status' => $status,
-            'amount' => $overrides['amount'] ?? 10000,
-            'currency' => $overrides['currency'] ?? 'MYR',
-            'recipient_name' => $overrides['recipient_name'] ?? 'Test Recipient',
-            'recipient_account' => $overrides['recipient_account'] ?? '1234567890',
-            'recipient_bank' => $overrides['recipient_bank'] ?? 'Maybank',
-            'reference' => $overrides['reference'] ?? 'PAYOUT-'.Str::random(8),
-            'is_test' => $overrides['is_test'] ?? true,
-            'created_on' => time(),
-            'updated_on' => time(),
-        ], $overrides);
-    }
-
-    /**
      * Create a payload for any webhook event type.
      *
      * @param  array<string, mixed>  $overrides
@@ -358,7 +333,7 @@ final class WebhookFactory
 
     public function currency(string $currency): self
     {
-        $this->currency = strtoupper($currency);
+        $this->currency = mb_strtoupper($currency);
 
         return $this;
     }
@@ -662,7 +637,7 @@ final class WebhookFactory
             'is_recurring_token' => false,
             'billing_template_id' => null,
             'currency_conversion' => null,
-            'reference_generated' => 'TEST' . random_int(100, 999),
+            'reference_generated' => 'TEST'.random_int(100, 999),
             'refund_availability' => 'all',
             'referral_campaign_id' => null,
             'retain_level_details' => null,
@@ -682,6 +657,31 @@ final class WebhookFactory
         $json = json_encode($this->toArray(), JSON_PRETTY_PRINT);
 
         return $json !== false ? $json : '{}';
+    }
+
+    /**
+     * Create a payout payload.
+     *
+     * @param  array<string, mixed>  $overrides
+     * @return array<string, mixed>
+     */
+    private static function payoutPayload(string $eventType, string $status, array $overrides = []): array
+    {
+        return array_merge([
+            'id' => $overrides['id'] ?? Str::uuid()->toString(),
+            'type' => 'payout',
+            'event_type' => $eventType,
+            'status' => $status,
+            'amount' => $overrides['amount'] ?? 10000,
+            'currency' => $overrides['currency'] ?? 'MYR',
+            'recipient_name' => $overrides['recipient_name'] ?? 'Test Recipient',
+            'recipient_account' => $overrides['recipient_account'] ?? '1234567890',
+            'recipient_bank' => $overrides['recipient_bank'] ?? 'Maybank',
+            'reference' => $overrides['reference'] ?? 'PAYOUT-'.Str::random(8),
+            'is_test' => $overrides['is_test'] ?? true,
+            'created_on' => time(),
+            'updated_on' => time(),
+        ], $overrides);
     }
 
     /**

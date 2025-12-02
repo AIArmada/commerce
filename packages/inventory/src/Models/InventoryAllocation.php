@@ -29,6 +29,7 @@ final class InventoryAllocation extends Model
 {
     /** @use HasFactory<\AIArmada\Inventory\Database\Factories\InventoryAllocationFactory> */
     use HasFactory;
+
     use HasUuids;
 
     /**
@@ -155,6 +156,14 @@ final class InventoryAllocation extends Model
     }
 
     /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): \AIArmada\Inventory\Database\Factories\InventoryAllocationFactory
+    {
+        return \AIArmada\Inventory\Database\Factories\InventoryAllocationFactory::new();
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -165,13 +174,5 @@ final class InventoryAllocation extends Model
             'quantity' => 'integer',
             'expires_at' => 'datetime',
         ];
-    }
-
-    /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory(): \AIArmada\Inventory\Database\Factories\InventoryAllocationFactory
-    {
-        return \AIArmada\Inventory\Database\Factories\InventoryAllocationFactory::new();
     }
 }

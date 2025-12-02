@@ -254,9 +254,9 @@ trait HasInventory
     /**
      * Get movement history.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, InventoryMovement>
+     * @return Collection<int, InventoryMovement>
      */
-    public function getInventoryHistory(int $limit = 50): \Illuminate\Database\Eloquent\Collection
+    public function getInventoryHistory(int $limit = 50): Collection
     {
         return $this->getInventoryService()->getMovementHistory($this, $limit);
     }

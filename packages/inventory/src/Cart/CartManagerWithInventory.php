@@ -11,6 +11,7 @@ use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Services\InventoryAllocationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 /**
  * CartManager decorator that adds inventory allocation functionality.
@@ -176,7 +177,7 @@ final class CartManagerWithInventory implements CartManagerInterface
                 );
 
                 $results[$item->id] = $allocations;
-            } catch (\InvalidArgumentException $e) {
+            } catch (InvalidArgumentException $e) {
                 // Rollback any successful allocations on failure
                 $this->releaseAllInventory();
 

@@ -13,6 +13,7 @@ use AIArmada\Inventory\Listeners\ReleaseInventoryOnCartClear;
 use AIArmada\Inventory\Services\InventoryAllocationService;
 use AIArmada\Inventory\Services\InventoryService;
 use Illuminate\Support\Facades\Event;
+use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -73,7 +74,7 @@ final class InventoryServiceProvider extends PackageServiceProvider
             $resolver = $app->make($resolverClass);
 
             if (! $resolver instanceof OwnerResolverInterface) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     sprintf('%s must implement %s', $resolverClass, OwnerResolverInterface::class)
                 );
             }

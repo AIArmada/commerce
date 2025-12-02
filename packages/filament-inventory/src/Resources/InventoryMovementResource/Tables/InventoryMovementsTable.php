@@ -5,8 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Resources\InventoryMovementResource\Tables;
 
 use AIArmada\Inventory\Enums\MovementType;
-use AIArmada\Inventory\Models\InventoryLocation;
-use AIArmada\Inventory\Models\InventoryMovement;
 use Filament\Actions\ViewAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;

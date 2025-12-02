@@ -19,6 +19,11 @@ final class LowInventoryAlertsWidget extends TableWidget
 
     protected int|string|array $columnSpan = 'full';
 
+    public static function canView(): bool
+    {
+        return config('filament-inventory.features.low_stock_widget', true);
+    }
+
     public function table(Table $table): Table
     {
         $aggregator = app(InventoryStatsAggregator::class);
@@ -80,10 +85,5 @@ final class LowInventoryAlertsWidget extends TableWidget
             ->emptyStateHeading('No Low Stock Items')
             ->emptyStateDescription('All inventory levels are above their reorder points.')
             ->emptyStateIcon('heroicon-o-check-circle');
-    }
-
-    public static function canView(): bool
-    {
-        return config('filament-inventory.features.low_stock_widget', true);
     }
 }

@@ -20,7 +20,7 @@ class VerifyWebhookSignature
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next): Response
     {
@@ -111,8 +111,8 @@ class VerifyWebhookSignature
         foreach ($data as $key => $value) {
             if (is_array($value)) {
                 $data[$key] = $this->maskRecursive($value, $sensitiveKeys);
-            } elseif (is_string($value) && in_array(strtolower((string) $key), $sensitiveKeys, true)) {
-                $data[$key] = str_repeat('*', min(strlen($value), 8));
+            } elseif (is_string($value) && in_array(mb_strtolower((string) $key), $sensitiveKeys, true)) {
+                $data[$key] = str_repeat('*', min(mb_strlen($value), 8));
             }
         }
 

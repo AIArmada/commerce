@@ -67,15 +67,15 @@ final class BillingShowcaseSeeder extends Seeder
 
         // Add Stripe data alongside Chip
         $admin->update([
-            'stripe_id' => 'cus_demo_admin_' . Str::random(16),
-            'stripe_default_payment_method' => 'pm_' . Str::random(24),
+            'stripe_id' => 'cus_demo_admin_'.Str::random(16),
+            'stripe_default_payment_method' => 'pm_'.Str::random(24),
         ]);
 
         // Create Stripe subscriptions (mock for demo)
         \Laravel\Cashier\Database\Factories\SubscriptionFactory::new()->create([
             'user_id' => $admin->id,
             'stripe_status' => 'active',
-            'stripe_id' => 'sub_stripe_' . Str::random(20),
+            'stripe_id' => 'sub_stripe_'.Str::random(20),
             'stripe_price' => 'price_stripe_pro',
         ]);
 
@@ -124,7 +124,7 @@ final class BillingShowcaseSeeder extends Seeder
             };
 
             $user->update([
-                'stripe_id' => 'cus_demo_user_' . Str::random(16),
+                'stripe_id' => 'cus_demo_user_'.Str::random(16),
             ]);
         }
     }

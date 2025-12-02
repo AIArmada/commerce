@@ -27,11 +27,6 @@ final class BillingCancelled
         public readonly array $payload,
     ) {}
 
-    public function eventType(): WebhookEventType
-    {
-        return WebhookEventType::BillingTemplateClientSubscriptionBillingCancelled;
-    }
-
     /**
      * Create event from a raw webhook payload.
      *
@@ -45,6 +40,11 @@ final class BillingCancelled
             billingTemplateClient: $billingTemplateClient,
             payload: $payload,
         );
+    }
+
+    public function eventType(): WebhookEventType
+    {
+        return WebhookEventType::BillingTemplateClientSubscriptionBillingCancelled;
     }
 
     /**

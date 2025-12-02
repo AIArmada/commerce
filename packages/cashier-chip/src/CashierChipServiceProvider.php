@@ -21,6 +21,7 @@ use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
 use AIArmada\Docs\Services\DocService;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+use RuntimeException;
 
 class CashierChipServiceProvider extends ServiceProvider
 {
@@ -72,7 +73,7 @@ class CashierChipServiceProvider extends ServiceProvider
                 return $app->make(DocsInvoiceRenderer::class);
             }
 
-            throw new \RuntimeException('Docs package is required for invoice rendering. Install aiarmada/docs.');
+            throw new RuntimeException('Docs package is required for invoice rendering. Install aiarmada/docs.');
         });
     }
 

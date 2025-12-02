@@ -28,6 +28,14 @@ class InvoicePayment implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
+     * Dynamically get values from the Purchase object.
+     */
+    public function __get(string $key): mixed
+    {
+        return $this->purchase->{$key};
+    }
+
+    /**
      * Get the payment ID.
      */
     public function id(): string
@@ -141,13 +149,5 @@ class InvoicePayment implements Arrayable, Jsonable, JsonSerializable
     public function jsonSerialize(): array
     {
         return $this->toArray();
-    }
-
-    /**
-     * Dynamically get values from the Purchase object.
-     */
-    public function __get(string $key): mixed
-    {
-        return $this->purchase->{$key};
     }
 }

@@ -6,6 +6,7 @@ namespace AIArmada\Cart\Traits;
 
 use AIArmada\Cart\Collections\CartCollection;
 use AIArmada\Cart\Models\CartItem;
+use Exception;
 
 trait ManagesStorage
 {
@@ -128,7 +129,7 @@ trait ManagesStorage
             if (isset($associatedData['id']) && is_subclass_of($className, \Illuminate\Database\Eloquent\Model::class)) {
                 try {
                     return $className::find($associatedData['id']);
-                } catch (\Exception) {
+                } catch (Exception) {
                     // If fetch fails, return just the class name
                     return $className;
                 }

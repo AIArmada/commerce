@@ -50,6 +50,7 @@ class HandlePurchasePaid
      * Handle recurring token from a purchase.
      *
      * @phpstan-ignore-next-line
+     *
      * @param  array<string, mixed>  $purchase
      */
     protected function handleRecurringToken(object $billable, string $recurringToken, array $purchase): void

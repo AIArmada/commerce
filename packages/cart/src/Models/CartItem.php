@@ -56,29 +56,6 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
     }
 
     /**
-     * Normalize price to integer cents.
-     *
-     * @param  int|float|string  $price  Price input
-     *                                    - int: treated as cents (returned as-is)
-     *                                    - float: treated as decimal dollars, converted to cents
-     *                                    - string: sanitized and converted
-     */
-    private function normalizeToInt(int|float|string $price): int
-    {
-        if (is_int($price)) {
-            return $price;
-        }
-
-        if (is_float($price)) {
-            // Float is treated as decimal dollars, convert to cents
-            return (int) round($price * 100);
-        }
-
-        // String handling
-        return $this->sanitizeStringPrice($price);
-    }
-
-    /**
      * Set item quantity
      */
     public function setQuantity(int $quantity): static
@@ -122,6 +99,29 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
             $attributes['conditions'] ?? $this->conditions->toArray(),
             $attributes['associated_model'] ?? $this->associatedModel
         );
+    }
+
+    /**
+     * Normalize price to integer cents.
+     *
+     * @param  int|float|string  $price  Price input
+     *                                   - int: treated as cents (returned as-is)
+     *                                   - float: treated as decimal dollars, converted to cents
+     *                                   - string: sanitized and converted
+     */
+    private function normalizeToInt(int|float|string $price): int
+    {
+        if (is_int($price)) {
+            return $price;
+        }
+
+        if (is_float($price)) {
+            // Float is treated as decimal dollars, convert to cents
+            return (int) round($price * 100);
+        }
+
+        // String handling
+        return $this->sanitizeStringPrice($price);
     }
 
     /**

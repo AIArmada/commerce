@@ -17,8 +17,8 @@ class InventoryLocationFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->unique()->company() . ' Warehouse',
-            'code' => strtoupper($this->faker->unique()->lexify('WH-???')),
+            'name' => $this->faker->unique()->company().' Warehouse',
+            'code' => mb_strtoupper($this->faker->unique()->lexify('WH-???')),
             'address' => $this->faker->address(),
             'is_active' => true,
             'priority' => $this->faker->numberBetween(1, 100),

@@ -3,26 +3,24 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliatePayout;
 
 test('AffiliateConversion has affiliate relationship', function (): void {
     $conversion = new AffiliateConversion();
 
-    expect($conversion->affiliate())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+    expect($conversion->affiliate())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
 });
 
 test('AffiliateConversion has attribution relationship', function (): void {
     $conversion = new AffiliateConversion();
 
-    expect($conversion->attribution())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+    expect($conversion->attribution())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
 });
 
 test('AffiliateConversion has payout relationship', function (): void {
     $conversion = new AffiliateConversion();
 
-    expect($conversion->payout())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+    expect($conversion->payout())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
 });
 
 test('AffiliateConversion can be created with fillable attributes', function (): void {

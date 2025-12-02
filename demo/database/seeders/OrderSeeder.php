@@ -72,7 +72,7 @@ final class OrderSeeder extends Seeder
 
             $order = Order::create([
                 'user_id' => $user->id,
-                'order_number' => 'ORD-' . strtoupper(fake()->unique()->bothify('???####')),
+                'order_number' => 'ORD-'.mb_strtoupper(fake()->unique()->bothify('???####')),
                 'status' => $status,
                 'payment_status' => $paymentStatus,
                 'subtotal' => $subtotal,

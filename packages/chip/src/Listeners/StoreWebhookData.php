@@ -44,7 +44,7 @@ final class StoreWebhookData
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     private function storePurchase(array $payload): void
     {
@@ -118,7 +118,7 @@ final class StoreWebhookData
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     private function storeClient(array $payload): void
     {
@@ -162,7 +162,7 @@ final class StoreWebhookData
     }
 
     /**
-     * @param array<string, mixed> $payload
+     * @param  array<string, mixed>  $payload
      */
     private function storePayment(array $payload): void
     {

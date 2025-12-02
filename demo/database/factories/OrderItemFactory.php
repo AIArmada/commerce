@@ -25,7 +25,7 @@ final class OrderItemFactory extends Factory
             'order_id' => Order::factory(),
             'product_id' => null,
             'name' => $this->faker->words(rand(2, 4), true),
-            'sku' => strtoupper($this->faker->bothify('???-####')),
+            'sku' => mb_strtoupper($this->faker->bothify('???-####')),
             'quantity' => $quantity,
             'unit_price' => $unitPrice,
             'total_price' => $quantity * $unitPrice,

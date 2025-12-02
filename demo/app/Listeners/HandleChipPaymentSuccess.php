@@ -105,7 +105,7 @@ final class HandleChipPaymentSuccess
                 $product->removeStock(
                     $item->quantity,
                     'sale',
-                    'Order paid: ' . $order->order_number
+                    'Order paid: '.$order->order_number
                 );
             }
         }

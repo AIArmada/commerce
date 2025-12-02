@@ -39,26 +39,6 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
-     * Normalize value to string or int.
-     *
-     * Float values (non-percentage) are converted to int cents.
-     * String values (percentages or with operators) are kept as strings.
-     */
-    private function normalizeValue(string|int|float $value): string|int
-    {
-        if (is_string($value)) {
-            return $value;
-        }
-
-        if (is_float($value)) {
-            // Float fixed values: convert to int cents
-            return (int) round($value * 100);
-        }
-
-        return $value;
-    }
-
-    /**
      * String representation
      */
     public function __toString(): string
@@ -397,6 +377,26 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
+     * Normalize value to string or int.
+     *
+     * Float values (non-percentage) are converted to int cents.
+     * String values (percentages or with operators) are kept as strings.
+     */
+    private function normalizeValue(string|int|float $value): string|int
+    {
+        if (is_string($value)) {
+            return $value;
+        }
+
+        if (is_float($value)) {
+            // Float fixed values: convert to int cents
+            return (int) round($value * 100);
+        }
+
+        return $value;
+    }
+
+    /**
      * Validate condition data
      */
     private function validateCondition(): void
@@ -544,7 +544,7 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     {
         $divisor = $this->parseMultiplier();
 
-        if ($divisor == 0) {
+        if ($divisor === 0) {
             return $amountCents;
         }
 
@@ -558,4 +558,3 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
         };
     }
 }
-

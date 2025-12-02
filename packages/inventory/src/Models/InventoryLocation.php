@@ -34,6 +34,7 @@ final class InventoryLocation extends Model
 {
     /** @use HasFactory<\AIArmada\Inventory\Database\Factories\InventoryLocationFactory> */
     use HasFactory;
+
     use HasUuids;
 
     public const DEFAULT_LOCATION_CODE = 'DEFAULT';
@@ -53,6 +54,21 @@ final class InventoryLocation extends Model
         'owner_id',
         'metadata',
     ];
+
+    /**
+     * Get or create the default location for simple setups.
+     */
+    public static function getOrCreateDefault(): self
+    {
+        return self::firstOrCreate(
+            ['code' => self::DEFAULT_LOCATION_CODE],
+            [
+                'name' => 'Default Location',
+                'is_active' => true,
+                'priority' => 100,
+            ]
+        );
+    }
 
     /**
      * Get the table associated with the model.
@@ -230,18 +246,22 @@ final class InventoryLocation extends Model
     }
 
     /**
-     * Get or create the default location for simple setups.
+     * Handle model lifecycle events.
      */
-    public static function getOrCreateDefault(): self
+    protected static function booted(): void
     {
-        return self::firstOrCreate(
-            ['code' => self::DEFAULT_LOCATION_CODE],
-            [
-                'name' => 'Default Location',
-                'is_active' => true,
-                'priority' => 100,
-            ]
-        );
+        self::deleting(function (InventoryLocation $location): void {
+            $location->inventoryLevels()->delete();
+            $location->allocations()->delete();
+        });
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): \AIArmada\Inventory\Database\Factories\InventoryLocationFactory
+    {
+        return \AIArmada\Inventory\Database\Factories\InventoryLocationFactory::new();
     }
 
     /**
@@ -256,24 +276,5 @@ final class InventoryLocation extends Model
             'priority' => 'integer',
             'metadata' => 'array',
         ];
-    }
-
-    /**
-     * Handle model lifecycle events.
-     */
-    protected static function booted(): void
-    {
-        static::deleting(function (InventoryLocation $location): void {
-            $location->inventoryLevels()->delete();
-            $location->allocations()->delete();
-        });
-    }
-
-    /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory(): \AIArmada\Inventory\Database\Factories\InventoryLocationFactory
-    {
-        return \AIArmada\Inventory\Database\Factories\InventoryLocationFactory::new();
     }
 }

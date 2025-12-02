@@ -54,45 +54,6 @@ class ChipSendService
         return SendInstruction::fromArray($response);
     }
 
-    /**
-     * Validate send instruction parameters.
-     *
-     * @throws ChipValidationException If validation fails
-     */
-    private function validateSendInstruction(
-        int $amountInCents,
-        string $currency,
-        string $email,
-        string $description,
-        string $reference
-    ): void {
-        $errors = [];
-
-        if ($amountInCents <= 0) {
-            $errors['amount'] = ['Amount must be a positive integer'];
-        }
-
-        if (mb_strlen($currency) !== 3) {
-            $errors['currency'] = ['Currency must be a 3-character ISO code'];
-        }
-
-        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
-            $errors['email'] = ['Invalid email address'];
-        }
-
-        if (empty(trim($description))) {
-            $errors['description'] = ['Description is required'];
-        }
-
-        if (empty(trim($reference))) {
-            $errors['reference'] = ['Reference is required'];
-        }
-
-        if (! empty($errors)) {
-            throw new ChipValidationException('Send instruction validation failed', $errors);
-        }
-    }
-
     public function getSendInstruction(string $id): SendInstruction
     {
         $response = $this->client->get("send/send_instructions/{$id}");
@@ -327,5 +288,44 @@ class ChipSendService
     public function resendBankAccountWebhook(string $id): array
     {
         return $this->client->post("send/bank_accounts/{$id}/resend_webhook");
+    }
+
+    /**
+     * Validate send instruction parameters.
+     *
+     * @throws ChipValidationException If validation fails
+     */
+    private function validateSendInstruction(
+        int $amountInCents,
+        string $currency,
+        string $email,
+        string $description,
+        string $reference
+    ): void {
+        $errors = [];
+
+        if ($amountInCents <= 0) {
+            $errors['amount'] = ['Amount must be a positive integer'];
+        }
+
+        if (mb_strlen($currency) !== 3) {
+            $errors['currency'] = ['Currency must be a 3-character ISO code'];
+        }
+
+        if (! filter_var($email, FILTER_VALIDATE_EMAIL)) {
+            $errors['email'] = ['Invalid email address'];
+        }
+
+        if (empty(mb_trim($description))) {
+            $errors['description'] = ['Description is required'];
+        }
+
+        if (empty(mb_trim($reference))) {
+            $errors['reference'] = ['Reference is required'];
+        }
+
+        if (! empty($errors)) {
+            throw new ChipValidationException('Send instruction validation failed', $errors);
+        }
     }
 }

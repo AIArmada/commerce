@@ -35,6 +35,7 @@ final class InventoryMovement extends Model
 {
     /** @use HasFactory<\AIArmada\Inventory\Database\Factories\InventoryMovementFactory> */
     use HasFactory;
+
     use HasUuids;
 
     /**
@@ -182,6 +183,14 @@ final class InventoryMovement extends Model
     }
 
     /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): \AIArmada\Inventory\Database\Factories\InventoryMovementFactory
+    {
+        return \AIArmada\Inventory\Database\Factories\InventoryMovementFactory::new();
+    }
+
+    /**
      * Get the attributes that should be cast.
      *
      * @return array<string, string>
@@ -192,13 +201,5 @@ final class InventoryMovement extends Model
             'quantity' => 'integer',
             'occurred_at' => 'datetime',
         ];
-    }
-
-    /**
-     * Create a new factory instance for the model.
-     */
-    protected static function newFactory(): \AIArmada\Inventory\Database\Factories\InventoryMovementFactory
-    {
-        return \AIArmada\Inventory\Database\Factories\InventoryMovementFactory::new();
     }
 }

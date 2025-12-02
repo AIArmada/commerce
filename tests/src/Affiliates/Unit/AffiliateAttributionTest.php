@@ -9,19 +9,19 @@ use Carbon\Carbon;
 test('AffiliateAttribution has affiliate relationship', function (): void {
     $attribution = new AffiliateAttribution();
 
-    expect($attribution->affiliate())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+    expect($attribution->affiliate())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
 });
 
 test('AffiliateAttribution has conversions relationship', function (): void {
     $attribution = new AffiliateAttribution();
 
-    expect($attribution->conversions())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($attribution->conversions())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
 });
 
 test('AffiliateAttribution has touchpoints relationship', function (): void {
     $attribution = new AffiliateAttribution();
 
-    expect($attribution->touchpoints())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($attribution->touchpoints())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
 });
 
 test('AffiliateAttribution scopeActive filters expired attributions', function (): void {

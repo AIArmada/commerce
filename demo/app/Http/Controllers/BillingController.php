@@ -4,15 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers;
 
+use AIArmada\CashierChip\Facades\CashierChip;
 use App\Models\Product;
 use App\Models\User;
+use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-use Laravel\Cashier\Cashier;
-use AIArmada\CashierChip\Facades\CashierChip;
 use Illuminate\View\View;
-use Illuminate\Http\RedirectResponse;
 
 class BillingController extends Controller
 {

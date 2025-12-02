@@ -64,28 +64,6 @@ final class Order extends Model
     ];
 
     /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'subtotal' => 'integer',
-            'discount_total' => 'integer',
-            'tax_total' => 'integer',
-            'shipping_total' => 'integer',
-            'grand_total' => 'integer',
-            'billing_address' => 'array',
-            'shipping_address' => 'array',
-            'metadata' => 'array',
-            'placed_at' => 'datetime',
-            'paid_at' => 'datetime',
-            'shipped_at' => 'datetime',
-            'delivered_at' => 'datetime',
-            'cancelled_at' => 'datetime',
-        ];
-    }
-
-    /**
      * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
@@ -106,6 +84,28 @@ final class Order extends Model
      */
     public function getFormattedTotalAttribute(): string
     {
-        return 'RM ' . number_format($this->grand_total / 100, 2);
+        return 'RM '.number_format($this->grand_total / 100, 2);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'subtotal' => 'integer',
+            'discount_total' => 'integer',
+            'tax_total' => 'integer',
+            'shipping_total' => 'integer',
+            'grand_total' => 'integer',
+            'billing_address' => 'array',
+            'shipping_address' => 'array',
+            'metadata' => 'array',
+            'placed_at' => 'datetime',
+            'paid_at' => 'datetime',
+            'shipped_at' => 'datetime',
+            'delivered_at' => 'datetime',
+            'cancelled_at' => 'datetime',
+        ];
     }
 }

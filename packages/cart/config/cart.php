@@ -60,7 +60,7 @@ return [
     */
     'owner' => [
         'enabled' => env('CART_OWNER_ENABLED', false),
-        'resolver' => env('CART_OWNER_RESOLVER', \AIArmada\CommerceSupport\Contracts\NullOwnerResolver::class),
+        'resolver' => env('CART_OWNER_RESOLVER', AIArmada\CommerceSupport\Contracts\NullOwnerResolver::class),
         'include_global' => env('CART_OWNER_INCLUDE_GLOBAL', true),
     ],
 

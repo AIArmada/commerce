@@ -39,7 +39,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Affiliate> $children
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateAttribution> $attributions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateConversion> $conversions
- * @property-read \Illuminate\Database\Eloquent\Model|null $owner
+ * @property-read Model|null $owner
  */
 class Affiliate extends Model
 {

@@ -2,18 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Contracts\CartManagerInterface;
-use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Stock\Cart\CartManagerWithStock;
-use AIArmada\Stock\DeductStockOnPaymentSuccess;
-use AIArmada\Stock\Listeners\ReleaseStockOnCartClear;
 use AIArmada\Stock\Services\StockReservationService;
 use AIArmada\Stock\Services\StockService;
 use AIArmada\Stock\StockServiceProvider;
 use Illuminate\Support\Facades\Event;
-use Orchestra\Testbench\Concerns\Testbench;
-use Orchestra\Testbench\TestCase;
 
 test('provides correct bindings', function (): void {
     $provider = new StockServiceProvider(app());
@@ -77,8 +71,8 @@ test('registers payment integration when enabled', function (): void {
     $this->app->boot(StockServiceProvider::class);
 
     $events = [
-        \AIArmada\Cashier\Events\PaymentSucceeded::class,
-        \AIArmada\CashierChip\Events\PaymentSucceeded::class,
+        AIArmada\Cashier\Events\PaymentSucceeded::class,
+        AIArmada\CashierChip\Events\PaymentSucceeded::class,
     ];
 
     $checked = 0;
@@ -98,6 +92,6 @@ test('registers command', function (): void {
     $this->app->register(StockServiceProvider::class);
 
     // Check that the command class is available via Artisan
-    $commands = \Artisan::all();
+    $commands = Artisan::all();
     expect(array_key_exists('stock:cleanup-reservations', $commands))->toBeTrue();
 });

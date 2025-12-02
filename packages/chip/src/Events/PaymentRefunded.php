@@ -30,11 +30,6 @@ final class PaymentRefunded
         public readonly array $payload,
     ) {}
 
-    public function eventType(): WebhookEventType
-    {
-        return WebhookEventType::PaymentRefunded;
-    }
-
     /**
      * Create event from a raw webhook payload.
      *
@@ -48,6 +43,11 @@ final class PaymentRefunded
             purchase: $purchase,
             payload: $payload,
         );
+    }
+
+    public function eventType(): WebhookEventType
+    {
+        return WebhookEventType::PaymentRefunded;
     }
 
     /**

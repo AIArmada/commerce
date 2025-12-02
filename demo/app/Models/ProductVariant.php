@@ -37,19 +37,6 @@ final class ProductVariant extends Model
     ];
 
     /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'price' => 'integer',
-            'stock_quantity' => 'integer',
-            'options' => 'array',
-            'is_active' => 'boolean',
-        ];
-    }
-
-    /**
      * @return BelongsTo<Product, $this>
      */
     public function product(): BelongsTo
@@ -62,6 +49,19 @@ final class ProductVariant extends Model
      */
     public function getFormattedPriceAttribute(): string
     {
-        return 'RM ' . number_format($this->price / 100, 2);
+        return 'RM '.number_format($this->price / 100, 2);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'price' => 'integer',
+            'stock_quantity' => 'integer',
+            'options' => 'array',
+            'is_active' => 'boolean',
+        ];
     }
 }

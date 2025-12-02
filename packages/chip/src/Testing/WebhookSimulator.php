@@ -35,6 +35,7 @@ use Illuminate\Http\Client\Response;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Http;
+use RuntimeException;
 
 /**
  * Comprehensive CHIP webhook simulator for testing.
@@ -119,6 +120,62 @@ final class WebhookSimulator
     public static function failed(): self
     {
         return (new self)->factory(WebhookFactory::make()->failed());
+    }
+
+    /**
+     * Fake all webhook events for testing assertions.
+     *
+     * @param  array<class-string>|null  $eventsToFake
+     */
+    public static function fakeEvents(?array $eventsToFake = null): void
+    {
+        $events = $eventsToFake ?? [
+            WebhookReceived::class,
+            PurchaseCreated::class,
+            PurchasePaid::class,
+            PurchasePaymentFailure::class,
+            PurchaseCancelled::class,
+            PurchasePreauthorized::class,
+            PurchaseHold::class,
+            PurchaseCaptured::class,
+            PurchaseReleased::class,
+            PurchaseSubscriptionChargeFailure::class,
+            PaymentRefunded::class,
+            BillingCancelled::class,
+            PayoutPending::class,
+            PayoutSuccess::class,
+            PayoutFailed::class,
+        ];
+
+        Event::fake($events);
+    }
+
+    /**
+     * Assert that a webhook event was dispatched.
+     *
+     * @param  class-string  $eventClass
+     */
+    public static function assertDispatched(string $eventClass, ?callable $callback = null): void
+    {
+        Event::assertDispatched($eventClass, $callback);
+    }
+
+    /**
+     * Assert that a webhook event was not dispatched.
+     *
+     * @param  class-string  $eventClass
+     */
+    public static function assertNotDispatched(string $eventClass): void
+    {
+        Event::assertNotDispatched($eventClass);
+    }
+
+    /**
+     * Disable webhook signature verification for testing.
+     */
+    public static function withoutSignatureVerification(): void
+    {
+        config(['chip.webhooks.verify_signature' => false]);
     }
 
     /**
@@ -324,12 +381,12 @@ final class WebhookSimulator
     /**
      * Send the webhook via HTTP POST request.
      *
-     * @throws \RuntimeException If URL is not set
+     * @throws RuntimeException If URL is not set
      */
     public function send(): Response
     {
         if ($this->url === null) {
-            throw new \RuntimeException('Webhook URL not set. Use ->to($url) or ->url($url) to set the target URL.');
+            throw new RuntimeException('Webhook URL not set. Use ->to($url) or ->url($url) to set the target URL.');
         }
 
         $payload = $this->factory->toArray();
@@ -346,14 +403,14 @@ final class WebhookSimulator
     /**
      * Send the webhook and assert the response is successful.
      *
-     * @throws \RuntimeException If response is not successful
+     * @throws RuntimeException If response is not successful
      */
     public function sendAndAssertSuccess(): Response
     {
         $response = $this->send();
 
         if (! $response->successful()) {
-            throw new \RuntimeException(
+            throw new RuntimeException(
                 "Webhook simulation failed with status {$response->status()}: {$response->body()}"
             );
         }
@@ -365,12 +422,11 @@ final class WebhookSimulator
      * Send webhook using a custom HTTP client (useful for Laravel test cases).
      *
      * @param  callable(string $url, array $payload, array $headers): mixed  $httpClient
-     * @return mixed
      */
     public function sendUsing(callable $httpClient): mixed
     {
         if ($this->url === null) {
-            throw new \RuntimeException('Webhook URL not set. Use ->to($url) or ->url($url) to set the target URL.');
+            throw new RuntimeException('Webhook URL not set. Use ->to($url) or ->url($url) to set the target URL.');
         }
 
         $payload = $this->factory->toArray();
@@ -402,52 +458,6 @@ final class WebhookSimulator
 
         // Dispatch typed event
         $this->dispatchTypedEvent($eventType, $payload);
-    }
-
-    /**
-     * Dispatch typed event based on event type.
-     *
-     * @param  array<string, mixed>  $payload
-     */
-    protected function dispatchTypedEvent(WebhookEventType $eventType, array $payload): void
-    {
-        // Only create the DTO that's actually needed for the event type
-        if ($eventType->isPurchaseEvent() || $eventType->isPaymentEvent()) {
-            $purchase = Purchase::fromArray($payload);
-
-            match ($eventType) {
-                WebhookEventType::PurchaseCreated => PurchaseCreated::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePaid => PurchasePaid::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePaymentFailure => PurchasePaymentFailure::dispatch($purchase, $payload),
-                WebhookEventType::PurchaseCancelled => PurchaseCancelled::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePendingExecute => PurchasePendingExecute::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePendingCharge => PurchasePendingCharge::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePendingCapture => PurchasePendingCapture::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePendingRelease => PurchasePendingRelease::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePendingRefund => PurchasePendingRefund::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePendingRecurringTokenDelete => PurchasePendingRecurringTokenDelete::dispatch($purchase, $payload),
-                WebhookEventType::PurchaseHold => PurchaseHold::dispatch($purchase, $payload),
-                WebhookEventType::PurchaseCaptured => PurchaseCaptured::dispatch($purchase, $payload),
-                WebhookEventType::PurchaseReleased => PurchaseReleased::dispatch($purchase, $payload),
-                WebhookEventType::PurchasePreauthorized => PurchasePreauthorized::dispatch($purchase, $payload),
-                WebhookEventType::PurchaseRecurringTokenDeleted => PurchaseRecurringTokenDeleted::dispatch($purchase, $payload),
-                WebhookEventType::PurchaseSubscriptionChargeFailure => PurchaseSubscriptionChargeFailure::dispatch($purchase, $payload),
-                WebhookEventType::PaymentRefunded => PaymentRefunded::dispatch($purchase, $payload),
-                default => null,
-            };
-        } elseif ($eventType->isBillingEvent()) {
-            $billingClient = BillingTemplateClient::fromArray($payload);
-            BillingCancelled::dispatch($billingClient, $payload);
-        } elseif ($eventType->isPayoutEvent()) {
-            $payout = Payout::fromArray($payload);
-
-            match ($eventType) {
-                WebhookEventType::PayoutPending => PayoutPending::dispatch($payout, $payload),
-                WebhookEventType::PayoutFailed => PayoutFailed::dispatch($payout, $payload),
-                WebhookEventType::PayoutSuccess => PayoutSuccess::dispatch($payout, $payload),
-                default => null,
-            };
-        }
     }
 
     /**
@@ -489,60 +499,49 @@ final class WebhookSimulator
     }
 
     /**
-     * Fake all webhook events for testing assertions.
+     * Dispatch typed event based on event type.
      *
-     * @param  array<class-string>|null  $eventsToFake
+     * @param  array<string, mixed>  $payload
      */
-    public static function fakeEvents(?array $eventsToFake = null): void
+    private function dispatchTypedEvent(WebhookEventType $eventType, array $payload): void
     {
-        $events = $eventsToFake ?? [
-            WebhookReceived::class,
-            PurchaseCreated::class,
-            PurchasePaid::class,
-            PurchasePaymentFailure::class,
-            PurchaseCancelled::class,
-            PurchasePreauthorized::class,
-            PurchaseHold::class,
-            PurchaseCaptured::class,
-            PurchaseReleased::class,
-            PurchaseSubscriptionChargeFailure::class,
-            PaymentRefunded::class,
-            BillingCancelled::class,
-            PayoutPending::class,
-            PayoutSuccess::class,
-            PayoutFailed::class,
-        ];
+        // Only create the DTO that's actually needed for the event type
+        if ($eventType->isPurchaseEvent() || $eventType->isPaymentEvent()) {
+            $purchase = Purchase::fromArray($payload);
 
-        Event::fake($events);
-    }
+            match ($eventType) {
+                WebhookEventType::PurchaseCreated => PurchaseCreated::dispatch($purchase, $payload),
+                WebhookEventType::PurchasePaid => PurchasePaid::dispatch($purchase, $payload),
+                WebhookEventType::PurchasePaymentFailure => PurchasePaymentFailure::dispatch($purchase, $payload),
+                WebhookEventType::PurchaseCancelled => PurchaseCancelled::dispatch($purchase, $payload),
+                WebhookEventType::PurchasePendingExecute => PurchasePendingExecute::dispatch($purchase, $payload),
+                WebhookEventType::PurchasePendingCharge => PurchasePendingCharge::dispatch($purchase, $payload),
+                WebhookEventType::PurchasePendingCapture => PurchasePendingCapture::dispatch($purchase, $payload),
+                WebhookEventType::PurchasePendingRelease => PurchasePendingRelease::dispatch($purchase, $payload),
+                WebhookEventType::PurchasePendingRefund => PurchasePendingRefund::dispatch($purchase, $payload),
+                WebhookEventType::PurchasePendingRecurringTokenDelete => PurchasePendingRecurringTokenDelete::dispatch($purchase, $payload),
+                WebhookEventType::PurchaseHold => PurchaseHold::dispatch($purchase, $payload),
+                WebhookEventType::PurchaseCaptured => PurchaseCaptured::dispatch($purchase, $payload),
+                WebhookEventType::PurchaseReleased => PurchaseReleased::dispatch($purchase, $payload),
+                WebhookEventType::PurchasePreauthorized => PurchasePreauthorized::dispatch($purchase, $payload),
+                WebhookEventType::PurchaseRecurringTokenDeleted => PurchaseRecurringTokenDeleted::dispatch($purchase, $payload),
+                WebhookEventType::PurchaseSubscriptionChargeFailure => PurchaseSubscriptionChargeFailure::dispatch($purchase, $payload),
+                WebhookEventType::PaymentRefunded => PaymentRefunded::dispatch($purchase, $payload),
+                default => null,
+            };
+        } elseif ($eventType->isBillingEvent()) {
+            $billingClient = BillingTemplateClient::fromArray($payload);
+            BillingCancelled::dispatch($billingClient, $payload);
+        } elseif ($eventType->isPayoutEvent()) {
+            $payout = Payout::fromArray($payload);
 
-    /**
-     * Assert that a webhook event was dispatched.
-     *
-     * @param  class-string  $eventClass
-     * @param  callable|null  $callback
-     */
-    public static function assertDispatched(string $eventClass, ?callable $callback = null): void
-    {
-        Event::assertDispatched($eventClass, $callback);
-    }
-
-    /**
-     * Assert that a webhook event was not dispatched.
-     *
-     * @param  class-string  $eventClass
-     */
-    public static function assertNotDispatched(string $eventClass): void
-    {
-        Event::assertNotDispatched($eventClass);
-    }
-
-    /**
-     * Disable webhook signature verification for testing.
-     */
-    public static function withoutSignatureVerification(): void
-    {
-        config(['chip.webhooks.verify_signature' => false]);
+            match ($eventType) {
+                WebhookEventType::PayoutPending => PayoutPending::dispatch($payout, $payload),
+                WebhookEventType::PayoutFailed => PayoutFailed::dispatch($payout, $payload),
+                WebhookEventType::PayoutSuccess => PayoutSuccess::dispatch($payout, $payload),
+                default => null,
+            };
+        }
     }
 
     /**
@@ -556,7 +555,7 @@ final class WebhookSimulator
         $formatted = [];
 
         foreach ($headers as $key => $value) {
-            $formatted['HTTP_' . strtoupper(str_replace('-', '_', $key))] = $value;
+            $formatted['HTTP_'.mb_strtoupper(str_replace('-', '_', $key))] = $value;
         }
 
         return $formatted;

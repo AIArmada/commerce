@@ -6,7 +6,6 @@ namespace AIArmada\FilamentInventory\Resources\InventoryLevelResource\Tables;
 
 use AIArmada\Inventory\Enums\AllocationStrategy;
 use AIArmada\Inventory\Models\InventoryLevel;
-use AIArmada\Inventory\Models\InventoryLocation;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;

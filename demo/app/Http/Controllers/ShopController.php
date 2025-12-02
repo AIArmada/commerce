@@ -6,13 +6,14 @@ namespace App\Http\Controllers;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Chip\Facades\Chip;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Chip\Facades\Chip;
 use App\Models\Category;
 use App\Models\Order;
 use App\Models\OrderItem;
 use App\Models\Product;
+use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -27,13 +28,13 @@ final class ShopController extends Controller
     public function home(): View
     {
         $categories = Category::withCount('products')->get();
-        
+
         $featuredProducts = Product::with('category')
             ->where('is_active', true)
             ->inRandomOrder()
             ->take(8)
             ->get();
-        
+
         $activeVouchers = Voucher::where('status', VoucherStatus::Active)
             ->where(function ($query) {
                 $query->whereNull('expires_at')
@@ -70,9 +71,9 @@ final class ShopController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                  ->orWhere('description', 'like', '%' . $request->search . '%')
-                  ->orWhere('sku', 'like', '%' . $request->search . '%');
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('description', 'like', '%'.$request->search.'%')
+                    ->orWhere('sku', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -119,7 +120,7 @@ final class ShopController extends Controller
     public function product(Product $product): View
     {
         $product->load('category');
-        
+
         $relatedProducts = Product::with('category')
             ->where('is_active', true)
             ->where('id', '!=', $product->id)
@@ -141,7 +142,7 @@ final class ShopController extends Controller
         $cartSubtotal = Cart::isEmpty() ? 0 : Cart::getRawSubtotalWithoutConditions();
         $cartQuantity = Cart::getTotalQuantity();
         $appliedVoucher = session('applied_voucher');
-        
+
         $activeVouchers = Voucher::where('status', VoucherStatus::Active)
             ->where(function ($query): void {
                 $query->whereNull('expires_at')
@@ -221,7 +222,7 @@ final class ShopController extends Controller
     public function removeFromCart(string $itemId): RedirectResponse
     {
         Cart::remove($itemId);
-        
+
         session(['cart_count' => Cart::getTotalQuantity()]);
 
         return back()->with('success', 'Item removed from cart.');
@@ -238,9 +239,9 @@ final class ShopController extends Controller
 
         try {
             Cart::applyVoucher($request->voucher_code);
-            session(['applied_voucher' => strtoupper($request->voucher_code)]);
+            session(['applied_voucher' => mb_strtoupper($request->voucher_code)]);
 
-            return back()->with('success', 'Voucher ' . strtoupper($request->voucher_code) . ' applied!');
+            return back()->with('success', 'Voucher '.mb_strtoupper($request->voucher_code).' applied!');
         } catch (\AIArmada\Vouchers\Exceptions\InvalidVoucherException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -252,11 +253,11 @@ final class ShopController extends Controller
     public function removeVoucher(): RedirectResponse
     {
         $appliedVoucher = session('applied_voucher');
-        
+
         if ($appliedVoucher) {
             Cart::removeVoucher($appliedVoucher);
         }
-        
+
         session()->forget('applied_voucher');
 
         return back()->with('success', 'Voucher removed.');
@@ -315,7 +316,7 @@ final class ShopController extends Controller
 
         // Create order with pending_payment status
         $order = Order::create([
-            'order_number' => 'ORD-' . strtoupper(Str::random(8)),
+            'order_number' => 'ORD-'.mb_strtoupper(Str::random(8)),
             'user_id' => auth()->id(),
             'status' => 'pending_payment',
             'payment_status' => 'pending',
@@ -326,7 +327,7 @@ final class ShopController extends Controller
             'grand_total' => $subtotalWithConditions + $shippingCost,
             'currency' => 'MYR',
             'shipping_address' => [
-                'name' => $request->first_name . ' ' . $request->last_name,
+                'name' => $request->first_name.' '.$request->last_name,
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'address_line_1' => $request->address_line_1,
@@ -372,7 +373,7 @@ final class ShopController extends Controller
                 ->reference($order->order_number)
                 ->customer(
                     email: $request->email,
-                    fullName: $request->first_name . ' ' . $request->last_name,
+                    fullName: $request->first_name.' '.$request->last_name,
                     phone: $request->phone,
                     country: 'MY'
                 )
@@ -396,7 +397,7 @@ final class ShopController extends Controller
             // Add shipping as a product if applicable
             if ($shippingCost > 0) {
                 $purchase->addProduct(
-                    name: 'Shipping (' . ucfirst(str_replace('_', ' ', $request->shipping_method)) . ')',
+                    name: 'Shipping ('.ucfirst(str_replace('_', ' ', $request->shipping_method)).')',
                     price: $shippingCost,
                     quantity: 1
                 );
@@ -437,7 +438,7 @@ final class ShopController extends Controller
             // Redirect to CHIP payment page
             return redirect()->away($chipPurchase->getCheckoutUrl());
 
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             // Log the error
             Log::error('CHIP payment creation failed', [
                 'order_id' => $order->id,
@@ -448,7 +449,7 @@ final class ShopController extends Controller
             $order->update(['status' => 'payment_failed']);
 
             return redirect()->route('shop.checkout')
-                ->with('error', 'Payment initialization failed. Please try again. Error: ' . $e->getMessage());
+                ->with('error', 'Payment initialization failed. Please try again. Error: '.$e->getMessage());
         }
     }
 
@@ -472,64 +473,6 @@ final class ShopController extends Controller
         $order->load('items');
 
         return view('shop.payment-success', compact('order'));
-    }
-
-    /**
-     * Simulate CHIP payment webhook for demo purposes.
-     * In production, CHIP sends webhooks to a public URL with signature verification.
-     */
-    private function simulatePaymentWebhook(Order $order): void
-    {
-        $address = $order->shipping_address ?? [];
-        $streetAddress = $address['address_line_1'] ?? $address['address'] ?? '';
-        
-        \AIArmada\Chip\Testing\WebhookSimulator::paid()
-            ->purchaseId($order->metadata['chip_purchase_id'])
-            ->reference($order->order_number)
-            ->amount($order->grand_total)
-            ->customer(
-                $address['email'] ?? 'demo@example.com',
-                $address['name'] ?? 'Demo Customer',
-                $address['phone'] ?? '+60123456789'
-            )
-            ->with([
-                'client' => [
-                    'street_address' => $streetAddress,
-                    'city' => $address['city'] ?? '',
-                    'state' => $address['state'] ?? '',
-                    'zip_code' => $address['postcode'] ?? '',
-                    'country' => 'MY',
-                    'shipping_street_address' => $streetAddress,
-                    'shipping_city' => $address['city'] ?? '',
-                    'shipping_state' => $address['state'] ?? '',
-                    'shipping_zip_code' => $address['postcode'] ?? '',
-                    'shipping_country' => 'MY',
-                ],
-                'purchase' => [
-                    'total' => $order->grand_total,
-                    'currency' => 'MYR',
-                    'metadata' => [
-                        'order_id' => $order->id,
-                        'order_number' => $order->order_number,
-                    ],
-                    'products' => $order->items->map(fn ($item) => [
-                        'name' => $item->name,
-                        'price' => $item->unit_price,
-                        'quantity' => (string) $item->quantity,
-                        'category' => 'product',
-                        'discount' => 0,
-                        'tax_percent' => '0.00',
-                    ])->toArray(),
-                    'subtotal_override' => $order->subtotal,
-                    'total_discount_override' => $order->discount_total,
-                    'shipping_options' => $order->shipping_total > 0 ? [
-                        ['amount' => $order->shipping_total, 'title' => 'Shipping'],
-                    ] : [],
-                ],
-            ])
-            ->fpx()
-            ->isTest()
-            ->dispatch();
     }
 
     /**
@@ -567,13 +510,13 @@ final class ShopController extends Controller
      */
     public function trackAffiliate(Request $request, string $code): RedirectResponse
     {
-        $affiliate = Affiliate::where('code', strtoupper($code))
+        $affiliate = Affiliate::where('code', mb_strtoupper($code))
             ->where('status', 'active')
             ->first();
 
         if ($affiliate) {
             session(['affiliate_code' => $affiliate->code]);
-            
+
             // Track click
             $affiliate->increment('total_clicks');
         }
@@ -652,5 +595,63 @@ final class ShopController extends Controller
             ->get();
 
         return view('shop.account', compact('user', 'recentOrders'));
+    }
+
+    /**
+     * Simulate CHIP payment webhook for demo purposes.
+     * In production, CHIP sends webhooks to a public URL with signature verification.
+     */
+    private function simulatePaymentWebhook(Order $order): void
+    {
+        $address = $order->shipping_address ?? [];
+        $streetAddress = $address['address_line_1'] ?? $address['address'] ?? '';
+
+        \AIArmada\Chip\Testing\WebhookSimulator::paid()
+            ->purchaseId($order->metadata['chip_purchase_id'])
+            ->reference($order->order_number)
+            ->amount($order->grand_total)
+            ->customer(
+                $address['email'] ?? 'demo@example.com',
+                $address['name'] ?? 'Demo Customer',
+                $address['phone'] ?? '+60123456789'
+            )
+            ->with([
+                'client' => [
+                    'street_address' => $streetAddress,
+                    'city' => $address['city'] ?? '',
+                    'state' => $address['state'] ?? '',
+                    'zip_code' => $address['postcode'] ?? '',
+                    'country' => 'MY',
+                    'shipping_street_address' => $streetAddress,
+                    'shipping_city' => $address['city'] ?? '',
+                    'shipping_state' => $address['state'] ?? '',
+                    'shipping_zip_code' => $address['postcode'] ?? '',
+                    'shipping_country' => 'MY',
+                ],
+                'purchase' => [
+                    'total' => $order->grand_total,
+                    'currency' => 'MYR',
+                    'metadata' => [
+                        'order_id' => $order->id,
+                        'order_number' => $order->order_number,
+                    ],
+                    'products' => $order->items->map(fn ($item) => [
+                        'name' => $item->name,
+                        'price' => $item->unit_price,
+                        'quantity' => (string) $item->quantity,
+                        'category' => 'product',
+                        'discount' => 0,
+                        'tax_percent' => '0.00',
+                    ])->toArray(),
+                    'subtotal_override' => $order->subtotal,
+                    'total_discount_override' => $order->discount_total,
+                    'shipping_options' => $order->shipping_total > 0 ? [
+                        ['amount' => $order->shipping_total, 'title' => 'Shipping'],
+                    ] : [],
+                ],
+            ])
+            ->fpx()
+            ->isTest()
+            ->dispatch();
     }
 }

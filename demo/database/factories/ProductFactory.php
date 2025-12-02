@@ -25,7 +25,7 @@ final class ProductFactory extends Factory
             'name' => ucwords($name),
             'slug' => Str::slug($name),
             'description' => $this->faker->paragraphs(rand(1, 3), true),
-            'sku' => strtoupper($this->faker->unique()->bothify('???-####')),
+            'sku' => mb_strtoupper($this->faker->unique()->bothify('???-####')),
             'price' => $price,
             'compare_at_price' => $this->faker->optional(0.3)->numberBetween($price + 1000, $price + 50000),
             'currency' => 'MYR',

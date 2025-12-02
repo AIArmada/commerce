@@ -12,6 +12,7 @@ use AIArmada\Stock\Listeners\ReleaseStockOnCartClear;
 use AIArmada\Stock\Services\StockReservationService;
 use AIArmada\Stock\Services\StockService;
 use Illuminate\Support\Facades\Event;
+use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -72,7 +73,7 @@ final class StockServiceProvider extends PackageServiceProvider
             $resolver = $app->make($resolverClass);
 
             if (! $resolver instanceof OwnerResolverInterface) {
-                throw new \InvalidArgumentException(
+                throw new InvalidArgumentException(
                     sprintf('%s must implement %s', $resolverClass, OwnerResolverInterface::class)
                 );
             }

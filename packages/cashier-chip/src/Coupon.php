@@ -26,6 +26,22 @@ class Coupon implements Arrayable, Jsonable, JsonSerializable
     public function __construct(protected VoucherData $voucher) {}
 
     /**
+     * Dynamically get values from the voucher.
+     */
+    public function __get(string $key): mixed
+    {
+        return match ($key) {
+            'id' => $this->id(),
+            'name' => $this->name(),
+            'percent_off' => $this->percentOff(),
+            'amount_off' => $this->rawAmountOff(),
+            'currency' => $this->currency(),
+            'duration' => $this->duration(),
+            default => $this->voucher->{$key} ?? null,
+        };
+    }
+
+    /**
      * Get the coupon ID (voucher code).
      */
     public function id(): string
@@ -230,14 +246,6 @@ class Coupon implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
-     * Format the given amount into a displayable currency.
-     */
-    protected function formatAmount(int $amount): string
-    {
-        return Cashier::formatAmount($amount, $this->currency());
-    }
-
-    /**
      * Get the instance as an array.
      *
      * @return array<string, mixed>
@@ -277,18 +285,10 @@ class Coupon implements Arrayable, Jsonable, JsonSerializable
     }
 
     /**
-     * Dynamically get values from the voucher.
+     * Format the given amount into a displayable currency.
      */
-    public function __get(string $key): mixed
+    protected function formatAmount(int $amount): string
     {
-        return match ($key) {
-            'id' => $this->id(),
-            'name' => $this->name(),
-            'percent_off' => $this->percentOff(),
-            'amount_off' => $this->rawAmountOff(),
-            'currency' => $this->currency(),
-            'duration' => $this->duration(),
-            default => $this->voucher->{$key} ?? null,
-        };
+        return Cashier::formatAmount($amount, $this->currency());
     }
 }

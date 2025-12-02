@@ -20,7 +20,7 @@ final class ProductVariantFactory extends Factory
         return [
             'product_id' => Product::factory(),
             'name' => $this->faker->randomElement(['Small', 'Medium', 'Large', 'XL', 'Red', 'Blue', 'Black', 'White']),
-            'sku' => strtoupper($this->faker->unique()->bothify('VAR-???-####')),
+            'sku' => mb_strtoupper($this->faker->unique()->bothify('VAR-???-####')),
             'price' => $this->faker->numberBetween(1000, 50000),
             'stock_quantity' => $this->faker->numberBetween(0, 50),
             'options' => [

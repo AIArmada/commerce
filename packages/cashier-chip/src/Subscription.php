@@ -812,91 +812,6 @@ class Subscription extends Model
     }
 
     /**
-     * Validate that a coupon can be applied to the subscription.
-     *
-     * @throws Exceptions\InvalidCoupon
-     */
-    protected function validateCouponForApplication(string $couponId): void
-    {
-        $coupon = $this->retrieveCoupon($couponId);
-
-        if (! $coupon) {
-            throw Exceptions\InvalidCoupon::notFound($couponId);
-        }
-
-        if (! $coupon->isValid()) {
-            throw Exceptions\InvalidCoupon::inactive($couponId);
-        }
-
-        if ($coupon->isForeverAmountOff()) {
-            throw Exceptions\InvalidCoupon::cannotApplyForeverAmountOffToSubscription($couponId);
-        }
-    }
-
-    /**
-     * Retrieve a coupon by its ID (voucher code).
-     */
-    protected function retrieveCoupon(string $couponId): ?Coupon
-    {
-        if (! class_exists(\AIArmada\Vouchers\Services\VoucherService::class)) {
-            return null;
-        }
-
-        /** @var \AIArmada\Vouchers\Services\VoucherService $service */
-        $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
-
-        $voucherData = $service->find($couponId);
-
-        if (! $voucherData) {
-            return null;
-        }
-
-        return new Coupon($voucherData);
-    }
-
-    /**
-     * Record coupon usage.
-     */
-    protected function recordCouponUsage(string $couponId, int $discountAmount): void
-    {
-        if (! class_exists(\AIArmada\Vouchers\Services\VoucherService::class)) {
-            return;
-        }
-
-        /** @var \AIArmada\Vouchers\Services\VoucherService $service */
-        $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
-
-        $currency = $this->owner->preferredCurrency();
-
-        $service->recordUsage(
-            code: $couponId,
-            discountAmount: \Akaunting\Money\Money::$currency($discountAmount),
-            channel: 'subscription',
-            metadata: ['subscription_id' => $this->id],
-            redeemedBy: $this->owner,
-        );
-    }
-
-    /**
-     * Calculate when the discount ends based on duration.
-     */
-    protected function calculateDiscountEnd(): ?\Carbon\CarbonInterface
-    {
-        if (! $this->coupon_applied_at || ! $this->coupon_duration) {
-            return null;
-        }
-
-        return match ($this->coupon_duration) {
-            'once' => $this->next_billing_at,
-            'forever' => null,
-            'repeating' => $this->coupon_applied_at->copy()->addMonths(
-                $this->retrieveCoupon($this->coupon_id)?->durationInMonths() ?? 1
-            ),
-            default => null,
-        };
-    }
-
-    /**
      * Get the latest payment for a Subscription.
      */
     public function latestPayment(): ?Payment
@@ -1102,6 +1017,101 @@ class Subscription extends Model
     }
 
     /**
+     * Create a new factory instance for the model.
+     *
+     * @return \Illuminate\Database\Eloquent\Factories\Factory
+     */
+    protected static function newFactory()
+    {
+        return SubscriptionFactory::new();
+    }
+
+    /**
+     * Validate that a coupon can be applied to the subscription.
+     *
+     * @throws Exceptions\InvalidCoupon
+     */
+    protected function validateCouponForApplication(string $couponId): void
+    {
+        $coupon = $this->retrieveCoupon($couponId);
+
+        if (! $coupon) {
+            throw Exceptions\InvalidCoupon::notFound($couponId);
+        }
+
+        if (! $coupon->isValid()) {
+            throw Exceptions\InvalidCoupon::inactive($couponId);
+        }
+
+        if ($coupon->isForeverAmountOff()) {
+            throw Exceptions\InvalidCoupon::cannotApplyForeverAmountOffToSubscription($couponId);
+        }
+    }
+
+    /**
+     * Retrieve a coupon by its ID (voucher code).
+     */
+    protected function retrieveCoupon(string $couponId): ?Coupon
+    {
+        if (! class_exists(\AIArmada\Vouchers\Services\VoucherService::class)) {
+            return null;
+        }
+
+        /** @var \AIArmada\Vouchers\Services\VoucherService $service */
+        $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
+
+        $voucherData = $service->find($couponId);
+
+        if (! $voucherData) {
+            return null;
+        }
+
+        return new Coupon($voucherData);
+    }
+
+    /**
+     * Record coupon usage.
+     */
+    protected function recordCouponUsage(string $couponId, int $discountAmount): void
+    {
+        if (! class_exists(\AIArmada\Vouchers\Services\VoucherService::class)) {
+            return;
+        }
+
+        /** @var \AIArmada\Vouchers\Services\VoucherService $service */
+        $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
+
+        $currency = $this->owner->preferredCurrency();
+
+        $service->recordUsage(
+            code: $couponId,
+            discountAmount: \Akaunting\Money\Money::$currency($discountAmount),
+            channel: 'subscription',
+            metadata: ['subscription_id' => $this->id],
+            redeemedBy: $this->owner,
+        );
+    }
+
+    /**
+     * Calculate when the discount ends based on duration.
+     */
+    protected function calculateDiscountEnd(): ?CarbonInterface
+    {
+        if (! $this->coupon_applied_at || ! $this->coupon_duration) {
+            return null;
+        }
+
+        return match ($this->coupon_duration) {
+            'once' => $this->next_billing_at,
+            'forever' => null,
+            'repeating' => $this->coupon_applied_at->copy()->addMonths(
+                $this->retrieveCoupon($this->coupon_id)?->durationInMonths() ?? 1
+            ),
+            default => null,
+        };
+    }
+
+    /**
      * Calculate the total subscription amount based on items.
      */
     protected function calculateSubscriptionAmount(): int
@@ -1129,15 +1139,5 @@ class Subscription extends Model
         }
 
         return self::STATUS_ACTIVE;
-    }
-
-    /**
-     * Create a new factory instance for the model.
-     *
-     * @return \Illuminate\Database\Eloquent\Factories\Factory
-     */
-    protected static function newFactory()
-    {
-        return SubscriptionFactory::new();
     }
 }

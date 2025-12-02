@@ -3,11 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Http\Controllers\AffiliateApiController;
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
-use Illuminate\Http\Request;
 
 test('AffiliateApiController can be instantiated', function (): void {
     $affiliateService = app(AffiliateService::class);

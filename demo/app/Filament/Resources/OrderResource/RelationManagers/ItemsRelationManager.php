@@ -71,11 +71,11 @@ final class ItemsRelationManager extends RelationManager
                     ->sortable(),
 
                 TextColumn::make('unit_price')
-                    ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR ' . number_format($state / 100, 2) : null)
+                    ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR '.number_format($state / 100, 2) : null)
                     ->sortable(),
 
                 TextColumn::make('total_price')
-                    ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR ' . number_format($state / 100, 2) : null)
+                    ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR '.number_format($state / 100, 2) : null)
                     ->sortable(),
             ])
             ->headerActions([

@@ -3,8 +3,6 @@
 declare(strict_types=1);
 
 use App\Http\Controllers\ShopController;
-use App\Models\Product;
-use App\Models\User;
 use Illuminate\Support\Facades\Route;
 
 // ==========================================
@@ -12,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 // ==========================================
 
 // Login redirect (uses Filament admin login)
-Route::get('/login', fn() => redirect('/admin/login'))->name('login');
+Route::get('/login', fn () => redirect('/admin/login'))->name('login');
 
 // Homepage
 Route::get('/', [ShopController::class, 'home'])->name('shop.home');
@@ -56,7 +54,7 @@ Route::get('/my-orders', [ShopController::class, 'orders'])->name('shop.orders')
 // Authenticated routes
 Route::middleware('auth')->group(function (): void {
     Route::get('/account', [ShopController::class, 'account'])->name('shop.account');
-    
+
     Route::get('/dashboard', function () {
         return view('dashboard');
     })->name('dashboard');
@@ -72,10 +70,10 @@ Route::post('/checkout/single', [App\Http\Controllers\BillingController::class, 
 Route::middleware('auth')->group(function () {
     Route::get('/subscribe/chip/{plan}', [App\Http\Controllers\BillingController::class, 'subscribeChip'])->name('subscribe.chip');
     Route::post('/subscribe/chip', [App\Http\Controllers\BillingController::class, 'processSubscribeChip'])->name('subscribe.chip.process');
-    
+
     Route::get('/subscribe/stripe/{plan}', [App\Http\Controllers\BillingController::class, 'subscribeStripe'])->name('subscribe.stripe');
     Route::post('/subscribe/stripe', [App\Http\Controllers\BillingController::class, 'processSubscribeStripe'])->name('subscribe.stripe.process');
-    
+
     Route::get('/billing/portal', [App\Http\Controllers\BillingController::class, 'portal'])->name('billing.portal');
 });
 
@@ -127,15 +125,15 @@ Route::post('/demo/simulate-payment/{order}', function (App\Models\Order $order)
         'status_history' => [],
     ];
 
-    $purchase = \AIArmada\Chip\DataObjects\Purchase::fromArray($purchaseData);
-    
+    $purchase = AIArmada\Chip\DataObjects\Purchase::fromArray($purchaseData);
+
     // Dispatch the event
-    \AIArmada\Chip\Events\PurchasePaid::dispatch($purchase, $purchaseData);
-    
+    AIArmada\Chip\Events\PurchasePaid::dispatch($purchase, $purchaseData);
+
     return response()->json([
         'status' => 'ok',
         'message' => 'Payment simulated successfully',
         'order_number' => $order->order_number,
     ]);
-})->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
-  ->name('demo.simulate-payment');
+})->withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+    ->name('demo.simulate-payment');

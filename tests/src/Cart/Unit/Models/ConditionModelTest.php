@@ -13,7 +13,7 @@ uses(RefreshDatabase::class);
 beforeEach(function (): void {
     // Ensure conditions table exists for model tests
     if (! Schema::hasTable('conditions')) {
-        Schema::create('conditions', function ($table) {
+        Schema::create('conditions', function ($table): void {
             $table->uuid('id')->primary();
             $table->string('name')->unique();
             $table->string('display_name')->nullable();
@@ -65,7 +65,7 @@ describe('Condition Model Instantiation', function (): void {
         ]);
 
         expect($condition->id)->toBeString();
-        expect(strlen($condition->id))->toBe(36); // UUID format
+        expect(mb_strlen($condition->id))->toBe(36); // UUID format
     });
 
     it('uses custom table name from config', function (): void {

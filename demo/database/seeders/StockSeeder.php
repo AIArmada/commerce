@@ -8,6 +8,7 @@ use AIArmada\Stock\Models\StockTransaction;
 use App\Models\Product;
 use App\Models\ProductVariant;
 use App\Models\User;
+use DateTimeInterface;
 use Illuminate\Database\Seeder;
 
 final class StockSeeder extends Seeder
@@ -123,7 +124,7 @@ final class StockSeeder extends Seeder
         string $reason,
         int $quantity,
         ?string $note = null,
-        ?\DateTimeInterface $date = null
+        ?DateTimeInterface $date = null
     ): StockTransaction {
         return StockTransaction::create([
             'stockable_type' => Product::class,
@@ -143,7 +144,7 @@ final class StockSeeder extends Seeder
         string $reason,
         int $quantity,
         ?string $note = null,
-        ?\DateTimeInterface $date = null
+        ?DateTimeInterface $date = null
     ): StockTransaction {
         return StockTransaction::create([
             'stockable_type' => ProductVariant::class,

@@ -71,18 +71,6 @@ class InMemoryStorage implements StorageInterface
         return $this->ownerId;
     }
 
-    /**
-     * Get the storage key scoped to owner if set
-     */
-    private function scopedKey(string $identifier): string
-    {
-        if ($this->ownerType !== null && $this->ownerId !== null) {
-            return "{$this->ownerType}:{$this->ownerId}:{$identifier}";
-        }
-
-        return $identifier;
-    }
-
     public function has(string $identifier, string $instance): bool
     {
         $key = $this->scopedKey($identifier);
@@ -313,6 +301,18 @@ class InMemoryStorage implements StorageInterface
     public function getUpdatedAt(string $identifier, string $instance): ?string
     {
         return null;
+    }
+
+    /**
+     * Get the storage key scoped to owner if set
+     */
+    private function scopedKey(string $identifier): string
+    {
+        if ($this->ownerType !== null && $this->ownerId !== null) {
+            return "{$this->ownerType}:{$this->ownerId}:{$identifier}";
+        }
+
+        return $identifier;
     }
 
     private function incrementVersion(string $identifier, string $instance): void

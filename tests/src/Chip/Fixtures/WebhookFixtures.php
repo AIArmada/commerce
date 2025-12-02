@@ -7,6 +7,7 @@ namespace Tests\Chip\Fixtures;
 use AIArmada\Chip\DataObjects\Purchase;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Testing\WebhookFactory;
+use RuntimeException;
 
 trait WebhookFixtures
 {
@@ -74,22 +75,22 @@ trait WebhookFixtures
      */
     protected function loadFixture(string $filename): array
     {
-        $path = __DIR__ . '/' . $filename;
+        $path = __DIR__.'/'.$filename;
 
         if (! file_exists($path)) {
-            throw new \RuntimeException("Fixture file not found: {$path}");
+            throw new RuntimeException("Fixture file not found: {$path}");
         }
 
         $content = file_get_contents($path);
 
         if ($content === false) {
-            throw new \RuntimeException("Could not read fixture file: {$path}");
+            throw new RuntimeException("Could not read fixture file: {$path}");
         }
 
         $decoded = json_decode($content, true);
 
         if (json_last_error() !== JSON_ERROR_NONE) {
-            throw new \RuntimeException("Invalid JSON in fixture file: {$path}");
+            throw new RuntimeException("Invalid JSON in fixture file: {$path}");
         }
 
         return $decoded;

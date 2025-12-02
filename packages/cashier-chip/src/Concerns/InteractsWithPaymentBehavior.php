@@ -14,11 +14,6 @@ namespace AIArmada\CashierChip\Concerns;
 trait InteractsWithPaymentBehavior
 {
     /**
-     * The payment behavior for subscription updates.
-     */
-    protected string $paymentBehavior = 'default_incomplete';
-
-    /**
      * Payment behavior constants for consistency with Stripe.
      */
     public const PAYMENT_BEHAVIOR_DEFAULT_INCOMPLETE = 'default_incomplete';
@@ -28,6 +23,11 @@ trait InteractsWithPaymentBehavior
     public const PAYMENT_BEHAVIOR_PENDING_IF_INCOMPLETE = 'pending_if_incomplete';
 
     public const PAYMENT_BEHAVIOR_ERROR_IF_INCOMPLETE = 'error_if_incomplete';
+
+    /**
+     * The payment behavior for subscription updates.
+     */
+    protected string $paymentBehavior = 'default_incomplete';
 
     /**
      * Set any new subscription as incomplete when created.

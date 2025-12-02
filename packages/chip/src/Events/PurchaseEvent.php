@@ -38,9 +38,10 @@ abstract class PurchaseEvent
      * Create event from a raw webhook payload.
      *
      * @param  array<string, mixed>  $payload
+     *
      * @phpstan-ignore-next-line new.static - All subclasses are final, this is safe
      */
-    public static function fromPayload(array $payload): static
+    final public static function fromPayload(array $payload): static
     {
         $purchase = Purchase::fromArray($payload);
 
@@ -53,7 +54,7 @@ abstract class PurchaseEvent
     /**
      * Get the event type string value.
      */
-    public function getEventTypeValue(): string
+    final public function getEventTypeValue(): string
     {
         return $this->eventType()->value;
     }
@@ -61,7 +62,7 @@ abstract class PurchaseEvent
     /**
      * Get the purchase reference.
      */
-    public function getReference(): ?string
+    final public function getReference(): ?string
     {
         return $this->purchase->reference;
     }
@@ -69,7 +70,7 @@ abstract class PurchaseEvent
     /**
      * Get the purchase ID.
      */
-    public function getPurchaseId(): string
+    final public function getPurchaseId(): string
     {
         return $this->purchase->id;
     }
@@ -77,7 +78,7 @@ abstract class PurchaseEvent
     /**
      * Get the client ID.
      */
-    public function getClientId(): ?string
+    final public function getClientId(): ?string
     {
         return $this->purchase->client_id;
     }
@@ -85,7 +86,7 @@ abstract class PurchaseEvent
     /**
      * Get the amount in cents.
      */
-    public function getAmount(): int
+    final public function getAmount(): int
     {
         return $this->purchase->getAmountInCents();
     }
@@ -93,7 +94,7 @@ abstract class PurchaseEvent
     /**
      * Get the currency code.
      */
-    public function getCurrency(): string
+    final public function getCurrency(): string
     {
         return $this->purchase->getCurrency();
     }
@@ -101,7 +102,7 @@ abstract class PurchaseEvent
     /**
      * Get the purchase status.
      */
-    public function getStatus(): string
+    final public function getStatus(): string
     {
         return $this->purchase->status;
     }
@@ -109,7 +110,7 @@ abstract class PurchaseEvent
     /**
      * Get the customer email.
      */
-    public function getCustomerEmail(): ?string
+    final public function getCustomerEmail(): ?string
     {
         return $this->purchase->client->email ?? null;
     }
@@ -117,7 +118,7 @@ abstract class PurchaseEvent
     /**
      * Get the customer name.
      */
-    public function getCustomerName(): ?string
+    final public function getCustomerName(): ?string
     {
         return $this->purchase->client->full_name ?? null;
     }
@@ -125,7 +126,7 @@ abstract class PurchaseEvent
     /**
      * Get the recurring token if available.
      */
-    public function getRecurringToken(): ?string
+    final public function getRecurringToken(): ?string
     {
         return $this->purchase->recurring_token;
     }
@@ -133,7 +134,7 @@ abstract class PurchaseEvent
     /**
      * Check if this purchase has a recurring token.
      */
-    public function hasRecurringToken(): bool
+    final public function hasRecurringToken(): bool
     {
         return $this->purchase->recurring_token !== null;
     }
@@ -141,7 +142,7 @@ abstract class PurchaseEvent
     /**
      * Check if this is a test purchase.
      */
-    public function isTest(): bool
+    final public function isTest(): bool
     {
         return $this->purchase->is_test;
     }
@@ -149,7 +150,7 @@ abstract class PurchaseEvent
     /**
      * Get the payment method used.
      */
-    public function getPaymentMethod(): ?string
+    final public function getPaymentMethod(): ?string
     {
         return $this->purchase->transaction_data->payment_method ?? null;
     }
@@ -159,7 +160,7 @@ abstract class PurchaseEvent
      *
      * @return array<string, mixed>|null
      */
-    public function getMetadata(): ?array
+    final public function getMetadata(): ?array
     {
         return $this->purchase->getMetadata();
     }
@@ -167,7 +168,7 @@ abstract class PurchaseEvent
     /**
      * Get a specific metadata value.
      */
-    public function getMetadataValue(string $key, mixed $default = null): mixed
+    final public function getMetadataValue(string $key, mixed $default = null): mixed
     {
         $metadata = $this->getMetadata();
 

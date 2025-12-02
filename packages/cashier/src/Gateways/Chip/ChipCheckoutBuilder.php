@@ -8,7 +8,6 @@ use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Gateways\ChipGateway;
-use AIArmada\CashierChip\CheckoutBuilder as ChipNativeCheckoutBuilder;
 use Illuminate\Http\RedirectResponse;
 
 /**

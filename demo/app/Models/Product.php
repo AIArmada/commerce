@@ -53,22 +53,6 @@ final class Product extends Model implements StockableInterface
     ];
 
     /**
-     * @return array<string, string>
-     */
-    protected function casts(): array
-    {
-        return [
-            'price' => 'integer',
-            'compare_at_price' => 'integer',
-            'is_active' => 'boolean',
-            'track_stock' => 'boolean',
-            'stock_quantity' => 'integer',
-            'low_stock_threshold' => 'integer',
-            'metadata' => 'array',
-        ];
-    }
-
-    /**
      * @return BelongsTo<Category, $this>
      */
     public function category(): BelongsTo
@@ -89,7 +73,7 @@ final class Product extends Model implements StockableInterface
      */
     public function getFormattedPriceAttribute(): string
     {
-        return 'RM ' . number_format($this->price / 100, 2);
+        return 'RM '.number_format($this->price / 100, 2);
     }
 
     /**
@@ -114,5 +98,21 @@ final class Product extends Model implements StockableInterface
         }
 
         return $this->getCurrentStock() <= 0;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'price' => 'integer',
+            'compare_at_price' => 'integer',
+            'is_active' => 'boolean',
+            'track_stock' => 'boolean',
+            'stock_quantity' => 'integer',
+            'low_stock_threshold' => 'integer',
+            'metadata' => 'array',
+        ];
     }
 }

@@ -27,6 +27,20 @@ class PromotionCode implements Arrayable, Jsonable, JsonSerializable
     ) {}
 
     /**
+     * Dynamically get values.
+     */
+    public function __get(string $key): mixed
+    {
+        return match ($key) {
+            'id' => $this->id(),
+            'code' => $this->code(),
+            'coupon' => $this->coupon(),
+            'active' => $this->isActive(),
+            default => null,
+        };
+    }
+
+    /**
      * Get the promotion code string.
      */
     public function code(): string
@@ -89,19 +103,5 @@ class PromotionCode implements Arrayable, Jsonable, JsonSerializable
     public function jsonSerialize(): array
     {
         return $this->toArray();
-    }
-
-    /**
-     * Dynamically get values.
-     */
-    public function __get(string $key): mixed
-    {
-        return match ($key) {
-            'id' => $this->id(),
-            'code' => $this->code(),
-            'coupon' => $this->coupon(),
-            'active' => $this->isActive(),
-            default => null,
-        };
     }
 }

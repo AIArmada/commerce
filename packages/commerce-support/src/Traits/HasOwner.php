@@ -91,7 +91,7 @@ trait HasOwner
     public function belongsToOwner(Model $owner): bool
     {
         return $this->owner_type === $owner->getMorphClass()
-            && $this->owner_id == $owner->getKey();
+            && $this->owner_id === $owner->getKey();
     }
 
     /**

@@ -36,9 +36,10 @@ abstract class PayoutEvent
      * Create event from a raw webhook payload.
      *
      * @param  array<string, mixed>  $payload
+     *
      * @phpstan-ignore-next-line new.static - All subclasses are final, this is safe
      */
-    public static function fromPayload(array $payload): static
+    final public static function fromPayload(array $payload): static
     {
         $payout = Payout::fromArray($payload);
 
@@ -51,7 +52,7 @@ abstract class PayoutEvent
     /**
      * Get the payout ID.
      */
-    public function getPayoutId(): string
+    final public function getPayoutId(): string
     {
         return $this->payout->id;
     }
@@ -59,7 +60,7 @@ abstract class PayoutEvent
     /**
      * Get the payout amount in cents.
      */
-    public function getAmount(): int
+    final public function getAmount(): int
     {
         return $this->payout->getAmountInCents();
     }
@@ -67,7 +68,7 @@ abstract class PayoutEvent
     /**
      * Get the currency code.
      */
-    public function getCurrency(): string
+    final public function getCurrency(): string
     {
         return $this->payout->currency;
     }
@@ -75,7 +76,7 @@ abstract class PayoutEvent
     /**
      * Get the payout status.
      */
-    public function getStatus(): string
+    final public function getStatus(): string
     {
         return $this->payout->status;
     }
@@ -83,7 +84,7 @@ abstract class PayoutEvent
     /**
      * Get the payout reference.
      */
-    public function getReference(): ?string
+    final public function getReference(): ?string
     {
         return $this->payout->reference;
     }
@@ -91,7 +92,7 @@ abstract class PayoutEvent
     /**
      * Get the recipient name.
      */
-    public function getRecipientName(): ?string
+    final public function getRecipientName(): ?string
     {
         return $this->payout->recipient_name;
     }
@@ -99,7 +100,7 @@ abstract class PayoutEvent
     /**
      * Get the recipient bank account.
      */
-    public function getRecipientBankAccount(): ?string
+    final public function getRecipientBankAccount(): ?string
     {
         return $this->payout->recipient_bank_account;
     }
@@ -107,7 +108,7 @@ abstract class PayoutEvent
     /**
      * Check if this is a test payout.
      */
-    public function isTest(): bool
+    final public function isTest(): bool
     {
         return $this->payout->is_test;
     }

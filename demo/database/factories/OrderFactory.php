@@ -25,7 +25,7 @@ final class OrderFactory extends Factory
 
         return [
             'user_id' => User::factory(),
-            'order_number' => 'ORD-' . strtoupper($this->faker->unique()->bothify('????####')),
+            'order_number' => 'ORD-'.mb_strtoupper($this->faker->unique()->bothify('????####')),
             'status' => $this->faker->randomElement(['pending', 'processing', 'shipped', 'delivered', 'cancelled']),
             'payment_status' => $this->faker->randomElement(['pending', 'paid', 'failed', 'refunded']),
             'subtotal' => $subtotal,
@@ -44,23 +44,6 @@ final class OrderFactory extends Factory
             'shipped_at' => null,
             'delivered_at' => null,
             'cancelled_at' => null,
-        ];
-    }
-
-    /**
-     * @return array<string, string|null>
-     */
-    private function generateAddress(): array
-    {
-        return [
-            'name' => $this->faker->name(),
-            'phone' => $this->faker->phoneNumber(),
-            'address_line_1' => $this->faker->streetAddress(),
-            'address_line_2' => $this->faker->optional()->secondaryAddress(),
-            'city' => $this->faker->city(),
-            'state' => $this->faker->randomElement(['Selangor', 'Kuala Lumpur', 'Penang', 'Johor', 'Perak']),
-            'postcode' => $this->faker->postcode(),
-            'country' => 'Malaysia',
         ];
     }
 
@@ -116,5 +99,22 @@ final class OrderFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'user_id' => $user->id,
         ]);
+    }
+
+    /**
+     * @return array<string, string|null>
+     */
+    private function generateAddress(): array
+    {
+        return [
+            'name' => $this->faker->name(),
+            'phone' => $this->faker->phoneNumber(),
+            'address_line_1' => $this->faker->streetAddress(),
+            'address_line_2' => $this->faker->optional()->secondaryAddress(),
+            'city' => $this->faker->city(),
+            'state' => $this->faker->randomElement(['Selangor', 'Kuala Lumpur', 'Penang', 'Johor', 'Perak']),
+            'postcode' => $this->faker->postcode(),
+            'country' => 'Malaysia',
+        ];
     }
 }

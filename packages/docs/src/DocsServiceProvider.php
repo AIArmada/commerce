@@ -39,6 +39,18 @@ final class DocsServiceProvider extends PackageServiceProvider
     }
 
     /**
+     * @return array<string>
+     */
+    public function provides(): array
+    {
+        return [
+            DocService::class,
+            'doc',
+            Numbering\NumberStrategyRegistry::class,
+        ];
+    }
+
+    /**
      * Validate owner configuration (fail-fast pattern)
      *
      * @throws RuntimeException If owner is enabled but resolver is not configured
@@ -74,17 +86,5 @@ final class DocsServiceProvider extends PackageServiceProvider
         if (! $this->app->bound(OwnerResolverInterface::class)) {
             $this->app->singleton(OwnerResolverInterface::class, $resolverClass);
         }
-    }
-
-    /**
-     * @return array<string>
-     */
-    public function provides(): array
-    {
-        return [
-            DocService::class,
-            'doc',
-            Numbering\NumberStrategyRegistry::class,
-        ];
     }
 }

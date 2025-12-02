@@ -155,14 +155,14 @@ final readonly class PercentageRate
         $formatted = number_format($percent, 2, '.', '');
 
         if ($this->basisPoints < 0) {
-            return '-' . $formatted . '%';
+            return '-'.$formatted.'%';
         }
 
         if ($includeSign && $this->basisPoints > 0) {
-            return '+' . $formatted . '%';
+            return '+'.$formatted.'%';
         }
 
-        return $formatted . '%';
+        return $formatted.'%';
     }
 
     /**
