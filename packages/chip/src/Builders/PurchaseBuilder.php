@@ -467,6 +467,23 @@ final class PurchaseBuilder
     }
 
     /**
+     * Set a discount override for the entire purchase.
+     *
+     * This applies a cart-level discount that reduces the total amount charged.
+     * The discount is applied after product prices are summed.
+     *
+     * @param  int  $amount  Discount amount in cents (e.g., 5000 for RM 50.00)
+     */
+    public function discount(int $amount): self
+    {
+        if ($amount > 0) {
+            $this->data['purchase']['total_discount_override'] = $amount;
+        }
+
+        return $this;
+    }
+
+    /**
      * Set metadata for the purchase.
      *
      * @param  array<string, mixed>  $metadata

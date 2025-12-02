@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Services;
 
-use AIArmada\Vouchers\Contracts\VoucherOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Enums\VoucherStatus;
@@ -23,7 +23,7 @@ class VoucherService
 {
     public function __construct(
         protected VoucherValidator $validator,
-        protected VoucherOwnerResolver $ownerResolver
+        protected OwnerResolverInterface $ownerResolver
     ) {}
 
     public function find(string $code): ?VoucherData

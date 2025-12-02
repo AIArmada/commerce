@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Models;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property string $id
@@ -49,12 +52,16 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property array<string, mixed>|null $request_payload
  * @property array<string, mixed>|null $response_payload
  * @property array<string, mixed>|null $metadata
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, JntOrderItem> $items
  * @property-read \Illuminate\Database\Eloquent\Collection<int, JntOrderParcel> $parcels
  * @property-read \Illuminate\Database\Eloquent\Collection<int, JntTrackingEvent> $trackingEvents
  * @property-read \Illuminate\Database\Eloquent\Collection<int, JntWebhookLog> $webhookLogs
+ *
+ * @method static Builder<static> forOwner(?Model $owner = null, bool $includeGlobal = true)
  */
 class JntOrder extends Model
 {
@@ -103,6 +110,8 @@ class JntOrder extends Model
         'request_payload',
         'response_payload',
         'metadata',
+        'owner_type',
+        'owner_id',
     ];
 
     public function getTable(): string
@@ -111,6 +120,78 @@ class JntOrder extends Model
         $prefix = config('jnt.database.table_prefix', 'jnt_');
 
         return $tables['orders'] ?? $prefix.'orders';
+    }
+
+    /**
+     * @return MorphTo<Model, $this>
+     */
+    public function owner(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
+    {
+        if (! config('jnt.owner.enabled', false)) {
+            return $query;
+        }
+
+        $owner ??= $this->resolveOwner();
+
+        if ($owner === null) {
+            return $includeGlobal ? $query->whereNull('owner_type') : $query;
+        }
+
+        if ($includeGlobal) {
+            return $query->where(function (Builder $q) use ($owner): void {
+                $q->where(function (Builder $subQ) use ($owner): void {
+                    $subQ->where('owner_type', $owner->getMorphClass())
+                        ->where('owner_id', $owner->getKey());
+                })->orWhereNull('owner_type');
+            });
+        }
+
+        return $query->where('owner_type', $owner->getMorphClass())
+            ->where('owner_id', $owner->getKey());
+    }
+
+    public function hasOwner(): bool
+    {
+        return $this->owner_type !== null && $this->owner_id !== null;
+    }
+
+    public function isGlobal(): bool
+    {
+        return ! $this->hasOwner();
+    }
+
+    public function assignOwner(Model $owner): static
+    {
+        $this->owner_type = $owner->getMorphClass();
+        $this->owner_id = (string) $owner->getKey();
+
+        return $this;
+    }
+
+    public function removeOwner(): static
+    {
+        $this->owner_type = null;
+        $this->owner_id = null;
+
+        return $this;
+    }
+
+    protected function resolveOwner(): ?Model
+    {
+        if (! app()->bound(OwnerResolverInterface::class)) {
+            return null;
+        }
+
+        return app(OwnerResolverInterface::class)->resolve();
     }
 
     /**

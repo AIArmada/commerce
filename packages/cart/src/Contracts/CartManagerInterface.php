@@ -6,6 +6,7 @@ namespace AIArmada\Cart\Contracts;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Storage\StorageInterface;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Interface for CartManager implementations.
@@ -47,16 +48,21 @@ interface CartManagerInterface
     public function forgetIdentifier(): static;
 
     /**
-     * Create a new cart manager instance scoped to a specific tenant
+     * Create a new cart manager instance scoped to a specific owner
      *
-     * Use this for admin operations that need to operate on a specific tenant's carts.
+     * Use this for admin operations that need to operate on a specific owner's carts.
      */
-    public function forTenant(string $tenantId): static;
+    public function forOwner(Model $owner): static;
 
     /**
-     * Get the current tenant ID if operating in tenant-scoped mode
+     * Get the current owner type if operating in owner-scoped mode
      */
-    public function getTenantId(): ?string;
+    public function getOwnerType(): ?string;
+
+    /**
+     * Get the current owner ID if operating in owner-scoped mode
+     */
+    public function getOwnerId(): string|int|null;
 
     /**
      * Get session storage access for session-specific operations

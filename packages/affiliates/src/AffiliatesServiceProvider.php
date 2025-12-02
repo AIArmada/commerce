@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates;
 
-use AIArmada\Affiliates\Contracts\AffiliateOwnerResolver;
 use AIArmada\Affiliates\Services\AffiliatePayoutService;
 use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\Services\AttributionModel;
@@ -12,8 +11,9 @@ use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
-use AIArmada\Affiliates\Support\Resolvers\NullOwnerResolver;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
+use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Routing\Router;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
@@ -42,16 +42,16 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(WebhookDispatcher::class);
         $this->app->singleton(AttributionModel::class);
 
-        $this->app->singleton(AffiliateOwnerResolver::class, function ($app): AffiliateOwnerResolver {
+        $this->app->singleton(OwnerResolverInterface::class, function ($app): OwnerResolverInterface {
             $resolverClass = config('affiliates.owner.resolver', NullOwnerResolver::class);
 
             $resolver = $app->make($resolverClass);
 
-            if (! $resolver instanceof AffiliateOwnerResolver) {
+            if (! $resolver instanceof OwnerResolverInterface) {
                 throw new InvalidArgumentException(sprintf(
                     '%s must implement %s',
                     $resolverClass,
-                    AffiliateOwnerResolver::class
+                    OwnerResolverInterface::class
                 ));
             }
 
@@ -78,7 +78,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
     }
 
     /**
-     * @return array<int, string>
+     * Register the affiliate cookie tracking middleware.
      */
     private function registerCookieTrackingMiddleware(): void
     {

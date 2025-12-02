@@ -9,6 +9,8 @@ use UnitEnum;
 
 abstract class BaseJntResource extends Resource
 {
+    protected static ?string $tenantOwnershipRelationshipName = 'owner';
+
     abstract protected static function navigationSortKey(): string;
 
     final public static function getNavigationGroup(): string|UnitEnum|null

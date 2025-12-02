@@ -4,12 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\Stock\Services;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Stock\Models\StockTransaction;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 final class StockService
 {
+    public function __construct(
+        protected OwnerResolverInterface $ownerResolver
+    ) {}
+
     /**
      * Add stock to a model.
      */
@@ -86,7 +92,7 @@ final class StockService
      */
     public function getCurrentStock(Model $model): int
     {
-        $result = StockTransaction::query()
+        $result = $this->query()
             ->where('stockable_type', $model->getMorphClass())
             ->where('stockable_id', $model->getKey())
             ->selectRaw("
@@ -105,7 +111,7 @@ final class StockService
      */
     public function getStockHistory(Model $model, int $limit = 50): \Illuminate\Database\Eloquent\Collection
     {
-        return StockTransaction::query()
+        return $this->query()
             ->where('stockable_type', $model->getMorphClass())
             ->where('stockable_id', $model->getKey())
             ->with('user')
@@ -134,6 +140,39 @@ final class StockService
     }
 
     /**
+     * Get the base query with owner scoping applied.
+     *
+     * @return Builder<StockTransaction>
+     */
+    protected function query(): Builder
+    {
+        return StockTransaction::query()->forOwner(
+            $this->resolveOwner(),
+            $this->shouldIncludeGlobal()
+        );
+    }
+
+    /**
+     * Resolve the current owner.
+     */
+    protected function resolveOwner(): ?Model
+    {
+        if (! config('stock.owner.enabled', false)) {
+            return null;
+        }
+
+        return $this->ownerResolver->resolve();
+    }
+
+    /**
+     * Determine if global records should be included.
+     */
+    protected function shouldIncludeGlobal(): bool
+    {
+        return (bool) config('stock.owner.include_global', true);
+    }
+
+    /**
      * Create a stock transaction.
      */
     private function createTransaction(
@@ -158,7 +197,7 @@ final class StockService
                 $resolvedUserId = (string) auth()->id();
             }
 
-            return StockTransaction::create([
+            $payload = [
                 'stockable_type' => $model->getMorphClass(),
                 'stockable_id' => $model->getKey(),
                 'user_id' => $resolvedUserId,
@@ -167,7 +206,22 @@ final class StockService
                 'reason' => $reason,
                 'note' => $note,
                 'transaction_date' => now(),
-            ]);
+            ];
+
+            // Auto-assign owner if enabled
+            if (
+                config('stock.owner.enabled', false)
+                && config('stock.owner.auto_assign_on_create', true)
+            ) {
+                $owner = $this->resolveOwner();
+
+                if ($owner) {
+                    $payload['owner_type'] = $owner->getMorphClass();
+                    $payload['owner_id'] = $owner->getKey();
+                }
+            }
+
+            return StockTransaction::create($payload);
         });
     }
 }

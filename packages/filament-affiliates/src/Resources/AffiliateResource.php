@@ -24,6 +24,8 @@ final class AffiliateResource extends Resource
 {
     protected static ?string $model = Affiliate::class;
 
+    protected static ?string $tenantOwnershipRelationshipName = 'owner';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
 
     protected static ?string $navigationLabel = 'Affiliates';

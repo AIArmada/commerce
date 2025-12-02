@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
-use AIArmada\Affiliates\Contracts\AffiliateOwnerResolver;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Data\AffiliateData;
@@ -18,6 +17,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Cart;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Cache\Repository as CacheRepository;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,7 +31,7 @@ final class AffiliateService
 {
     public function __construct(
         private readonly CommissionCalculator $commissionCalculator,
-        private readonly AffiliateOwnerResolver $ownerResolver,
+        private readonly OwnerResolverInterface $ownerResolver,
         private readonly Dispatcher $events,
         private readonly WebhookDispatcher $webhooks,
         private readonly AttributionModel $attributionModel
@@ -54,18 +54,36 @@ final class AffiliateService
     public function findByCode(string $code): ?Affiliate
     {
         $normalized = $this->normalizeCode($code);
+        $query = $this->query();
+        /** @var \Illuminate\Database\Connection $connection */
+        $connection = $query->getConnection();
+        $driver = $connection->getDriverName();
 
-        return $this->query()
-            ->whereRaw('LOWER(code) = ?', [mb_strtolower($normalized)])
+        /** @var Affiliate|null */
+        return $query
+            ->when(
+                $driver === 'pgsql',
+                fn ($q) => $q->whereRaw('code ILIKE ?', [$normalized]),
+                fn ($q) => $q->whereRaw('LOWER(code) = ?', [mb_strtolower($normalized)])
+            )
             ->first();
     }
 
     public function findByDefaultVoucherCode(string $voucherCode): ?Affiliate
     {
         $normalized = $this->normalizeCode($voucherCode);
+        $query = $this->query();
+        /** @var \Illuminate\Database\Connection $connection */
+        $connection = $query->getConnection();
+        $driver = $connection->getDriverName();
 
-        return $this->query()
-            ->whereRaw('LOWER(default_voucher_code) = ?', [mb_strtolower($normalized)])
+        /** @var Affiliate|null */
+        return $query
+            ->when(
+                $driver === 'pgsql',
+                fn ($q) => $q->whereRaw('default_voucher_code ILIKE ?', [$normalized]),
+                fn ($q) => $q->whereRaw('LOWER(default_voucher_code) = ?', [mb_strtolower($normalized)])
+            )
             ->first();
     }
 
@@ -825,6 +843,6 @@ final class AffiliateService
             return null;
         }
 
-        return $this->ownerResolver->resolveCurrentOwner();
+        return $this->ownerResolver->resolve();
     }
 }

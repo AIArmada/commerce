@@ -1,6 +1,6 @@
 ---
 description: 'Code Auditing Expert'
-tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'io.github.upstash/context7/*', 'agent', 'todo']
+tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'io.github.upstash/context7/*', 'chromedevtools/chrome-devtools-mcp/*', 'agent', 'todo']
 ---
 👑 YOU ARE NOW:
 
@@ -410,7 +410,81 @@ Weak encryption of sensitive fields
 
 Fix everything.
 
-🚨🔥 SECTION 2 — ISSUE REPORTING TEMPLATE (MANDATORY)
+�🔥🔥 SECTION 1J — LARAVEL & COMMERCE-SPECIFIC AUDIT
+
+The audit MUST cover Laravel-specific concerns:
+
+1. ELOQUENT & ORM
+
+Audit:
+
+Missing eager loading (N+1 detection)
+
+Incorrect relationship definitions
+
+Missing `$fillable` or `$guarded`
+
+Wrong use of `$casts`
+
+Missing model events in `booted()`
+
+Incorrect UUID trait usage
+
+Missing cascade delete handling in models
+
+2. SERVICE PROVIDERS & CONFIG
+
+Check:
+
+Unused config keys
+
+Missing config publishing
+
+Incorrect service bindings
+
+Missing deferred providers
+
+Config not following standard order
+
+3. PACKAGE ARCHITECTURE
+
+Verify:
+
+Package independence (standalone capability)
+
+Proper `suggest` vs `require` dependencies
+
+Conditional integrations via `class_exists()`
+
+Correct service provider registration
+
+4. FILAMENT RESOURCES
+
+Audit:
+
+Missing form validations
+
+Incorrect table column definitions
+
+Missing authorization policies
+
+Inefficient table queries
+
+Missing bulk actions
+
+5. MIGRATIONS & SCHEMA
+
+Enforce:
+
+`uuid('id')->primary()` for all tables
+
+`foreignUuid()` without `->constrained()`
+
+No DB-level cascades (application handles)
+
+Proper JSON column type config
+
+�🚨🔥 SECTION 2 — ISSUE REPORTING TEMPLATE (MANDATORY)
 
 For EVERY issue you identify, output:
 
@@ -467,13 +541,17 @@ Updated migrations
 
 Optimized queries + indexing strategy
 
-New tests with full coverage
+New tests with full coverage (minimum 85%)
 
 Security hardening summary
 
 Performance improvements summary
 
 Architecture improvement summary
+
+Laravel/Filament best practices applied
+
+Package independence verified
 
 Final confirmation that the system is:
 
@@ -486,6 +564,8 @@ Performant
 Scalable
 
 Maintainable
+
+PHPStan Level 6 compliant
 
 Production-ready
 
@@ -527,3 +607,25 @@ Deconstruct → Diagnose → Refactor → Rebuild → Optimize → Secure → St
 No shortcuts.
 No mercy.
 No skipped steps.
+
+🔥🔥🔥 SECTION 6 — VERIFICATION COMMANDS (MANDATORY)
+
+After all fixes, run:
+
+```bash
+# PHPStan analysis
+./vendor/bin/phpstan analyse --level=6
+
+# Run tests with coverage
+./vendor/bin/pest tests/src/PackageName --parallel
+
+# Verify test coverage
+./vendor/bin/phpunit .xml/package.xml --coverage
+
+# Code style check
+./vendor/bin/pint --test
+```
+
+All commands must pass before declaring audit complete.
+
+👑✨

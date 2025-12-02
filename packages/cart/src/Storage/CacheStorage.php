@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Storage;
 
 use Illuminate\Cache\Repository as Cache;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use JsonException;
@@ -17,15 +18,16 @@ final readonly class CacheStorage implements StorageInterface
         private int $ttl = 86400, // 24 hours
         private bool $useLocking = false, // Enable for multi-server setups with shared cache
         private int $lockTimeout = 5, // Lock timeout in seconds
-        private ?string $tenantId = null
+        private ?string $ownerType = null,
+        private string|int|null $ownerId = null
     ) {
         //
     }
 
     /**
-     * Create a new instance scoped to a specific tenant
+     * Create a new instance with the specified owner
      */
-    public function withTenantId(?string $tenantId): static
+    public function withOwner(?Model $owner): static
     {
         return new self(
             cache: $this->cache,
@@ -33,25 +35,34 @@ final readonly class CacheStorage implements StorageInterface
             ttl: $this->ttl,
             useLocking: $this->useLocking,
             lockTimeout: $this->lockTimeout,
-            tenantId: $tenantId
+            ownerType: $owner?->getMorphClass(),
+            ownerId: $owner?->getKey()
         );
     }
 
     /**
-     * Get the current tenant ID
+     * Get the current owner type
      */
-    public function getTenantId(): ?string
+    public function getOwnerType(): ?string
     {
-        return $this->tenantId;
+        return $this->ownerType;
     }
 
     /**
-     * Get the base key prefix including tenant scope when set
+     * Get the current owner ID
+     */
+    public function getOwnerId(): string|int|null
+    {
+        return $this->ownerId;
+    }
+
+    /**
+     * Get the base key prefix including owner scope when set
      */
     private function getBasePrefix(): string
     {
-        if ($this->tenantId !== null) {
-            return "{$this->keyPrefix}.tenant.{$this->tenantId}";
+        if ($this->ownerType !== null && $this->ownerId !== null) {
+            return "{$this->keyPrefix}.owner.{$this->ownerType}.{$this->ownerId}";
         }
 
         return $this->keyPrefix;

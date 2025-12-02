@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Support\Resolvers\NullOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 
 test('NullOwnerResolver returns null', function (): void {
     $resolver = new NullOwnerResolver();
 
-    expect($resolver->resolveCurrentOwner())->toBeNull();
+    expect($resolver->resolve())->toBeNull();
 });

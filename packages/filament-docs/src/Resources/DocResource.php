@@ -24,6 +24,8 @@ final class DocResource extends Resource
 {
     protected static ?string $model = Doc::class;
 
+    protected static ?string $tenantOwnershipRelationshipName = 'owner';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
 
     protected static ?string $recordTitleAttribute = 'doc_number';

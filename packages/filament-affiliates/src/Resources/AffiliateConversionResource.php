@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Pages\ListAffiliateConversions;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Pages\ViewAffiliateConversion;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Schemas\AffiliateConversionForm;
+use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Schemas\AffiliateConversionInfolist;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
 use BackedEnum;
 use Filament\Resources\Resource;
@@ -40,7 +41,7 @@ final class AffiliateConversionResource extends Resource
 
     public static function infolist(Schema $schema): Schema
     {
-        return AffiliateConversionForm::configure($schema);
+        return AffiliateConversionInfolist::configure($schema);
     }
 
     public static function getRelations(): array

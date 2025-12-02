@@ -92,14 +92,19 @@ final class CartManagerWithStock implements CartManagerInterface
         return $this;
     }
 
-    public function forTenant(string $tenantId): static
+    public function forOwner(Model $owner): static
     {
-        return new self($this->manager->forTenant($tenantId));
+        return new self($this->manager->forOwner($owner));
     }
 
-    public function getTenantId(): ?string
+    public function getOwnerType(): ?string
     {
-        return $this->manager->getTenantId();
+        return $this->manager->getOwnerType();
+    }
+
+    public function getOwnerId(): string|int|null
+    {
+        return $this->manager->getOwnerId();
     }
 
     public function session(?string $sessionKey = null): StorageInterface

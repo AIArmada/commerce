@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Storage;
 
 use Illuminate\Contracts\Session\Session;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use JsonException;
@@ -14,38 +15,48 @@ final readonly class SessionStorage implements StorageInterface
     public function __construct(
         private Session $session,
         private string $keyPrefix = 'cart',
-        private ?string $tenantId = null
+        private ?string $ownerType = null,
+        private string|int|null $ownerId = null
     ) {
         //
     }
 
     /**
-     * Create a new instance scoped to a specific tenant
+     * Create a new instance with the specified owner
      */
-    public function withTenantId(?string $tenantId): static
+    public function withOwner(?Model $owner): static
     {
         return new self(
             session: $this->session,
             keyPrefix: $this->keyPrefix,
-            tenantId: $tenantId
+            ownerType: $owner?->getMorphClass(),
+            ownerId: $owner?->getKey()
         );
     }
 
     /**
-     * Get the current tenant ID
+     * Get the current owner type
      */
-    public function getTenantId(): ?string
+    public function getOwnerType(): ?string
     {
-        return $this->tenantId;
+        return $this->ownerType;
     }
 
     /**
-     * Get the base key prefix including tenant scope when set
+     * Get the current owner ID
+     */
+    public function getOwnerId(): string|int|null
+    {
+        return $this->ownerId;
+    }
+
+    /**
+     * Get the base key prefix including owner scope when set
      */
     private function getBasePrefix(): string
     {
-        if ($this->tenantId !== null) {
-            return "{$this->keyPrefix}.tenant.{$this->tenantId}";
+        if ($this->ownerType !== null && $this->ownerId !== null) {
+            return "{$this->keyPrefix}.owner.{$this->ownerType}.{$this->ownerId}";
         }
 
         return $this->keyPrefix;
@@ -80,7 +91,7 @@ final readonly class SessionStorage implements StorageInterface
      */
     public function flush(): void
     {
-        // Remove the entire cart data from session for this tenant scope
+        // Remove the entire cart data from session for this owner scope
         $this->session->forget($this->getBasePrefix());
     }
 

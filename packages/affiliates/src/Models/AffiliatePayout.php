@@ -8,6 +8,23 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property string $id
+ * @property string $reference
+ * @property string $status
+ * @property int $total_minor
+ * @property int $conversion_count
+ * @property string $currency
+ * @property string|null $owner_type
+ * @property string|null $owner_id
+ * @property array<string, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $scheduled_at
+ * @property \Illuminate\Support\Carbon|null $paid_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateConversion> $conversions
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutEvent> $events
+ */
 class AffiliatePayout extends Model
 {
     use HasUuids;

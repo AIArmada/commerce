@@ -80,9 +80,10 @@ final class StockTransactionInfolist
                                 ->label('Item Type')
                                 ->formatStateUsing(fn (string $state): string => class_basename($state)),
 
-                            TextEntry::make('stockable_id')
-                                ->label('Item ID')
-                                ->copyable(),
+                            TextEntry::make('stockable.name')
+                                ->label('Item')
+                                ->default('-')
+                                ->url(fn ($record): ?string => $record->stockable ? route('filament.admin.resources.products.view', ['record' => $record->stockable_id]) : null),
                         ]),
                 ]),
 

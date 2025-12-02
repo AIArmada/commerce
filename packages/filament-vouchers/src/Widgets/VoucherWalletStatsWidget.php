@@ -22,7 +22,13 @@ final class VoucherWalletStatsWidget extends BaseWidget
         $uniqueVouchers = VoucherWallet::distinct('voucher_id')->count('voucher_id');
 
         // Calculate unique owners (users/stores/teams) who have vouchers in their wallets
-        $uniqueOwners = VoucherWallet::selectRaw("COUNT(DISTINCT CONCAT(owner_type, '-', owner_id)) as count")
+        /** @var \Illuminate\Database\Connection $connection */
+        $connection = VoucherWallet::query()->getConnection();
+        $driver = $connection->getDriverName();
+        $concat = $driver === 'pgsql'
+            ? "owner_type || '-' || owner_id"
+            : "CONCAT(owner_type, '-', owner_id)";
+        $uniqueOwners = VoucherWallet::selectRaw("COUNT(DISTINCT {$concat}) as count")
             ->value('count') ?? 0;
 
         return [

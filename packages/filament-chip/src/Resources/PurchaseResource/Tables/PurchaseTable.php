@@ -26,7 +26,6 @@ final class PurchaseTable
             ->striped()
             ->contentGrid([
                 'md' => 1,
-                'xl' => 2,
             ])
             ->columns([
                 Split::make([
@@ -119,7 +118,38 @@ final class PurchaseTable
                     ->query(fn (Builder $query): Builder => $query->where('is_test', true)),
                 Filter::make('high_value')
                     ->label('High Value (≥ 5,000)')
-                    ->query(fn (Builder $query): Builder => $query->whereRaw("(purchase->>'amount')::int >= ?", [500000])),
+                    ->query(function (Builder $query): Builder {
+                        $driver = $query->getConnection()->getDriverName();
+                        $amount = 500000; // amounts are stored in cents
+
+                        // Build DB-specific JSON extraction for purchase total with fallbacks
+                        return match ($driver) {
+                            'pgsql' => $query->whereRaw(
+                                // Try purchase.total, then purchase.total.amount, then purchase.amount, then purchase.subtotal
+                                'COALESCE((purchase->>\'total\')::int, (purchase->\'total\'->>\'amount\')::int, (purchase->>\'amount\')::int, (purchase->>\'subtotal\')::int) >= ?',
+                                [$amount]
+                            ),
+                            'mysql', 'mariadb' => $query->whereRaw(
+                                'CAST(COALESCE(
+                                    JSON_UNQUOTE(JSON_EXTRACT(purchase, \"$.total\")),
+                                    JSON_UNQUOTE(JSON_EXTRACT(purchase, \"$.total.amount\")),
+                                    JSON_UNQUOTE(JSON_EXTRACT(purchase, \"$.amount\")),
+                                    JSON_UNQUOTE(JSON_EXTRACT(purchase, \"$.subtotal\"))
+                                ) AS UNSIGNED) >= ?',
+                                [$amount]
+                            ),
+                            default => $query->whereRaw(
+                                // SQLite
+                                "CAST(COALESCE(
+                                    json_extract(purchase, '$.total'),
+                                    json_extract(purchase, '$.total.amount'),
+                                    json_extract(purchase, '$.amount'),
+                                    json_extract(purchase, '$.subtotal')
+                                ) AS INTEGER) >= ?",
+                                [$amount]
+                            ),
+                        };
+                    }),
             ], layout: FiltersLayout::AboveContent)
             ->actions([
                 ViewAction::make()

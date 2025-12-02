@@ -46,7 +46,7 @@ final class PurchaseResource extends BaseChipResource
             'reference_generated',
             'client->email',
             'client->full_name',
-            'purchase->line_items.name',
+            'purchase->products.name',
         ];
     }
 

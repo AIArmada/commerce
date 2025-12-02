@@ -15,7 +15,7 @@ final class AffiliateConversionForm
 {
     public static function configure(Schema $schema): Schema
     {
-        return $schema->sections([
+        return $schema->components([
             Section::make('Reference')
                 ->schema([
                     Grid::make(3)->schema([

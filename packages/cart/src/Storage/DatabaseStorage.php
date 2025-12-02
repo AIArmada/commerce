@@ -7,6 +7,7 @@ namespace AIArmada\Cart\Storage;
 use AIArmada\Cart\Exceptions\CartConflictException;
 use DateTimeInterface;
 use Illuminate\Database\ConnectionInterface as Database;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -18,37 +19,45 @@ final readonly class DatabaseStorage implements StorageInterface
 {
     /**
      * @param  int|null  $ttl  Time-to-live in seconds (null = no expiration)
-     * @param  string|null  $tenantId  Tenant ID for multi-tenancy scoping
-     * @param  string  $tenantColumn  Column name for tenant ID in database
+     * @param  string|null  $ownerType  Owner morph class for multi-tenancy scoping
+     * @param  string|int|null  $ownerId  Owner ID for multi-tenancy scoping
      */
     public function __construct(
         private Database $database,
         private string $table = 'carts',
         private ?int $ttl = null,
-        private ?string $tenantId = null,
-        private string $tenantColumn = 'tenant_id',
+        private ?string $ownerType = null,
+        private string|int|null $ownerId = null,
     ) {}
 
     /**
-     * Create a new instance with the specified tenant ID.
+     * Create a new instance with the specified owner.
      */
-    public function withTenantId(?string $tenantId): static
+    public function withOwner(?Model $owner): static
     {
         return new self(
             database: $this->database,
             table: $this->table,
             ttl: $this->ttl,
-            tenantId: $tenantId,
-            tenantColumn: $this->tenantColumn,
+            ownerType: $owner?->getMorphClass(),
+            ownerId: $owner?->getKey(),
         );
     }
 
     /**
-     * Get the current tenant ID.
+     * Get the current owner type.
      */
-    public function getTenantId(): ?string
+    public function getOwnerType(): ?string
     {
-        return $this->tenantId;
+        return $this->ownerType;
+    }
+
+    /**
+     * Get the current owner ID.
+     */
+    public function getOwnerId(): string|int|null
+    {
+        return $this->ownerId;
     }
 
     /**
@@ -138,9 +147,10 @@ final readonly class DatabaseStorage implements StorageInterface
         if (app()->environment(['testing', 'local'])) {
             $query = $this->database->table($this->table);
 
-            // If tenant scoped, only flush tenant's carts
-            if ($this->tenantId !== null) {
-                $query->where($this->tenantColumn, $this->tenantId);
+            // If owner scoped, only flush owner's carts
+            if ($this->ownerType !== null && $this->ownerId !== null) {
+                $query->where('owner_type', $this->ownerType)
+                    ->where('owner_id', $this->ownerId);
                 $query->delete();
             } else {
                 $query->truncate();
@@ -160,8 +170,9 @@ final readonly class DatabaseStorage implements StorageInterface
         $query = $this->database->table($this->table)
             ->where('identifier', $identifier);
 
-        if ($this->tenantId !== null) {
-            $query->where($this->tenantColumn, $this->tenantId);
+        if ($this->ownerType !== null && $this->ownerId !== null) {
+            $query->where('owner_type', $this->ownerType)
+                ->where('owner_id', $this->ownerId);
         }
 
         return $query->pluck('instance')->toArray();
@@ -175,8 +186,9 @@ final readonly class DatabaseStorage implements StorageInterface
         $query = $this->database->table($this->table)
             ->where('identifier', $identifier);
 
-        if ($this->tenantId !== null) {
-            $query->where($this->tenantColumn, $this->tenantId);
+        if ($this->ownerType !== null && $this->ownerId !== null) {
+            $query->where('owner_type', $this->ownerType)
+                ->where('owner_id', $this->ownerId);
         }
 
         $query->delete();
@@ -433,10 +445,10 @@ final readonly class DatabaseStorage implements StorageInterface
     }
 
     /**
-     * Create a base query with identifier, instance, and optional tenant scoping.
+     * Create a base query with identifier, instance, and optional owner scoping.
      *
      * All database operations should use this method to ensure consistent
-     * query building with proper tenant isolation when multi-tenancy is enabled.
+     * query building with proper owner isolation when multi-tenancy is enabled.
      */
     private function baseQuery(string $identifier, string $instance): Builder
     {
@@ -444,8 +456,9 @@ final readonly class DatabaseStorage implements StorageInterface
             ->where('identifier', $identifier)
             ->where('instance', $instance);
 
-        if ($this->tenantId !== null) {
-            $query->where($this->tenantColumn, $this->tenantId);
+        if ($this->ownerType !== null && $this->ownerId !== null) {
+            $query->where('owner_type', $this->ownerType)
+                ->where('owner_id', $this->ownerId);
         }
 
         return $query;
@@ -584,9 +597,10 @@ final readonly class DatabaseStorage implements StorageInterface
                     'updated_at' => now(),
                 ]);
 
-                // Include tenant_id in insert if set
-                if ($this->tenantId !== null) {
-                    $insertData[$this->tenantColumn] = $this->tenantId;
+                // Include owner columns in insert if set
+                if ($this->ownerType !== null && $this->ownerId !== null) {
+                    $insertData['owner_type'] = $this->ownerType;
+                    $insertData['owner_id'] = $this->ownerId;
                 }
 
                 $this->database->table($this->table)->insert($insertData);
