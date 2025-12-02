@@ -113,17 +113,19 @@ final class VoucherUsageTimelineWidget extends Widget
 
         // Determine event type based on channel and redemption
         $isManual = $usage->channel === VoucherUsage::CHANNEL_MANUAL;
-        $hasOrder = $usage->redeemedBy && $usage->redeemed_by_type === 'App\Models\Order';
+        $hasOrder = $usage->redeemedBy && in_array($usage->redeemed_by_type, ['order', 'App\Models\Order'], true);
 
         // Build title
         $title = $hasOrder
             ? 'Redeemed in Order'
             : ($isManual ? 'Manual Redemption' : 'Redeemed');
 
-        // Build description
+        // Build description - include order number if available
         $description = "Discount applied: {$savings}";
 
-        if ($usage->redeemedBy) {
+        if ($hasOrder && $usage->redeemedBy && isset($usage->redeemedBy->order_number)) {
+            $description .= " • Order: {$usage->redeemedBy->order_number}";
+        } elseif ($usage->redeemedBy) {
             $description .= " • Customer: {$this->getCustomerName($usage)}";
         }
 
@@ -135,13 +137,22 @@ final class VoucherUsageTimelineWidget extends Widget
             'channel' => $usage->channel,
             'notes' => $usage->notes,
             'order_id' => $hasOrder ? $usage->redeemed_by_id : null,
+            'order_number' => $hasOrder && $usage->redeemedBy ? ($usage->redeemedBy->order_number ?? null) : null,
             'cart_snapshot' => $usage->cart_snapshot,
+            'metadata' => $usage->metadata,
         ];
 
         // Add cart details if available
         if ($usage->cart_snapshot) {
             $details['cart_items_count'] = $usage->cart_snapshot['items_count'] ?? null;
             $details['cart_total'] = $usage->cart_snapshot['total'] ?? null;
+        }
+
+        // Add metadata details if available
+        if ($usage->metadata) {
+            $details['order_number'] = $details['order_number'] ?? ($usage->metadata['order_number'] ?? null);
+            $details['subtotal'] = $usage->metadata['subtotal'] ?? null;
+            $details['grand_total'] = $usage->metadata['grand_total'] ?? null;
         }
 
         return [
@@ -184,7 +195,7 @@ final class VoucherUsageTimelineWidget extends Widget
      */
     protected function getEventIcon(VoucherUsage $usage): string
     {
-        if ($usage->redeemedBy && $usage->redeemed_by_type === 'App\Models\Order') {
+        if ($usage->redeemedBy && in_array($usage->redeemed_by_type, ['order', 'App\Models\Order'], true)) {
             return 'heroicon-o-shopping-bag';
         }
 
@@ -200,7 +211,7 @@ final class VoucherUsageTimelineWidget extends Widget
      */
     protected function getEventColor(VoucherUsage $usage): string
     {
-        if ($usage->redeemedBy && $usage->redeemed_by_type === 'App\Models\Order') {
+        if ($usage->redeemedBy && in_array($usage->redeemed_by_type, ['order', 'App\Models\Order'], true)) {
             return 'success';
         }
 

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt;
 
+use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use AIArmada\Jnt\Console\Commands\ConfigCheckCommand;
 use AIArmada\Jnt\Console\Commands\HealthCheckCommand;
@@ -58,6 +60,7 @@ class JntServiceProvider extends PackageServiceProvider
      */
     public function registeringPackage(): void
     {
+        $this->registerOwnerResolver();
         $this->registerServices();
     }
 
@@ -73,6 +76,17 @@ class JntServiceProvider extends PackageServiceProvider
         ]);
 
         $this->registerMiddleware();
+    }
+
+    /**
+     * Register the owner resolver.
+     */
+    protected function registerOwnerResolver(): void
+    {
+        /** @var class-string<OwnerResolverInterface> $resolverClass */
+        $resolverClass = config('jnt.owner.resolver', NullOwnerResolver::class);
+
+        $this->app->singleton(OwnerResolverInterface::class, $resolverClass);
     }
 
     /**

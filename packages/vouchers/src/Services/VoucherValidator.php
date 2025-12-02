@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Services;
 
-use AIArmada\Vouchers\Contracts\VoucherOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Models\Voucher;
@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Session;
 class VoucherValidator
 {
     public function __construct(
-        protected VoucherOwnerResolver $ownerResolver
+        protected OwnerResolverInterface $ownerResolver
     ) {}
 
     public function validate(string $code, mixed $cart): VoucherValidationResult

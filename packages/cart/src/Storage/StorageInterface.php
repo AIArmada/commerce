@@ -4,25 +4,34 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Storage;
 
+use Illuminate\Database\Eloquent\Model;
+
 interface StorageInterface
 {
     /**
-     * Set the tenant ID for multi-tenancy scoping.
+     * Set the owner for multi-tenancy scoping.
      *
-     * Returns a new instance with the tenant ID set, allowing fluent chaining.
-     * When tenant ID is set, all storage operations will be scoped to that tenant.
+     * Returns a new instance with the owner set, allowing fluent chaining.
+     * When owner is set, all storage operations will be scoped to that owner.
      *
-     * @param  string|null  $tenantId  The tenant ID to scope operations to
-     * @return static New instance with tenant ID set
+     * @param  Model|null  $owner  The owner model to scope operations to
+     * @return static New instance with owner set
      */
-    public function withTenantId(?string $tenantId): static;
+    public function withOwner(?Model $owner): static;
 
     /**
-     * Get the current tenant ID.
+     * Get the current owner type.
      *
-     * @return string|null The current tenant ID or null if not set
+     * @return string|null The current owner morph class or null if not set
      */
-    public function getTenantId(): ?string;
+    public function getOwnerType(): ?string;
+
+    /**
+     * Get the current owner ID.
+     *
+     * @return string|int|null The current owner ID or null if not set
+     */
+    public function getOwnerId(): string|int|null;
 
     /**
      * Check if cart exists in storage

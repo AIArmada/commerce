@@ -23,6 +23,8 @@ final class StockTransactionResource extends Resource
 {
     protected static ?string $model = StockTransaction::class;
 
+    protected static ?string $tenantOwnershipRelationshipName = 'owner';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
 
     protected static ?string $recordTitleAttribute = 'id';

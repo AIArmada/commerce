@@ -4,18 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Services;
 
-use AIArmada\Affiliates\Contracts\AffiliateOwnerResolver;
 use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 final class AffiliateStatsAggregator
 {
     public function __construct(
-        private readonly AffiliateOwnerResolver $ownerResolver
+        private readonly OwnerResolverInterface $ownerResolver
     ) {}
 
     /**
@@ -96,6 +96,6 @@ final class AffiliateStatsAggregator
             return null;
         }
 
-        return $this->ownerResolver->resolveCurrentOwner();
+        return $this->ownerResolver->resolve();
     }
 }

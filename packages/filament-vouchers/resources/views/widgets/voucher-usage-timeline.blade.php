@@ -9,187 +9,137 @@
         heading="Usage History"
         description="Complete timeline of voucher redemptions and activity"
     >
-        {{-- Summary Stats --}}
-        @if($stats['total_redemptions'] > 0)
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="rounded-full bg-primary-100 dark:bg-primary-900/50 p-2">
-                            <x-filament::icon
-                                icon="heroicon-o-check-circle"
-                                class="h-5 w-5 text-primary-600 dark:text-primary-400"
-                            />
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Total Redemptions</p>
-                            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                                {{ $stats['total_redemptions'] }}
-                            </p>
-                        </div>
+        <div class="fi-ta-content">
+            {{-- Summary Stats Bar --}}
+            @if($stats['total_redemptions'] > 0)
+                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1.5rem; padding: 1rem; background: rgba(0,0,0,0.05); border-radius: 0.75rem;">
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: var(--primary-600);">{{ $stats['total_redemptions'] }}</div>
+                        <div style="font-size: 0.75rem; color: #6b7280;">Redemptions</div>
+                    </div>
+                    <div style="text-align: center; border-left: 1px solid rgba(128,128,128,0.3); border-right: 1px solid rgba(128,128,128,0.3);">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #059669;">{{ $stats['total_savings'] }}</div>
+                        <div style="font-size: 0.75rem; color: #6b7280;">Total Savings</div>
+                    </div>
+                    <div style="text-align: center;">
+                        <div style="font-size: 1.5rem; font-weight: 700; color: #0ea5e9;">{{ $stats['unique_customers'] }}</div>
+                        <div style="font-size: 0.75rem; color: #6b7280;">Customers</div>
                     </div>
                 </div>
+            @endif
 
-                <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="rounded-full bg-success-100 dark:bg-success-900/50 p-2">
-                            <x-filament::icon
-                                icon="heroicon-o-currency-dollar"
-                                class="h-5 w-5 text-success-600 dark:text-success-400"
-                            />
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Total Savings</p>
-                            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                                {{ $stats['total_savings'] }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
+            {{-- Timeline --}}
+            @if($events->isNotEmpty())
+                <div style="position: relative; padding-left: 2rem;">
+                    {{-- Vertical Timeline Line --}}
+                    <div style="position: absolute; left: 0.5rem; top: 0; bottom: 0; width: 2px; background: linear-gradient(to bottom, #f97316, #d1d5db);"></div>
 
-                <div class="rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4">
-                    <div class="flex items-center gap-3">
-                        <div class="rounded-full bg-info-100 dark:bg-info-900/50 p-2">
-                            <x-filament::icon
-                                icon="heroicon-o-users"
-                                class="h-5 w-5 text-info-600 dark:text-info-400"
-                            />
-                        </div>
-                        <div>
-                            <p class="text-sm text-gray-500 dark:text-gray-400">Unique Customers</p>
-                            <p class="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                                {{ $stats['unique_customers'] }}
-                            </p>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        @endif
+                    @foreach($events as $index => $event)
+                        <div style="position: relative; margin-bottom: 1.5rem;">
+                            {{-- Timeline Node --}}
+                            <div style="position: absolute; left: -1.75rem; top: 0; width: 1.25rem; height: 1.25rem; border-radius: 50%; background: {{ $event['color'] === 'success' ? '#10b981' : '#f97316' }}; border: 3px solid #fff; box-shadow: 0 2px 4px rgba(0,0,0,0.2);"></div>
 
-        {{-- Timeline --}}
-        @if($events->isNotEmpty())
-            <div class="space-y-4">
-                @foreach($events as $index => $event)
-                    <div class="relative flex gap-4">
-                        {{-- Timeline Line --}}
-                        @if(!$loop->last)
-                            <div class="absolute left-6 top-12 h-full w-0.5 bg-gray-200 dark:bg-gray-700"></div>
-                        @endif
+                            {{-- Arrow pointing to node --}}
+                            <div style="position: absolute; left: -0.25rem; top: 0.35rem; width: 0; height: 0; border-top: 6px solid transparent; border-bottom: 6px solid transparent; border-right: 8px solid rgba(0,0,0,0.1);"></div>
 
-                        {{-- Icon --}}
-                        <div class="relative flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full border-2 border-{{ $event['color'] }}-500 bg-{{ $event['color'] }}-50 dark:bg-{{ $event['color'] }}-900/20">
-                            <x-filament::icon
-                                :icon="$event['icon']"
-                                class="h-6 w-6 text-{{ $event['color'] }}-600 dark:text-{{ $event['color'] }}-400"
-                            />
-                        </div>
-
-                        {{-- Content --}}
-                        <div class="flex-1 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-4 shadow-sm">
-                            {{-- Header --}}
-                            <div class="flex items-start justify-between gap-4">
-                                <div>
-                                    <h3 class="text-base font-semibold text-gray-900 dark:text-gray-100">
-                                        {{ $event['title'] }}
-                                    </h3>
-                                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                        {{ $event['description'] }}
-                                    </p>
+                            {{-- Content Card --}}
+                            <div style="background: rgba(0,0,0,0.03); border: 1px solid rgba(128,128,128,0.2); border-radius: 0.75rem; overflow: hidden;">
+                                {{-- Header --}}
+                                <div style="padding: 1rem; background: linear-gradient(to right, rgba(249,115,22,0.1), transparent); border-bottom: 1px solid rgba(128,128,128,0.1);">
+                                    <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 0.5rem;">
+                                        <div>
+                                            <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+                                                <span style="font-size: 1rem; font-weight: 700;">{{ $event['title'] }}</span>
+                                                @if($event['details']['order_number'] ?? null)
+                                                    <span style="display: inline-flex; align-items: center; gap: 0.25rem; padding: 0.25rem 0.75rem; background: #dcfce7; color: #166534; font-size: 0.75rem; font-weight: 600; border-radius: 9999px;">
+                                                        🛒 {{ $event['details']['order_number'] }}
+                                                    </span>
+                                                @endif
+                                            </div>
+                                            <p style="margin-top: 0.25rem; font-size: 0.875rem; color: #6b7280;">{{ $event['description'] }}</p>
+                                        </div>
+                                        <div style="text-align: right; flex-shrink: 0;">
+                                            <div style="font-size: 0.875rem; font-weight: 600;">{{ $event['timestamp']->format('M d, Y') }}</div>
+                                            <div style="font-size: 0.75rem; color: #6b7280;">{{ $event['timestamp']->format('g:i A') }}</div>
+                                            <div style="font-size: 0.75rem; color: #f97316; font-weight: 500;">{{ $event['timestamp_human'] }}</div>
+                                        </div>
+                                    </div>
                                 </div>
-                                <div class="flex-shrink-0 text-right">
-                                    <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
-                                        {{ $event['timestamp']->format('M d, Y') }}
-                                    </p>
-                                    <p class="text-xs text-gray-400 dark:text-gray-500">
-                                        {{ $event['timestamp']->format('g:i A') }}
-                                    </p>
-                                    <p class="mt-1 text-xs text-gray-400 dark:text-gray-500">
-                                        {{ $event['timestamp_human'] }}
-                                    </p>
+
+                                {{-- Details Grid --}}
+                                <div style="padding: 1rem;">
+                                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+                                        {{-- Discount --}}
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <div style="width: 2rem; height: 2rem; background: #dcfce7; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;">💰</div>
+                                            <div>
+                                                <div style="font-size: 0.625rem; color: #6b7280; text-transform: uppercase;">Discount</div>
+                                                <div style="font-size: 0.875rem; font-weight: 700; color: #059669;">{{ $event['details']['savings'] }}</div>
+                                            </div>
+                                        </div>
+
+                                        {{-- Channel --}}
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <div style="width: 2rem; height: 2rem; background: #fef3c7; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;">⚡</div>
+                                            <div>
+                                                <div style="font-size: 0.625rem; color: #6b7280; text-transform: uppercase;">Channel</div>
+                                                <div style="font-size: 0.875rem; font-weight: 600; text-transform: capitalize;">{{ $event['details']['channel'] }}</div>
+                                            </div>
+                                        </div>
+
+                                        {{-- Order Total --}}
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <div style="width: 2rem; height: 2rem; background: #e0e7ff; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;">📦</div>
+                                            <div>
+                                                <div style="font-size: 0.625rem; color: #6b7280; text-transform: uppercase;">Order Total</div>
+                                                <div style="font-size: 0.875rem; font-weight: 600;">
+                                                    @if($event['details']['grand_total'] ?? null)
+                                                        {{ \Akaunting\Money\Money::MYR($event['details']['grand_total'])->format() }}
+                                                    @elseif($event['details']['cart_total'] ?? null)
+                                                        {{ \Akaunting\Money\Money::MYR($event['details']['cart_total'])->format() }}
+                                                    @else
+                                                        —
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {{-- Subtotal --}}
+                                        <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                            <div style="width: 2rem; height: 2rem; background: #f3e8ff; border-radius: 0.5rem; display: flex; align-items: center; justify-content: center;">🧮</div>
+                                            <div>
+                                                <div style="font-size: 0.625rem; color: #6b7280; text-transform: uppercase;">Subtotal</div>
+                                                <div style="font-size: 0.875rem; font-weight: 600;">
+                                                    @if($event['details']['subtotal'] ?? null)
+                                                        {{ \Akaunting\Money\Money::MYR($event['details']['subtotal'])->format() }}
+                                                    @else
+                                                        —
+                                                    @endif
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
                             </div>
-
-                            {{-- Details --}}
-                            <div class="mt-3 grid grid-cols-2 gap-3 border-t border-gray-100 dark:border-gray-700 pt-3">
-                                @if($event['details']['cart_identifier'])
-                                    <div>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">Cart ID</p>
-                                        <p class="mt-0.5 text-sm font-mono text-gray-900 dark:text-gray-100">
-                                            {{ Str::limit($event['details']['cart_identifier'], 20) }}
-                                        </p>
-                                    </div>
-                                @endif
-
-                                @if($event['details']['order_id'])
-                                    <div>
-                                        <p class="text-xs text-gray-500 dark:text-gray-400">Order ID</p>
-                                        <p class="mt-0.5 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                            #{{ $event['details']['order_id'] }}
-                                        </p>
-                                    </div>
-                                @endif
-
-                                <div>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">Channel</p>
-                                    <p class="mt-0.5 text-sm capitalize text-gray-900 dark:text-gray-100">
-                                        {{ $event['details']['channel'] }}
-                                    </p>
-                                </div>
-
-                                <div>
-                                    <p class="text-xs text-gray-500 dark:text-gray-400">Savings</p>
-                                    <p class="mt-0.5 text-sm font-semibold text-success-600 dark:text-success-400">
-                                        {{ $event['details']['savings'] }}
-                                    </p>
-                                </div>
-
-                                @if($event['details']['cart_snapshot'])
-                                    @if(isset($event['details']['cart_items_count']))
-                                        <div>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400">Cart Items</p>
-                                            <p class="mt-0.5 text-sm text-gray-900 dark:text-gray-100">
-                                                {{ $event['details']['cart_items_count'] }} items
-                                            </p>
-                                        </div>
-                                    @endif
-
-                                    @if(isset($event['details']['cart_total']))
-                                        <div>
-                                            <p class="text-xs text-gray-500 dark:text-gray-400">Cart Total</p>
-                                            <p class="mt-0.5 text-sm font-medium text-gray-900 dark:text-gray-100">
-                                                {{ \Akaunting\Money\Money::MYR($event['details']['cart_total'])->format() }}
-                                            </p>
-                                        </div>
-                                    @endif
-                                @endif
-                            </div>
-
-                            {{-- Notes --}}
-                            @if($event['details']['notes'])
-                                <div class="mt-3 rounded-md bg-gray-50 dark:bg-gray-900/50 p-3">
-                                    <p class="text-xs font-medium text-gray-700 dark:text-gray-300">Notes:</p>
-                                    <p class="mt-1 text-sm text-gray-600 dark:text-gray-400">
-                                        {{ $event['details']['notes'] }}
-                                    </p>
-                                </div>
-                            @endif
                         </div>
+                    @endforeach
+
+                    {{-- End Marker --}}
+                    <div style="position: relative;">
+                        <div style="position: absolute; left: -1.5rem; top: 0; width: 0.75rem; height: 0.75rem; border-radius: 50%; background: #9ca3af;"></div>
+                        <p style="font-size: 0.75rem; color: #9ca3af; font-style: italic;">End of history</p>
                     </div>
-                @endforeach
-            </div>
-        @else
-            {{-- Empty State --}}
-            <div class="text-center py-12">
-                <x-filament::icon
-                    icon="heroicon-o-clock"
-                    class="mx-auto h-12 w-12 text-gray-400"
-                />
-                <h3 class="mt-4 text-sm font-medium text-gray-900 dark:text-gray-100">
-                    No Usage History Yet
-                </h3>
-                <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">
-                    This voucher hasn't been redeemed yet. Usage activity will appear here once customers start using this voucher.
-                </p>
-            </div>
-        @endif
+                </div>
+            @else
+                {{-- Empty State --}}
+                <div style="text-align: center; padding: 3rem 1rem;">
+                    <div style="width: 4rem; height: 4rem; margin: 0 auto 1rem; background: #f3f4f6; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.5rem;">⏰</div>
+                    <h3 style="font-size: 1.125rem; font-weight: 600; margin-bottom: 0.5rem;">No Usage History Yet</h3>
+                    <p style="font-size: 0.875rem; color: #6b7280; max-width: 20rem; margin: 0 auto;">
+                        This voucher hasn't been redeemed yet. Usage activity will appear here once customers start using this voucher.
+                    </p>
+                </div>
+            @endif
+        </div>
     </x-filament::section>
 </x-filament-widgets::widget>

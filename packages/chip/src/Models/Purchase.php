@@ -183,6 +183,7 @@ class Purchase extends ChipModel
             'status_history' => 'array',
             'currency_conversion' => 'array',
             'payment_method_whitelist' => 'array',
+            'metadata' => 'array',
             'send_receipt' => 'boolean',
             'is_test' => 'boolean',
             'is_recurring_token' => 'boolean',

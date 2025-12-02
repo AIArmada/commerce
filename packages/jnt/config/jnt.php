@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -41,6 +43,22 @@ return [
     'base_urls' => [
         'testing' => env('JNT_BASE_URL_TESTING', 'https://demoopenapi.jtexpress.my/webopenplatformapi'),
         'production' => env('JNT_BASE_URL_PRODUCTION', 'https://ylopenapi.jtexpress.my/webopenplatformapi'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ownership (Multi-Tenancy)
+    |--------------------------------------------------------------------------
+    |
+    | Register a resolver that returns the current owner (merchant, tenant, etc).
+    | When enabled, orders are automatically scoped to the owner.
+    |
+    */
+    'owner' => [
+        'enabled' => env('JNT_OWNER_ENABLED', false),
+        'resolver' => NullOwnerResolver::class,
+        'include_global' => env('JNT_OWNER_INCLUDE_GLOBAL', true),
+        'auto_assign_on_create' => env('JNT_OWNER_AUTO_ASSIGN', true),
     ],
 
     /*

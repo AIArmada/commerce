@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -24,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class DocTemplate extends Model
 {
     use HasFactory;
+    use HasOwner;
     use HasUuids;
 
     protected $fillable = [
@@ -33,6 +35,8 @@ class DocTemplate extends Model
         'view_name',
         'doc_type',
         'is_default',
+        'owner_type',
+        'owner_id',
         'settings',
     ];
 
@@ -52,14 +56,23 @@ class DocTemplate extends Model
     }
 
     /**
-     * Set this template as default
+     * Set this template as default within the same owner context
      */
     public function setAsDefault(): void
     {
-        // Remove default from all other templates of the same type
-        static::where('id', '!=', $this->id)
-            ->where('doc_type', $this->doc_type)
-            ->update(['is_default' => false]);
+        // Build query to remove default from other templates of the same type
+        $query = static::where('id', '!=', $this->id)
+            ->where('doc_type', $this->doc_type);
+
+        // Scope to same owner context
+        if ($this->owner_type !== null && $this->owner_id !== null) {
+            $query->where('owner_type', $this->owner_type)
+                ->where('owner_id', $this->owner_id);
+        } else {
+            $query->whereNull('owner_type');
+        }
+
+        $query->update(['is_default' => false]);
 
         // Set this as default
         $this->update(['is_default' => true]);

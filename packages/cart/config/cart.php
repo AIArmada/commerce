@@ -50,18 +50,18 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Tenancy
+    | Ownership (Multi-Tenancy)
     |--------------------------------------------------------------------------
     |
-    | Multi-tenancy support for scoping carts by tenant. When enabled, carts
-    | are isolated per tenant using the configured resolver. The resolver must
-    | implement CartTenantResolverInterface or an exception will be thrown.
+    | Multi-tenancy support for scoping carts by owner. When enabled, carts
+    | are isolated per owner using the configured resolver. The resolver must
+    | implement OwnerResolverInterface from commerce-support.
     |
     */
-    'tenancy' => [
-        'enabled' => env('CART_TENANCY_ENABLED', false),
-        'resolver' => env('CART_TENANT_RESOLVER'), // e.g., App\Support\CartTenantResolver::class
-        'column' => env('CART_TENANT_COLUMN', 'tenant_id'),
+    'owner' => [
+        'enabled' => env('CART_OWNER_ENABLED', false),
+        'resolver' => env('CART_OWNER_RESOLVER', \AIArmada\CommerceSupport\Contracts\NullOwnerResolver::class),
+        'include_global' => env('CART_OWNER_INCLUDE_GLOBAL', true),
     ],
 
     /*

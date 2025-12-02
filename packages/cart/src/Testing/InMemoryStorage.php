@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Testing;
 
 use AIArmada\Cart\Storage\StorageInterface;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Simple in-memory storage implementation for testing purposes.
@@ -32,39 +33,51 @@ class InMemoryStorage implements StorageInterface
     /** @var array<string, array<string, string>> */
     private array $ids = [];
 
-    private ?string $tenantId = null;
+    private ?string $ownerType = null;
 
-    public function __construct(?string $tenantId = null)
+    private string|int|null $ownerId = null;
+
+    public function __construct(?string $ownerType = null, string|int|null $ownerId = null)
     {
-        $this->tenantId = $tenantId;
+        $this->ownerType = $ownerType;
+        $this->ownerId = $ownerId;
     }
 
     /**
-     * Create a new instance scoped to a specific tenant
+     * Create a new instance with the specified owner
      */
-    public function withTenantId(?string $tenantId): static
+    public function withOwner(?Model $owner): static
     {
         $storage = clone $this;
-        $storage->tenantId = $tenantId;
+        $storage->ownerType = $owner?->getMorphClass();
+        $storage->ownerId = $owner?->getKey();
 
         return $storage;
     }
 
     /**
-     * Get the current tenant ID
+     * Get the current owner type
      */
-    public function getTenantId(): ?string
+    public function getOwnerType(): ?string
     {
-        return $this->tenantId;
+        return $this->ownerType;
     }
 
     /**
-     * Get the storage key scoped to tenant if set
+     * Get the current owner ID
+     */
+    public function getOwnerId(): string|int|null
+    {
+        return $this->ownerId;
+    }
+
+    /**
+     * Get the storage key scoped to owner if set
      */
     private function scopedKey(string $identifier): string
     {
-        if ($this->tenantId !== null) {
-            return "{$this->tenantId}:{$identifier}";
+        if ($this->ownerType !== null && $this->ownerId !== null) {
+            return "{$this->ownerType}:{$this->ownerId}:{$identifier}";
         }
 
         return $identifier;

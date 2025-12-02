@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Services;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Numbering\NumberStrategyRegistry;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Spatie\LaravelPdf\Facades\Pdf;
 
@@ -30,16 +32,20 @@ class DocService
         // Generate doc number if not provided
         $docNumber = $data->docNumber ?? $this->generateDocNumber($docType);
 
-        // Get template
+        // Resolve current owner
+        $owner = $this->resolveOwner();
+
+        // Get template (scoped by owner if enabled)
         $template = null;
         if ($data->docTemplateId) {
-            $template = DocTemplate::find($data->docTemplateId);
+            $template = $this->getTemplateQuery()->find($data->docTemplateId);
         } elseif ($data->templateSlug) {
-            $template = DocTemplate::where('slug', $data->templateSlug)->first();
+            $template = $this->getTemplateQuery()->where('slug', $data->templateSlug)->first();
         }
 
         if (! $template) {
-            $template = DocTemplate::where('is_default', true)
+            $template = $this->getTemplateQuery()
+                ->where('is_default', true)
                 ->where('doc_type', $docType)
                 ->first();
         }
@@ -67,8 +73,8 @@ class DocService
             $dueDate = now()->addDays($dueDays);
         }
 
-        // Create doc
-        $doc = Doc::create([
+        // Build doc data with owner columns if enabled
+        $docData = [
             'doc_number' => $docNumber,
             'doc_type' => $docType,
             'doc_template_id' => $template?->id,
@@ -88,7 +94,16 @@ class DocService
             'company_data' => $data->companyData ?? config('docs.company'),
             'items' => $data->items,
             'metadata' => $metadata,
-        ]);
+        ];
+
+        // Add owner columns if enabled
+        if ($owner !== null) {
+            $docData['owner_type'] = $owner->getMorphClass();
+            $docData['owner_id'] = $owner->getKey();
+        }
+
+        // Create doc
+        $doc = Doc::create($docData);
 
         // Load relationships
         $doc->loadMissing(['template', 'docable']);
@@ -107,7 +122,8 @@ class DocService
         $doc->loadMissing('docable');
 
         $docType = $doc->doc_type ?? 'invoice';
-        $template = $doc->template ?? DocTemplate::where('is_default', true)
+        $template = $doc->template ?? $this->getTemplateQuery()
+            ->where('is_default', true)
             ->where('doc_type', $docType)
             ->first();
         $viewName = $template->view_name ?? config("docs.types.{$docType}.default_template", "{$docType}-default");
@@ -287,5 +303,59 @@ class DocService
     protected function resolveDefault(string $docType, string $key, mixed $fallback = null): mixed
     {
         return config("docs.types.{$docType}.defaults.{$key}", config("docs.defaults.{$key}", $fallback));
+    }
+
+    /**
+     * Resolve the current owner from the configured resolver.
+     */
+    protected function resolveOwner(): ?Model
+    {
+        if (! config('docs.owner.enabled', false)) {
+            return null;
+        }
+
+        /** @var class-string<OwnerResolverInterface>|null $resolverClass */
+        $resolverClass = config('docs.owner.resolver');
+
+        if ($resolverClass === null) {
+            return null;
+        }
+
+        /** @var OwnerResolverInterface $resolver */
+        $resolver = app($resolverClass);
+
+        return $resolver->resolve();
+    }
+
+    /**
+     * Get template query builder with owner scoping applied.
+     *
+     * @return \Illuminate\Database\Eloquent\Builder<DocTemplate>
+     */
+    protected function getTemplateQuery(): \Illuminate\Database\Eloquent\Builder
+    {
+        $query = DocTemplate::query();
+
+        if (config('docs.owner.enabled', false)) {
+            $owner = $this->resolveOwner();
+            $includeGlobal = config('docs.owner.include_global', true);
+
+            if ($owner !== null) {
+                if ($includeGlobal) {
+                    $query->where(function ($q) use ($owner): void {
+                        $q->where('owner_type', $owner->getMorphClass())
+                            ->where('owner_id', $owner->getKey())
+                            ->orWhereNull('owner_type');
+                    });
+                } else {
+                    $query->where('owner_type', $owner->getMorphClass())
+                        ->where('owner_id', $owner->getKey());
+                }
+            } elseif ($includeGlobal) {
+                $query->whereNull('owner_type');
+            }
+        }
+
+        return $query;
     }
 }

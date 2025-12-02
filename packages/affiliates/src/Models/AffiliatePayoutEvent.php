@@ -8,6 +8,17 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
+/**
+ * @property string $id
+ * @property string $affiliate_payout_id
+ * @property string|null $from_status
+ * @property string $to_status
+ * @property array<string, mixed>|null $metadata
+ * @property string|null $notes
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read AffiliatePayout $payout
+ */
 class AffiliatePayoutEvent extends Model
 {
     use HasUuids;

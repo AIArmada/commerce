@@ -37,7 +37,7 @@ final class LowStockAlertsWidget extends TableWidget
             ->select([
                 'stockable_type',
                 'stockable_id',
-                DB::raw('SUM(CASE WHEN type = "in" THEN quantity ELSE -quantity END) as current_stock'),
+                DB::raw("SUM(CASE WHEN type = 'in' THEN quantity ELSE -quantity END) as current_stock"),
             ])
             ->groupBy('stockable_type', 'stockable_id')
             ->havingRaw('current_stock <= ?', [$threshold])
@@ -159,7 +159,7 @@ final class LowStockAlertsWidget extends TableWidget
             ->select([
                 'stockable_type',
                 'stockable_id',
-                DB::raw('SUM(CASE WHEN type = "in" THEN quantity ELSE -quantity END) as current_stock'),
+                DB::raw("SUM(CASE WHEN type = 'in' THEN quantity ELSE -quantity END) as current_stock"),
                 DB::raw('MAX(transaction_date) as last_movement'),
             ])
             ->groupBy('stockable_type', 'stockable_id')

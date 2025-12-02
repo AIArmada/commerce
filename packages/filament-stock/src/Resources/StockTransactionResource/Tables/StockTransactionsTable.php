@@ -67,6 +67,12 @@ final class StockTransactionsTable
                     ->sortable()
                     ->toggleable(),
 
+                TextColumn::make('stockable.name')
+                    ->label('Item')
+                    ->searchable()
+                    ->sortable()
+                    ->toggleable(),
+
                 TextColumn::make('stockable_id')
                     ->label('Item ID')
                     ->searchable()

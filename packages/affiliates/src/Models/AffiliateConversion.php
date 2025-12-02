@@ -10,7 +10,31 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
+ * @property string $id
+ * @property string $affiliate_id
+ * @property string|null $affiliate_attribution_id
+ * @property string|null $affiliate_payout_id
+ * @property string $affiliate_code
+ * @property string|null $cart_identifier
+ * @property string|null $cart_instance
+ * @property string|null $voucher_code
+ * @property string|null $order_reference
+ * @property int $subtotal_minor
+ * @property int $total_minor
+ * @property int $commission_minor
+ * @property string $commission_currency
+ * @property ConversionStatus $status
+ * @property string|null $channel
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $occurred_at
+ * @property \Illuminate\Support\Carbon|null $approved_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Affiliate $affiliate
+ * @property-read AffiliateAttribution|null $attribution
+ * @property-read AffiliatePayout|null $payout
  */
 class AffiliateConversion extends Model
 {

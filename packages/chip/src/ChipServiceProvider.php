@@ -7,12 +7,17 @@ namespace AIArmada\Chip;
 use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Clients\ChipSendClient;
 use AIArmada\Chip\Commands\ChipHealthCheckCommand;
+use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Gateways\ChipGateway;
 use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
+use AIArmada\Chip\Listeners\StoreWebhookData;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\WebhookService;
+use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentGatewayInterface;
+use Illuminate\Support\Facades\Event;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Support\Facades\Route;
@@ -45,6 +50,7 @@ final class ChipServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->registerOwnerResolver();
         $this->registerServices();
         $this->registerClients();
         $this->registerGateway();
@@ -59,6 +65,7 @@ final class ChipServiceProvider extends PackageServiceProvider
         ]);
 
         $this->configureWebhookRoutes();
+        $this->registerEventListeners();
     }
 
     /**
@@ -74,10 +81,19 @@ final class ChipServiceProvider extends PackageServiceProvider
             ChipSendClient::class,
             ChipGateway::class,
             PaymentGatewayInterface::class,
+            OwnerResolverInterface::class,
             'chip.collect',
             'chip.send',
             'chip.gateway',
         ];
+    }
+
+    protected function registerOwnerResolver(): void
+    {
+        /** @var class-string<OwnerResolverInterface> $resolverClass */
+        $resolverClass = config('chip.owner.resolver', NullOwnerResolver::class);
+
+        $this->app->singleton(OwnerResolverInterface::class, $resolverClass);
     }
 
     protected function registerMiddleware(): void
@@ -87,6 +103,13 @@ final class ChipServiceProvider extends PackageServiceProvider
                 $app->make(WebhookService::class)
             );
         });
+    }
+
+    protected function registerEventListeners(): void
+    {
+        if (config('chip.webhooks.store_data', true)) {
+            Event::listen(WebhookReceived::class, StoreWebhookData::class);
+        }
     }
 
     protected function registerServices(): void

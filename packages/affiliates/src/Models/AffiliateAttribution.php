@@ -11,9 +11,35 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
- * @property string $cart_identifier
+ * @property string $id
+ * @property string $affiliate_id
+ * @property string $affiliate_code
+ * @property string|null $cart_identifier
  * @property string $cart_instance
+ * @property string|null $cookie_value
+ * @property string|null $voucher_code
+ * @property string|null $source
+ * @property string|null $medium
+ * @property string|null $campaign
+ * @property string|null $term
+ * @property string|null $content
+ * @property string|null $landing_url
+ * @property string|null $referrer_url
+ * @property string|null $user_agent
+ * @property string|null $ip_address
+ * @property string|null $user_id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $first_seen_at
+ * @property \Illuminate\Support\Carbon|null $last_seen_at
+ * @property \Illuminate\Support\Carbon|null $last_cookie_seen_at
+ * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Affiliate $affiliate
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateConversion> $conversions
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateTouchpoint> $touchpoints
  */
 class AffiliateAttribution extends Model
 {

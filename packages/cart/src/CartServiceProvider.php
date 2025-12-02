@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart;
 
-use AIArmada\Cart\Contracts\CartTenantResolverInterface;
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Services\CartConditionResolver;
@@ -14,6 +13,8 @@ use AIArmada\Cart\Storage\CacheStorage;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Cart\Storage\SessionStorage;
 use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Auth\Events\Attempting;
 use Illuminate\Auth\Events\Login;
@@ -56,44 +57,46 @@ final class CartServiceProvider extends PackageServiceProvider
             'money.default_currency',
         ]);
 
-        $this->validateTenancyConfiguration();
+        $this->validateOwnerConfiguration();
         $this->registerEventListeners();
     }
 
     /**
-     * Validate tenancy configuration (fail-fast pattern)
+     * Validate owner configuration (fail-fast pattern)
      *
-     * @throws RuntimeException If tenancy is enabled but resolver is not configured
+     * @throws RuntimeException If owner is enabled but resolver is not configured
      */
-    protected function validateTenancyConfiguration(): void
+    protected function validateOwnerConfiguration(): void
     {
-        if (! config('cart.tenancy.enabled', false)) {
+        if (! config('cart.owner.enabled', false)) {
             return;
         }
 
-        $resolverClass = config('cart.tenancy.resolver');
+        $resolverClass = config('cart.owner.resolver', NullOwnerResolver::class);
 
         if (empty($resolverClass)) {
             throw new RuntimeException(
-                'Cart tenancy is enabled but no resolver is configured. '.
-                'Set CART_TENANT_RESOLVER or cart.tenancy.resolver to a class implementing CartTenantResolverInterface.'
+                'Cart owner is enabled but no resolver is configured. '.
+                'Set CART_OWNER_RESOLVER or cart.owner.resolver to a class implementing OwnerResolverInterface.'
             );
         }
 
         if (! class_exists($resolverClass)) {
             throw new RuntimeException(
-                "Cart tenant resolver class '{$resolverClass}' does not exist."
+                "Cart owner resolver class '{$resolverClass}' does not exist."
             );
         }
 
-        if (! is_subclass_of($resolverClass, CartTenantResolverInterface::class)) {
+        if (! is_subclass_of($resolverClass, OwnerResolverInterface::class) && $resolverClass !== NullOwnerResolver::class) {
             throw new RuntimeException(
-                "Cart tenant resolver '{$resolverClass}' must implement ".CartTenantResolverInterface::class
+                "Cart owner resolver '{$resolverClass}' must implement ".OwnerResolverInterface::class
             );
         }
 
-        // Register the resolver in the container
-        $this->app->singleton(CartTenantResolverInterface::class, $resolverClass);
+        // Register the resolver in the container (only if not already bound)
+        if (! $this->app->bound(OwnerResolverInterface::class)) {
+            $this->app->singleton(OwnerResolverInterface::class, $resolverClass);
+        }
     }
 
     /**
@@ -129,7 +132,7 @@ final class CartServiceProvider extends PackageServiceProvider
                 config('cart.session.key', 'cart')
             );
 
-            return $this->applyTenantScope($app, $storage);
+            return $this->applyOwnerScope($app, $storage);
         });
 
         $this->app->bind('cart.storage.cache', function (\Illuminate\Contracts\Foundation\Application $app) {
@@ -139,7 +142,7 @@ final class CartServiceProvider extends PackageServiceProvider
                 config('cart.cache.ttl', 86400)
             );
 
-            return $this->applyTenantScope($app, $storage);
+            return $this->applyOwnerScope($app, $storage);
         });
 
         $this->app->bind('cart.storage.database', function (\Illuminate\Contracts\Foundation\Application $app) {
@@ -149,10 +152,9 @@ final class CartServiceProvider extends PackageServiceProvider
                 $connection,
                 config('cart.database.table', 'carts'),
                 config('cart.database.ttl'),
-                tenantColumn: config('cart.tenancy.column', 'tenant_id'),
             );
 
-            return $this->applyTenantScope($app, $storage);
+            return $this->applyOwnerScope($app, $storage);
         });
 
         // Bind StorageInterface to the configured storage driver
@@ -164,26 +166,26 @@ final class CartServiceProvider extends PackageServiceProvider
     }
 
     /**
-     * Apply tenant scope to storage driver if tenancy is enabled
+     * Apply owner scope to storage driver if owner is enabled
      */
-    protected function applyTenantScope(\Illuminate\Contracts\Foundation\Application $app, StorageInterface $storage): StorageInterface
+    protected function applyOwnerScope(\Illuminate\Contracts\Foundation\Application $app, StorageInterface $storage): StorageInterface
     {
-        if (! config('cart.tenancy.enabled', false)) {
+        if (! config('cart.owner.enabled', false)) {
             return $storage;
         }
 
-        if (! $app->bound(CartTenantResolverInterface::class)) {
+        if (! $app->bound(OwnerResolverInterface::class)) {
             return $storage;
         }
 
-        $resolver = $app->make(CartTenantResolverInterface::class);
-        $tenantId = $resolver->resolve();
+        $resolver = $app->make(OwnerResolverInterface::class);
+        $owner = $resolver->resolve();
 
-        if ($tenantId === null) {
+        if ($owner === null) {
             return $storage;
         }
 
-        return $storage->withTenantId($tenantId);
+        return $storage->withOwner($owner);
     }
 
     /**

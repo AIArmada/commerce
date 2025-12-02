@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Contracts\AffiliateOwnerResolver;
 use AIArmada\Affiliates\Events\AffiliateAttributed;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -12,6 +11,7 @@ use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -160,7 +160,7 @@ test('affiliate cookies honor owner scoping', function (): void {
         'affiliates.tracking.block_self_referral' => false,
     ]);
 
-    app()->singleton(AffiliateOwnerResolver::class, fn (): AffiliateOwnerResolver => new StaticOwnerResolver());
+    app()->singleton(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new StaticOwnerResolver());
 
     $ownerOne = AffiliateTestOwner::create(['id' => (string) Str::uuid(), 'name' => 'Owner One']);
     $ownerTwo = AffiliateTestOwner::create(['id' => (string) Str::uuid(), 'name' => 'Owner Two']);
@@ -212,7 +212,7 @@ test('self referral is blocked when owner matches current owner', function (): v
         'affiliates.tracking.block_self_referral' => true,
     ]);
 
-    app()->singleton(AffiliateOwnerResolver::class, fn (): AffiliateOwnerResolver => new StaticOwnerResolver());
+    app()->singleton(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new StaticOwnerResolver());
 
     $owner = AffiliateTestOwner::create(['id' => (string) Str::uuid(), 'name' => 'Owner Self']);
     StaticOwnerResolver::$owner = $owner;
@@ -296,11 +296,11 @@ test('webhook dispatcher is invoked for attribution and conversion', function ()
         ->and($fakeDispatcher->events[1]['type'])->toBe('conversion');
 });
 
-class StaticOwnerResolver implements AffiliateOwnerResolver
+class StaticOwnerResolver implements OwnerResolverInterface
 {
     public static ?Model $owner = null;
 
-    public function resolveCurrentOwner(): ?Model
+    public function resolve(): ?Model
     {
         return self::$owner;
     }

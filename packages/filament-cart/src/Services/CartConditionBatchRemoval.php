@@ -50,12 +50,27 @@ final class CartConditionBatchRemoval
         try {
             // Find all cart snapshots that might have this condition
             // We check both cart conditions and item conditions
+            $driver = CartModel::query()->getConnection()->getDriverName();
             $affectedSnapshots = CartModel::query()
-                ->where(function ($query) use ($conditionName): void {
+                ->where(function ($query) use ($conditionName, $driver): void {
                     // Check in normalized_data->conditions
-                    $query->whereJsonContains('normalized_data->conditions', [['name' => $conditionName]])
-                        // Or check in normalized_data->items->*->conditions
-                        ->orWhereRaw("JSON_SEARCH(normalized_data, 'one', ?, null, '$.items[*].conditions[*].name') IS NOT NULL", [$conditionName]);
+                    $query->whereJsonContains('normalized_data->conditions', [['name' => $conditionName]]);
+
+                    // Or check in normalized_data->items->*->conditions (database-specific)
+                    match ($driver) {
+                        'pgsql' => $query->orWhereRaw(
+                            "EXISTS (SELECT 1 FROM jsonb_array_elements(normalized_data->'items') AS item, jsonb_array_elements(item->'conditions') AS cond WHERE cond->>'name' = ?)",
+                            [$conditionName]
+                        ),
+                        'mysql', 'mariadb' => $query->orWhereRaw(
+                            "JSON_SEARCH(normalized_data, 'one', ?, null, '$.items[*].conditions[*].name') IS NOT NULL",
+                            [$conditionName]
+                        ),
+                        default => $query->orWhereRaw(
+                            "normalized_data LIKE ?",
+                            ['%"name":"'.str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], $conditionName).'"%']
+                        ),
+                    };
                 })
                 ->get();
 

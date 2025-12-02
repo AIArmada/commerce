@@ -23,6 +23,8 @@ final class DocTemplateResource extends Resource
 {
     protected static ?string $model = DocTemplate::class;
 
+    protected static ?string $tenantOwnershipRelationshipName = 'owner';
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentDuplicate;
 
     protected static ?string $recordTitleAttribute = 'name';

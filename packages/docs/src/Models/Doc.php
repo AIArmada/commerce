@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Docs\Enums\DocStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -40,6 +41,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class Doc extends Model
 {
     use HasFactory;
+    use HasOwner;
     use HasUuids;
 
     protected $fillable = [
@@ -48,6 +50,8 @@ class Doc extends Model
         'doc_template_id',
         'docable_type',
         'docable_id',
+        'owner_type',
+        'owner_id',
         'status',
         'issue_date',
         'due_date',

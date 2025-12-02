@@ -8,8 +8,9 @@ use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart as CartFacade;
 use AIArmada\Cart\Services\CartConditionResolver;
+use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
-use AIArmada\Vouchers\Contracts\VoucherOwnerResolver;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Facades\Voucher;
@@ -17,7 +18,6 @@ use AIArmada\Vouchers\Listeners\IncrementVoucherAppliedCount;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Services\VoucherValidator;
 use AIArmada\Vouchers\Support\CartManagerWithVouchers;
-use AIArmada\Vouchers\Support\Resolvers\NullOwnerResolver;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
@@ -42,16 +42,16 @@ final class VoucherServiceProvider extends PackageServiceProvider
         $this->app->singleton(VoucherValidator::class);
         $this->app->singleton(VoucherRulesFactory::class, static fn () => new VoucherRulesFactory());
 
-        $this->app->singleton(VoucherOwnerResolver::class, function (\Illuminate\Contracts\Foundation\Application $app): VoucherOwnerResolver {
+        $this->app->singleton(OwnerResolverInterface::class, function (\Illuminate\Contracts\Foundation\Application $app): OwnerResolverInterface {
             /** @var string $resolverClass */
             $resolverClass = config('vouchers.owner.resolver', NullOwnerResolver::class);
 
             /** @var object $resolver */
             $resolver = $app->make($resolverClass);
 
-            if (! $resolver instanceof VoucherOwnerResolver) {
+            if (! $resolver instanceof OwnerResolverInterface) {
                 throw new InvalidArgumentException(
-                    sprintf('%s must implement %s', $resolverClass, VoucherOwnerResolver::class)
+                    sprintf('%s must implement %s', $resolverClass, OwnerResolverInterface::class)
                 );
             }
 
@@ -135,7 +135,7 @@ final class VoucherServiceProvider extends PackageServiceProvider
         return [
             VoucherService::class,
             VoucherValidator::class,
-            VoucherOwnerResolver::class,
+            OwnerResolverInterface::class,
             'voucher',
         ];
     }

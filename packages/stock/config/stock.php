@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -17,6 +19,22 @@ return [
     |--------------------------------------------------------------------------
     */
     'low_stock_threshold' => env('STOCK_LOW_THRESHOLD', 10),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Ownership (Multi-Tenancy)
+    |--------------------------------------------------------------------------
+    |
+    | Register a resolver that returns the current owner (merchant, tenant, etc).
+    | When enabled, stock transactions are automatically scoped to the owner.
+    |
+    */
+    'owner' => [
+        'enabled' => env('STOCK_OWNER_ENABLED', false),
+        'resolver' => NullOwnerResolver::class,
+        'include_global' => env('STOCK_OWNER_INCLUDE_GLOBAL', true),
+        'auto_assign_on_create' => env('STOCK_OWNER_AUTO_ASSIGN', true),
+    ],
 
     /*
     |--------------------------------------------------------------------------

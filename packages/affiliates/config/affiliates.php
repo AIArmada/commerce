@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Support\Resolvers\NullOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 
 return [
     /*

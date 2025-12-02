@@ -144,16 +144,16 @@ class CartManager implements CartManagerInterface
     }
 
     /**
-     * Create a new cart manager instance scoped to a specific tenant
+     * Create a new cart manager instance scoped to a specific owner
      *
-     * Use this for admin operations that need to operate on a specific tenant's carts.
-     * The returned manager has isolated storage that only accesses the specified tenant's data.
+     * Use this for admin operations that need to operate on a specific owner's carts.
+     * The returned manager has isolated storage that only accesses the specified owner's data.
      *
-     * @param  string  $tenantId  The tenant identifier to scope operations to
+     * @param  \Illuminate\Database\Eloquent\Model  $owner  The owner model to scope operations to
      */
-    public function forTenant(string $tenantId): static
+    public function forOwner(\Illuminate\Database\Eloquent\Model $owner): static
     {
-        $scopedStorage = $this->storage->withTenantId($tenantId);
+        $scopedStorage = $this->storage->withOwner($owner);
 
         return new self(
             storage: $scopedStorage,
@@ -164,11 +164,19 @@ class CartManager implements CartManagerInterface
     }
 
     /**
-     * Get the current tenant ID if operating in tenant-scoped mode
+     * Get the current owner type if operating in owner-scoped mode
      */
-    public function getTenantId(): ?string
+    public function getOwnerType(): ?string
     {
-        return $this->storage->getTenantId();
+        return $this->storage->getOwnerType();
+    }
+
+    /**
+     * Get the current owner ID if operating in owner-scoped mode
+     */
+    public function getOwnerId(): string|int|null
+    {
+        return $this->storage->getOwnerId();
     }
 
     /**

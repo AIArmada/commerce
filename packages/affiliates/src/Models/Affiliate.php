@@ -4,23 +4,42 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
-use AIArmada\Affiliates\Contracts\AffiliateOwnerResolver;
 use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property string $id
  * @property string $code
+ * @property string $name
+ * @property string|null $description
  * @property AffiliateStatus $status
  * @property CommissionType $commission_type
  * @property int $commission_rate
  * @property string $currency
+ * @property string|null $parent_affiliate_id
+ * @property string|null $default_voucher_code
+ * @property string|null $contact_email
+ * @property string|null $website_url
+ * @property string|null $payout_terms
+ * @property string|null $tracking_domain
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $activated_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Affiliate|null $parent
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Affiliate> $children
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateAttribution> $attributions
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateConversion> $conversions
+ * @property-read \Illuminate\Database\Eloquent\Model|null $owner
  */
 class Affiliate extends Model
 {
@@ -84,6 +103,14 @@ class Affiliate extends Model
         return $this->hasMany(self::class, 'parent_affiliate_id');
     }
 
+    /**
+     * Get the owner model (polymorphic relationship).
+     */
+    public function owner(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
     public function isActive(): bool
     {
         return $this->status === AffiliateStatus::Active;
@@ -95,7 +122,7 @@ class Affiliate extends Model
             return $query;
         }
 
-        $owner ??= app(AffiliateOwnerResolver::class)->resolveCurrentOwner();
+        $owner ??= app(OwnerResolverInterface::class)->resolve();
 
         if (! $owner) {
             return $query;
@@ -120,7 +147,7 @@ class Affiliate extends Model
                 return;
             }
 
-            $owner = app(AffiliateOwnerResolver::class)->resolveCurrentOwner();
+            $owner = app(OwnerResolverInterface::class)->resolve();
 
             if ($owner) {
                 $affiliate->owner_type = $owner->getMorphClass();

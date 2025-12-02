@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Stock;
 
+use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Stock\Console\CleanupExpiredReservationsCommand;
 use AIArmada\Stock\Listeners\DeductStockOnPaymentSuccess;
 use AIArmada\Stock\Listeners\ReleaseStockOnCartClear;
@@ -27,6 +29,8 @@ final class StockServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
+        $this->registerOwnerResolver();
+
         // Register Stock Service
         $this->app->singleton(StockService::class);
         $this->app->alias(StockService::class, 'stock');
@@ -50,9 +54,31 @@ final class StockServiceProvider extends PackageServiceProvider
         return [
             StockService::class,
             StockReservationService::class,
+            OwnerResolverInterface::class,
             'stock',
             'stock.reservations',
         ];
+    }
+
+    /**
+     * Register the owner resolver for multi-tenancy support.
+     */
+    private function registerOwnerResolver(): void
+    {
+        $this->app->singleton(OwnerResolverInterface::class, function (\Illuminate\Contracts\Foundation\Application $app): OwnerResolverInterface {
+            /** @var class-string<OwnerResolverInterface> $resolverClass */
+            $resolverClass = config('stock.owner.resolver', NullOwnerResolver::class);
+
+            $resolver = $app->make($resolverClass);
+
+            if (! $resolver instanceof OwnerResolverInterface) {
+                throw new \InvalidArgumentException(
+                    sprintf('%s must implement %s', $resolverClass, OwnerResolverInterface::class)
+                );
+            }
+
+            return $resolver;
+        });
     }
 
     /**
