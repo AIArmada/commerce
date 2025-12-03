@@ -622,7 +622,7 @@ it('shouldApply returns true for static and evaluates rules for dynamic', functi
                 return null;
             }
 
-            public function withOwner(?\Illuminate\Database\Eloquent\Model $owner): static
+            public function withOwner(?Illuminate\Database\Eloquent\Model $owner): static
             {
                 return $this;
             }

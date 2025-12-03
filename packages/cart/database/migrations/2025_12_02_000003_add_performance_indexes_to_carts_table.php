@@ -33,6 +33,26 @@ return new class extends Migration
     }
 
     /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        $tableName = config('cart.database.table', 'carts');
+        $driver = Schema::getConnection()->getDriverName();
+
+        if ($driver === 'pgsql') {
+            DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_lookup_covering');
+            DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_active');
+            DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_expired');
+            DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_analytics');
+        } else {
+            DB::statement("DROP INDEX idx_carts_lookup_covering ON `{$tableName}`");
+            DB::statement("DROP INDEX idx_carts_expired ON `{$tableName}`");
+            DB::statement("DROP INDEX idx_carts_analytics ON `{$tableName}`");
+        }
+    }
+
+    /**
      * PostgreSQL-specific indexes with advanced features.
      */
     private function addPostgreSQLIndexes(string $tableName): void
@@ -88,25 +108,5 @@ return new class extends Migration
             CREATE INDEX idx_carts_analytics
             ON `{$tableName}` (updated_at, instance)
         ");
-    }
-
-    /**
-     * Reverse the migrations.
-     */
-    public function down(): void
-    {
-        $tableName = config('cart.database.table', 'carts');
-        $driver = Schema::getConnection()->getDriverName();
-
-        if ($driver === 'pgsql') {
-            DB::statement("DROP INDEX CONCURRENTLY IF EXISTS idx_carts_lookup_covering");
-            DB::statement("DROP INDEX CONCURRENTLY IF EXISTS idx_carts_active");
-            DB::statement("DROP INDEX CONCURRENTLY IF EXISTS idx_carts_expired");
-            DB::statement("DROP INDEX CONCURRENTLY IF EXISTS idx_carts_analytics");
-        } else {
-            DB::statement("DROP INDEX idx_carts_lookup_covering ON `{$tableName}`");
-            DB::statement("DROP INDEX idx_carts_expired ON `{$tableName}`");
-            DB::statement("DROP INDEX idx_carts_analytics ON `{$tableName}`");
-        }
     }
 };

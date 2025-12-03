@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Services\CartConditionResolver;
-use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;

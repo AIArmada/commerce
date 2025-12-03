@@ -76,70 +76,6 @@ trait ManagesItems
     }
 
     /**
-     * Internal method to add a single item (bypasses rate limit check for recursive calls).
-     *
-     * @param  string|int  $id
-     * @param  array<string, mixed>  $attributes
-     * @param  array<string, mixed>|object|null  $conditions
-     */
-    private function addItemInternal(
-        string|int $id,
-        ?string $name,
-        float|int|string|null $price,
-        int $quantity,
-        array $attributes,
-        array|object|null $conditions,
-        string|object|null $associatedModel
-    ): CartItem {
-        // Normalize ID to string for consistent handling
-        $id = (string) $id;
-
-        // Create cart item
-        $item = $this->createCartItem([
-            'id' => $id,
-            'name' => $name,
-            'price' => $this->normalizePrice($price),
-            'quantity' => $quantity,
-            'attributes' => $attributes,
-            'conditions' => $conditions,
-            'associated_model' => $associatedModel,
-        ]);
-
-        // Check if item already exists in cart
-        $cartItems = $this->getItems();
-        $isFirstItem = $cartItems->isEmpty();
-
-        if ($cartItems->has($id)) {
-            // Update existing item quantity
-            $existingItem = $cartItems->get($id);
-            assert($existingItem !== null, 'Item should exist since we checked has()');
-            $item = $item->setQuantity($existingItem->quantity + $quantity);
-        }
-
-        // Store in cart
-        $cartItems->put($id, $item);
-        $this->save($cartItems);
-
-        // Invalidate pipeline cache after cart modification
-        $this->invalidatePipelineCacheIfEnabled();
-
-        // Dispatch CartCreated event only when adding the first item to an empty cart
-        if ($isFirstItem && $this->eventsEnabled && $this->events) {
-            $this->events->dispatch(new CartCreated($this));
-        }
-
-        // Dispatch ItemAdded event
-        if ($this->eventsEnabled && $this->events) {
-            $this->events->dispatch(new ItemAdded($item, $this));
-        }
-
-        // Evaluate dynamic conditions after adding item
-        $this->evaluateDynamicConditions();
-
-        return $item;
-    }
-
-    /**
      * Update cart item
      *
      * @param  array<string, mixed>  $data
@@ -275,6 +211,69 @@ trait ManagesItems
     public function search(callable $callback): CartCollection
     {
         return $this->getItems()->filter($callback);
+    }
+
+    /**
+     * Internal method to add a single item (bypasses rate limit check for recursive calls).
+     *
+     * @param  array<string, mixed>  $attributes
+     * @param  array<string, mixed>|object|null  $conditions
+     */
+    private function addItemInternal(
+        string|int $id,
+        ?string $name,
+        float|int|string|null $price,
+        int $quantity,
+        array $attributes,
+        array|object|null $conditions,
+        string|object|null $associatedModel
+    ): CartItem {
+        // Normalize ID to string for consistent handling
+        $id = (string) $id;
+
+        // Create cart item
+        $item = $this->createCartItem([
+            'id' => $id,
+            'name' => $name,
+            'price' => $this->normalizePrice($price),
+            'quantity' => $quantity,
+            'attributes' => $attributes,
+            'conditions' => $conditions,
+            'associated_model' => $associatedModel,
+        ]);
+
+        // Check if item already exists in cart
+        $cartItems = $this->getItems();
+        $isFirstItem = $cartItems->isEmpty();
+
+        if ($cartItems->has($id)) {
+            // Update existing item quantity
+            $existingItem = $cartItems->get($id);
+            assert($existingItem !== null, 'Item should exist since we checked has()');
+            $item = $item->setQuantity($existingItem->quantity + $quantity);
+        }
+
+        // Store in cart
+        $cartItems->put($id, $item);
+        $this->save($cartItems);
+
+        // Invalidate pipeline cache after cart modification
+        $this->invalidatePipelineCacheIfEnabled();
+
+        // Dispatch CartCreated event only when adding the first item to an empty cart
+        if ($isFirstItem && $this->eventsEnabled && $this->events) {
+            $this->events->dispatch(new CartCreated($this));
+        }
+
+        // Dispatch ItemAdded event
+        if ($this->eventsEnabled && $this->events) {
+            $this->events->dispatch(new ItemAdded($item, $this));
+        }
+
+        // Evaluate dynamic conditions after adding item
+        $this->evaluateDynamicConditions();
+
+        return $item;
     }
 
     /**

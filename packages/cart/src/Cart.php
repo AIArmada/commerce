@@ -26,6 +26,7 @@ use AIArmada\Cart\Traits\ManagesStorage;
 use AIArmada\Cart\Traits\ProvidesConditionScopes;
 use AIArmada\CommerceSupport\Contracts\Payment\CheckoutableInterface;
 use Illuminate\Contracts\Events\Dispatcher;
+use Throwable;
 
 final class Cart implements CheckoutableInterface
 {
@@ -64,7 +65,7 @@ final class Cart implements CheckoutableInterface
         } elseif (function_exists('app') && config('cart.rate_limiting.enabled', true)) {
             try {
                 $this->setRateLimiter(app(CartRateLimiter::class));
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // Rate limiter not available, continue without it
             }
         }

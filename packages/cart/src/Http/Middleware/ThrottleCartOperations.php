@@ -24,7 +24,7 @@ final class ThrottleCartOperations
     /**
      * Handle an incoming request.
      *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * @param  Closure(Request): (Response)  $next
      */
     public function handle(Request $request, Closure $next, ?string $operation = null): Response
     {
@@ -53,16 +53,16 @@ final class ThrottleCartOperations
     {
         // Prefer authenticated user ID
         if ($request->user()) {
-            return 'user:' . $request->user()->getAuthIdentifier();
+            return 'user:'.$request->user()->getAuthIdentifier();
         }
 
         // Fall back to session ID
         if ($request->hasSession()) {
-            return 'session:' . $request->session()->getId();
+            return 'session:'.$request->session()->getId();
         }
 
         // Last resort: IP address
-        return 'ip:' . $request->ip();
+        return 'ip:'.$request->ip();
     }
 
     /**
@@ -71,7 +71,7 @@ final class ThrottleCartOperations
     private function resolveOperation(Request $request): string
     {
         // Map HTTP method + route to operation type
-        $method = strtoupper($request->method());
+        $method = mb_strtoupper($request->method());
         $path = $request->path();
 
         // Common patterns
