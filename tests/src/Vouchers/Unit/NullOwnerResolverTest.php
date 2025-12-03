@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Support\Resolvers\NullOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 
 it('null owner resolver returns null', function (): void {
     $resolver = new NullOwnerResolver();

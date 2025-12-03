@@ -78,9 +78,7 @@ trait CalculatesTotals
      */
     public function getRawTotal(): int
     {
-        $pipelineResult = $this->evaluateConditionPipeline();
-
-        return $pipelineResult->total();
+        return $this->getTotalWithLazyPipeline();
     }
 
     /**
@@ -88,9 +86,7 @@ trait CalculatesTotals
      */
     public function getRawSubtotal(): int
     {
-        $pipelineResult = $this->evaluateConditionPipeline();
-
-        return $pipelineResult->subtotal();
+        return $this->getSubtotalWithLazyPipeline();
     }
 
     /**
@@ -123,8 +119,7 @@ trait CalculatesTotals
      */
     protected function getSubtotal(): Money
     {
-        $pipelineResult = $this->evaluateConditionPipeline();
-        $finalAmount = $pipelineResult->subtotal();
+        $finalAmount = $this->getSubtotalWithLazyPipeline();
 
         $currency = config('cart.money.default_currency', 'USD');
 
@@ -159,8 +154,7 @@ trait CalculatesTotals
      */
     protected function getTotal(): Money
     {
-        $pipelineResult = $this->evaluateConditionPipeline();
-        $finalAmount = $pipelineResult->total();
+        $finalAmount = $this->getTotalWithLazyPipeline();
 
         $currency = config('cart.money.default_currency', 'USD');
 

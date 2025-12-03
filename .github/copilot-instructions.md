@@ -35,6 +35,17 @@ Config files MUST follow this section order:
 - Use compact section headers (single line description only).
 - Group related settings under nested arrays.
 - Prefer opinionated defaults over excessive configuration.
+- Remove redundant env() wrappers for non-sensitive hardcoded values.
+
+## Comment Style
+Use compact Laravel-style section headers. Inline comments only for non-obvious values.
+
+## Verification
+Search codebase for config key usage:
+```bash
+grep -r "config('package.key')" src/ packages/*/src/
+```
+If no matches, remove the config.
 
 ## Comment Style
 Use compact Laravel-style section headers. Inline comments only for non-obvious values.
@@ -74,29 +85,100 @@ Schema::create('orders', function (Blueprint $table) {
 ```
 ## Models
 ```
-# Models Guidelines
+## Model Guidelines
 
-## Cascade Handling
-- **CRITICAL**: Handle referential integrity and cascades in **application code/models ONLY**.
-- Use `booted()` method with `deleting()` event listeners for cascade deletes.
-- Migrations: `foreignUuid('relation_id')` **WITHOUT** `->constrained()` or cascades.
+**CRITICAL**: Never use database-level foreign key constraints or cascades (`->constrained()`, `->cascadeOnDelete()`). Handle all referential integrity and cascading **in application code only**.
 
-## Required Structure
+### Required Model Structure
+
 ```php
-protected static function booted(): void
+<?php
+
+declare(strict_types=1);
+
+namespace {{ $namespace }}\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+
+/**
+ * @property string $id
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, {{ $childModel }}> ${{ $childPlural }}
+ */
+class {{ $modelClass }} extends Model
 {
-    static::deleting(function (Model $model): void {
-        $model->children()->delete();  // hasMany
-        $model->nullableChildren()->update(['parent_id' => null]);  // nullable FK
-    });
-}
+    use HasUuids;
+
+    protected $fillable = [
+        // List fillable columns matching migration
+    ];
+
+    public function getTable(): string
+    {
+        $tables = config('{{ $configKey }}.database.tables', []);
+        $prefix = config('{{ $configKey }}.database.table_prefix', '{{ $tablePrefix}}_');
+
+        return $tables['{{ $tableKey }}'] ?? $prefix.'{{ $tableName }}';
+    }
+
+    /**
+     * @return HasMany<{{ $childModel }}, $this>
+     */
+    public function {{ $childPlural }}(): HasMany
+    {
+        return $this->hasMany({{ $childModel }}::class, '{{ $foreignKey }}');
+    }
+
+    /**
+     * @return BelongsTo<{{ $parentModel }}, $this>
+     */
+    public function {{ $parentSnake }}(): BelongsTo
+    {
+        return $this->belongsTo({{ $parentModel }}::class, '{{ $foreignKey }}');
+    }
+
+    /**
+     * Application-level cascade delete (NO database constraints!)
+     */
+    protected static function booted(): void
+    {
+        static::deleting(function ({{ $modelClass }} ${{ $modelVar }}): void {
+            ${{ $modelVar }}->{{ $childPlural }}()->delete();
+            // Add other cascades as needed
+            // For nullable FKs: ${{ $modelVar }}->{{ $childPlural }}()->update(['{{ $foreignKey }}' => null]);
+        });
+    }
+
+    protected function casts(): array
+    {
+        return [
+            // Casts for dates, JSON, booleans, enums
+            '{{ $jsonField }}' => 'array',
+            'is_active' => 'boolean',
+            'created_at' => 'datetime',
+        ];
+    }
 ```
 
-## Verification
-- All models use `HasUuids` trait
-- `getTable()` from config (no hardcoded tables)
-- Type-safe relations with PHPDoc generics
-- PHPStan level 6 compliant
+### Cascade Rules
+
+| Relationship | Delete Action | Example |
+|--------------|---------------|---------|
+| `hasMany` children | `->delete()` | `$order->items()->delete();` |
+| Nullable FK children | `->update(['fk' => null])` | `$order->webhookLogs()->update(['order_id' => null]);` |
+
+### Verification Checklist
+- ✅ `HasUuids` trait
+- ✅ `getTable()` from config (no hardcoded names)
+- ✅ `booted()` with cascade deletes
+- ✅ **NO** `protected $table` property
+- ✅ PHPDoc `@property` annotations
+- ✅ Type-safe relations with generics
+- ✅ PHPStan level 6 compliant
+
+**Migration**: Use `foreignUuid('order_id')` **without** `->constrained()` or cascades.
 ```
 ## Docs
 ```
@@ -168,6 +250,8 @@ The project's `phpstan.neon` configures the baseline. Ensure no errors at level 
 # Testing Guidelines
 
 ## Running Tests
+
+**Don't run all tests at once. The test suite is too large and inefficient. Always test by individual package using `tests/src/PackageName`.**
 
 Use `--parallel` flag to speed up test execution:
 

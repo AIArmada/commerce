@@ -32,6 +32,9 @@ trait ManagesItems
         array|object|null $conditions = null,
         string|object|null $associatedModel = null
     ): CartItem|CartCollection {
+        // Check rate limit before adding
+        $this->checkRateLimitIfEnabled('add_item');
+
         // Handle array input - distinguish between single item and multiple items
         if (is_array($id)) {
             // If array has 'id' key, it's a single item array
@@ -51,8 +54,11 @@ trait ManagesItems
                 /** @var object|string|null $associatedModel */
                 $associatedModel = $id['associated_model'] ?? null;
 
-                return $this->add(
-                    $id['id'],
+                /** @var string|int $itemId */
+                $itemId = $id['id'];
+
+                return $this->addItemInternal(
+                    $itemId,
                     $name,
                     $price,
                     $quantity,
@@ -66,6 +72,25 @@ trait ManagesItems
             return $this->addMultiple($id);
         }
 
+        return $this->addItemInternal($id, $name, $price, $quantity, $attributes, $conditions, $associatedModel);
+    }
+
+    /**
+     * Internal method to add a single item (bypasses rate limit check for recursive calls).
+     *
+     * @param  string|int  $id
+     * @param  array<string, mixed>  $attributes
+     * @param  array<string, mixed>|object|null  $conditions
+     */
+    private function addItemInternal(
+        string|int $id,
+        ?string $name,
+        float|int|string|null $price,
+        int $quantity,
+        array $attributes,
+        array|object|null $conditions,
+        string|object|null $associatedModel
+    ): CartItem {
         // Normalize ID to string for consistent handling
         $id = (string) $id;
 
@@ -95,6 +120,9 @@ trait ManagesItems
         $cartItems->put($id, $item);
         $this->save($cartItems);
 
+        // Invalidate pipeline cache after cart modification
+        $this->invalidatePipelineCacheIfEnabled();
+
         // Dispatch CartCreated event only when adding the first item to an empty cart
         if ($isFirstItem && $this->eventsEnabled && $this->events) {
             $this->events->dispatch(new CartCreated($this));
@@ -118,6 +146,9 @@ trait ManagesItems
      */
     public function update(string|int $id, array $data): ?CartItem
     {
+        // Check rate limit before updating
+        $this->checkRateLimitIfEnabled('update_item');
+
         // Normalize ID to string for consistent handling
         $id = (string) $id;
 
@@ -163,6 +194,9 @@ trait ManagesItems
         $cartItems->put($id, $item);
         $this->save($cartItems);
 
+        // Invalidate pipeline cache after cart modification
+        $this->invalidatePipelineCacheIfEnabled();
+
         if ($this->eventsEnabled && $this->events) {
             $this->events->dispatch(new ItemUpdated($item, $this));
         }
@@ -178,6 +212,9 @@ trait ManagesItems
      */
     public function remove(string|int $id): ?CartItem
     {
+        // Check rate limit before removing
+        $this->checkRateLimitIfEnabled('remove_item');
+
         // Normalize ID to string for consistent handling
         $id = (string) $id;
 
@@ -191,6 +228,9 @@ trait ManagesItems
         assert($item !== null, 'Item should exist since we checked has()');
         $cartItems->forget($id);
         $this->save($cartItems);
+
+        // Invalidate pipeline cache after cart modification
+        $this->invalidatePipelineCacheIfEnabled();
 
         if ($this->eventsEnabled && $this->events) {
             $this->events->dispatch(new ItemRemoved($item, $this));
@@ -238,6 +278,26 @@ trait ManagesItems
     }
 
     /**
+     * Check rate limit if the trait is available and enabled.
+     */
+    private function checkRateLimitIfEnabled(string $operation): void
+    {
+        if (method_exists($this, 'checkRateLimit')) {
+            $this->checkRateLimit($operation);
+        }
+    }
+
+    /**
+     * Invalidate pipeline cache if the trait is available.
+     */
+    private function invalidatePipelineCacheIfEnabled(): void
+    {
+        if (method_exists($this, 'invalidatePipelineCache')) {
+            $this->invalidatePipelineCache();
+        }
+    }
+
+    /**
      * Handle cart when it becomes empty based on configured behavior.
      */
     private function handleEmptyCart(): void
@@ -263,7 +323,7 @@ trait ManagesItems
         $cartItems = new CartCollection;
 
         foreach ($items as $item) {
-            $cartItem = $this->add(
+            $cartItem = $this->addItemInternal(
                 $item['id'],
                 $item['name'] ?? null,
                 $item['price'] ?? null,
@@ -273,7 +333,6 @@ trait ManagesItems
                 $item['associated_model'] ?? null
             );
 
-            assert($cartItem instanceof CartItem, 'add() should return CartItem when called with scalar id');
             $cartItems->put($cartItem->id, $cartItem);
         }
 

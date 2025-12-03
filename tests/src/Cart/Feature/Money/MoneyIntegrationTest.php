@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Storage\StorageInterface;
 use Akaunting\Money\Money;
+use Illuminate\Database\Eloquent\Model;
 
 function createTestCart(string $instance = 'test'): Cart
 {
@@ -137,6 +138,21 @@ function createTestCart(string $instance = 'test'): Cart
             }
 
             public function getTenantId(): ?string
+            {
+                return null;
+            }
+
+            public function withOwner(?Model $owner): static
+            {
+                return $this;
+            }
+
+            public function getOwnerType(): ?string
+            {
+                return null;
+            }
+
+            public function getOwnerId(): string|int|null
             {
                 return null;
             }

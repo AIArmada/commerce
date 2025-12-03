@@ -13,9 +13,8 @@ return new class extends Migration
         $tableName = config('jnt.database.table_prefix', 'jnt_').'orders';
 
         Schema::table($tableName, function (Blueprint $table): void {
+            // nullableMorphs already creates an index on owner_type and owner_id
             $table->nullableMorphs('owner');
-
-            $table->index(['owner_type', 'owner_id']);
         });
     }
 

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Contracts\VoucherOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
@@ -108,9 +108,9 @@ it('scopes vouchers to the resolved owner', function (): void {
     $owner = TestOwner::create(['name' => 'Merchant A']);
     $otherOwner = TestOwner::create(['name' => 'Merchant B']);
 
-    $this->app->forgetInstance(VoucherOwnerResolver::class);
-    $this->app->singleton(VoucherOwnerResolver::class, function () use ($owner): VoucherOwnerResolver {
-        return new class($owner) implements VoucherOwnerResolver
+    $this->app->forgetInstance(OwnerResolverInterface::class);
+    $this->app->singleton(OwnerResolverInterface::class, function () use ($owner): OwnerResolverInterface {
+        return new class($owner) implements OwnerResolverInterface
         {
             public function __construct(private TestOwner $owner) {}
 

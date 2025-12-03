@@ -8,9 +8,12 @@ use AIArmada\Cart\Conditions\Pipeline\ConditionPipeline;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineContext;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineResult;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
+use AIArmada\Cart\Security\CartRateLimiter;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cart\Traits\CalculatesTotals;
+use AIArmada\Cart\Traits\HasLazyPipeline;
+use AIArmada\Cart\Traits\HasRateLimiting;
 use AIArmada\Cart\Traits\ImplementsCheckoutable;
 use AIArmada\Cart\Traits\ManagesBuyables;
 use AIArmada\Cart\Traits\ManagesConditions;
@@ -27,6 +30,8 @@ use Illuminate\Contracts\Events\Dispatcher;
 final class Cart implements CheckoutableInterface
 {
     use CalculatesTotals;
+    use HasLazyPipeline;
+    use HasRateLimiting;
     use ImplementsCheckoutable;
     use ManagesBuyables;
     use ManagesConditions;
@@ -46,11 +51,23 @@ final class Cart implements CheckoutableInterface
         private ?Dispatcher $events = null,
         private string $instanceName = 'default',
         private bool $eventsEnabled = true,
-        ?CartConditionResolver $conditionResolver = null
+        ?CartConditionResolver $conditionResolver = null,
+        ?CartRateLimiter $rateLimiter = null
     ) {
         // Cart is now created when first item is added, not during instantiation
         $this->conditionResolver = $conditionResolver
             ?? (function_exists('app') ? app(CartConditionResolver::class) : new CartConditionResolver());
+
+        // Set rate limiter if provided or resolve from container
+        if ($rateLimiter !== null) {
+            $this->setRateLimiter($rateLimiter);
+        } elseif (function_exists('app') && config('cart.rate_limiting.enabled', true)) {
+            try {
+                $this->setRateLimiter(app(CartRateLimiter::class));
+            } catch (\Throwable) {
+                // Rate limiter not available, continue without it
+            }
+        }
     }
 
     public function getConditionResolver(): CartConditionResolver

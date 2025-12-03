@@ -12,6 +12,8 @@ it('has correct fillable attributes', function (): void {
         'stockable_type',
         'stockable_id',
         'user_id',
+        'owner_type',
+        'owner_id',
         'quantity',
         'type',
         'reason',

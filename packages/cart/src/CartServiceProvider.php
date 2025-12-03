@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart;
 
+use AIArmada\Cart\Http\Middleware\ThrottleCartOperations;
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
+use AIArmada\Cart\Security\CartRateLimiter;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Services\CartMigrationService;
 use AIArmada\Cart\Services\TaxCalculator;
@@ -48,6 +50,7 @@ final class CartServiceProvider extends PackageServiceProvider
         $this->registerCartManager();
         $this->registerMigrationService();
         $this->registerTaxCalculator();
+        $this->registerRateLimiter();
     }
 
     public function bootingPackage(): void
@@ -75,11 +78,14 @@ final class CartServiceProvider extends PackageServiceProvider
             CartMigrationService::class,
             CartConditionResolver::class,
             TaxCalculator::class,
+            CartRateLimiter::class,
+            ThrottleCartOperations::class,
             'cart.condition_resolver',
             'cart.storage.session',
             'cart.storage.cache',
             'cart.storage.database',
             'cart.tax',
+            'cart.rate_limiter',
         ];
     }
 
@@ -251,5 +257,26 @@ final class CartServiceProvider extends PackageServiceProvider
         });
 
         $this->app->alias(TaxCalculator::class, 'cart.tax');
+    }
+
+    /**
+     * Register rate limiter service
+     */
+    protected function registerRateLimiter(): void
+    {
+        $this->app->singleton(CartRateLimiter::class, function (\Illuminate\Contracts\Foundation\Application $app) {
+            $limits = config('cart.rate_limiting.limits');
+
+            return new CartRateLimiter($limits);
+        });
+
+        $this->app->alias(CartRateLimiter::class, 'cart.rate_limiter');
+
+        // Register middleware
+        $this->app->singleton(ThrottleCartOperations::class, function (\Illuminate\Contracts\Foundation\Application $app) {
+            return new ThrottleCartOperations(
+                $app->make(CartRateLimiter::class)
+            );
+        });
     }
 }

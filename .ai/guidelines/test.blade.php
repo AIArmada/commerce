@@ -2,6 +2,8 @@
 
 ## Running Tests
 
+**Don't run all tests at once. The test suite is too large and inefficient. Always test by individual package using `tests/src/PackageName`.**
+
 Use `--parallel` flag to speed up test execution:
 
 ```bash

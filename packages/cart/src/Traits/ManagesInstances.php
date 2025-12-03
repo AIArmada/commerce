@@ -112,6 +112,11 @@ trait ManagesInstances
         // Clear everything in a single storage operation
         $this->storage->clearAll($identifier, $instance);
 
+        // Invalidate pipeline cache after clearing cart
+        if (method_exists($this, 'invalidatePipelineCache')) {
+            $this->invalidatePipelineCache();
+        }
+
         // Dispatch CartCleared event
         if ($this->eventsEnabled && $this->events) {
             $this->events->dispatch(new CartCleared($this));

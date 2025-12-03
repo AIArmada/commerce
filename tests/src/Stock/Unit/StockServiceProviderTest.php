@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Stock\Cart\CartManagerWithStock;
 use AIArmada\Stock\Services\StockReservationService;
 use AIArmada\Stock\Services\StockService;
@@ -15,6 +16,7 @@ test('provides correct bindings', function (): void {
     expect($provider->provides())->toBe([
         StockService::class,
         StockReservationService::class,
+        OwnerResolverInterface::class,
         'stock',
         'stock.reservations',
     ]);
