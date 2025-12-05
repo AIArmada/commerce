@@ -12,8 +12,8 @@ use AIArmada\Vouchers\Enums\VoucherType;
 /**
  * Create a test cart with a specified total value.
  *
- * @param int $totalValue Total cart value in cents
- * @param int $quantity Number of items (for per-item cashback tests)
+ * @param  int  $totalValue  Total cart value in cents
+ * @param  int  $quantity  Number of items (for per-item cashback tests)
  */
 function createCashbackTestCart(int $totalValue, int $quantity = 1): Cart
 {

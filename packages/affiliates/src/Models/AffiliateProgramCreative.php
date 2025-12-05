@@ -63,7 +63,7 @@ class AffiliateProgramCreative extends Model
         $separator = str_contains($baseUrl, '?') ? '&' : '?';
         $param = config('affiliates.tracking.parameter', 'ref');
 
-        return $baseUrl . $separator . $param . '=' . $affiliate->code;
+        return $baseUrl.$separator.$param.'='.$affiliate->code;
     }
 
     public function getEmbedCode(Affiliate $affiliate): string

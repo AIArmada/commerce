@@ -6,7 +6,6 @@ namespace AIArmada\Inventory\Services;
 
 use AIArmada\Inventory\Models\InventoryBatch;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\Event;
 
 final class ExpiryMonitorService
 {

@@ -37,6 +37,59 @@ enum FraudSignalType: string
     case ExpiredCodeAbuse = 'expired_code_abuse';
 
     /**
+     * Get all signals in a specific category.
+     *
+     * @return array<FraudSignalType>
+     */
+    public static function byCategory(string $category): array
+    {
+        return array_filter(
+            self::cases(),
+            fn (self $signal): bool => $signal->getCategory() === $category
+        );
+    }
+
+    /**
+     * Get all velocity-related signals.
+     *
+     * @return array<FraudSignalType>
+     */
+    public static function velocitySignals(): array
+    {
+        return self::byCategory('velocity');
+    }
+
+    /**
+     * Get all pattern-related signals.
+     *
+     * @return array<FraudSignalType>
+     */
+    public static function patternSignals(): array
+    {
+        return self::byCategory('pattern');
+    }
+
+    /**
+     * Get all behavioral signals.
+     *
+     * @return array<FraudSignalType>
+     */
+    public static function behavioralSignals(): array
+    {
+        return self::byCategory('behavioral');
+    }
+
+    /**
+     * Get all code abuse signals.
+     *
+     * @return array<FraudSignalType>
+     */
+    public static function codeAbuseSignals(): array
+    {
+        return self::byCategory('code_abuse');
+    }
+
+    /**
      * Get a human-readable label for the signal type.
      */
     public function getLabel(): string
@@ -156,58 +209,5 @@ enum FraudSignalType: string
             self::OnlyDiscountedPurchases => 15,
             self::AbnormalCartValue => 10,
         };
-    }
-
-    /**
-     * Get all signals in a specific category.
-     *
-     * @return array<FraudSignalType>
-     */
-    public static function byCategory(string $category): array
-    {
-        return array_filter(
-            self::cases(),
-            fn (self $signal): bool => $signal->getCategory() === $category
-        );
-    }
-
-    /**
-     * Get all velocity-related signals.
-     *
-     * @return array<FraudSignalType>
-     */
-    public static function velocitySignals(): array
-    {
-        return self::byCategory('velocity');
-    }
-
-    /**
-     * Get all pattern-related signals.
-     *
-     * @return array<FraudSignalType>
-     */
-    public static function patternSignals(): array
-    {
-        return self::byCategory('pattern');
-    }
-
-    /**
-     * Get all behavioral signals.
-     *
-     * @return array<FraudSignalType>
-     */
-    public static function behavioralSignals(): array
-    {
-        return self::byCategory('behavioral');
-    }
-
-    /**
-     * Get all code abuse signals.
-     *
-     * @return array<FraudSignalType>
-     */
-    public static function codeAbuseSignals(): array
-    {
-        return self::byCategory('code_abuse');
     }
 }

@@ -176,23 +176,6 @@ final class WeightedAverageCostService
     }
 
     /**
-     * Update existing layers with new average cost.
-     */
-    private function updateExistingLayers(Model $model, int $newAverageCost, ?string $locationId = null): void
-    {
-        $query = InventoryCostLayer::query()
-            ->forModel($model)
-            ->withRemainingQuantity()
-            ->usingMethod(CostingMethod::WeightedAverage);
-
-        if ($locationId !== null) {
-            $query->where('location_id', $locationId);
-        }
-
-        $query->update(['unit_cost_minor' => $newAverageCost]);
-    }
-
-    /**
      * Check if sufficient quantity is available.
      */
     public function hasAvailableQuantity(Model $model, int $quantity, ?string $locationId = null): bool
@@ -207,5 +190,22 @@ final class WeightedAverageCostService
         }
 
         return $query->sum('remaining_quantity') >= $quantity;
+    }
+
+    /**
+     * Update existing layers with new average cost.
+     */
+    private function updateExistingLayers(Model $model, int $newAverageCost, ?string $locationId = null): void
+    {
+        $query = InventoryCostLayer::query()
+            ->forModel($model)
+            ->withRemainingQuantity()
+            ->usingMethod(CostingMethod::WeightedAverage);
+
+        if ($locationId !== null) {
+            $query->where('location_id', $locationId);
+        }
+
+        $query->update(['unit_cost_minor' => $newAverageCost]);
     }
 }

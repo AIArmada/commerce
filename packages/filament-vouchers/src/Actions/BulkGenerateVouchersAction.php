@@ -6,7 +6,6 @@ namespace AIArmada\FilamentVouchers\Actions;
 
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
-use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Services\VoucherService;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -17,11 +16,6 @@ use Illuminate\Support\Str;
 
 final class BulkGenerateVouchersAction extends Action
 {
-    public static function getDefaultName(): ?string
-    {
-        return 'bulk_generate';
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -115,5 +109,10 @@ final class BulkGenerateVouchersAction extends Action
                 ->success()
                 ->send();
         });
+    }
+
+    public static function getDefaultName(): ?string
+    {
+        return 'bulk_generate';
     }
 }

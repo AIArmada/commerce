@@ -14,7 +14,7 @@ return new class extends Migration
         $tableName = config('vouchers.table_names.gift_card_transactions', 'gift_card_transactions');
         $giftCardsTable = config('vouchers.table_names.gift_cards', 'gift_cards');
 
-        Schema::create($tableName, function (Blueprint $table) use ($giftCardsTable): void {
+        Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('gift_card_id');
 

@@ -55,6 +55,7 @@ final class InventoryBatch extends Model
 {
     /** @use HasFactory<\AIArmada\Inventory\Database\Factories\InventoryBatchFactory> */
     use HasFactory;
+
     use HasUuids;
 
     /**

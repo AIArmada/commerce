@@ -101,7 +101,7 @@ final class AffiliateFraudSignalResource extends Resource
 
                 Tables\Columns\TextColumn::make('score')
                     ->label('Score')
-                    ->formatStateUsing(fn ($state) => $state . '%')
+                    ->formatStateUsing(fn ($state) => $state.'%')
                     ->sortable(),
 
                 Tables\Columns\BadgeColumn::make('status')
@@ -174,14 +174,14 @@ final class AffiliateFraudSignalResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => \AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource\Pages\ListAffiliateFraudSignals::route('/'),
-            'view' => \AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource\Pages\ViewAffiliateFraudSignal::route('/{record}'),
+            'index' => AffiliateFraudSignalResource\Pages\ListAffiliateFraudSignals::route('/'),
+            'view' => AffiliateFraudSignalResource\Pages\ViewAffiliateFraudSignal::route('/{record}'),
         ];
     }
 
     public static function getNavigationBadge(): ?string
     {
-        $count = static::getModel()::where('status', FraudSignalStatus::Detected)->count();
+        $count = self::getModel()::where('status', FraudSignalStatus::Detected)->count();
 
         return $count > 0 ? (string) $count : null;
     }

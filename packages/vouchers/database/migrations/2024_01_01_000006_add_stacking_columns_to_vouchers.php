@@ -39,8 +39,8 @@ return new class extends Migration
         $tableName = config('vouchers.table_names.vouchers', 'vouchers');
 
         if (Schema::getConnection()->getDriverName() === 'pgsql') {
-            DB::statement("DROP INDEX IF EXISTS vouchers_stacking_rules_gin_index");
-            DB::statement("DROP INDEX IF EXISTS vouchers_exclusion_groups_gin_index");
+            DB::statement('DROP INDEX IF EXISTS vouchers_stacking_rules_gin_index');
+            DB::statement('DROP INDEX IF EXISTS vouchers_exclusion_groups_gin_index');
         }
 
         Schema::table($tableName, function (Blueprint $table): void {

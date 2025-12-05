@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Events;
 
-use AIArmada\Affiliates\Models\Affiliate;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Carbon;

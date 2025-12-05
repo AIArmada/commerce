@@ -37,7 +37,7 @@ final class PayoutProcessorFactory
     {
         if (! is_a($processorClass, PayoutProcessorInterface::class, true)) {
             throw new InvalidArgumentException(
-                "Processor class must implement " . PayoutProcessorInterface::class
+                'Processor class must implement '.PayoutProcessorInterface::class
             );
         }
 

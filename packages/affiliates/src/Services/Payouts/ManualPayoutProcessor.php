@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Services\Payouts;
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use DateTimeInterface;
 use Illuminate\Support\Str;
 
 /**
@@ -17,7 +18,7 @@ final class ManualPayoutProcessor implements PayoutProcessorInterface
     public function process(AffiliatePayout $payout): PayoutResult
     {
         return PayoutResult::pending(
-            externalReference: 'MANUAL-' . Str::upper(Str::random(12)),
+            externalReference: 'MANUAL-'.Str::upper(Str::random(12)),
             metadata: [
                 'type' => 'manual',
                 'requires_admin_action' => true,
@@ -35,7 +36,7 @@ final class ManualPayoutProcessor implements PayoutProcessorInterface
         return true;
     }
 
-    public function getEstimatedArrival(AffiliatePayout $payout): ?\DateTimeInterface
+    public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface
     {
         return now()->addDays(5);
     }

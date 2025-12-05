@@ -46,7 +46,7 @@ final class RankQualificationService
 
         Affiliate::query()
             ->with('rank')
-            ->chunk(100, function ($affiliates) use (&$upgraded) {
+            ->chunk(100, function ($affiliates) use (&$upgraded): void {
                 foreach ($affiliates as $affiliate) {
                     $newRank = $this->evaluate($affiliate);
 

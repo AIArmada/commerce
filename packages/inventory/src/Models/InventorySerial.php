@@ -14,6 +14,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -54,6 +55,7 @@ final class InventorySerial extends Model
 {
     /** @use HasFactory<\AIArmada\Inventory\Database\Factories\InventorySerialFactory> */
     use HasFactory;
+
     use HasUuids;
 
     /**
@@ -221,7 +223,7 @@ final class InventorySerial extends Model
     public function transitionTo(SerialStatus $newStatus): self
     {
         if (! $this->canTransitionTo($newStatus)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 sprintf(
                     'Cannot transition from %s to %s',
                     $this->getStatusEnum()->label(),

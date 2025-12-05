@@ -13,8 +13,8 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
+use RuntimeException;
 
 final class ProgramService
 {
@@ -117,7 +117,7 @@ final class ProgramService
             ->first();
 
         if (! $membership) {
-            throw new \RuntimeException('Affiliate is not a member of this program');
+            throw new RuntimeException('Affiliate is not a member of this program');
         }
 
         $oldTier = $membership->tier;

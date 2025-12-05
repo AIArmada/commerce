@@ -10,11 +10,18 @@ use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Pages\Page;
-use Illuminate\Support\Number;
 
 final class ReportsPage extends Page implements HasForms
 {
     use InteractsWithForms;
+
+    public ?string $period = 'month';
+
+    public ?string $startDate = null;
+
+    public ?string $endDate = null;
+
+    public array $reportData = [];
 
     protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
 
@@ -25,14 +32,6 @@ final class ReportsPage extends Page implements HasForms
     protected static ?int $navigationSort = 10;
 
     protected static string $view = 'filament-affiliates::pages.reports';
-
-    public ?string $period = 'month';
-
-    public ?string $startDate = null;
-
-    public ?string $endDate = null;
-
-    public array $reportData = [];
 
     public function mount(): void
     {

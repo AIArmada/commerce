@@ -12,11 +12,6 @@ use Filament\Support\Icons\Heroicon;
 
 final class PauseVoucherAction extends Action
 {
-    public static function getDefaultName(): ?string
-    {
-        return 'pause';
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,5 +33,10 @@ final class PauseVoucherAction extends Action
                 ->warning()
                 ->send();
         });
+    }
+
+    public static function getDefaultName(): ?string
+    {
+        return 'pause';
     }
 }

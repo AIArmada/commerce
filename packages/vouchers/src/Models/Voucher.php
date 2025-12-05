@@ -328,7 +328,7 @@ class Voucher extends Model
      *
      * Compares exclusion groups to determine if vouchers are mutually exclusive.
      */
-    public function canStackWith(Voucher $other): bool
+    public function canStackWith(self $other): bool
     {
         $myGroups = $this->exclusion_groups ?? [];
         $otherGroups = $other->exclusion_groups ?? [];

@@ -13,11 +13,6 @@ use Illuminate\Support\Facades\Auth;
 
 final class MarkFraudReviewedAction extends Action
 {
-    public static function getDefaultName(): ?string
-    {
-        return 'mark_reviewed';
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -27,7 +22,7 @@ final class MarkFraudReviewedAction extends Action
         $this->color('success');
         $this->modalHeading('Mark Signal as Reviewed');
 
-        $this->visible(fn (VoucherFraudSignal $record): bool => !$record->reviewed);
+        $this->visible(fn (VoucherFraudSignal $record): bool => ! $record->reviewed);
 
         $this->form([
             Textarea::make('review_notes')
@@ -49,5 +44,10 @@ final class MarkFraudReviewedAction extends Action
                 ->success()
                 ->send();
         });
+    }
+
+    public static function getDefaultName(): ?string
+    {
+        return 'mark_reviewed';
     }
 }

@@ -6,7 +6,6 @@ namespace AIArmada\Affiliates\Http\Controllers\Portal;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
-use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Support\AffiliateLinkGenerator;
 use Illuminate\Http\JsonResponse;

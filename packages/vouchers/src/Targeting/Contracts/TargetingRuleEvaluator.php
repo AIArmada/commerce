@@ -33,7 +33,7 @@ interface TargetingRuleEvaluator
      * Validate the rule configuration.
      *
      * @param  array<string, mixed>  $rule
-     * @return array<string>  List of validation errors (empty if valid)
+     * @return array<string> List of validation errors (empty if valid)
      */
     public function validate(array $rule): array;
 }

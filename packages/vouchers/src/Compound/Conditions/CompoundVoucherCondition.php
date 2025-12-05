@@ -58,22 +58,6 @@ abstract class CompoundVoucherCondition implements Arrayable, CartConditionConve
     }
 
     /**
-     * Create the appropriate compound condition based on voucher type.
-     */
-    public static function create(VoucherData $voucher, int $order = 0, bool $dynamic = true): ?self
-    {
-        $valueConfig = $voucher->valueConfig ?? [];
-
-        return match ($voucher->type) {
-            VoucherType::BuyXGetY => new BOGOVoucherCondition($voucher, $valueConfig, $order, $dynamic),
-            VoucherType::Tiered => new TieredVoucherCondition($voucher, $valueConfig, $order, $dynamic),
-            VoucherType::Bundle => new BundleVoucherCondition($voucher, $valueConfig, $order, $dynamic),
-            VoucherType::Cashback => new CashbackVoucherCondition($voucher, $valueConfig, $order, $dynamic),
-            default => null,
-        };
-    }
-
-    /**
      * Calculate the discount amount for this compound voucher.
      *
      * @return int Discount amount in cents (positive value)
@@ -90,7 +74,23 @@ abstract class CompoundVoucherCondition implements Arrayable, CartConditionConve
      */
     abstract public function meetsRequirements(Cart $cart): bool;
 
-    public function toCartCondition(): CartCondition
+    /**
+     * Create the appropriate compound condition based on voucher type.
+     */
+    final public static function create(VoucherData $voucher, int $order = 0, bool $dynamic = true): ?self
+    {
+        $valueConfig = $voucher->valueConfig ?? [];
+
+        return match ($voucher->type) {
+            VoucherType::BuyXGetY => new BOGOVoucherCondition($voucher, $valueConfig, $order, $dynamic),
+            VoucherType::Tiered => new TieredVoucherCondition($voucher, $valueConfig, $order, $dynamic),
+            VoucherType::Bundle => new BundleVoucherCondition($voucher, $valueConfig, $order, $dynamic),
+            VoucherType::Cashback => new CashbackVoucherCondition($voucher, $valueConfig, $order, $dynamic),
+            default => null,
+        };
+    }
+
+    final public function toCartCondition(): CartCondition
     {
         if ($this->cartCondition instanceof CartCondition) {
             return $this->cartCondition;
@@ -112,7 +112,7 @@ abstract class CompoundVoucherCondition implements Arrayable, CartConditionConve
     /**
      * Validate that the voucher can still be applied.
      */
-    public function validateVoucher(Cart $cart, ?CartItem $item = null): bool
+    final public function validateVoucher(Cart $cart, ?CartItem $item = null): bool
     {
         $validationResult = Voucher::validate($this->voucher->code, $cart);
 
@@ -122,7 +122,7 @@ abstract class CompoundVoucherCondition implements Arrayable, CartConditionConve
     /**
      * Get the voucher data.
      */
-    public function getVoucher(): VoucherData
+    final public function getVoucher(): VoucherData
     {
         return $this->voucher;
     }
@@ -130,7 +130,7 @@ abstract class CompoundVoucherCondition implements Arrayable, CartConditionConve
     /**
      * Get the voucher code.
      */
-    public function getVoucherCode(): string
+    final public function getVoucherCode(): string
     {
         return $this->voucher->code;
     }
@@ -140,9 +140,66 @@ abstract class CompoundVoucherCondition implements Arrayable, CartConditionConve
      *
      * @return array<string, mixed>
      */
-    public function getValueConfig(): array
+    final public function getValueConfig(): array
     {
         return $this->valueConfig;
+    }
+
+    final public function getRuleFactoryKey(): string
+    {
+        return self::RULE_FACTORY_KEY;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    final public function getRuleFactoryContext(): array
+    {
+        return [
+            'voucher_code' => $this->voucher->code,
+            'voucher_id' => $this->voucher->id,
+            'voucher_type' => $this->voucher->type->value,
+        ];
+    }
+
+    final public function getName(): string
+    {
+        return "voucher_{$this->voucher->code}";
+    }
+
+    final public function getType(): string
+    {
+        return 'voucher';
+    }
+
+    final public function getOrder(): int
+    {
+        return $this->order;
+    }
+
+    final public function isDynamic(): bool
+    {
+        return $this->dynamic;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    final public function toArray(): array
+    {
+        return [
+            'name' => $this->getName(),
+            'type' => $this->getType(),
+            'voucher' => [
+                'id' => $this->voucher->id,
+                'code' => $this->voucher->code,
+                'type' => $this->voucher->type->value,
+            ],
+            'value_config' => $this->valueConfig,
+            'order' => $this->order,
+            'is_dynamic' => $this->dynamic,
+            'is_compound' => true,
+        ];
     }
 
     /**
@@ -154,7 +211,7 @@ abstract class CompoundVoucherCondition implements Arrayable, CartConditionConve
         $value = $this->valueConfig;
 
         foreach ($keys as $k) {
-            if (!is_array($value) || !array_key_exists($k, $value)) {
+            if (! is_array($value) || ! array_key_exists($k, $value)) {
                 return $default;
             }
             $value = $value[$k];
@@ -238,63 +295,6 @@ abstract class CompoundVoucherCondition implements Arrayable, CartConditionConve
             'description' => $this->voucher->description,
             'value_config' => $this->valueConfig,
             'voucher_data' => $this->voucher->toArray(),
-            'is_compound' => true,
-        ];
-    }
-
-    public function getRuleFactoryKey(): string
-    {
-        return self::RULE_FACTORY_KEY;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function getRuleFactoryContext(): array
-    {
-        return [
-            'voucher_code' => $this->voucher->code,
-            'voucher_id' => $this->voucher->id,
-            'voucher_type' => $this->voucher->type->value,
-        ];
-    }
-
-    public function getName(): string
-    {
-        return "voucher_{$this->voucher->code}";
-    }
-
-    public function getType(): string
-    {
-        return 'voucher';
-    }
-
-    public function getOrder(): int
-    {
-        return $this->order;
-    }
-
-    public function isDynamic(): bool
-    {
-        return $this->dynamic;
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function toArray(): array
-    {
-        return [
-            'name' => $this->getName(),
-            'type' => $this->getType(),
-            'voucher' => [
-                'id' => $this->voucher->id,
-                'code' => $this->voucher->code,
-                'type' => $this->voucher->type->value,
-            ],
-            'value_config' => $this->valueConfig,
-            'order' => $this->order,
-            'is_dynamic' => $this->dynamic,
             'is_compound' => true,
         ];
     }
