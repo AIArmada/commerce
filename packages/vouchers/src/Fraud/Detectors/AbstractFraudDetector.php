@@ -19,31 +19,6 @@ abstract class AbstractFraudDetector implements FraudDetectorInterface
 
     protected bool $enabled = true;
 
-    public function detect(
-        string $code,
-        object $cart,
-        ?Model $user = null,
-        array $context = [],
-    ): FraudDetectorResult {
-        $this->signals = [];
-
-        if (!$this->isEnabled()) {
-            return FraudDetectorResult::clean($this->getName());
-        }
-
-        $startTime = microtime(true);
-
-        $this->analyze($code, $cart, $user, $context);
-
-        $executionTimeMs = (microtime(true) - $startTime) * 1000;
-
-        return new FraudDetectorResult(
-            signals: $this->signals,
-            detector: $this->getName(),
-            executionTimeMs: $executionTimeMs,
-        );
-    }
-
     /**
      * Perform the actual fraud analysis.
      *
@@ -61,7 +36,32 @@ abstract class AbstractFraudDetector implements FraudDetectorInterface
         array $context,
     ): void;
 
-    public function isEnabled(): bool
+    final public function detect(
+        string $code,
+        object $cart,
+        ?Model $user = null,
+        array $context = [],
+    ): FraudDetectorResult {
+        $this->signals = [];
+
+        if (! $this->isEnabled()) {
+            return FraudDetectorResult::clean($this->getName());
+        }
+
+        $startTime = microtime(true);
+
+        $this->analyze($code, $cart, $user, $context);
+
+        $executionTimeMs = (microtime(true) - $startTime) * 1000;
+
+        return new FraudDetectorResult(
+            signals: $this->signals,
+            detector: $this->getName(),
+            executionTimeMs: $executionTimeMs,
+        );
+    }
+
+    final public function isEnabled(): bool
     {
         return $this->enabled;
     }
@@ -69,7 +69,7 @@ abstract class AbstractFraudDetector implements FraudDetectorInterface
     /**
      * Enable or disable this detector.
      */
-    public function setEnabled(bool $enabled): static
+    final public function setEnabled(bool $enabled): static
     {
         $this->enabled = $enabled;
 

@@ -12,7 +12,7 @@ use AIArmada\Vouchers\Enums\VoucherType;
 /**
  * Create a test cart with items.
  *
- * @param array<array{sku: string, price: int, quantity: int}> $itemsData
+ * @param  array<array{sku: string, price: int, quantity: int}>  $itemsData
  */
 function createBundleTestCart(array $itemsData): Cart
 {
@@ -35,7 +35,7 @@ function createBundleTestCart(array $itemsData): Cart
 /**
  * Create a bundle voucher data object for testing.
  *
- * @param array<int, array{sku: string, quantity: int}>|null $requiredProducts
+ * @param  array<int, array{sku: string, quantity: int}>|null  $requiredProducts
  */
 function createBundleVoucherDataFor(
     ?array $requiredProducts = null,

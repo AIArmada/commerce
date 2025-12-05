@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPermissions\Widgets;
 
+use DB;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Spatie\Permission\Models\Permission;
@@ -45,14 +46,14 @@ class PermissionStatsWidget extends BaseWidget
 
     protected function countUsersWithRoles(): int
     {
-        return \DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
+        return DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
             ->distinct('model_id')
             ->count('model_id');
     }
 
     protected function countUnassignedPermissions(): int
     {
-        $assignedPermissionIds = \DB::table(config('permission.table_names.role_has_permissions', 'role_has_permissions'))
+        $assignedPermissionIds = DB::table(config('permission.table_names.role_has_permissions', 'role_has_permissions'))
             ->distinct()
             ->pluck('permission_id');
 

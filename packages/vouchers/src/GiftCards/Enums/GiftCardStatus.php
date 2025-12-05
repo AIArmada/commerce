@@ -17,6 +17,21 @@ enum GiftCardStatus: string
     case Cancelled = 'cancelled';
 
     /**
+     * Get options for UI dropdowns.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        $options = [];
+        foreach (self::cases() as $case) {
+            $options[$case->value] = $case->label();
+        }
+
+        return $options;
+    }
+
+    /**
      * Get human-readable label.
      */
     public function label(): string
@@ -116,20 +131,5 @@ enum GiftCardStatus: string
             self::Expired => 'danger',
             self::Cancelled => 'danger',
         };
-    }
-
-    /**
-     * Get options for UI dropdowns.
-     *
-     * @return array<string, string>
-     */
-    public static function options(): array
-    {
-        $options = [];
-        foreach (self::cases() as $case) {
-            $options[$case->value] = $case->label();
-        }
-
-        return $options;
     }
 }

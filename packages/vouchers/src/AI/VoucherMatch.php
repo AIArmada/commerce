@@ -17,8 +17,8 @@ use AIArmada\Vouchers\Models\Voucher;
 final readonly class VoucherMatch
 {
     /**
-     * @param array<string, mixed> $matchReasons
-     * @param array<int, array<string, mixed>> $alternatives
+     * @param  array<string, mixed>  $matchReasons
+     * @param  array<int, array<string, mixed>>  $alternatives
      */
     public function __construct(
         public ?Voucher $voucher,
@@ -42,7 +42,7 @@ final readonly class VoucherMatch
     /**
      * Create a perfect match.
      *
-     * @param array<string, mixed> $reasons
+     * @param  array<string, mixed>  $reasons
      */
     public static function perfect(Voucher $voucher, array $reasons = []): self
     {
@@ -56,7 +56,7 @@ final readonly class VoucherMatch
     /**
      * Create a good match.
      *
-     * @param array<string, mixed> $reasons
+     * @param  array<string, mixed>  $reasons
      */
     public static function good(Voucher $voucher, float $score = 0.75, array $reasons = []): self
     {
@@ -118,7 +118,6 @@ final readonly class VoucherMatch
     /**
      * Get the top match reasons.
      *
-     * @param int $limit
      * @return array<string, mixed>
      */
     public function getTopReasons(int $limit = 3): array

@@ -84,13 +84,13 @@ class GiftCardCondition implements Arrayable, CartConditionConvertible
         $attributes = $condition->getAttributes();
         $giftCardId = $attributes['gift_card_id'] ?? null;
 
-        if (!$giftCardId) {
+        if (! $giftCardId) {
             return null;
         }
 
         $giftCard = GiftCard::find($giftCardId);
 
-        if (!$giftCard) {
+        if (! $giftCard) {
             return null;
         }
 
@@ -261,7 +261,7 @@ class GiftCardCondition implements Arrayable, CartConditionConvertible
      */
     public function isDynamic(): bool
     {
-        return $this->rules !== null && !empty($this->rules);
+        return $this->rules !== null && ! empty($this->rules);
     }
 
     /**

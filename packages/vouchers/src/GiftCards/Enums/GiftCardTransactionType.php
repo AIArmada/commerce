@@ -21,6 +21,21 @@ enum GiftCardTransactionType: string
     case Merge = 'merge';
 
     /**
+     * Get options for UI dropdowns.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        $options = [];
+        foreach (self::cases() as $case) {
+            $options[$case->value] = $case->label();
+        }
+
+        return $options;
+    }
+
+    /**
      * Get human-readable label.
      */
     public function label(): string
@@ -98,7 +113,7 @@ enum GiftCardTransactionType: string
      */
     public function expectedSign(): int
     {
-        if (!$this->affectsBalance()) {
+        if (! $this->affectsBalance()) {
             return 0;
         }
 
@@ -133,20 +148,5 @@ enum GiftCardTransactionType: string
             self::Adjustment => 'gray',
             self::Merge => 'primary',
         };
-    }
-
-    /**
-     * Get options for UI dropdowns.
-     *
-     * @return array<string, string>
-     */
-    public static function options(): array
-    {
-        $options = [];
-        foreach (self::cases() as $case) {
-            $options[$case->value] = $case->label();
-        }
-
-        return $options;
     }
 }

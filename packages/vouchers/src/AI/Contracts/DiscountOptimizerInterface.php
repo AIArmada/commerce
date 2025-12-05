@@ -19,9 +19,9 @@ interface DiscountOptimizerInterface
     /**
      * Find the optimal discount for a cart.
      *
-     * @param Cart $cart The cart to optimize discount for
-     * @param Model|null $user Optional authenticated user
-     * @param array<string, mixed> $constraints Optional constraints (max_discount, min_margin, etc.)
+     * @param  Cart  $cart  The cart to optimize discount for
+     * @param  Model|null  $user  Optional authenticated user
+     * @param  array<string, mixed>  $constraints  Optional constraints (max_discount, min_margin, etc.)
      */
     public function findOptimalDiscount(
         Cart $cart,
@@ -32,9 +32,6 @@ interface DiscountOptimizerInterface
     /**
      * Evaluate a specific discount amount.
      *
-     * @param Cart $cart
-     * @param int $discountCents
-     * @param Model|null $user
      * @return array{conversion_lift: float, roi: float, recommended: bool}
      */
     public function evaluateDiscount(
@@ -46,9 +43,7 @@ interface DiscountOptimizerInterface
     /**
      * Get a range of discount recommendations.
      *
-     * @param Cart $cart
-     * @param Model|null $user
-     * @param int $count Number of alternatives to return
+     * @param  int  $count  Number of alternatives to return
      * @return iterable<DiscountRecommendation>
      */
     public function getDiscountAlternatives(

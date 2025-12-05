@@ -7,6 +7,7 @@ namespace AIArmada\FilamentPermissions\Pages;
 use AIArmada\FilamentPermissions\Enums\AuditEventType;
 use AIArmada\FilamentPermissions\Models\PermissionAuditLog;
 use AIArmada\FilamentPermissions\Services\ComplianceReportService;
+use BackedEnum;
 use Carbon\Carbon;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DatePicker;
@@ -16,16 +17,6 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class AuditLogPage extends Page
 {
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
-
-    protected string $view = 'filament-permissions::pages.audit-log';
-
-    protected static ?string $title = 'Permission Audit Log';
-
-    protected static ?string $navigationLabel = 'Audit Log';
-
-    protected static ?int $navigationSort = 12;
-
     public ?string $startDate = null;
 
     public ?string $endDate = null;
@@ -37,45 +28,26 @@ class AuditLogPage extends Page
     /** @var Collection<int, PermissionAuditLog> */
     public Collection $logs;
 
-    public function mount(): void
-    {
-        $this->startDate = now()->subDays(7)->toDateString();
-        $this->endDate = now()->toDateString();
-        $this->loadLogs();
-    }
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
+
+    protected string $view = 'filament-permissions::pages.audit-log';
+
+    protected static ?string $title = 'Permission Audit Log';
+
+    protected static ?string $navigationLabel = 'Audit Log';
+
+    protected static ?int $navigationSort = 12;
 
     public static function getNavigationGroup(): ?string
     {
         return config('filament-permissions.navigation.group', 'Administration');
     }
 
-    protected function getHeaderActions(): array
+    public function mount(): void
     {
-        return [
-            Action::make('filter')
-                ->label('Filter')
-                ->form([
-                    DatePicker::make('start_date')
-                        ->label('Start Date')
-                        ->default($this->startDate),
-                    DatePicker::make('end_date')
-                        ->label('End Date')
-                        ->default($this->endDate),
-                ])
-                ->action(function (array $data): void {
-                    $this->startDate = $data['start_date'];
-                    $this->endDate = $data['end_date'];
-                    $this->loadLogs();
-                }),
-            Action::make('exportCsv')
-                ->label('Export CSV')
-                ->action(fn () => $this->exportCsv())
-                ->icon('heroicon-o-arrow-down-tray'),
-            Action::make('refresh')
-                ->label('Refresh')
-                ->action(fn () => $this->loadLogs())
-                ->icon('heroicon-o-arrow-path'),
-        ];
+        $this->startDate = now()->subDays(7)->toDateString();
+        $this->endDate = now()->toDateString();
+        $this->loadLogs();
     }
 
     public function loadLogs(): void
@@ -170,6 +142,35 @@ class AuditLogPage extends Page
             'total' => $this->logs->count(),
             'by_severity' => $bySeverity,
             'by_category' => $byCategory,
+        ];
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('filter')
+                ->label('Filter')
+                ->form([
+                    DatePicker::make('start_date')
+                        ->label('Start Date')
+                        ->default($this->startDate),
+                    DatePicker::make('end_date')
+                        ->label('End Date')
+                        ->default($this->endDate),
+                ])
+                ->action(function (array $data): void {
+                    $this->startDate = $data['start_date'];
+                    $this->endDate = $data['end_date'];
+                    $this->loadLogs();
+                }),
+            Action::make('exportCsv')
+                ->label('Export CSV')
+                ->action(fn () => $this->exportCsv())
+                ->icon('heroicon-o-arrow-down-tray'),
+            Action::make('refresh')
+                ->label('Refresh')
+                ->action(fn () => $this->loadLogs())
+                ->icon('heroicon-o-arrow-path'),
         ];
     }
 }

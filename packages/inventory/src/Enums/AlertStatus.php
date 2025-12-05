@@ -15,6 +15,38 @@ enum AlertStatus: string
     case Expired = 'expired';
 
     /**
+     * Get all critical statuses.
+     *
+     * @return array<self>
+     */
+    public static function criticalStatuses(): array
+    {
+        return [self::OutOfStock, self::SafetyBreached, self::Expired];
+    }
+
+    /**
+     * Get all warning statuses.
+     *
+     * @return array<self>
+     */
+    public static function warningStatuses(): array
+    {
+        return [self::LowStock, self::Expiring];
+    }
+
+    /**
+     * Get all options for select fields.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        return collect(self::cases())
+            ->mapWithKeys(fn (self $status): array => [$status->value => $status->label()])
+            ->toArray();
+    }
+
+    /**
      * Get a human-readable label.
      */
     public function label(): string
@@ -68,37 +100,5 @@ enum AlertStatus: string
     public function requiresImmediateAttention(): bool
     {
         return $this->severity() >= 4;
-    }
-
-    /**
-     * Get all critical statuses.
-     *
-     * @return array<self>
-     */
-    public static function criticalStatuses(): array
-    {
-        return [self::OutOfStock, self::SafetyBreached, self::Expired];
-    }
-
-    /**
-     * Get all warning statuses.
-     *
-     * @return array<self>
-     */
-    public static function warningStatuses(): array
-    {
-        return [self::LowStock, self::Expiring];
-    }
-
-    /**
-     * Get all options for select fields.
-     *
-     * @return array<string, string>
-     */
-    public static function options(): array
-    {
-        return collect(self::cases())
-            ->mapWithKeys(fn (self $status): array => [$status->value => $status->label()])
-            ->toArray();
     }
 }

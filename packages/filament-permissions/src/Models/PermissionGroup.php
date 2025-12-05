@@ -135,7 +135,7 @@ class PermissionGroup extends Model
     /**
      * Check if this group is an ancestor of another group.
      */
-    public function isAncestorOf(PermissionGroup $group): bool
+    public function isAncestorOf(self $group): bool
     {
         return $group->getAncestors()->contains('id', $this->id);
     }
@@ -143,7 +143,7 @@ class PermissionGroup extends Model
     /**
      * Check if this group is a descendant of another group.
      */
-    public function isDescendantOf(PermissionGroup $group): bool
+    public function isDescendantOf(self $group): bool
     {
         return $this->getAncestors()->contains('id', $group->id);
     }

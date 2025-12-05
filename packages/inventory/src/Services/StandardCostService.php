@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 final class StandardCostService
 {
@@ -202,7 +203,7 @@ final class StandardCostService
         ?string $notes = null
     ): InventoryStandardCost {
         if ($effectiveFrom <= now()) {
-            throw new \InvalidArgumentException('Scheduled cost changes must be in the future');
+            throw new InvalidArgumentException('Scheduled cost changes must be in the future');
         }
 
         $currentCost = $this->getCurrentStandardCost($model);
@@ -228,7 +229,7 @@ final class StandardCostService
     public function cancelScheduledCost(InventoryStandardCost $scheduledCost): bool
     {
         if (! $scheduledCost->isFuture()) {
-            throw new \InvalidArgumentException('Can only cancel future scheduled costs');
+            throw new InvalidArgumentException('Can only cancel future scheduled costs');
         }
 
         return $scheduledCost->delete();

@@ -25,17 +25,22 @@ use Illuminate\Database\Eloquent\Collection;
  */
 final class ABTestDashboard extends Page
 {
+    public ?string $campaignId = null;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBeaker;
 
     protected static ?int $navigationSort = 15;
 
     protected string $view = 'filament-vouchers::pages.ab-test-dashboard';
 
-    public ?string $campaignId = null;
-
     public static function getNavigationLabel(): string
     {
         return 'A/B Testing';
+    }
+
+    public static function getNavigationGroup(): ?string
+    {
+        return config('filament-vouchers.navigation_group');
     }
 
     public function getTitle(): string|Htmlable
@@ -184,10 +189,5 @@ final class ABTestDashboard extends Page
                 })
                 ->visible(fn (): bool => $this->campaign !== null && $this->campaign->ab_winner_variant === null),
         ];
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return config('filament-vouchers.navigation_group');
     }
 }

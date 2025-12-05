@@ -19,7 +19,7 @@ use AIArmada\Vouchers\AI\Enums\PredictionConfidence;
 final readonly class ConversionPrediction
 {
     /**
-     * @param array<string, mixed> $factors
+     * @param  array<string, mixed>  $factors
      */
     public function __construct(
         public float $probability,

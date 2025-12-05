@@ -13,7 +13,7 @@ final class CreateGiftCard extends CreateRecord
 
     protected function mutateFormDataBeforeCreate(array $data): array
     {
-        if (empty($data['current_balance']) && !empty($data['initial_balance'])) {
+        if (empty($data['current_balance']) && ! empty($data['initial_balance'])) {
             $data['current_balance'] = $data['initial_balance'];
         }
 

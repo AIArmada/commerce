@@ -76,15 +76,6 @@ class AffiliateProgram extends Model
         return config('affiliates.table_names.programs', 'affiliate_programs');
     }
 
-    protected static function booted(): void
-    {
-        static::creating(function (self $program): void {
-            if (empty($program->slug)) {
-                $program->slug = Str::slug($program->name);
-            }
-        });
-    }
-
     /**
      * @return HasMany<AffiliateProgramTier, self>
      */
@@ -169,10 +160,10 @@ class AffiliateProgram extends Model
     public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', ProgramStatus::Active)
-            ->where(function ($q) {
+            ->where(function ($q): void {
                 $q->whereNull('starts_at')->orWhere('starts_at', '<=', now());
             })
-            ->where(function ($q) {
+            ->where(function ($q): void {
                 $q->whereNull('ends_at')->orWhere('ends_at', '>=', now());
             });
     }
@@ -180,6 +171,15 @@ class AffiliateProgram extends Model
     public function scopePublic(Builder $query): Builder
     {
         return $query->where('is_public', true);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $program): void {
+            if (empty($program->slug)) {
+                $program->slug = Str::slug($program->name);
+            }
+        });
     }
 
     private function evaluateEligibility(Affiliate $affiliate): bool

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPermissions\Services;
 
 use AIArmada\FilamentPermissions\Enums\PolicyDecision;
-use Illuminate\Database\Eloquent\Model;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 

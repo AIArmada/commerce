@@ -14,6 +14,18 @@ enum TemperatureZone: string
     case ClimateControlled = 'climate_controlled';
 
     /**
+     * Get all options for select fields.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        return collect(self::cases())
+            ->mapWithKeys(fn (self $zone): array => [$zone->value => $zone->label()])
+            ->toArray();
+    }
+
+    /**
      * Get a human-readable label.
      */
     public function label(): string
@@ -100,17 +112,5 @@ enum TemperatureZone: string
     public function isTemperatureSensitive(): bool
     {
         return in_array($this, [self::Chilled, self::Frozen, self::DeepFrozen], true);
-    }
-
-    /**
-     * Get all options for select fields.
-     *
-     * @return array<string, string>
-     */
-    public static function options(): array
-    {
-        return collect(self::cases())
-            ->mapWithKeys(fn (self $zone): array => [$zone->value => $zone->label()])
-            ->toArray();
     }
 }

@@ -5,19 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Actions;
 
 use AIArmada\Affiliates\Enums\PayoutStatus;
-use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
+use Exception;
 use Filament\Tables\Actions\BulkAction;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
 final class BulkPayoutAction extends BulkAction
 {
-    public static function getDefaultName(): ?string
-    {
-        return 'bulk_process_payouts';
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -84,7 +79,7 @@ final class BulkPayoutAction extends BulkAction
                             $failed++;
                         }
                     });
-                } catch (\Exception $e) {
+                } catch (Exception $e) {
                     $payout->update(['status' => PayoutStatus::Failed->value]);
                     $payout->events()->create([
                         'status' => PayoutStatus::Failed->value,
@@ -102,5 +97,10 @@ final class BulkPayoutAction extends BulkAction
         });
 
         $this->deselectRecordsAfterCompletion();
+    }
+
+    public static function getDefaultName(): ?string
+    {
+        return 'bulk_process_payouts';
     }
 }

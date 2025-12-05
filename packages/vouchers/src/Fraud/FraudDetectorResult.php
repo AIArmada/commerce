@@ -58,7 +58,7 @@ final readonly class FraudDetectorResult
      */
     public function hasSignals(): bool
     {
-        return !empty($this->signals);
+        return ! empty($this->signals);
     }
 
     /**

@@ -20,9 +20,9 @@ interface ConversionPredictorInterface
     /**
      * Predict the likelihood of cart conversion.
      *
-     * @param Cart $cart The cart to analyze
-     * @param VoucherCondition|null $voucher Optional voucher being considered
-     * @param Model|null $user Optional authenticated user
+     * @param  Cart  $cart  The cart to analyze
+     * @param  VoucherCondition|null  $voucher  Optional voucher being considered
+     * @param  Model|null  $user  Optional authenticated user
      */
     public function predictConversion(
         Cart $cart,
@@ -33,7 +33,7 @@ interface ConversionPredictorInterface
     /**
      * Batch predict conversions for multiple carts.
      *
-     * @param iterable<Cart> $carts
+     * @param  iterable<Cart>  $carts
      * @return iterable<ConversionPrediction>
      */
     public function predictConversionBatch(iterable $carts): iterable;

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Strategies;
 
 use AIArmada\Inventory\Models\InventoryBatch;
-use AIArmada\Inventory\Models\InventoryLevel;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
@@ -57,38 +56,6 @@ final class FefoStrategy implements AllocationStrategyInterface
     }
 
     /**
-     * @param  Collection<int, InventoryBatch>  $batches
-     * @return array<int, array{batch_id: string, location_id: string|null, quantity: int, expires_at: \Illuminate\Support\Carbon|null}>
-     */
-    private function buildAllocations(Collection $batches, int $quantity): array
-    {
-        $allocations = [];
-        $remaining = $quantity;
-
-        foreach ($batches as $batch) {
-            if ($remaining <= 0) {
-                break;
-            }
-
-            $available = $batch->available_quantity;
-            $allocate = min($available, $remaining);
-
-            if ($allocate > 0) {
-                $allocations[] = [
-                    'batch_id' => $batch->id,
-                    'location_id' => $batch->location_id,
-                    'quantity' => $allocate,
-                    'expires_at' => $batch->expires_at,
-                ];
-
-                $remaining -= $allocate;
-            }
-        }
-
-        return $allocations;
-    }
-
-    /**
      * Check if strategy can fulfill the requested quantity.
      */
     public function canFulfill(Model $model, int $quantity, ?AllocationContext $context = null): bool
@@ -133,5 +100,37 @@ final class FefoStrategy implements AllocationStrategyInterface
         }
 
         return $query->get();
+    }
+
+    /**
+     * @param  Collection<int, InventoryBatch>  $batches
+     * @return array<int, array{batch_id: string, location_id: string|null, quantity: int, expires_at: \Illuminate\Support\Carbon|null}>
+     */
+    private function buildAllocations(Collection $batches, int $quantity): array
+    {
+        $allocations = [];
+        $remaining = $quantity;
+
+        foreach ($batches as $batch) {
+            if ($remaining <= 0) {
+                break;
+            }
+
+            $available = $batch->available_quantity;
+            $allocate = min($available, $remaining);
+
+            if ($allocate > 0) {
+                $allocations[] = [
+                    'batch_id' => $batch->id,
+                    'location_id' => $batch->location_id,
+                    'quantity' => $allocate,
+                    'expires_at' => $batch->expires_at,
+                ];
+
+                $remaining -= $allocate;
+            }
+        }
+
+        return $allocations;
     }
 }

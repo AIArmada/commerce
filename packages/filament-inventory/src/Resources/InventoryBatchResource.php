@@ -10,7 +10,6 @@ use AIArmada\FilamentInventory\Resources\InventoryBatchResource\Pages\ListInvent
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource\Pages\ViewInventoryBatch;
 use AIArmada\Inventory\Enums\BatchStatus;
 use AIArmada\Inventory\Models\InventoryBatch;
-use AIArmada\Inventory\Models\InventoryLocation;
 use BackedEnum;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Grid;

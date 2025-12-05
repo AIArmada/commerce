@@ -231,7 +231,7 @@ class VelocityDetector extends AbstractFraudDetector
      */
     protected function getRedemptionCount(string $code, Carbon $since): int
     {
-        if (!class_exists(VoucherRedemption::class)) {
+        if (! class_exists(VoucherRedemption::class)) {
             return 0;
         }
 
@@ -246,7 +246,7 @@ class VelocityDetector extends AbstractFraudDetector
      */
     protected function getUniqueAccountCount(string $code, Carbon $since): int
     {
-        if (!class_exists(VoucherRedemption::class)) {
+        if (! class_exists(VoucherRedemption::class)) {
             return 0;
         }
 
@@ -266,7 +266,7 @@ class VelocityDetector extends AbstractFraudDetector
      */
     protected function getCodeAttemptCount(?string $userId, ?string $ipAddress, Carbon $since): int
     {
-        if (!class_exists(VoucherRedemption::class)) {
+        if (! class_exists(VoucherRedemption::class)) {
             return 0;
         }
 

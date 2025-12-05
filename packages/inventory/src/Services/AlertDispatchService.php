@@ -6,7 +6,6 @@ namespace AIArmada\Inventory\Services;
 
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Models\InventoryLevel;
-use Illuminate\Contracts\Mail\Mailable;
 use Illuminate\Support\Facades\Notification;
 
 final class AlertDispatchService

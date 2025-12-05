@@ -213,7 +213,7 @@ class TargetingEngine
      * Validate a targeting configuration.
      *
      * @param  array<string, mixed>  $targeting
-     * @return array<string>  List of validation errors
+     * @return array<string> List of validation errors
      */
     public function validate(array $targeting): array
     {

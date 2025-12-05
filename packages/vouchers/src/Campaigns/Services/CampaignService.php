@@ -13,6 +13,7 @@ use AIArmada\Vouchers\Models\Voucher;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 
 class CampaignService
 {
@@ -57,7 +58,7 @@ class CampaignService
     public function update(Campaign $campaign, array $data): Campaign
     {
         if (! $campaign->status->canBeEdited() && $this->hasStructuralChanges($data)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Campaign in {$campaign->status->label()} status cannot be structurally edited."
             );
         }
@@ -81,7 +82,7 @@ class CampaignService
     public function activate(Campaign $campaign): Campaign
     {
         if (! $campaign->transitionTo(CampaignStatus::Active)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Cannot activate campaign from {$campaign->status->label()} status."
             );
         }
@@ -95,7 +96,7 @@ class CampaignService
     public function pause(Campaign $campaign): Campaign
     {
         if (! $campaign->transitionTo(CampaignStatus::Paused)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Cannot pause campaign from {$campaign->status->label()} status."
             );
         }
@@ -109,7 +110,7 @@ class CampaignService
     public function complete(Campaign $campaign): Campaign
     {
         if (! $campaign->transitionTo(CampaignStatus::Completed)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Cannot complete campaign from {$campaign->status->label()} status."
             );
         }
@@ -123,7 +124,7 @@ class CampaignService
     public function cancel(Campaign $campaign): Campaign
     {
         if (! $campaign->transitionTo(CampaignStatus::Cancelled)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Cannot cancel campaign from {$campaign->status->label()} status."
             );
         }
@@ -137,7 +138,7 @@ class CampaignService
     public function schedule(Campaign $campaign, Carbon $startsAt, ?Carbon $endsAt = null): Campaign
     {
         if (! $campaign->status->canTransitionTo(CampaignStatus::Scheduled)) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Cannot schedule campaign from {$campaign->status->label()} status."
             );
         }
@@ -159,7 +160,7 @@ class CampaignService
     public function addVariant(Campaign $campaign, array $data): CampaignVariant
     {
         if (! $campaign->ab_testing_enabled && $campaign->variants()->count() >= 1) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Cannot add more variants. A/B testing is not enabled for this campaign.'
             );
         }
@@ -188,11 +189,11 @@ class CampaignService
     public function removeVariant(CampaignVariant $variant): bool
     {
         if ($variant->is_control) {
-            throw new \InvalidArgumentException('Cannot remove the control variant.');
+            throw new InvalidArgumentException('Cannot remove the control variant.');
         }
 
         if ($variant->conversions > 0) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 'Cannot remove a variant with existing conversions.'
             );
         }
@@ -210,7 +211,7 @@ class CampaignService
         $total = array_sum($distribution);
 
         if ($total !== 100) {
-            throw new \InvalidArgumentException(
+            throw new InvalidArgumentException(
                 "Traffic distribution must sum to 100%, got {$total}%."
             );
         }
@@ -272,11 +273,11 @@ class CampaignService
     public function declareWinner(Campaign $campaign, CampaignVariant $variant): Campaign
     {
         if (! $campaign->ab_testing_enabled) {
-            throw new \InvalidArgumentException('A/B testing is not enabled for this campaign.');
+            throw new InvalidArgumentException('A/B testing is not enabled for this campaign.');
         }
 
         if ($variant->campaign_id !== $campaign->id) {
-            throw new \InvalidArgumentException('Variant does not belong to this campaign.');
+            throw new InvalidArgumentException('Variant does not belong to this campaign.');
         }
 
         $campaign->declareWinner($variant);

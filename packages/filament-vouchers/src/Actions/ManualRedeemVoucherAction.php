@@ -16,11 +16,6 @@ use Illuminate\Support\Facades\Auth;
 
 final class ManualRedeemVoucherAction extends Action
 {
-    public static function getDefaultName(): ?string
-    {
-        return 'manual_redeem';
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -76,5 +71,10 @@ final class ManualRedeemVoucherAction extends Action
                 ->success()
                 ->send();
         });
+    }
+
+    public static function getDefaultName(): ?string
+    {
+        return 'manual_redeem';
     }
 }

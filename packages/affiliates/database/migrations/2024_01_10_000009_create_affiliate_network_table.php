@@ -13,7 +13,7 @@ return new class extends Migration
         $tableName = config('affiliates.table_names.network', 'affiliate_network');
         $affiliatesTable = config('affiliates.table_names.affiliates', 'affiliates');
 
-        Schema::create($tableName, function (Blueprint $table) use ($affiliatesTable): void {
+        Schema::create($tableName, function (Blueprint $table): void {
             $table->foreignUuid('ancestor_id');
             $table->foreignUuid('descendant_id');
             $table->integer('depth');

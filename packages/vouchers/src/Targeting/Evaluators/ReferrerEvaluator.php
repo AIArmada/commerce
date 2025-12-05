@@ -53,6 +53,27 @@ class ReferrerEvaluator implements TargetingRuleEvaluator
         };
     }
 
+    public function getType(): string
+    {
+        return TargetingRuleType::Referrer->value;
+    }
+
+    public function validate(array $rule): array
+    {
+        $errors = [];
+
+        if (! isset($rule['values']) || ! is_array($rule['values'])) {
+            $errors[] = 'Values must be an array';
+        }
+
+        $validTypes = ['referrer', 'referrer_url', 'utm_source', 'utm_medium', 'utm_campaign', 'channel'];
+        if (isset($rule['type']) && ! in_array($rule['type'], $validTypes, true)) {
+            $errors[] = 'Invalid type. Valid types: '.implode(', ', $validTypes);
+        }
+
+        return $errors;
+    }
+
     /**
      * Match referrer URL against values.
      */
@@ -145,7 +166,7 @@ class ReferrerEvaluator implements TargetingRuleEvaluator
     /**
      * Check if referrer contains any of the values.
      *
-     * @param array<string> $values
+     * @param  array<string>  $values
      */
     private function anyContains(string $referrer, array $values): bool
     {
@@ -161,7 +182,7 @@ class ReferrerEvaluator implements TargetingRuleEvaluator
     /**
      * Match referrer domain against allowed domains.
      *
-     * @param array<string> $domains
+     * @param  array<string>  $domains
      */
     private function matchDomain(string $referrer, array $domains): bool
     {
@@ -169,7 +190,7 @@ class ReferrerEvaluator implements TargetingRuleEvaluator
         $host = $parsedUrl['host'] ?? '';
 
         foreach ($domains as $domain) {
-            if ($host === $domain || str_ends_with($host, '.' . $domain)) {
+            if ($host === $domain || str_ends_with($host, '.'.$domain)) {
                 return true;
             }
         }
@@ -191,26 +212,5 @@ class ReferrerEvaluator implements TargetingRuleEvaluator
         }
 
         return null;
-    }
-
-    public function getType(): string
-    {
-        return TargetingRuleType::Referrer->value;
-    }
-
-    public function validate(array $rule): array
-    {
-        $errors = [];
-
-        if (! isset($rule['values']) || ! is_array($rule['values'])) {
-            $errors[] = 'Values must be an array';
-        }
-
-        $validTypes = ['referrer', 'referrer_url', 'utm_source', 'utm_medium', 'utm_campaign', 'channel'];
-        if (isset($rule['type']) && ! in_array($rule['type'], $validTypes, true)) {
-            $errors[] = 'Invalid type. Valid types: ' . implode(', ', $validTypes);
-        }
-
-        return $errors;
     }
 }

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentPermissions\Services;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -29,7 +30,7 @@ class RoleInheritanceService
         if ($parent !== null) {
             // Prevent circular references
             if ($this->isAncestorOf($role, $parent)) {
-                throw new \InvalidArgumentException('Cannot set a descendant role as parent.');
+                throw new InvalidArgumentException('Cannot set a descendant role as parent.');
             }
 
             // Check depth limit
@@ -38,7 +39,7 @@ class RoleInheritanceService
             $subtreeDepth = $this->getMaxSubtreeDepth($role);
 
             if ($parentDepth + 1 + $subtreeDepth > $maxDepth) {
-                throw new \InvalidArgumentException("Setting this parent would exceed the maximum depth of {$maxDepth}.");
+                throw new InvalidArgumentException("Setting this parent would exceed the maximum depth of {$maxDepth}.");
             }
         }
 

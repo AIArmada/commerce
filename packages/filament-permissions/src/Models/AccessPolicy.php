@@ -104,60 +104,6 @@ class AccessPolicy extends Model
     }
 
     /**
-     * Check if this policy's target action matches the given action.
-     */
-    protected function matchesAction(string $action): bool
-    {
-        $targetAction = $this->target_action;
-
-        // Exact match
-        if ($targetAction === $action) {
-            return true;
-        }
-
-        // Wildcard match
-        if ($targetAction === '*') {
-            return true;
-        }
-
-        // Prefix wildcard match (e.g., 'orders.*' matches 'orders.create')
-        if (str_ends_with($targetAction, '.*')) {
-            $prefix = substr($targetAction, 0, -2);
-
-            return str_starts_with($action, $prefix.'.');
-        }
-
-        return false;
-    }
-
-    /**
-     * Check if this policy's target resource matches the given resource.
-     */
-    protected function matchesResource(?string $resource): bool
-    {
-        $targetResource = $this->target_resource;
-
-        // No resource restriction
-        if ($targetResource === null || $targetResource === '*') {
-            return true;
-        }
-
-        // Exact match
-        if ($targetResource === $resource) {
-            return true;
-        }
-
-        // Prefix wildcard match
-        if (str_ends_with($targetResource, '.*')) {
-            $prefix = substr($targetResource, 0, -2);
-
-            return str_starts_with((string) $resource, $prefix.'.');
-        }
-
-        return false;
-    }
-
-    /**
      * Evaluate this policy against the given context.
      *
      * @param  array<string, mixed>  $context
@@ -213,38 +159,6 @@ class AccessPolicy extends Model
         }
 
         return true;
-    }
-
-    /**
-     * Evaluate a single condition.
-     *
-     * @param  array<string, mixed>  $condition
-     * @param  array<string, mixed>  $context
-     */
-    protected function evaluateCondition(array $condition, array $context): ?bool
-    {
-        $attribute = $condition['attribute'] ?? null;
-        $operatorString = $condition['operator'] ?? 'eq';
-        $value = $condition['value'] ?? null;
-        $source = $condition['source'] ?? 'subject';
-
-        if ($attribute === null) {
-            return true;
-        }
-
-        // Get attribute value from appropriate context source
-        $sourceContext = $context[$source] ?? $context;
-        $attributeValue = data_get($sourceContext, $attribute);
-
-        // Try to use enum operator
-        $operator = ConditionOperator::tryFrom($operatorString);
-
-        if ($operator !== null) {
-            return $operator->evaluate($attributeValue, $value);
-        }
-
-        // Fallback to basic comparison
-        return $attributeValue === $value;
     }
 
     /**
@@ -333,6 +247,92 @@ class AccessPolicy extends Model
     public function scopeOrderByPriority(Builder $query, string $direction = 'desc'): Builder
     {
         return $query->orderBy('priority', $direction);
+    }
+
+    /**
+     * Check if this policy's target action matches the given action.
+     */
+    protected function matchesAction(string $action): bool
+    {
+        $targetAction = $this->target_action;
+
+        // Exact match
+        if ($targetAction === $action) {
+            return true;
+        }
+
+        // Wildcard match
+        if ($targetAction === '*') {
+            return true;
+        }
+
+        // Prefix wildcard match (e.g., 'orders.*' matches 'orders.create')
+        if (str_ends_with($targetAction, '.*')) {
+            $prefix = mb_substr($targetAction, 0, -2);
+
+            return str_starts_with($action, $prefix.'.');
+        }
+
+        return false;
+    }
+
+    /**
+     * Check if this policy's target resource matches the given resource.
+     */
+    protected function matchesResource(?string $resource): bool
+    {
+        $targetResource = $this->target_resource;
+
+        // No resource restriction
+        if ($targetResource === null || $targetResource === '*') {
+            return true;
+        }
+
+        // Exact match
+        if ($targetResource === $resource) {
+            return true;
+        }
+
+        // Prefix wildcard match
+        if (str_ends_with($targetResource, '.*')) {
+            $prefix = mb_substr($targetResource, 0, -2);
+
+            return str_starts_with((string) $resource, $prefix.'.');
+        }
+
+        return false;
+    }
+
+    /**
+     * Evaluate a single condition.
+     *
+     * @param  array<string, mixed>  $condition
+     * @param  array<string, mixed>  $context
+     */
+    protected function evaluateCondition(array $condition, array $context): ?bool
+    {
+        $attribute = $condition['attribute'] ?? null;
+        $operatorString = $condition['operator'] ?? 'eq';
+        $value = $condition['value'] ?? null;
+        $source = $condition['source'] ?? 'subject';
+
+        if ($attribute === null) {
+            return true;
+        }
+
+        // Get attribute value from appropriate context source
+        $sourceContext = $context[$source] ?? $context;
+        $attributeValue = data_get($sourceContext, $attribute);
+
+        // Try to use enum operator
+        $operator = ConditionOperator::tryFrom($operatorString);
+
+        if ($operator !== null) {
+            return $operator->evaluate($attributeValue, $value);
+        }
+
+        // Fallback to basic comparison
+        return $attributeValue === $value;
     }
 
     /**

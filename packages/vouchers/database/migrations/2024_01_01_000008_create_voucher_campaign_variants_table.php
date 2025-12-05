@@ -14,7 +14,7 @@ return new class extends Migration
         $campaignsTable = config('vouchers.table_names.campaigns', 'voucher_campaigns');
         $vouchersTable = config('vouchers.table_names.vouchers', 'vouchers');
 
-        Schema::create($tableName, function (Blueprint $table) use ($campaignsTable, $vouchersTable): void {
+        Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('campaign_id');
             $table->foreignUuid('voucher_id')->nullable();

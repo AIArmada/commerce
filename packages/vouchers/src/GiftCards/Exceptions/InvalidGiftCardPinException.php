@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\GiftCards\Exceptions;
 
 use Exception;
+use Throwable;
 
 /**
  * Exception thrown when an incorrect PIN is provided for a gift card.
@@ -17,7 +18,7 @@ class InvalidGiftCardPinException extends Exception
         string $giftCardCode,
         string $message = 'Invalid gift card PIN',
         int $errorCode = 0,
-        ?\Throwable $previous = null
+        ?Throwable $previous = null
     ) {
         $this->giftCardCode = $giftCardCode;
         parent::__construct($message, $errorCode, $previous);

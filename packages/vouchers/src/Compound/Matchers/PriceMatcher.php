@@ -35,6 +35,15 @@ class PriceMatcher extends AbstractProductMatcher
         $this->useUnitPrice = $useUnitPrice;
     }
 
+    public static function fromArray(array $config): self
+    {
+        return new self(
+            minPrice: $config['min_price'] ?? null,
+            maxPrice: $config['max_price'] ?? null,
+            useUnitPrice: $config['use_unit_price'] ?? true
+        );
+    }
+
     public function matches(CartItem $item): bool
     {
         $price = $this->getItemPrice($item);
@@ -66,15 +75,6 @@ class PriceMatcher extends AbstractProductMatcher
             'max_price' => $this->maxPrice,
             'use_unit_price' => $this->useUnitPrice,
         ];
-    }
-
-    public static function fromArray(array $config): self
-    {
-        return new self(
-            minPrice: $config['min_price'] ?? null,
-            maxPrice: $config['max_price'] ?? null,
-            useUnitPrice: $config['use_unit_price'] ?? true
-        );
     }
 
     /**
