@@ -1,29 +1,34 @@
 # AIArmada Vouchers
 
-A flexible voucher and coupon system for Laravel with cart integration, multi-tenancy support, and comprehensive usage tracking.
+A voucher and coupon system for Laravel built on the [AIArmada Cart](../cart) package's condition system. Provides percentage discounts, fixed amounts, free shipping, multi-tenancy support, and comprehensive usage tracking.
+
+> **Architectural Note**: This package is a first-party extension of the cart package. Vouchers are converted to cart conditions via the `VoucherCondition` adapter, leveraging the cart's pricing pipeline for discount calculation.
 
 ## Features
 
 - **Multiple Voucher Types** — Percentage discounts, fixed amounts, and free shipping
+- **Cart Condition Integration** — Vouchers become cart conditions via `CartConditionConvertible`
+- **Dynamic Validation** — Real-time eligibility checks through cart's rules factory system
 - **Usage Limits** — Global limits and per-user restrictions
 - **Time-Based Campaigns** — Start and expiry dates for promotions
 - **Voucher Wallet** — Users can save vouchers for later use
 - **Multi-Tenancy** — Scope vouchers to owners/merchants via configurable resolver
 - **Manual Redemption** — Record offline usage with channels, metadata, and attribution
 - **Usage Tracking** — Complete history and conversion analytics
-- **Cart Integration** — Seamless integration with AIArmada Cart
 
 ## Requirements
 
 - PHP 8.2+
 - Laravel 12+
-- AIArmada Cart
+- **AIArmada Cart** (required dependency)
 
 ## Installation
 
 ```bash
 composer require aiarmada/vouchers
 ```
+
+> **Note**: The cart package is automatically installed as a required dependency.
 
 Publish configuration and migrations:
 

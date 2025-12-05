@@ -53,18 +53,28 @@ class PermissionExplorer extends Page
         $permissionModel = config('permission.models.permission', 'Spatie\\Permission\\Models\\Permission');
         $permissions = $permissionModel::orderBy('name')->get();
 
-        return $permissions->groupBy(function ($permission) {
-            $parts = explode('.', $permission->name);
+        return $permissions->groupBy(function (Model $permission): string {
+            /** @var string $name */
+            $name = $permission->getAttribute('name');
+            $parts = explode('.', $name);
 
             return $parts[0] ?? 'Other';
-        })->map(function ($group) {
-            return $group->map(function ($permission) {
+        })->map(function ($group): array {
+            return $group->map(function (Model $permission): array {
+                /** @var string $name */
+                $name = $permission->getAttribute('name');
+                /** @var string $guardName */
+                $guardName = $permission->getAttribute('guard_name');
+
                 // Load roles separately to avoid eager loading issues
-                $roles = $permission->roles()->pluck('name')->toArray();
+                /** @var array<int, string> $roles */
+                $roles = method_exists($permission, 'roles')
+                    ? $permission->roles()->pluck('name')->toArray()
+                    : [];
 
                 return [
-                    'name' => $permission->name,
-                    'guard_name' => $permission->guard_name,
+                    'name' => $name,
+                    'guard_name' => $guardName,
                     'roles' => $roles,
                 ];
             })->toArray();
@@ -79,11 +89,18 @@ class PermissionExplorer extends Page
         /** @var class-string<Model> $roleModel */
         $roleModel = config('permission.models.role', 'Spatie\\Permission\\Models\\Role');
 
-        return $roleModel::withCount('permissions')->orderBy('name')->get()->map(function ($role) {
+        return $roleModel::withCount('permissions')->orderBy('name')->get()->map(function (Model $role): array {
+            /** @var string $name */
+            $name = $role->getAttribute('name');
+            /** @var string $guardName */
+            $guardName = $role->getAttribute('guard_name');
+            /** @var int $permissionsCount */
+            $permissionsCount = $role->getAttribute('permissions_count') ?? 0;
+
             return [
-                'name' => $role->name,
-                'guard_name' => $role->guard_name,
-                'permissions_count' => $role->permissions_count,
+                'name' => $name,
+                'guard_name' => $guardName,
+                'permissions_count' => $permissionsCount,
             ];
         })->toArray();
     }

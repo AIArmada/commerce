@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Models;
 
+use AIArmada\Vouchers\Campaigns\Models\Campaign;
+use AIArmada\Vouchers\Campaigns\Models\CampaignVariant;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use Akaunting\Money\Money;
@@ -12,6 +14,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
@@ -22,6 +25,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $description
  * @property VoucherType $type
  * @property int $value Value in cents for fixed amounts, or basis points for percentage (e.g., 10.50% = 1050)
+ * @property array<string, mixed>|null $value_config Configuration for compound voucher types (BOGO, Tiered, Bundle, Cashback)
+ * @property string|null $credit_destination Destination for cashback credits (wallet, next_order, points)
+ * @property int $credit_delay_hours Hours to wait before crediting cashback
  * @property string $currency
  * @property int|null $min_cart_value Value in cents
  * @property int|null $max_discount Value in cents
@@ -36,6 +42,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property VoucherStatus $status
  * @property array<string, mixed>|null $target_definition
  * @property array<string, mixed>|null $metadata
+ * @property array<string, mixed>|null $stacking_rules
+ * @property array<string>|null $exclusion_groups
+ * @property int $stacking_priority
+ * @property string|null $campaign_id
+ * @property string|null $campaign_variant_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read int $times_used
@@ -47,6 +58,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read int $wallet_claimed_count
  * @property-read int $wallet_redeemed_count
  * @property-read int $wallet_available_count
+ * @property-read Campaign|null $campaign
+ * @property-read CampaignVariant|null $campaignVariant
  */
 class Voucher extends Model
 {
@@ -58,6 +71,9 @@ class Voucher extends Model
         'description',
         'type',
         'value',
+        'value_config',
+        'credit_destination',
+        'credit_delay_hours',
         'currency',
         'min_cart_value',
         'max_discount',
@@ -72,6 +88,11 @@ class Voucher extends Model
         'owner_type',
         'owner_id',
         'target_definition',
+        'stacking_rules',
+        'exclusion_groups',
+        'stacking_priority',
+        'campaign_id',
+        'campaign_variant_id',
     ];
 
     public function getTable(): string
@@ -109,6 +130,41 @@ class Voucher extends Model
     public function owner(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * @return BelongsTo<Campaign, Voucher>
+     */
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(Campaign::class, 'campaign_id');
+    }
+
+    /**
+     * @return BelongsTo<CampaignVariant, Voucher>
+     */
+    public function campaignVariant(): BelongsTo
+    {
+        return $this->belongsTo(CampaignVariant::class, 'campaign_variant_id');
+    }
+
+    /**
+     * Check if voucher belongs to a campaign.
+     */
+    public function belongsToCampaign(): bool
+    {
+        return $this->campaign_id !== null;
+    }
+
+    /**
+     * Scope to filter vouchers by campaign.
+     *
+     * @param  Builder<Voucher>  $query
+     * @return Builder<Voucher>
+     */
+    public function scopeForCampaign(Builder $query, Campaign $campaign): Builder
+    {
+        return $query->where('campaign_id', $campaign->id);
     }
 
     public function scopeForOwner(Builder $query, ?EloquentModel $owner, bool $includeGlobal = true): Builder
@@ -267,6 +323,31 @@ class Voucher extends Model
             && $this->hasUsageLimitRemaining();
     }
 
+    /**
+     * Check if this voucher can stack with another voucher.
+     *
+     * Compares exclusion groups to determine if vouchers are mutually exclusive.
+     */
+    public function canStackWith(Voucher $other): bool
+    {
+        $myGroups = $this->exclusion_groups ?? [];
+        $otherGroups = $other->exclusion_groups ?? [];
+
+        if (empty($myGroups) || empty($otherGroups)) {
+            return true;
+        }
+
+        return empty(array_intersect($myGroups, $otherGroups));
+    }
+
+    /**
+     * Get the stacking priority for ordering.
+     */
+    public function getStackingPriority(): int
+    {
+        return $this->stacking_priority ?? 100;
+    }
+
     public function getUsageProgressAttribute(): ?float
     {
         /** @var int|null $usageLimit */
@@ -383,6 +464,8 @@ class Voucher extends Model
             'type' => VoucherType::class,
             'status' => VoucherStatus::class,
             'value' => 'integer', // Stored as cents or basis points
+            'value_config' => 'array',
+            'credit_delay_hours' => 'integer',
             'min_cart_value' => 'integer', // Stored as cents
             'max_discount' => 'integer', // Stored as cents
             'usage_limit' => 'integer',
@@ -393,6 +476,9 @@ class Voucher extends Model
             'expires_at' => 'datetime',
             'metadata' => 'array',
             'target_definition' => 'array',
+            'stacking_rules' => 'array',
+            'exclusion_groups' => 'array',
+            'stacking_priority' => 'integer',
         ];
     }
 }

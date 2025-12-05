@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Enums\AllocationStrategy;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,7 +20,18 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $location_id
  * @property int $quantity_on_hand
  * @property int $quantity_reserved
+ * @property float|null $quantity_on_hand_decimal
+ * @property float|null $quantity_reserved_decimal
  * @property int|null $reorder_point
+ * @property int|null $safety_stock
+ * @property int|null $max_stock
+ * @property string|null $alert_status
+ * @property \Illuminate\Support\Carbon|null $last_alert_at
+ * @property \Illuminate\Support\Carbon|null $last_stock_check_at
+ * @property string $unit_of_measure
+ * @property float $unit_conversion_factor
+ * @property int|null $lead_time_days
+ * @property string|null $preferred_supplier_id
  * @property string|null $allocation_strategy
  * @property array<string, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon $created_at
@@ -47,7 +59,18 @@ final class InventoryLevel extends Model
         'location_id',
         'quantity_on_hand',
         'quantity_reserved',
+        'quantity_on_hand_decimal',
+        'quantity_reserved_decimal',
         'reorder_point',
+        'safety_stock',
+        'max_stock',
+        'alert_status',
+        'last_alert_at',
+        'last_stock_check_at',
+        'unit_of_measure',
+        'unit_conversion_factor',
+        'lead_time_days',
+        'preferred_supplier_id',
         'allocation_strategy',
         'metadata',
     ];
@@ -112,6 +135,42 @@ final class InventoryLevel extends Model
         $threshold ??= $this->reorder_point ?? config('inventory.default_reorder_point', 10);
 
         return $this->available <= $threshold;
+    }
+
+    /**
+     * Check if safety stock is breached.
+     */
+    public function isSafetyStockBreached(): bool
+    {
+        if ($this->safety_stock === null) {
+            return false;
+        }
+
+        return $this->available <= $this->safety_stock;
+    }
+
+    /**
+     * Check if stock exceeds maximum.
+     */
+    public function isOverStocked(): bool
+    {
+        if ($this->max_stock === null) {
+            return false;
+        }
+
+        return $this->quantity_on_hand > $this->max_stock;
+    }
+
+    /**
+     * Get the current alert status as enum.
+     */
+    public function getAlertStatusEnum(): AlertStatus
+    {
+        if ($this->alert_status === null) {
+            return AlertStatus::None;
+        }
+
+        return AlertStatus::from($this->alert_status);
     }
 
     /**
@@ -212,6 +271,56 @@ final class InventoryLevel extends Model
     }
 
     /**
+     * Scope to filter by alert status.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<self>
+     */
+    public function scopeWithAlertStatus(\Illuminate\Database\Eloquent\Builder $query, AlertStatus $status): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('alert_status', $status->value);
+    }
+
+    /**
+     * Scope to filter items needing reorder.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<self>
+     */
+    public function scopeNeedsReorder(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereIn('alert_status', [
+            AlertStatus::LowStock->value,
+            AlertStatus::SafetyBreached->value,
+            AlertStatus::OutOfStock->value,
+        ]);
+    }
+
+    /**
+     * Scope to filter safety stock breached items.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<self>
+     */
+    public function scopeSafetyStockBreached(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereNotNull('safety_stock')
+            ->whereRaw('(quantity_on_hand - quantity_reserved) <= safety_stock');
+    }
+
+    /**
+     * Scope to filter over-stocked items.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<self>
+     */
+    public function scopeOverStocked(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->whereNotNull('max_stock')
+            ->whereRaw('quantity_on_hand > max_stock');
+    }
+
+    /**
      * Handle model lifecycle events.
      */
     protected static function booted(): void
@@ -239,7 +348,15 @@ final class InventoryLevel extends Model
         return [
             'quantity_on_hand' => 'integer',
             'quantity_reserved' => 'integer',
+            'quantity_on_hand_decimal' => 'decimal:4',
+            'quantity_reserved_decimal' => 'decimal:4',
             'reorder_point' => 'integer',
+            'safety_stock' => 'integer',
+            'max_stock' => 'integer',
+            'lead_time_days' => 'integer',
+            'unit_conversion_factor' => 'decimal:4',
+            'last_alert_at' => 'datetime',
+            'last_stock_check_at' => 'datetime',
             'metadata' => 'array',
         ];
     }

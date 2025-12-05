@@ -8,10 +8,25 @@ use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Inventory\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\Console\CleanupExpiredAllocationsCommand;
+use AIArmada\Inventory\Console\CreateValuationSnapshotCommand;
+use AIArmada\Inventory\Exports\ExportService;
 use AIArmada\Inventory\Listeners\CommitInventoryOnPayment;
 use AIArmada\Inventory\Listeners\ReleaseInventoryOnCartClear;
+use AIArmada\Inventory\Reports\InventoryKpiService;
+use AIArmada\Inventory\Reports\MovementAnalysisReport;
+use AIArmada\Inventory\Reports\StockLevelReport;
+use AIArmada\Inventory\Services\BackorderService;
+use AIArmada\Inventory\Services\BatchService;
+use AIArmada\Inventory\Services\DemandForecastService;
+use AIArmada\Inventory\Services\FifoCostService;
 use AIArmada\Inventory\Services\InventoryAllocationService;
 use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\Inventory\Services\ReplenishmentService;
+use AIArmada\Inventory\Services\SerialLookupService;
+use AIArmada\Inventory\Services\SerialService;
+use AIArmada\Inventory\Services\StandardCostService;
+use AIArmada\Inventory\Services\ValuationService;
+use AIArmada\Inventory\Services\WeightedAverageCostService;
 use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
@@ -26,20 +41,21 @@ final class InventoryServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->discoversMigrations()
             ->runsMigrations()
-            ->hasCommand(CleanupExpiredAllocationsCommand::class);
+            ->hasCommands([
+                CleanupExpiredAllocationsCommand::class,
+                CreateValuationSnapshotCommand::class,
+            ]);
     }
 
     public function packageRegistered(): void
     {
         $this->registerOwnerResolver();
-
-        // Register Inventory Service
-        $this->app->singleton(InventoryService::class);
-        $this->app->alias(InventoryService::class, 'inventory');
-
-        // Register Inventory Allocation Service
-        $this->app->singleton(InventoryAllocationService::class);
-        $this->app->alias(InventoryAllocationService::class, 'inventory.allocations');
+        $this->registerCoreServices();
+        $this->registerBatchSerialServices();
+        $this->registerCostingServices();
+        $this->registerAllocationServices();
+        $this->registerReplenishmentServices();
+        $this->registerReportServices();
     }
 
     public function packageBooted(): void
@@ -57,6 +73,20 @@ final class InventoryServiceProvider extends PackageServiceProvider
             InventoryService::class,
             InventoryAllocationService::class,
             OwnerResolverInterface::class,
+            BatchService::class,
+            SerialService::class,
+            SerialLookupService::class,
+            FifoCostService::class,
+            WeightedAverageCostService::class,
+            StandardCostService::class,
+            ValuationService::class,
+            BackorderService::class,
+            DemandForecastService::class,
+            ReplenishmentService::class,
+            InventoryKpiService::class,
+            MovementAnalysisReport::class,
+            StockLevelReport::class,
+            ExportService::class,
             'inventory',
             'inventory.allocations',
         ];
@@ -81,6 +111,67 @@ final class InventoryServiceProvider extends PackageServiceProvider
 
             return $resolver;
         });
+    }
+
+    /**
+     * Register core inventory services.
+     */
+    private function registerCoreServices(): void
+    {
+        $this->app->singleton(InventoryService::class);
+        $this->app->alias(InventoryService::class, 'inventory');
+
+        $this->app->singleton(InventoryAllocationService::class);
+        $this->app->alias(InventoryAllocationService::class, 'inventory.allocations');
+    }
+
+    /**
+     * Register batch and serial number services.
+     */
+    private function registerBatchSerialServices(): void
+    {
+        $this->app->singleton(BatchService::class);
+        $this->app->singleton(SerialService::class);
+        $this->app->singleton(SerialLookupService::class);
+    }
+
+    /**
+     * Register costing and valuation services.
+     */
+    private function registerCostingServices(): void
+    {
+        $this->app->singleton(FifoCostService::class);
+        $this->app->singleton(WeightedAverageCostService::class);
+        $this->app->singleton(StandardCostService::class);
+        $this->app->singleton(ValuationService::class);
+    }
+
+    /**
+     * Register allocation and backorder services.
+     */
+    private function registerAllocationServices(): void
+    {
+        $this->app->singleton(BackorderService::class);
+    }
+
+    /**
+     * Register demand forecasting and replenishment services.
+     */
+    private function registerReplenishmentServices(): void
+    {
+        $this->app->singleton(DemandForecastService::class);
+        $this->app->singleton(ReplenishmentService::class);
+    }
+
+    /**
+     * Register reporting and analytics services.
+     */
+    private function registerReportServices(): void
+    {
+        $this->app->singleton(InventoryKpiService::class);
+        $this->app->singleton(MovementAnalysisReport::class);
+        $this->app->singleton(StockLevelReport::class);
+        $this->app->singleton(ExportService::class);
     }
 
     /**

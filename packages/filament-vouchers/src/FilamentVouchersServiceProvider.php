@@ -81,5 +81,15 @@ final class FilamentVouchersServiceProvider extends PackageServiceProvider
             'a-i-armada.filament-vouchers.widgets.voucher-wallet-stats-widget',
             Widgets\VoucherWalletStatsWidget::class
         );
+
+        Livewire::component(
+            'a-i-armada.filament-vouchers.widgets.campaign-stats-widget',
+            Widgets\CampaignStatsWidget::class
+        );
+
+        Livewire::component(
+            'a-i-armada.filament-vouchers.widgets.redemption-trend-chart',
+            Widgets\RedemptionTrendChart::class
+        );
     }
 }

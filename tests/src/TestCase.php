@@ -209,9 +209,20 @@ abstract class TestCase extends Orchestra
             $table->id();
             $table->string('name');
             $table->string('guard_name');
+            // Hierarchy columns for filament-permissions
+            $table->foreignUuid('parent_role_id')->nullable();
+            $table->foreignUuid('template_id')->nullable();
+            $table->text('description')->nullable();
+            $table->integer('level')->default(0);
+            $table->json('metadata')->nullable();
+            $table->boolean('is_system')->default(false);
+            $table->boolean('is_assignable')->default(true);
             $table->timestamps();
 
             $table->unique(['name', 'guard_name']);
+            $table->index('parent_role_id', 'roles_parent_role_id_index');
+            $table->index('template_id', 'roles_template_id_index');
+            $table->index('level', 'roles_level_index');
         });
 
         Schema::create('model_has_permissions', function (Blueprint $table): void {
