@@ -214,7 +214,7 @@ class JntTrackingService
         return JntOrder::query()
             ->whereNotNull('tracking_number')
             ->whereNull('delivered_at')
-            ->where(function ($query) {
+            ->where(function ($query): void {
                 $query->whereNull('last_tracked_at')
                     ->orWhere('last_tracked_at', '<', now()->subHours(1));
             })
