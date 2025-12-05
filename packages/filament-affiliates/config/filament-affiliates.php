@@ -34,10 +34,6 @@ return [
     |--------------------------------------------------------------------------
     | Integrations
     |--------------------------------------------------------------------------
-    |
-    | Configure if the plugin should render deep links when Filament Cart or
-    | Filament Vouchers are detected at runtime.
-    |
     */
 
     'integrations' => [
@@ -45,4 +41,26 @@ return [
         'filament_vouchers' => true,
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Affiliate Portal
+    |--------------------------------------------------------------------------
+    */
+
+    'portal' => [
+        'enabled' => env('AFFILIATES_PORTAL_ENABLED', true),
+        'panel_id' => env('AFFILIATES_PORTAL_PANEL_ID', 'affiliate'),
+        'path' => env('AFFILIATES_PORTAL_PATH', 'affiliate'),
+        'brand_name' => env('AFFILIATES_PORTAL_BRAND_NAME', 'Affiliate Portal'),
+        'primary_color' => env('AFFILIATES_PORTAL_PRIMARY_COLOR', '#6366f1'),
+        'login_enabled' => env('AFFILIATES_PORTAL_LOGIN_ENABLED', true),
+        'registration_enabled' => env('AFFILIATES_PORTAL_REGISTRATION_ENABLED', true),
+        'auth_guard' => env('AFFILIATES_PORTAL_AUTH_GUARD', 'web'),
+        'features' => [
+            'dashboard' => true,
+            'links' => true,
+            'conversions' => true,
+            'payouts' => true,
+        ],
+    ],
 ];
