@@ -41,6 +41,25 @@ final class RevenueChartWidget extends ChartWidget
         return 'line';
     }
 
+    protected function getOptions(): array
+    {
+        return [
+            'plugins' => [
+                'legend' => [
+                    'display' => false,
+                ],
+            ],
+            'scales' => [
+                'y' => [
+                    'beginAtZero' => true,
+                    'ticks' => [
+                        'callback' => 'function(value) { return "'.config('filament-chip.default_currency', 'MYR').' " + value.toLocaleString(); }',
+                    ],
+                ],
+            ],
+        ];
+    }
+
     /**
      * @return array{labels: array<string>, amounts: array<int>}
      */
@@ -78,25 +97,6 @@ final class RevenueChartWidget extends ChartWidget
         return [
             'labels' => $labels,
             'amounts' => $amounts,
-        ];
-    }
-
-    protected function getOptions(): array
-    {
-        return [
-            'plugins' => [
-                'legend' => [
-                    'display' => false,
-                ],
-            ],
-            'scales' => [
-                'y' => [
-                    'beginAtZero' => true,
-                    'ticks' => [
-                        'callback' => 'function(value) { return "' . config('filament-chip.default_currency', 'MYR') . ' " + value.toLocaleString(); }',
-                    ],
-                ],
-            ],
         ];
     }
 }

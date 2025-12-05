@@ -11,6 +11,7 @@ use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 use Carbon\Carbon;
+use Throwable;
 
 class JntTrackingService
 {
@@ -189,7 +190,7 @@ class JntTrackingService
         foreach ($orders as $order) {
             try {
                 $successful[] = $this->syncOrderTracking($order);
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $failed[] = [
                     'order' => $order,
                     'error' => $e->getMessage(),
@@ -213,7 +214,7 @@ class JntTrackingService
         return JntOrder::query()
             ->whereNotNull('tracking_number')
             ->whereNull('delivered_at')
-            ->where(function ($query) {
+            ->where(function ($query): void {
                 $query->whereNull('last_tracked_at')
                     ->orWhere('last_tracked_at', '<', now()->subHours(1));
             })

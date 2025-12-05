@@ -12,6 +12,7 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Throwable;
 
 final class CancelOrderAction
 {
@@ -67,7 +68,7 @@ final class CancelOrderAction
                         ->body("Order {$record->order_id} has been cancelled successfully.")
                         ->success()
                         ->send();
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     Notification::make()
                         ->title('Cancellation Failed')
                         ->body($e->getMessage())
