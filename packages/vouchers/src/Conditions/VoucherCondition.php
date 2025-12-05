@@ -491,6 +491,8 @@ class VoucherCondition implements Arrayable, CartConditionConvertible
             VoucherType::Percentage => '-'.($voucher->value / 100).'%', // Convert basis points to percentage (1000 = 10.00%)
             VoucherType::Fixed => "-{$voucher->value}", // Value is already in cents
             VoucherType::FreeShipping => '+0', // Free shipping is handled separately
+            // Compound types - value is calculated dynamically
+            VoucherType::BuyXGetY, VoucherType::Tiered, VoucherType::Bundle, VoucherType::Cashback => '+0',
         };
     }
 

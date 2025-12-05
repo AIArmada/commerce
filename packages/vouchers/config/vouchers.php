@@ -18,6 +18,12 @@ return [
         'voucher_wallets' => 'voucher_wallets',
         'voucher_assignments' => 'voucher_assignments',
         'voucher_transactions' => 'voucher_transactions',
+        'campaigns' => 'voucher_campaigns',
+        'campaign_variants' => 'voucher_campaign_variants',
+        'campaign_events' => 'voucher_campaign_events',
+        'gift_cards' => 'gift_cards',
+        'gift_card_transactions' => 'gift_card_transactions',
+        'voucher_fraud_signals' => 'voucher_fraud_signals',
     ],
 
     /*
@@ -37,10 +43,40 @@ return [
     |--------------------------------------------------------------------------
     */
     'cart' => [
-        'max_vouchers_per_cart' => env('VOUCHERS_MAX_PER_CART', 1), // 0=disabled, -1=unlimited
+        'max_vouchers_per_cart' => env('VOUCHERS_MAX_PER_CART', 1), // 1=single voucher, >1=stacking enabled, -1=unlimited
         'replace_when_max_reached' => env('VOUCHERS_REPLACE_WHEN_MAX', true),
         'condition_order' => env('VOUCHERS_CONDITION_ORDER', 50),
-        'allow_stacking' => env('VOUCHERS_ALLOW_STACKING', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Stacking Policies
+    |--------------------------------------------------------------------------
+    */
+    'stacking' => [
+        'mode' => env('VOUCHERS_STACKING_MODE', 'sequential'), // none, sequential, parallel, best_deal, custom
+
+        'rules' => [
+            [
+                'type' => 'max_vouchers',
+                'value' => (int) env('VOUCHERS_MAX_PER_CART', 3),
+            ],
+            [
+                'type' => 'max_discount_percentage',
+                'value' => (int) env('VOUCHERS_MAX_DISCOUNT_PCT', 50),
+            ],
+            [
+                'type' => 'type_restriction',
+                'max_per_type' => [
+                    'percentage' => 1,
+                    'fixed' => 2,
+                    'free_shipping' => 1,
+                ],
+            ],
+        ],
+
+        'auto_optimize' => env('VOUCHERS_AUTO_OPTIMIZE', false),
+        'auto_replace' => env('VOUCHERS_AUTO_REPLACE', true),
     ],
 
     /*
@@ -52,6 +88,7 @@ return [
         'check_user_limit' => env('VOUCHERS_CHECK_USER_LIMIT', true),
         'check_global_limit' => env('VOUCHERS_CHECK_GLOBAL_LIMIT', true),
         'check_min_cart_value' => env('VOUCHERS_CHECK_MIN_CART_VALUE', true),
+        'check_targeting' => env('VOUCHERS_CHECK_TARGETING', true),
     ],
 
     /*
@@ -83,5 +120,47 @@ return [
     'redemption' => [
         'manual_requires_flag' => env('VOUCHERS_MANUAL_REQUIRES_FLAG', true),
         'manual_channel' => 'manual',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | AI Optimization
+    |--------------------------------------------------------------------------
+    |
+    | Configure AI-powered optimization features. By default, rule-based
+    | heuristics are used. These can be swapped for ML implementations
+    | (AWS SageMaker, TensorFlow, etc.) by rebinding the interfaces
+    | in your AppServiceProvider.
+    |
+    */
+    'ai' => [
+        'enabled' => env('VOUCHERS_AI_ENABLED', true),
+
+        // Conversion prediction settings
+        'conversion' => [
+            'high_probability_threshold' => 0.7,
+            'low_probability_threshold' => 0.3,
+            'min_confidence' => 0.5,
+        ],
+
+        // Abandonment prediction settings
+        'abandonment' => [
+            'high_risk_threshold' => 0.6,
+            'critical_risk_threshold' => 0.8,
+            'cart_age_weight' => 1.0,
+        ],
+
+        // Discount optimization settings
+        'discount' => [
+            'min_roi' => 1.0,
+            'max_discount_percent' => 50,
+            'discount_levels' => [0, 5, 10, 15, 20, 25, 30],
+        ],
+
+        // Voucher matching settings
+        'matching' => [
+            'min_match_score' => 0.3,
+            'strong_match_threshold' => 0.7,
+        ],
     ],
 ];

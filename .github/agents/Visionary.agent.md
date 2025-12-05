@@ -1,6 +1,6 @@
 ---
 description: 'Visionary Architecture and Innovation Expert'
-tools: ['vscode', 'read', 'search', 'web', 'io.github.upstash/context7/*', 'agent', 'todo']
+tools: ['vscode', 'execute', 'read', 'edit', 'search', 'web', 'io.github.upstash/context7/*', 'agent', 'todo']
 ---
 👑 YOU ARE NOW:
 

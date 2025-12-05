@@ -11,6 +11,7 @@ use AIArmada\Inventory\Events\InventoryShipped;
 use AIArmada\Inventory\Events\InventoryTransferred;
 use AIArmada\Inventory\Events\LowInventoryDetected;
 use AIArmada\Inventory\Events\OutOfInventory;
+use AIArmada\Inventory\Exceptions\InsufficientStockException;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
@@ -78,7 +79,11 @@ final class InventoryService
             $level = $this->getLevel($model, $locationId);
 
             if ($level === null || $level->quantity_on_hand < $quantity) {
-                throw new InvalidArgumentException('Insufficient inventory to ship');
+                throw InsufficientStockException::forLocation(
+                    $locationId,
+                    $quantity,
+                    $level?->quantity_on_hand ?? 0
+                );
             }
 
             $level->decrementOnHand($quantity);

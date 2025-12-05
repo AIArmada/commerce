@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Services;
 
+use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\Targeting\TargetingConfiguration;
+use AIArmada\Vouchers\Targeting\TargetingContext;
+use AIArmada\Vouchers\Targeting\TargetingEngine;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -105,7 +109,15 @@ class VoucherValidator
             }
         }
 
-        return VoucherValidationResult::valid();
+        // Check targeting rules
+        if (config('vouchers.validation.check_targeting', true)) {
+            $targetingResult = $this->validateTargeting($voucher, $cart);
+            if (! $targetingResult->isValid) {
+                return $targetingResult;
+            }
+        }
+
+        return VoucherValidationResult::valid();;
     }
 
     /**
@@ -173,5 +185,50 @@ class VoucherValidator
         }
 
         return mb_trim($code);
+    }
+
+    /**
+     * Validate voucher targeting rules against the cart context.
+     */
+    protected function validateTargeting(Voucher $voucher, mixed $cart): VoucherValidationResult
+    {
+        // Parse targeting configuration from voucher
+        $configuration = TargetingConfiguration::fromArray($voucher->target_definition);
+
+        // No targeting rules = valid
+        if ($configuration === null || ! $configuration->hasRules()) {
+            return VoucherValidationResult::valid();
+        }
+
+        // Need a Cart object for targeting evaluation
+        if (! $cart instanceof Cart) {
+            // Cannot evaluate targeting without a proper Cart context
+            return VoucherValidationResult::valid();
+        }
+
+        // Build targeting context
+        $context = TargetingContext::fromCart($cart);
+
+        // Evaluate targeting rules using the configuration data
+        $engine = new TargetingEngine();
+        $targetingData = [
+            'mode' => $configuration->mode->value,
+            'rules' => $configuration->rules,
+        ];
+
+        if ($configuration->expression !== null) {
+            $targetingData['expression'] = $configuration->expression;
+        }
+
+        $result = $engine->evaluate($targetingData, $context);
+
+        if (! $result) {
+            return VoucherValidationResult::invalid(
+                'You do not meet the eligibility requirements for this voucher.',
+                ['targeting_failed' => true]
+            );
+        }
+
+        return VoucherValidationResult::valid();
     }
 }

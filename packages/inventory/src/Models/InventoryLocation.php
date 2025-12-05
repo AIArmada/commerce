@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\Inventory\Enums\TemperatureZone;
+use AIArmada\Inventory\Traits\HasLocationHierarchy;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,6 +21,17 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $address
  * @property bool $is_active
  * @property int $priority
+ * @property string|null $parent_id
+ * @property string|null $path
+ * @property int $depth
+ * @property string|null $temperature_zone
+ * @property bool $is_hazmat_certified
+ * @property float|null $coordinate_x
+ * @property float|null $coordinate_y
+ * @property float|null $coordinate_z
+ * @property int|null $pick_sequence
+ * @property int|null $capacity
+ * @property int $current_utilization
  * @property string|null $owner_type
  * @property int|string|null $owner_id
  * @property array<string, mixed>|null $metadata
@@ -28,12 +41,17 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryMovement> $movementsFrom
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryMovement> $movementsTo
  * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryAllocation> $allocations
+ * @property-read InventoryLocation|null $parent
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryLocation> $children
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryLocation> $descendants
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryLocation> $ancestors
  * @property-read string|null $owner_display_name
  */
 final class InventoryLocation extends Model
 {
     /** @use HasFactory<\AIArmada\Inventory\Database\Factories\InventoryLocationFactory> */
     use HasFactory;
+    use HasLocationHierarchy;
 
     use HasUuids;
 
@@ -50,6 +68,17 @@ final class InventoryLocation extends Model
         'address',
         'is_active',
         'priority',
+        'parent_id',
+        'path',
+        'depth',
+        'temperature_zone',
+        'is_hazmat_certified',
+        'coordinate_x',
+        'coordinate_y',
+        'coordinate_z',
+        'pick_sequence',
+        'capacity',
+        'current_utilization',
         'owner_type',
         'owner_id',
         'metadata',
@@ -246,6 +275,154 @@ final class InventoryLocation extends Model
     }
 
     /**
+     * Get the temperature zone as enum.
+     */
+    public function getTemperatureZoneEnum(): ?TemperatureZone
+    {
+        if ($this->temperature_zone === null) {
+            return null;
+        }
+
+        return TemperatureZone::from($this->temperature_zone);
+    }
+
+    /**
+     * Check if this location can store items requiring a specific temperature zone.
+     */
+    public function canStoreTemperatureZone(TemperatureZone $required): bool
+    {
+        $current = $this->getTemperatureZoneEnum();
+
+        // If no zone specified, assume ambient-compatible
+        if ($current === null) {
+            return $required === TemperatureZone::Ambient;
+        }
+
+        return $current->isCompatibleWith($required);
+    }
+
+    /**
+     * Check if this location can store hazardous materials.
+     */
+    public function canStoreHazmat(): bool
+    {
+        return $this->is_hazmat_certified;
+    }
+
+    /**
+     * Get coordinates as array.
+     *
+     * @return array{x: float|null, y: float|null, z: float|null}
+     */
+    public function getCoordinates(): array
+    {
+        return [
+            'x' => $this->coordinate_x,
+            'y' => $this->coordinate_y,
+            'z' => $this->coordinate_z,
+        ];
+    }
+
+    /**
+     * Set coordinates.
+     */
+    public function setCoordinates(?float $x, ?float $y, ?float $z = null): self
+    {
+        $this->coordinate_x = $x;
+        $this->coordinate_y = $y;
+        $this->coordinate_z = $z;
+
+        return $this;
+    }
+
+    /**
+     * Calculate distance to another location.
+     */
+    public function distanceTo(InventoryLocation $other): ?float
+    {
+        if ($this->coordinate_x === null || $other->coordinate_x === null) {
+            return null;
+        }
+
+        $dx = $this->coordinate_x - $other->coordinate_x;
+        $dy = ($this->coordinate_y ?? 0) - ($other->coordinate_y ?? 0);
+        $dz = ($this->coordinate_z ?? 0) - ($other->coordinate_z ?? 0);
+
+        return sqrt($dx * $dx + $dy * $dy + $dz * $dz);
+    }
+
+    /**
+     * Get the capacity utilization percentage.
+     */
+    public function getUtilizationPercentage(): ?float
+    {
+        if ($this->capacity === null || $this->capacity === 0) {
+            return null;
+        }
+
+        return ($this->current_utilization / $this->capacity) * 100;
+    }
+
+    /**
+     * Check if location has available capacity.
+     */
+    public function hasAvailableCapacity(int $required = 1): bool
+    {
+        if ($this->capacity === null) {
+            return true; // No capacity limit
+        }
+
+        return ($this->capacity - $this->current_utilization) >= $required;
+    }
+
+    /**
+     * Scope to filter by temperature zone.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeWithTemperatureZone(Builder $query, TemperatureZone $zone): Builder
+    {
+        return $query->where('temperature_zone', $zone->value);
+    }
+
+    /**
+     * Scope to filter hazmat certified locations.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeHazmatCertified(Builder $query): Builder
+    {
+        return $query->where('is_hazmat_certified', true);
+    }
+
+    /**
+     * Scope to filter by available capacity.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeWithAvailableCapacity(Builder $query, int $required = 1): Builder
+    {
+        return $query->where(function (Builder $q) use ($required): void {
+            $q->whereNull('capacity')
+                ->orWhereRaw('(capacity - current_utilization) >= ?', [$required]);
+        });
+    }
+
+    /**
+     * Scope to order by pick sequence.
+     *
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeByPickSequence(Builder $query): Builder
+    {
+        return $query->orderBy('pick_sequence');
+    }
+
+    /**
      * Handle model lifecycle events.
      */
     protected static function booted(): void
@@ -273,7 +450,15 @@ final class InventoryLocation extends Model
     {
         return [
             'is_active' => 'boolean',
+            'is_hazmat_certified' => 'boolean',
             'priority' => 'integer',
+            'depth' => 'integer',
+            'coordinate_x' => 'decimal:2',
+            'coordinate_y' => 'decimal:2',
+            'coordinate_z' => 'decimal:2',
+            'pick_sequence' => 'integer',
+            'capacity' => 'integer',
+            'current_utilization' => 'integer',
             'metadata' => 'array',
         ];
     }

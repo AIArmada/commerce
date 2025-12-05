@@ -1,0 +1,6 @@
+includes:
+    - phar://phpstan.phar/conf/bleedingEdge.neon
+
+parameters:
+    stubFiles:
+        - stubs/Role.stub.php

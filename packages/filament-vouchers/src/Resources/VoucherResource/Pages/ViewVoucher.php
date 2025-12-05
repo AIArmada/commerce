@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Pages;
 
+use AIArmada\FilamentVouchers\Actions\ActivateVoucherAction;
 use AIArmada\FilamentVouchers\Actions\AddToMyWalletAction;
+use AIArmada\FilamentVouchers\Actions\ManualRedeemVoucherAction;
+use AIArmada\FilamentVouchers\Actions\PauseVoucherAction;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Widgets\VoucherCartStatsWidget;
 use AIArmada\FilamentVouchers\Widgets\VoucherUsageTimelineWidget;
@@ -25,6 +28,9 @@ final class ViewVoucher extends ViewRecord
     protected function getHeaderActions(): array
     {
         return [
+            ActivateVoucherAction::make(),
+            PauseVoucherAction::make(),
+            ManualRedeemVoucherAction::make(),
             AddToMyWalletAction::make(),
             Actions\EditAction::make(),
         ];

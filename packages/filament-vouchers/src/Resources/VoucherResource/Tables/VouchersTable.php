@@ -50,6 +50,10 @@ final class VouchersTable
                         VoucherType::Percentage => 'primary',
                         VoucherType::Fixed => 'success',
                         VoucherType::FreeShipping => 'warning',
+                        VoucherType::BuyXGetY => 'info',
+                        VoucherType::Tiered => 'secondary',
+                        VoucherType::Bundle => 'primary',
+                        VoucherType::Cashback => 'success',
                     })
                     ->formatStateUsing(static fn (VoucherType|string $state): string => $state instanceof VoucherType ? $state->label() : VoucherType::from($state)->label())
                     ->sortable(),

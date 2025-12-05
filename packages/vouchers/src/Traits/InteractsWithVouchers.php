@@ -10,7 +10,11 @@ use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Events\VoucherRemoved;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
+use AIArmada\Vouchers\Exceptions\VoucherStackingException;
 use AIArmada\Vouchers\Facades\Voucher;
+use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
+use AIArmada\Vouchers\Stacking\StackingEngine;
+use AIArmada\Vouchers\Stacking\StackingPolicy;
 use AIArmada\Vouchers\Support\CartWithVouchers;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use Illuminate\Support\Facades\Event;
@@ -24,6 +28,54 @@ use Throwable;
  */
 trait InteractsWithVouchers
 {
+    protected ?StackingPolicyInterface $stackingPolicy = null;
+
+    /**
+     * Set the stacking policy for voucher combinations.
+     */
+    public function setStackingPolicy(StackingPolicyInterface $policy): static
+    {
+        $this->stackingPolicy = $policy;
+
+        return $this;
+    }
+
+    /**
+     * Get the current stacking policy.
+     */
+    public function getStackingPolicy(): StackingPolicyInterface
+    {
+        if ($this->stackingPolicy !== null) {
+            return $this->stackingPolicy;
+        }
+
+        // Check for legacy cart config
+        $maxVouchers = (int) config('vouchers.cart.max_vouchers_per_cart', 1);
+
+        // If max vouchers is 1 or stacking is explicitly disabled (when max is also 1), use single voucher
+        if ($maxVouchers === 1) {
+            return StackingPolicy::singleVoucher();
+        }
+
+        // If max is 0, vouchers are disabled
+        if ($maxVouchers === 0) {
+            return StackingPolicy::singleVoucher();
+        }
+
+        // Build a policy from legacy cart config (max > 1 or unlimited)
+        $rules = [];
+        if ($maxVouchers > 0) {
+            $rules[] = ['type' => 'max_vouchers', 'value' => $maxVouchers];
+        }
+
+        return new StackingPolicy(
+            mode: \AIArmada\Vouchers\Stacking\Enums\StackingMode::Sequential,
+            rules: $rules,
+            autoOptimize: false,
+            autoReplace: (bool) config('vouchers.cart.replace_when_max_reached', true),
+        );
+    }
+
     /**
      * Apply a voucher to the cart by code.
      *
@@ -34,6 +86,7 @@ trait InteractsWithVouchers
      * @param  int  $order  The order in which the voucher condition should be applied (default: 100)
      *
      * @throws InvalidVoucherException If the voucher is invalid or cannot be applied
+     * @throws VoucherStackingException If the voucher violates stacking policies
      */
     public function applyVoucher(string $code, int $order = 100): self
     {
@@ -53,24 +106,6 @@ trait InteractsWithVouchers
             );
         }
 
-        /** @var int $maxVouchers */
-        $maxVouchers = config('vouchers.cart.max_vouchers_per_cart', 1);
-        $currentVoucherCount = count($this->getAppliedVouchers());
-
-        if ($currentVoucherCount >= $maxVouchers && $maxVouchers > 0) {
-            /** @var bool $replaceWhenMaxReached */
-            $replaceWhenMaxReached = config('vouchers.cart.replace_when_max_reached', false);
-
-            if ($replaceWhenMaxReached) {
-                // Clear existing vouchers to make room for the new one
-                $this->clearVouchers();
-            } else {
-                throw new InvalidVoucherException(
-                    "Cart already has the maximum number of vouchers ({$maxVouchers})"
-                );
-            }
-        }
-
         $voucherData = Voucher::find($code);
 
         if ($voucherData === null) {
@@ -79,9 +114,30 @@ trait InteractsWithVouchers
             );
         }
 
-        $this->ensureVoucherRulesFactory($cart);
-
         $voucherCondition = new VoucherCondition($voucherData, $order);
+        $existingVouchers = collect($this->getAppliedVouchers());
+        $policy = $this->getStackingPolicy();
+        $engine = new StackingEngine($policy);
+
+        $decision = $engine->canAdd($voucherCondition, $existingVouchers, $cart);
+
+        if ($decision->isDenied()) {
+            $replaceWhenMaxReached = (bool) config('vouchers.cart.replace_when_max_reached', true);
+
+            if ($policy->isAutoReplaceEnabled() && $replaceWhenMaxReached && $decision->hasConflict()) {
+                $conflicting = $decision->conflictsWith;
+                if ($conflicting !== null) {
+                    $this->removeVoucher($conflicting->getVoucherCode());
+                }
+            } else {
+                // Throw InvalidVoucherException for backward compatibility
+                throw new InvalidVoucherException(
+                    'Cart already has the maximum number of vouchers'
+                );
+            }
+        }
+
+        $this->ensureVoucherRulesFactory($cart);
 
         try {
             $cart->registerDynamicCondition(
@@ -214,18 +270,63 @@ trait InteractsWithVouchers
         $cart = $this->getUnderlyingCart();
         $subtotalMoney = $cart->subtotal();
         $baseValue = (float) $subtotalMoney->getAmount();
+        $policy = $this->getStackingPolicy();
+        $mode = $policy->getMode();
 
-        foreach ($this->getAppliedVouchers() as $voucher) {
+        $vouchers = $this->getAppliedVouchers();
+        $orderedVouchers = $policy->getApplicationOrder(collect($vouchers), $cart)->all();
+
+        foreach ($orderedVouchers as $voucher) {
             $discountAmount = abs($voucher->getCalculatedValue($baseValue));
             $discount += $discountAmount;
 
-            // Update subtotal for next voucher calculation if stacking
-            if (config('vouchers.cart.allow_stacking', false)) {
+            if ($mode->value === 'sequential') {
                 $baseValue -= $discountAmount;
             }
         }
 
         return $discount;
+    }
+
+    /**
+     * Optimize voucher combination for best value.
+     *
+     * Removes suboptimal vouchers and keeps only the best combination.
+     */
+    public function optimizeVouchers(): self
+    {
+        $policy = $this->getStackingPolicy();
+
+        if (! $policy->isAutoOptimizeEnabled()) {
+            return $this;
+        }
+
+        $cart = $this->getUnderlyingCart();
+        $available = collect($this->getAppliedVouchers());
+        $engine = new StackingEngine($policy);
+
+        $maxVouchers = 3;
+        foreach ($policy->getRules() as $rule) {
+            if (($rule['type'] ?? '') === 'max_vouchers') {
+                $maxVouchers = (int) ($rule['value'] ?? 3);
+
+                break;
+            }
+        }
+
+        $optimal = $engine->getBestCombination($available, $cart, $maxVouchers);
+
+        $toRemove = $available->filter(
+            fn (VoucherCondition $v) => ! $optimal->contains(
+                fn (VoucherCondition $o) => $o->getVoucherCode() === $v->getVoucherCode()
+            )
+        );
+
+        foreach ($toRemove as $voucher) {
+            $this->removeVoucher($voucher->getVoucherCode());
+        }
+
+        return $this;
     }
 
     /**

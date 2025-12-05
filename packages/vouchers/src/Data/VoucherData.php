@@ -18,6 +18,10 @@ readonly class VoucherData
         public ?string $description,
         public VoucherType $type,
         public float $value,
+        /** @var ?array<string, mixed> Configuration for compound voucher types */
+        public ?array $valueConfig,
+        public ?string $creditDestination,
+        public int $creditDelayHours,
         public string $currency,
         public ?float $minCartValue,
         public ?float $maxDiscount,
@@ -56,6 +60,9 @@ readonly class VoucherData
             description: $voucher->description,
             type: $type,
             value: (float) $voucher->value,
+            valueConfig: $voucher->value_config,
+            creditDestination: $voucher->credit_destination,
+            creditDelayHours: (int) ($voucher->credit_delay_hours ?? 0),
             currency: $voucher->currency,
             minCartValue: $voucher->min_cart_value ? (float) $voucher->min_cart_value : null,
             maxDiscount: $voucher->max_discount ? (float) $voucher->max_discount : null,
@@ -103,6 +110,11 @@ readonly class VoucherData
             ? $data['metadata']
             : null;
 
+        /** @var array<string, mixed>|null $valueConfig */
+        $valueConfig = isset($data['value_config']) && is_array($data['value_config'])
+            ? $data['value_config']
+            : null;
+
         /** @var scalar|null $id */
         $id = $data['id'] ?? '';
         /** @var scalar|null $code */
@@ -125,6 +137,10 @@ readonly class VoucherData
         $usageLimitPerUser = $data['usage_limit_per_user'] ?? null;
         /** @var scalar|null $ownerType */
         $ownerType = $data['owner_type'] ?? null;
+        /** @var scalar|null $creditDestination */
+        $creditDestination = $data['credit_destination'] ?? null;
+        /** @var scalar|null $creditDelayHours */
+        $creditDelayHours = $data['credit_delay_hours'] ?? 0;
 
         return new self(
             id: (string) $id,
@@ -133,6 +149,9 @@ readonly class VoucherData
             description: $description !== null ? (string) $description : null,
             type: VoucherType::from($typeValue),
             value: (float) $value,
+            valueConfig: $valueConfig,
+            creditDestination: $creditDestination !== null ? (string) $creditDestination : null,
+            creditDelayHours: (int) $creditDelayHours,
             currency: (string) $currency,
             minCartValue: $minCartValue !== null ? (float) $minCartValue : null,
             maxDiscount: $maxDiscount !== null ? (float) $maxDiscount : null,
@@ -161,6 +180,7 @@ readonly class VoucherData
             'description' => $this->description,
             'type' => $this->type->value,
             'value' => $this->value,
+            'value_config' => $this->valueConfig,
             'currency' => $this->currency,
             'min_cart_value' => $this->minCartValue,
             'max_discount' => $this->maxDiscount,
@@ -174,6 +194,8 @@ readonly class VoucherData
             'status' => $this->status->value,
             'target_definition' => $this->targetDefinition,
             'metadata' => $this->metadata,
+            'credit_destination' => $this->creditDestination,
+            'credit_delay_hours' => $this->creditDelayHours,
         ];
     }
 }
