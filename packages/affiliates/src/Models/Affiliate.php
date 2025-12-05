@@ -39,6 +39,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Affiliate> $children
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateAttribution> $attributions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateConversion> $conversions
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayout> $payouts
  * @property-read Model|null $owner
  */
 class Affiliate extends Model
@@ -91,6 +92,14 @@ class Affiliate extends Model
     public function conversions(): HasMany
     {
         return $this->hasMany(AffiliateConversion::class);
+    }
+
+    /**
+     * @return HasMany<AffiliatePayout, self>
+     */
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(AffiliatePayout::class);
     }
 
     public function parent(): BelongsTo
