@@ -14,11 +14,6 @@ use Filament\Support\Icons\Heroicon;
 
 final class DeclareABWinnerAction extends Action
 {
-    public static function getDefaultName(): ?string
-    {
-        return 'declare_winner';
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -70,5 +65,10 @@ final class DeclareABWinnerAction extends Action
                 ->success()
                 ->send();
         });
+    }
+
+    public static function getDefaultName(): ?string
+    {
+        return 'declare_winner';
     }
 }

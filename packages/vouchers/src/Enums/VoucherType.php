@@ -17,6 +17,35 @@ enum VoucherType: string
     case Bundle = 'bundle';
     case Cashback = 'cashback';
 
+    /**
+     * Get all simple voucher types.
+     *
+     * @return array<self>
+     */
+    public static function simpleTypes(): array
+    {
+        return [
+            self::Percentage,
+            self::Fixed,
+            self::FreeShipping,
+        ];
+    }
+
+    /**
+     * Get all compound voucher types.
+     *
+     * @return array<self>
+     */
+    public static function compoundTypes(): array
+    {
+        return [
+            self::BuyXGetY,
+            self::Tiered,
+            self::Bundle,
+            self::Cashback,
+        ];
+    }
+
     public function label(): string
     {
         return match ($this) {
@@ -102,34 +131,5 @@ enum VoucherType: string
             self::Bundle => 'pink',
             self::Cashback => 'amber',
         };
-    }
-
-    /**
-     * Get all simple voucher types.
-     *
-     * @return array<self>
-     */
-    public static function simpleTypes(): array
-    {
-        return [
-            self::Percentage,
-            self::Fixed,
-            self::FreeShipping,
-        ];
-    }
-
-    /**
-     * Get all compound voucher types.
-     *
-     * @return array<self>
-     */
-    public static function compoundTypes(): array
-    {
-        return [
-            self::BuyXGetY,
-            self::Tiered,
-            self::Bundle,
-            self::Cashback,
-        ];
     }
 }

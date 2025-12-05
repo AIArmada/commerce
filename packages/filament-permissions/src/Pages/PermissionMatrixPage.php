@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPermissions\Pages;
 
-use AIArmada\FilamentPermissions\Services\PermissionAggregator;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
@@ -15,16 +15,6 @@ use Spatie\Permission\Models\Role;
 
 class PermissionMatrixPage extends Page
 {
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-table-cells';
-
-    protected string $view = 'filament-permissions::pages.permission-matrix';
-
-    protected static ?string $title = 'Permission Matrix';
-
-    protected static ?string $navigationLabel = 'Permission Matrix';
-
-    protected static ?int $navigationSort = 10;
-
     public ?string $selectedRole = null;
 
     /** @var array<string, bool> */
@@ -39,39 +29,26 @@ class PermissionMatrixPage extends Page
     /** @var array<string, array<string, Permission>> */
     public array $groupedPermissions = [];
 
-    public function mount(): void
-    {
-        $this->allPermissions = Permission::all();
-        $this->allRoles = Role::all();
-        $this->groupPermissions();
-    }
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-table-cells';
+
+    protected string $view = 'filament-permissions::pages.permission-matrix';
+
+    protected static ?string $title = 'Permission Matrix';
+
+    protected static ?string $navigationLabel = 'Permission Matrix';
+
+    protected static ?int $navigationSort = 10;
 
     public static function getNavigationGroup(): ?string
     {
         return config('filament-permissions.navigation.group', 'Administration');
     }
 
-    protected function getHeaderActions(): array
+    public function mount(): void
     {
-        return [
-            Action::make('selectRole')
-                ->label('Select Role')
-                ->form([
-                    Select::make('role')
-                        ->label('Role')
-                        ->options($this->allRoles->pluck('name', 'id'))
-                        ->required()
-                        ->searchable(),
-                ])
-                ->action(function (array $data): void {
-                    $this->selectRole($data['role']);
-                }),
-            Action::make('saveChanges')
-                ->label('Save Changes')
-                ->action(fn () => $this->savePermissions())
-                ->visible(fn () => $this->selectedRole !== null)
-                ->color('primary'),
-        ];
+        $this->allPermissions = Permission::all();
+        $this->allRoles = Role::all();
+        $this->groupPermissions();
     }
 
     public function selectRole(string $roleId): void
@@ -155,6 +132,29 @@ class PermissionMatrixPage extends Page
         }
 
         return $matrix;
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('selectRole')
+                ->label('Select Role')
+                ->form([
+                    Select::make('role')
+                        ->label('Role')
+                        ->options($this->allRoles->pluck('name', 'id'))
+                        ->required()
+                        ->searchable(),
+                ])
+                ->action(function (array $data): void {
+                    $this->selectRole($data['role']);
+                }),
+            Action::make('saveChanges')
+                ->label('Save Changes')
+                ->action(fn () => $this->savePermissions())
+                ->visible(fn () => $this->selectedRole !== null)
+                ->color('primary'),
+        ];
     }
 
     protected function groupPermissions(): void

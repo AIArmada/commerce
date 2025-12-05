@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPermissions\Services;
 
+use DB;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Facades\Cache;
 use Spatie\Permission\Models\Permission;
@@ -125,7 +126,7 @@ class PermissionCacheService
     public function flush(): void
     {
         // Flush user caches
-        $users = \DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
+        $users = DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
             ->distinct()
             ->pluck('model_id');
 

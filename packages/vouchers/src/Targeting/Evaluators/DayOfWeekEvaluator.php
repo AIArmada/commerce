@@ -76,7 +76,7 @@ class DayOfWeekEvaluator implements TargetingRuleEvaluator
         foreach ($rule['values'] as $day) {
             if (is_int($day) && ($day < 0 || $day > 6)) {
                 $errors[] = "Invalid day number: {$day}. Must be 0-6";
-            } elseif (is_string($day) && ! isset(self::DAY_MAP[strtolower($day)])) {
+            } elseif (is_string($day) && ! isset(self::DAY_MAP[mb_strtolower($day)])) {
                 $errors[] = "Invalid day name: {$day}";
             }
         }
@@ -97,7 +97,7 @@ class DayOfWeekEvaluator implements TargetingRuleEvaluator
                 return $day;
             }
 
-            return self::DAY_MAP[strtolower((string) $day)] ?? -1;
+            return self::DAY_MAP[mb_strtolower((string) $day)] ?? -1;
         }, $days);
     }
 }

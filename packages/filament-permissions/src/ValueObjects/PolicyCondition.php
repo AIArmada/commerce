@@ -31,51 +31,6 @@ final readonly class PolicyCondition
     }
 
     /**
-     * Convert to array.
-     *
-     * @return array{attribute: string, operator: string, value: mixed, description: string|null}
-     */
-    public function toArray(): array
-    {
-        return [
-            'attribute' => $this->attribute,
-            'operator' => $this->operator->value,
-            'value' => $this->value,
-            'description' => $this->description,
-        ];
-    }
-
-    /**
-     * Evaluate the condition against a context.
-     *
-     * @param  array<string, mixed>  $context
-     */
-    public function evaluate(array $context): bool
-    {
-        // Get the attribute value from context using dot notation
-        $actualValue = data_get($context, $this->attribute);
-
-        return $this->operator->evaluate($actualValue, $this->value);
-    }
-
-    /**
-     * Get human-readable description of the condition.
-     */
-    public function describe(): string
-    {
-        if ($this->description !== null) {
-            return $this->description;
-        }
-
-        $operatorLabel = $this->operator->label();
-        $valueDisplay = is_array($this->value)
-            ? '['.implode(', ', array_map(fn ($v) => (string) $v, $this->value)).']'
-            : (string) $this->value;
-
-        return "{$this->attribute} {$operatorLabel} {$valueDisplay}";
-    }
-
-    /**
      * Create an equals condition.
      */
     public static function equals(string $attribute, mixed $value): self
@@ -175,5 +130,50 @@ final readonly class PolicyCondition
     public static function matches(string $attribute, string $pattern): self
     {
         return new self($attribute, ConditionOperator::Matches, $pattern);
+    }
+
+    /**
+     * Convert to array.
+     *
+     * @return array{attribute: string, operator: string, value: mixed, description: string|null}
+     */
+    public function toArray(): array
+    {
+        return [
+            'attribute' => $this->attribute,
+            'operator' => $this->operator->value,
+            'value' => $this->value,
+            'description' => $this->description,
+        ];
+    }
+
+    /**
+     * Evaluate the condition against a context.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    public function evaluate(array $context): bool
+    {
+        // Get the attribute value from context using dot notation
+        $actualValue = data_get($context, $this->attribute);
+
+        return $this->operator->evaluate($actualValue, $this->value);
+    }
+
+    /**
+     * Get human-readable description of the condition.
+     */
+    public function describe(): string
+    {
+        if ($this->description !== null) {
+            return $this->description;
+        }
+
+        $operatorLabel = $this->operator->label();
+        $valueDisplay = is_array($this->value)
+            ? '['.implode(', ', array_map(fn ($v) => (string) $v, $this->value)).']'
+            : (string) $this->value;
+
+        return "{$this->attribute} {$operatorLabel} {$valueDisplay}";
     }
 }

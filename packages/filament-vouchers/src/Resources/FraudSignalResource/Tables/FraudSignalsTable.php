@@ -7,7 +7,6 @@ namespace AIArmada\FilamentVouchers\Resources\FraudSignalResource\Tables;
 use AIArmada\FilamentVouchers\Actions\MarkFraudReviewedAction;
 use AIArmada\Vouchers\Fraud\Enums\FraudRiskLevel;
 use AIArmada\Vouchers\Fraud\Enums\FraudSignalType;
-use AIArmada\Vouchers\Fraud\Models\VoucherFraudSignal;
 use Filament\Actions\ViewAction;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;

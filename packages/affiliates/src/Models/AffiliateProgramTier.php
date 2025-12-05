@@ -66,7 +66,7 @@ class AffiliateProgramTier extends Model
     public function meetsUpgradeRequirements(Affiliate $affiliate, AffiliateProgram $program): bool
     {
         $conversions = $affiliate->conversions()
-            ->whereHas('attribution', function ($q) use ($program) {
+            ->whereHas('attribution', function ($q) use ($program): void {
                 $q->where('program_id', $program->id);
             })
             ->count();
@@ -76,7 +76,7 @@ class AffiliateProgramTier extends Model
         }
 
         $revenue = $affiliate->conversions()
-            ->whereHas('attribution', function ($q) use ($program) {
+            ->whereHas('attribution', function ($q) use ($program): void {
                 $q->where('program_id', $program->id);
             })
             ->sum('total_minor');

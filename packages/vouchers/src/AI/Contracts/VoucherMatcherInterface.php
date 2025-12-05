@@ -20,9 +20,9 @@ interface VoucherMatcherInterface
     /**
      * Find the best voucher for a cart.
      *
-     * @param Cart $cart The cart to match a voucher for
-     * @param Collection $availableVouchers Collection of Voucher models to choose from
-     * @param Model|null $user Optional authenticated user
+     * @param  Cart  $cart  The cart to match a voucher for
+     * @param  Collection  $availableVouchers  Collection of Voucher models to choose from
+     * @param  Model|null  $user  Optional authenticated user
      */
     public function findBestVoucher(
         Cart $cart,
@@ -33,9 +33,6 @@ interface VoucherMatcherInterface
     /**
      * Rank all available vouchers by suitability.
      *
-     * @param Cart $cart
-     * @param Collection $availableVouchers
-     * @param Model|null $user
      * @return Collection<int, VoucherMatch> Sorted by match score descending
      */
     public function rankVouchers(
@@ -46,11 +43,6 @@ interface VoucherMatcherInterface
 
     /**
      * Score a specific voucher for the cart.
-     *
-     * @param Cart $cart
-     * @param mixed $voucher
-     * @param Model|null $user
-     * @return VoucherMatch
      */
     public function scoreVoucher(
         Cart $cart,

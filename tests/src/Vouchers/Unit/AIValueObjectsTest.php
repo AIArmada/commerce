@@ -10,7 +10,6 @@ use AIArmada\Vouchers\AI\Enums\DiscountStrategy;
 use AIArmada\Vouchers\AI\Enums\InterventionType;
 use AIArmada\Vouchers\AI\Enums\PredictionConfidence;
 use AIArmada\Vouchers\AI\VoucherMatch;
-use AIArmada\Vouchers\Models\Voucher;
 
 describe('ConversionPrediction', function (): void {
     it('creates with all properties', function (): void {

@@ -4,15 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
-use AIArmada\Affiliates\Enums\RankQualificationReason;
-use AIArmada\Affiliates\Events\AffiliateRankChanged;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateNetwork;
-use AIArmada\Affiliates\Models\AffiliateRank;
-use AIArmada\Affiliates\Models\AffiliateRankHistory;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
 
 final class NetworkService
 {
@@ -100,7 +96,7 @@ final class NetworkService
         $query = Affiliate::query()
             ->whereIn('id', $descendantIds)
             ->withSum([
-                'conversions' => function ($q) use ($from, $to) {
+                'conversions' => function ($q) use ($from, $to): void {
                     if ($from) {
                         $q->where('occurred_at', '>=', $from);
                     }

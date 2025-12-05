@@ -5,21 +5,19 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Widgets;
 
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Services\NetworkService;
 use Filament\Widgets\Widget;
-use Illuminate\Contracts\View\View;
 
 final class NetworkVisualizationWidget extends Widget
 {
+    public ?string $affiliateId = null;
+
+    public int $depth = 3;
+
     protected static ?int $sort = 5;
 
     protected int|string|array $columnSpan = 'full';
 
     protected static string $view = 'filament-affiliates::widgets.network-visualization';
-
-    public ?string $affiliateId = null;
-
-    public int $depth = 3;
 
     public function mount(?string $affiliateId = null): void
     {

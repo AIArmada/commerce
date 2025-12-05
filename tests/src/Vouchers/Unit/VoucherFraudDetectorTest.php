@@ -2,14 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Fraud\Enums\FraudRiskLevel;
-use AIArmada\Vouchers\Fraud\Enums\FraudSignalType;
-use AIArmada\Vouchers\Fraud\VoucherFraudDetector;
-use AIArmada\Vouchers\Fraud\Detectors\VelocityDetector;
-use AIArmada\Vouchers\Fraud\Detectors\PatternDetector;
 use AIArmada\Vouchers\Fraud\Detectors\BehavioralDetector;
 use AIArmada\Vouchers\Fraud\Detectors\CodeAbuseDetector;
+use AIArmada\Vouchers\Fraud\Detectors\PatternDetector;
+use AIArmada\Vouchers\Fraud\Detectors\VelocityDetector;
+use AIArmada\Vouchers\Fraud\Enums\FraudRiskLevel;
 use AIArmada\Vouchers\Fraud\FraudAnalysis;
+use AIArmada\Vouchers\Fraud\VoucherFraudDetector;
 
 describe('VoucherFraudDetector', function (): void {
     it('can be instantiated', function (): void {
@@ -113,14 +112,15 @@ describe('VoucherFraudDetector', function (): void {
 
     it('aggregates signals from all detectors', function (): void {
         $detector = new VoucherFraudDetector();
-        $cart = new class {
+        $cart = new class
+        {
             public function getTotal(): float
             {
                 return 100.0;
             }
         };
 
-        $user = Mockery::mock(\Illuminate\Database\Eloquent\Model::class);
+        $user = Mockery::mock(Illuminate\Database\Eloquent\Model::class);
         $user->shouldReceive('getKey')->andReturn('user-123');
 
         $context = [
@@ -145,7 +145,8 @@ describe('VoucherFraudDetector', function (): void {
         $detector = new VoucherFraudDetector();
         $detector->setBlockThreshold(0.5);
 
-        $cart = new class {
+        $cart = new class
+        {
             public function getTotal(): float
             {
                 return 100.0;
@@ -161,7 +162,7 @@ describe('VoucherFraudDetector', function (): void {
             'user_refunded_orders' => 8,
         ];
 
-        $user = Mockery::mock(\Illuminate\Database\Eloquent\Model::class);
+        $user = Mockery::mock(Illuminate\Database\Eloquent\Model::class);
         $user->shouldReceive('getKey')->andReturn('user-123');
 
         $analysis = $detector->analyze('TEST-CODE', $cart, $user, $context);
@@ -262,7 +263,8 @@ describe('VoucherFraudDetector', function (): void {
 describe('VoucherFraudDetector Integration', function (): void {
     it('processes clean redemption correctly', function (): void {
         $detector = VoucherFraudDetector::make();
-        $cart = new class {
+        $cart = new class
+        {
             public function getTotal(): float
             {
                 return 50.0;
@@ -298,14 +300,15 @@ describe('VoucherFraudDetector Integration', function (): void {
 
     it('accumulates signals from multiple categories', function (): void {
         $detector = VoucherFraudDetector::make();
-        $cart = new class {
+        $cart = new class
+        {
             public function getTotal(): float
             {
                 return 15000.0; // Triggers abnormal cart value
             }
         };
 
-        $user = Mockery::mock(\Illuminate\Database\Eloquent\Model::class);
+        $user = Mockery::mock(Illuminate\Database\Eloquent\Model::class);
         $user->shouldReceive('getKey')->andReturn('user-123');
 
         $context = [

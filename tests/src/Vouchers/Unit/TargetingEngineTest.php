@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Unit\Vouchers;
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\CartItem;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Targeting\Enums\TargetingMode;
 use AIArmada\Vouchers\Targeting\Enums\TargetingRuleType;

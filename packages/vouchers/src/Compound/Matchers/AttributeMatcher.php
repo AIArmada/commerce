@@ -35,6 +35,15 @@ class AttributeMatcher extends AbstractProductMatcher
         $this->value = $value;
     }
 
+    public static function fromArray(array $config): self
+    {
+        return new self(
+            attribute: $config['attribute'] ?? '',
+            operator: $config['operator'] ?? '=',
+            value: $config['value'] ?? null
+        );
+    }
+
     public function matches(CartItem $item): bool
     {
         $attributes = $item->attributes->toArray();
@@ -61,15 +70,6 @@ class AttributeMatcher extends AbstractProductMatcher
         ];
     }
 
-    public static function fromArray(array $config): self
-    {
-        return new self(
-            attribute: $config['attribute'] ?? '',
-            operator: $config['operator'] ?? '=',
-            value: $config['value'] ?? null
-        );
-    }
-
     /**
      * Get a nested attribute using dot notation.
      *
@@ -81,7 +81,7 @@ class AttributeMatcher extends AbstractProductMatcher
         $value = $attributes;
 
         foreach ($keys as $k) {
-            if (!is_array($value) || !array_key_exists($k, $value)) {
+            if (! is_array($value) || ! array_key_exists($k, $value)) {
                 return null;
             }
             $value = $value[$k];
@@ -96,16 +96,16 @@ class AttributeMatcher extends AbstractProductMatcher
     private function compare(mixed $itemValue, string $operator, mixed $targetValue): bool
     {
         return match ($operator) {
-            '=', '==' => $itemValue == $targetValue,
+            '=', '==' => $itemValue === $targetValue,
             '===' => $itemValue === $targetValue,
-            '!=' => $itemValue != $targetValue,
+            '!=' => $itemValue !== $targetValue,
             '!==' => $itemValue !== $targetValue,
             '>' => is_numeric($itemValue) && is_numeric($targetValue) && $itemValue > $targetValue,
             '<' => is_numeric($itemValue) && is_numeric($targetValue) && $itemValue < $targetValue,
             '>=' => is_numeric($itemValue) && is_numeric($targetValue) && $itemValue >= $targetValue,
             '<=' => is_numeric($itemValue) && is_numeric($targetValue) && $itemValue <= $targetValue,
             'in' => is_array($targetValue) && in_array($itemValue, $targetValue, true),
-            'not_in' => is_array($targetValue) && !in_array($itemValue, $targetValue, true),
+            'not_in' => is_array($targetValue) && ! in_array($itemValue, $targetValue, true),
             'contains' => is_string($itemValue) && is_string($targetValue) && str_contains($itemValue, $targetValue),
             'starts_with' => is_string($itemValue) && is_string($targetValue) && str_starts_with($itemValue, $targetValue),
             'ends_with' => is_string($itemValue) && is_string($targetValue) && str_ends_with($itemValue, $targetValue),

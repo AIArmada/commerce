@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Fraud\Detectors\VelocityDetector;
-use AIArmada\Vouchers\Fraud\Detectors\PatternDetector;
 use AIArmada\Vouchers\Fraud\Detectors\BehavioralDetector;
 use AIArmada\Vouchers\Fraud\Detectors\CodeAbuseDetector;
+use AIArmada\Vouchers\Fraud\Detectors\PatternDetector;
+use AIArmada\Vouchers\Fraud\Detectors\VelocityDetector;
 use AIArmada\Vouchers\Fraud\Enums\FraudSignalType;
 use AIArmada\Vouchers\Fraud\FraudDetectorResult;
 
@@ -104,7 +104,7 @@ describe('PatternDetector', function (): void {
 
         // Distance ~10,800 km in 1 hour = 10,800 km/h (impossible)
         expect($result->hasSignals())->toBeTrue();
-        
+
         $geoSignal = collect($result->signals)->first(
             fn ($s) => $s->type === FraudSignalType::GeoAnomalyDetected
         );
@@ -123,7 +123,7 @@ describe('PatternDetector', function (): void {
         $result = $detector->detect('TEST-CODE', $cart, null, $context);
 
         expect($result->hasSignals())->toBeTrue();
-        
+
         $fpSignal = collect($result->signals)->first(
             fn ($s) => $s->type === FraudSignalType::DeviceFingerprintMismatch
         );
@@ -142,7 +142,7 @@ describe('PatternDetector', function (): void {
         $result = $detector->detect('TEST-CODE', $cart, null, $context);
 
         expect($result->hasSignals())->toBeTrue();
-        
+
         $ipSignal = collect($result->signals)->first(
             fn ($s) => $s->type === FraudSignalType::IpAddressAnomaly
         );
@@ -163,7 +163,7 @@ describe('PatternDetector', function (): void {
         $result = $detector->detect('TEST-CODE', $cart, null, $context);
 
         expect($result->hasSignals())->toBeTrue();
-        
+
         $sessionSignal = collect($result->signals)->first(
             fn ($s) => $s->type === FraudSignalType::SessionAnomaly
         );
@@ -182,7 +182,7 @@ describe('BehavioralDetector', function (): void {
     it('detects discount-only purchase pattern', function (): void {
         $detector = new BehavioralDetector();
         $cart = new stdClass();
-        $user = Mockery::mock(\Illuminate\Database\Eloquent\Model::class);
+        $user = Mockery::mock(Illuminate\Database\Eloquent\Model::class);
         $user->shouldReceive('getKey')->andReturn('user-123');
 
         $context = [
@@ -193,7 +193,7 @@ describe('BehavioralDetector', function (): void {
         $result = $detector->detect('TEST-CODE', $cart, $user, $context);
 
         expect($result->hasSignals())->toBeTrue();
-        
+
         $discountSignal = collect($result->signals)->first(
             fn ($s) => $s->type === FraudSignalType::OnlyDiscountedPurchases
         );
@@ -203,7 +203,7 @@ describe('BehavioralDetector', function (): void {
     it('detects high refund rate', function (): void {
         $detector = new BehavioralDetector();
         $cart = new stdClass();
-        $user = Mockery::mock(\Illuminate\Database\Eloquent\Model::class);
+        $user = Mockery::mock(Illuminate\Database\Eloquent\Model::class);
         $user->shouldReceive('getKey')->andReturn('user-123');
 
         $context = [
@@ -214,7 +214,7 @@ describe('BehavioralDetector', function (): void {
         $result = $detector->detect('TEST-CODE', $cart, $user, $context);
 
         expect($result->hasSignals())->toBeTrue();
-        
+
         $refundSignal = collect($result->signals)->first(
             fn ($s) => $s->type === FraudSignalType::HighRefundRate
         );
@@ -233,7 +233,7 @@ describe('BehavioralDetector', function (): void {
         $result = $detector->detect('TEST-CODE', $cart, null, $context);
 
         expect($result->hasSignals())->toBeTrue();
-        
+
         $cartSignals = collect($result->signals)->filter(
             fn ($s) => $s->type === FraudSignalType::CartManipulation
         );
@@ -252,7 +252,7 @@ describe('BehavioralDetector', function (): void {
         $result = $detector->detect('TEST-CODE', $cart, null, $context);
 
         expect($result->hasSignals())->toBeTrue();
-        
+
         $checkoutSignals = collect($result->signals)->filter(
             fn ($s) => $s->type === FraudSignalType::SuspiciousCheckoutPattern
         );
@@ -261,7 +261,8 @@ describe('BehavioralDetector', function (): void {
 
     it('detects abnormally high cart value', function (): void {
         $detector = new BehavioralDetector();
-        $cart = new class {
+        $cart = new class
+        {
             public function getTotal(): float
             {
                 return 15000.0;
@@ -271,7 +272,7 @@ describe('BehavioralDetector', function (): void {
         $result = $detector->detect('TEST-CODE', $cart, null, []);
 
         expect($result->hasSignals())->toBeTrue();
-        
+
         $cartValueSignal = collect($result->signals)->first(
             fn ($s) => $s->type === FraudSignalType::AbnormalCartValue
         );
@@ -281,7 +282,8 @@ describe('BehavioralDetector', function (): void {
 
     it('detects near-zero cart after discount', function (): void {
         $detector = new BehavioralDetector();
-        $cart = new class {
+        $cart = new class
+        {
             public function getTotal(): float
             {
                 return 100.0;
@@ -295,7 +297,7 @@ describe('BehavioralDetector', function (): void {
         $result = $detector->detect('TEST-CODE', $cart, null, $context);
 
         expect($result->hasSignals())->toBeTrue();
-        
+
         $cartValueSignal = collect($result->signals)->first(
             fn ($s) => $s->type === FraudSignalType::AbnormalCartValue
         );
@@ -324,7 +326,7 @@ describe('CodeAbuseDetector', function (): void {
         $result = $detector->detect('TEST-CODE', $cart, null, $context);
 
         expect($result->hasSignals())->toBeTrue();
-        
+
         $leakedSignal = collect($result->signals)->first(
             fn ($s) => $s->type === FraudSignalType::LeakedCodeUsage
         );
@@ -343,7 +345,7 @@ describe('CodeAbuseDetector', function (): void {
         $result = $detector->detect('TEST-CODE', $cart, null, $context);
 
         expect($result->hasSignals())->toBeTrue();
-        
+
         $sequentialSignal = collect($result->signals)->first(
             fn ($s) => $s->type === FraudSignalType::SequentialCodeAttempts
         );
@@ -362,7 +364,7 @@ describe('CodeAbuseDetector', function (): void {
         $result = $detector->detect('TEST-CODE', $cart, null, $context);
 
         expect($result->hasSignals())->toBeTrue();
-        
+
         $bruteForceSignal = collect($result->signals)->first(
             fn ($s) => $s->type === FraudSignalType::InvalidCodeBruteforce
         );
@@ -380,7 +382,7 @@ describe('CodeAbuseDetector', function (): void {
         $result = $detector->detect('TEST-CODE', $cart, null, $context);
 
         expect($result->hasSignals())->toBeTrue();
-        
+
         $expiredSignal = collect($result->signals)->first(
             fn ($s) => $s->type === FraudSignalType::ExpiredCodeAbuse
         );
@@ -413,11 +415,11 @@ describe('FraudDetectorResult', function (): void {
 
     it('can create result with signals', function (): void {
         $signals = [
-            \AIArmada\Vouchers\Fraud\FraudSignal::create(
+            AIArmada\Vouchers\Fraud\FraudSignal::create(
                 FraudSignalType::HighRedemptionVelocity,
                 'High velocity'
             ),
-            \AIArmada\Vouchers\Fraud\FraudSignal::withScore(
+            AIArmada\Vouchers\Fraud\FraudSignal::withScore(
                 FraudSignalType::RapidCodeAttempts,
                 50.0,
                 'Rapid attempts'
@@ -434,12 +436,12 @@ describe('FraudDetectorResult', function (): void {
 
     it('can get total score', function (): void {
         $signals = [
-            \AIArmada\Vouchers\Fraud\FraudSignal::withScore(
+            AIArmada\Vouchers\Fraud\FraudSignal::withScore(
                 FraudSignalType::HighRedemptionVelocity,
                 40.0,
                 'Signal 1'
             ),
-            \AIArmada\Vouchers\Fraud\FraudSignal::withScore(
+            AIArmada\Vouchers\Fraud\FraudSignal::withScore(
                 FraudSignalType::RapidCodeAttempts,
                 30.0,
                 'Signal 2'
@@ -453,17 +455,17 @@ describe('FraudDetectorResult', function (): void {
 
     it('can get highest severity signal', function (): void {
         $signals = [
-            \AIArmada\Vouchers\Fraud\FraudSignal::withScore(
+            AIArmada\Vouchers\Fraud\FraudSignal::withScore(
                 FraudSignalType::UnusualTimePattern,
                 30.0,
                 'Low'
             ),
-            \AIArmada\Vouchers\Fraud\FraudSignal::withScore(
+            AIArmada\Vouchers\Fraud\FraudSignal::withScore(
                 FraudSignalType::HighRedemptionVelocity,
                 80.0,
                 'High'
             ),
-            \AIArmada\Vouchers\Fraud\FraudSignal::withScore(
+            AIArmada\Vouchers\Fraud\FraudSignal::withScore(
                 FraudSignalType::RapidCodeAttempts,
                 50.0,
                 'Medium'
@@ -486,7 +488,7 @@ describe('FraudDetectorResult', function (): void {
 
     it('can convert to array', function (): void {
         $signals = [
-            \AIArmada\Vouchers\Fraud\FraudSignal::withScore(
+            AIArmada\Vouchers\Fraud\FraudSignal::withScore(
                 FraudSignalType::HighRedemptionVelocity,
                 60.0,
                 'Test signal'

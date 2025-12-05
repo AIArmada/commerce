@@ -11,6 +11,25 @@ enum ReorderUrgency: string
     case High = 'high';
     case Critical = 'critical';
 
+    /**
+     * Calculate urgency based on days until stockout.
+     */
+    public static function fromDaysUntilStockout(?int $days, int $leadTime = 0): self
+    {
+        if ($days === null) {
+            return self::Low;
+        }
+
+        $buffer = $days - $leadTime;
+
+        return match (true) {
+            $buffer <= 0 => self::Critical,
+            $buffer <= 3 => self::High,
+            $buffer <= 7 => self::Normal,
+            default => self::Low,
+        };
+    }
+
     public function label(): string
     {
         return match ($this) {
@@ -38,25 +57,6 @@ enum ReorderUrgency: string
             self::High => 2,
             self::Normal => 3,
             self::Low => 4,
-        };
-    }
-
-    /**
-     * Calculate urgency based on days until stockout.
-     */
-    public static function fromDaysUntilStockout(?int $days, int $leadTime = 0): self
-    {
-        if ($days === null) {
-            return self::Low;
-        }
-
-        $buffer = $days - $leadTime;
-
-        return match (true) {
-            $buffer <= 0 => self::Critical,
-            $buffer <= 3 => self::High,
-            $buffer <= 7 => self::Normal,
-            default => self::Low,
         };
     }
 }

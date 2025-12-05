@@ -12,7 +12,8 @@ use AIArmada\Vouchers\GiftCards\Models\GiftCardTransaction;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
+use InvalidArgumentException;
+use RuntimeException;
 
 class GiftCardService
 {
@@ -28,7 +29,7 @@ class GiftCardService
         $data['currency'] = $data['currency'] ?? config('vouchers.default_currency', 'MYR');
         $data['current_balance'] = $data['initial_balance'];
 
-        if (!isset($data['code'])) {
+        if (! isset($data['code'])) {
             $data['code'] = GiftCard::generateCode();
         }
 
@@ -159,15 +160,15 @@ class GiftCardService
     public function merge(array $codes, Model $actor): GiftCard
     {
         if (count($codes) < 2) {
-            throw new \InvalidArgumentException('At least 2 gift cards required for merge');
+            throw new InvalidArgumentException('At least 2 gift cards required for merge');
         }
 
-        $giftCards = collect($codes)->map(fn($code) => GiftCard::findByCodeOrFail($code));
+        $giftCards = collect($codes)->map(fn ($code) => GiftCard::findByCodeOrFail($code));
 
         // Validate all cards can be merged
         foreach ($giftCards as $giftCard) {
-            if (!$giftCard->isActive() && $giftCard->status !== GiftCardStatus::Exhausted) {
-                throw new \RuntimeException("Gift card {$giftCard->code} is not active");
+            if (! $giftCard->isActive() && $giftCard->status !== GiftCardStatus::Exhausted) {
+                throw new RuntimeException("Gift card {$giftCard->code} is not active");
             }
         }
 
@@ -201,7 +202,7 @@ class GiftCardService
             $targetCard->credit(
                 amount: $totalMerged,
                 type: GiftCardTransactionType::Merge,
-                description: 'Merged from ' . ($giftCards->count() - 1) . ' cards',
+                description: 'Merged from '.($giftCards->count() - 1).' cards',
                 actor: $actor,
                 metadata: ['merged_from' => $giftCards->skip(1)->pluck('id')->toArray()]
             );
@@ -397,7 +398,7 @@ class GiftCardService
     {
         $giftCard = GiftCard::findByCode($code);
 
-        if (!$giftCard) {
+        if (! $giftCard) {
             return [
                 'valid' => false,
                 'message' => 'Gift card not found',
@@ -405,7 +406,7 @@ class GiftCardService
             ];
         }
 
-        if (!$giftCard->verifyPin($pin)) {
+        if (! $giftCard->verifyPin($pin)) {
             return [
                 'valid' => false,
                 'message' => 'Invalid PIN',
@@ -413,11 +414,11 @@ class GiftCardService
             ];
         }
 
-        if (!$giftCard->canRedeem()) {
+        if (! $giftCard->canRedeem()) {
             $reason = match (true) {
                 $giftCard->isExpired() => 'Gift card has expired',
-                !$giftCard->isActive() => 'Gift card is not active',
-                !$giftCard->hasBalance() => 'Gift card has no balance',
+                ! $giftCard->isActive() => 'Gift card is not active',
+                ! $giftCard->hasBalance() => 'Gift card has no balance',
                 default => 'Gift card cannot be redeemed',
             };
 

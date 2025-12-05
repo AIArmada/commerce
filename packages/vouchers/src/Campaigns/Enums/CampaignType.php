@@ -18,6 +18,21 @@ enum CampaignType: string
     case Referral = 'referral';
 
     /**
+     * Get options for UI dropdowns.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        $options = [];
+        foreach (self::cases() as $case) {
+            $options[$case->value] = $case->label();
+        }
+
+        return $options;
+    }
+
+    /**
      * Get human-readable label.
      */
     public function label(): string
@@ -47,20 +62,5 @@ enum CampaignType: string
             self::Flash => 'Limited-time urgency deals',
             self::Referral => 'Refer-a-friend incentive programs',
         };
-    }
-
-    /**
-     * Get options for UI dropdowns.
-     *
-     * @return array<string, string>
-     */
-    public static function options(): array
-    {
-        $options = [];
-        foreach (self::cases() as $case) {
-            $options[$case->value] = $case->label();
-        }
-
-        return $options;
     }
 }

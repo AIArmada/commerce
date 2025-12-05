@@ -6,7 +6,6 @@ namespace AIArmada\Vouchers\Compound\Conditions;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\CartItem;
-use Illuminate\Support\Collection;
 
 /**
  * Bundle discount voucher condition.
@@ -54,19 +53,23 @@ class BundleVoucherCondition extends CompoundVoucherCondition
 
         if ($bundleCount === 0) {
             $missing = $this->getMissingProducts($cart);
-            if (!empty($missing)) {
+            if (! empty($missing)) {
                 $missingCount = count($missing);
+
                 return "{$bundleName}: Add {$missingCount} more item(s) to complete";
             }
+
             return $bundleName;
         }
 
         if (str_ends_with($discount, '%')) {
             $percent = abs((int) str_replace(['%', '-', '+'], '', $discount));
+
             return "{$bundleName}: {$percent}% off";
         }
 
         $amount = abs((int) str_replace(['-', '+'], '', $discount)) / 100;
+
         return "{$bundleName}: RM{$amount} off";
     }
 
@@ -91,11 +94,12 @@ class BundleVoucherCondition extends CompoundVoucherCondition
         // Count available quantity for each required product
         $availableCounts = [];
         foreach ($required as $req) {
-            $sku = strtoupper($req['sku'] ?? '');
+            $sku = mb_strtoupper($req['sku'] ?? '');
             $requiredQty = $req['quantity'] ?? 1;
 
             $matchingItem = $items->first(function (CartItem $item) use ($sku): bool {
-                $itemSku = strtoupper($this->getItemSku($item));
+                $itemSku = mb_strtoupper($this->getItemSku($item));
+
                 return $itemSku === $sku;
             });
 
@@ -111,7 +115,7 @@ class BundleVoucherCondition extends CompoundVoucherCondition
 
         $completeBundles = min($availableCounts);
 
-        if (!$allowMultiples) {
+        if (! $allowMultiples) {
             return min($completeBundles, 1);
         }
 
@@ -127,7 +131,7 @@ class BundleVoucherCondition extends CompoundVoucherCondition
     {
         $products = $this->getConfig('required_products', []);
 
-        if (!is_array($products)) {
+        if (! is_array($products)) {
             return [];
         }
 
@@ -146,11 +150,12 @@ class BundleVoucherCondition extends CompoundVoucherCondition
         $missing = [];
 
         foreach ($required as $req) {
-            $sku = strtoupper($req['sku'] ?? '');
+            $sku = mb_strtoupper($req['sku'] ?? '');
             $requiredQty = $req['quantity'] ?? 1;
 
             $matchingItem = $items->first(function (CartItem $item) use ($sku): bool {
-                $itemSku = strtoupper($this->getItemSku($item));
+                $itemSku = mb_strtoupper($this->getItemSku($item));
+
                 return $itemSku === $sku;
             });
 
@@ -177,11 +182,12 @@ class BundleVoucherCondition extends CompoundVoucherCondition
         $totalValue = 0;
 
         foreach ($required as $req) {
-            $sku = strtoupper($req['sku'] ?? '');
+            $sku = mb_strtoupper($req['sku'] ?? '');
             $requiredQty = $req['quantity'] ?? 1;
 
             $matchingItem = $items->first(function (CartItem $item) use ($sku): bool {
-                $itemSku = strtoupper($this->getItemSku($item));
+                $itemSku = mb_strtoupper($this->getItemSku($item));
+
                 return $itemSku === $sku;
             });
 
@@ -202,11 +208,13 @@ class BundleVoucherCondition extends CompoundVoucherCondition
 
         if (str_ends_with($discount, '%')) {
             $percent = abs((float) str_replace(['%', '-', '+'], '', $discount));
+
             return (int) round($bundleValue * ($percent / 100));
         }
 
         // Fixed discount per bundle
         $amount = abs((int) str_replace(['-', '+'], '', $discount));
+
         return min($amount * $bundleCount, $bundleValue);
     }
 
@@ -219,10 +227,12 @@ class BundleVoucherCondition extends CompoundVoucherCondition
 
         if (str_ends_with($discount, '%')) {
             $percent = abs((float) str_replace(['%', '-', '+'], '', $discount));
+
             return (int) round($cartValue * ($percent / 100));
         }
 
         $amount = abs((int) str_replace(['-', '+'], '', $discount));
+
         return min($amount, $cartValue);
     }
 

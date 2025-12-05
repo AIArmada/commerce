@@ -71,11 +71,11 @@ class RoleTemplate extends Model
     /**
      * Get roles using this template.
      *
-     * @return HasMany<\Illuminate\Database\Eloquent\Model, $this>
+     * @return HasMany<Model, $this>
      */
     public function roles(): HasMany
     {
-        /** @var class-string<\Illuminate\Database\Eloquent\Model> $roleClass */
+        /** @var class-string<Model> $roleClass */
         $roleClass = config('permission.models.role', Role::class);
 
         return $this->hasMany($roleClass, 'template_id');
@@ -169,7 +169,7 @@ class RoleTemplate extends Model
     /**
      * Check if this template is an ancestor of another template.
      */
-    public function isAncestorOf(RoleTemplate $template): bool
+    public function isAncestorOf(self $template): bool
     {
         return $template->getAncestors()->contains('id', $this->id);
     }
@@ -177,7 +177,7 @@ class RoleTemplate extends Model
     /**
      * Check if this template is a descendant of another template.
      */
-    public function isDescendantOf(RoleTemplate $template): bool
+    public function isDescendantOf(self $template): bool
     {
         return $this->getAncestors()->contains('id', $template->id);
     }

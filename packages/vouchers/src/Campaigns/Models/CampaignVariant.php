@@ -196,7 +196,7 @@ class CampaignVariant extends Model
      *
      * @return array{z_score: float, p_value: float, significant: bool}|null
      */
-    public function calculateSignificance(CampaignVariant $control): ?array
+    public function calculateSignificance(self $control): ?array
     {
         // Need minimum sample size for meaningful analysis
         if ($this->applications < 30 || $control->applications < 30) {
@@ -236,41 +236,11 @@ class CampaignVariant extends Model
     }
 
     /**
-     * Approximate normal CDF using error function.
-     */
-    private function normalCdf(float $z): float
-    {
-        return 0.5 * (1 + $this->erf($z / sqrt(2)));
-    }
-
-    /**
-     * Approximate error function.
-     */
-    private function erf(float $x): float
-    {
-        // Approximation constants
-        $a1 = 0.254829592;
-        $a2 = -0.284496736;
-        $a3 = 1.421413741;
-        $a4 = -1.453152027;
-        $a5 = 1.061405429;
-        $p = 0.3275911;
-
-        $sign = $x < 0 ? -1 : 1;
-        $x = abs($x);
-
-        $t = 1.0 / (1.0 + $p * $x);
-        $y = 1.0 - ((((($a5 * $t + $a4) * $t) + $a3) * $t + $a2) * $t + $a1) * $t * exp(-$x * $x);
-
-        return $sign * $y;
-    }
-
-    /**
      * Compare performance to another variant.
      *
      * @return array{conversion_lift: float, revenue_lift: float, aov_lift: float|null}
      */
-    public function compareToVariant(CampaignVariant $other): array
+    public function compareToVariant(self $other): array
     {
         $conversionLift = 0.0;
         if ($other->conversion_rate > 0) {
@@ -310,5 +280,35 @@ class CampaignVariant extends Model
             'discount_cents' => 'integer',
             'is_control' => 'boolean',
         ];
+    }
+
+    /**
+     * Approximate normal CDF using error function.
+     */
+    private function normalCdf(float $z): float
+    {
+        return 0.5 * (1 + $this->erf($z / sqrt(2)));
+    }
+
+    /**
+     * Approximate error function.
+     */
+    private function erf(float $x): float
+    {
+        // Approximation constants
+        $a1 = 0.254829592;
+        $a2 = -0.284496736;
+        $a3 = 1.421413741;
+        $a4 = -1.453152027;
+        $a5 = 1.061405429;
+        $p = 0.3275911;
+
+        $sign = $x < 0 ? -1 : 1;
+        $x = abs($x);
+
+        $t = 1.0 / (1.0 + $p * $x);
+        $y = 1.0 - ((((($a5 * $t + $a4) * $t) + $a3) * $t + $a2) * $t + $a1) * $t * exp(-$x * $x);
+
+        return $sign * $y;
     }
 }

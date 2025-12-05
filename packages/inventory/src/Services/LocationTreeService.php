@@ -8,6 +8,7 @@ use AIArmada\Inventory\Enums\TemperatureZone;
 use AIArmada\Inventory\Models\InventoryLocation;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 final class LocationTreeService
 {
@@ -146,7 +147,7 @@ final class LocationTreeService
     public function moveLocation(InventoryLocation $location, ?InventoryLocation $newParent): InventoryLocation
     {
         if ($newParent !== null && $location->isAncestorOf($newParent)) {
-            throw new \InvalidArgumentException('Cannot move a location to its own descendant');
+            throw new InvalidArgumentException('Cannot move a location to its own descendant');
         }
 
         return DB::transaction(function () use ($location, $newParent): InventoryLocation {

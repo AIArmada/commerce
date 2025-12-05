@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPermissions\Services;
 
 use AIArmada\FilamentPermissions\Enums\ImpactLevel;
+use DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -221,7 +222,7 @@ class PermissionImpactAnalyzer
     {
         $roleIds = $roles->pluck('id');
 
-        return \DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
+        return DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
             ->whereIn('role_id', $roleIds)
             ->distinct('model_id')
             ->count('model_id');
@@ -247,7 +248,7 @@ class PermissionImpactAnalyzer
         // Count users in affected roles who don't have permission through other roles
         $affectedRoleIds = $affectedRoles->pluck('id');
 
-        return \DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
+        return DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
             ->whereIn('role_id', $affectedRoleIds)
             ->whereNotIn('model_id', function ($query) use ($otherRolesWithPermission): void {
                 $query->select('model_id')
@@ -263,7 +264,7 @@ class PermissionImpactAnalyzer
      */
     protected function countUsersWithRole(Role $role): int
     {
-        return \DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
+        return DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
             ->where('role_id', $role->id)
             ->count();
     }

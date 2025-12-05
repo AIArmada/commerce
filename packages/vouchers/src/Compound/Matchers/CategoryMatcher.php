@@ -34,13 +34,22 @@ class CategoryMatcher extends AbstractProductMatcher
         $this->includeChildren = $includeChildren;
     }
 
+    public static function fromArray(array $config): self
+    {
+        return new self(
+            categories: $config['categories'] ?? [],
+            exclude: $config['exclude'] ?? false,
+            includeChildren: $config['include_children'] ?? true
+        );
+    }
+
     public function matches(CartItem $item): bool
     {
         $itemCategories = $this->getItemCategories($item);
         $inCategory = false;
 
         foreach ($itemCategories as $category) {
-            $normalizedCategory = strtolower($category);
+            $normalizedCategory = mb_strtolower($category);
 
             if (in_array($normalizedCategory, $this->categories, true)) {
                 $inCategory = true;
@@ -50,7 +59,7 @@ class CategoryMatcher extends AbstractProductMatcher
             // Check if category is a child of any target category
             if ($this->includeChildren) {
                 foreach ($this->categories as $targetCategory) {
-                    if (str_starts_with($normalizedCategory, $targetCategory . '/')) {
+                    if (str_starts_with($normalizedCategory, $targetCategory.'/')) {
                         $inCategory = true;
                         break 2;
                     }
@@ -58,7 +67,7 @@ class CategoryMatcher extends AbstractProductMatcher
             }
         }
 
-        return $this->exclude ? !$inCategory : $inCategory;
+        return $this->exclude ? ! $inCategory : $inCategory;
     }
 
     public function getType(): string
@@ -77,15 +86,6 @@ class CategoryMatcher extends AbstractProductMatcher
             'exclude' => $this->exclude,
             'include_children' => $this->includeChildren,
         ];
-    }
-
-    public static function fromArray(array $config): self
-    {
-        return new self(
-            categories: $config['categories'] ?? [],
-            exclude: $config['exclude'] ?? false,
-            includeChildren: $config['include_children'] ?? true
-        );
     }
 
     /**

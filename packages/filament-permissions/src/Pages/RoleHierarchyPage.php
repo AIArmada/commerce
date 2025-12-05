@@ -5,17 +5,25 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPermissions\Pages;
 
 use AIArmada\FilamentPermissions\Services\RoleInheritanceService;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
+use InvalidArgumentException;
 use Spatie\Permission\Models\Role;
 
 class RoleHierarchyPage extends Page
 {
-    protected static string|\BackedEnum|null $navigationIcon = 'heroicon-o-arrow-trending-up';
+    /** @var Collection<int, Role> */
+    public Collection $rootRoles;
+
+    /** @var array<string, array<string, mixed>> */
+    public array $hierarchyTree = [];
+
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-arrow-trending-up';
 
     protected string $view = 'filament-permissions::pages.role-hierarchy';
 
@@ -25,11 +33,10 @@ class RoleHierarchyPage extends Page
 
     protected static ?int $navigationSort = 11;
 
-    /** @var Collection<int, Role> */
-    public Collection $rootRoles;
-
-    /** @var array<string, array<string, mixed>> */
-    public array $hierarchyTree = [];
+    public static function getNavigationGroup(): ?string
+    {
+        return config('filament-permissions.navigation.group', 'Administration');
+    }
 
     public function mount(RoleInheritanceService $service): void
     {
@@ -37,9 +44,53 @@ class RoleHierarchyPage extends Page
         $this->buildTree($service);
     }
 
-    public static function getNavigationGroup(): ?string
+    public function setParent(string $roleId, ?string $parentId, RoleInheritanceService $service): void
     {
-        return config('filament-permissions.navigation.group', 'Administration');
+        /** @var Role|null $role */
+        $role = Role::find($roleId);
+        /** @var Role|null $parent */
+        $parent = $parentId !== null ? Role::find($parentId) : null;
+
+        if ($role === null) {
+            return;
+        }
+
+        try {
+            $service->setParent($role, $parent);
+
+            Notification::make()
+                ->title('Hierarchy Updated')
+                ->body("Parent of '{$role->name}' has been updated.")
+                ->success()
+                ->send();
+
+            $this->buildTree($service);
+        } catch (InvalidArgumentException $e) {
+            Notification::make()
+                ->title('Error')
+                ->body($e->getMessage())
+                ->danger()
+                ->send();
+        }
+    }
+
+    public function detachRole(string $roleId, RoleInheritanceService $service): void
+    {
+        $role = Role::find($roleId);
+
+        if ($role === null) {
+            return;
+        }
+
+        $service->detachFromParent($role);
+
+        Notification::make()
+            ->title('Role Detached')
+            ->body("Role '{$role->name}' is now a root role.")
+            ->success()
+            ->send();
+
+        $this->buildTree($service);
     }
 
     protected function getHeaderActions(): array
@@ -89,55 +140,6 @@ class RoleHierarchyPage extends Page
                 ->action(fn (RoleInheritanceService $service) => $this->buildTree($service))
                 ->icon('heroicon-o-arrow-path'),
         ];
-    }
-
-    public function setParent(string $roleId, ?string $parentId, RoleInheritanceService $service): void
-    {
-        /** @var Role|null $role */
-        $role = Role::find($roleId);
-        /** @var Role|null $parent */
-        $parent = $parentId !== null ? Role::find($parentId) : null;
-
-        if ($role === null) {
-            return;
-        }
-
-        try {
-            $service->setParent($role, $parent);
-
-            Notification::make()
-                ->title('Hierarchy Updated')
-                ->body("Parent of '{$role->name}' has been updated.")
-                ->success()
-                ->send();
-
-            $this->buildTree($service);
-        } catch (\InvalidArgumentException $e) {
-            Notification::make()
-                ->title('Error')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
-        }
-    }
-
-    public function detachRole(string $roleId, RoleInheritanceService $service): void
-    {
-        $role = Role::find($roleId);
-
-        if ($role === null) {
-            return;
-        }
-
-        $service->detachFromParent($role);
-
-        Notification::make()
-            ->title('Role Detached')
-            ->body("Role '{$role->name}' is now a root role.")
-            ->success()
-            ->send();
-
-        $this->buildTree($service);
     }
 
     protected function buildTree(RoleInheritanceService $service): void

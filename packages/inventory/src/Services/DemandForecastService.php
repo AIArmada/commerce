@@ -6,7 +6,6 @@ namespace AIArmada\Inventory\Services;
 
 use AIArmada\Inventory\Enums\DemandPeriodType;
 use AIArmada\Inventory\Models\InventoryDemandHistory;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;

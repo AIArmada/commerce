@@ -8,6 +8,7 @@ use AIArmada\FilamentPermissions\Models\PermissionGroup;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
 use Spatie\Permission\Models\Permission;
 
 class PermissionGroupService
@@ -194,7 +195,7 @@ class PermissionGroupService
         if ($newParentId !== null) {
             $newParent = PermissionGroup::find($newParentId);
             if ($newParent !== null && $group->isAncestorOf($newParent)) {
-                throw new \InvalidArgumentException('Cannot move a group to one of its descendants.');
+                throw new InvalidArgumentException('Cannot move a group to one of its descendants.');
             }
         }
 
@@ -206,7 +207,7 @@ class PermissionGroupService
             $subtreeDepth = $this->getMaxSubtreeDepth($group);
 
             if ($newDepth + $subtreeDepth > $maxDepth) {
-                throw new \InvalidArgumentException("Moving this group would exceed the maximum depth of {$maxDepth}.");
+                throw new InvalidArgumentException("Moving this group would exceed the maximum depth of {$maxDepth}.");
             }
         }
 

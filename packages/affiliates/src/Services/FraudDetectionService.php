@@ -138,7 +138,7 @@ final class FraudDetectionService
 
     private function generateFingerprint(Request $request): string
     {
-        return hash('sha256', $request->userAgent() . '|' . $request->ip());
+        return hash('sha256', $request->userAgent().'|'.$request->ip());
     }
 
     private function checkClickVelocity(Affiliate $affiliate, array $context): ?AffiliateFraudSignal
@@ -237,7 +237,7 @@ final class FraudDetectionService
                 severity: FraudSeverity::Medium,
                 description: "Same fingerprint used {$existingCount} times in 24 hours",
                 evidence: [
-                    'fingerprint' => substr($context['fingerprint'], 0, 16) . '...',
+                    'fingerprint' => mb_substr($context['fingerprint'], 0, 16).'...',
                     'count' => $existingCount,
                     'threshold' => $threshold,
                 ]

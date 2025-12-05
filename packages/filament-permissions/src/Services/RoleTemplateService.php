@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
+use Throwable;
 
 class RoleTemplateService
 {
@@ -125,7 +126,7 @@ class RoleTemplateService
             try {
                 $template->syncRole($role);
                 $synced++;
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $failed++;
             }
         }

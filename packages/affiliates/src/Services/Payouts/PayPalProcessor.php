@@ -7,6 +7,8 @@ namespace AIArmada\Affiliates\Services\Payouts;
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use DateTimeInterface;
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -73,7 +75,7 @@ final class PayPalProcessor implements PayoutProcessorInterface
                             'recipient_type' => 'EMAIL',
                             'amount' => [
                                 'value' => number_format($netAmount / 100, 2, '.', ''),
-                                'currency' => strtoupper($payout->currency),
+                                'currency' => mb_strtoupper($payout->currency),
                             ],
                             'sender_item_id' => $payout->id,
                             'receiver' => $paypalEmail,
@@ -97,7 +99,7 @@ final class PayPalProcessor implements PayoutProcessorInterface
                 reason: $error['message'] ?? 'PayPal payout failed',
                 code: $error['name'] ?? 'PAYPAL_ERROR'
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('PayPal payout error', [
                 'payout_id' => $payout->id,
                 'error' => $e->getMessage(),
@@ -134,7 +136,7 @@ final class PayPalProcessor implements PayoutProcessorInterface
                     default => $payout->status,
                 };
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('Failed to get PayPal payout status', [
                 'payout_id' => $payout->id,
                 'error' => $e->getMessage(),
@@ -149,7 +151,7 @@ final class PayPalProcessor implements PayoutProcessorInterface
         return false;
     }
 
-    public function getEstimatedArrival(AffiliatePayout $payout): ?\DateTimeInterface
+    public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface
     {
         return now();
     }
@@ -195,7 +197,7 @@ final class PayPalProcessor implements PayoutProcessorInterface
 
                 return $this->accessToken;
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('PayPal OAuth error', ['error' => $e->getMessage()]);
         }
 

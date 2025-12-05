@@ -14,7 +14,6 @@ use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Builder;
 
 final class FraudReviewPage extends Page implements HasForms, HasTable
 {
@@ -67,7 +66,7 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('score')
                     ->label('Risk Score')
-                    ->formatStateUsing(fn ($state): string => $state . '%'),
+                    ->formatStateUsing(fn ($state): string => $state.'%'),
 
                 Tables\Columns\TextColumn::make('detected_at')
                     ->dateTime()

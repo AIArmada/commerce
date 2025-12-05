@@ -6,9 +6,9 @@ namespace AIArmada\Affiliates\Console\Commands;
 
 use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\AffiliatePayoutService;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 
@@ -45,7 +45,7 @@ final class ProcessScheduledPayoutsCommand extends Command
 
         $query = Affiliate::query()
             ->where('status', 'active')
-            ->whereHas('balance', function ($q) use ($minAmount) {
+            ->whereHas('balance', function ($q) use ($minAmount): void {
                 $q->where('available_minor', '>=', $minAmount);
             });
 
@@ -66,7 +66,7 @@ final class ProcessScheduledPayoutsCommand extends Command
                 } else {
                     $skipped++;
                 }
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 $errors++;
                 $this->error("Error processing affiliate {$affiliate->id}: {$e->getMessage()}");
             }
@@ -96,7 +96,7 @@ final class ProcessScheduledPayoutsCommand extends Command
 
         // Check for holds
         $hasHold = $affiliate->payoutHolds()
-            ->where(function ($q) {
+            ->where(function ($q): void {
                 $q->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
             })

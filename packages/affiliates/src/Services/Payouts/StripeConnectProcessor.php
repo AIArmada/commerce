@@ -7,6 +7,8 @@ namespace AIArmada\Affiliates\Services\Payouts;
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use DateTimeInterface;
+use Exception;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -50,7 +52,7 @@ final class StripeConnectProcessor implements PayoutProcessorInterface
                 ->asForm()
                 ->post("{$this->apiUrl}/transfers", [
                     'amount' => $payout->amount_minor - $this->getFees($payout->amount_minor, $payout->currency),
-                    'currency' => strtolower($payout->currency),
+                    'currency' => mb_strtolower($payout->currency),
                     'destination' => $stripeAccountId,
                     'transfer_group' => $payout->batch_id ?? $payout->id,
                     'metadata' => [
@@ -74,7 +76,7 @@ final class StripeConnectProcessor implements PayoutProcessorInterface
                 reason: $error['error']['message'] ?? 'Stripe transfer failed',
                 code: $error['error']['code'] ?? 'STRIPE_ERROR'
             );
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Stripe payout error', [
                 'payout_id' => $payout->id,
                 'error' => $e->getMessage(),
@@ -97,7 +99,7 @@ final class StripeConnectProcessor implements PayoutProcessorInterface
             if ($response->successful()) {
                 return 'completed';
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::warning('Failed to get Stripe transfer status', [
                 'payout_id' => $payout->id,
                 'error' => $e->getMessage(),
@@ -119,7 +121,7 @@ final class StripeConnectProcessor implements PayoutProcessorInterface
                 ->post("{$this->apiUrl}/transfers/{$payout->external_reference}/reversals");
 
             return $response->successful();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('Failed to cancel Stripe transfer', [
                 'payout_id' => $payout->id,
                 'error' => $e->getMessage(),
@@ -129,7 +131,7 @@ final class StripeConnectProcessor implements PayoutProcessorInterface
         }
     }
 
-    public function getEstimatedArrival(AffiliatePayout $payout): ?\DateTimeInterface
+    public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface
     {
         return now()->addDays(2);
     }

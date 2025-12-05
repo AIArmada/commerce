@@ -13,11 +13,6 @@ use Filament\Support\Icons\Heroicon;
 
 final class ActivateCampaignAction extends Action
 {
-    public static function getDefaultName(): ?string
-    {
-        return 'activate_campaign';
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,5 +36,10 @@ final class ActivateCampaignAction extends Action
                 ->success()
                 ->send();
         });
+    }
+
+    public static function getDefaultName(): ?string
+    {
+        return 'activate_campaign';
     }
 }

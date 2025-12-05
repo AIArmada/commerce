@@ -16,6 +16,21 @@ enum CampaignEventType: string
     case Removal = 'removal';
 
     /**
+     * Get options for UI dropdowns.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        $options = [];
+        foreach (self::cases() as $case) {
+            $options[$case->value] = $case->label();
+        }
+
+        return $options;
+    }
+
+    /**
      * Get human-readable label.
      */
     public function label(): string
@@ -62,20 +77,5 @@ enum CampaignEventType: string
             self::Conversion => 'conversions',
             default => null,
         };
-    }
-
-    /**
-     * Get options for UI dropdowns.
-     *
-     * @return array<string, string>
-     */
-    public static function options(): array
-    {
-        $options = [];
-        foreach (self::cases() as $case) {
-            $options[$case->value] = $case->label();
-        }
-
-        return $options;
     }
 }

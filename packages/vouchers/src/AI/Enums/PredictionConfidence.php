@@ -16,6 +16,20 @@ enum PredictionConfidence: string
     case VeryHigh = 'very_high';
 
     /**
+     * Determine confidence level from a score.
+     */
+    public static function fromScore(float $score): self
+    {
+        return match (true) {
+            $score >= 0.8 => self::VeryHigh,
+            $score >= 0.6 => self::High,
+            $score >= 0.4 => self::Medium,
+            $score >= 0.2 => self::Low,
+            default => self::VeryLow,
+        };
+    }
+
+    /**
      * Get the minimum confidence threshold for this level.
      */
     public function getMinThreshold(): float
@@ -79,20 +93,6 @@ enum PredictionConfidence: string
         return match ($this) {
             self::VeryLow, self::Low => false,
             self::Medium, self::High, self::VeryHigh => true,
-        };
-    }
-
-    /**
-     * Determine confidence level from a score.
-     */
-    public static function fromScore(float $score): self
-    {
-        return match (true) {
-            $score >= 0.8 => self::VeryHigh,
-            $score >= 0.6 => self::High,
-            $score >= 0.4 => self::Medium,
-            $score >= 0.2 => self::Low,
-            default => self::VeryLow,
         };
     }
 }

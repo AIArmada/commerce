@@ -20,7 +20,7 @@ use Carbon\Carbon;
 final readonly class AbandonmentRisk
 {
     /**
-     * @param array<string, mixed> $riskFactors
+     * @param  array<string, mixed>  $riskFactors
      */
     public function __construct(
         public float $riskScore,
@@ -46,7 +46,7 @@ final readonly class AbandonmentRisk
     /**
      * Create a high-risk assessment.
      *
-     * @param array<string, mixed> $factors
+     * @param  array<string, mixed>  $factors
      */
     public static function high(float $score = 0.75, array $factors = []): self
     {
@@ -61,7 +61,7 @@ final readonly class AbandonmentRisk
     /**
      * Create a critical-risk assessment requiring immediate action.
      *
-     * @param array<string, mixed> $factors
+     * @param  array<string, mixed>  $factors
      */
     public static function critical(array $factors = []): self
     {
@@ -128,7 +128,6 @@ final readonly class AbandonmentRisk
     /**
      * Get the top risk factors.
      *
-     * @param int $limit
      * @return array<string, mixed>
      */
     public function getTopRiskFactors(int $limit = 3): array

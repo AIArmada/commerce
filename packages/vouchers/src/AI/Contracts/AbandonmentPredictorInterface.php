@@ -19,8 +19,8 @@ interface AbandonmentPredictorInterface
     /**
      * Predict the likelihood of cart abandonment.
      *
-     * @param Cart $cart The cart to analyze
-     * @param Model|null $user Optional authenticated user
+     * @param  Cart  $cart  The cart to analyze
+     * @param  Model|null  $user  Optional authenticated user
      */
     public function predictAbandonment(
         Cart $cart,
@@ -30,7 +30,7 @@ interface AbandonmentPredictorInterface
     /**
      * Batch predict abandonment for multiple carts.
      *
-     * @param iterable<Cart> $carts
+     * @param  iterable<Cart>  $carts
      * @return iterable<AbandonmentRisk>
      */
     public function predictAbandonmentBatch(iterable $carts): iterable;
@@ -38,8 +38,8 @@ interface AbandonmentPredictorInterface
     /**
      * Get carts with high abandonment risk.
      *
-     * @param iterable<Cart> $carts
-     * @param float $threshold Minimum risk score to include
+     * @param  iterable<Cart>  $carts
+     * @param  float  $threshold  Minimum risk score to include
      * @return iterable<array{cart: Cart, risk: AbandonmentRisk}>
      */
     public function getHighRiskCarts(iterable $carts, float $threshold = 0.6): iterable;

@@ -8,6 +8,7 @@ use AIArmada\Vouchers\Targeting\Contracts\TargetingRuleEvaluator;
 use AIArmada\Vouchers\Targeting\Enums\TargetingRuleType;
 use AIArmada\Vouchers\Targeting\TargetingContext;
 use Carbon\Carbon;
+use Throwable;
 
 /**
  * Evaluates date range targeting rules.
@@ -104,7 +105,7 @@ class DateRangeEvaluator implements TargetingRuleEvaluator
 
         try {
             return Carbon::parse($dateString, $timezone)->startOfDay();
-        } catch (\Throwable) {
+        } catch (Throwable) {
             return null;
         }
     }

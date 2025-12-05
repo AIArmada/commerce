@@ -105,7 +105,7 @@ class AffiliateCommissionPromotion extends Model
     {
         return $query->where('starts_at', '<=', now())
             ->where('ends_at', '>=', now())
-            ->where(function ($q) {
+            ->where(function ($q): void {
                 $q->whereNull('max_uses')
                     ->orWhereColumn('current_uses', '<', 'max_uses');
             });

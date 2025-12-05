@@ -6,6 +6,7 @@ namespace AIArmada\FilamentPermissions\Console;
 
 use AIArmada\FilamentPermissions\Services\RoleInheritanceService;
 use Illuminate\Console\Command;
+use InvalidArgumentException;
 use Spatie\Permission\Models\Role;
 
 use function Laravel\Prompts\info;
@@ -133,7 +134,7 @@ class RoleHierarchyCommand extends Command
             info("Parent role set successfully for '{$roleName}'.");
 
             return self::SUCCESS;
-        } catch (\InvalidArgumentException $e) {
+        } catch (InvalidArgumentException $e) {
             warning($e->getMessage());
 
             return self::FAILURE;

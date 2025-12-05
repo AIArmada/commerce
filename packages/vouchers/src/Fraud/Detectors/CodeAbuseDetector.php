@@ -146,7 +146,7 @@ class CodeAbuseDetector extends AbstractFraudDetector
     protected function checkLeakedCodeUsage(string $code, array $context): void
     {
         foreach ($this->knownLeakedPatterns as $pattern) {
-            if (Str::contains(strtoupper($code), strtoupper($pattern))) {
+            if (Str::contains(mb_strtoupper($code), mb_strtoupper($pattern))) {
                 $this->addSignal(FraudSignal::create(
                     type: FraudSignalType::LeakedCodeUsage,
                     message: 'Code matches known leaked pattern',
@@ -285,7 +285,7 @@ class CodeAbuseDetector extends AbstractFraudDetector
      */
     protected function getUniqueIpsForCode(string $code): int
     {
-        if (!class_exists(VoucherRedemption::class) || !class_exists(Voucher::class)) {
+        if (! class_exists(VoucherRedemption::class) || ! class_exists(Voucher::class)) {
             return 0;
         }
 
@@ -304,7 +304,7 @@ class CodeAbuseDetector extends AbstractFraudDetector
      */
     protected function getUniqueDevicesForCode(string $code): int
     {
-        if (!class_exists(VoucherRedemption::class) || !class_exists(Voucher::class)) {
+        if (! class_exists(VoucherRedemption::class) || ! class_exists(Voucher::class)) {
             return 0;
         }
 
@@ -328,7 +328,7 @@ class CodeAbuseDetector extends AbstractFraudDetector
         $sequential = 0;
 
         foreach ($attempts as $i => $code) {
-            if (!isset($attempts[$i + 1])) {
+            if (! isset($attempts[$i + 1])) {
                 continue;
             }
 
@@ -338,7 +338,7 @@ class CodeAbuseDetector extends AbstractFraudDetector
             preg_match('/(\d+)$/', $code, $currentMatch);
             preg_match('/(\d+)$/', $nextCode, $nextMatch);
 
-            if (!empty($currentMatch) && !empty($nextMatch)) {
+            if (! empty($currentMatch) && ! empty($nextMatch)) {
                 $currentNum = (int) $currentMatch[1];
                 $nextNum = (int) $nextMatch[1];
 
@@ -361,15 +361,15 @@ class CodeAbuseDetector extends AbstractFraudDetector
         $sequential = 0;
 
         foreach ($attempts as $i => $code) {
-            if (!isset($attempts[$i + 1])) {
+            if (! isset($attempts[$i + 1])) {
                 continue;
             }
 
             $nextCode = $attempts[$i + 1];
 
             // Check if last char is sequential
-            $lastCurrent = strtoupper(substr($code, -1));
-            $lastNext = strtoupper(substr($nextCode, -1));
+            $lastCurrent = mb_strtoupper(mb_substr($code, -1));
+            $lastNext = mb_strtoupper(mb_substr($nextCode, -1));
 
             if (ctype_alpha($lastCurrent) && ctype_alpha($lastNext)) {
                 if (ord($lastNext) === ord($lastCurrent) + 1) {
@@ -386,12 +386,12 @@ class CodeAbuseDetector extends AbstractFraudDetector
      */
     protected function maskCode(string $code): string
     {
-        $length = strlen($code);
+        $length = mb_strlen($code);
 
         if ($length <= 5) {
             return str_repeat('*', $length);
         }
 
-        return substr($code, 0, 3) . str_repeat('*', $length - 5) . substr($code, -2);
+        return mb_substr($code, 0, 3).str_repeat('*', $length - 5).mb_substr($code, -2);
     }
 }

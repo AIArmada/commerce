@@ -22,7 +22,7 @@ interface FraudDetectorInterface
      * @param  object  $cart  The cart associated with the redemption
      * @param  Model|null  $user  The user attempting the redemption
      * @param  array<string, mixed>  $context  Additional context (IP, device, etc.)
-     * @return FraudDetectorResult  The detection result with any signals found
+     * @return FraudDetectorResult The detection result with any signals found
      */
     public function detect(
         string $code,

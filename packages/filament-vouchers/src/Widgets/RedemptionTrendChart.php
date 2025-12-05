@@ -11,6 +11,8 @@ use Illuminate\Support\Collection;
 
 final class RedemptionTrendChart extends ChartWidget
 {
+    public ?string $filter = '30';
+
     protected ?string $heading = 'Redemption Trend';
 
     protected ?string $description = 'Daily voucher redemptions over the last 30 days';
@@ -18,8 +20,6 @@ final class RedemptionTrendChart extends ChartWidget
     protected static ?int $sort = 2;
 
     protected int|string|array $columnSpan = 'full';
-
-    public ?string $filter = '30';
 
     protected function getFilters(): ?array
     {
@@ -57,6 +57,25 @@ final class RedemptionTrendChart extends ChartWidget
         return 'line';
     }
 
+    protected function getOptions(): array
+    {
+        return [
+            'plugins' => [
+                'legend' => [
+                    'display' => false,
+                ],
+            ],
+            'scales' => [
+                'y' => [
+                    'beginAtZero' => true,
+                    'ticks' => [
+                        'precision' => 0,
+                    ],
+                ],
+            ],
+        ];
+    }
+
     /**
      * @return Collection<int, array{date: string, count: int}>
      */
@@ -65,7 +84,7 @@ final class RedemptionTrendChart extends ChartWidget
         $startDate = Carbon::now()->subDays($days)->startOfDay();
         $endDate = Carbon::now()->endOfDay();
 
-        /** @var \Illuminate\Support\Collection<string, object{date: string, count: int}> $redemptions */
+        /** @var Collection<string, object{date: string, count: int}> $redemptions */
         $redemptions = VoucherUsage::query()
             ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
             ->where('created_at', '>=', $startDate)
@@ -87,24 +106,5 @@ final class RedemptionTrendChart extends ChartWidget
         }
 
         return $result;
-    }
-
-    protected function getOptions(): array
-    {
-        return [
-            'plugins' => [
-                'legend' => [
-                    'display' => false,
-                ],
-            ],
-            'scales' => [
-                'y' => [
-                    'beginAtZero' => true,
-                    'ticks' => [
-                        'precision' => 0,
-                    ],
-                ],
-            ],
-        ];
     }
 }

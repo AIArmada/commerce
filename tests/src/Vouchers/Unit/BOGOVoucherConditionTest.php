@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Compound\Conditions\BOGOVoucherCondition;
 use AIArmada\Vouchers\Compound\Enums\ItemSelectionStrategy;
@@ -14,7 +13,7 @@ use AIArmada\Vouchers\Enums\VoucherType;
 /**
  * Create a test cart with items.
  *
- * @param array<array{sku: string, price: int, quantity: int}> $itemsData
+ * @param  array<array{sku: string, price: int, quantity: int}>  $itemsData
  */
 function createBogoTestCart(array $itemsData): Cart
 {

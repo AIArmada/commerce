@@ -79,7 +79,7 @@ final class TaxDocumentService
         $endDate = Carbon::create($year, 12, 31)->endOfDay();
 
         return Affiliate::query()
-            ->whereHas('payouts', function ($query) use ($startDate, $endDate, $threshold) {
+            ->whereHas('payouts', function ($query) use ($startDate, $endDate, $threshold): void {
                 $query->where('status', 'completed')
                     ->whereBetween('paid_at', [$startDate, $endDate])
                     ->groupBy('affiliate_id')

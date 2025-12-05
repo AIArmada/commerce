@@ -19,7 +19,7 @@ final class DailyAggregationService
         $affiliateCount = 0;
 
         Affiliate::query()
-            ->chunkById(100, function ($affiliates) use ($date, &$affiliateCount) {
+            ->chunkById(100, function ($affiliates) use ($date, &$affiliateCount): void {
                 foreach ($affiliates as $affiliate) {
                     $this->aggregateForAffiliate($affiliate, $date);
                     $affiliateCount++;

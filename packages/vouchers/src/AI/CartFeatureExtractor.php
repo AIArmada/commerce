@@ -20,9 +20,6 @@ final class CartFeatureExtractor implements CartFeatureExtractorInterface
     /**
      * Extract all features from the given context.
      *
-     * @param Cart $cart
-     * @param Model|null $user
-     * @param Request|null $request
      * @return array<string, mixed>
      */
     public function extract(Cart $cart, ?Model $user = null, ?Request $request = null): array
@@ -181,7 +178,7 @@ final class CartFeatureExtractor implements CartFeatureExtractorInterface
     /**
      * Get max item price from collection.
      *
-     * @param \Illuminate\Support\Collection $items
+     * @param  \Illuminate\Support\Collection  $items
      */
     private function getMaxItemPrice($items): int
     {
@@ -195,7 +192,7 @@ final class CartFeatureExtractor implements CartFeatureExtractorInterface
     /**
      * Get min item price from collection.
      *
-     * @param \Illuminate\Support\Collection $items
+     * @param  \Illuminate\Support\Collection  $items
      */
     private function getMinItemPrice($items): int
     {
@@ -209,7 +206,7 @@ final class CartFeatureExtractor implements CartFeatureExtractorInterface
     /**
      * Calculate price variance coefficient.
      *
-     * @param \Illuminate\Support\Collection $items
+     * @param  \Illuminate\Support\Collection  $items
      */
     private function getPriceVariance($items): float
     {
@@ -232,7 +229,7 @@ final class CartFeatureExtractor implements CartFeatureExtractorInterface
     /**
      * Check if cart has high-value items (> $100).
      *
-     * @param \Illuminate\Support\Collection $items
+     * @param  \Illuminate\Support\Collection  $items
      */
     private function hasHighValueItems($items): bool
     {
@@ -339,7 +336,7 @@ final class CartFeatureExtractor implements CartFeatureExtractorInterface
      */
     private function detectDeviceType(string $userAgent): string
     {
-        $userAgent = strtolower($userAgent);
+        $userAgent = mb_strtolower($userAgent);
 
         if (str_contains($userAgent, 'mobile') || str_contains($userAgent, 'android')) {
             return 'mobile';
@@ -369,7 +366,7 @@ final class CartFeatureExtractor implements CartFeatureExtractorInterface
             return 'direct';
         }
 
-        $referrer = strtolower($referrer);
+        $referrer = mb_strtolower($referrer);
 
         if (str_contains($referrer, 'google') || str_contains($referrer, 'bing')) {
             return 'search';

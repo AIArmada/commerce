@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
-use AIArmada\Vouchers\AI\AbandonmentRisk;
-use AIArmada\Vouchers\AI\ConversionPrediction;
-use AIArmada\Vouchers\AI\DiscountRecommendation;
 use Filament\Widgets\Widget;
 
 final class AIInsightsWidget extends Widget

@@ -99,7 +99,7 @@ final class CommissionRuleEngine
         $volumeQuery = $affiliate->conversions();
 
         if ($programId) {
-            $volumeQuery->whereHas('attribution', function ($q) use ($programId) {
+            $volumeQuery->whereHas('attribution', function ($q) use ($programId): void {
                 $q->where('program_id', $programId);
             });
         }
@@ -112,7 +112,7 @@ final class CommissionRuleEngine
         $tier = AffiliateVolumeTier::query()
             ->when($programId, fn ($q) => $q->where('program_id', $programId))
             ->where('min_volume_minor', '<=', $periodVolume)
-            ->where(function ($q) use ($periodVolume) {
+            ->where(function ($q) use ($periodVolume): void {
                 $q->whereNull('max_volume_minor')
                     ->orWhere('max_volume_minor', '>=', $periodVolume);
             })

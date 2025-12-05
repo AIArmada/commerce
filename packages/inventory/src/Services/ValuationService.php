@@ -41,32 +41,6 @@ final class ValuationService
     }
 
     /**
-     * Calculate valuation using standard cost.
-     *
-     * @return array{quantity: int, value: int, average_cost: int}
-     */
-    private function calculateStandardValuation(Model $model, ?string $locationId = null): array
-    {
-        $query = InventoryLevel::query()
-            ->where('inventoryable_type', $model->getMorphClass())
-            ->where('inventoryable_id', $model->getKey());
-
-        if ($locationId !== null) {
-            $query->where('location_id', $locationId);
-        }
-
-        $quantity = (int) $query->sum('quantity_on_hand');
-
-        $standardCost = $this->standardCostService->getCurrentCostValue($model) ?? 0;
-
-        return [
-            'quantity' => $quantity,
-            'value' => $quantity * $standardCost,
-            'average_cost' => $standardCost,
-        ];
-    }
-
-    /**
      * Get total inventory valuation for a location.
      *
      * @return array{total_quantity: int, total_value: int, sku_count: int}
@@ -211,36 +185,6 @@ final class ValuationService
     }
 
     /**
-     * Get breakdown by category/type.
-     *
-     * @return array<string, array{units: int, value: int}>
-     */
-    private function getBreakdownByCategory(CostingMethod $method, ?string $locationId = null): array
-    {
-        $query = InventoryCostLayer::query()
-            ->withRemainingQuantity()
-            ->usingMethod($method)
-            ->selectRaw('inventoryable_type, SUM(remaining_quantity) as units, SUM(remaining_quantity * unit_cost_minor) as value')
-            ->groupBy('inventoryable_type');
-
-        if ($locationId !== null) {
-            $query->where('location_id', $locationId);
-        }
-
-        $results = $query->get();
-
-        $breakdown = [];
-        foreach ($results as $result) {
-            $breakdown[$result->inventoryable_type] = [
-                'units' => (int) $result->units,
-                'value' => (int) $result->value,
-            ];
-        }
-
-        return $breakdown;
-    }
-
-    /**
      * Compare valuations between two methods.
      *
      * @return array{method1: array{value: int, average: int}, method2: array{value: int, average: int}, difference: int}
@@ -318,5 +262,61 @@ final class ValuationService
 
             return $snapshots;
         });
+    }
+
+    /**
+     * Calculate valuation using standard cost.
+     *
+     * @return array{quantity: int, value: int, average_cost: int}
+     */
+    private function calculateStandardValuation(Model $model, ?string $locationId = null): array
+    {
+        $query = InventoryLevel::query()
+            ->where('inventoryable_type', $model->getMorphClass())
+            ->where('inventoryable_id', $model->getKey());
+
+        if ($locationId !== null) {
+            $query->where('location_id', $locationId);
+        }
+
+        $quantity = (int) $query->sum('quantity_on_hand');
+
+        $standardCost = $this->standardCostService->getCurrentCostValue($model) ?? 0;
+
+        return [
+            'quantity' => $quantity,
+            'value' => $quantity * $standardCost,
+            'average_cost' => $standardCost,
+        ];
+    }
+
+    /**
+     * Get breakdown by category/type.
+     *
+     * @return array<string, array{units: int, value: int}>
+     */
+    private function getBreakdownByCategory(CostingMethod $method, ?string $locationId = null): array
+    {
+        $query = InventoryCostLayer::query()
+            ->withRemainingQuantity()
+            ->usingMethod($method)
+            ->selectRaw('inventoryable_type, SUM(remaining_quantity) as units, SUM(remaining_quantity * unit_cost_minor) as value')
+            ->groupBy('inventoryable_type');
+
+        if ($locationId !== null) {
+            $query->where('location_id', $locationId);
+        }
+
+        $results = $query->get();
+
+        $breakdown = [];
+        foreach ($results as $result) {
+            $breakdown[$result->inventoryable_type] = [
+                'units' => (int) $result->units,
+                'value' => (int) $result->value,
+            ];
+        }
+
+        return $breakdown;
     }
 }

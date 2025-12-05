@@ -232,7 +232,7 @@ final class RuleBasedConversionPredictor implements ConversionPredictorInterface
     /**
      * Calculate the lift a voucher provides to conversion.
      *
-     * @param array<string, mixed> $features
+     * @param  array<string, mixed>  $features
      */
     private function calculateVoucherLift(Cart $cart, VoucherCondition $voucher, array $features): float
     {

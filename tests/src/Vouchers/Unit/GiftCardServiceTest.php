@@ -6,7 +6,6 @@ use AIArmada\Vouchers\GiftCards\Enums\GiftCardStatus;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardTransactionType;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardType;
 use AIArmada\Vouchers\GiftCards\Models\GiftCard;
-use AIArmada\Vouchers\GiftCards\Models\GiftCardTransaction;
 use AIArmada\Vouchers\GiftCards\Services\GiftCardService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -60,8 +59,10 @@ describe('GiftCardService Issue', function (): void {
 
 describe('GiftCardService Purchase', function (): void {
     it('can purchase a gift card for self', function (): void {
-        $purchaser = new class extends \Illuminate\Database\Eloquent\Model {
+        $purchaser = new class extends Illuminate\Database\Eloquent\Model
+        {
             protected $table = 'vouchers';
+
             public function getKey(): string
             {
                 return 'user-123';
@@ -76,16 +77,20 @@ describe('GiftCardService Purchase', function (): void {
     });
 
     it('can purchase a gift card for another recipient', function (): void {
-        $purchaser = new class extends \Illuminate\Database\Eloquent\Model {
+        $purchaser = new class extends Illuminate\Database\Eloquent\Model
+        {
             protected $table = 'vouchers';
+
             public function getKey(): string
             {
                 return 'user-123';
             }
         };
 
-        $recipient = new class extends \Illuminate\Database\Eloquent\Model {
+        $recipient = new class extends Illuminate\Database\Eloquent\Model
+        {
             protected $table = 'vouchers';
+
             public function getKey(): string
             {
                 return 'user-456';
@@ -162,9 +167,14 @@ describe('GiftCardService Balance Operations', function (): void {
         $giftCard = $this->service->issue(['initial_balance' => 10000]);
         $giftCard->activate();
 
-        $actor = new class extends \Illuminate\Database\Eloquent\Model {
+        $actor = new class extends Illuminate\Database\Eloquent\Model
+        {
             protected $table = 'vouchers';
-            public function getKey(): string { return 'admin-123'; }
+
+            public function getKey(): string
+            {
+                return 'admin-123';
+            }
         };
 
         $updated = $this->service->topUp($giftCard->code, 5000, $actor);
@@ -178,14 +188,24 @@ describe('GiftCardService Transfer', function (): void {
         $giftCard = $this->service->issue(['initial_balance' => 10000]);
         $giftCard->activate();
 
-        $newRecipient = new class extends \Illuminate\Database\Eloquent\Model {
+        $newRecipient = new class extends Illuminate\Database\Eloquent\Model
+        {
             protected $table = 'vouchers';
-            public function getKey(): string { return 'user-new'; }
+
+            public function getKey(): string
+            {
+                return 'user-new';
+            }
         };
 
-        $actor = new class extends \Illuminate\Database\Eloquent\Model {
+        $actor = new class extends Illuminate\Database\Eloquent\Model
+        {
             protected $table = 'vouchers';
-            public function getKey(): string { return 'admin-123'; }
+
+            public function getKey(): string
+            {
+                return 'admin-123';
+            }
         };
 
         $transferred = $this->service->transfer($giftCard->code, $newRecipient, $actor);
@@ -205,9 +225,14 @@ describe('GiftCardService Merge', function (): void {
         $card3 = $this->service->issue(['initial_balance' => 2000]);
         $card3->activate();
 
-        $actor = new class extends \Illuminate\Database\Eloquent\Model {
+        $actor = new class extends Illuminate\Database\Eloquent\Model
+        {
             protected $table = 'vouchers';
-            public function getKey(): string { return 'admin-123'; }
+
+            public function getKey(): string
+            {
+                return 'admin-123';
+            }
         };
 
         $merged = $this->service->merge(
@@ -230,12 +255,17 @@ describe('GiftCardService Merge', function (): void {
         $card1 = $this->service->issue(['initial_balance' => 5000]);
         $card1->activate();
 
-        $actor = new class extends \Illuminate\Database\Eloquent\Model {
+        $actor = new class extends Illuminate\Database\Eloquent\Model
+        {
             protected $table = 'vouchers';
-            public function getKey(): string { return 'admin-123'; }
+
+            public function getKey(): string
+            {
+                return 'admin-123';
+            }
         };
 
-        expect(fn() => $this->service->merge([$card1->code], $actor))
+        expect(fn () => $this->service->merge([$card1->code], $actor))
             ->toThrow(InvalidArgumentException::class, 'At least 2 gift cards required');
     });
 });
@@ -245,9 +275,14 @@ describe('GiftCardService Redeem and Refund', function (): void {
         $giftCard = $this->service->issue(['initial_balance' => 10000]);
         $giftCard->activate();
 
-        $order = new class extends \Illuminate\Database\Eloquent\Model {
+        $order = new class extends Illuminate\Database\Eloquent\Model
+        {
             protected $table = 'vouchers';
-            public function getKey(): string { return 'order-123'; }
+
+            public function getKey(): string
+            {
+                return 'order-123';
+            }
         };
 
         $transaction = $this->service->redeem($giftCard->code, 3000, $order);
@@ -265,9 +300,14 @@ describe('GiftCardService Redeem and Refund', function (): void {
         $giftCard->current_balance = 7000;
         $giftCard->save();
 
-        $order = new class extends \Illuminate\Database\Eloquent\Model {
+        $order = new class extends Illuminate\Database\Eloquent\Model
+        {
             protected $table = 'vouchers';
-            public function getKey(): string { return 'order-123'; }
+
+            public function getKey(): string
+            {
+                return 'order-123';
+            }
         };
 
         $transaction = $this->service->refund($giftCard->code, 3000, $order);
@@ -293,7 +333,8 @@ describe('GiftCardService Queries', function (): void {
     });
 
     it('can get by recipient', function (): void {
-        $recipient = new class extends \Illuminate\Database\Eloquent\Model {
+        $recipient = new class extends Illuminate\Database\Eloquent\Model
+        {
             protected $table = 'vouchers';
 
             public function getMorphClass(): string
@@ -394,9 +435,14 @@ describe('GiftCardService Status Changes', function (): void {
         $giftCard = $this->service->issue(['initial_balance' => 10000]);
         $giftCard->activate();
 
-        $actor = new class extends \Illuminate\Database\Eloquent\Model {
+        $actor = new class extends Illuminate\Database\Eloquent\Model
+        {
             protected $table = 'vouchers';
-            public function getKey(): string { return 'admin-123'; }
+
+            public function getKey(): string
+            {
+                return 'admin-123';
+            }
         };
 
         $expired = $this->service->expire($giftCard->code, $actor);

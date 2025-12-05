@@ -37,7 +37,7 @@ class CashbackVoucherCondition extends CompoundVoucherCondition
      */
     public function calculateCashback(Cart $cart): int
     {
-        if (!$this->meetsRequirements($cart)) {
+        if (! $this->meetsRequirements($cart)) {
             return 0;
         }
 
@@ -76,16 +76,19 @@ class CashbackVoucherCondition extends CompoundVoucherCondition
         if ($rateType === 'percentage') {
             // Rate is in basis points (500 = 5%)
             $percent = $rate / 100;
+
             return "{$percent}% cashback to {$destination}";
         }
 
         if ($rateType === 'fixed') {
             $amount = $rate / 100;
+
             return "RM{$amount} cashback to {$destination}";
         }
 
         if ($rateType === 'per_item') {
             $amount = $rate / 100;
+
             return "RM{$amount} cashback per item to {$destination}";
         }
 

@@ -252,6 +252,15 @@ class InventoryBackorder extends Model
         return $this->update(['priority' => $newPriority]);
     }
 
+    protected static function booted(): void
+    {
+        static::creating(function (InventoryBackorder $backorder): void {
+            if ($backorder->requested_at === null) {
+                $backorder->requested_at = now();
+            }
+        });
+    }
+
     protected function casts(): array
     {
         return [
@@ -268,14 +277,5 @@ class InventoryBackorder extends Model
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
-    }
-
-    protected static function booted(): void
-    {
-        static::creating(function (InventoryBackorder $backorder): void {
-            if ($backorder->requested_at === null) {
-                $backorder->requested_at = now();
-            }
-        });
     }
 }
