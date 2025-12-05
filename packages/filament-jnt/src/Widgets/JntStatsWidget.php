@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Widgets;
 
-use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Models\JntOrder;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;

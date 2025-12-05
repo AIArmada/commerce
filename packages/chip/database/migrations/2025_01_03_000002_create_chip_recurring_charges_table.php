@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $prefix = config('chip.database.table_prefix', 'chip_');
 
-        Schema::create($prefix . 'recurring_charges', function (Blueprint $table) use ($prefix): void {
+        Schema::create($prefix.'recurring_charges', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('schedule_id');
             $table->string('chip_purchase_id')->nullable();
@@ -32,6 +32,6 @@ return new class extends Migration
     public function down(): void
     {
         $prefix = config('chip.database.table_prefix', 'chip_');
-        Schema::dropIfExists($prefix . 'recurring_charges');
+        Schema::dropIfExists($prefix.'recurring_charges');
     }
 };

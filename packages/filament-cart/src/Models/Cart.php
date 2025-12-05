@@ -43,8 +43,6 @@ class Cart extends Model
 
     use HasUuids;
 
-    protected $table = 'cart_snapshots';
-
     protected $fillable = [
         'identifier',
         'instance',
@@ -83,6 +81,13 @@ class Cart extends Model
         'savings' => 0,
         'currency' => 'USD',
     ];
+
+    public function getTable(): string
+    {
+        $tables = config('filament-cart.database.tables', []);
+
+        return $tables['snapshots'] ?? 'cart_snapshots';
+    }
 
     public function getCartInstance(): ?BaseCart
     {

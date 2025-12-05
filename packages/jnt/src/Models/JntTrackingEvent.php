@@ -55,7 +55,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read JntOrder|null $order
  */
-class JntTrackingEvent extends Model
+final class JntTrackingEvent extends Model
 {
     use HasUuids;
 

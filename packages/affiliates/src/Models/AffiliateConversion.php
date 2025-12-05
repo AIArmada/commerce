@@ -36,7 +36,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read AffiliateAttribution|null $attribution
  * @property-read AffiliatePayout|null $payout
  */
-class AffiliateConversion extends Model
+final class AffiliateConversion extends Model
 {
     use HasUuids;
 
@@ -62,30 +62,45 @@ class AffiliateConversion extends Model
         'approved_at',
     ];
 
-    protected $casts = [
-        'metadata' => 'array',
-        'occurred_at' => 'datetime',
-        'approved_at' => 'datetime',
-        'status' => ConversionStatus::class,
-    ];
-
     public function getTable(): string
     {
         return config('affiliates.table_names.conversions', parent::getTable());
     }
 
+    /**
+     * @return BelongsTo<Affiliate, $this>
+     */
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);
     }
 
+    /**
+     * @return BelongsTo<AffiliateAttribution, $this>
+     */
     public function attribution(): BelongsTo
     {
         return $this->belongsTo(AffiliateAttribution::class, 'affiliate_attribution_id');
     }
 
+    /**
+     * @return BelongsTo<AffiliatePayout, $this>
+     */
     public function payout(): BelongsTo
     {
         return $this->belongsTo(AffiliatePayout::class, 'affiliate_payout_id');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'metadata' => 'array',
+            'occurred_at' => 'datetime',
+            'approved_at' => 'datetime',
+            'status' => ConversionStatus::class,
+        ];
     }
 }

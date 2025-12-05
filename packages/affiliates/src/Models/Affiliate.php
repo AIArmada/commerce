@@ -6,6 +6,8 @@ namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Events\AffiliateActivated;
+use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -14,6 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+
+use function class_exists;
 
 /**
  * @property string $id
@@ -51,9 +55,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutMethod> $payoutMethods
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutHold> $payoutHolds
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayout> $payouts
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, \AIArmada\Vouchers\Models\Voucher> $vouchers
  * @property-read Model|null $owner
  */
-class Affiliate extends Model
+final class Affiliate extends Model
 {
     use HasUuids;
 
@@ -79,16 +84,6 @@ class Affiliate extends Model
         'owner_type',
         'owner_id',
         'activated_at',
-    ];
-
-    protected $casts = [
-        'status' => AffiliateStatus::class,
-        'commission_type' => CommissionType::class,
-        'network_depth' => 'integer',
-        'direct_downline_count' => 'integer',
-        'total_downline_count' => 'integer',
-        'metadata' => 'array',
-        'activated_at' => 'datetime',
     ];
 
     public function getTable(): string
@@ -120,16 +115,25 @@ class Affiliate extends Model
         return $this->hasMany(AffiliatePayout::class);
     }
 
+    /**
+     * @return BelongsTo<self, $this>
+     */
     public function parent(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_affiliate_id');
     }
 
+    /**
+     * @return HasMany<self, $this>
+     */
     public function children(): HasMany
     {
         return $this->hasMany(self::class, 'parent_affiliate_id');
     }
 
+    /**
+     * @return BelongsTo<AffiliateRank, $this>
+     */
     public function rank(): BelongsTo
     {
         return $this->belongsTo(AffiliateRank::class, 'rank_id');
@@ -151,6 +155,9 @@ class Affiliate extends Model
         return $this->hasMany(AffiliateDailyStat::class);
     }
 
+    /**
+     * @return HasOne<AffiliateBalance, $this>
+     */
     public function balance(): HasOne
     {
         return $this->hasOne(AffiliateBalance::class);
@@ -173,7 +180,24 @@ class Affiliate extends Model
     }
 
     /**
+     * Get all vouchers linked to this affiliate (when aiarmada/vouchers is installed).
+     *
+     * @return HasMany<\AIArmada\Vouchers\Models\Voucher, self>|HasMany<Model, self>
+     */
+    public function vouchers(): HasMany
+    {
+        if (class_exists(\AIArmada\Vouchers\Models\Voucher::class)) {
+            return $this->hasMany(\AIArmada\Vouchers\Models\Voucher::class, 'affiliate_id');
+        }
+
+        // Fallback to prevent errors when vouchers package not installed
+        return $this->hasMany(Model::class, 'affiliate_id');
+    }
+
+    /**
      * Get the owner model (polymorphic relationship).
+     *
+     * @return MorphTo<Model, $this>
      */
     public function owner(): MorphTo
     {
@@ -232,7 +256,7 @@ class Affiliate extends Model
 
     protected static function booted(): void
     {
-        static::creating(function (self $affiliate): void {
+        self::creating(function (self $affiliate): void {
             if (! config('affiliates.owner.enabled', false)) {
                 return;
             }
@@ -253,10 +277,37 @@ class Affiliate extends Model
             }
         });
 
-        static::deleting(function (self $affiliate): void {
+        self::created(function (self $affiliate): void {
+            AffiliateCreated::dispatch($affiliate);
+        });
+
+        self::updated(function (self $affiliate): void {
+            // Fire activated event when status changes to Active
+            if ($affiliate->wasChanged('status') && $affiliate->status === AffiliateStatus::Active) {
+                AffiliateActivated::dispatch($affiliate);
+            }
+        });
+
+        self::deleting(function (self $affiliate): void {
             $affiliate->attributions()->delete();
             $affiliate->conversions()->delete();
             $affiliate->children()->update(['parent_affiliate_id' => null]);
         });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status' => AffiliateStatus::class,
+            'commission_type' => CommissionType::class,
+            'network_depth' => 'integer',
+            'direct_downline_count' => 'integer',
+            'total_downline_count' => 'integer',
+            'metadata' => 'array',
+            'activated_at' => 'datetime',
+        ];
     }
 }

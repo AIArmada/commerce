@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\RecurringScheduleResource\Schemas;
 
-use AIArmada\Chip\Enums\RecurringStatus;
 use AIArmada\Chip\Models\RecurringSchedule;
-use Filament\Infolists\Components\RepeatableEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;

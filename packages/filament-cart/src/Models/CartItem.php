@@ -40,11 +40,6 @@ final class CartItem extends Model
     public $timestamps = true;
 
     /**
-     * The table associated with the model.
-     */
-    protected $table = 'cart_snapshot_items';
-
-    /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
@@ -69,6 +64,13 @@ final class CartItem extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function getTable(): string
+    {
+        $tables = config('filament-cart.database.tables', []);
+
+        return $tables['snapshot_items'] ?? 'cart_snapshot_items';
+    }
 
     /**
      * Get the computed subtotal (price × quantity).

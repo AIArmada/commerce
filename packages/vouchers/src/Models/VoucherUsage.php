@@ -10,19 +10,24 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
+ * @property string $id
+ * @property string $voucher_id
  * @property string $currency
  * @property int $discount_amount
  * @property string $channel
  * @property array<string, mixed>|null $target_definition
- * @property string $redeemed_by_type
- * @property string $cart_identifier
- * @property string $user_identifier
+ * @property string|null $redeemed_by_type
+ * @property string|null $redeemed_by_id
  * @property string|null $notes
- * @property string $redeemed_by_id
+ * @property array<string, mixed>|null $metadata
  * @property array<string, mixed>|null $cart_snapshot
- * @property \Carbon\Carbon $used_at
+ * @property \Illuminate\Support\Carbon $used_at
+ * @property-read Voucher $voucher
+ * @property-read Model|null $redeemedBy
+ * @property-read string $user_identifier
+ * @property-read string $cart_identifier
  */
-class VoucherUsage extends Model
+final class VoucherUsage extends Model
 {
     use HasUuids;
 
@@ -55,11 +60,17 @@ class VoucherUsage extends Model
         return $table;
     }
 
+    /**
+     * @return BelongsTo<Voucher, $this>
+     */
     public function voucher(): BelongsTo
     {
         return $this->belongsTo(Voucher::class);
     }
 
+    /**
+     * @return MorphTo<Model, $this>
+     */
     public function redeemedBy(): MorphTo
     {
         return $this->morphTo();

@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Pages;
 
 use AIArmada\Affiliates\Services\AffiliateReportService;
+use BackedEnum;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Forms\Form;
 use Filament\Pages\Page;
+use UnitEnum;
 
 final class ReportsPage extends Page implements HasForms
 {
@@ -23,9 +25,9 @@ final class ReportsPage extends Page implements HasForms
 
     public array $reportData = [];
 
-    protected static ?string $navigationIcon = 'heroicon-o-chart-bar';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar';
 
-    protected static ?string $navigationGroup = 'Affiliates';
+    protected static string|UnitEnum|null $navigationGroup = 'Affiliates';
 
     protected static ?string $navigationLabel = 'Reports';
 

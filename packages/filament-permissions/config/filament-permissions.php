@@ -61,6 +61,8 @@ return [
     |--------------------------------------------------------------------------
     */
     'enable_user_resource' => false,
+    'user_model' => App\Models\User::class,
+    'panel_guard_map' => [],
     'features' => [
         'permission_explorer' => false,
         'diff_widget' => false,
@@ -74,6 +76,11 @@ return [
         'audit_logging' => true,
         'wildcard_permissions' => true,
         'role_inheritance' => true,
+        'permission_matrix' => true,
+        'role_hierarchy' => true,
+        'stats_widget' => true,
+        'hierarchy_widget' => true,
+        'activity_widget' => true,
     ],
 
     /*
@@ -109,5 +116,25 @@ return [
         'combining_algorithm' => 'deny_overrides',
         'cache_policies' => true,
         'cache_ttl' => 300,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Permission Discovery
+    |--------------------------------------------------------------------------
+    |
+    | Auto-discover permissions from Filament resources implementing
+    | RegistersPermissions interface.
+    |
+    */
+    'discovery' => [
+        'enabled' => env('PERMISSIONS_DISCOVERY_ENABLED', false),
+        'auto_sync' => env('PERMISSIONS_DISCOVERY_AUTO_SYNC', false),
+        'namespaces' => [
+            // Add namespaces to scan for resources with permission registration
+            // 'AIArmada\\FilamentVouchers\\Resources',
+            // 'AIArmada\\FilamentCart\\Resources',
+            // 'AIArmada\\FilamentInventory\\Resources',
+        ],
     ],
 ];

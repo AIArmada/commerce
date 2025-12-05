@@ -14,11 +14,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
+ * @property string $id
  * @property string $doc_number
  * @property string $doc_type
  * @property string|null $doc_template_id
  * @property string|null $docable_type
  * @property string|null $docable_id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property DocStatus $status
  * @property \Illuminate\Support\Carbon $issue_date
  * @property \Illuminate\Support\Carbon|null $due_date
@@ -37,8 +40,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $pdf_path
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
+ * @property-read DocTemplate|null $template
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, DocStatusHistory> $statusHistories
+ * @property-read Model|null $docable
  */
-class Doc extends Model
+final class Doc extends Model
 {
     use HasFactory;
     use HasOwner;
@@ -70,36 +76,30 @@ class Doc extends Model
         'pdf_path',
     ];
 
-    protected $casts = [
-        'status' => DocStatus::class,
-        'issue_date' => 'date',
-        'due_date' => 'date',
-        'paid_at' => 'datetime',
-        'subtotal' => 'decimal:2',
-        'tax_amount' => 'decimal:2',
-        'discount_amount' => 'decimal:2',
-        'total' => 'decimal:2',
-        'customer_data' => 'array',
-        'company_data' => 'array',
-        'items' => 'array',
-        'metadata' => 'array',
-    ];
-
     public function getTable(): string
     {
         return config('docs.database.tables.docs', 'docs');
     }
 
+    /**
+     * @return MorphTo<Model, $this>
+     */
     public function docable(): MorphTo
     {
         return $this->morphTo();
     }
 
+    /**
+     * @return BelongsTo<DocTemplate, $this>
+     */
     public function template(): BelongsTo
     {
         return $this->belongsTo(DocTemplate::class, 'doc_template_id');
     }
 
+    /**
+     * @return HasMany<DocStatusHistory, $this>
+     */
     public function statusHistories(): HasMany
     {
         return $this->hasMany(DocStatusHistory::class);
@@ -186,8 +186,29 @@ class Doc extends Model
 
     protected static function booted(): void
     {
-        static::deleting(function (Doc $doc): void {
+        self::deleting(function (Doc $doc): void {
             $doc->statusHistories()->delete();
         });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status' => DocStatus::class,
+            'issue_date' => 'date',
+            'due_date' => 'date',
+            'paid_at' => 'datetime',
+            'subtotal' => 'decimal:2',
+            'tax_amount' => 'decimal:2',
+            'discount_amount' => 'decimal:2',
+            'total' => 'decimal:2',
+            'customer_data' => 'array',
+            'company_data' => 'array',
+            'items' => 'array',
+            'metadata' => 'array',
+        ];
     }
 }

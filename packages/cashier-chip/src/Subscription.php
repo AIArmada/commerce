@@ -58,39 +58,26 @@ class Subscription extends Model
     public const STATUS_PAUSED = 'paused';
 
     /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
-    protected $table = 'chip_subscriptions';
-
-    /**
      * The attributes that are not mass assignable.
      *
-     * @var array
+     * @var array<int, string>
      */
     protected $guarded = [];
 
     /**
      * The relations to eager load on every query.
      *
-     * @var array
+     * @var array<int, string>
      */
     protected $with = ['items'];
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
-    protected $casts = [
-        'ends_at' => 'datetime',
-        'quantity' => 'integer',
-        'trial_ends_at' => 'datetime',
-        'next_billing_at' => 'datetime',
-        'coupon_discount' => 'integer',
-        'coupon_applied_at' => 'datetime',
-    ];
+    public function getTable(): string
+    {
+        $tables = config('cashier-chip.database.tables', []);
+        $prefix = config('cashier-chip.database.table_prefix', 'cashier_chip_');
+
+        return $tables['subscriptions'] ?? $prefix.'subscriptions';
+    }
 
     /**
      * Get the user that owns the subscription.
@@ -1024,6 +1011,21 @@ class Subscription extends Model
     protected static function newFactory()
     {
         return SubscriptionFactory::new();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'ends_at' => 'datetime',
+            'quantity' => 'integer',
+            'trial_ends_at' => 'datetime',
+            'next_billing_at' => 'datetime',
+            'coupon_discount' => 'integer',
+            'coupon_applied_at' => 'datetime',
+        ];
     }
 
     /**

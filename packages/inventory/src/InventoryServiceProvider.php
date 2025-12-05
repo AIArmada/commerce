@@ -7,6 +7,7 @@ namespace AIArmada\Inventory;
 use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Inventory\Cart\CartManagerWithInventory;
+use AIArmada\Inventory\Cart\ValidateInventoryOnAdd;
 use AIArmada\Inventory\Console\CleanupExpiredAllocationsCommand;
 use AIArmada\Inventory\Console\CreateValuationSnapshotCommand;
 use AIArmada\Inventory\Exports\ExportService;
@@ -200,6 +201,14 @@ final class InventoryServiceProvider extends PackageServiceProvider
             Event::listen(
                 \AIArmada\Cart\Events\CartDestroyed::class,
                 [ReleaseInventoryOnCartClear::class, 'handleDestroyed']
+            );
+        }
+
+        // Register ItemAdded listener for validation/auto-allocation
+        if (class_exists(\AIArmada\Cart\Events\ItemAdded::class)) {
+            Event::listen(
+                \AIArmada\Cart\Events\ItemAdded::class,
+                ValidateInventoryOnAdd::class
             );
         }
 

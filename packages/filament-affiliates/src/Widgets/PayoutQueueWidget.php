@@ -16,7 +16,7 @@ final class PayoutQueueWidget extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected static ?string $pollingInterval = '60s';
+    protected ?string $pollingInterval = '60s';
 
     protected static ?string $heading = 'Pending Payouts';
 

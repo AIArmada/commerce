@@ -15,7 +15,7 @@ final class RealTimeActivityWidget extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected static ?string $pollingInterval = '10s';
+    protected ?string $pollingInterval = '10s';
 
     protected static ?string $heading = 'Real-Time Activity';
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cashier;
 
+use AIArmada\Cashier\Support\CartIntegrationRegistrar;
 use Illuminate\Support\ServiceProvider;
 
 /**
@@ -28,6 +29,9 @@ class CashierServiceProvider extends ServiceProvider
         });
 
         $this->app->alias(GatewayManager::class, 'cashier');
+
+        // Register cart integration
+        $this->app->singleton(CartIntegrationRegistrar::class);
     }
 
     /**
@@ -37,6 +41,9 @@ class CashierServiceProvider extends ServiceProvider
     {
         $this->registerPublishing();
         $this->registerRoutes();
+
+        // Register cart integration if cart package is installed
+        $this->app->make(CartIntegrationRegistrar::class)->register();
     }
 
     /**
@@ -48,6 +55,7 @@ class CashierServiceProvider extends ServiceProvider
     {
         return [
             GatewayManager::class,
+            CartIntegrationRegistrar::class,
             'cashier',
         ];
     }

@@ -24,16 +24,6 @@ final class SupportServiceProvider extends PackageServiceProvider
             ]);
     }
 
-    public function packageRegistered(): void
-    {
-        // Register any core services here if needed in the future
-    }
-
-    public function packageBooted(): void
-    {
-        // Boot any core functionality here if needed in the future
-    }
-
     /**
      * Get the services provided by the provider.
      *

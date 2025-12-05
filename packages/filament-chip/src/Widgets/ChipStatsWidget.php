@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\Purchase;
+use DateTimeInterface;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -64,7 +65,7 @@ final class ChipStatsWidget extends BaseWidget
         return $this->getRevenueForPeriod(now()->startOfMonth());
     }
 
-    private function getRevenueForPeriod(\DateTimeInterface $since): int
+    private function getRevenueForPeriod(DateTimeInterface $since): int
     {
         $sinceTimestamp = $since->getTimestamp();
         $driver = DB::connection()->getDriverName();
@@ -113,6 +114,6 @@ final class ChipStatsWidget extends BaseWidget
         $currency = config('filament-chip.default_currency', 'MYR');
         $amount = $amountInCents / 100;
 
-        return mb_strtoupper($currency) . ' ' . number_format($amount, 2);
+        return mb_strtoupper($currency).' '.number_format($amount, 2);
     }
 }

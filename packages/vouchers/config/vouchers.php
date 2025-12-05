@@ -163,4 +163,49 @@ return [
             'strong_match_threshold' => 0.7,
         ],
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Package Integrations
+    |--------------------------------------------------------------------------
+    |
+    | Configure integrations with other AIArmada packages when installed.
+    |
+    */
+
+    'integrations' => [
+        /*
+        |----------------------------------------------------------------------
+        | Affiliates Integration (aiarmada/affiliates)
+        |----------------------------------------------------------------------
+        |
+        | When the affiliates package is installed, vouchers can be directly
+        | linked to affiliates for tracking referral discounts.
+        |
+        */
+        'affiliates' => [
+            'enabled' => env('VOUCHERS_AFFILIATES_ENABLED', true),
+
+            // Auto-create voucher when affiliate is created
+            'auto_create_voucher' => env('VOUCHERS_AFFILIATES_AUTO_CREATE', false),
+
+            // Create voucher when affiliate is activated (recommended)
+            'create_on_activation' => env('VOUCHERS_AFFILIATES_CREATE_ON_ACTIVATION', true),
+
+            // Set the created voucher as affiliate's default_voucher_code
+            'set_default_voucher_code' => env('VOUCHERS_AFFILIATES_SET_DEFAULT', true),
+
+            // Voucher code format: prefix_code|code_only|prefix_random
+            'code_format' => env('VOUCHERS_AFFILIATES_CODE_FORMAT', 'prefix_code'),
+            'code_prefix' => env('VOUCHERS_AFFILIATES_CODE_PREFIX', 'REF'),
+
+            // Default voucher settings for auto-created affiliate vouchers
+            'voucher_defaults' => [
+                'type' => env('VOUCHERS_AFFILIATES_DEFAULT_TYPE', 'percentage'),
+                'value' => env('VOUCHERS_AFFILIATES_DEFAULT_VALUE', 1000), // 10% in basis points
+                'currency' => env('VOUCHERS_AFFILIATES_DEFAULT_CURRENCY'),
+                'status' => 'active',
+            ],
+        ],
+    ],
 ];

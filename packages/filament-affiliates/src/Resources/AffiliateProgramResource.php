@@ -7,25 +7,27 @@ namespace AIArmada\FilamentAffiliates\Resources;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\AffiliateProgram;
+use BackedEnum;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 final class AffiliateProgramResource extends Resource
 {
     protected static ?string $model = AffiliateProgram::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationGroup = 'Affiliates';
+    protected static string|UnitEnum|null $navigationGroup = 'Affiliates';
 
     protected static ?int $navigationSort = 2;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->schema([
             Forms\Components\Section::make('Program Details')
                 ->schema([
                     Forms\Components\TextInput::make('name')

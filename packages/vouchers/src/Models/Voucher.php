@@ -18,6 +18,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
+// Conditional import for affiliate integration
+use function class_exists;
+
 /**
  * @property string $id
  * @property string $code
@@ -47,6 +50,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int $stacking_priority
  * @property string|null $campaign_id
  * @property string|null $campaign_variant_id
+ * @property string|null $affiliate_id
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read int $times_used
@@ -60,8 +64,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read int $wallet_available_count
  * @property-read Campaign|null $campaign
  * @property-read CampaignVariant|null $campaignVariant
+ * @property-read \AIArmada\Affiliates\Models\Affiliate|null $affiliate
  */
-class Voucher extends Model
+final class Voucher extends Model
 {
     use HasFactory, HasUuids;
 
@@ -93,6 +98,7 @@ class Voucher extends Model
         'stacking_priority',
         'campaign_id',
         'campaign_variant_id',
+        'affiliate_id',
     ];
 
     public function getTable(): string
@@ -146,6 +152,40 @@ class Voucher extends Model
     public function campaignVariant(): BelongsTo
     {
         return $this->belongsTo(CampaignVariant::class, 'campaign_variant_id');
+    }
+
+    /**
+     * Get the affiliate that owns this voucher (when aiarmada/affiliates is installed).
+     *
+     * @return BelongsTo<\AIArmada\Affiliates\Models\Affiliate, Voucher>|BelongsTo<Model, Voucher>
+     */
+    public function affiliate(): BelongsTo
+    {
+        if (class_exists(\AIArmada\Affiliates\Models\Affiliate::class)) {
+            return $this->belongsTo(\AIArmada\Affiliates\Models\Affiliate::class, 'affiliate_id');
+        }
+
+        // Fallback to generic model if affiliates package not installed
+        return $this->belongsTo(Model::class, 'affiliate_id');
+    }
+
+    /**
+     * Check if this voucher belongs to an affiliate.
+     */
+    public function belongsToAffiliate(): bool
+    {
+        return $this->affiliate_id !== null;
+    }
+
+    /**
+     * Scope to filter vouchers by affiliate.
+     *
+     * @param  Builder<Voucher>  $query
+     * @return Builder<Voucher>
+     */
+    public function scopeForAffiliate(Builder $query, string $affiliateId): Builder
+    {
+        return $query->where('affiliate_id', $affiliateId);
     }
 
     /**
@@ -451,7 +491,7 @@ class Voucher extends Model
 
     protected static function booted(): void
     {
-        static::deleting(function (Voucher $voucher): void {
+        self::deleting(function (Voucher $voucher): void {
             $voucher->usages()->delete();
             $voucher->walletEntries()->delete();
             $voucher->transactions()->delete();

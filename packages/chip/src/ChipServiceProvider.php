@@ -16,6 +16,7 @@ use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Chip\Services\RecurringService;
 use AIArmada\Chip\Services\WebhookService;
+use AIArmada\Chip\Support\DocsIntegrationRegistrar;
 use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentGatewayInterface;
@@ -71,6 +72,7 @@ final class ChipServiceProvider extends PackageServiceProvider
 
         $this->configureWebhookRoutes();
         $this->registerEventListeners();
+        $this->bootDocsIntegration();
     }
 
     /**
@@ -93,6 +95,12 @@ final class ChipServiceProvider extends PackageServiceProvider
             'chip.gateway',
             'chip.recurring',
         ];
+    }
+
+    protected function bootDocsIntegration(): void
+    {
+        $registrar = new DocsIntegrationRegistrar;
+        $registrar->register();
     }
 
     protected function registerOwnerResolver(): void
