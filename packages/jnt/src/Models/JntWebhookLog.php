@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read JntOrder|null $order
  */
-class JntWebhookLog extends Model
+final class JntWebhookLog extends Model
 {
     use HasUuids;
 

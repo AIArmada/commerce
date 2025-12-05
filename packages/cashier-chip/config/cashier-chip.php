@@ -10,6 +10,11 @@ return [
     */
     'database' => [
         'table_prefix' => env('CASHIER_CHIP_TABLE_PREFIX', 'cashier_chip_'),
+        'json_column_type' => env('CASHIER_CHIP_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+        'tables' => [
+            'subscriptions' => 'chip_subscriptions',
+            'subscription_items' => 'chip_subscription_items',
+        ],
     ],
 
     /*

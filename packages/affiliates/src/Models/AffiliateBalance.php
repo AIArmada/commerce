@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Affiliate $affiliate
  */
-class AffiliateBalance extends Model
+final class AffiliateBalance extends Model
 {
     use HasUuids;
 
@@ -33,18 +33,14 @@ class AffiliateBalance extends Model
         'minimum_payout_minor',
     ];
 
-    protected $casts = [
-        'holding_minor' => 'integer',
-        'available_minor' => 'integer',
-        'lifetime_earnings_minor' => 'integer',
-        'minimum_payout_minor' => 'integer',
-    ];
-
     public function getTable(): string
     {
         return config('affiliates.table_names.balances', 'affiliate_balances');
     }
 
+    /**
+     * @return BelongsTo<Affiliate, $this>
+     */
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);
@@ -92,6 +88,19 @@ class AffiliateBalance extends Model
     public function formatLifetimeEarnings(): string
     {
         return $this->formatAmount($this->lifetime_earnings_minor);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'holding_minor' => 'integer',
+            'available_minor' => 'integer',
+            'lifetime_earnings_minor' => 'integer',
+            'minimum_payout_minor' => 'integer',
+        ];
     }
 
     private function formatAmount(int $amountMinor): string

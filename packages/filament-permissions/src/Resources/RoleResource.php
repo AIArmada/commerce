@@ -45,7 +45,11 @@ class RoleResource extends Resource
     {
         $user = auth()->user();
 
-        return $user?->can('role.viewAny') || $user?->hasRole(config('filament-permissions.super_admin_role'));
+        if ($user === null) {
+            return false;
+        }
+
+        return (bool) ($user->can('role.viewAny') || $user->hasRole(config('filament-permissions.super_admin_role')));
     }
 
     public static function form(Schema $form): Schema

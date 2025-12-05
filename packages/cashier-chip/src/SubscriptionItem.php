@@ -28,28 +28,19 @@ class SubscriptionItem extends Model
     use Prorates;
 
     /**
-     * The table associated with the model.
-     *
-     * @var string
-     */
-    protected $table = 'chip_subscription_items';
-
-    /**
      * The attributes that are not mass assignable.
      *
-     * @var array
+     * @var array<int, string>
      */
     protected $guarded = [];
 
-    /**
-     * The attributes that should be cast to native types.
-     *
-     * @var array
-     */
-    protected $casts = [
-        'quantity' => 'integer',
-        'unit_amount' => 'integer',
-    ];
+    public function getTable(): string
+    {
+        $tables = config('cashier-chip.database.tables', []);
+        $prefix = config('cashier-chip.database.table_prefix', 'cashier_chip_');
+
+        return $tables['subscription_items'] ?? $prefix.'subscription_items';
+    }
 
     /**
      * Get the subscription that the item belongs to.
@@ -167,5 +158,16 @@ class SubscriptionItem extends Model
     protected static function newFactory()
     {
         return SubscriptionItemFactory::new();
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'quantity' => 'integer',
+            'unit_amount' => 'integer',
+        ];
     }
 }

@@ -8,13 +8,12 @@ use AIArmada\Chip\Models\Purchase;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\DB;
 
 final class PaymentMethodsWidget extends BaseWidget
 {
     protected static ?int $sort = 3;
 
-    protected static ?string $pollingInterval = '60s';
+    protected ?string $pollingInterval = '60s';
 
     protected function getStats(): array
     {
@@ -128,6 +127,6 @@ final class PaymentMethodsWidget extends BaseWidget
         $currency = config('filament-chip.default_currency', 'MYR');
         $amount = $amountInCents / 100;
 
-        return mb_strtoupper($currency) . ' ' . number_format($amount, 2);
+        return mb_strtoupper($currency).' '.number_format($amount, 2);
     }
 }

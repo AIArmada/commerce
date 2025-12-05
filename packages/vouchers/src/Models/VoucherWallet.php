@@ -21,8 +21,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property array<string, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
+ * @property-read Voucher $voucher
+ * @property-read Model|null $owner
  */
-class VoucherWallet extends Model
+final class VoucherWallet extends Model
 {
     use HasUuids;
 
@@ -58,6 +60,9 @@ class VoucherWallet extends Model
         return $this->belongsTo(Voucher::class);
     }
 
+    /**
+     * @return MorphTo<Model, $this>
+     */
     public function owner(): MorphTo
     {
         return $this->morphTo();

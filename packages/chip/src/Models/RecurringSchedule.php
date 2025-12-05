@@ -75,7 +75,7 @@ class RecurringSchedule extends ChipModel
 
     public function isDue(): bool
     {
-        if (!$this->isActive()) {
+        if (! $this->isActive()) {
             return false;
         }
 
@@ -96,7 +96,7 @@ class RecurringSchedule extends ChipModel
 
     public function getAmountFormatted(): string
     {
-        return number_format($this->amount_minor / 100, 2) . ' ' . $this->currency;
+        return number_format($this->amount_minor / 100, 2).' '.$this->currency;
     }
 
     protected static function tableSuffix(): string

@@ -15,8 +15,12 @@ return [
             'orders' => 10,
             'pickups' => 20,
             'tracking' => 30,
+            'tracking_events' => 40,
+            'webhook_logs' => 50,
         ],
     ],
+
+    'navigation_badge_color' => 'primary',
 
     /*
     |--------------------------------------------------------------------------

@@ -9,6 +9,7 @@ use AIArmada\Jnt\Services\JntTrackingService;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Throwable;
 
 final class SyncTrackingAction
 {
@@ -32,7 +33,7 @@ final class SyncTrackingAction
                         ->body('Tracking information has been updated successfully.')
                         ->success()
                         ->send();
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     Notification::make()
                         ->title('Sync Failed')
                         ->body($e->getMessage())

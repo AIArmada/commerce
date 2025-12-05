@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates;
 
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
+use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource;
 use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
 use Filament\Contracts\Plugin;
@@ -38,6 +40,8 @@ final class FilamentAffiliatesPlugin implements Plugin
                 AffiliateResource::class,
                 AffiliateConversionResource::class,
                 AffiliatePayoutResource::class,
+                AffiliateProgramResource::class,
+                AffiliateFraudSignalResource::class,
             ])
             ->widgets([
                 AffiliateStatsWidget::class,

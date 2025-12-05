@@ -65,6 +65,13 @@ return [
                 'prefix' => 'RCP',
             ],
         ],
+        'credit_note' => [
+            'default_template' => 'doc-default',
+            'numbering' => [
+                'strategy' => DefaultNumberStrategy::class,
+                'prefix' => 'CN',
+            ],
+        ],
     ],
 
     /*

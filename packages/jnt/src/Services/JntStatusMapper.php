@@ -78,7 +78,7 @@ class JntStatusMapper
      */
     public function fromString(string $statusString): TrackingStatus
     {
-        $normalized = strtoupper(trim($statusString));
+        $normalized = mb_strtoupper(mb_trim($statusString));
 
         return match (true) {
             str_contains($normalized, 'PENDING') => TrackingStatus::Pending,

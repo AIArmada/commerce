@@ -16,7 +16,7 @@ final class FraudAlertWidget extends BaseWidget
 
     protected int|string|array $columnSpan = 'full';
 
-    protected static ?string $pollingInterval = '30s';
+    protected ?string $pollingInterval = '30s';
 
     protected static ?string $heading = 'Fraud Alerts';
 

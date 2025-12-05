@@ -11,6 +11,8 @@ use AIArmada\FilamentPermissions\Pages\RoleHierarchyPage;
 use AIArmada\FilamentPermissions\Resources\PermissionResource;
 use AIArmada\FilamentPermissions\Resources\RoleResource;
 use AIArmada\FilamentPermissions\Resources\UserResource;
+use AIArmada\FilamentPermissions\Services\PermissionRegistry;
+use AIArmada\FilamentPermissions\Support\ResourcePermissionDiscovery;
 use AIArmada\FilamentPermissions\Widgets\PermissionStatsWidget;
 use AIArmada\FilamentPermissions\Widgets\RecentActivityWidget;
 use AIArmada\FilamentPermissions\Widgets\RoleHierarchyWidget;
@@ -19,6 +21,13 @@ use Filament\Panel;
 
 class FilamentPermissionsPlugin implements Plugin
 {
+    protected bool $autoDiscoverPermissions = false;
+
+    /**
+     * @var array<string>
+     */
+    protected array $discoveryNamespaces = [];
+
     public static function make(): self
     {
         return app(self::class);
@@ -27,6 +36,29 @@ class FilamentPermissionsPlugin implements Plugin
     public function getId(): string
     {
         return 'aiarmada-filament-permissions';
+    }
+
+    /**
+     * Enable automatic permission discovery from resources.
+     */
+    public function discoverPermissions(bool $enabled = true): static
+    {
+        $this->autoDiscoverPermissions = $enabled;
+
+        return $this;
+    }
+
+    /**
+     * Add namespaces to scan for resource permissions.
+     *
+     * @param  array<string>  $namespaces
+     */
+    public function discoverPermissionsFrom(array $namespaces): static
+    {
+        $this->discoveryNamespaces = array_merge($this->discoveryNamespaces, $namespaces);
+        $this->autoDiscoverPermissions = true;
+
+        return $this;
     }
 
     public function register(Panel $panel): void
@@ -105,6 +137,41 @@ class FilamentPermissionsPlugin implements Plugin
 
     public function boot(Panel $panel): void
     {
-        // No-op for now; reserved for future cross-cutting boot logic.
+        if ($this->shouldAutoDiscoverPermissions()) {
+            $this->runPermissionDiscovery($panel);
+        }
+    }
+
+    protected function shouldAutoDiscoverPermissions(): bool
+    {
+        return $this->autoDiscoverPermissions || config('filament-permissions.discovery.enabled', false);
+    }
+
+    protected function runPermissionDiscovery(Panel $panel): void
+    {
+        /** @var PermissionRegistry $registry */
+        $registry = app(PermissionRegistry::class);
+
+        /** @var ResourcePermissionDiscovery $discovery */
+        $discovery = new ResourcePermissionDiscovery($registry);
+
+        // Discover from panel resources
+        $discovery->discoverFromPanel($panel);
+
+        // Discover from configured namespaces
+        $namespaces = array_merge(
+            (array) config('filament-permissions.discovery.namespaces', []),
+            $this->discoveryNamespaces
+        );
+
+        if (! empty($namespaces)) {
+            $discovery->discoverFromNamespaces($namespaces);
+        }
+
+        // Auto-sync to database if enabled
+        if (config('filament-permissions.discovery.auto_sync', false)) {
+            $guard = config('filament-permissions.default_guard', 'web');
+            $registry->sync($guard);
+        }
     }
 }

@@ -63,7 +63,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  *
  * @method static Builder<static> forOwner(?Model $owner = null, bool $includeGlobal = true)
  */
-class JntOrder extends Model
+final class JntOrder extends Model
 {
     use HasUuids;
 

@@ -36,6 +36,61 @@ class PortalRegistration extends FilamentRegister
         parent::mount();
     }
 
+    public function register(): ?Model
+    {
+        if (! $this->registrationEnabled) {
+            Notification::make()
+                ->title(__('Registration Disabled'))
+                ->body(__('Affiliate registration is currently not available.'))
+                ->danger()
+                ->send();
+
+            return null;
+        }
+
+        $data = $this->form->getState();
+
+        $user = $this->getUserModel()::create([
+            'name' => $data['name'],
+            'email' => $data['email'],
+            'password' => Hash::make($data['password']),
+        ]);
+
+        $this->createAffiliateForUser($user, $data);
+
+        $this->sendEmailVerificationNotification($user);
+
+        auth()->guard($this->getGuard())->login($user);
+
+        session()->regenerate();
+
+        return $user;
+    }
+
+    public function getHeading(): string
+    {
+        return __('Register as an Affiliate');
+    }
+
+    public function getSubheading(): ?string
+    {
+        if (! $this->registrationEnabled) {
+            return __('Registration is currently closed.');
+        }
+
+        return match ($this->approvalMode) {
+            'auto' => __('Your affiliate account will be automatically activated.'),
+            'open' => __('Your account will be created with pending status.'),
+            'admin' => __('Your application will be reviewed by an administrator.'),
+            default => null,
+        };
+    }
+
+    public function isRegistrationEnabled(): bool
+    {
+        return $this->registrationEnabled;
+    }
+
     /**
      * @return array<int, Component>
      */
@@ -73,37 +128,6 @@ class PortalRegistration extends FilamentRegister
             ->maxLength(255);
     }
 
-    public function register(): ?Model
-    {
-        if (! $this->registrationEnabled) {
-            Notification::make()
-                ->title(__('Registration Disabled'))
-                ->body(__('Affiliate registration is currently not available.'))
-                ->danger()
-                ->send();
-
-            return null;
-        }
-
-        $data = $this->form->getState();
-
-        $user = $this->getUserModel()::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
-        ]);
-
-        $this->createAffiliateForUser($user, $data);
-
-        $this->sendEmailVerificationNotification($user);
-
-        auth()->guard($this->getGuard())->login($user);
-
-        session()->regenerate();
-
-        return $user;
-    }
-
     protected function createAffiliateForUser(Model $user, array $data): Affiliate
     {
         $registrationService = app(AffiliateRegistrationService::class);
@@ -120,30 +144,6 @@ class PortalRegistration extends FilamentRegister
         return Action::make('register')
             ->label(__('Register as Affiliate'))
             ->submit('register');
-    }
-
-    public function getHeading(): string
-    {
-        return __('Register as an Affiliate');
-    }
-
-    public function getSubheading(): ?string
-    {
-        if (! $this->registrationEnabled) {
-            return __('Registration is currently closed.');
-        }
-
-        return match ($this->approvalMode) {
-            'auto' => __('Your affiliate account will be automatically activated.'),
-            'open' => __('Your account will be created with pending status.'),
-            'admin' => __('Your application will be reviewed by an administrator.'),
-            default => null,
-        };
-    }
-
-    public function isRegistrationEnabled(): bool
-    {
-        return $this->registrationEnabled;
     }
 
     protected function afterRegister(): void

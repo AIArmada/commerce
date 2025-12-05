@@ -28,6 +28,7 @@ use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\Listeners\IncrementVoucherAppliedCount;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Services\VoucherValidator;
+use AIArmada\Vouchers\Support\AffiliateIntegrationRegistrar;
 use AIArmada\Vouchers\Support\CartManagerWithVouchers;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use Illuminate\Support\Facades\Event;
@@ -55,6 +56,9 @@ final class VoucherServiceProvider extends PackageServiceProvider
 
         // Register AI/ML services
         $this->registerAIServices();
+
+        // Register affiliate integration
+        $this->app->singleton(AffiliateIntegrationRegistrar::class);
 
         $this->app->singleton(OwnerResolverInterface::class, function (\Illuminate\Contracts\Foundation\Application $app): OwnerResolverInterface {
             /** @var string $resolverClass */
@@ -122,6 +126,9 @@ final class VoucherServiceProvider extends PackageServiceProvider
         // Register event listener for tracking voucher applications
         Event::listen(VoucherApplied::class, IncrementVoucherAppliedCount::class);
 
+        // Register affiliate integration
+        $this->app->make(AffiliateIntegrationRegistrar::class)->register();
+
         $this->app->extend('cart', function (CartManagerInterface $manager, $app): CartManagerInterface {
             if ($manager instanceof CartManagerWithVouchers) {
                 return $manager;
@@ -157,6 +164,7 @@ final class VoucherServiceProvider extends PackageServiceProvider
             CartFeatureExtractorInterface::class,
             CartFeatureExtractor::class,
             VoucherMLDataCollector::class,
+            AffiliateIntegrationRegistrar::class,
             'voucher',
         ];
     }

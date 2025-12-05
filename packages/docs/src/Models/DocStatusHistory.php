@@ -10,7 +10,17 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class DocStatusHistory extends Model
+/**
+ * @property string $id
+ * @property string $doc_id
+ * @property DocStatus $status
+ * @property string|null $notes
+ * @property string|null $changed_by
+ * @property \Illuminate\Support\Carbon $created_at
+ * @property \Illuminate\Support\Carbon $updated_at
+ * @property-read Doc $doc
+ */
+final class DocStatusHistory extends Model
 {
     use HasFactory;
     use HasUuids;
@@ -22,17 +32,26 @@ class DocStatusHistory extends Model
         'changed_by',
     ];
 
-    protected $casts = [
-        'status' => DocStatus::class,
-    ];
-
     public function getTable(): string
     {
         return config('docs.database.tables.doc_status_histories', 'doc_status_histories');
     }
 
+    /**
+     * @return BelongsTo<Doc, $this>
+     */
     public function doc(): BelongsTo
     {
         return $this->belongsTo(Doc::class);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'status' => DocStatus::class,
+        ];
     }
 }

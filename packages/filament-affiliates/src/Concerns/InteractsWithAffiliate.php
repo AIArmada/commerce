@@ -162,7 +162,7 @@ trait InteractsWithAffiliate
 
         // Determine decimal places based on currency (most use 2, some use 0)
         $zeroDecimalCurrencies = ['JPY', 'KRW', 'VND', 'IDR', 'CLP', 'PYG', 'UGX', 'RWF'];
-        $decimals = in_array(strtoupper($currency), $zeroDecimalCurrencies, true) ? 0 : 2;
+        $decimals = in_array(mb_strtoupper($currency), $zeroDecimalCurrencies, true) ? 0 : 2;
 
         $divisor = $decimals === 0 ? 1 : 100;
 

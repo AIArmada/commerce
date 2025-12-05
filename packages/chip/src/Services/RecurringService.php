@@ -7,7 +7,6 @@ namespace AIArmada\Chip\Services;
 use AIArmada\Chip\Enums\ChargeStatus;
 use AIArmada\Chip\Enums\RecurringInterval;
 use AIArmada\Chip\Enums\RecurringStatus;
-use AIArmada\Chip\Events\RecurringChargeFailed;
 use AIArmada\Chip\Events\RecurringChargeRetryScheduled;
 use AIArmada\Chip\Events\RecurringChargeSucceeded;
 use AIArmada\Chip\Events\RecurringScheduleCancelled;
@@ -19,6 +18,7 @@ use AIArmada\Chip\Models\RecurringCharge;
 use AIArmada\Chip\Models\RecurringSchedule;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
+use Throwable;
 
 /**
  * App-layer recurring payment service using Chip's token + charge APIs.
@@ -149,26 +149,6 @@ class RecurringService
     }
 
     /**
-     * Handle charge failure with retry logic.
-     */
-    private function handleFailure(RecurringSchedule $schedule, ChipApiException $e): void
-    {
-        $schedule->increment('failure_count');
-
-        if ($schedule->failure_count >= $schedule->max_failures) {
-            $schedule->update(['status' => RecurringStatus::Failed]);
-            event(new RecurringScheduleFailed($schedule));
-        } else {
-            // Exponential backoff: 2^failure_count * 24 hours
-            $retryDelayHours = (int) pow(2, $schedule->failure_count) * 24;
-            $schedule->update([
-                'next_charge_at' => now()->addHours($retryDelayHours),
-            ]);
-            event(new RecurringChargeRetryScheduled($schedule, $retryDelayHours));
-        }
-    }
-
-    /**
      * Cancel a recurring schedule.
      */
     public function cancel(RecurringSchedule $schedule): RecurringSchedule
@@ -265,7 +245,7 @@ class RecurringService
                 } else {
                     $failed++;
                 }
-            } catch (\Throwable $e) {
+            } catch (Throwable $e) {
                 $failed++;
                 report($e);
             }
@@ -276,6 +256,26 @@ class RecurringService
             'succeeded' => $succeeded,
             'failed' => $failed,
         ];
+    }
+
+    /**
+     * Handle charge failure with retry logic.
+     */
+    private function handleFailure(RecurringSchedule $schedule, ChipApiException $e): void
+    {
+        $schedule->increment('failure_count');
+
+        if ($schedule->failure_count >= $schedule->max_failures) {
+            $schedule->update(['status' => RecurringStatus::Failed]);
+            event(new RecurringScheduleFailed($schedule));
+        } else {
+            // Exponential backoff: 2^failure_count * 24 hours
+            $retryDelayHours = (int) pow(2, $schedule->failure_count) * 24;
+            $schedule->update([
+                'next_charge_at' => now()->addHours($retryDelayHours),
+            ]);
+            event(new RecurringChargeRetryScheduled($schedule, $retryDelayHours));
+        }
     }
 
     private function calculateFirstCharge(RecurringInterval $interval, int $count): Carbon

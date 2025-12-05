@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources;
 
-use AIArmada\Chip\Enums\RecurringInterval;
-use AIArmada\Chip\Enums\RecurringStatus;
 use AIArmada\Chip\Models\RecurringSchedule;
 use AIArmada\FilamentChip\Resources\RecurringScheduleResource\Pages\ListRecurringSchedules;
 use AIArmada\FilamentChip\Resources\RecurringScheduleResource\Pages\ViewRecurringSchedule;

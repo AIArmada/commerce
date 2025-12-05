@@ -20,15 +20,15 @@ class PortalLinks extends Page
 {
     use InteractsWithAffiliate;
 
+    public string $targetUrl = '';
+
+    public ?string $generatedLink = null;
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLink;
 
     protected static ?int $navigationSort = 1;
 
     protected string $view = 'filament-affiliates::pages.portal.links';
-
-    public string $targetUrl = '';
-
-    public ?string $generatedLink = null;
 
     public static function getNavigationLabel(): string
     {

@@ -59,9 +59,34 @@ return [
     |--------------------------------------------------------------------------
     | Cart Integration
     |--------------------------------------------------------------------------
+    |
+    | Configure tight integration with the Cart package when installed.
+    |
     */
     'cart' => [
+        // Enable cart integration
         'enabled' => env('INVENTORY_CART_ENABLED', true),
+
+        // Validate stock availability when adding items to cart
+        'validate_on_add' => env('INVENTORY_VALIDATE_ON_ADD', false),
+
+        // Auto-allocate inventory when items are added to cart
+        'auto_allocate_on_add' => env('INVENTORY_AUTO_ALLOCATE_ON_ADD', false),
+
+        // Default allocation TTL in minutes
+        'allocation_ttl_minutes' => env('INVENTORY_ALLOCATION_TTL', 30),
+
+        // Allow adding items even when out of stock (backorder support)
+        'allow_backorder' => env('INVENTORY_ALLOW_BACKORDER', false),
+
+        // Maximum backorder quantity per item (null = unlimited)
+        'max_backorder_quantity' => env('INVENTORY_MAX_BACKORDER_QTY'),
+
+        // Metadata key for storing allocation status on cart items
+        'allocation_metadata_key' => 'inventory_allocated',
+
+        // Metadata key for storing backorder status on cart items
+        'backorder_metadata_key' => 'is_backorder',
     ],
 
     /*

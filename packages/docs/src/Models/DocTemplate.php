@@ -18,11 +18,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string $view_name
  * @property string $doc_type
  * @property bool $is_default
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property array<string, mixed>|null $settings
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Doc> $docs
  */
-class DocTemplate extends Model
+final class DocTemplate extends Model
 {
     use HasFactory;
     use HasOwner;
@@ -40,16 +43,14 @@ class DocTemplate extends Model
         'settings',
     ];
 
-    protected $casts = [
-        'is_default' => 'boolean',
-        'settings' => 'array',
-    ];
-
     public function getTable(): string
     {
         return config('docs.database.tables.doc_templates', 'doc_templates');
     }
 
+    /**
+     * @return HasMany<Doc, $this>
+     */
     public function docs(): HasMany
     {
         return $this->hasMany(Doc::class);
@@ -61,7 +62,7 @@ class DocTemplate extends Model
     public function setAsDefault(): void
     {
         // Build query to remove default from other templates of the same type
-        $query = static::where('id', '!=', $this->id)
+        $query = self::where('id', '!=', $this->id)
             ->where('doc_type', $this->doc_type);
 
         // Scope to same owner context
@@ -80,10 +81,21 @@ class DocTemplate extends Model
 
     protected static function booted(): void
     {
-        static::deleting(function (DocTemplate $template): void {
+        self::deleting(function (DocTemplate $template): void {
             // Nullify the template reference on associated docs rather than deleting them
             $template->docs()->update(['doc_template_id' => null]);
         });
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'is_default' => 'boolean',
+            'settings' => 'array',
+        ];
     }
 
     /**

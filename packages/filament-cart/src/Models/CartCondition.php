@@ -49,11 +49,6 @@ final class CartCondition extends Model
     public $timestamps = true;
 
     /**
-     * The table associated with the model.
-     */
-    protected $table = 'cart_snapshot_conditions';
-
-    /**
      * The attributes that are mass assignable.
      */
     protected $fillable = [
@@ -95,6 +90,13 @@ final class CartCondition extends Model
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
+
+    public function getTable(): string
+    {
+        $tables = config('filament-cart.database.tables', []);
+
+        return $tables['snapshot_conditions'] ?? 'cart_snapshot_conditions';
+    }
 
     /**
      * Get the cart that owns this condition.

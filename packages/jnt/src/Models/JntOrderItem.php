@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read JntOrder $order
  */
-class JntOrderItem extends Model
+final class JntOrderItem extends Model
 {
     use HasUuids;
 

@@ -10,7 +10,17 @@ return [
     | Database
     |--------------------------------------------------------------------------
     */
+    'database' => [
+        'json_column_type' => env('STOCK_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+        'tables' => [
+            'transactions' => env('STOCK_TABLE_NAME', 'stock_transactions'),
+            'reservations' => env('STOCK_RESERVATIONS_TABLE', 'stock_reservations'),
+        ],
+    ],
+
+    // @deprecated Use database.tables.transactions instead
     'table_name' => env('STOCK_TABLE_NAME', 'stock_transactions'),
+    // @deprecated Use database.tables.reservations instead
     'reservations_table' => env('STOCK_RESERVATIONS_TABLE', 'stock_reservations'),
 
     /*

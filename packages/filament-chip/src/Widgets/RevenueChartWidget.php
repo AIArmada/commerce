@@ -10,13 +10,13 @@ use Illuminate\Support\Carbon;
 
 final class RevenueChartWidget extends ChartWidget
 {
-    protected static ?string $heading = 'Revenue Trend (Last 30 Days)';
+    protected ?string $heading = 'Revenue Trend (Last 30 Days)';
 
     protected static ?int $sort = 2;
 
     protected int|string|array $columnSpan = 'full';
 
-    protected static ?string $pollingInterval = '120s';
+    protected ?string $pollingInterval = '120s';
 
     protected function getData(): array
     {
@@ -39,6 +39,25 @@ final class RevenueChartWidget extends ChartWidget
     protected function getType(): string
     {
         return 'line';
+    }
+
+    protected function getOptions(): array
+    {
+        return [
+            'plugins' => [
+                'legend' => [
+                    'display' => false,
+                ],
+            ],
+            'scales' => [
+                'y' => [
+                    'beginAtZero' => true,
+                    'ticks' => [
+                        'callback' => 'function(value) { return "'.config('filament-chip.default_currency', 'MYR').' " + value.toLocaleString(); }',
+                    ],
+                ],
+            ],
+        ];
     }
 
     /**
@@ -78,25 +97,6 @@ final class RevenueChartWidget extends ChartWidget
         return [
             'labels' => $labels,
             'amounts' => $amounts,
-        ];
-    }
-
-    protected function getOptions(): array
-    {
-        return [
-            'plugins' => [
-                'legend' => [
-                    'display' => false,
-                ],
-            ],
-            'scales' => [
-                'y' => [
-                    'beginAtZero' => true,
-                    'ticks' => [
-                        'callback' => 'function(value) { return "' . config('filament-chip.default_currency', 'MYR') . ' " + value.toLocaleString(); }',
-                    ],
-                ],
-            ],
         ];
     }
 }

@@ -15,7 +15,7 @@ final class LowInventoryAlertsWidget extends TableWidget
 
     protected static ?string $heading = 'Low Inventory Alerts';
 
-    protected static ?string $pollingInterval = '60s';
+    protected ?string $pollingInterval = '60s';
 
     protected int|string|array $columnSpan = 'full';
 
