@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates;
 
 use AIArmada\Affiliates\Services\AffiliatePayoutService;
+use AIArmada\Affiliates\Services\AffiliateRegistrationService;
 use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
@@ -52,6 +53,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(CommissionCalculator::class);
         $this->app->singleton(AffiliateService::class);
         $this->app->singleton(AffiliatePayoutService::class);
+        $this->app->singleton(AffiliateRegistrationService::class);
         $this->app->singleton(WebhookDispatcher::class);
         $this->app->singleton(AttributionModel::class);
         $this->app->singleton(NetworkService::class);

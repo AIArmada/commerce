@@ -50,6 +50,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read AffiliateBalance|null $balance
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutMethod> $payoutMethods
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutHold> $payoutHolds
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayout> $payouts
  * @property-read Model|null $owner
  */
 class Affiliate extends Model
@@ -109,6 +110,14 @@ class Affiliate extends Model
     public function conversions(): HasMany
     {
         return $this->hasMany(AffiliateConversion::class);
+    }
+
+    /**
+     * @return HasMany<AffiliatePayout, self>
+     */
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(AffiliatePayout::class);
     }
 
     public function parent(): BelongsTo

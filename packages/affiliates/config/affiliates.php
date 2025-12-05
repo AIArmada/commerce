@@ -279,9 +279,29 @@ return [
     ],
 
     /*
-|--------------------------------------------------------------------------
-| Database Options
-|--------------------------------------------------------------------------
+    |--------------------------------------------------------------------------
+    | Registration & Approval
+    |--------------------------------------------------------------------------
+    |
+    | Configure self-registration for affiliates. The owner model determines
+    | the polymorphic relationship owner. Approval mode controls how new
+    | affiliate registrations are handled.
+    |
+    */
+
+    'registration' => [
+        'enabled' => env('AFFILIATES_REGISTRATION_ENABLED', true),
+        'owner_model' => env('AFFILIATES_REGISTRATION_OWNER_MODEL', 'App\\Models\\User'),
+        'approval_mode' => env('AFFILIATES_REGISTRATION_APPROVAL_MODE', 'admin'), // auto | open | admin
+        'default_status' => env('AFFILIATES_REGISTRATION_DEFAULT_STATUS', 'pending'), // draft | pending | active
+        'default_commission_type' => env('AFFILIATES_REGISTRATION_COMMISSION_TYPE', 'percentage'),
+        'default_commission_rate' => env('AFFILIATES_REGISTRATION_COMMISSION_RATE', 1000), // 10% in basis points
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Database Options
+    |--------------------------------------------------------------------------
     |
     | Respect the monorepo helper for JSON column type (json/jsonb).
     |

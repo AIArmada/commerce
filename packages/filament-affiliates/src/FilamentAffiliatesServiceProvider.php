@@ -19,7 +19,8 @@ final class FilamentAffiliatesServiceProvider extends PackageServiceProvider
     {
         $package
             ->name('filament-affiliates')
-            ->hasConfigFile('filament-affiliates');
+            ->hasConfigFile('filament-affiliates')
+            ->hasViews();
     }
 
     public function packageRegistered(): void
