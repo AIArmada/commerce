@@ -51,8 +51,8 @@ final class InventoryLocation extends Model
 {
     /** @use HasFactory<\AIArmada\Inventory\Database\Factories\InventoryLocationFactory> */
     use HasFactory;
-    use HasLocationHierarchy;
 
+    use HasLocationHierarchy;
     use HasUuids;
 
     public const DEFAULT_LOCATION_CODE = 'DEFAULT';
@@ -338,7 +338,7 @@ final class InventoryLocation extends Model
     /**
      * Calculate distance to another location.
      */
-    public function distanceTo(InventoryLocation $other): ?float
+    public function distanceTo(self $other): ?float
     {
         if ($this->coordinate_x === null || $other->coordinate_x === null) {
             return null;

@@ -20,22 +20,22 @@ use Illuminate\Database\Eloquent\Model;
 final class VoucherFraudDetector
 {
     /** @var array<string, FraudDetectorInterface> */
-    protected array $detectors = [];
+    private array $detectors = [];
 
     /**
      * Threshold for blocking redemption (0.0-1.0).
      */
-    protected float $blockThreshold = 0.8;
+    private float $blockThreshold = 0.8;
 
     /**
      * Whether to run detectors in parallel (for future async support).
      */
-    protected bool $parallelExecution = false;
+    private bool $parallelExecution = false;
 
     /**
      * Maximum combined score before automatic blocking.
      */
-    protected float $maxAllowedScore = 100.0;
+    private float $maxAllowedScore = 100.0;
 
     public function __construct()
     {
@@ -68,7 +68,7 @@ final class VoucherFraudDetector
         $detectorResults = [];
 
         foreach ($this->detectors as $name => $detector) {
-            if (!$detector->isEnabled()) {
+            if (! $detector->isEnabled()) {
                 continue;
             }
 
@@ -226,10 +226,10 @@ final class VoucherFraudDetector
         $detector = $this->getDetector('pattern');
 
         if ($detector instanceof PatternDetector) {
-            if (!empty($unusualHours)) {
+            if (! empty($unusualHours)) {
                 $detector->setUnusualHours($unusualHours);
             }
-            if (!empty($suspiciousIpPatterns)) {
+            if (! empty($suspiciousIpPatterns)) {
                 $detector->setSuspiciousIpPatterns($suspiciousIpPatterns);
             }
         }
@@ -312,7 +312,7 @@ final class VoucherFraudDetector
     /**
      * Register the default detectors.
      */
-    protected function registerDefaultDetectors(): void
+    private function registerDefaultDetectors(): void
     {
         $this->detectors = [
             'velocity' => new VelocityDetector(),

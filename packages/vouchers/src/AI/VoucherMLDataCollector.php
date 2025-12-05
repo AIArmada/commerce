@@ -7,6 +7,7 @@ namespace AIArmada\Vouchers\AI;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 /**
  * Collects training data for ML model development.
@@ -20,8 +21,8 @@ final class VoucherMLDataCollector
     /**
      * Collect training data for conversion prediction.
      *
-     * @param Carbon $from Start date
-     * @param Carbon $to End date
+     * @param  Carbon  $from  Start date
+     * @param  Carbon  $to  End date
      * @return Collection<int, array<string, mixed>>
      */
     public function collectConversionData(Carbon $from, Carbon $to): Collection
@@ -70,8 +71,8 @@ final class VoucherMLDataCollector
     /**
      * Collect training data for abandonment prediction.
      *
-     * @param Carbon $from Start date
-     * @param Carbon $to End date
+     * @param  Carbon  $from  Start date
+     * @param  Carbon  $to  End date
      * @return Collection<int, array<string, mixed>>
      */
     public function collectAbandonmentData(Carbon $from, Carbon $to): Collection
@@ -113,8 +114,8 @@ final class VoucherMLDataCollector
     /**
      * Collect voucher performance data for optimization.
      *
-     * @param Carbon $from Start date
-     * @param Carbon $to End date
+     * @param  Carbon  $from  Start date
+     * @param  Carbon  $to  End date
      * @return Collection<int, array<string, mixed>>
      */
     public function collectVoucherPerformanceData(Carbon $from, Carbon $to): Collection
@@ -125,7 +126,7 @@ final class VoucherMLDataCollector
 
         return DB::table($vouchersTable)
             ->leftJoin($voucherUsageTable, "{$voucherUsageTable}.voucher_id", '=', "{$vouchersTable}.id")
-            ->leftJoin($ordersTable, function ($join) use ($voucherUsageTable, $ordersTable) {
+            ->leftJoin($ordersTable, function ($join) use ($voucherUsageTable, $ordersTable): void {
                 $join->on("{$ordersTable}.cart_id", '=', "{$voucherUsageTable}.cart_id");
             })
             ->whereBetween("{$vouchersTable}.created_at", [$from, $to])
@@ -157,9 +158,6 @@ final class VoucherMLDataCollector
 
     /**
      * Export data to CSV format.
-     *
-     * @param Collection $data
-     * @param string $filepath
      */
     public function exportToCsv(Collection $data, string $filepath): void
     {
@@ -170,7 +168,7 @@ final class VoucherMLDataCollector
         $handle = fopen($filepath, 'w');
 
         if ($handle === false) {
-            throw new \RuntimeException("Cannot open file for writing: {$filepath}");
+            throw new RuntimeException("Cannot open file for writing: {$filepath}");
         }
 
         // Write headers
@@ -186,9 +184,6 @@ final class VoucherMLDataCollector
 
     /**
      * Export data to JSON format.
-     *
-     * @param Collection $data
-     * @param string $filepath
      */
     public function exportToJson(Collection $data, string $filepath): void
     {
@@ -201,7 +196,6 @@ final class VoucherMLDataCollector
     /**
      * Get summary statistics for the collected data.
      *
-     * @param Collection $data
      * @return array<string, mixed>
      */
     public function getSummaryStatistics(Collection $data): array

@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Http\Controllers\Portal;
 
 use AIArmada\Affiliates\Models\AffiliateTrainingModule;
 use AIArmada\Affiliates\Models\AffiliateTrainingProgress;
+use DB;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -157,7 +158,7 @@ final class TrainingController extends Controller
             ],
             [
                 'quiz_score' => $score,
-                'quiz_attempts' => \DB::raw('COALESCE(quiz_attempts, 0) + 1'),
+                'quiz_attempts' => DB::raw('COALESCE(quiz_attempts, 0) + 1'),
                 'quiz_passed_at' => $passed ? now() : null,
                 'completed_at' => $passed ? now() : null,
                 'progress_percent' => $passed ? 100 : 90,

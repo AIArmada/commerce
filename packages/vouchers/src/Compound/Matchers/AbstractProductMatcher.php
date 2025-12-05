@@ -21,12 +21,32 @@ abstract class AbstractProductMatcher implements ProductMatcherInterface
         protected array $config = []
     ) {}
 
-    public function filter(Collection $items): Collection
+    /**
+     * Create the appropriate matcher based on config type.
+     *
+     * @param  array<string, mixed>  $config
+     */
+    final public static function create(array $config): ProductMatcherInterface
+    {
+        $type = ProductMatcherType::tryFrom($config['type'] ?? 'sku');
+
+        return match ($type) {
+            ProductMatcherType::Sku => SkuMatcher::fromArray($config),
+            ProductMatcherType::Category => CategoryMatcher::fromArray($config),
+            ProductMatcherType::Price => PriceMatcher::fromArray($config),
+            ProductMatcherType::Attribute => AttributeMatcher::fromArray($config),
+            ProductMatcherType::All => CompositeMatcher::all($config['matchers'] ?? []),
+            ProductMatcherType::Any => CompositeMatcher::any($config['matchers'] ?? []),
+            default => SkuMatcher::fromArray($config),
+        };
+    }
+
+    final public function filter(Collection $items): Collection
     {
         return $items->filter(fn (CartItem $item): bool => $this->matches($item));
     }
 
-    public function getMatchingItems(Collection $items, ?int $limit = null): Collection
+    final public function getMatchingItems(Collection $items, ?int $limit = null): Collection
     {
         $matching = $this->filter($items);
 
@@ -43,25 +63,5 @@ abstract class AbstractProductMatcher implements ProductMatcherInterface
     protected function getConfig(string $key, mixed $default = null): mixed
     {
         return $this->config[$key] ?? $default;
-    }
-
-    /**
-     * Create the appropriate matcher based on config type.
-     *
-     * @param  array<string, mixed>  $config
-     */
-    public static function create(array $config): ProductMatcherInterface
-    {
-        $type = ProductMatcherType::tryFrom($config['type'] ?? 'sku');
-
-        return match ($type) {
-            ProductMatcherType::Sku => SkuMatcher::fromArray($config),
-            ProductMatcherType::Category => CategoryMatcher::fromArray($config),
-            ProductMatcherType::Price => PriceMatcher::fromArray($config),
-            ProductMatcherType::Attribute => AttributeMatcher::fromArray($config),
-            ProductMatcherType::All => CompositeMatcher::all($config['matchers'] ?? []),
-            ProductMatcherType::Any => CompositeMatcher::any($config['matchers'] ?? []),
-            default => SkuMatcher::fromArray($config),
-        };
     }
 }

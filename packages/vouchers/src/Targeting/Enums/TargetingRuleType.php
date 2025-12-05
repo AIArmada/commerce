@@ -33,6 +33,52 @@ enum TargetingRuleType: string
     case Referrer = 'referrer';
 
     /**
+     * Get all rule types as options for select fields.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        return collect(self::cases())
+            ->mapWithKeys(fn (self $case) => [$case->value => $case->label()])
+            ->all();
+    }
+
+    /**
+     * Group rule types by category.
+     *
+     * @return array<string, array<string, string>>
+     */
+    public static function grouped(): array
+    {
+        return [
+            'User' => [
+                self::UserSegment->value => self::UserSegment->label(),
+                self::UserAttribute->value => self::UserAttribute->label(),
+                self::FirstPurchase->value => self::FirstPurchase->label(),
+                self::CustomerLifetimeValue->value => self::CustomerLifetimeValue->label(),
+            ],
+            'Cart' => [
+                self::CartValue->value => self::CartValue->label(),
+                self::CartQuantity->value => self::CartQuantity->label(),
+                self::ProductInCart->value => self::ProductInCart->label(),
+                self::CategoryInCart->value => self::CategoryInCart->label(),
+            ],
+            'Time' => [
+                self::TimeWindow->value => self::TimeWindow->label(),
+                self::DayOfWeek->value => self::DayOfWeek->label(),
+                self::DateRange->value => self::DateRange->label(),
+            ],
+            'Context' => [
+                self::Channel->value => self::Channel->label(),
+                self::Device->value => self::Device->label(),
+                self::Geographic->value => self::Geographic->label(),
+                self::Referrer->value => self::Referrer->label(),
+            ],
+        ];
+    }
+
+    /**
      * Get human-readable label.
      */
     public function label(): string
@@ -148,51 +194,5 @@ enum TargetingRuleType: string
             self::DayOfWeek, self::Geographic => true,
             default => false,
         };
-    }
-
-    /**
-     * Get all rule types as options for select fields.
-     *
-     * @return array<string, string>
-     */
-    public static function options(): array
-    {
-        return collect(self::cases())
-            ->mapWithKeys(fn (self $case) => [$case->value => $case->label()])
-            ->all();
-    }
-
-    /**
-     * Group rule types by category.
-     *
-     * @return array<string, array<string, string>>
-     */
-    public static function grouped(): array
-    {
-        return [
-            'User' => [
-                self::UserSegment->value => self::UserSegment->label(),
-                self::UserAttribute->value => self::UserAttribute->label(),
-                self::FirstPurchase->value => self::FirstPurchase->label(),
-                self::CustomerLifetimeValue->value => self::CustomerLifetimeValue->label(),
-            ],
-            'Cart' => [
-                self::CartValue->value => self::CartValue->label(),
-                self::CartQuantity->value => self::CartQuantity->label(),
-                self::ProductInCart->value => self::ProductInCart->label(),
-                self::CategoryInCart->value => self::CategoryInCart->label(),
-            ],
-            'Time' => [
-                self::TimeWindow->value => self::TimeWindow->label(),
-                self::DayOfWeek->value => self::DayOfWeek->label(),
-                self::DateRange->value => self::DateRange->label(),
-            ],
-            'Context' => [
-                self::Channel->value => self::Channel->label(),
-                self::Device->value => self::Device->label(),
-                self::Geographic->value => self::Geographic->label(),
-                self::Referrer->value => self::Referrer->label(),
-            ],
-        ];
     }
 }

@@ -184,7 +184,7 @@ class Affiliate extends Model
     {
         return $this->payoutHolds()
             ->whereNull('released_at')
-            ->where(function ($query) {
+            ->where(function ($query): void {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
             })

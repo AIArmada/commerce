@@ -166,9 +166,11 @@ describe('GiftCardTransaction Factory Methods', function (): void {
             'status' => GiftCardStatus::Active,
         ]);
 
-        $order = new class extends \Illuminate\Database\Eloquent\Model {
-            protected $table = 'vouchers';
+        $order = new class extends Illuminate\Database\Eloquent\Model
+        {
             public $id = 'order-123';
+
+            protected $table = 'vouchers';
         };
 
         $transaction = GiftCardTransaction::recordRedemption(
@@ -211,9 +213,11 @@ describe('GiftCardTransaction Factory Methods', function (): void {
             'status' => GiftCardStatus::Active,
         ]);
 
-        $order = new class extends \Illuminate\Database\Eloquent\Model {
-            protected $table = 'vouchers';
+        $order = new class extends Illuminate\Database\Eloquent\Model
+        {
             public $id = 'order-123';
+
+            protected $table = 'vouchers';
         };
 
         $transaction = GiftCardTransaction::recordRefund(

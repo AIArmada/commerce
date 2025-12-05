@@ -8,7 +8,6 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Targeting\Evaluators\CartQuantityEvaluator;
 use AIArmada\Vouchers\Targeting\Evaluators\CartValueEvaluator;
-use AIArmada\Vouchers\Targeting\Evaluators\CategoryInCartEvaluator;
 use AIArmada\Vouchers\Targeting\Evaluators\ChannelEvaluator;
 use AIArmada\Vouchers\Targeting\Evaluators\CustomerLifetimeValueEvaluator;
 use AIArmada\Vouchers\Targeting\Evaluators\DateRangeEvaluator;

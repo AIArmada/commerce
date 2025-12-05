@@ -8,6 +8,7 @@ use AIArmada\FilamentPermissions\Enums\ConditionOperator;
 use AIArmada\FilamentPermissions\Enums\PolicyEffect;
 use AIArmada\FilamentPermissions\Models\AccessPolicy;
 use AIArmada\FilamentPermissions\ValueObjects\PolicyCondition;
+use DateTimeInterface;
 use Illuminate\Support\Str;
 
 class PolicyBuilder
@@ -29,9 +30,9 @@ class PolicyBuilder
 
     protected bool $isActive = true;
 
-    protected ?\DateTimeInterface $validFrom = null;
+    protected ?DateTimeInterface $validFrom = null;
 
-    protected ?\DateTimeInterface $validUntil = null;
+    protected ?DateTimeInterface $validUntil = null;
 
     /** @var array<string, mixed>|null */
     protected ?array $metadata = null;
@@ -310,7 +311,7 @@ class PolicyBuilder
     /**
      * Set validity period.
      */
-    public function validBetween(\DateTimeInterface $from, \DateTimeInterface $until): self
+    public function validBetween(DateTimeInterface $from, DateTimeInterface $until): self
     {
         $this->validFrom = $from;
         $this->validUntil = $until;
@@ -321,7 +322,7 @@ class PolicyBuilder
     /**
      * Set valid from date.
      */
-    public function validFrom(\DateTimeInterface $from): self
+    public function validFrom(DateTimeInterface $from): self
     {
         $this->validFrom = $from;
 
@@ -331,7 +332,7 @@ class PolicyBuilder
     /**
      * Set valid until date.
      */
-    public function validUntil(\DateTimeInterface $until): self
+    public function validUntil(DateTimeInterface $until): self
     {
         $this->validUntil = $until;
 

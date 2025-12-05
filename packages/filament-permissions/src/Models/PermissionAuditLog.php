@@ -6,6 +6,7 @@ namespace AIArmada\FilamentPermissions\Models;
 
 use AIArmada\FilamentPermissions\Enums\AuditEventType;
 use AIArmada\FilamentPermissions\Enums\AuditSeverity;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -235,7 +236,7 @@ class PermissionAuditLog extends Model
      * @param  Builder<PermissionAuditLog>  $query
      * @return Builder<PermissionAuditLog>
      */
-    public function scopeBetweenDates(Builder $query, \DateTimeInterface $start, \DateTimeInterface $end): Builder
+    public function scopeBetweenDates(Builder $query, DateTimeInterface $start, DateTimeInterface $end): Builder
     {
         return $query
             ->where('occurred_at', '>=', $start)

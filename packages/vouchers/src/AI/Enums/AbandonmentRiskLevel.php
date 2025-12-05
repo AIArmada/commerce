@@ -15,6 +15,19 @@ enum AbandonmentRiskLevel: string
     case Critical = 'critical';
 
     /**
+     * Determine risk level from a score.
+     */
+    public static function fromScore(float $score): self
+    {
+        return match (true) {
+            $score >= 0.8 => self::Critical,
+            $score >= 0.6 => self::High,
+            $score >= 0.3 => self::Medium,
+            default => self::Low,
+        };
+    }
+
+    /**
      * Get the minimum risk score for this level.
      */
     public function getMinScore(): float
@@ -100,19 +113,6 @@ enum AbandonmentRiskLevel: string
             self::Medium => 2,
             self::High => 4,
             self::Critical => 8,
-        };
-    }
-
-    /**
-     * Determine risk level from a score.
-     */
-    public static function fromScore(float $score): self
-    {
-        return match (true) {
-            $score >= 0.8 => self::Critical,
-            $score >= 0.6 => self::High,
-            $score >= 0.3 => self::Medium,
-            default => self::Low,
         };
     }
 }

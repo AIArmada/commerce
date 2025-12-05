@@ -57,7 +57,7 @@ final class FilamentInventoryPlugin implements Plugin
     /**
      * @return array<class-string>
      */
-    protected function getResources(): array
+    private function getResources(): array
     {
         $resources = [
             InventoryLocationResource::class,
@@ -80,7 +80,7 @@ final class FilamentInventoryPlugin implements Plugin
     /**
      * @return array<class-string>
      */
-    protected function getWidgets(): array
+    private function getWidgets(): array
     {
         $widgets = [
             InventoryStatsWidget::class,

@@ -13,11 +13,6 @@ use Filament\Support\Icons\Heroicon;
 
 final class SuspendGiftCardAction extends Action
 {
-    public static function getDefaultName(): ?string
-    {
-        return 'suspend';
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,5 +36,10 @@ final class SuspendGiftCardAction extends Action
                 ->warning()
                 ->send();
         });
+    }
+
+    public static function getDefaultName(): ?string
+    {
+        return 'suspend';
     }
 }

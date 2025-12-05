@@ -135,7 +135,7 @@ final class AffiliateProgramResource extends Resource
 
                 Tables\Columns\TextColumn::make('default_commission_rate_basis_points')
                     ->label('Commission')
-                    ->formatStateUsing(fn ($state) => ($state / 100) . '%'),
+                    ->formatStateUsing(fn ($state) => ($state / 100).'%'),
 
                 Tables\Columns\TextColumn::make('affiliates_count')
                     ->counts('affiliates')
@@ -184,10 +184,10 @@ final class AffiliateProgramResource extends Resource
     public static function getPages(): array
     {
         return [
-            'index' => \AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Pages\ListAffiliatePrograms::route('/'),
-            'create' => \AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Pages\CreateAffiliateProgram::route('/create'),
-            'view' => \AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Pages\ViewAffiliateProgram::route('/{record}'),
-            'edit' => \AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Pages\EditAffiliateProgram::route('/{record}/edit'),
+            'index' => AffiliateProgramResource\Pages\ListAffiliatePrograms::route('/'),
+            'create' => AffiliateProgramResource\Pages\CreateAffiliateProgram::route('/create'),
+            'view' => AffiliateProgramResource\Pages\ViewAffiliateProgram::route('/{record}'),
+            'edit' => AffiliateProgramResource\Pages\EditAffiliateProgram::route('/{record}/edit'),
         ];
     }
 }

@@ -57,6 +57,39 @@ trait HasOwnerPermissions
     }
 
     /**
+     * Scope query to only include models owned by a user.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @param  object  $user
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopeOwnedBy($query, $user)
+    {
+        return $query->where($this->getOwnerKeyName(), $user->getKey());
+    }
+
+    /**
+     * Scope query to only include models the user can view.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @param  object  $user
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopeViewableBy($query, $user)
+    {
+        $service = app(ContextualAuthorizationService::class);
+        $permission = $this->getPermissionName('viewAny');
+
+        // If user has global viewAny, return all
+        if ($service->canWithContext($user, $permission, [])) {
+            return $query;
+        }
+
+        // Otherwise, only return owned
+        return $query->ownedBy($user);
+    }
+
+    /**
      * Get the permission name for an action.
      */
     protected function getPermissionName(string $action): string
@@ -88,7 +121,7 @@ trait HasOwnerPermissions
         $prefixes = ['perm_', 'inv_', 'vou_'];
         foreach ($prefixes as $prefix) {
             if (str_starts_with($table, $prefix)) {
-                return substr($table, strlen($prefix));
+                return mb_substr($table, mb_strlen($prefix));
             }
         }
 
@@ -102,38 +135,5 @@ trait HasOwnerPermissions
     {
         // Override this in your model if using a different column
         return 'user_id';
-    }
-
-    /**
-     * Scope query to only include models owned by a user.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
-     * @param  object  $user
-     * @return \Illuminate\Database\Eloquent\Builder<static>
-     */
-    public function scopeOwnedBy($query, $user)
-    {
-        return $query->where($this->getOwnerKeyName(), $user->getKey());
-    }
-
-    /**
-     * Scope query to only include models the user can view.
-     *
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
-     * @param  object  $user
-     * @return \Illuminate\Database\Eloquent\Builder<static>
-     */
-    public function scopeViewableBy($query, $user)
-    {
-        $service = app(ContextualAuthorizationService::class);
-        $permission = $this->getPermissionName('viewAny');
-
-        // If user has global viewAny, return all
-        if ($service->canWithContext($user, $permission, [])) {
-            return $query;
-        }
-
-        // Otherwise, only return owned
-        return $query->ownedBy($user);
     }
 }

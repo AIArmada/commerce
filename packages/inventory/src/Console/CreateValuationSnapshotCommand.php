@@ -6,6 +6,7 @@ namespace AIArmada\Inventory\Console;
 
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Services\ValuationService;
+use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Carbon;
 
@@ -45,7 +46,7 @@ final class CreateValuationSnapshotCommand extends Command
             ? Carbon::parse($this->option('date'))
             : null;
 
-        $this->info("Creating valuation snapshot for date: ".($date?->format('Y-m-d') ?? 'today'));
+        $this->info('Creating valuation snapshot for date: '.($date?->format('Y-m-d') ?? 'today'));
         $this->info("Costing method: {$method->label()}");
 
         if ($locationId !== null) {
@@ -77,11 +78,11 @@ final class CreateValuationSnapshotCommand extends Command
             if ($snapshot->variance_from_previous_minor !== null) {
                 $variancePercent = $snapshot->variancePercentage();
                 $sign = $snapshot->isPositiveVariance() ? '+' : '';
-                $this->info("Variance from previous: {$sign}".number_format($snapshot->variance_from_previous_minor / 100, 2)." ({$sign}".number_format($variancePercent ?? 0, 2)."%)");
+                $this->info("Variance from previous: {$sign}".number_format($snapshot->variance_from_previous_minor / 100, 2)." ({$sign}".number_format($variancePercent ?? 0, 2).'%)');
             }
 
             return self::SUCCESS;
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             $this->error("Failed to create valuation snapshot: {$e->getMessage()}");
 
             return self::FAILURE;

@@ -14,6 +14,28 @@ enum BatchStatus: string
     case OnHold = 'on_hold';
 
     /**
+     * Get statuses that allow inventory movement.
+     *
+     * @return array<self>
+     */
+    public static function movableStatuses(): array
+    {
+        return [self::Active, self::OnHold];
+    }
+
+    /**
+     * Get all options for select fields.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        return collect(self::cases())
+            ->mapWithKeys(fn (self $status): array => [$status->value => $status->label()])
+            ->toArray();
+    }
+
+    /**
      * Get a human-readable label.
      */
     public function label(): string
@@ -57,27 +79,5 @@ enum BatchStatus: string
     public function requiresAttention(): bool
     {
         return in_array($this, [self::Quarantined, self::Expired, self::Recalled], true);
-    }
-
-    /**
-     * Get statuses that allow inventory movement.
-     *
-     * @return array<self>
-     */
-    public static function movableStatuses(): array
-    {
-        return [self::Active, self::OnHold];
-    }
-
-    /**
-     * Get all options for select fields.
-     *
-     * @return array<string, string>
-     */
-    public static function options(): array
-    {
-        return collect(self::cases())
-            ->mapWithKeys(fn (self $status): array => [$status->value => $status->label()])
-            ->toArray();
     }
 }

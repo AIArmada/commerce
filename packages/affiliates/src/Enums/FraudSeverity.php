@@ -11,6 +11,16 @@ enum FraudSeverity: string
     case High = 'high';
     case Critical = 'critical';
 
+    public static function fromScore(int $score): self
+    {
+        return match (true) {
+            $score >= 100 => self::Critical,
+            $score >= 80 => self::High,
+            $score >= 50 => self::Medium,
+            default => self::Low,
+        };
+    }
+
     public function label(): string
     {
         return match ($this) {
@@ -38,16 +48,6 @@ enum FraudSeverity: string
             self::Medium => 50,
             self::High => 80,
             self::Critical => 100,
-        };
-    }
-
-    public static function fromScore(int $score): self
-    {
-        return match (true) {
-            $score >= 100 => self::Critical,
-            $score >= 80 => self::High,
-            $score >= 50 => self::Medium,
-            default => self::Low,
         };
     }
 }

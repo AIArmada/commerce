@@ -9,7 +9,6 @@ use AIArmada\Vouchers\GiftCards\Models\GiftCard;
 use AIArmada\Vouchers\GiftCards\Models\GiftCardTransaction;
 use Akaunting\Money\Money;
 use Filament\Widgets\Widget;
-use Illuminate\Contracts\View\View;
 
 final class GiftCardTransactionTimelineWidget extends Widget
 {

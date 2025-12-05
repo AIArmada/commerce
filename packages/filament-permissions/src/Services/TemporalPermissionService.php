@@ -7,6 +7,7 @@ namespace AIArmada\FilamentPermissions\Services;
 use AIArmada\FilamentPermissions\Enums\PermissionScope;
 use AIArmada\FilamentPermissions\Models\ScopedPermission;
 use Carbon\Carbon;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Collection;
 
 class TemporalPermissionService
@@ -24,7 +25,7 @@ class TemporalPermissionService
     public function grantTemporaryPermission(
         $user,
         string $permission,
-        \DateTimeInterface $expiresAt,
+        DateTimeInterface $expiresAt,
         ?PermissionScope $scope = null,
         ?string $scopeValue = null,
         array $additionalConditions = []
@@ -73,7 +74,7 @@ class TemporalPermissionService
         string $permission,
         int $startHour,
         int $endHour,
-        ?\DateTimeInterface $expiresAt = null
+        ?DateTimeInterface $expiresAt = null
     ): ScopedPermission {
         return $this->contextualAuth->grantScopedPermission(
             user: $user,
@@ -100,7 +101,7 @@ class TemporalPermissionService
         $user,
         string $permission,
         array $days,
-        ?\DateTimeInterface $expiresAt = null
+        ?DateTimeInterface $expiresAt = null
     ): ScopedPermission {
         return $this->contextualAuth->grantScopedPermission(
             user: $user,

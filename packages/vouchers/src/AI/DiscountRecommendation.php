@@ -19,7 +19,7 @@ use AIArmada\Vouchers\AI\Enums\DiscountStrategy;
 final readonly class DiscountRecommendation
 {
     /**
-     * @param array<int, array<string, mixed>> $alternatives
+     * @param  array<int, array<string, mixed>>  $alternatives
      */
     public function __construct(
         public int $recommendedDiscountCents,
@@ -109,7 +109,7 @@ final readonly class DiscountRecommendation
     {
         $amount = $this->recommendedDiscountCents / 100;
 
-        return $currencySymbol . number_format($amount, 2);
+        return $currencySymbol.number_format($amount, 2);
     }
 
     /**

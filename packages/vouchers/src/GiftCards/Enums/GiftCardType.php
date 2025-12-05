@@ -16,6 +16,21 @@ enum GiftCardType: string
     case Corporate = 'corporate';
 
     /**
+     * Get options for UI dropdowns.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        $options = [];
+        foreach (self::cases() as $case) {
+            $options[$case->value] = $case->label();
+        }
+
+        return $options;
+    }
+
+    /**
      * Get human-readable label.
      */
     public function label(): string
@@ -89,20 +104,5 @@ enum GiftCardType: string
             self::Reward => 'warning',
             self::Corporate => 'gray',
         };
-    }
-
-    /**
-     * Get options for UI dropdowns.
-     *
-     * @return array<string, string>
-     */
-    public static function options(): array
-    {
-        $options = [];
-        foreach (self::cases() as $case) {
-            $options[$case->value] = $case->label();
-        }
-
-        return $options;
     }
 }

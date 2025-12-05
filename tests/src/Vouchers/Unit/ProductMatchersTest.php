@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Models\CartItem;
-use AIArmada\Vouchers\Compound\Enums\ProductMatcherType;
 use AIArmada\Vouchers\Compound\Matchers\AbstractProductMatcher;
 use AIArmada\Vouchers\Compound\Matchers\AttributeMatcher;
 use AIArmada\Vouchers\Compound\Matchers\CategoryMatcher;
@@ -403,7 +402,7 @@ describe('Product Matchers', function (): void {
 /**
  * Helper function to create a cart item
  *
- * @param array<string, mixed> $attributes
+ * @param  array<string, mixed>  $attributes
  */
 function createCartItem(string $sku, int $price, int $quantity, array $attributes = []): CartItem
 {

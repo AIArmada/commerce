@@ -180,41 +180,6 @@ class ScopedPermission extends Model
     }
 
     /**
-     * Evaluate a single condition.
-     *
-     * @param  array<string, mixed>  $condition
-     * @param  array<string, mixed>  $attributes
-     */
-    protected function evaluateCondition(array $condition, array $attributes): bool
-    {
-        $attribute = $condition['attribute'] ?? null;
-        $operator = $condition['operator'] ?? 'eq';
-        $value = $condition['value'] ?? null;
-        $source = $condition['source'] ?? 'subject';
-
-        if ($attribute === null) {
-            return true;
-        }
-
-        $attributeValue = $attributes[$attribute] ?? null;
-
-        return match ($operator) {
-            'eq' => $attributeValue === $value,
-            'neq' => $attributeValue !== $value,
-            'gt' => $attributeValue > $value,
-            'gte' => $attributeValue >= $value,
-            'lt' => $attributeValue < $value,
-            'lte' => $attributeValue <= $value,
-            'in' => is_array($value) && in_array($attributeValue, $value, true),
-            'not_in' => is_array($value) && ! in_array($attributeValue, $value, true),
-            'contains' => is_string($attributeValue) && str_contains($attributeValue, (string) $value),
-            'is_null' => $attributeValue === null,
-            'is_not_null' => $attributeValue !== null,
-            default => true,
-        };
-    }
-
-    /**
      * Scope to filter active (non-expired) permissions.
      *
      * @param  Builder<ScopedPermission>  $query
@@ -291,6 +256,41 @@ class ScopedPermission extends Model
             ->whereNotNull('expires_at')
             ->where('expires_at', '>', now())
             ->where('expires_at', '<=', now()->addDays($days));
+    }
+
+    /**
+     * Evaluate a single condition.
+     *
+     * @param  array<string, mixed>  $condition
+     * @param  array<string, mixed>  $attributes
+     */
+    protected function evaluateCondition(array $condition, array $attributes): bool
+    {
+        $attribute = $condition['attribute'] ?? null;
+        $operator = $condition['operator'] ?? 'eq';
+        $value = $condition['value'] ?? null;
+        $source = $condition['source'] ?? 'subject';
+
+        if ($attribute === null) {
+            return true;
+        }
+
+        $attributeValue = $attributes[$attribute] ?? null;
+
+        return match ($operator) {
+            'eq' => $attributeValue === $value,
+            'neq' => $attributeValue !== $value,
+            'gt' => $attributeValue > $value,
+            'gte' => $attributeValue >= $value,
+            'lt' => $attributeValue < $value,
+            'lte' => $attributeValue <= $value,
+            'in' => is_array($value) && in_array($attributeValue, $value, true),
+            'not_in' => is_array($value) && ! in_array($attributeValue, $value, true),
+            'contains' => is_string($attributeValue) && str_contains($attributeValue, (string) $value),
+            'is_null' => $attributeValue === null,
+            'is_not_null' => $attributeValue !== null,
+            default => true,
+        };
     }
 
     /**

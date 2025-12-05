@@ -15,6 +15,23 @@ final class AbcAnalysisChart extends ChartWidget
 
     protected ?string $maxHeight = '300px';
 
+    public static function canView(): bool
+    {
+        return config('filament-inventory.features.abc_analysis_chart', true);
+    }
+
+    public function getDescription(): ?string
+    {
+        $report = app(StockLevelReport::class);
+        $analysis = $report->getAbcAnalysis();
+
+        $classAPercent = $analysis->count() > 0
+            ? round(($analysis->where('classification', 'A')->count() / $analysis->count()) * 100, 1)
+            : 0;
+
+        return "Class A items: {$classAPercent}% of SKUs, 80% of value";
+    }
+
     protected function getData(): array
     {
         $report = app(StockLevelReport::class);
@@ -59,22 +76,5 @@ final class AbcAnalysisChart extends ChartWidget
                 ],
             ],
         ];
-    }
-
-    public function getDescription(): ?string
-    {
-        $report = app(StockLevelReport::class);
-        $analysis = $report->getAbcAnalysis();
-
-        $classAPercent = $analysis->count() > 0
-            ? round(($analysis->where('classification', 'A')->count() / $analysis->count()) * 100, 1)
-            : 0;
-
-        return "Class A items: {$classAPercent}% of SKUs, 80% of value";
-    }
-
-    public static function canView(): bool
-    {
-        return config('filament-inventory.features.abc_analysis_chart', true);
     }
 }

@@ -13,6 +13,7 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 
 final class TransferStockAction
 {
@@ -82,7 +83,7 @@ final class TransferStockAction
                         ->body("Transferred {$data['quantity']} units from {$fromLocation?->name} to {$toLocation?->name}.")
                         ->success()
                         ->send();
-                } catch (\InvalidArgumentException $e) {
+                } catch (InvalidArgumentException $e) {
                     Notification::make()
                         ->title('Transfer Failed')
                         ->body($e->getMessage())

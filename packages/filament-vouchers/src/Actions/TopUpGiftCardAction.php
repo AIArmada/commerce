@@ -14,11 +14,6 @@ use Illuminate\Support\Facades\Auth;
 
 final class TopUpGiftCardAction extends Action
 {
-    public static function getDefaultName(): ?string
-    {
-        return 'top_up';
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -54,5 +49,10 @@ final class TopUpGiftCardAction extends Action
                 ->success()
                 ->send();
         });
+    }
+
+    public static function getDefaultName(): ?string
+    {
+        return 'top_up';
     }
 }

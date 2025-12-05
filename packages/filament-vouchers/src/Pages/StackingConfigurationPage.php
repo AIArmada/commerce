@@ -4,15 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Pages;
 
-use AIArmada\Vouchers\Stacking\Enums\StackingMode;
-use AIArmada\Vouchers\Stacking\Enums\StackingRuleType;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
-use BackedEnum;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -26,6 +24,11 @@ final class StackingConfigurationPage extends Page implements HasForms
 {
     use InteractsWithForms;
 
+    /**
+     * @var array<string, mixed>
+     */
+    public array $data = [];
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedSquare3Stack3d;
 
     protected string $view = 'filament-vouchers::pages.stacking-configuration';
@@ -37,11 +40,6 @@ final class StackingConfigurationPage extends Page implements HasForms
     protected static string|UnitEnum|null $navigationGroup = 'Vouchers & Discounts';
 
     protected static ?int $navigationSort = 100;
-
-    /**
-     * @var array<string, mixed>
-     */
-    public array $data = [];
 
     public function mount(): void
     {
@@ -122,16 +120,6 @@ final class StackingConfigurationPage extends Page implements HasForms
             ->statePath('data');
     }
 
-    protected function getFormActions(): array
-    {
-        return [
-            Action::make('save')
-                ->label('Save Configuration')
-                ->action('save')
-                ->color('primary'),
-        ];
-    }
-
     public function save(): void
     {
         $data = $this->form->getState();
@@ -143,5 +131,15 @@ final class StackingConfigurationPage extends Page implements HasForms
             ->body('Stacking configuration has been updated. Note: For persistent changes, update your vouchers.php config file.')
             ->warning()
             ->send();
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label('Save Configuration')
+                ->action('save')
+                ->color('primary'),
+        ];
     }
 }

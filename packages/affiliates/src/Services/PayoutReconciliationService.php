@@ -143,7 +143,7 @@ final class PayoutReconciliationService
 
     private function mapExternalStatus(string $status): ?string
     {
-        return match (strtolower($status)) {
+        return match (mb_strtolower($status)) {
             'completed', 'paid', 'success', 'succeeded' => PayoutStatus::Completed->value,
             'failed', 'declined', 'rejected', 'error' => PayoutStatus::Failed->value,
             'pending', 'created' => PayoutStatus::Pending->value,

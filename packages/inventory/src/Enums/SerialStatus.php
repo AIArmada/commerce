@@ -17,6 +17,18 @@ enum SerialStatus: string
     case Recalled = 'recalled';
 
     /**
+     * Get all options for select fields.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        return collect(self::cases())
+            ->mapWithKeys(fn (self $status): array => [$status->value => $status->label()])
+            ->toArray();
+    }
+
+    /**
      * Get a human-readable label.
      */
     public function label(): string
@@ -94,17 +106,5 @@ enum SerialStatus: string
     public function canTransitionTo(self $newStatus): bool
     {
         return in_array($newStatus, $this->allowedTransitions(), true);
-    }
-
-    /**
-     * Get all options for select fields.
-     *
-     * @return array<string, string>
-     */
-    public static function options(): array
-    {
-        return collect(self::cases())
-            ->mapWithKeys(fn (self $status): array => [$status->value => $status->label()])
-            ->toArray();
     }
 }

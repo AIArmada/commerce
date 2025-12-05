@@ -13,11 +13,6 @@ use Filament\Support\Icons\Heroicon;
 
 final class PauseCampaignAction extends Action
 {
-    public static function getDefaultName(): ?string
-    {
-        return 'pause_campaign';
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -41,5 +36,10 @@ final class PauseCampaignAction extends Action
                 ->warning()
                 ->send();
         });
+    }
+
+    public static function getDefaultName(): ?string
+    {
+        return 'pause_campaign';
     }
 }

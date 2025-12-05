@@ -38,7 +38,7 @@ describe('FraudSignalType', function (): void {
 
     it('can get velocity signals', function (): void {
         $velocitySignals = FraudSignalType::velocitySignals();
-        
+
         expect($velocitySignals)->toHaveCount(4)
             ->and($velocitySignals)->toContain(FraudSignalType::HighRedemptionVelocity)
             ->and($velocitySignals)->toContain(FraudSignalType::MultipleAccountsAttempt)
@@ -48,7 +48,7 @@ describe('FraudSignalType', function (): void {
 
     it('can get pattern signals', function (): void {
         $patternSignals = FraudSignalType::patternSignals();
-        
+
         expect($patternSignals)->toHaveCount(5)
             ->and($patternSignals)->toContain(FraudSignalType::UnusualTimePattern)
             ->and($patternSignals)->toContain(FraudSignalType::GeoAnomalyDetected);
@@ -56,7 +56,7 @@ describe('FraudSignalType', function (): void {
 
     it('can get behavioral signals', function (): void {
         $behavioralSignals = FraudSignalType::behavioralSignals();
-        
+
         expect($behavioralSignals)->toHaveCount(5)
             ->and($behavioralSignals)->toContain(FraudSignalType::OnlyDiscountedPurchases)
             ->and($behavioralSignals)->toContain(FraudSignalType::HighRefundRate);
@@ -64,7 +64,7 @@ describe('FraudSignalType', function (): void {
 
     it('can get code abuse signals', function (): void {
         $codeAbuseSignals = FraudSignalType::codeAbuseSignals();
-        
+
         expect($codeAbuseSignals)->toHaveCount(5)
             ->and($codeAbuseSignals)->toContain(FraudSignalType::CodeSharingDetected)
             ->and($codeAbuseSignals)->toContain(FraudSignalType::LeakedCodeUsage);
@@ -73,7 +73,7 @@ describe('FraudSignalType', function (): void {
     it('can get signals by category', function (): void {
         $velocityByCategory = FraudSignalType::byCategory('velocity');
         $patternByCategory = FraudSignalType::byCategory('pattern');
-        
+
         expect($velocityByCategory)->toHaveCount(4)
             ->and($patternByCategory)->toHaveCount(5);
     });
@@ -149,7 +149,7 @@ describe('FraudRiskLevel', function (): void {
 
     it('can get blocking levels', function (): void {
         $blockingLevels = FraudRiskLevel::blockingLevels();
-        
+
         expect($blockingLevels)->toHaveCount(2)
             ->and($blockingLevels)->toContain(FraudRiskLevel::High)
             ->and($blockingLevels)->toContain(FraudRiskLevel::Critical);
@@ -157,7 +157,7 @@ describe('FraudRiskLevel', function (): void {
 
     it('can get review required levels', function (): void {
         $reviewLevels = FraudRiskLevel::reviewRequiredLevels();
-        
+
         expect($reviewLevels)->toHaveCount(3)
             ->and($reviewLevels)->toContain(FraudRiskLevel::Medium)
             ->and($reviewLevels)->toContain(FraudRiskLevel::High)

@@ -16,6 +16,13 @@ use Illuminate\Support\Collection;
 interface ProductMatcherInterface
 {
     /**
+     * Create a matcher from configuration array.
+     *
+     * @param  array<string, mixed>  $config
+     */
+    public static function fromArray(array $config): self;
+
+    /**
      * Check if a cart item matches this matcher's criteria.
      */
     public function matches(CartItem $item): bool;
@@ -47,11 +54,4 @@ interface ProductMatcherInterface
      * @return array<string, mixed>
      */
     public function toArray(): array;
-
-    /**
-     * Create a matcher from configuration array.
-     *
-     * @param  array<string, mixed>  $config
-     */
-    public static function fromArray(array $config): self;
 }

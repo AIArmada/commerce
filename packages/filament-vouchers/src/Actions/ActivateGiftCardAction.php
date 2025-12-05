@@ -12,11 +12,6 @@ use Filament\Support\Icons\Heroicon;
 
 final class ActivateGiftCardAction extends Action
 {
-    public static function getDefaultName(): ?string
-    {
-        return 'activate';
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -40,5 +35,10 @@ final class ActivateGiftCardAction extends Action
                 ->success()
                 ->send();
         });
+    }
+
+    public static function getDefaultName(): ?string
+    {
+        return 'activate';
     }
 }

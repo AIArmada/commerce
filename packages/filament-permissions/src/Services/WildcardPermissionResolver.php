@@ -60,7 +60,7 @@ class WildcardPermissionResolver
 
         // Prefix wildcard (e.g., 'orders.*' matches 'orders.create')
         if (str_ends_with($wildcardPattern, '.*')) {
-            $prefix = substr($wildcardPattern, 0, -2);
+            $prefix = mb_substr($wildcardPattern, 0, -2);
 
             return str_starts_with($permission, $prefix.'.');
         }
@@ -202,7 +202,7 @@ class WildcardPermissionResolver
      */
     protected function resolvePrefixWildcard(string $wildcardPermission, Collection $allPermissions): Collection
     {
-        $prefix = substr($wildcardPermission, 0, -2);
+        $prefix = mb_substr($wildcardPermission, 0, -2);
 
         /** @var Collection<int, string> */
         return $allPermissions->filter(fn (string $p): bool => str_starts_with($p, $prefix.'.'));

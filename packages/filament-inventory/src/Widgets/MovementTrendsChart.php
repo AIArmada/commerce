@@ -15,6 +15,11 @@ final class MovementTrendsChart extends ChartWidget
 
     protected ?string $pollingInterval = '60s';
 
+    public static function canView(): bool
+    {
+        return config('filament-inventory.features.movement_trends_chart', true);
+    }
+
     protected function getData(): array
     {
         $report = app(MovementAnalysisReport::class);
@@ -85,10 +90,5 @@ final class MovementTrendsChart extends ChartWidget
                 'mode' => 'index',
             ],
         ];
-    }
-
-    public static function canView(): bool
-    {
-        return config('filament-inventory.features.movement_trends_chart', true);
     }
 }

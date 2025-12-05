@@ -60,122 +60,6 @@ class CampaignEvent extends Model
         'occurred_at',
     ];
 
-    public function getTable(): string
-    {
-        /** @var string $table */
-        $table = config('vouchers.table_names.campaign_events', 'voucher_campaign_events');
-
-        return $table;
-    }
-
-    /**
-     * @return BelongsTo<Campaign, CampaignEvent>
-     */
-    public function campaign(): BelongsTo
-    {
-        return $this->belongsTo(Campaign::class, 'campaign_id');
-    }
-
-    /**
-     * @return BelongsTo<CampaignVariant, CampaignEvent>
-     */
-    public function variant(): BelongsTo
-    {
-        return $this->belongsTo(CampaignVariant::class, 'variant_id');
-    }
-
-    public function user(): MorphTo
-    {
-        return $this->morphTo();
-    }
-
-    public function cart(): MorphTo
-    {
-        return $this->morphTo();
-    }
-
-    public function order(): MorphTo
-    {
-        return $this->morphTo();
-    }
-
-    /**
-     * Scope to filter by event type.
-     *
-     * @param  Builder<CampaignEvent>  $query
-     * @return Builder<CampaignEvent>
-     */
-    public function scopeOfType(Builder $query, CampaignEventType $type): Builder
-    {
-        return $query->where('event_type', $type->value);
-    }
-
-    /**
-     * Scope to filter impressions.
-     *
-     * @param  Builder<CampaignEvent>  $query
-     * @return Builder<CampaignEvent>
-     */
-    public function scopeImpressions(Builder $query): Builder
-    {
-        return $query->ofType(CampaignEventType::Impression);
-    }
-
-    /**
-     * Scope to filter applications.
-     *
-     * @param  Builder<CampaignEvent>  $query
-     * @return Builder<CampaignEvent>
-     */
-    public function scopeApplications(Builder $query): Builder
-    {
-        return $query->ofType(CampaignEventType::Application);
-    }
-
-    /**
-     * Scope to filter conversions.
-     *
-     * @param  Builder<CampaignEvent>  $query
-     * @return Builder<CampaignEvent>
-     */
-    public function scopeConversions(Builder $query): Builder
-    {
-        return $query->ofType(CampaignEventType::Conversion);
-    }
-
-    /**
-     * Scope to filter by date range.
-     *
-     * @param  Builder<CampaignEvent>  $query
-     * @return Builder<CampaignEvent>
-     */
-    public function scopeOccurredBetween(Builder $query, Carbon $start, Carbon $end): Builder
-    {
-        return $query->whereBetween('occurred_at', [$start, $end]);
-    }
-
-    /**
-     * Scope to filter by channel.
-     *
-     * @param  Builder<CampaignEvent>  $query
-     * @return Builder<CampaignEvent>
-     */
-    public function scopeFromChannel(Builder $query, string $channel): Builder
-    {
-        return $query->where('channel', $channel);
-    }
-
-    /**
-     * Scope to filter by variant.
-     *
-     * @param  Builder<CampaignEvent>  $query
-     * @return Builder<CampaignEvent>
-     */
-    public function scopeForVariant(Builder $query, CampaignVariant $variant): Builder
-    {
-        return $query->where('variant_id', $variant->id);
-    }
-
     /**
      * Record an impression event.
      *
@@ -306,6 +190,122 @@ class CampaignEvent extends Model
         }
 
         return $event;
+    }
+
+    public function getTable(): string
+    {
+        /** @var string $table */
+        $table = config('vouchers.table_names.campaign_events', 'voucher_campaign_events');
+
+        return $table;
+    }
+
+    /**
+     * @return BelongsTo<Campaign, CampaignEvent>
+     */
+    public function campaign(): BelongsTo
+    {
+        return $this->belongsTo(Campaign::class, 'campaign_id');
+    }
+
+    /**
+     * @return BelongsTo<CampaignVariant, CampaignEvent>
+     */
+    public function variant(): BelongsTo
+    {
+        return $this->belongsTo(CampaignVariant::class, 'variant_id');
+    }
+
+    public function user(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    public function cart(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    public function order(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    /**
+     * Scope to filter by event type.
+     *
+     * @param  Builder<CampaignEvent>  $query
+     * @return Builder<CampaignEvent>
+     */
+    public function scopeOfType(Builder $query, CampaignEventType $type): Builder
+    {
+        return $query->where('event_type', $type->value);
+    }
+
+    /**
+     * Scope to filter impressions.
+     *
+     * @param  Builder<CampaignEvent>  $query
+     * @return Builder<CampaignEvent>
+     */
+    public function scopeImpressions(Builder $query): Builder
+    {
+        return $query->ofType(CampaignEventType::Impression);
+    }
+
+    /**
+     * Scope to filter applications.
+     *
+     * @param  Builder<CampaignEvent>  $query
+     * @return Builder<CampaignEvent>
+     */
+    public function scopeApplications(Builder $query): Builder
+    {
+        return $query->ofType(CampaignEventType::Application);
+    }
+
+    /**
+     * Scope to filter conversions.
+     *
+     * @param  Builder<CampaignEvent>  $query
+     * @return Builder<CampaignEvent>
+     */
+    public function scopeConversions(Builder $query): Builder
+    {
+        return $query->ofType(CampaignEventType::Conversion);
+    }
+
+    /**
+     * Scope to filter by date range.
+     *
+     * @param  Builder<CampaignEvent>  $query
+     * @return Builder<CampaignEvent>
+     */
+    public function scopeOccurredBetween(Builder $query, Carbon $start, Carbon $end): Builder
+    {
+        return $query->whereBetween('occurred_at', [$start, $end]);
+    }
+
+    /**
+     * Scope to filter by channel.
+     *
+     * @param  Builder<CampaignEvent>  $query
+     * @return Builder<CampaignEvent>
+     */
+    public function scopeFromChannel(Builder $query, string $channel): Builder
+    {
+        return $query->where('channel', $channel);
+    }
+
+    /**
+     * Scope to filter by variant.
+     *
+     * @param  Builder<CampaignEvent>  $query
+     * @return Builder<CampaignEvent>
+     */
+    public function scopeForVariant(Builder $query, CampaignVariant $variant): Builder
+    {
+        return $query->where('variant_id', $variant->id);
     }
 
     /**

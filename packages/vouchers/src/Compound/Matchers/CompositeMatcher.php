@@ -7,7 +7,6 @@ namespace AIArmada\Vouchers\Compound\Matchers;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Vouchers\Compound\Enums\ProductMatcherType;
 use AIArmada\Vouchers\Contracts\ProductMatcherInterface;
-use Illuminate\Support\Collection;
 
 /**
  * Composite matcher that combines multiple matchers with AND/OR logic.
@@ -64,6 +63,19 @@ class CompositeMatcher extends AbstractProductMatcher
         return new self($matchers, false);
     }
 
+    public static function fromArray(array $config): self
+    {
+        $type = $config['type'] ?? 'all';
+        $requireAll = $type === ProductMatcherType::All->value;
+
+        $matchers = array_map(
+            fn (array $c): ProductMatcherInterface => AbstractProductMatcher::create($c),
+            $config['matchers'] ?? []
+        );
+
+        return new self($matchers, $requireAll);
+    }
+
     public function matches(CartItem $item): bool
     {
         if (empty($this->matchers)) {
@@ -73,10 +85,11 @@ class CompositeMatcher extends AbstractProductMatcher
         if ($this->requireAll) {
             // AND logic: all matchers must match
             foreach ($this->matchers as $matcher) {
-                if (!$matcher->matches($item)) {
+                if (! $matcher->matches($item)) {
                     return false;
                 }
             }
+
             return true;
         }
 
@@ -86,6 +99,7 @@ class CompositeMatcher extends AbstractProductMatcher
                 return true;
             }
         }
+
         return false;
     }
 
@@ -110,25 +124,13 @@ class CompositeMatcher extends AbstractProductMatcher
         ];
     }
 
-    public static function fromArray(array $config): self
-    {
-        $type = $config['type'] ?? 'all';
-        $requireAll = $type === ProductMatcherType::All->value;
-
-        $matchers = array_map(
-            fn (array $c): ProductMatcherInterface => AbstractProductMatcher::create($c),
-            $config['matchers'] ?? []
-        );
-
-        return new self($matchers, $requireAll);
-    }
-
     /**
      * Add a matcher to the composite.
      */
     public function addMatcher(ProductMatcherInterface $matcher): self
     {
         $this->matchers[] = $matcher;
+
         return $this;
     }
 

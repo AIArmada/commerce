@@ -12,11 +12,6 @@ use Illuminate\Database\Eloquent\Collection;
 
 final class BulkFraudReviewAction extends BulkAction
 {
-    public static function getDefaultName(): ?string
-    {
-        return 'bulk_fraud_review';
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -55,5 +50,10 @@ final class BulkFraudReviewAction extends BulkAction
         });
 
         $this->deselectRecordsAfterCompletion();
+    }
+
+    public static function getDefaultName(): ?string
+    {
+        return 'bulk_fraud_review';
     }
 }

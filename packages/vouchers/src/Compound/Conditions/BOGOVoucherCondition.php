@@ -37,7 +37,7 @@ class BOGOVoucherCondition extends CompoundVoucherCondition
 {
     public function calculateDiscount(Cart $cart): int
     {
-        if (!$this->meetsRequirements($cart)) {
+        if (! $this->meetsRequirements($cart)) {
             return 0;
         }
 
@@ -62,6 +62,7 @@ class BOGOVoucherCondition extends CompoundVoucherCondition
         }
 
         $discountPercent = (int) str_replace('%', '', (string) $discount);
+
         return "Buy {$buyQty} Get {$getQty} at {$discountPercent}% Off";
     }
 
@@ -110,7 +111,7 @@ class BOGOVoucherCondition extends CompoundVoucherCondition
         $setSize = $buyQuantity + $getQuantity;
         $buyItemIds = $buyItems->pluck('id')->toArray();
         $getItemIds = $sortedGetItems->pluck('id')->toArray();
-        $overlapping = !empty(array_intersect($buyItemIds, $getItemIds));
+        $overlapping = ! empty(array_intersect($buyItemIds, $getItemIds));
 
         if ($overlapping) {
             // Items are shared between buy and get pools - use set-based calculation
@@ -170,6 +171,7 @@ class BOGOVoucherCondition extends CompoundVoucherCondition
     protected function getBuyMatcher(): ProductMatcherInterface
     {
         $config = $this->getConfig('buy.product_matcher', ['type' => 'all']);
+
         return $this->createMatcher($config);
     }
 
@@ -226,6 +228,7 @@ class BOGOVoucherCondition extends CompoundVoucherCondition
     {
         if (str_ends_with($discount, '%')) {
             $percent = (int) str_replace('%', '', $discount);
+
             return (int) round($price * ($percent / 100));
         }
 

@@ -6,7 +6,6 @@ namespace AIArmada\FilamentAffiliates\Widgets;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Services\NetworkService;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Number;
@@ -79,7 +78,7 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
         $change = (($current - $previous) / $previous) * 100;
         $sign = $change >= 0 ? '+' : '';
 
-        return $sign . Number::format($change, precision: 1) . '% from last month';
+        return $sign.Number::format($change, precision: 1).'% from last month';
     }
 
     private function formatMoney(int $amountMinor): string

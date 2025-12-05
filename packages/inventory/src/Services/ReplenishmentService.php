@@ -11,7 +11,6 @@ use AIArmada\Inventory\Models\InventoryReorderSuggestion;
 use AIArmada\Inventory\Models\InventorySupplierLeadtime;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 
 final class ReplenishmentService
 {
@@ -130,7 +129,7 @@ final class ReplenishmentService
         int $orderingCostMinor = 5000,
         float $holdingCostPercentage = 0.25
     ): int {
-        $annualDemand = $annualDemand * 365;
+        $annualDemand *= 365;
 
         if ($annualDemand === 0) {
             return $supplier?->minimum_order_quantity ?? 1;
@@ -146,29 +145,6 @@ final class ReplenishmentService
         $eoq = (int) ceil(sqrt((2 * $annualDemand * $orderingCostMinor) / $holdingCost));
 
         return max($eoq, $supplier?->minimum_order_quantity ?? 1);
-    }
-
-    /**
-     * Calculate suggested quantity.
-     */
-    private function calculateSuggestedQuantity(
-        InventoryLevel $level,
-        int $avgDailyDemand,
-        int $leadTimeDays,
-        ?int $eoq
-    ): int {
-        $safetyStock = $level->safety_stock ?? 0;
-        $maxStock = $level->max_stock ?? ($safetyStock * 4);
-        $currentStock = $level->quantity_available;
-
-        $orderUpToLevel = $maxStock;
-
-        $needed = $orderUpToLevel - $currentStock;
-
-        $reviewPeriodDemand = $avgDailyDemand * ($leadTimeDays + 7);
-        $minOrder = max($reviewPeriodDemand, $eoq ?? 1);
-
-        return max($needed, $minOrder);
     }
 
     /**
@@ -297,5 +273,28 @@ final class ReplenishmentService
             'critical' => $critical,
             'total_value' => (int) $totalValue,
         ];
+    }
+
+    /**
+     * Calculate suggested quantity.
+     */
+    private function calculateSuggestedQuantity(
+        InventoryLevel $level,
+        int $avgDailyDemand,
+        int $leadTimeDays,
+        ?int $eoq
+    ): int {
+        $safetyStock = $level->safety_stock ?? 0;
+        $maxStock = $level->max_stock ?? ($safetyStock * 4);
+        $currentStock = $level->quantity_available;
+
+        $orderUpToLevel = $maxStock;
+
+        $needed = $orderUpToLevel - $currentStock;
+
+        $reviewPeriodDemand = $avgDailyDemand * ($leadTimeDays + 7);
+        $minOrder = max($reviewPeriodDemand, $eoq ?? 1);
+
+        return max($needed, $minOrder);
     }
 }

@@ -12,6 +12,18 @@ enum CostingMethod: string
     case Standard = 'standard';
     case SpecificIdentification = 'specific_identification';
 
+    /**
+     * @return array<string, CostingMethod>
+     */
+    public static function perpetualMethods(): array
+    {
+        return [
+            self::Fifo->value => self::Fifo,
+            self::Lifo->value => self::Lifo,
+            self::WeightedAverage->value => self::WeightedAverage,
+        ];
+    }
+
     public function label(): string
     {
         return match ($this) {
@@ -54,18 +66,6 @@ enum CostingMethod: string
             self::Standard => 'Predetermined fixed cost. Good for manufacturing and budgeting.',
             self::SpecificIdentification => 'Tracks actual cost per unit. Best for unique/high-value items.',
         };
-    }
-
-    /**
-     * @return array<string, CostingMethod>
-     */
-    public static function perpetualMethods(): array
-    {
-        return [
-            self::Fifo->value => self::Fifo,
-            self::Lifo->value => self::Lifo,
-            self::WeightedAverage->value => self::WeightedAverage,
-        ];
     }
 
     public function isPerpetual(): bool

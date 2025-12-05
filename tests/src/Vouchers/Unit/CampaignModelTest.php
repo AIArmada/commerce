@@ -70,7 +70,7 @@ describe('Campaign Model', function (): void {
     it('can have events relationship', function (): void {
         $event = CampaignEvent::create([
             'campaign_id' => $this->campaign->id,
-            'event_type' => \AIArmada\Vouchers\Campaigns\Enums\CampaignEventType::Impression,
+            'event_type' => AIArmada\Vouchers\Campaigns\Enums\CampaignEventType::Impression,
             'occurred_at' => Carbon::now(),
         ]);
 
@@ -455,7 +455,7 @@ describe('Campaign Cascade Delete', function (): void {
     it('deletes events when campaign is deleted', function (): void {
         CampaignEvent::create([
             'campaign_id' => $this->campaign->id,
-            'event_type' => \AIArmada\Vouchers\Campaigns\Enums\CampaignEventType::Impression,
+            'event_type' => AIArmada\Vouchers\Campaigns\Enums\CampaignEventType::Impression,
             'occurred_at' => Carbon::now(),
         ]);
 

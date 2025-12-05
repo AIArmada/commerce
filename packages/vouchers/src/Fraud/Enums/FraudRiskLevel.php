@@ -15,6 +15,45 @@ enum FraudRiskLevel: string
     case Critical = 'critical';
 
     /**
+     * Determine risk level from a fraud score.
+     */
+    public static function fromScore(float $score): self
+    {
+        return match (true) {
+            $score >= 0.8 => self::Critical,
+            $score >= 0.6 => self::High,
+            $score >= 0.3 => self::Medium,
+            default => self::Low,
+        };
+    }
+
+    /**
+     * Get all risk levels that should be blocked.
+     *
+     * @return array<FraudRiskLevel>
+     */
+    public static function blockingLevels(): array
+    {
+        return array_filter(
+            self::cases(),
+            fn (self $level): bool => $level->shouldBlock()
+        );
+    }
+
+    /**
+     * Get all risk levels that require review.
+     *
+     * @return array<FraudRiskLevel>
+     */
+    public static function reviewRequiredLevels(): array
+    {
+        return array_filter(
+            self::cases(),
+            fn (self $level): bool => $level->requiresReview()
+        );
+    }
+
+    /**
      * Get a human-readable label.
      */
     public function getLabel(): string
@@ -102,49 +141,10 @@ enum FraudRiskLevel: string
     }
 
     /**
-     * Determine risk level from a fraud score.
-     */
-    public static function fromScore(float $score): self
-    {
-        return match (true) {
-            $score >= 0.8 => self::Critical,
-            $score >= 0.6 => self::High,
-            $score >= 0.3 => self::Medium,
-            default => self::Low,
-        };
-    }
-
-    /**
      * Check if a score falls within this risk level.
      */
     public function containsScore(float $score): bool
     {
         return $score >= $this->getMinScore() && $score < $this->getMaxScore();
-    }
-
-    /**
-     * Get all risk levels that should be blocked.
-     *
-     * @return array<FraudRiskLevel>
-     */
-    public static function blockingLevels(): array
-    {
-        return array_filter(
-            self::cases(),
-            fn (self $level): bool => $level->shouldBlock()
-        );
-    }
-
-    /**
-     * Get all risk levels that require review.
-     *
-     * @return array<FraudRiskLevel>
-     */
-    public static function reviewRequiredLevels(): array
-    {
-        return array_filter(
-            self::cases(),
-            fn (self $level): bool => $level->requiresReview()
-        );
     }
 }

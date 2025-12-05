@@ -7,7 +7,6 @@ namespace AIArmada\Vouchers\GiftCards\Models;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardStatus;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardTransactionType;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardType;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -15,6 +14,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use InvalidArgumentException;
+use RuntimeException;
 
 /**
  * @property string $id
@@ -74,6 +75,42 @@ class GiftCard extends Model
         'status' => 'inactive',
         'currency' => 'MYR',
     ];
+
+    /**
+     * Generate a unique gift card code.
+     */
+    public static function generateCode(string $prefix = 'GC'): string
+    {
+        $segments = [];
+        for ($i = 0; $i < 4; $i++) {
+            $segments[] = mb_strtoupper(Str::random(4));
+        }
+
+        return $prefix.'-'.implode('-', $segments);
+    }
+
+    /**
+     * Find a gift card by code.
+     */
+    public static function findByCode(string $code): ?static
+    {
+        /** @var static|null */
+        return static::query()->where('code', mb_strtoupper($code))->first();
+    }
+
+    /**
+     * Find a gift card by code or throw.
+     */
+    public static function findByCodeOrFail(string $code): static
+    {
+        $giftCard = static::findByCode($code);
+
+        if ($giftCard === null) {
+            throw new RuntimeException("Gift card not found: {$code}");
+        }
+
+        return $giftCard;
+    }
 
     public function getTable(): string
     {
@@ -223,7 +260,7 @@ class GiftCard extends Model
     {
         return $this->isActive()
             && $this->hasBalance()
-            && !$this->isExpired();
+            && ! $this->isExpired();
     }
 
     /**
@@ -231,7 +268,7 @@ class GiftCard extends Model
      */
     public function canTopUp(): bool
     {
-        if (!$this->type->canBeToppedup()) {
+        if (! $this->type->canBeToppedup()) {
             return false;
         }
 
@@ -243,7 +280,7 @@ class GiftCard extends Model
      */
     public function canTransfer(): bool
     {
-        if (!$this->type->canBeTransferred()) {
+        if (! $this->type->canBeTransferred()) {
             return false;
         }
 
@@ -287,8 +324,8 @@ class GiftCard extends Model
      */
     public function activate(): static
     {
-        if (!$this->status->canTransitionTo(GiftCardStatus::Active)) {
-            throw new \RuntimeException(
+        if (! $this->status->canTransitionTo(GiftCardStatus::Active)) {
+            throw new RuntimeException(
                 "Cannot activate gift card in {$this->status->value} status"
             );
         }
@@ -311,8 +348,8 @@ class GiftCard extends Model
      */
     public function suspend(): static
     {
-        if (!$this->status->canTransitionTo(GiftCardStatus::Suspended)) {
-            throw new \RuntimeException(
+        if (! $this->status->canTransitionTo(GiftCardStatus::Suspended)) {
+            throw new RuntimeException(
                 "Cannot suspend gift card in {$this->status->value} status"
             );
         }
@@ -328,8 +365,8 @@ class GiftCard extends Model
      */
     public function cancel(): static
     {
-        if (!$this->status->canTransitionTo(GiftCardStatus::Cancelled)) {
-            throw new \RuntimeException(
+        if (! $this->status->canTransitionTo(GiftCardStatus::Cancelled)) {
+            throw new RuntimeException(
                 "Cannot cancel gift card in {$this->status->value} status"
             );
         }
@@ -352,11 +389,11 @@ class GiftCard extends Model
         ?array $metadata = null
     ): GiftCardTransaction {
         if ($amount <= 0) {
-            throw new \InvalidArgumentException('Credit amount must be positive');
+            throw new InvalidArgumentException('Credit amount must be positive');
         }
 
-        if (!$type->isCredit()) {
-            throw new \InvalidArgumentException("Transaction type {$type->value} is not a credit type");
+        if (! $type->isCredit()) {
+            throw new InvalidArgumentException("Transaction type {$type->value} is not a credit type");
         }
 
         $balanceBefore = $this->current_balance;
@@ -392,15 +429,15 @@ class GiftCard extends Model
         ?array $metadata = null
     ): GiftCardTransaction {
         if ($amount <= 0) {
-            throw new \InvalidArgumentException('Debit amount must be positive');
+            throw new InvalidArgumentException('Debit amount must be positive');
         }
 
-        if (!$type->isDebit()) {
-            throw new \InvalidArgumentException("Transaction type {$type->value} is not a debit type");
+        if (! $type->isDebit()) {
+            throw new InvalidArgumentException("Transaction type {$type->value} is not a debit type");
         }
 
         if ($amount > $this->current_balance) {
-            throw new \RuntimeException('Insufficient balance');
+            throw new RuntimeException('Insufficient balance');
         }
 
         $balanceBefore = $this->current_balance;
@@ -434,8 +471,8 @@ class GiftCard extends Model
         ?string $description = null,
         ?Model $actor = null
     ): GiftCardTransaction {
-        if (!$this->canRedeem()) {
-            throw new \RuntimeException('Gift card cannot be redeemed');
+        if (! $this->canRedeem()) {
+            throw new RuntimeException('Gift card cannot be redeemed');
         }
 
         return $this->debit(
@@ -456,8 +493,8 @@ class GiftCard extends Model
         ?string $description = null,
         ?Model $actor = null
     ): GiftCardTransaction {
-        if (!$this->canTopUp()) {
-            throw new \RuntimeException('Gift card cannot be topped up');
+        if (! $this->canTopUp()) {
+            throw new RuntimeException('Gift card cannot be topped up');
         }
 
         return $this->credit(
@@ -492,8 +529,8 @@ class GiftCard extends Model
      */
     public function transferTo(Model $newRecipient, ?Model $actor = null): static
     {
-        if (!$this->canTransfer()) {
-            throw new \RuntimeException('Gift card cannot be transferred');
+        if (! $this->canTransfer()) {
+            throw new RuntimeException('Gift card cannot be transferred');
         }
 
         $previousRecipient = $this->recipient;
@@ -523,8 +560,8 @@ class GiftCard extends Model
      */
     public function expire(?Model $actor = null): static
     {
-        if (!$this->status->canTransitionTo(GiftCardStatus::Expired)) {
-            throw new \RuntimeException(
+        if (! $this->status->canTransitionTo(GiftCardStatus::Expired)) {
+            throw new RuntimeException(
                 "Cannot expire gift card in {$this->status->value} status"
             );
         }
@@ -544,6 +581,23 @@ class GiftCard extends Model
         $this->save();
 
         return $this;
+    }
+
+    /**
+     * Boot the model.
+     */
+    protected static function booted(): void
+    {
+        static::creating(function (GiftCard $giftCard): void {
+            if (empty($giftCard->code)) {
+                $giftCard->code = static::generateCode();
+            }
+            $giftCard->code = mb_strtoupper($giftCard->code);
+        });
+
+        static::deleting(function (GiftCard $giftCard): void {
+            $giftCard->transactions()->delete();
+        });
     }
 
     /**
@@ -575,59 +629,6 @@ class GiftCard extends Model
             'actor_id' => $actor?->getKey(),
             'metadata' => $metadata,
         ]);
-    }
-
-    /**
-     * Generate a unique gift card code.
-     */
-    public static function generateCode(string $prefix = 'GC'): string
-    {
-        $segments = [];
-        for ($i = 0; $i < 4; $i++) {
-            $segments[] = strtoupper(Str::random(4));
-        }
-
-        return $prefix . '-' . implode('-', $segments);
-    }
-
-    /**
-     * Find a gift card by code.
-     */
-    public static function findByCode(string $code): ?static
-    {
-        /** @var static|null */
-        return static::query()->where('code', strtoupper($code))->first();
-    }
-
-    /**
-     * Find a gift card by code or throw.
-     */
-    public static function findByCodeOrFail(string $code): static
-    {
-        $giftCard = static::findByCode($code);
-
-        if ($giftCard === null) {
-            throw new \RuntimeException("Gift card not found: {$code}");
-        }
-
-        return $giftCard;
-    }
-
-    /**
-     * Boot the model.
-     */
-    protected static function booted(): void
-    {
-        static::creating(function (GiftCard $giftCard): void {
-            if (empty($giftCard->code)) {
-                $giftCard->code = static::generateCode();
-            }
-            $giftCard->code = strtoupper($giftCard->code);
-        });
-
-        static::deleting(function (GiftCard $giftCard): void {
-            $giftCard->transactions()->delete();
-        });
     }
 
     /**

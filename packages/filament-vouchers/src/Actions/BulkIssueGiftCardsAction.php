@@ -14,11 +14,6 @@ use Filament\Support\Icons\Heroicon;
 
 final class BulkIssueGiftCardsAction extends Action
 {
-    public static function getDefaultName(): ?string
-    {
-        return 'bulk_issue';
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -85,5 +80,10 @@ final class BulkIssueGiftCardsAction extends Action
                 ->success()
                 ->send();
         });
+    }
+
+    public static function getDefaultName(): ?string
+    {
+        return 'bulk_issue';
     }
 }

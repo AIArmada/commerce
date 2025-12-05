@@ -20,12 +20,12 @@ class ChannelEvaluator implements TargetingRuleEvaluator
 
     public function evaluate(array $rule, TargetingContext $context): bool
     {
-        $currentChannel = strtolower($context->getChannel());
+        $currentChannel = mb_strtolower($context->getChannel());
         $operator = $rule['operator'] ?? '=';
 
         return match ($operator) {
-            '=' => $currentChannel === strtolower((string) ($rule['value'] ?? '')),
-            '!=' => $currentChannel !== strtolower((string) ($rule['value'] ?? '')),
+            '=' => $currentChannel === mb_strtolower((string) ($rule['value'] ?? '')),
+            '!=' => $currentChannel !== mb_strtolower((string) ($rule['value'] ?? '')),
             'in' => $this->isIn($currentChannel, $rule['values'] ?? []),
             'not_in' => ! $this->isIn($currentChannel, $rule['values'] ?? []),
             default => false,

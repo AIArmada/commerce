@@ -12,7 +12,7 @@ use AIArmada\Vouchers\Enums\VoucherType;
 /**
  * Create a test cart with a specified total value.
  *
- * @param int $totalValue Total cart value in cents
+ * @param  int  $totalValue  Total cart value in cents
  */
 function createTieredTestCart(int $totalValue): Cart
 {
@@ -33,7 +33,7 @@ function createTieredTestCart(int $totalValue): Cart
 /**
  * Create a tiered voucher data object for testing.
  *
- * @param array<int, array{min_value: int, discount: string, label: string}>|null $tiers
+ * @param  array<int, array{min_value: int, discount: string, label: string}>|null  $tiers
  */
 function createTieredVoucherDataFor(
     ?array $tiers = null,

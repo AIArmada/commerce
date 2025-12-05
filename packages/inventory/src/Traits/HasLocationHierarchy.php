@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use InvalidArgumentException;
 
 /**
  * @mixin InventoryLocation
@@ -256,7 +257,7 @@ trait HasLocationHierarchy
     public function moveTo(?InventoryLocation $newParent): self
     {
         if ($newParent !== null && $this->isAncestorOf($newParent)) {
-            throw new \InvalidArgumentException('Cannot move a location to its own descendant');
+            throw new InvalidArgumentException('Cannot move a location to its own descendant');
         }
 
         $this->parent_id = $newParent?->id;

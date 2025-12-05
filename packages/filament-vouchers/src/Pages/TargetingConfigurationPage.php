@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Pages;
 
-use AIArmada\Vouchers\Targeting\Enums\TargetingRuleType;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Repeater;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
-use BackedEnum;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
@@ -22,6 +21,11 @@ final class TargetingConfigurationPage extends Page implements HasForms
 {
     use InteractsWithForms;
 
+    /**
+     * @var array<string, mixed>
+     */
+    public array $data = [];
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFunnel;
 
     protected string $view = 'filament-vouchers::pages.targeting-configuration';
@@ -33,11 +37,6 @@ final class TargetingConfigurationPage extends Page implements HasForms
     protected static string|UnitEnum|null $navigationGroup = 'Vouchers & Discounts';
 
     protected static ?int $navigationSort = 101;
-
-    /**
-     * @var array<string, mixed>
-     */
-    public array $data = [];
 
     public function mount(): void
     {
@@ -112,6 +111,27 @@ final class TargetingConfigurationPage extends Page implements HasForms
             ->statePath('data');
     }
 
+    public function save(): void
+    {
+        $data = $this->form->getState();
+
+        Notification::make()
+            ->title('Configuration saved')
+            ->body('Targeting configuration has been updated.')
+            ->warning()
+            ->send();
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label('Save Configuration')
+                ->action('save')
+                ->color('primary'),
+        ];
+    }
+
     /**
      * @return array<string, string>
      */
@@ -143,26 +163,5 @@ final class TargetingConfigurationPage extends Page implements HasForms
                 'not_in' => 'Not In List',
             ],
         };
-    }
-
-    protected function getFormActions(): array
-    {
-        return [
-            Action::make('save')
-                ->label('Save Configuration')
-                ->action('save')
-                ->color('primary'),
-        ];
-    }
-
-    public function save(): void
-    {
-        $data = $this->form->getState();
-
-        Notification::make()
-            ->title('Configuration saved')
-            ->body('Targeting configuration has been updated.')
-            ->warning()
-            ->send();
     }
 }

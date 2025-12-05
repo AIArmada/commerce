@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\GiftCards\Models;
 
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardTransactionType;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -47,6 +48,87 @@ class GiftCardTransaction extends Model
         'actor_id',
         'metadata',
     ];
+
+    /**
+     * Factory method to record a redemption.
+     */
+    public static function recordRedemption(
+        GiftCard $giftCard,
+        int $amount,
+        Model $reference,
+        ?string $description = null,
+        ?Model $actor = null
+    ): static {
+        $balanceBefore = $giftCard->current_balance;
+
+        /** @var static */
+        return static::query()->create([
+            'gift_card_id' => $giftCard->id,
+            'type' => GiftCardTransactionType::Redeem,
+            'amount' => -$amount,
+            'balance_before' => $balanceBefore,
+            'balance_after' => $balanceBefore - $amount,
+            'reference_type' => $reference->getMorphClass(),
+            'reference_id' => $reference->getKey(),
+            'description' => $description ?? 'Redeemed',
+            'actor_type' => $actor?->getMorphClass(),
+            'actor_id' => $actor?->getKey(),
+        ]);
+    }
+
+    /**
+     * Factory method to record a top-up.
+     */
+    public static function recordTopUp(
+        GiftCard $giftCard,
+        int $amount,
+        ?Model $reference = null,
+        ?string $description = null,
+        ?Model $actor = null
+    ): static {
+        $balanceBefore = $giftCard->current_balance;
+
+        /** @var static */
+        return static::query()->create([
+            'gift_card_id' => $giftCard->id,
+            'type' => GiftCardTransactionType::TopUp,
+            'amount' => $amount,
+            'balance_before' => $balanceBefore,
+            'balance_after' => $balanceBefore + $amount,
+            'reference_type' => $reference?->getMorphClass(),
+            'reference_id' => $reference?->getKey(),
+            'description' => $description ?? 'Top up',
+            'actor_type' => $actor?->getMorphClass(),
+            'actor_id' => $actor?->getKey(),
+        ]);
+    }
+
+    /**
+     * Factory method to record a refund.
+     */
+    public static function recordRefund(
+        GiftCard $giftCard,
+        int $amount,
+        Model $reference,
+        ?string $description = null,
+        ?Model $actor = null
+    ): static {
+        $balanceBefore = $giftCard->current_balance;
+
+        /** @var static */
+        return static::query()->create([
+            'gift_card_id' => $giftCard->id,
+            'type' => GiftCardTransactionType::Refund,
+            'amount' => $amount,
+            'balance_before' => $balanceBefore,
+            'balance_after' => $balanceBefore + $amount,
+            'reference_type' => $reference->getMorphClass(),
+            'reference_id' => $reference->getKey(),
+            'description' => $description ?? 'Refund',
+            'actor_type' => $actor?->getMorphClass(),
+            'actor_id' => $actor?->getKey(),
+        ]);
+    }
 
     public function getTable(): string
     {
@@ -131,7 +213,7 @@ class GiftCardTransaction extends Model
      * @param  Builder<GiftCardTransaction>  $query
      * @return Builder<GiftCardTransaction>
      */
-    public function scopeOccurredBetween(Builder $query, \DateTimeInterface $from, \DateTimeInterface $to): Builder
+    public function scopeOccurredBetween(Builder $query, DateTimeInterface $from, DateTimeInterface $to): Builder
     {
         return $query->whereBetween('created_at', [$from, $to]);
     }
@@ -158,87 +240,6 @@ class GiftCardTransaction extends Model
     public function getAbsoluteAmount(): int
     {
         return abs($this->amount);
-    }
-
-    /**
-     * Factory method to record a redemption.
-     */
-    public static function recordRedemption(
-        GiftCard $giftCard,
-        int $amount,
-        Model $reference,
-        ?string $description = null,
-        ?Model $actor = null
-    ): static {
-        $balanceBefore = $giftCard->current_balance;
-
-        /** @var static */
-        return static::query()->create([
-            'gift_card_id' => $giftCard->id,
-            'type' => GiftCardTransactionType::Redeem,
-            'amount' => -$amount,
-            'balance_before' => $balanceBefore,
-            'balance_after' => $balanceBefore - $amount,
-            'reference_type' => $reference->getMorphClass(),
-            'reference_id' => $reference->getKey(),
-            'description' => $description ?? 'Redeemed',
-            'actor_type' => $actor?->getMorphClass(),
-            'actor_id' => $actor?->getKey(),
-        ]);
-    }
-
-    /**
-     * Factory method to record a top-up.
-     */
-    public static function recordTopUp(
-        GiftCard $giftCard,
-        int $amount,
-        ?Model $reference = null,
-        ?string $description = null,
-        ?Model $actor = null
-    ): static {
-        $balanceBefore = $giftCard->current_balance;
-
-        /** @var static */
-        return static::query()->create([
-            'gift_card_id' => $giftCard->id,
-            'type' => GiftCardTransactionType::TopUp,
-            'amount' => $amount,
-            'balance_before' => $balanceBefore,
-            'balance_after' => $balanceBefore + $amount,
-            'reference_type' => $reference?->getMorphClass(),
-            'reference_id' => $reference?->getKey(),
-            'description' => $description ?? 'Top up',
-            'actor_type' => $actor?->getMorphClass(),
-            'actor_id' => $actor?->getKey(),
-        ]);
-    }
-
-    /**
-     * Factory method to record a refund.
-     */
-    public static function recordRefund(
-        GiftCard $giftCard,
-        int $amount,
-        Model $reference,
-        ?string $description = null,
-        ?Model $actor = null
-    ): static {
-        $balanceBefore = $giftCard->current_balance;
-
-        /** @var static */
-        return static::query()->create([
-            'gift_card_id' => $giftCard->id,
-            'type' => GiftCardTransactionType::Refund,
-            'amount' => $amount,
-            'balance_before' => $balanceBefore,
-            'balance_after' => $balanceBefore + $amount,
-            'reference_type' => $reference->getMorphClass(),
-            'reference_id' => $reference->getKey(),
-            'description' => $description ?? 'Refund',
-            'actor_type' => $actor?->getMorphClass(),
-            'actor_id' => $actor?->getKey(),
-        ]);
     }
 
     /**

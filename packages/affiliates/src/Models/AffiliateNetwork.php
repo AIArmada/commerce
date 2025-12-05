@@ -37,21 +37,6 @@ class AffiliateNetwork extends Model
         'depth' => 'integer',
     ];
 
-    public function getTable(): string
-    {
-        return config('affiliates.table_names.network', 'affiliate_network');
-    }
-
-    public function ancestor(): BelongsTo
-    {
-        return $this->belongsTo(Affiliate::class, 'ancestor_id');
-    }
-
-    public function descendant(): BelongsTo
-    {
-        return $this->belongsTo(Affiliate::class, 'descendant_id');
-    }
-
     /**
      * Get all ancestors of an affiliate (upline).
      *
@@ -205,5 +190,20 @@ class AffiliateNetwork extends Model
                 ]);
             }
         }
+    }
+
+    public function getTable(): string
+    {
+        return config('affiliates.table_names.network', 'affiliate_network');
+    }
+
+    public function ancestor(): BelongsTo
+    {
+        return $this->belongsTo(Affiliate::class, 'ancestor_id');
+    }
+
+    public function descendant(): BelongsTo
+    {
+        return $this->belongsTo(Affiliate::class, 'descendant_id');
     }
 }

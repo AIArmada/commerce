@@ -114,7 +114,7 @@ final class FraudSignalInfolist
                         ->columnSpanFull()
                         ->placeholder('No notes'),
                 ])
-                ->hidden(fn (VoucherFraudSignal $record): bool => !$record->reviewed),
+                ->hidden(fn (VoucherFraudSignal $record): bool => ! $record->reviewed),
 
             Section::make('Metadata')
                 ->schema([

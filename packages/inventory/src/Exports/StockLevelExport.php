@@ -13,7 +13,7 @@ use Carbon\CarbonImmutable;
 final class StockLevelExport implements ExportableInterface
 {
     /**
-     * @param array<string, mixed> $filters
+     * @param  array<string, mixed>  $filters
      */
     public function __construct(
         private array $filters = [],
@@ -80,6 +80,6 @@ final class StockLevelExport implements ExportableInterface
 
     public function getFilename(): string
     {
-        return 'stock-levels-' . CarbonImmutable::now()->format('Y-m-d-His');
+        return 'stock-levels-'.CarbonImmutable::now()->format('Y-m-d-His');
     }
 }

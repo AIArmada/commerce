@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Widgets;
 
-use AIArmada\Inventory\Enums\ReorderUrgency;
 use AIArmada\Inventory\Models\InventoryReorderSuggestion;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
