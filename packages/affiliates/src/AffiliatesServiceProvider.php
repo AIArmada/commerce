@@ -8,6 +8,15 @@ use AIArmada\Affiliates\Services\AffiliatePayoutService;
 use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
+use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
+use AIArmada\Affiliates\Services\CommissionMaturityService;
+use AIArmada\Affiliates\Services\DailyAggregationService;
+use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\Services\NetworkService;
+use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\Services\ProgramService;
+use AIArmada\Affiliates\Services\RankQualificationService;
 use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
@@ -28,9 +37,13 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             ->hasConfigFile('affiliates')
             ->discoversMigrations()
             ->runsMigrations()
-            ->hasRoute('api')
+            ->hasRoutes(['api', 'portal'])
             ->hasCommands([
                 Console\Commands\ExportAffiliatePayoutCommand::class,
+                Console\Commands\AggregateDailyStatsCommand::class,
+                Console\Commands\ProcessRankUpgradesCommand::class,
+                Console\Commands\ProcessScheduledPayoutsCommand::class,
+                Console\Commands\ProcessCommissionMaturityCommand::class,
             ]);
     }
 
@@ -41,6 +54,15 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         $this->app->singleton(AffiliatePayoutService::class);
         $this->app->singleton(WebhookDispatcher::class);
         $this->app->singleton(AttributionModel::class);
+        $this->app->singleton(NetworkService::class);
+        $this->app->singleton(RankQualificationService::class);
+        $this->app->singleton(DailyAggregationService::class);
+        $this->app->singleton(FraudDetectionService::class);
+        $this->app->singleton(PayoutProcessorFactory::class);
+        $this->app->singleton(CommissionRuleEngine::class);
+        $this->app->singleton(ProgramService::class);
+        $this->app->singleton(CommissionMaturityService::class);
+        $this->app->singleton(PayoutReconciliationService::class);
 
         $this->app->singleton(OwnerResolverInterface::class, function ($app): OwnerResolverInterface {
             $resolverClass = config('affiliates.owner.resolver', NullOwnerResolver::class);

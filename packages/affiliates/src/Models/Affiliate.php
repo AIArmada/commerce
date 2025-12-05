@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
@@ -24,6 +25,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int $commission_rate
  * @property string $currency
  * @property string|null $parent_affiliate_id
+ * @property string|null $rank_id
+ * @property int $network_depth
+ * @property int $direct_downline_count
+ * @property int $total_downline_count
  * @property string|null $default_voucher_code
  * @property string|null $contact_email
  * @property string|null $website_url
@@ -36,9 +41,15 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Affiliate|null $parent
+ * @property-read AffiliateRank|null $rank
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Affiliate> $children
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateAttribution> $attributions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateConversion> $conversions
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateFraudSignal> $fraudSignals
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateDailyStat> $dailyStats
+ * @property-read AffiliateBalance|null $balance
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutMethod> $payoutMethods
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutHold> $payoutHolds
  * @property-read Model|null $owner
  */
 class Affiliate extends Model
@@ -54,6 +65,10 @@ class Affiliate extends Model
         'commission_rate',
         'currency',
         'parent_affiliate_id',
+        'rank_id',
+        'network_depth',
+        'direct_downline_count',
+        'total_downline_count',
         'default_voucher_code',
         'contact_email',
         'website_url',
@@ -68,6 +83,9 @@ class Affiliate extends Model
     protected $casts = [
         'status' => AffiliateStatus::class,
         'commission_type' => CommissionType::class,
+        'network_depth' => 'integer',
+        'direct_downline_count' => 'integer',
+        'total_downline_count' => 'integer',
         'metadata' => 'array',
         'activated_at' => 'datetime',
     ];
@@ -103,12 +121,83 @@ class Affiliate extends Model
         return $this->hasMany(self::class, 'parent_affiliate_id');
     }
 
+    public function rank(): BelongsTo
+    {
+        return $this->belongsTo(AffiliateRank::class, 'rank_id');
+    }
+
+    /**
+     * @return HasMany<AffiliateFraudSignal, self>
+     */
+    public function fraudSignals(): HasMany
+    {
+        return $this->hasMany(AffiliateFraudSignal::class);
+    }
+
+    /**
+     * @return HasMany<AffiliateDailyStat, self>
+     */
+    public function dailyStats(): HasMany
+    {
+        return $this->hasMany(AffiliateDailyStat::class);
+    }
+
+    public function balance(): HasOne
+    {
+        return $this->hasOne(AffiliateBalance::class);
+    }
+
+    /**
+     * @return HasMany<AffiliatePayoutMethod, self>
+     */
+    public function payoutMethods(): HasMany
+    {
+        return $this->hasMany(AffiliatePayoutMethod::class);
+    }
+
+    /**
+     * @return HasMany<AffiliatePayoutHold, self>
+     */
+    public function payoutHolds(): HasMany
+    {
+        return $this->hasMany(AffiliatePayoutHold::class);
+    }
+
     /**
      * Get the owner model (polymorphic relationship).
      */
     public function owner(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    public function hasActivePayoutHold(): bool
+    {
+        return $this->payoutHolds()
+            ->whereNull('released_at')
+            ->where(function ($query) {
+                $query->whereNull('expires_at')
+                    ->orWhere('expires_at', '>', now());
+            })
+            ->exists();
+    }
+
+    public function canRequestPayout(): bool
+    {
+        if (! $this->isActive()) {
+            return false;
+        }
+
+        if ($this->hasActivePayoutHold()) {
+            return false;
+        }
+
+        $balance = $this->balance;
+        if (! $balance) {
+            return false;
+        }
+
+        return $balance->canRequestPayout();
     }
 
     public function isActive(): bool

@@ -34,6 +34,22 @@ return [
         'payouts' => 'affiliate_payouts',
         'payout_events' => 'affiliate_payout_events',
         'touchpoints' => 'affiliate_touchpoints',
+        'ranks' => 'affiliate_ranks',
+        'network' => 'affiliate_network',
+        'rank_histories' => 'affiliate_rank_histories',
+        'daily_stats' => 'affiliate_daily_stats',
+        'fraud_signals' => 'affiliate_fraud_signals',
+        'balances' => 'affiliate_balances',
+        'payout_methods' => 'affiliate_payout_methods',
+        'payout_holds' => 'affiliate_payout_holds',
+        'programs' => 'affiliate_programs',
+        'program_tiers' => 'affiliate_program_tiers',
+        'program_memberships' => 'affiliate_program_memberships',
+        'program_creatives' => 'affiliate_program_creatives',
+        'links' => 'affiliate_links',
+        'commission_rules' => 'affiliate_commission_rules',
+        'volume_tiers' => 'affiliate_volume_tiers',
+        'commission_promotions' => 'affiliate_commission_promotions',
     ],
 
     /*
@@ -213,6 +229,53 @@ return [
         'middleware' => ['api', 'throttle:60,1'],
         'auth' => env('AFFILIATES_API_AUTH', 'token'), // token | none
         'token' => env('AFFILIATES_API_TOKEN'), // static token for simple setups
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Fraud Detection
+    |--------------------------------------------------------------------------
+    */
+
+    'fraud' => [
+        'enabled' => env('AFFILIATES_FRAUD_ENABLED', true),
+        'blocking_threshold' => env('AFFILIATES_FRAUD_BLOCK_THRESHOLD', 100),
+
+        'velocity' => [
+            'enabled' => env('AFFILIATES_FRAUD_VELOCITY_ENABLED', true),
+            'max_clicks_per_hour' => env('AFFILIATES_FRAUD_MAX_CLICKS_HOUR', 100),
+            'max_conversions_per_day' => env('AFFILIATES_FRAUD_MAX_CONVERSIONS_DAY', 50),
+        ],
+
+        'anomaly' => [
+            'geo' => [
+                'enabled' => env('AFFILIATES_FRAUD_GEO_ENABLED', false),
+                'max_speed_kmh' => env('AFFILIATES_FRAUD_MAX_SPEED_KMH', 500),
+            ],
+            'conversion_time' => [
+                'min_seconds' => env('AFFILIATES_FRAUD_MIN_CONVERSION_SECONDS', 5),
+                'max_hours' => env('AFFILIATES_FRAUD_MAX_CONVERSION_HOURS', 720),
+            ],
+        ],
+
+        'alerts' => [
+            'enabled' => env('AFFILIATES_FRAUD_ALERTS_ENABLED', false),
+            'channels' => ['mail'],
+            'recipients' => array_filter(explode(',', (string) env('AFFILIATES_FRAUD_ALERT_RECIPIENTS', ''))),
+            'threshold' => 'high',
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Network / MLM Settings
+    |--------------------------------------------------------------------------
+    */
+
+    'network' => [
+        'enabled' => env('AFFILIATES_NETWORK_ENABLED', false),
+        'max_depth' => env('AFFILIATES_NETWORK_MAX_DEPTH', 10),
+        'compression' => env('AFFILIATES_NETWORK_COMPRESSION', true),
     ],
 
     /*
