@@ -14,6 +14,18 @@ enum SerialCondition: string
     case ForParts = 'for_parts';
 
     /**
+     * Get all options for select fields.
+     *
+     * @return array<string, string>
+     */
+    public static function options(): array
+    {
+        return collect(self::cases())
+            ->mapWithKeys(fn (self $condition): array => [$condition->value => $condition->label()])
+            ->toArray();
+    }
+
+    /**
      * Get a human-readable label.
      */
     public function label(): string
@@ -64,17 +76,5 @@ enum SerialCondition: string
             self::Damaged => 2,
             self::ForParts => 1,
         };
-    }
-
-    /**
-     * Get all options for select fields.
-     *
-     * @return array<string, string>
-     */
-    public static function options(): array
-    {
-        return collect(self::cases())
-            ->mapWithKeys(fn (self $condition): array => [$condition->value => $condition->label()])
-            ->toArray();
     }
 }

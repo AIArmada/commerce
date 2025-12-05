@@ -27,12 +27,20 @@ class SkuMatcher extends AbstractProductMatcher
         $this->exclude = $exclude;
     }
 
+    public static function fromArray(array $config): self
+    {
+        return new self(
+            skus: $config['skus'] ?? [],
+            exclude: $config['exclude'] ?? false
+        );
+    }
+
     public function matches(CartItem $item): bool
     {
-        $itemSku = strtoupper($this->getItemSku($item));
+        $itemSku = mb_strtoupper($this->getItemSku($item));
         $inList = in_array($itemSku, $this->skus, true);
 
-        return $this->exclude ? !$inList : $inList;
+        return $this->exclude ? ! $inList : $inList;
     }
 
     public function getType(): string
@@ -50,14 +58,6 @@ class SkuMatcher extends AbstractProductMatcher
             'skus' => $this->skus,
             'exclude' => $this->exclude,
         ];
-    }
-
-    public static function fromArray(array $config): self
-    {
-        return new self(
-            skus: $config['skus'] ?? [],
-            exclude: $config['exclude'] ?? false
-        );
     }
 
     /**

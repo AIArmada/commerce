@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Pages;
 
-use Filament\Actions\Action;
 use BackedEnum;
+use Filament\Actions\Action;
 use Filament\Forms\Components\KeyValue;
-use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Forms\Concerns\InteractsWithForms;
@@ -23,6 +22,11 @@ final class FraudConfigurationPage extends Page implements HasForms
 {
     use InteractsWithForms;
 
+    /**
+     * @var array<string, mixed>
+     */
+    public array $data = [];
+
     protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
 
     protected string $view = 'filament-vouchers::pages.fraud-configuration';
@@ -34,11 +38,6 @@ final class FraudConfigurationPage extends Page implements HasForms
     protected static string|UnitEnum|null $navigationGroup = 'Vouchers & Discounts';
 
     protected static ?int $navigationSort = 102;
-
-    /**
-     * @var array<string, mixed>
-     */
-    public array $data = [];
 
     public function mount(): void
     {
@@ -112,21 +111,6 @@ final class FraudConfigurationPage extends Page implements HasForms
             ->statePath('data');
     }
 
-    protected function getFormActions(): array
-    {
-        return [
-            Action::make('save')
-                ->label('Save Configuration')
-                ->action('save')
-                ->color('primary'),
-
-            Action::make('test')
-                ->label('Test Detection')
-                ->action('testDetection')
-                ->color('gray'),
-        ];
-    }
-
     public function save(): void
     {
         $data = $this->form->getState();
@@ -145,5 +129,20 @@ final class FraudConfigurationPage extends Page implements HasForms
             ->body('Fraud detection is functioning normally.')
             ->success()
             ->send();
+    }
+
+    protected function getFormActions(): array
+    {
+        return [
+            Action::make('save')
+                ->label('Save Configuration')
+                ->action('save')
+                ->color('primary'),
+
+            Action::make('test')
+                ->label('Test Detection')
+                ->action('testDetection')
+                ->color('gray'),
+        ];
     }
 }

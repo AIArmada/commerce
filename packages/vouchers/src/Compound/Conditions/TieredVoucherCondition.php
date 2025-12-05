@@ -45,11 +45,13 @@ class TieredVoucherCondition extends CompoundVoucherCondition
 
         if ($tier === null) {
             $tiers = $this->getTiers();
-            if (!empty($tiers)) {
+            if (! empty($tiers)) {
                 $minTier = $tiers[0];
                 $minValue = ($minTier['min_value'] ?? 0) / 100;
+
                 return "Spend RM{$minValue}+ to unlock discounts";
             }
+
             return 'Tiered discount';
         }
 
@@ -58,10 +60,12 @@ class TieredVoucherCondition extends CompoundVoucherCondition
 
         if (str_ends_with($discount, '%')) {
             $percent = abs((int) str_replace(['%', '-', '+'], '', $discount));
+
             return "{$label}: {$percent}% off";
         }
 
         $amount = abs((int) str_replace(['-', '+'], '', $discount)) / 100;
+
         return "{$label}: RM{$amount} off";
     }
 
@@ -104,7 +108,7 @@ class TieredVoucherCondition extends CompoundVoucherCondition
     {
         $tiers = $this->getConfig('tiers', []);
 
-        if (!is_array($tiers)) {
+        if (! is_array($tiers)) {
             return [];
         }
 
@@ -176,16 +180,18 @@ class TieredVoucherCondition extends CompoundVoucherCondition
      */
     protected function calculateDiscountAmount(int $baseValue, string $discount): int
     {
-        $discount = trim($discount);
+        $discount = mb_trim($discount);
 
         if (str_ends_with($discount, '%')) {
             // Percentage discount
             $percent = abs((float) str_replace(['%', '-', '+'], '', $discount));
+
             return (int) round($baseValue * ($percent / 100));
         }
 
         // Fixed discount
         $amount = abs((int) str_replace(['-', '+'], '', $discount));
+
         return min($amount, $baseValue);
     }
 

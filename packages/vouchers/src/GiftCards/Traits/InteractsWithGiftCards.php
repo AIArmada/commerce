@@ -21,6 +21,11 @@ use Illuminate\Support\Collection;
 trait InteractsWithGiftCards
 {
     /**
+     * Get the underlying cart instance.
+     */
+    abstract protected function getUnderlyingCart(): Cart;
+
+    /**
      * Apply a gift card to the cart by code.
      *
      * @throws InvalidGiftCardException If the gift card is invalid or cannot be applied
@@ -30,19 +35,19 @@ trait InteractsWithGiftCards
     {
         $giftCard = GiftCard::findByCode($code);
 
-        if (!$giftCard) {
+        if (! $giftCard) {
             throw new InvalidGiftCardException("Gift card not found: {$code}");
         }
 
-        if (!$giftCard->verifyPin($pin)) {
+        if (! $giftCard->verifyPin($pin)) {
             throw new InvalidGiftCardPinException($code);
         }
 
-        if (!$giftCard->canRedeem()) {
+        if (! $giftCard->canRedeem()) {
             $reason = match (true) {
                 $giftCard->isExpired() => 'Gift card has expired',
-                !$giftCard->isActive() => 'Gift card is not active',
-                !$giftCard->hasBalance() => 'Gift card has no balance',
+                ! $giftCard->isActive() => 'Gift card is not active',
+                ! $giftCard->hasBalance() => 'Gift card has no balance',
                 default => 'Gift card cannot be redeemed',
             };
 
@@ -67,7 +72,7 @@ trait InteractsWithGiftCards
      */
     public function removeGiftCard(string $code): static
     {
-        $conditionName = 'gift_card_' . strtoupper($code);
+        $conditionName = 'gift_card_'.mb_strtoupper($code);
 
         $cart = $this->getUnderlyingCart();
         $cart->removeCondition($conditionName);
@@ -95,10 +100,10 @@ trait InteractsWithGiftCards
      */
     public function hasGiftCard(string $code): bool
     {
-        $conditionName = 'gift_card_' . strtoupper($code);
+        $conditionName = 'gift_card_'.mb_strtoupper($code);
 
         return $this->getAppliedGiftCards()
-            ->contains(fn(CartCondition $c) => $c->getName() === $conditionName);
+            ->contains(fn (CartCondition $c) => $c->getName() === $conditionName);
     }
 
     /**
@@ -119,7 +124,7 @@ trait InteractsWithGiftCards
         $cart = $this->getUnderlyingCart();
 
         return collect($cart->getConditions())
-            ->filter(fn(CartCondition $condition) => $condition->getType() === 'gift_card');
+            ->filter(fn (CartCondition $condition) => $condition->getType() === 'gift_card');
     }
 
     /**
@@ -165,7 +170,7 @@ trait InteractsWithGiftCards
 
         // Get grand total without gift card conditions
         $conditions = collect($cart->getConditions())
-            ->filter(fn(CartCondition $c) => $c->getType() !== 'gift_card');
+            ->filter(fn (CartCondition $c) => $c->getType() !== 'gift_card');
 
         $subtotal = $cart->getSubtotalRaw();
 
@@ -255,9 +260,4 @@ trait InteractsWithGiftCards
 
         return $value + $numericValue;
     }
-
-    /**
-     * Get the underlying cart instance.
-     */
-    abstract protected function getUnderlyingCart(): Cart;
 }

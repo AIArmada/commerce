@@ -345,7 +345,7 @@ final class RuleBasedDiscountOptimizer implements DiscountOptimizerInterface
     /**
      * Build alternatives list.
      *
-     * @param array<int|float, array<string, mixed>> $evaluations
+     * @param  array<int|float, array<string, mixed>>  $evaluations
      * @return array<int, array<string, mixed>>
      */
     private function buildAlternatives(array $evaluations, float $optimalPercent): array

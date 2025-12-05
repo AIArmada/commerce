@@ -156,9 +156,9 @@ class PermissionGroupsCommand extends Command
 
         $this->info("Group: {$group->name}");
         $this->line("Slug: {$group->slug}");
-        $this->line("Description: ".($group->description ?? 'N/A'));
-        $this->line("Parent: ".($group->parent->name ?? 'None'));
-        $this->line("System: ".($group->is_system ? 'Yes' : 'No'));
+        $this->line('Description: '.($group->description ?? 'N/A'));
+        $this->line('Parent: '.($group->parent->name ?? 'None'));
+        $this->line('System: '.($group->is_system ? 'Yes' : 'No'));
         $this->line("Sort Order: {$group->sort_order}");
 
         $this->newLine();

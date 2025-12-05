@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Contracts;
 
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use DateTimeInterface;
 
 interface PayoutProcessorInterface
 {
@@ -27,7 +28,7 @@ interface PayoutProcessorInterface
     /**
      * Get the estimated arrival time for a payout.
      */
-    public function getEstimatedArrival(AffiliatePayout $payout): ?\DateTimeInterface;
+    public function getEstimatedArrival(AffiliatePayout $payout): ?DateTimeInterface;
 
     /**
      * Get the processing fees for a given amount.

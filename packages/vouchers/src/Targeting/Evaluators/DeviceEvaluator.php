@@ -20,12 +20,12 @@ class DeviceEvaluator implements TargetingRuleEvaluator
 
     public function evaluate(array $rule, TargetingContext $context): bool
     {
-        $currentDevice = strtolower($context->getDevice());
+        $currentDevice = mb_strtolower($context->getDevice());
         $operator = $rule['operator'] ?? '=';
 
         return match ($operator) {
-            '=' => $currentDevice === strtolower((string) ($rule['value'] ?? '')),
-            '!=' => $currentDevice !== strtolower((string) ($rule['value'] ?? '')),
+            '=' => $currentDevice === mb_strtolower((string) ($rule['value'] ?? '')),
+            '!=' => $currentDevice !== mb_strtolower((string) ($rule['value'] ?? '')),
             'in' => $this->isIn($currentDevice, $rule['values'] ?? []),
             'not_in' => ! $this->isIn($currentDevice, $rule['values'] ?? []),
             default => false,
@@ -48,7 +48,7 @@ class DeviceEvaluator implements TargetingRuleEvaluator
                 $errors[] = 'Values must be an array for in/not_in operators';
             } else {
                 foreach ($rule['values'] as $device) {
-                    if (! in_array(strtolower((string) $device), $validDevices, true)) {
+                    if (! in_array(mb_strtolower((string) $device), $validDevices, true)) {
                         $errors[] = "Invalid device type: {$device}. Valid: desktop, mobile, tablet";
                     }
                 }
@@ -56,7 +56,7 @@ class DeviceEvaluator implements TargetingRuleEvaluator
         } else {
             if (! isset($rule['value'])) {
                 $errors[] = 'Value is required';
-            } elseif (! in_array(strtolower((string) $rule['value']), $validDevices, true)) {
+            } elseif (! in_array(mb_strtolower((string) $rule['value']), $validDevices, true)) {
                 $errors[] = "Invalid device type: {$rule['value']}. Valid: desktop, mobile, tablet";
             }
         }

@@ -62,8 +62,7 @@ final class RuleBasedVoucherMatcher implements VoucherMatcherInterface
         Cart $cart,
         Collection $availableVouchers,
         ?Model $user = null,
-    ): Collection
-    {
+    ): Collection {
         $features = $this->featureExtractor->extract($cart, $user);
         $cartValue = $features['cart_value_cents'] ?? 0;
 

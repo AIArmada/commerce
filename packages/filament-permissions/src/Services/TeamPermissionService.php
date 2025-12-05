@@ -6,6 +6,7 @@ namespace AIArmada\FilamentPermissions\Services;
 
 use AIArmada\FilamentPermissions\Enums\PermissionScope;
 use AIArmada\FilamentPermissions\Models\ScopedPermission;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Collection;
 
 class TeamPermissionService
@@ -37,7 +38,7 @@ class TeamPermissionService
         string $permission,
         $teamId,
         array $conditions = [],
-        ?\DateTimeInterface $expiresAt = null
+        ?DateTimeInterface $expiresAt = null
     ): ScopedPermission {
         return $this->contextualAuth->grantScopedPermission(
             user: $user,

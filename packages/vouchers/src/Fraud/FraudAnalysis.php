@@ -111,7 +111,7 @@ final readonly class FraudAnalysis
 
         foreach ($this->signals as $signal) {
             $category = $signal->type->getCategory();
-            if (!isset($grouped[$category])) {
+            if (! isset($grouped[$category])) {
                 $grouped[$category] = [];
             }
             $grouped[$category][] = $signal;
@@ -147,7 +147,7 @@ final readonly class FraudAnalysis
      */
     public function hasIssues(): bool
     {
-        return !empty($this->signals);
+        return ! empty($this->signals);
     }
 
     /**
@@ -203,7 +203,7 @@ final readonly class FraudAnalysis
         $summary = implode(', ', $labels);
 
         if (count($signals) > 3) {
-            $summary .= ' and ' . (count($signals) - 3) . ' more';
+            $summary .= ' and '.(count($signals) - 3).' more';
         }
 
         return $summary;

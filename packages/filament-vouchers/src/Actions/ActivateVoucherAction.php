@@ -12,11 +12,6 @@ use Filament\Support\Icons\Heroicon;
 
 final class ActivateVoucherAction extends Action
 {
-    public static function getDefaultName(): ?string
-    {
-        return 'activate';
-    }
-
     protected function setUp(): void
     {
         parent::setUp();
@@ -38,5 +33,10 @@ final class ActivateVoucherAction extends Action
                 ->success()
                 ->send();
         });
+    }
+
+    public static function getDefaultName(): ?string
+    {
+        return 'activate';
     }
 }

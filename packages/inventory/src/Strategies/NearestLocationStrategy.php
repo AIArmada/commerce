@@ -43,6 +43,68 @@ final class NearestLocationStrategy implements AllocationStrategyInterface
         return $this->buildAllocations($sortedLevels, $quantity, $context);
     }
 
+    public function canFulfill(Model $model, int $quantity, ?AllocationContext $context = null): bool
+    {
+        $context = $context ?? new AllocationContext;
+
+        $query = InventoryLevel::query()
+            ->where('inventoryable_type', $model->getMorphClass())
+            ->where('inventoryable_id', $model->getKey());
+
+        if ($context->excludeLocationIds !== null) {
+            $query->whereNotIn('location_id', $context->excludeLocationIds);
+        }
+
+        $available = $query->sum('quantity_available');
+
+        return $available >= $quantity;
+    }
+
+    /**
+     * @return Collection<int, InventoryLocation>
+     */
+    public function getRecommendedOrder(Model $model, ?AllocationContext $context = null): Collection
+    {
+        $context = $context ?? new AllocationContext;
+
+        $levels = $this->getAvailableLevels($model, $context);
+        $sortedLevels = $this->sortByDistance($levels, $context);
+
+        $locationIds = $sortedLevels->pluck('location_id')->unique()->values();
+
+        return InventoryLocation::whereIn('id', $locationIds)
+            ->get()
+            ->sortBy(function ($location) use ($locationIds) {
+                return $locationIds->search($location->id);
+            })
+            ->values();
+    }
+
+    /**
+     * Get locations sorted by distance from origin.
+     *
+     * @return Collection<int, InventoryLocation>
+     */
+    public function getLocationsByDistance(float $originX, float $originY, ?float $originZ = null): Collection
+    {
+        $locations = InventoryLocation::query()
+            ->where('is_active', true)
+            ->whereNotNull('coordinate_x')
+            ->whereNotNull('coordinate_y')
+            ->get();
+
+        return $locations->sortBy(function ($location) use ($originX, $originY, $originZ) {
+            return $this->calculateDistance(
+                $originX,
+                $originY,
+                $originZ,
+                $location->coordinate_x,
+                $location->coordinate_y,
+                $location->coordinate_z
+            );
+        })->values();
+    }
+
     /**
      * @return Collection<int, InventoryLevel>
      */
@@ -163,67 +225,5 @@ final class NearestLocationStrategy implements AllocationStrategyInterface
         }
 
         return $allocations;
-    }
-
-    public function canFulfill(Model $model, int $quantity, ?AllocationContext $context = null): bool
-    {
-        $context = $context ?? new AllocationContext;
-
-        $query = InventoryLevel::query()
-            ->where('inventoryable_type', $model->getMorphClass())
-            ->where('inventoryable_id', $model->getKey());
-
-        if ($context->excludeLocationIds !== null) {
-            $query->whereNotIn('location_id', $context->excludeLocationIds);
-        }
-
-        $available = $query->sum('quantity_available');
-
-        return $available >= $quantity;
-    }
-
-    /**
-     * @return Collection<int, InventoryLocation>
-     */
-    public function getRecommendedOrder(Model $model, ?AllocationContext $context = null): Collection
-    {
-        $context = $context ?? new AllocationContext;
-
-        $levels = $this->getAvailableLevels($model, $context);
-        $sortedLevels = $this->sortByDistance($levels, $context);
-
-        $locationIds = $sortedLevels->pluck('location_id')->unique()->values();
-
-        return InventoryLocation::whereIn('id', $locationIds)
-            ->get()
-            ->sortBy(function ($location) use ($locationIds) {
-                return $locationIds->search($location->id);
-            })
-            ->values();
-    }
-
-    /**
-     * Get locations sorted by distance from origin.
-     *
-     * @return Collection<int, InventoryLocation>
-     */
-    public function getLocationsByDistance(float $originX, float $originY, ?float $originZ = null): Collection
-    {
-        $locations = InventoryLocation::query()
-            ->where('is_active', true)
-            ->whereNotNull('coordinate_x')
-            ->whereNotNull('coordinate_y')
-            ->get();
-
-        return $locations->sortBy(function ($location) use ($originX, $originY, $originZ) {
-            return $this->calculateDistance(
-                $originX,
-                $originY,
-                $originZ,
-                $location->coordinate_x,
-                $location->coordinate_y,
-                $location->coordinate_z
-            );
-        })->values();
     }
 }

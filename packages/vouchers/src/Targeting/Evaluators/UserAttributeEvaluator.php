@@ -44,6 +44,27 @@ class UserAttributeEvaluator implements TargetingRuleEvaluator
         return $this->compareValues($userValue, $value, $operator);
     }
 
+    public function getType(): string
+    {
+        return TargetingRuleType::UserAttribute->value;
+    }
+
+    public function validate(array $rule): array
+    {
+        $errors = [];
+
+        if (! isset($rule['attribute']) || ! is_string($rule['attribute'])) {
+            $errors[] = 'Attribute name must be a string';
+        }
+
+        $validOperators = ['equals', 'eq', '=', 'not_equals', 'neq', '!=', 'contains', 'starts_with', 'ends_with', 'in', 'not_in', 'gt', '>', 'gte', '>=', 'lt', '<', 'lte', '<=', 'exists', 'not_exists'];
+        if (isset($rule['operator']) && ! in_array($rule['operator'], $validOperators, true)) {
+            $errors[] = 'Invalid operator. Valid operators: '.implode(', ', $validOperators);
+        }
+
+        return $errors;
+    }
+
     /**
      * Get attribute value from user model or metadata.
      */
@@ -55,7 +76,7 @@ class UserAttributeEvaluator implements TargetingRuleEvaluator
         }
 
         // Check for getter method
-        $getter = 'get' . str_replace('_', '', ucwords($attribute, '_'));
+        $getter = 'get'.str_replace('_', '', ucwords($attribute, '_'));
         if (method_exists($user, $getter)) {
             return $user->{$getter}();
         }
@@ -90,26 +111,5 @@ class UserAttributeEvaluator implements TargetingRuleEvaluator
             'not_exists' => $userValue === null,
             default => false,
         };
-    }
-
-    public function getType(): string
-    {
-        return TargetingRuleType::UserAttribute->value;
-    }
-
-    public function validate(array $rule): array
-    {
-        $errors = [];
-
-        if (! isset($rule['attribute']) || ! is_string($rule['attribute'])) {
-            $errors[] = 'Attribute name must be a string';
-        }
-
-        $validOperators = ['equals', 'eq', '=', 'not_equals', 'neq', '!=', 'contains', 'starts_with', 'ends_with', 'in', 'not_in', 'gt', '>', 'gte', '>=', 'lt', '<', 'lte', '<=', 'exists', 'not_exists'];
-        if (isset($rule['operator']) && ! in_array($rule['operator'], $validOperators, true)) {
-            $errors[] = 'Invalid operator. Valid operators: ' . implode(', ', $validOperators);
-        }
-
-        return $errors;
     }
 }

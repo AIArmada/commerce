@@ -56,7 +56,7 @@ final class FraudAlertWidget extends BaseWidget
 
                 Tables\Columns\TextColumn::make('score')
                     ->label('Score')
-                    ->formatStateUsing(fn ($state) => $state . '%'),
+                    ->formatStateUsing(fn ($state) => $state.'%'),
 
                 Tables\Columns\TextColumn::make('description')
                     ->limit(50)

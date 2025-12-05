@@ -117,7 +117,7 @@ class VoucherValidator
             }
         }
 
-        return VoucherValidationResult::valid();;
+        return VoucherValidationResult::valid();
     }
 
     /**

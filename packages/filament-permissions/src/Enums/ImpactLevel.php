@@ -12,6 +12,36 @@ enum ImpactLevel: string
     case High = 'high';
     case Critical = 'critical';
 
+    /**
+     * Calculate impact level from affected user count.
+     */
+    public static function fromAffectedUsers(int $count, int $totalUsers = 0): self
+    {
+        if ($count === 0) {
+            return self::None;
+        }
+
+        if ($totalUsers > 0) {
+            $percentage = ($count / $totalUsers) * 100;
+
+            return match (true) {
+                $percentage >= 75 => self::Critical,
+                $percentage >= 50 => self::High,
+                $percentage >= 25 => self::Medium,
+                $percentage >= 5 => self::Low,
+                default => self::None,
+            };
+        }
+
+        return match (true) {
+            $count >= 1000 => self::Critical,
+            $count >= 100 => self::High,
+            $count >= 10 => self::Medium,
+            $count >= 1 => self::Low,
+            default => self::None,
+        };
+    }
+
     public function label(): string
     {
         return match ($this) {
@@ -80,36 +110,6 @@ enum ImpactLevel: string
         return match ($this) {
             self::Medium, self::High, self::Critical => true,
             default => false,
-        };
-    }
-
-    /**
-     * Calculate impact level from affected user count.
-     */
-    public static function fromAffectedUsers(int $count, int $totalUsers = 0): self
-    {
-        if ($count === 0) {
-            return self::None;
-        }
-
-        if ($totalUsers > 0) {
-            $percentage = ($count / $totalUsers) * 100;
-
-            return match (true) {
-                $percentage >= 75 => self::Critical,
-                $percentage >= 50 => self::High,
-                $percentage >= 25 => self::Medium,
-                $percentage >= 5 => self::Low,
-                default => self::None,
-            };
-        }
-
-        return match (true) {
-            $count >= 1000 => self::Critical,
-            $count >= 100 => self::High,
-            $count >= 10 => self::Medium,
-            $count >= 1 => self::Low,
-            default => self::None,
         };
     }
 }

@@ -83,7 +83,7 @@ class RoleTemplateCommand extends Command
         $name = text(
             label: 'Template name:',
             required: true,
-            validate: fn (string $value): ?string => strlen($value) < 2 ? 'Name must be at least 2 characters.' : null
+            validate: fn (string $value): ?string => mb_strlen($value) < 2 ? 'Name must be at least 2 characters.' : null
         );
 
         $description = text(
@@ -139,7 +139,7 @@ class RoleTemplateCommand extends Command
         $roleName = $this->option('role') ?? text(
             label: 'Role name:',
             required: true,
-            validate: fn (string $value): ?string => strlen($value) < 2 ? 'Name must be at least 2 characters.' : null
+            validate: fn (string $value): ?string => mb_strlen($value) < 2 ? 'Name must be at least 2 characters.' : null
         );
 
         $role = $service->createRoleFromTemplate($template, $roleName);

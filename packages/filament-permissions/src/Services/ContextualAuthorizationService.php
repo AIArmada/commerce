@@ -6,6 +6,7 @@ namespace AIArmada\FilamentPermissions\Services;
 
 use AIArmada\FilamentPermissions\Enums\PermissionScope;
 use AIArmada\FilamentPermissions\Models\ScopedPermission;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
@@ -114,7 +115,7 @@ class ContextualAuthorizationService
         PermissionScope $scope,
         string $scopeValue,
         array $conditions = [],
-        ?\DateTimeInterface $expiresAt = null
+        ?DateTimeInterface $expiresAt = null
     ): ScopedPermission {
         $permissionModel = \Spatie\Permission\Models\Permission::findOrCreate($permission);
 
@@ -194,6 +195,16 @@ class ContextualAuthorizationService
     }
 
     /**
+     * Clear the context cache for a user.
+     *
+     * @param  object  $user
+     */
+    public function clearCache($user): void
+    {
+        Cache::forget(self::CACHE_KEY_PREFIX."user:{$user->getKey()}");
+    }
+
+    /**
      * Check if scoped permission matches the given context.
      *
      * @param  array<string, mixed>  $context
@@ -221,15 +232,5 @@ class ContextualAuthorizationService
 
         // Check additional conditions
         return $scopedPermission->matchesConditions($context);
-    }
-
-    /**
-     * Clear the context cache for a user.
-     *
-     * @param  object  $user
-     */
-    public function clearCache($user): void
-    {
-        Cache::forget(self::CACHE_KEY_PREFIX."user:{$user->getKey()}");
     }
 }

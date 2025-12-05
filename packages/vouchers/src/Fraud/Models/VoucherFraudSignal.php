@@ -183,7 +183,7 @@ class VoucherFraudSignal extends Model
      */
     public function requiresReview(): bool
     {
-        return !$this->reviewed && $this->risk_level->requiresReview();
+        return ! $this->reviewed && $this->risk_level->requiresReview();
     }
 
     /**
@@ -200,6 +200,13 @@ class VoucherFraudSignal extends Model
         );
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (VoucherFraudSignal $signal): void {
+            // No child relations to cascade
+        });
+    }
+
     protected function casts(): array
     {
         return [
@@ -214,12 +221,5 @@ class VoucherFraudSignal extends Model
             'created_at' => 'datetime',
             'updated_at' => 'datetime',
         ];
-    }
-
-    protected static function booted(): void
-    {
-        static::deleting(function (VoucherFraudSignal $signal): void {
-            // No child relations to cascade
-        });
     }
 }

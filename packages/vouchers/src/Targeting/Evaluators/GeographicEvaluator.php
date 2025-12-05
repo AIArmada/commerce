@@ -29,7 +29,7 @@ class GeographicEvaluator implements TargetingRuleEvaluator
             return (bool) ($rule['allow_unknown'] ?? true);
         }
 
-        $currentCountry = strtoupper($currentCountry);
+        $currentCountry = mb_strtoupper($currentCountry);
         $targetCountries = array_map('strtoupper', $rule['values'] ?? []);
 
         if (empty($targetCountries)) {
@@ -59,7 +59,7 @@ class GeographicEvaluator implements TargetingRuleEvaluator
         }
 
         foreach ($rule['values'] as $country) {
-            if (! is_string($country) || strlen($country) !== 2) {
+            if (! is_string($country) || mb_strlen($country) !== 2) {
                 $errors[] = "Invalid country code: {$country}. Use ISO 3166-1 alpha-2 codes";
             }
         }

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Widgets;
 
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Models\AffiliateAttribution;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;

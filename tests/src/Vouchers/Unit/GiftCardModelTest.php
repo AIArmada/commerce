@@ -279,7 +279,7 @@ describe('GiftCard Status Transitions', function (): void {
             'status' => GiftCardStatus::Cancelled,
         ]);
 
-        expect(fn() => $giftCard->activate())->toThrow(RuntimeException::class);
+        expect(fn () => $giftCard->activate())->toThrow(RuntimeException::class);
     });
 
     it('can suspend an active gift card', function (): void {
@@ -334,7 +334,7 @@ describe('GiftCard Balance Operations', function (): void {
             'status' => GiftCardStatus::Active,
         ]);
 
-        expect(fn() => $giftCard->credit(0, GiftCardTransactionType::TopUp))
+        expect(fn () => $giftCard->credit(0, GiftCardTransactionType::TopUp))
             ->toThrow(InvalidArgumentException::class);
     });
 
@@ -345,7 +345,7 @@ describe('GiftCard Balance Operations', function (): void {
             'status' => GiftCardStatus::Active,
         ]);
 
-        expect(fn() => $giftCard->credit(5000, GiftCardTransactionType::Redeem))
+        expect(fn () => $giftCard->credit(5000, GiftCardTransactionType::Redeem))
             ->toThrow(InvalidArgumentException::class);
     });
 
@@ -375,7 +375,7 @@ describe('GiftCard Balance Operations', function (): void {
             'status' => GiftCardStatus::Active,
         ]);
 
-        expect(fn() => $giftCard->debit(6000, GiftCardTransactionType::Redeem))
+        expect(fn () => $giftCard->debit(6000, GiftCardTransactionType::Redeem))
             ->toThrow(RuntimeException::class, 'Insufficient balance');
     });
 
@@ -416,9 +416,11 @@ describe('GiftCard Redemption', function (): void {
         ]);
 
         // Create a mock order
-        $order = new class extends \Illuminate\Database\Eloquent\Model {
-            protected $table = 'vouchers';
+        $order = new class extends Illuminate\Database\Eloquent\Model
+        {
             public $id = 'order-123';
+
+            protected $table = 'vouchers';
         };
 
         $transaction = $giftCard->redeem(5000, $order);
@@ -435,12 +437,14 @@ describe('GiftCard Redemption', function (): void {
             'status' => GiftCardStatus::Inactive,
         ]);
 
-        $order = new class extends \Illuminate\Database\Eloquent\Model {
-            protected $table = 'vouchers';
+        $order = new class extends Illuminate\Database\Eloquent\Model
+        {
             public $id = 'order-123';
+
+            protected $table = 'vouchers';
         };
 
-        expect(fn() => $giftCard->redeem(5000, $order))
+        expect(fn () => $giftCard->redeem(5000, $order))
             ->toThrow(RuntimeException::class, 'cannot be redeemed');
     });
 });
@@ -468,7 +472,7 @@ describe('GiftCard Top Up', function (): void {
             'type' => GiftCardType::Promotional, // Cannot top up promotional
         ]);
 
-        expect(fn() => $giftCard->topUp(3000))
+        expect(fn () => $giftCard->topUp(3000))
             ->toThrow(RuntimeException::class, 'cannot be topped up');
     });
 });
@@ -479,7 +483,7 @@ describe('GiftCard Static Methods', function (): void {
         $code2 = GiftCard::generateCode();
 
         expect($code1)->toStartWith('GC-')
-            ->and(strlen($code1))->toBe(22) // GC- + 4 segments of 4 + 3 dashes
+            ->and(mb_strlen($code1))->toBe(22) // GC- + 4 segments of 4 + 3 dashes
             ->and($code1)->not->toBe($code2);
     });
 
@@ -514,7 +518,7 @@ describe('GiftCard Static Methods', function (): void {
         $found = GiftCard::findByCodeOrFail('GC-TEST-FAIL');
         expect($found->id)->toBe($giftCard->id);
 
-        expect(fn() => GiftCard::findByCodeOrFail('GC-NOT-FOUND'))
+        expect(fn () => GiftCard::findByCodeOrFail('GC-NOT-FOUND'))
             ->toThrow(RuntimeException::class, 'Gift card not found');
     });
 });
