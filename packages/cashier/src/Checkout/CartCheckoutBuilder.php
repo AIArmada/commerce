@@ -237,7 +237,7 @@ final class CartCheckoutBuilder
         $checkoutBuilder = $this->gateway->checkout($this->customer);
 
         // Add cart items as line items
-        foreach ($this->cart->items() as $item) {
+        foreach ($this->cart->getItems() as $item) {
             $this->addItemToCheckout($checkoutBuilder, $item);
         }
 

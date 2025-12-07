@@ -243,7 +243,7 @@ class ChipSubscriptionBuilder implements SubscriptionBuilderContract
     {
         $checkout = $this->builder->checkout($sessionOptions);
 
-        return new ChipCheckout($checkout->purchase);
+        return new ChipCheckout($checkout->asChipPurchase());
     }
 
     /**

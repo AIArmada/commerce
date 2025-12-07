@@ -202,9 +202,9 @@ class ChipPayment implements PaymentContract
     public function receiptUrl(): ?string
     {
         if ($this->payment instanceof Payment) {
-            $purchase = $this->payment->purchase;
+            $purchase = $this->payment->asChipPurchase();
 
-            return $purchase?->invoice_url ?? null;
+            return $purchase->invoice_url ?? null;
         }
 
         return $this->payment->invoice_url;
