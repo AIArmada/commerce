@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Clients\ChipCollectClient;
-use AIArmada\Chip\Data\Client;
+use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Services\Collect\ClientsApi;
 
 beforeEach(function (): void {
@@ -29,7 +29,7 @@ describe('Collect Clients API', function (): void {
 
         $created = $this->api->create(['email' => 'buyer@example.com']);
 
-        expect($created)->toBeInstanceOf(Client::class);
+        expect($created)->toBeInstanceOf(ClientData::class);
         expect($created->id)->toBe('client_123');
 
         $this->client->shouldReceive('get')
@@ -62,7 +62,7 @@ describe('Collect Clients API', function (): void {
 
         $updated = $this->api->update('client_123', ['email' => 'new@example.com']);
 
-        expect($updated)->toBeInstanceOf(Client::class);
+        expect($updated)->toBeInstanceOf(ClientData::class);
         expect($updated->email)->toBe('new@example.com');
 
         $patchedPayload = ['id' => 'client_123', 'phone' => '+60123456789'];
