@@ -9,6 +9,8 @@ use Illuminate\Contracts\Support\Jsonable;
 
 /**
  * Contract for payment method representations.
+ *
+ * @property-read string $id The payment method ID (via id() method)
  */
 interface PaymentMethodContract extends Arrayable, Jsonable
 {

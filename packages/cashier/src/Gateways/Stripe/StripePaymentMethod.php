@@ -89,7 +89,7 @@ class StripePaymentMethod implements PaymentMethodContract
 
         $default = $this->billable->defaultPaymentMethod();
 
-        return $default && $default->id === $this->id();
+        return $default && $default->id() === $this->id();
     }
 
     /**
@@ -102,16 +102,12 @@ class StripePaymentMethod implements PaymentMethodContract
 
     /**
      * Delete the payment method.
+     *
+     * @throws Exception
      */
-    public function delete(): bool
+    public function delete(): void
     {
-        try {
-            $this->paymentMethod->delete();
-
-            return true;
-        } catch (Exception) {
-            return false;
-        }
+        $this->paymentMethod->delete();
     }
 
     /**
@@ -139,5 +135,13 @@ class StripePaymentMethod implements PaymentMethodContract
             'expiration_year' => $this->expirationYear(),
             'is_default' => $this->isDefault(),
         ];
+    }
+
+    /**
+     * Convert to JSON.
+     */
+    public function toJson($options = 0): string
+    {
+        return json_encode($this->toArray(), $options) ?: '{}';
     }
 }

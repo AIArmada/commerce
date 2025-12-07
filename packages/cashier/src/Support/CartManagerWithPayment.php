@@ -208,4 +208,74 @@ final class CartManagerWithPayment implements CartManagerInterface
     {
         return $this->cart->persist($identifier);
     }
+
+    // ========================================
+    // Additional CartManagerInterface methods
+    // ========================================
+
+    public function getCurrentCart(): Cart
+    {
+        return $this->cart->getCurrentCart();
+    }
+
+    public function getCartInstance(string $name, ?string $identifier = null): Cart
+    {
+        return $this->cart->getCartInstance($name, $identifier);
+    }
+
+    public function instance(): string
+    {
+        return $this->cart->instance();
+    }
+
+    public function setInstance(string $name): static
+    {
+        $this->cart->setInstance($name);
+
+        return $this;
+    }
+
+    public function setIdentifier(string $identifier): static
+    {
+        $this->cart->setIdentifier($identifier);
+
+        return $this;
+    }
+
+    public function forgetIdentifier(): static
+    {
+        $this->cart->forgetIdentifier();
+
+        return $this;
+    }
+
+    public function forOwner(\Illuminate\Database\Eloquent\Model $owner): static
+    {
+        return new self($this->cart->forOwner($owner));
+    }
+
+    public function getOwnerType(): ?string
+    {
+        return $this->cart->getOwnerType();
+    }
+
+    public function getOwnerId(): string|int|null
+    {
+        return $this->cart->getOwnerId();
+    }
+
+    public function session(?string $sessionKey = null): \AIArmada\Cart\Storage\StorageInterface
+    {
+        return $this->cart->session($sessionKey);
+    }
+
+    public function getById(string $uuid): ?Cart
+    {
+        return $this->cart->getById($uuid);
+    }
+
+    public function swap(string $oldIdentifier, string $newIdentifier, string $instance = 'default'): bool
+    {
+        return $this->cart->swap($oldIdentifier, $newIdentifier, $instance);
+    }
 }

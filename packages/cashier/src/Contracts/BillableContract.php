@@ -12,6 +12,8 @@ use Illuminate\Support\Collection;
  *
  * This contract defines the interface that any model using the Billable trait
  * must satisfy. It provides a unified API across all payment gateways.
+ *
+ * @property-read \Illuminate\Database\Eloquent\Collection $subscriptions
  */
 interface BillableContract
 {
