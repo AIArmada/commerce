@@ -182,19 +182,62 @@ class {{ $modelClass }} extends Model
 ```
 ## Docs
 ```
-# Docs Guidelines
+# Documentation Guidelines (Filament-Style)
 
-All documentation must be kept up-to-date with code changes.
+Docs are stored as markdown in the main repo, with a separate site that builds them.
 
-## Rules
-- Update `README.md` and `packages/*/README.md` for new features, installation, usage.
-- Maintain `docs/` folders in packages and root.
-- No outdated examples, APIs, or instructions.
+## File Structure
+
+### Naming Convention
+- Use numbered prefixes for ordering: `01-overview.md`, `02-installation.md`
+- Use lowercase kebab-case: `03-getting-started.md`
+- One topic per file, max ~500 lines
+
+### Required Frontmatter
+Every markdown file MUST start with:
+```yaml
+---
+title: Page Title
+---
+```
+
+### Astro Component Imports (for future docs site)
+Add after frontmatter for rich content:
+```md
+---
+title: Configuration
+---
+import Aside from "@components/Aside.astro"
+
+<Aside variant="warning">
+    Breaking change in v2.0...
+</Aside>
+```
+
+## Package docs/ Structure
+
+Each package must have:
+1. `01-overview.md` - Introduction, features
+2. `02-installation.md` - Composer, config, migrations
+3. `03-configuration.md` - All config options
+4. `04-usage.md` - Basic usage patterns
+5. Feature-specific docs (numbered)
+6. `99-troubleshooting.md` - Common issues
+
+## Content Style
+- `##` for main sections, `###` for subsections
+- Working code examples with full imports
+- Cross-reference related docs with relative links
+- Use `<Aside>` components for callouts
 
 ## Verification
-- Review changelogs, new features against docs.
-- Test all documented examples/commands.
-- Use `grep` for deprecated/removed features still in docs.
+```bash
+# Check frontmatter exists
+grep -L "^---" packages/*/docs/*.md
+
+# Find docs without numbered prefix
+ls packages/*/docs/*.md | grep -v "/[0-9][0-9]-"
+```
 ```
 ## Packages
 ```

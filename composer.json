@@ -4,8 +4,9 @@
     "license": "MIT",
     "require": {
         "php": "^8.4",
+        "ext-intl": "*",
         "composer-runtime-api": "^2.1",
-        "ext-intl": "*"
+        "spatie/laravel-data": "^4.18"
     },
     "require-dev": {
         "akaunting/laravel-money": "^6.0",
@@ -110,6 +111,11 @@
             "AIArmada\\Stock\\Tests\\": "packages/stock/tests/",
             "AIArmada\\Vouchers\\": "packages/vouchers/src",
             "AIArmada\\Vouchers\\Tests\\": "packages/vouchers/tests/",
+            "AIArmada\\Shipping\\": "packages/shipping/src",
+            "AIArmada\\Shipping\\Database\\Factories\\": "packages/shipping/database/factories",
+            "AIArmada\\Shipping\\Tests\\": "packages/shipping/tests/",
+            "AIArmada\\FilamentShipping\\": "packages/filament-shipping/src",
+            "AIArmada\\FilamentShipping\\Tests\\": "packages/filament-shipping/tests/",
             "Tests\\": "tests/"
         }
     },
