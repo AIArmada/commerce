@@ -4,79 +4,65 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
-use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Actions\Affiliates\ApproveAffiliate;
+use AIArmada\Affiliates\Actions\Affiliates\CreateAffiliate;
+use AIArmada\Affiliates\Actions\Affiliates\GenerateAffiliateCode;
+use AIArmada\Affiliates\Actions\Affiliates\RejectAffiliate;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Models\Affiliate;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Str;
 
+/**
+ * Service for affiliate registration operations.
+ *
+ * This service now delegates to individual Actions for cleaner architecture.
+ *
+ * @deprecated Use the individual Actions directly:
+ *             - CreateAffiliate::run($data, $owner)
+ *             - ApproveAffiliate::run($affiliate)
+ *             - RejectAffiliate::run($affiliate)
+ *             - GenerateAffiliateCode::run($name)
+ */
 final class AffiliateRegistrationService
 {
+    public function __construct(
+        private readonly CreateAffiliate $createAffiliate,
+        private readonly ApproveAffiliate $approveAffiliate,
+        private readonly RejectAffiliate $rejectAffiliate,
+        private readonly GenerateAffiliateCode $generateCode,
+    ) {
+    }
+
     /**
      * Register a new affiliate.
      *
      * @param  array<string, mixed>  $data
+     *
+     * @deprecated Use CreateAffiliate::run($data, $owner) instead
      */
     public function register(array $data, ?Model $owner = null): Affiliate
     {
-        $approvalMode = $this->getApprovalMode();
-        $status = $this->determineStatus($data, $approvalMode);
-        $commissionType = $this->getDefaultCommissionType();
-        $commissionRate = $this->getDefaultCommissionRate();
-
-        $affiliate = new Affiliate([
-            'code' => $data['code'] ?? $this->generateCode($data['name'] ?? ''),
-            'name' => $data['name'],
-            'description' => $data['description'] ?? null,
-            'status' => $status,
-            'commission_type' => $data['commission_type'] ?? $commissionType,
-            'commission_rate' => $data['commission_rate'] ?? $commissionRate,
-            'currency' => $data['currency'] ?? config('affiliates.currency.default', 'USD'),
-            'contact_email' => $data['contact_email'] ?? null,
-            'website_url' => $data['website_url'] ?? null,
-            'metadata' => $data['metadata'] ?? [],
-        ]);
-
-        if ($owner) {
-            $affiliate->owner_type = $owner->getMorphClass();
-            $affiliate->owner_id = $owner->getKey();
-        }
-
-        if ($status === AffiliateStatus::Active) {
-            $affiliate->activated_at = now();
-        }
-
-        $affiliate->save();
-
-        return $affiliate;
+        return $this->createAffiliate->handle($data, $owner);
     }
 
     /**
      * Approve a pending affiliate.
+     *
+     * @deprecated Use ApproveAffiliate::run($affiliate) instead
      */
     public function approve(Affiliate $affiliate): Affiliate
     {
-        if ($affiliate->status === AffiliateStatus::Active) {
-            return $affiliate;
-        }
-
-        $affiliate->status = AffiliateStatus::Active;
-        $affiliate->activated_at = now();
-        $affiliate->save();
-
-        return $affiliate;
+        return $this->approveAffiliate->handle($affiliate);
     }
 
     /**
      * Reject a pending affiliate.
+     *
+     * @deprecated Use RejectAffiliate::run($affiliate) instead
      */
     public function reject(Affiliate $affiliate): Affiliate
     {
-        $affiliate->status = AffiliateStatus::Disabled;
-        $affiliate->save();
-
-        return $affiliate;
+        return $this->rejectAffiliate->handle($affiliate);
     }
 
     /**
@@ -98,63 +84,12 @@ final class AffiliateRegistrationService
     }
 
     /**
-     * Determine the initial status based on approval mode.
-     *
-     * @param  array<string, mixed>  $data
-     */
-    private function determineStatus(array $data, RegistrationApprovalMode $approvalMode): AffiliateStatus
-    {
-        if (isset($data['status'])) {
-            return $data['status'] instanceof AffiliateStatus
-                ? $data['status']
-                : (AffiliateStatus::tryFrom($data['status']) ?? $approvalMode->defaultStatus());
-        }
-
-        return $approvalMode->defaultStatus();
-    }
-
-    /**
-     * Get the default commission type.
-     */
-    private function getDefaultCommissionType(): CommissionType
-    {
-        $type = config('affiliates.registration.default_commission_type', 'percentage');
-
-        return CommissionType::tryFrom($type) ?? CommissionType::Percentage;
-    }
-
-    /**
-     * Get the default commission rate.
-     */
-    private function getDefaultCommissionRate(): int
-    {
-        return (int) config('affiliates.registration.default_commission_rate', 1000);
-    }
-
-    /**
      * Generate a unique affiliate code.
+     *
+     * @deprecated Use GenerateAffiliateCode::run($name) instead
      */
-    private function generateCode(string $name = ''): string
+    public function generateCode(string $name = ''): string
     {
-        $slug = Str::slug($name, '');
-        $base = ($slug !== '' && mb_strlen($slug) > 0)
-            ? Str::upper(Str::substr($slug, 0, 6))
-            : 'AFF';
-
-        // Ensure base is not empty after all transformations
-        if ($base === '' || mb_strlen($base) === 0) {
-            $base = 'AFF';
-        }
-
-        $suffix = Str::upper(Str::random(4));
-
-        $code = $base.$suffix;
-
-        while (Affiliate::where('code', $code)->exists()) {
-            $suffix = Str::upper(Str::random(4));
-            $code = $base.$suffix;
-        }
-
-        return $code;
+        return $this->generateCode->handle($name);
     }
 }
