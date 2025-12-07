@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\SendInstruction;
+use AIArmada\Chip\Data\SendInstructionData;
 
 describe('SendInstruction data object', function (): void {
     it('creates a send instruction from array data', function (): void {
@@ -18,7 +18,7 @@ describe('SendInstruction data object', function (): void {
             'updated_at' => '2023-07-20T10:41:25.302Z',
         ];
 
-        $instruction = SendInstruction::fromArray($data);
+        $instruction = SendInstructionData::fromArray($data);
 
         expect($instruction->id)->toBe(50);
         expect($instruction->bank_account_id)->toBe(1);
@@ -31,7 +31,7 @@ describe('SendInstruction data object', function (): void {
     });
 
     it('handles rejected send instruction', function (): void {
-        $instruction = SendInstruction::fromArray([
+        $instruction = SendInstructionData::fromArray([
             'id' => 51,
             'bank_account_id' => 2,
             'amount' => '250.00',
@@ -49,7 +49,7 @@ describe('SendInstruction data object', function (): void {
     });
 
     it('provides amount helpers and array export', function (): void {
-        $instruction = SendInstruction::fromArray([
+        $instruction = SendInstructionData::fromArray([
             'id' => 52,
             'bank_account_id' => 3,
             'amount' => '125.50',

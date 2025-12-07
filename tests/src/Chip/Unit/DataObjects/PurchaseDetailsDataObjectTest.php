@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\Product;
-use AIArmada\Chip\Data\PurchaseDetails;
+use AIArmada\Chip\Data\ProductData;
+use AIArmada\Chip\Data\PurchaseDetailsData;
 use Akaunting\Money\Money;
 
 describe('PurchaseDetails data object', function (): void {
@@ -29,17 +29,17 @@ describe('PurchaseDetails data object', function (): void {
             'metadata' => ['order_id' => 'ORD-123'],
         ];
 
-        $details = PurchaseDetails::fromArray($data);
+        $details = PurchaseDetailsData::fromArray($data);
 
         expect($details->getTotalInCurrency())->toBe(195.0);
         expect($details->getSubtotalInCurrency())->toEqual((10000 + (5000 * 2)) / 100);
-        expect($details->products[0])->toBeInstanceOf(Product::class);
+        expect($details->products[0])->toBeInstanceOf(ProductData::class);
     });
 
     it('exports to array with nested products', function (): void {
-        $details = new PurchaseDetails(
+        $details = new PurchaseDetailsData(
             currency: 'MYR',
-            products: [Product::make('Custom', Money::MYR(1000))],
+            products: [ProductData::make('Custom', Money::MYR(1000))],
             total: Money::MYR(1000),
             language: 'en',
             notes: null,

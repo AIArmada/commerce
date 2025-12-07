@@ -7,9 +7,9 @@ namespace AIArmada\Chip\Services;
 use AIArmada\Chip\Builders\PurchaseBuilder;
 use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Data\ClientData;
-use AIArmada\Chip\Data\ClientDetails;
-use AIArmada\Chip\Data\CompanyStatement;
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\ClientDetailsData;
+use AIArmada\Chip\Data\CompanyStatementData;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Services\Collect\AccountApi;
 use AIArmada\Chip\Services\Collect\ClientsApi;
 use AIArmada\Chip\Services\Collect\PurchasesApi;
@@ -46,22 +46,22 @@ class ChipCollectService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function createPurchase(array $data): Purchase
+    public function createPurchase(array $data): PurchaseData
     {
         return $this->purchases->create($data);
     }
 
-    public function getPurchase(string $purchaseId): Purchase
+    public function getPurchase(string $purchaseId): PurchaseData
     {
         return $this->purchases->find($purchaseId);
     }
 
-    public function cancelPurchase(string $purchaseId): Purchase
+    public function cancelPurchase(string $purchaseId): PurchaseData
     {
         return $this->purchases->cancel($purchaseId);
     }
 
-    public function refundPurchase(string $purchaseId, ?int $amount = null): Purchase
+    public function refundPurchase(string $purchaseId, ?int $amount = null): PurchaseData
     {
         return $this->purchases->refund($purchaseId, $amount);
     }
@@ -81,27 +81,27 @@ class ChipCollectService
         return $this->purchases->paymentMethods($filters);
     }
 
-    public function chargePurchase(string $purchaseId, string $recurringToken): Purchase
+    public function chargePurchase(string $purchaseId, string $recurringToken): PurchaseData
     {
         return $this->purchases->charge($purchaseId, $recurringToken);
     }
 
-    public function capturePurchase(string $purchaseId, ?int $amount = null): Purchase
+    public function capturePurchase(string $purchaseId, ?int $amount = null): PurchaseData
     {
         return $this->purchases->capture($purchaseId, $amount);
     }
 
-    public function releasePurchase(string $purchaseId): Purchase
+    public function releasePurchase(string $purchaseId): PurchaseData
     {
         return $this->purchases->release($purchaseId);
     }
 
-    public function markPurchaseAsPaid(string $purchaseId, ?int $paidOn = null): Purchase
+    public function markPurchaseAsPaid(string $purchaseId, ?int $paidOn = null): PurchaseData
     {
         return $this->purchases->markAsPaid($purchaseId, $paidOn);
     }
 
-    public function resendInvoice(string $purchaseId): Purchase
+    public function resendInvoice(string $purchaseId): PurchaseData
     {
         return $this->purchases->resendInvoice($purchaseId);
     }
@@ -181,10 +181,10 @@ class ChipCollectService
     }
 
     /**
-     * @param  array<int, \AIArmada\Chip\Data\Product>  $products
+     * @param  array<int, \AIArmada\Chip\Data\ProductData>  $products
      * @param  array<string, mixed>  $options
      */
-    public function createCheckoutPurchase(array $products, ClientDetails $clientDetails, array $options = []): Purchase
+    public function createCheckoutPurchase(array $products, ClientDetailsData $clientDetails, array $options = []): PurchaseData
     {
         return $this->purchases->createCheckoutPurchase($products, $clientDetails, $options);
     }
@@ -217,37 +217,37 @@ class ChipCollectService
      */
     /**
      * @param  array<string, mixed>  $filters
-     * @return array<int, CompanyStatement>|array{data: array<int, CompanyStatement>, meta?: array<string, mixed>}
+     * @return array<int, CompanyStatementData>|array{data: array<int, CompanyStatementData>, meta?: array<string, mixed>}
      */
     public function listCompanyStatements(array $filters = []): array
     {
         $response = $this->account->companyStatements($filters);
 
         if (isset($response['data']) && is_array($response['data'])) {
-            $response['data'] = array_map(static fn (array $item) => CompanyStatement::fromArray($item), $response['data']);
+            $response['data'] = array_map(static fn (array $item) => CompanyStatementData::fromArray($item), $response['data']);
 
             return $response;
         }
 
         if (array_is_list($response)) {
-            return array_map(static fn (array $item) => CompanyStatement::fromArray($item), $response);
+            return array_map(static fn (array $item) => CompanyStatementData::fromArray($item), $response);
         }
 
         return [];
     }
 
-    public function getCompanyStatement(string $statementId): CompanyStatement
+    public function getCompanyStatement(string $statementId): CompanyStatementData
     {
         $response = $this->account->companyStatement($statementId);
 
-        return CompanyStatement::fromArray($response);
+        return CompanyStatementData::fromArray($response);
     }
 
-    public function cancelCompanyStatement(string $statementId): CompanyStatement
+    public function cancelCompanyStatement(string $statementId): CompanyStatementData
     {
         $response = $this->account->cancelCompanyStatement($statementId);
 
-        return CompanyStatement::fromArray($response);
+        return CompanyStatementData::fromArray($response);
     }
 
     /**

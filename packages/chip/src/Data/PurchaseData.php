@@ -7,51 +7,51 @@ namespace AIArmada\Chip\Data;
 use Akaunting\Money\Money;
 use Carbon\Carbon;
 
-class Purchase
+class PurchaseData
 {
     public function __construct(
-        public readonly string $id, // UUID as string
-        public readonly string $type,
-        public readonly int $created_on, // Unix timestamp from API
-        public readonly int $updated_on, // Unix timestamp from API
-        public readonly ClientDetails $client,
-        public readonly PurchaseDetails $purchase,
-        public readonly string $brand_id, // UUID as string
-        public readonly ?Payment $payment,
-        public readonly IssuerDetails $issuer_details,
-        public readonly TransactionData $transaction_data,
-        public readonly string $status,
+        public readonly string              $id, // UUID as string
+        public readonly string              $type,
+        public readonly int                 $created_on, // Unix timestamp from API
+        public readonly int                 $updated_on, // Unix timestamp from API
+        public readonly ClientDetailsData   $client,
+        public readonly PurchaseDetailsData $purchase,
+        public readonly string              $brand_id, // UUID as string
+        public readonly ?PaymentData        $payment,
+        public readonly IssuerDetailsData   $issuer_details,
+        public readonly TransactionData     $transaction_data,
+        public readonly string              $status,
         /** @var array<string, mixed> */
-        public readonly array $status_history,
-        public readonly ?int $viewed_on, // Unix timestamp or null
-        public readonly ?string $company_id, // UUID as string or null
-        public readonly bool $is_test,
-        public readonly ?string $user_id, // UUID as string or null
-        public readonly ?string $billing_template_id, // UUID as string or null
-        public readonly ?string $client_id, // UUID as string or null
+        public readonly array               $status_history,
+        public readonly ?int                $viewed_on, // Unix timestamp or null
+        public readonly ?string             $company_id, // UUID as string or null
+        public readonly bool                $is_test,
+        public readonly ?string           $user_id, // UUID as string or null
+        public readonly ?string           $billing_template_id, // UUID as string or null
+        public readonly ?string           $client_id, // UUID as string or null
         public readonly bool $send_receipt,
         public readonly bool $is_recurring_token,
-        public readonly ?string $recurring_token, // UUID as string or null
-        public readonly bool $skip_capture,
-        public readonly bool $force_recurring,
-        public readonly string $reference_generated,
-        public readonly ?string $reference,
-        public readonly ?string $notes,
-        public readonly ?string $issued, // ISO 8601 date string
-        public readonly ?int $due, // Unix timestamp or null
-        public readonly string $refund_availability,
-        public readonly Money $refundable_amount,
-        public readonly ?CurrencyConversion $currency_conversion,
+        public readonly ?string                 $recurring_token, // UUID as string or null
+        public readonly bool                    $skip_capture,
+        public readonly bool                    $force_recurring,
+        public readonly string                  $reference_generated,
+        public readonly ?string                 $reference,
+        public readonly ?string                 $notes,
+        public readonly ?string                 $issued, // ISO 8601 date string
+        public readonly ?int                    $due, // Unix timestamp or null
+        public readonly string                  $refund_availability,
+        public readonly Money                   $refundable_amount,
+        public readonly ?CurrencyConversionData $currency_conversion,
         /** @var array<string, mixed> */
-        public readonly array $payment_method_whitelist,
-        public readonly ?string $success_redirect,
-        public readonly ?string $failure_redirect,
-        public readonly ?string $cancel_redirect,
-        public readonly ?string $success_callback,
-        public readonly ?string $creator_agent,
-        public readonly string $platform,
-        public readonly string $product,
-        public readonly ?string $created_from_ip,
+        public readonly array                   $payment_method_whitelist,
+        public readonly ?string                 $success_redirect,
+        public readonly ?string                 $failure_redirect,
+        public readonly ?string                 $cancel_redirect,
+        public readonly ?string                 $success_callback,
+        public readonly ?string                 $creator_agent,
+        public readonly string                  $platform,
+        public readonly string                  $product,
+        public readonly ?string                 $created_from_ip,
         public readonly ?string $invoice_url,
         public readonly ?string $checkout_url,
         public readonly ?string $direct_post_url,
@@ -102,19 +102,19 @@ class Purchase
         // Handle client data
         $client = null;
         if (isset($data['client'])) {
-            $client = ClientDetails::fromArray($data['client']);
+            $client = ClientDetailsData::fromArray($data['client']);
         } else {
             // Create minimal client for test data
-            $client = ClientDetails::fromArray([]);
+            $client = ClientDetailsData::fromArray([]);
         }
 
         // Handle purchase data
         $purchase = null;
         if (isset($data['purchase'])) {
-            $purchase = PurchaseDetails::fromArray($data['purchase']);
+            $purchase = PurchaseDetailsData::fromArray($data['purchase']);
         } else {
             // Create purchase from flat test data structure
-            $purchase = PurchaseDetails::fromArray([
+            $purchase = PurchaseDetailsData::fromArray([
                 'total' => $data['amount_in_cents'] ?? 0,
                 'currency' => $data['currency'] ?? 'MYR',
                 'products' => [],
@@ -130,8 +130,8 @@ class Purchase
             client: $client,
             purchase: $purchase,
             brand_id: $data['brand_id'] ?? '',
-            payment: isset($data['payment']) ? Payment::fromArray($data['payment']) : null,
-            issuer_details: isset($data['issuer_details']) ? IssuerDetails::fromArray($data['issuer_details']) : IssuerDetails::fromArray(['legal_name' => '']),
+            payment: isset($data['payment']) ? PaymentData::fromArray($data['payment']) : null,
+            issuer_details: isset($data['issuer_details']) ? IssuerDetailsData::fromArray($data['issuer_details']) : IssuerDetailsData::fromArray(['legal_name' => '']),
             transaction_data: isset($data['transaction_data']) ? TransactionData::fromArray($data['transaction_data']) : TransactionData::fromArray(['payment_method' => '', 'attempts' => []]),
             status: $data['status'] ?? 'created',
             status_history: $data['status_history'] ?? [],
@@ -153,7 +153,7 @@ class Purchase
             due: $data['due'] ?? null,
             refund_availability: $data['refund_availability'] ?? 'all',
             refundable_amount: Money::{$purchase->currency}($data['refundable_amount'] ?? 0),
-            currency_conversion: isset($data['currency_conversion']) ? CurrencyConversion::fromArray($data['currency_conversion']) : null,
+            currency_conversion: isset($data['currency_conversion']) ? CurrencyConversionData::fromArray($data['currency_conversion']) : null,
             payment_method_whitelist: $data['payment_method_whitelist'] ?? [],
             success_redirect: $data['success_redirect'] ?? null,
             failure_redirect: $data['failure_redirect'] ?? null,

@@ -159,7 +159,7 @@ trait ManagesPaymentMethods
      *
      * @param  array<string, mixed>  $options
      */
-    public function createSetupPurchase(array $options = []): \AIArmada\Chip\Data\Purchase
+    public function createSetupPurchase(array $options = []): \AIArmada\Chip\Data\PurchaseData
     {
         // Ensure customer exists on CHIP - create if not already exists
         if (! $this->hasChipId()) {

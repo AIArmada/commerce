@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Clients\ChipSendClient;
 use AIArmada\Chip\Data\BankAccountData;
-use AIArmada\Chip\Data\SendInstruction;
-use AIArmada\Chip\Data\SendLimit;
-use AIArmada\Chip\Data\SendWebhook;
+use AIArmada\Chip\Data\SendInstructionData;
+use AIArmada\Chip\Data\SendLimitData;
+use AIArmada\Chip\Data\SendWebhookData;
 use AIArmada\Chip\Services\ChipSendService;
 
 describe('ChipSendService', function (): void {
@@ -52,7 +52,7 @@ describe('ChipSendService', function (): void {
             'test@example.com'
         );
 
-        expect($instruction)->toBeInstanceOf(SendInstruction::class);
+        expect($instruction)->toBeInstanceOf(SendInstructionData::class);
         expect($instruction->id)->toBe(50);
         expect($instruction->amount)->toBe('500.00');
         expect($instruction->state)->toBe('completed');
@@ -80,7 +80,7 @@ describe('ChipSendService', function (): void {
 
         $instruction = $this->service->getSendInstruction('50');
 
-        expect($instruction)->toBeInstanceOf(SendInstruction::class);
+        expect($instruction)->toBeInstanceOf(SendInstructionData::class);
         expect($instruction->id)->toBe(50);
         expect($instruction->state)->toBe('completed');
     });
@@ -165,7 +165,7 @@ describe('ChipSendService', function (): void {
 
         $limit = $this->service->getSendLimit(9);
 
-        expect($limit)->toBeInstanceOf(SendLimit::class);
+        expect($limit)->toBeInstanceOf(SendLimitData::class);
         expect($limit->currency)->toBe('MYR');
         expect($limit->net_amount)->toBe(9900);
     });
@@ -247,7 +247,7 @@ describe('ChipSendService', function (): void {
 
         $cancelled = $this->service->cancelSendInstruction('si_100');
 
-        expect($cancelled)->toBeInstanceOf(SendInstruction::class);
+        expect($cancelled)->toBeInstanceOf(SendInstructionData::class);
         expect($cancelled->state)->toBe('cancelled');
 
         $this->client->shouldReceive('delete')
@@ -322,7 +322,7 @@ describe('ChipSendService', function (): void {
 
         $createdWebhook = $this->service->createSendWebhook(['url' => 'https://example.com']);
 
-        expect($createdWebhook)->toBeInstanceOf(SendWebhook::class)
+        expect($createdWebhook)->toBeInstanceOf(SendWebhookData::class)
             ->and($createdWebhook->handlesEvent('send_instruction_status'))->toBeTrue();
 
         $this->client->shouldReceive('get')
@@ -331,7 +331,7 @@ describe('ChipSendService', function (): void {
             ->andReturn($webhookPayload);
 
         expect($this->service->getSendWebhook('wh_1'))
-            ->toBeInstanceOf(SendWebhook::class);
+            ->toBeInstanceOf(SendWebhookData::class);
 
         $updatedPayload = $webhookPayload;
         $updatedPayload['event_hooks'] = ['bank_account_status'];
@@ -343,7 +343,7 @@ describe('ChipSendService', function (): void {
 
         $updated = $this->service->updateSendWebhook('wh_1', ['events' => ['bank_account_status']]);
 
-        expect($updated)->toBeInstanceOf(SendWebhook::class)
+        expect($updated)->toBeInstanceOf(SendWebhookData::class)
             ->and($updated->handlesEvent('bank_account_status'))->toBeTrue();
 
         $this->client->shouldReceive('delete')
@@ -367,7 +367,7 @@ describe('ChipSendService', function (): void {
         $list = $this->service->listSendWebhooks(['type' => 'callback']);
 
         expect($list)->toHaveKey('data');
-        expect($list['data'][0])->toBeInstanceOf(SendWebhook::class);
+        expect($list['data'][0])->toBeInstanceOf(SendWebhookData::class);
         expect($list['meta']['total'])->toBe(1);
     });
 });

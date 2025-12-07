@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Builders;
 
-use AIArmada\Chip\Data\Product;
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\ProductData;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Contracts\Payment\CheckoutableInterface;
@@ -99,7 +99,7 @@ final class PurchaseBuilder
     /**
      * Add a Product data object directly.
      */
-    public function addProductObject(Product $product): self
+    public function addProductObject(ProductData $product): self
     {
         // Ensure currency is set on the purchase
         if (! isset($this->data['purchase']['currency'])) {
@@ -508,7 +508,7 @@ final class PurchaseBuilder
     /**
      * Create the purchase
      */
-    public function create(): Purchase
+    public function create(): PurchaseData
     {
         // Use brand_id from config if not set
         if (! isset($this->data['brand_id'])) {
@@ -521,7 +521,7 @@ final class PurchaseBuilder
     /**
      * Alias for create()
      */
-    public function save(): Purchase
+    public function save(): PurchaseData
     {
         return $this->create();
     }

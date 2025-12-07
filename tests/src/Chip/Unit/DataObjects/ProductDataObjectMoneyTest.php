@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\Product;
+use AIArmada\Chip\Data\ProductData;
 use Akaunting\Money\Money;
 
 describe('Product data object with Money', function (): void {
     it('creates product from array with Money objects', function (): void {
-        $product = Product::fromArray([
+        $product = ProductData::fromArray([
             'name' => 'Premium Plan',
             'quantity' => 2,
             'price' => 19900,
@@ -26,7 +26,7 @@ describe('Product data object with Money', function (): void {
         $price = Money::MYR(5000);
         $discount = Money::MYR(500);
 
-        $product = Product::make(
+        $product = ProductData::make(
             name: 'Test Product',
             price: $price,
             quantity: 2,
@@ -43,7 +43,7 @@ describe('Product data object with Money', function (): void {
     });
 
     it('calculates total price as Money', function (): void {
-        $product = Product::fromArray([
+        $product = ProductData::fromArray([
             'name' => 'Premium Plan',
             'quantity' => 2,
             'price' => 19900,
@@ -59,7 +59,7 @@ describe('Product data object with Money', function (): void {
     });
 
     it('exports to array with prices in cents for API', function (): void {
-        $product = Product::make(
+        $product = ProductData::make(
             name: 'One-time Item',
             price: Money::MYR(5000),
         );
@@ -75,7 +75,7 @@ describe('Product data object with Money', function (): void {
     });
 
     it('handles different currencies', function (): void {
-        $product = Product::fromArray([
+        $product = ProductData::fromArray([
             'name' => 'USD Product',
             'quantity' => 1,
             'price' => 1000,
@@ -86,7 +86,7 @@ describe('Product data object with Money', function (): void {
     });
 
     it('creates product with zero discount when not provided', function (): void {
-        $product = Product::make(
+        $product = ProductData::make(
             name: 'No Discount Product',
             price: Money::MYR(10000),
         );
@@ -97,7 +97,7 @@ describe('Product data object with Money', function (): void {
     });
 
     it('maintains backward compatibility with deprecated methods', function (): void {
-        $product = Product::fromArray([
+        $product = ProductData::fromArray([
             'name' => 'Test',
             'quantity' => 1,
             'price' => 10000,

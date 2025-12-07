@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip;
 
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Contracts\Support\Responsable;
@@ -30,14 +30,14 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     /**
      * The CHIP purchase instance.
      */
-    protected Purchase $purchase;
+    protected PurchaseData $purchase;
 
     /**
      * Create a new checkout instance.
      *
      * @param  \Illuminate\Database\Eloquent\Model|null  $owner
      */
-    public function __construct($owner, Purchase $purchase)
+    public function __construct($owner, PurchaseData $purchase)
     {
         $this->owner = $owner;
         $this->purchase = $purchase;
@@ -198,7 +198,7 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     /**
      * Get the underlying CHIP purchase.
      */
-    public function asChipPurchase(): Purchase
+    public function asChipPurchase(): PurchaseData
     {
         return $this->purchase;
     }

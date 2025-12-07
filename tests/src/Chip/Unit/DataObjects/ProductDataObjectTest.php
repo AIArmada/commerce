@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\Product;
+use AIArmada\Chip\Data\ProductData;
 use Akaunting\Money\Money;
 
 describe('Product data object', function (): void {
     it('calculates price helpers in currency', function (): void {
-        $product = Product::fromArray([
+        $product = ProductData::fromArray([
             'name' => 'Premium Plan',
             'quantity' => 2,
             'price' => 19900,
@@ -23,7 +23,7 @@ describe('Product data object', function (): void {
     });
 
     it('exports to array for API payloads', function (): void {
-        $product = Product::make('One-time Item', Money::MYR(5000));
+        $product = ProductData::make('One-time Item', Money::MYR(5000));
 
         expect($product->toArray())->toBe([
             'name' => 'One-time Item',

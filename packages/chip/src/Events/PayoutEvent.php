@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Events;
 
-use AIArmada\Chip\Data\Payout;
+use AIArmada\Chip\Data\PayoutData;
 use AIArmada\Chip\Enums\WebhookEventType;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -23,8 +23,8 @@ abstract class PayoutEvent
      * @param  array<string, mixed>  $payload
      */
     public function __construct(
-        public readonly Payout $payout,
-        public readonly array $payload,
+        public readonly PayoutData $payout,
+        public readonly array      $payload,
     ) {}
 
     /**
@@ -41,7 +41,7 @@ abstract class PayoutEvent
      */
     final public static function fromPayload(array $payload): static
     {
-        $payout = Payout::fromArray($payload);
+        $payout = PayoutData::fromArray($payload);
 
         return new static(
             payout: $payout,

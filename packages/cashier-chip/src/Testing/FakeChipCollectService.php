@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Testing;
 
 use AIArmada\Chip\Data\ClientData;
-use AIArmada\Chip\Data\ClientDetails;
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\ClientDetailsData;
+use AIArmada\Chip\Data\PurchaseData;
 
 /**
  * Fake CHIP Collect Service for testing purposes.
@@ -51,41 +51,41 @@ class FakeChipCollectService
      *
      * @param  array<string, mixed>  $data
      */
-    public function createPurchase(array $data): Purchase
+    public function createPurchase(array $data): PurchaseData
     {
         $response = $this->fakeClient->createPurchase($data);
 
-        return Purchase::fromArray($response);
+        return PurchaseData::fromArray($response);
     }
 
     /**
      * Get a purchase.
      */
-    public function getPurchase(string $purchaseId): Purchase
+    public function getPurchase(string $purchaseId): PurchaseData
     {
         $response = $this->fakeClient->getPurchase($purchaseId);
 
-        return Purchase::fromArray($response ?? []);
+        return PurchaseData::fromArray($response ?? []);
     }
 
     /**
      * Cancel a purchase.
      */
-    public function cancelPurchase(string $purchaseId): Purchase
+    public function cancelPurchase(string $purchaseId): PurchaseData
     {
         $response = $this->fakeClient->cancelPurchase($purchaseId);
 
-        return Purchase::fromArray($response ?? []);
+        return PurchaseData::fromArray($response ?? []);
     }
 
     /**
      * Refund a purchase.
      */
-    public function refundPurchase(string $purchaseId, ?int $amount = null): Purchase
+    public function refundPurchase(string $purchaseId, ?int $amount = null): PurchaseData
     {
         $response = $this->fakeClient->refundPurchase($purchaseId, $amount);
 
-        return Purchase::fromArray($response ?? []);
+        return PurchaseData::fromArray($response ?? []);
     }
 
     /**
@@ -102,52 +102,52 @@ class FakeChipCollectService
     /**
      * Charge a purchase with a recurring token.
      */
-    public function chargePurchase(string $purchaseId, string $recurringToken): Purchase
+    public function chargePurchase(string $purchaseId, string $recurringToken): PurchaseData
     {
         $response = $this->fakeClient->chargePurchase($purchaseId, $recurringToken);
 
-        return Purchase::fromArray($response ?? []);
+        return PurchaseData::fromArray($response ?? []);
     }
 
     /**
      * Capture a purchase.
      */
-    public function capturePurchase(string $purchaseId, ?int $amount = null): Purchase
+    public function capturePurchase(string $purchaseId, ?int $amount = null): PurchaseData
     {
         $response = $this->fakeClient->capturePurchase($purchaseId, $amount);
 
-        return Purchase::fromArray($response ?? []);
+        return PurchaseData::fromArray($response ?? []);
     }
 
     /**
      * Release a purchase.
      */
-    public function releasePurchase(string $purchaseId): Purchase
+    public function releasePurchase(string $purchaseId): PurchaseData
     {
         $response = $this->fakeClient->releasePurchase($purchaseId);
 
-        return Purchase::fromArray($response ?? []);
+        return PurchaseData::fromArray($response ?? []);
     }
 
     /**
      * Mark a purchase as paid.
      */
-    public function markPurchaseAsPaid(string $purchaseId, ?int $paidOn = null): Purchase
+    public function markPurchaseAsPaid(string $purchaseId, ?int $paidOn = null): PurchaseData
     {
         $response = $this->fakeClient->markPurchaseAsPaid($purchaseId, $paidOn);
 
-        return Purchase::fromArray($response ?? []);
+        return PurchaseData::fromArray($response ?? []);
     }
 
     /**
      * Resend invoice.
      */
-    public function resendInvoice(string $purchaseId): Purchase
+    public function resendInvoice(string $purchaseId): PurchaseData
     {
         // Just return the purchase as-is
         $response = $this->fakeClient->getPurchase($purchaseId);
 
-        return Purchase::fromArray($response ?? []);
+        return PurchaseData::fromArray($response ?? []);
     }
 
     /**
@@ -254,10 +254,10 @@ class FakeChipCollectService
     /**
      * Create a checkout purchase.
      *
-     * @param  array<int, \AIArmada\Chip\Data\Product>  $products
+     * @param  array<int, \AIArmada\Chip\Data\ProductData>  $products
      * @param  array<string, mixed>  $options
      */
-    public function createCheckoutPurchase(array $products, ClientDetails $clientDetails, array $options = []): Purchase
+    public function createCheckoutPurchase(array $products, ClientDetailsData $clientDetails, array $options = []): PurchaseData
     {
         $data = array_merge([
             'client' => [
@@ -274,7 +274,7 @@ class FakeChipCollectService
 
         $response = $this->fakeClient->createPurchase($data);
 
-        return Purchase::fromArray($response);
+        return PurchaseData::fromArray($response);
     }
 
     /**
@@ -323,7 +323,7 @@ class FakeChipCollectService
     /**
      * Get a company statement.
      *
-     * @return \AIArmada\Chip\Data\CompanyStatement
+     * @return \AIArmada\Chip\Data\CompanyStatementData
      */
     public function getCompanyStatement(string $statementId): mixed
     {
@@ -333,7 +333,7 @@ class FakeChipCollectService
     /**
      * Cancel a company statement.
      *
-     * @return \AIArmada\Chip\Data\CompanyStatement
+     * @return \AIArmada\Chip\Data\CompanyStatementData
      */
     public function cancelCompanyStatement(string $statementId): mixed
     {
@@ -413,20 +413,20 @@ class FakeChipCollectService
     /**
      * Simulate a payment being completed.
      */
-    public function simulatePaymentComplete(string $purchaseId, ?string $recurringToken = null): ?Purchase
+    public function simulatePaymentComplete(string $purchaseId, ?string $recurringToken = null): ?PurchaseData
     {
         $response = $this->fakeClient->simulatePaymentComplete($purchaseId, $recurringToken);
 
-        return $response ? Purchase::fromArray($response) : null;
+        return $response ? PurchaseData::fromArray($response) : null;
     }
 
     /**
      * Simulate a payment failure.
      */
-    public function simulatePaymentFailure(string $purchaseId, string $reason = 'Payment declined'): ?Purchase
+    public function simulatePaymentFailure(string $purchaseId, string $reason = 'Payment declined'): ?PurchaseData
     {
         $response = $this->fakeClient->simulatePaymentFailure($purchaseId, $reason);
 
-        return $response ? Purchase::fromArray($response) : null;
+        return $response ? PurchaseData::fromArray($response) : null;
     }
 }

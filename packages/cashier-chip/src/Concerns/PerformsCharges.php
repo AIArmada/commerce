@@ -8,7 +8,7 @@ use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Checkout;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment;
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 use Exception;
 
 trait PerformsCharges
@@ -181,7 +181,7 @@ trait PerformsCharges
      *
      * @param  array<string, mixed>  $options
      */
-    public function refund(string $purchaseId, ?int $amount = null): Purchase
+    public function refund(string $purchaseId, ?int $amount = null): PurchaseData
     {
         return Cashier::chip()->refundPurchase($purchaseId, $amount);
     }
