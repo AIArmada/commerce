@@ -7,6 +7,7 @@ namespace AIArmada\FilamentPermissions\Support\Macros;
 use AIArmada\FilamentPermissions\Services\PermissionAggregator;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
+use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -16,8 +17,9 @@ class FilterMacros
     {
         Filter::macro('visibleForPermission', function (string $permission): static {
             /** @var Filter $this */
+            /** @phpstan-ignore return.type */
             return $this->visible(function () use ($permission): bool {
-                $user = auth()->user();
+                $user = Auth::user();
                 if ($user === null) {
                     return false;
                 }
@@ -32,11 +34,13 @@ class FilterMacros
             /** @var Filter $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
-            return $this->visible(fn (): bool => auth()->user()?->hasAnyRole($rolesArray) ?? false);
+            /** @phpstan-ignore return.type, method.notFound */
+            return $this->visible(fn (): bool => Auth::user()?->hasAnyRole($rolesArray) ?? false);
         });
 
         SelectFilter::macro('roleOptions', function (): static {
             /** @var SelectFilter $this */
+            /** @phpstan-ignore return.type */
             return $this->options(Role::pluck('name', 'id')->toArray());
         });
 
@@ -48,6 +52,7 @@ class FilterMacros
                 $query->where('name', 'like', $prefix.'%');
             }
 
+            /** @phpstan-ignore return.type */
             return $this->options($query->pluck('name', 'id')->toArray());
         });
 
@@ -63,6 +68,7 @@ class FilterMacros
                 ->mapWithKeys(fn (string $group): array => [$group => ucfirst($group)])
                 ->toArray();
 
+            /** @phpstan-ignore return.type */
             return $this->options($groups);
         });
     }

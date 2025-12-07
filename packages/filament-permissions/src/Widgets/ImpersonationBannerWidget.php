@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPermissions\Widgets;
 
 use Filament\Widgets\Widget;
+use Illuminate\Support\Facades\Auth;
 
 class ImpersonationBannerWidget extends Widget
 {
@@ -14,15 +15,16 @@ class ImpersonationBannerWidget extends Widget
 
     public static function canView(): bool
     {
-        $user = auth()->user();
+        $user = Auth::user();
         $superAdmin = (string) config('filament-permissions.super_admin_role');
 
+        /** @phpstan-ignore method.notFound */
         return $user?->hasRole($superAdmin) ?? false;
     }
 
     public function getCurrentRoleContext(): ?string
     {
-        // Placeholder for future impersonation logic
-        return auth()->user()?->roles->pluck('name')->join(', ') ?? 'None';
+        /** @phpstan-ignore property.notFound */
+        return Auth::user()?->roles->pluck('name')->join(', ') ?? 'None';
     }
 }
