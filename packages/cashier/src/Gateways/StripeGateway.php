@@ -214,7 +214,7 @@ class StripeGateway extends AbstractGateway
      */
     public function subscriptions(BillableContract $billable): Collection
     {
-        return $billable->subscriptions->map(function ($subscription) {
+        return $billable->subscriptions()->get()->map(function ($subscription) {
             return new StripeSubscription($subscription);
         });
     }

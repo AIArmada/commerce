@@ -113,20 +113,16 @@ class ChipPaymentMethod implements PaymentMethodContract
 
     /**
      * Delete the payment method.
+     *
+     * @throws Exception
      */
-    public function delete(): bool
+    public function delete(): void
     {
         if (! $this->billable) {
-            return false;
+            throw new Exception('Cannot delete payment method without billable owner');
         }
 
-        try {
-            $this->billable->deletePaymentMethod($this->id());
-
-            return true;
-        } catch (Exception) {
-            return false;
-        }
+        $this->billable->deletePaymentMethod($this->id());
     }
 
     /**
@@ -156,5 +152,13 @@ class ChipPaymentMethod implements PaymentMethodContract
             'expiration_year' => $this->expirationYear(),
             'is_default' => $this->isDefault(),
         ];
+    }
+
+    /**
+     * Convert to JSON.
+     */
+    public function toJson($options = 0): string
+    {
+        return json_encode($this->toArray(), $options) ?: '{}';
     }
 }

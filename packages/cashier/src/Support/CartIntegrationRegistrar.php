@@ -232,18 +232,17 @@ final class CartIntegrationRegistrar
         $amount = $event->payment->rawAmount() ?? 0;
         $currency = $event->payment->currency() ?? config('cashier.currency', 'USD');
 
-        $affiliateService->recordConversion(
-            affiliateId: $affiliateId,
-            conversionType: 'purchase',
-            orderId: $this->extractOrderIdFromPayment($event),
-            orderTotal: $amount,
-            currency: $currency,
-            metadata: [
+        /** @var \AIArmada\Cart\Cart $cart */
+        $affiliateService->recordConversion($cart, [
+            'order_reference' => $this->extractOrderIdFromPayment($event),
+            'total' => $amount,
+            'commission_currency' => $currency,
+            'metadata' => [
                 'payment_id' => $event->payment->id(),
                 'gateway' => $event->payment->gateway(),
                 'cart_id' => $cart->getId(),
-            ]
-        );
+            ],
+        ]);
     }
 
     /**

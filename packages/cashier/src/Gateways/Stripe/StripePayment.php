@@ -77,6 +77,22 @@ class StripePayment implements PaymentContract
     }
 
     /**
+     * Determine if the payment was canceled (alias for isCancelled).
+     */
+    public function isCanceled(): bool
+    {
+        return $this->isCancelled();
+    }
+
+    /**
+     * Determine if the payment requires action (e.g., 3DS).
+     */
+    public function requiresAction(): bool
+    {
+        return $this->payment->requiresAction();
+    }
+
+    /**
      * Determine if the payment was refunded.
      */
     public function isRefunded(): bool
@@ -115,6 +131,24 @@ class StripePayment implements PaymentContract
     public function redirect(): RedirectResponse
     {
         return redirect()->to($this->redirectUrl());
+    }
+
+    /**
+     * Get the receipt/invoice URL.
+     */
+    public function receiptUrl(): ?string
+    {
+        $paymentIntent = $this->payment->asStripePaymentIntent();
+        $latestCharge = $paymentIntent->latest_charge;
+
+        if ($latestCharge && is_string($latestCharge)) {
+            $stripe = new \Stripe\StripeClient(config('cashier.secret'));
+            $charge = $stripe->charges->retrieve($latestCharge);
+
+            return $charge->receipt_url;
+        }
+
+        return null;
     }
 
     /**
