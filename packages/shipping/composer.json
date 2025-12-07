@@ -8,8 +8,7 @@
         "source": "https://github.com/aiarmada/commerce"
     },
     "require": {
-        "aiarmada/commerce-support": "self.version",
-        "spatie/laravel-data": "^4.0"
+        "aiarmada/commerce-support": "self.version"
     },
     "autoload": {
         "psr-4": {
