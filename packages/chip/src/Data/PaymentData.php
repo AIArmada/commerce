@@ -7,7 +7,7 @@ namespace AIArmada\Chip\Data;
 use Akaunting\Money\Money;
 use Carbon\Carbon;
 
-final class Payment
+final class PaymentData
 {
     public function __construct(
         public readonly bool $is_outgoing,

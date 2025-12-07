@@ -6,11 +6,11 @@ namespace AIArmada\Chip\Data;
 
 use Akaunting\Money\Money;
 
-final class PurchaseDetails
+final class PurchaseDetailsData
 {
     public function __construct(
         public readonly string $currency,
-        /** @var array<int, Product> */
+        /** @var array<int, ProductData> */
         public readonly array $products,
         public readonly Money $total,
         public readonly string $language,
@@ -42,7 +42,7 @@ final class PurchaseDetails
         return new self(
             currency: $currency,
             products: isset($data['products'])
-                ? array_map(fn ($product) => Product::fromArray($product, $currency), $data['products'])
+                ? array_map(fn ($product) => ProductData::fromArray($product, $currency), $data['products'])
                 : [],
             total: Money::{$currency}($data['total'] ?? 0),
             language: $data['language'] ?? 'en',
@@ -73,7 +73,7 @@ final class PurchaseDetails
      */
     public function getSubtotal(): Money
     {
-        $subtotalCents = array_reduce($this->products, function ($carry, Product $product) {
+        $subtotalCents = array_reduce($this->products, function ($carry, ProductData $product) {
             return $carry + $product->getPriceInCents() * (float) $product->quantity;
         }, 0);
 

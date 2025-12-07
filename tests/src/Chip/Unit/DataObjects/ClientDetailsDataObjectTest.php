@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\ClientDetails;
+use AIArmada\Chip\Data\ClientDetailsData;
 
 describe('ClientDetails data object', function (): void {
     it('creates client details from array data', function (): void {
@@ -31,7 +31,7 @@ describe('ClientDetails data object', function (): void {
             'tax_number' => 'TX1234567',
         ];
 
-        $details = ClientDetails::fromArray($data);
+        $details = ClientDetailsData::fromArray($data);
 
         expect($details->email)->toBe('customer@example.com');
         expect($details->shipping_city)->toBe('Kuala Lumpur');
@@ -39,7 +39,7 @@ describe('ClientDetails data object', function (): void {
     });
 
     it('uses defaults for missing optional fields', function (): void {
-        $details = ClientDetails::fromArray([]);
+        $details = ClientDetailsData::fromArray([]);
 
         expect($details->email)->toBeNull();
         expect($details->cc)->toBe([]);

@@ -19,7 +19,7 @@ it('proxies send service helpers through the ChipSend facade', function (): void
 });
 
 it('allows mocking of webhook helpers through the ChipSend facade', function (): void {
-    $webhook = new AIArmada\Chip\Data\SendWebhook(
+    $webhook = new AIArmada\Chip\Data\SendWebhookData(
         id: 123,
         name: 'test-webhook',
         public_key: 'test-key',

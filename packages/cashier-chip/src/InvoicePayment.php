@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip;
 
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use JsonSerializable;
@@ -22,7 +22,7 @@ class InvoicePayment implements Arrayable, Jsonable, JsonSerializable
     /**
      * Create a new InvoicePayment instance.
      */
-    public function __construct(protected Purchase $purchase)
+    public function __construct(protected PurchaseData $purchase)
     {
         //
     }
@@ -111,7 +111,7 @@ class InvoicePayment implements Arrayable, Jsonable, JsonSerializable
     /**
      * Get the CHIP Purchase instance.
      */
-    public function asChipPurchase(): Purchase
+    public function asChipPurchase(): PurchaseData
     {
         return $this->purchase;
     }

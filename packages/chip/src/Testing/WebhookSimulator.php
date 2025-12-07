@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Testing;
 
 use AIArmada\Chip\Data\BillingTemplateClientData;
-use AIArmada\Chip\Data\Payout;
-use AIArmada\Chip\Data\Purchase;
-use AIArmada\Chip\Data\Webhook;
+use AIArmada\Chip\Data\PayoutData;
+use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Data\WebhookData;
 use AIArmada\Chip\Enums\WebhookEventType;
 use AIArmada\Chip\Events\BillingCancelled;
 use AIArmada\Chip\Events\PaymentRefunded;
@@ -485,17 +485,17 @@ final class WebhookSimulator
     /**
      * Create a Purchase data object from the payload.
      */
-    public function toPurchase(): Purchase
+    public function toPurchase(): PurchaseData
     {
-        return Purchase::fromArray($this->factory->toArray());
+        return PurchaseData::fromArray($this->factory->toArray());
     }
 
     /**
      * Create a Webhook data object from the payload.
      */
-    public function toWebhook(): Webhook
+    public function toWebhook(): WebhookData
     {
-        return Webhook::fromArray($this->factory->toArray());
+        return WebhookData::fromArray($this->factory->toArray());
     }
 
     /**
@@ -507,7 +507,7 @@ final class WebhookSimulator
     {
         // Only create the DTO that's actually needed for the event type
         if ($eventType->isPurchaseEvent() || $eventType->isPaymentEvent()) {
-            $purchase = Purchase::fromArray($payload);
+            $purchase = PurchaseData::fromArray($payload);
 
             match ($eventType) {
                 WebhookEventType::PurchaseCreated => PurchaseCreated::dispatch($purchase, $payload),
@@ -533,7 +533,7 @@ final class WebhookSimulator
             $billingClient = BillingTemplateClientData::fromArray($payload);
             BillingCancelled::dispatch($billingClient, $payload);
         } elseif ($eventType->isPayoutEvent()) {
-            $payout = Payout::fromArray($payload);
+            $payout = PayoutData::fromArray($payload);
 
             match ($eventType) {
                 WebhookEventType::PayoutPending => PayoutPending::dispatch($payout, $payload),

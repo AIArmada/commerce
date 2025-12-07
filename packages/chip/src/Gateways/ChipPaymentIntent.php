@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Gateways;
 
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentIntentInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;
 use Akaunting\Money\Money;
@@ -19,7 +19,7 @@ use DateTimeInterface;
 final readonly class ChipPaymentIntent implements PaymentIntentInterface
 {
     public function __construct(
-        private Purchase $purchase
+        private PurchaseData $purchase
     ) {}
 
     public function getPaymentId(): string
@@ -131,7 +131,7 @@ final readonly class ChipPaymentIntent implements PaymentIntentInterface
     /**
      * Get the underlying CHIP Purchase object.
      */
-    public function getPurchase(): Purchase
+    public function getPurchase(): PurchaseData
     {
         return $this->purchase;
     }

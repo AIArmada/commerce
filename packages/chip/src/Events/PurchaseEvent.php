@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Events;
 
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Enums\WebhookEventType;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -25,8 +25,8 @@ abstract class PurchaseEvent
      * @param  array<string, mixed>  $payload
      */
     public function __construct(
-        public readonly Purchase $purchase,
-        public readonly array $payload,
+        public readonly PurchaseData $purchase,
+        public readonly array        $payload,
     ) {}
 
     /**
@@ -43,7 +43,7 @@ abstract class PurchaseEvent
      */
     final public static function fromPayload(array $payload): static
     {
-        $purchase = Purchase::fromArray($payload);
+        $purchase = PurchaseData::fromArray($payload);
 
         return new static(
             purchase: $purchase,

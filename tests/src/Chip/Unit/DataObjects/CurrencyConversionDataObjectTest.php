@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\CurrencyConversion;
+use AIArmada\Chip\Data\CurrencyConversionData;
 
 describe('CurrencyConversion data object', function (): void {
     it('converts original amount to major currency units', function (): void {
-        $conversion = CurrencyConversion::fromArray([
+        $conversion = CurrencyConversionData::fromArray([
             'original_currency' => 'USD',
             'original_amount' => 12345,
             'exchange_rate' => 4.56,
@@ -17,7 +17,7 @@ describe('CurrencyConversion data object', function (): void {
     });
 
     it('exports array representation', function (): void {
-        $conversion = new CurrencyConversion('EUR', 5000, 4.95);
+        $conversion = new CurrencyConversionData('EUR', 5000, 4.95);
 
         expect($conversion->toArray())->toBe([
             'original_currency' => 'EUR',

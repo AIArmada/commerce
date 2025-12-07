@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\SendLimit;
+use AIArmada\Chip\Data\SendLimitData;
 
 describe('SendLimit data object', function (): void {
     it('normalises API payload', function (): void {
@@ -22,7 +22,7 @@ describe('SendLimit data object', function (): void {
             'updated_at' => '2024-04-02T12:00:00Z',
         ];
 
-        $limit = SendLimit::fromArray($payload);
+        $limit = SendLimitData::fromArray($payload);
 
         expect($limit->id)->toBe(7)
             ->and($limit->currency)->toBe('MYR')

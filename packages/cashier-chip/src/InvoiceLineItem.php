@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip;
 
-use AIArmada\Chip\Data\Product;
+use AIArmada\Chip\Data\ProductData;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use JsonSerializable;
@@ -23,7 +23,7 @@ class InvoiceLineItem implements Arrayable, Jsonable, JsonSerializable
     /**
      * The CHIP product data.
      */
-    protected Product $product;
+    protected ProductData $product;
 
     /**
      * The line item index.
@@ -33,7 +33,7 @@ class InvoiceLineItem implements Arrayable, Jsonable, JsonSerializable
     /**
      * Create a new invoice line item instance.
      */
-    public function __construct(Invoice $invoice, Product $product, int $index = 0)
+    public function __construct(Invoice $invoice, ProductData $product, int $index = 0)
     {
         $this->invoice = $invoice;
         $this->product = $product;
@@ -107,7 +107,7 @@ class InvoiceLineItem implements Arrayable, Jsonable, JsonSerializable
     /**
      * Get the underlying CHIP product.
      */
-    public function asChipProduct(): Product
+    public function asChipProduct(): ProductData
     {
         return $this->product;
     }

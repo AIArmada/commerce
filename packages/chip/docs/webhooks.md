@@ -58,9 +58,9 @@ $isValid = $service->verifySignature(
 ## Webhook Data Object
 
 ```php
-use AIArmada\Chip\Data\Webhook;
+use AIArmada\Chip\Data\WebhookData;
 
-$webhook = Webhook::fromArray($request->all());
+$webhook = WebhookData::fromArray($request->all());
 
 $webhook->event;           // 'purchase.paid'
 $webhook->data;            // Event payload

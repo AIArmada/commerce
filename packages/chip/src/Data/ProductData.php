@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Data;
 
 use Akaunting\Money\Money;
 
-final class Product
+final class ProductData
 {
     public function __construct(
         public readonly string $name,

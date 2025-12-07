@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Actions\Purchases;
 
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Services\Collect\PurchasesApi;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -24,7 +24,7 @@ final class CreatePurchase
      *
      * @param  array<string, mixed>  $data
      */
-    public function handle(array $data): Purchase
+    public function handle(array $data): PurchaseData
     {
         return $this->purchasesApi->create($data);
     }

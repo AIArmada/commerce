@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Services;
 
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use InvalidArgumentException;
 
@@ -17,7 +17,7 @@ class SubscriptionService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function createWithFreeTrial(array $data): Purchase
+    public function createWithFreeTrial(array $data): PurchaseData
     {
         $trialData = [
             'client' => $data['client'],
@@ -40,7 +40,7 @@ class SubscriptionService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function createWithRegistrationFee(array $data): Purchase
+    public function createWithRegistrationFee(array $data): PurchaseData
     {
         $registrationData = [
             'client' => $data['client'],
@@ -63,7 +63,7 @@ class SubscriptionService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function createSubscriptionPayment(array $data): Purchase
+    public function createSubscriptionPayment(array $data): PurchaseData
     {
         $subscriptionData = [
             'client' => $data['client'],
@@ -81,7 +81,7 @@ class SubscriptionService
         return $this->chipService->createPurchase($subscriptionData);
     }
 
-    public function chargeSubscription(string $subscriptionPurchaseId, string $recurringToken): Purchase
+    public function chargeSubscription(string $subscriptionPurchaseId, string $recurringToken): PurchaseData
     {
         return $this->chipService->chargePurchase($subscriptionPurchaseId, $recurringToken);
     }

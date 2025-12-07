@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Gateways;
 
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\WebhookService;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentIntentInterface;
@@ -97,7 +97,7 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
 
         try {
             // We can construct a Purchase directly from webhook data
-            $purchase = Purchase::fromArray($payload);
+            $purchase = PurchaseData::fromArray($payload);
 
             return new ChipPaymentIntent($purchase);
         } catch (Throwable) {

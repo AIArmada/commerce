@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Clients\ChipCollectClient;
-use AIArmada\Chip\Data\ClientDetails;
-use AIArmada\Chip\Data\Product;
+use AIArmada\Chip\Data\ClientDetailsData;
+use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\Collect\PurchasesApi;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
@@ -141,8 +141,8 @@ describe('Collect Purchases API', function (): void {
     });
 
     it('creates checkout purchases with derived options', function (): void {
-        $client = ClientDetails::fromArray(['email' => 'buyer@example.com']);
-        $products = [Product::fromArray(['name' => 'Service', 'price' => 2000, 'quantity' => '1'])];
+        $client = ClientDetailsData::fromArray(['email' => 'buyer@example.com']);
+        $products = [ProductData::fromArray(['name' => 'Service', 'price' => 2000, 'quantity' => '1'])];
 
         $this->client->shouldReceive('getBrandId')
             ->andReturn('brand_checkout');

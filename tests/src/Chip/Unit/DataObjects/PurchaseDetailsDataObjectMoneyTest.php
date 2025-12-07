@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\Product;
-use AIArmada\Chip\Data\PurchaseDetails;
+use AIArmada\Chip\Data\ProductData;
+use AIArmada\Chip\Data\PurchaseDetailsData;
 use Akaunting\Money\Money;
 
 describe('PurchaseDetails data object with Money', function (): void {
@@ -19,12 +19,12 @@ describe('PurchaseDetails data object with Money', function (): void {
             'debt' => 500,
         ];
 
-        $details = PurchaseDetails::fromArray($data);
+        $details = PurchaseDetailsData::fromArray($data);
 
         expect($details->total)->toBeInstanceOf(Money::class)
             ->and($details->debt)->toBeInstanceOf(Money::class)
             ->and($details->getTotalInCents())->toBe(20000)
-            ->and($details->products[0])->toBeInstanceOf(Product::class)
+            ->and($details->products[0])->toBeInstanceOf(ProductData::class)
             ->and($details->products[0]->price)->toBeInstanceOf(Money::class);
     });
 
@@ -38,7 +38,7 @@ describe('PurchaseDetails data object with Money', function (): void {
             'total' => 20000,
         ];
 
-        $details = PurchaseDetails::fromArray($data);
+        $details = PurchaseDetailsData::fromArray($data);
         $subtotal = $details->getSubtotal();
 
         expect($subtotal)->toBeInstanceOf(Money::class)
@@ -57,7 +57,7 @@ describe('PurchaseDetails data object with Money', function (): void {
             'total_override' => 9100,
         ];
 
-        $details = PurchaseDetails::fromArray($data);
+        $details = PurchaseDetailsData::fromArray($data);
 
         expect($details->subtotal_override)->toBeInstanceOf(Money::class)
             ->and($details->total_tax_override)->toBeInstanceOf(Money::class)
@@ -68,9 +68,9 @@ describe('PurchaseDetails data object with Money', function (): void {
     });
 
     it('exports to array with amounts in cents for API', function (): void {
-        $details = new PurchaseDetails(
+        $details = new PurchaseDetailsData(
             currency: 'MYR',
-            products: [Product::make('Test', Money::MYR(1000))],
+            products: [ProductData::make('Test', Money::MYR(1000))],
             total: Money::MYR(1000),
             language: 'en',
             notes: null,
@@ -105,7 +105,7 @@ describe('PurchaseDetails data object with Money', function (): void {
             'total' => 10000,
         ];
 
-        $details = PurchaseDetails::fromArray($data);
+        $details = PurchaseDetailsData::fromArray($data);
 
         expect($details->getTotalInCurrency())->toBe(100.0)
             ->and($details->getSubtotalInCurrency())->toBe(100.0);
@@ -118,7 +118,7 @@ describe('PurchaseDetails data object with Money', function (): void {
             'total' => 5000,
         ];
 
-        $details = PurchaseDetails::fromArray($data);
+        $details = PurchaseDetailsData::fromArray($data);
 
         expect($details->subtotal_override)->toBeNull()
             ->and($details->total_tax_override)->toBeNull()
@@ -135,7 +135,7 @@ describe('PurchaseDetails data object with Money', function (): void {
             'total' => 5000,
         ];
 
-        $details = PurchaseDetails::fromArray($data);
+        $details = PurchaseDetailsData::fromArray($data);
 
         expect($details->products[0]->getCurrency())->toBe('USD')
             ->and($details->products[0]->price->getCurrency()->getCurrency())->toBe('USD');

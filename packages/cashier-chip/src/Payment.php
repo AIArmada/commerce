@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip;
 
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Support\Traits\ForwardsCalls;
@@ -61,12 +61,12 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     /**
      * The CHIP purchase instance.
      */
-    protected Purchase $purchase;
+    protected PurchaseData $purchase;
 
     /**
      * Create a new Payment instance.
      */
-    public function __construct(Purchase $purchase)
+    public function __construct(PurchaseData $purchase)
     {
         $this->purchase = $purchase;
     }
@@ -314,7 +314,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
     /**
      * Get the underlying CHIP Purchase DataObject.
      */
-    public function asChipPurchase(): Purchase
+    public function asChipPurchase(): PurchaseData
     {
         return $this->purchase;
     }

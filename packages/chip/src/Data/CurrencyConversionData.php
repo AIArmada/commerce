@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-final class CurrencyConversion
+final class CurrencyConversionData
 {
     public function __construct(
         public readonly string $original_currency,

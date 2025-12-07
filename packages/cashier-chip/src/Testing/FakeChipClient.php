@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Testing;
 
 use AIArmada\Chip\Data\ClientData;
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Support\Str;
 
 /**

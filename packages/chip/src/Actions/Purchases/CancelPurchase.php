@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Actions\Purchases;
 
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Services\Collect\PurchasesApi;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -22,7 +22,7 @@ final class CancelPurchase
     /**
      * Cancel an existing purchase.
      */
-    public function handle(string $purchaseId): Purchase
+    public function handle(string $purchaseId): PurchaseData
     {
         return $this->purchasesApi->cancel($purchaseId);
     }

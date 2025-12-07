@@ -9,7 +9,7 @@ use AIArmada\CashierChip\Exceptions\InvalidPaymentMethod;
 use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
 use AIArmada\CashierChip\Payment;
 use AIArmada\CashierChip\Subscription;
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 
 it('can create customer already created exception', function (): void {
     $owner = new class
@@ -49,7 +49,7 @@ it('can create invalid payment method exception for not found', function (): voi
 });
 
 it('can create incomplete payment exception for redirect', function (): void {
-    $payment = new Payment(Purchase::fromArray([
+    $payment = new Payment(PurchaseData::fromArray([
         'id' => 'test-id',
         'status' => 'pending',
         'checkout_url' => 'https://chip.com/checkout',
@@ -63,7 +63,7 @@ it('can create incomplete payment exception for redirect', function (): void {
 });
 
 it('can create incomplete payment exception for failed', function (): void {
-    $payment = new Payment(Purchase::fromArray([
+    $payment = new Payment(PurchaseData::fromArray([
         'id' => 'test-id',
         'status' => 'failed',
     ]));
@@ -75,7 +75,7 @@ it('can create incomplete payment exception for failed', function (): void {
 });
 
 it('can create incomplete payment exception for expired', function (): void {
-    $payment = new Payment(Purchase::fromArray([
+    $payment = new Payment(PurchaseData::fromArray([
         'id' => 'test-id',
         'status' => 'expired',
     ]));

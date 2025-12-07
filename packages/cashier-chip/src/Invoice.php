@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip;
 
-use AIArmada\Chip\Data\Product;
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\ProductData;
+use AIArmada\Chip\Data\PurchaseData;
 use Carbon\Carbon;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
@@ -29,12 +29,12 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
     /**
      * The CHIP purchase data.
      */
-    protected Purchase $purchase;
+    protected PurchaseData $purchase;
 
     /**
      * Create a new invoice instance.
      */
-    public function __construct(Model $owner, Purchase $purchase)
+    public function __construct(Model $owner, PurchaseData $purchase)
     {
         $this->owner = $owner;
         $this->purchase = $purchase;
@@ -146,7 +146,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
     {
         $products = $this->purchase->purchase->products ?? [];
 
-        return collect($products)->map(function (Product $product, int $index) {
+        return collect($products)->map(function (ProductData $product, int $index) {
             return new InvoiceLineItem($this, $product, $index);
         });
     }
@@ -310,7 +310,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
     /**
      * Get the underlying CHIP purchase.
      */
-    public function asChipPurchase(): Purchase
+    public function asChipPurchase(): PurchaseData
     {
         return $this->purchase;
     }

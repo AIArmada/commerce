@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Data;
 
 use Carbon\Carbon;
 
-final class CompanyStatement
+final class CompanyStatementData
 {
     public function __construct(
         public readonly string $id,

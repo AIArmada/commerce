@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Events;
 
 use AIArmada\Chip\Data\BillingTemplateClientData;
-use AIArmada\Chip\Data\Payout;
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PayoutData;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Enums\WebhookEventType;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -30,8 +30,8 @@ class WebhookReceived
     public function __construct(
         public readonly string                     $eventType,
         public readonly array                      $payload,
-        public readonly ?Purchase                  $purchase = null,
-        public readonly ?Payout                    $payout = null,
+        public readonly ?PurchaseData              $purchase = null,
+        public readonly ?PayoutData                $payout = null,
         public readonly ?BillingTemplateClientData $billingTemplateClient = null,
     ) {}
 
@@ -50,9 +50,9 @@ class WebhookReceived
         $type = $payload['type'] ?? '';
 
         if ($type === 'purchase' || str_starts_with($eventType, 'purchase.')) {
-            $purchase = Purchase::fromArray($payload);
+            $purchase = PurchaseData::fromArray($payload);
         } elseif ($type === 'payout' || str_starts_with($eventType, 'payout.')) {
-            $payout = Payout::fromArray($payload);
+            $payout = PayoutData::fromArray($payload);
         } elseif ($type === 'billing_template_client' || str_starts_with($eventType, 'billing_template_client.')) {
             $billingTemplateClient = BillingTemplateClientData::fromArray($payload);
         }

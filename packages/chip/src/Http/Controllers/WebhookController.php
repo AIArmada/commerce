@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Http\Controllers;
 
 use AIArmada\Chip\Data\BillingTemplateClientData;
-use AIArmada\Chip\Data\Payout;
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PayoutData;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Enums\WebhookEventType;
 use AIArmada\Chip\Events\BillingCancelled;
 use AIArmada\Chip\Events\PaymentRefunded;
@@ -126,12 +126,12 @@ class WebhookController extends Controller
      *
      * @param  array<string, mixed>  $payload
      */
-    protected function extractPurchase(array $payload): ?Purchase
+    protected function extractPurchase(array $payload): ?PurchaseData
     {
         $type = $payload['type'] ?? '';
 
         if ($type === 'purchase' || str_starts_with($payload['event_type'] ?? '', 'purchase.') || str_starts_with($payload['event_type'] ?? '', 'payment.')) {
-            return Purchase::fromArray($payload);
+            return PurchaseData::fromArray($payload);
         }
 
         return null;
@@ -142,12 +142,12 @@ class WebhookController extends Controller
      *
      * @param  array<string, mixed>  $payload
      */
-    protected function extractPayout(array $payload): ?Payout
+    protected function extractPayout(array $payload): ?PayoutData
     {
         $type = $payload['type'] ?? '';
 
         if ($type === 'payout' || str_starts_with($payload['event_type'] ?? '', 'payout.')) {
-            return Payout::fromArray($payload);
+            return PayoutData::fromArray($payload);
         }
 
         return null;
