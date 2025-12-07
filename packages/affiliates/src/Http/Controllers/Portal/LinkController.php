@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Http\Controllers\Portal;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
-use AIArmada\Affiliates\Support\AffiliateLinkGenerator;
+use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
@@ -68,7 +68,7 @@ final class LinkController extends Controller
             'custom_slug' => 'nullable|string|max:50|unique:affiliate_links,custom_slug',
         ]);
 
-        $trackingUrl = $this->linkGenerator->generate($affiliate, $validated['destination_url'], [
+        $trackingUrl = $this->linkGenerator->generate($affiliate->code, $validated['destination_url'], [
             'campaign' => $validated['campaign'] ?? null,
             'sub_id' => $validated['sub_id'] ?? null,
         ]);
