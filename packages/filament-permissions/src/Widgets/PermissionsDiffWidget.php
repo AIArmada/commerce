@@ -7,6 +7,7 @@ namespace AIArmada\FilamentPermissions\Widgets;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -16,7 +17,7 @@ class PermissionsDiffWidget extends StatsOverviewWidget
 
     public static function canView(): bool
     {
-        $user = auth()->user();
+        $user = Auth::user();
 
         /** @phpstan-ignore method.notFound */
         return $user?->can('permission.viewAny') || $user?->hasRole(config('filament-permissions.super_admin_role'));

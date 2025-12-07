@@ -220,4 +220,176 @@ interface StorageInterface
      * @return string|null ISO 8601 timestamp or null if cart doesn't exist
      */
     public function getUpdatedAt(string $identifier, string $instance): ?string;
+
+    /**
+     * Get cart expiration timestamp
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     * @return string|null ISO 8601 timestamp or null if cart doesn't exist or no expiration
+     */
+    public function getExpiresAt(string $identifier, string $instance): ?string;
+
+    /**
+     * Check if a cart has expired
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     * @return bool True if cart has expired
+     */
+    public function isExpired(string $identifier, string $instance): bool;
+
+    // =========================================================================
+    // AI & Analytics Methods (Phase 0.2)
+    // =========================================================================
+
+    /**
+     * Get last activity timestamp for engagement tracking
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     * @return string|null ISO 8601 timestamp or null if not tracked
+     */
+    public function getLastActivityAt(string $identifier, string $instance): ?string;
+
+    /**
+     * Update last activity timestamp
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     */
+    public function touchLastActivity(string $identifier, string $instance): void;
+
+    /**
+     * Get checkout started timestamp
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     * @return string|null ISO 8601 timestamp or null if checkout not started
+     */
+    public function getCheckoutStartedAt(string $identifier, string $instance): ?string;
+
+    /**
+     * Mark checkout as started for conversion funnel tracking
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     */
+    public function markCheckoutStarted(string $identifier, string $instance): void;
+
+    /**
+     * Get checkout abandoned timestamp
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     * @return string|null ISO 8601 timestamp or null if not abandoned
+     */
+    public function getCheckoutAbandonedAt(string $identifier, string $instance): ?string;
+
+    /**
+     * Mark checkout as abandoned for recovery tracking
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     */
+    public function markCheckoutAbandoned(string $identifier, string $instance): void;
+
+    /**
+     * Get number of recovery attempts made
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     * @return int Number of recovery attempts (0 if none)
+     */
+    public function getRecoveryAttempts(string $identifier, string $instance): int;
+
+    /**
+     * Increment recovery attempts counter
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     */
+    public function incrementRecoveryAttempts(string $identifier, string $instance): void;
+
+    /**
+     * Get recovered at timestamp
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     * @return string|null ISO 8601 timestamp or null if not recovered
+     */
+    public function getRecoveredAt(string $identifier, string $instance): ?string;
+
+    /**
+     * Mark cart as recovered (user returned after abandonment)
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     */
+    public function markRecovered(string $identifier, string $instance): void;
+
+    /**
+     * Clear all abandonment tracking data (checkout started, abandoned, recovery)
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     */
+    public function clearAbandonmentTracking(string $identifier, string $instance): void;
+
+    // =========================================================================
+    // Event Sourcing Methods (Phase 0.3)
+    // =========================================================================
+
+    /**
+     * Get current event stream position for replay
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     * @return int Event stream position (0 if not set)
+     */
+    public function getEventStreamPosition(string $identifier, string $instance): int;
+
+    /**
+     * Update event stream position after recording events
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     * @param  int  $position  New stream position
+     */
+    public function setEventStreamPosition(string $identifier, string $instance, int $position): void;
+
+    /**
+     * Get aggregate schema version for migrations
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     * @return string Version string (e.g., "1.0")
+     */
+    public function getAggregateVersion(string $identifier, string $instance): string;
+
+    /**
+     * Update aggregate schema version
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     * @param  string  $version  New version string
+     */
+    public function setAggregateVersion(string $identifier, string $instance, string $version): void;
+
+    /**
+     * Get last snapshot timestamp
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     * @return string|null ISO 8601 timestamp or null if no snapshot
+     */
+    public function getSnapshotAt(string $identifier, string $instance): ?string;
+
+    /**
+     * Update snapshot timestamp after taking a snapshot
+     *
+     * @param  string  $identifier  User/session identifier
+     * @param  string  $instance  Cart instance name
+     */
+    public function markSnapshotTaken(string $identifier, string $instance): void;
 }

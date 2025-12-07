@@ -303,6 +303,166 @@ class InMemoryStorage implements StorageInterface
         return null;
     }
 
+    // =========================================================================
+    // AI & Analytics Methods (Phase 0.2) - Stub implementations for in-memory storage
+    // =========================================================================
+
+    /**
+     * Get cart expiration timestamp.
+     */
+    public function getExpiresAt(string $identifier, string $instance): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Check if a cart has expired.
+     */
+    public function isExpired(string $identifier, string $instance): bool
+    {
+        return false;
+    }
+
+    /**
+     * Get last activity timestamp for engagement tracking.
+     */
+    public function getLastActivityAt(string $identifier, string $instance): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Update last activity timestamp.
+     */
+    public function touchLastActivity(string $identifier, string $instance): void
+    {
+        // No-op for in-memory storage
+    }
+
+    /**
+     * Get checkout started timestamp.
+     */
+    public function getCheckoutStartedAt(string $identifier, string $instance): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Mark checkout as started for conversion funnel tracking.
+     */
+    public function markCheckoutStarted(string $identifier, string $instance): void
+    {
+        // No-op for in-memory storage
+    }
+
+    /**
+     * Get checkout abandoned timestamp.
+     */
+    public function getCheckoutAbandonedAt(string $identifier, string $instance): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Mark checkout as abandoned for recovery tracking.
+     */
+    public function markCheckoutAbandoned(string $identifier, string $instance): void
+    {
+        // No-op for in-memory storage
+    }
+
+    /**
+     * Get number of recovery attempts made.
+     */
+    public function getRecoveryAttempts(string $identifier, string $instance): int
+    {
+        return 0;
+    }
+
+    /**
+     * Increment recovery attempts counter.
+     */
+    public function incrementRecoveryAttempts(string $identifier, string $instance): void
+    {
+        // No-op for in-memory storage
+    }
+
+    /**
+     * Get recovered at timestamp.
+     */
+    public function getRecoveredAt(string $identifier, string $instance): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Mark cart as recovered (user returned after abandonment).
+     */
+    public function markRecovered(string $identifier, string $instance): void
+    {
+        // No-op for in-memory storage
+    }
+
+    /**
+     * Clear all abandonment tracking data (checkout started, abandoned, recovery).
+     */
+    public function clearAbandonmentTracking(string $identifier, string $instance): void
+    {
+        // No-op for in-memory storage
+    }
+
+    // =========================================================================
+    // Event Sourcing Methods (Phase 0.3) - Stub implementations for in-memory storage
+    // =========================================================================
+
+    /**
+     * Get current event stream position for replay.
+     */
+    public function getEventStreamPosition(string $identifier, string $instance): int
+    {
+        return 0;
+    }
+
+    /**
+     * Update event stream position after recording events.
+     */
+    public function setEventStreamPosition(string $identifier, string $instance, int $position): void
+    {
+        // No-op for in-memory storage
+    }
+
+    /**
+     * Get aggregate schema version for migrations.
+     */
+    public function getAggregateVersion(string $identifier, string $instance): string
+    {
+        return '1.0';
+    }
+
+    /**
+     * Update aggregate schema version.
+     */
+    public function setAggregateVersion(string $identifier, string $instance, string $version): void
+    {
+        // No-op for in-memory storage
+    }
+
+    /**
+     * Get last snapshot timestamp.
+     */
+    public function getSnapshotAt(string $identifier, string $instance): ?string
+    {
+        return null;
+    }
+
+    /**
+     * Update snapshot timestamp after taking a snapshot.
+     */
+    public function markSnapshotTaken(string $identifier, string $instance): void
+    {
+        // No-op for in-memory storage
+    }
+
     /**
      * Get the storage key scoped to owner if set
      */

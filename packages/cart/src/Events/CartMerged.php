@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Events;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Events\Concerns\HasCartEventData;
+use AIArmada\CommerceSupport\Contracts\Events\CartEventInterface;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -30,9 +32,9 @@ use Illuminate\Queue\SerializesModels;
  * });
  * ```
  */
-final class CartMerged
+final class CartMerged implements CartEventInterface
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable, HasCartEventData, InteractsWithSockets, SerializesModels;
 
     /**
      * Create a new cart merged event instance.
@@ -54,7 +56,39 @@ final class CartMerged
         public readonly ?string $originalSourceIdentifier = null,
         public readonly ?string $originalTargetIdentifier = null,
     ) {
-        //
+        $this->initializeEventData();
+    }
+
+    /**
+     * Get the event type identifier.
+     */
+    public function getEventType(): string
+    {
+        return 'cart.merged';
+    }
+
+    /**
+     * Get the cart identifier this event belongs to.
+     */
+    public function getCartIdentifier(): string
+    {
+        return $this->targetCart->getIdentifier();
+    }
+
+    /**
+     * Get the cart instance name.
+     */
+    public function getCartInstance(): string
+    {
+        return $this->targetCart->instance();
+    }
+
+    /**
+     * Get the cart ID (UUID) if available.
+     */
+    public function getCartId(): ?string
+    {
+        return $this->targetCart->getId();
     }
 
     /**

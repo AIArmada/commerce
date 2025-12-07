@@ -129,4 +129,26 @@ final class Cart implements CheckoutableInterface
     {
         return $this->storage->getId($this->getIdentifier(), $this->instance());
     }
+
+    /**
+     * Get cart creation timestamp
+     * Returns when the cart was first created in storage.
+     *
+     * @return string|null ISO 8601 timestamp or null if not supported
+     */
+    public function getCreatedAt(): ?string
+    {
+        return $this->storage->getCreatedAt($this->getIdentifier(), $this->instance());
+    }
+
+    /**
+     * Get cart last updated timestamp
+     * Returns when the cart was last modified.
+     *
+     * @return string|null ISO 8601 timestamp or null if not supported
+     */
+    public function getUpdatedAt(): ?string
+    {
+        return $this->storage->getUpdatedAt($this->getIdentifier(), $this->instance());
+    }
 }
