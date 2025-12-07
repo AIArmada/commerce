@@ -6,6 +6,7 @@ namespace AIArmada\FilamentPermissions\Support\Macros;
 
 use AIArmada\FilamentPermissions\Services\PermissionAggregator;
 use Filament\Navigation\NavigationItem;
+use Illuminate\Support\Facades\Auth;
 
 class NavigationMacros
 {
@@ -13,8 +14,9 @@ class NavigationMacros
     {
         NavigationItem::macro('visibleForPermission', function (string $permission): static {
             /** @var NavigationItem $this */
+            /** @phpstan-ignore return.type */
             return $this->visible(function () use ($permission): bool {
-                $user = auth()->user();
+                $user = Auth::user();
                 if ($user === null) {
                     return false;
                 }
@@ -29,13 +31,15 @@ class NavigationMacros
             /** @var NavigationItem $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
-            return $this->visible(fn (): bool => auth()->user()?->hasAnyRole($rolesArray) ?? false);
+            /** @phpstan-ignore return.type, method.notFound */
+            return $this->visible(fn (): bool => Auth::user()?->hasAnyRole($rolesArray) ?? false);
         });
 
         NavigationItem::macro('visibleForAnyPermission', function (array $permissions): static {
             /** @var NavigationItem $this */
+            /** @phpstan-ignore return.type */
             return $this->visible(function () use ($permissions): bool {
-                $user = auth()->user();
+                $user = Auth::user();
                 if ($user === null) {
                     return false;
                 }
@@ -48,8 +52,9 @@ class NavigationMacros
 
         NavigationItem::macro('visibleForAllPermissions', function (array $permissions): static {
             /** @var NavigationItem $this */
+            /** @phpstan-ignore return.type */
             return $this->visible(function () use ($permissions): bool {
-                $user = auth()->user();
+                $user = Auth::user();
                 if ($user === null) {
                     return false;
                 }

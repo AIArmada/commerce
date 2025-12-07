@@ -9,6 +9,7 @@ use AIArmada\FilamentPermissions\Models\ScopedPermission;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
 
 class ContextualAuthorizationService
@@ -127,7 +128,7 @@ class ContextualAuthorizationService
             'scope_value' => $scopeValue,
             'conditions' => $conditions,
             'expires_at' => $expiresAt,
-            'granted_by' => auth()->id(),
+            'granted_by' => Auth::id(),
         ]);
     }
 
