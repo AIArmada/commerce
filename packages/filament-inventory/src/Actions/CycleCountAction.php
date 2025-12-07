@@ -8,11 +8,12 @@ use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Grid;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 final class CycleCountAction
 {
@@ -98,7 +99,7 @@ final class CycleCountAction
                     newQuantity: $countedQuantity,
                     reason: $reason,
                     note: "Variance: {$variance} (System: {$systemQuantity}, Counted: {$countedQuantity})",
-                    userId: auth()->id(),
+                    userId: Auth::id(),
                 );
 
                 $varianceText = $variance > 0 ? "+{$variance}" : (string) $variance;
