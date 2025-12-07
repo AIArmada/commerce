@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Data;
 
 use Carbon\Carbon;
 
-final class Client
+final class ClientData
 {
     /**
      * @param  array<int, mixed>  $cc

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\BankAccount;
+use AIArmada\Chip\Data\BankAccountData;
 
-describe('BankAccount data object', function (): void {
+describe('BankAccountData data object', function (): void {
     it('creates a bank account from array data', function (): void {
         $data = [
             'id' => 84,
@@ -22,7 +22,7 @@ describe('BankAccount data object', function (): void {
             'rejection_reason' => null,
         ];
 
-        $account = BankAccount::fromArray($data);
+        $account = BankAccountData::fromArray($data);
 
         expect($account->id)->toBe(84);
         expect($account->status)->toBe('verified');
@@ -34,7 +34,7 @@ describe('BankAccount data object', function (): void {
     });
 
     it('handles unverified bank account', function (): void {
-        $account = BankAccount::fromArray([
+        $account = BankAccountData::fromArray([
             'id' => 85,
             'status' => 'pending',
             'account_number' => '157380222222',
@@ -56,7 +56,7 @@ describe('BankAccount data object', function (): void {
     });
 
     it('exposes date helpers and account capabilities', function (): void {
-        $account = BankAccount::fromArray([
+        $account = BankAccountData::fromArray([
             'id' => 99,
             'status' => 'verified',
             'account_number' => '9876543210',

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Clients\ChipSendClient;
-use AIArmada\Chip\Data\BankAccount;
+use AIArmada\Chip\Data\BankAccountData;
 use AIArmada\Chip\Data\SendInstruction;
 use AIArmada\Chip\Data\SendLimit;
 use AIArmada\Chip\Data\SendWebhook;
@@ -116,7 +116,7 @@ describe('ChipSendService', function (): void {
             'Ahmad Pintu'
         );
 
-        expect($account)->toBeInstanceOf(BankAccount::class);
+        expect($account)->toBeInstanceOf(BankAccountData::class);
         expect($account->id)->toBe(84);
         expect($account->status)->toBe('verified');
         expect($account->account_number)->toBe('157380111111');
@@ -194,7 +194,7 @@ describe('ChipSendService', function (): void {
 
         $account = $this->service->getBankAccount('84');
 
-        expect($account)->toBeInstanceOf(BankAccount::class);
+        expect($account)->toBeInstanceOf(BankAccountData::class);
 
         $this->client->shouldReceive('get')
             ->once()
@@ -210,7 +210,7 @@ describe('ChipSendService', function (): void {
             ->andReturn($accountPayload);
 
         expect($this->service->updateBankAccount('84', ['name' => 'New Name']))
-            ->toBeInstanceOf(BankAccount::class);
+            ->toBeInstanceOf(BankAccountData::class);
 
         $this->client->shouldReceive('delete')
             ->once()

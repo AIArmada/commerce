@@ -6,7 +6,7 @@ namespace AIArmada\Cashier\Gateways\Chip;
 
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
-use AIArmada\Chip\Data\Client;
+use AIArmada\Chip\Data\ClientData;
 
 /**
  * Wrapper for CHIP customer (client).
@@ -16,14 +16,14 @@ class ChipCustomer implements CustomerContract
     /**
      * The underlying CHIP client.
      */
-    protected ?Client $client = null;
+    protected ?ClientData $client = null;
 
     /**
      * Create a new CHIP customer wrapper.
      */
     public function __construct(
         protected BillableContract $billable,
-        ?Client $client = null
+        ?ClientData $client = null
     ) {
         $this->client = $client;
     }
@@ -125,7 +125,7 @@ class ChipCustomer implements CustomerContract
     /**
      * Get the underlying CHIP client.
      */
-    public function asGatewayCustomer(): ?Client
+    public function asGatewayCustomer(): ?ClientData
     {
         return $this->client;
     }

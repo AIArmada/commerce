@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\Client;
+use AIArmada\Chip\Data\ClientData;
 
 describe('Client data object', function (): void {
     it('creates a client from array data', function (): void {
@@ -23,7 +23,7 @@ describe('Client data object', function (): void {
             'nationality' => 'MY',
         ];
 
-        $client = Client::fromArray($data);
+        $client = ClientData::fromArray($data);
 
         expect($client->id)->toBe('client_123');
         expect($client->fullName)->toBe('John Doe');
@@ -40,7 +40,7 @@ describe('Client data object', function (): void {
     });
 
     it('handles minimal client data', function (): void {
-        $client = Client::fromArray([
+        $client = ClientData::fromArray([
             'id' => 'client_123',
             'full_name' => 'John Doe',
         ]);
@@ -52,7 +52,7 @@ describe('Client data object', function (): void {
     });
 
     it('exposes helpers for timelines and company detection', function (): void {
-        $client = Client::fromArray([
+        $client = ClientData::fromArray([
             'id' => 'client_company',
             'full_name' => 'ACME Operations',
             'created_on' => strtotime('2024-01-01T00:00:00Z'),

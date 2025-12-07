@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Testing;
 
-use AIArmada\Chip\Data\BillingTemplateClient;
+use AIArmada\Chip\Data\BillingTemplateClientData;
 use AIArmada\Chip\Data\Payout;
 use AIArmada\Chip\Data\Purchase;
 use AIArmada\Chip\Data\Webhook;
@@ -530,7 +530,7 @@ final class WebhookSimulator
                 default => null,
             };
         } elseif ($eventType->isBillingEvent()) {
-            $billingClient = BillingTemplateClient::fromArray($payload);
+            $billingClient = BillingTemplateClientData::fromArray($payload);
             BillingCancelled::dispatch($billingClient, $payload);
         } elseif ($eventType->isPayoutEvent()) {
             $payout = Payout::fromArray($payload);

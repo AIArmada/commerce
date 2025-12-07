@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Events;
 
-use AIArmada\Chip\Data\BillingTemplateClient;
+use AIArmada\Chip\Data\BillingTemplateClientData;
 use AIArmada\Chip\Enums\WebhookEventType;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -23,8 +23,8 @@ final class BillingCancelled
      * @param  array<string, mixed>  $payload
      */
     public function __construct(
-        public readonly BillingTemplateClient $billingTemplateClient,
-        public readonly array $payload,
+        public readonly BillingTemplateClientData $billingTemplateClient,
+        public readonly array                     $payload,
     ) {}
 
     /**
@@ -34,7 +34,7 @@ final class BillingCancelled
      */
     public static function fromPayload(array $payload): self
     {
-        $billingTemplateClient = BillingTemplateClient::fromArray($payload);
+        $billingTemplateClient = BillingTemplateClientData::fromArray($payload);
 
         return new self(
             billingTemplateClient: $billingTemplateClient,
