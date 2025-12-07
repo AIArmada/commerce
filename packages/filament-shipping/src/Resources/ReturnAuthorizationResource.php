@@ -7,27 +7,30 @@ namespace AIArmada\FilamentShipping\Resources;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Pages;
 use AIArmada\Shipping\Enums\ReturnReason;
 use AIArmada\Shipping\Models\ReturnAuthorization;
+use BackedEnum;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class ReturnAuthorizationResource extends Resource
 {
     protected static ?string $model = ReturnAuthorization::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-arrow-uturn-left';
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowUturnLeft;
 
-    protected static ?string $navigationGroup = 'Shipping';
+    protected static string|UnitEnum|null $navigationGroup = 'Shipping';
 
     protected static ?int $navigationSort = 3;
 
     protected static ?string $navigationLabel = 'Returns';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Forms\Components\Section::make('Return Details')
                     ->schema([
