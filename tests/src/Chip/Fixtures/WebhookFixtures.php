@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Chip\Fixtures;
 
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Testing\WebhookFactory;
 use RuntimeException;
@@ -43,9 +43,9 @@ trait WebhookFixtures
     /**
      * Create a Purchase data object from the paid webhook fixture.
      */
-    protected function getPurchaseFromPaidWebhook(): Purchase
+    protected function getPurchaseFromPaidWebhook(): PurchaseData
     {
-        return Purchase::fromArray($this->getWebhookPurchasePaidPayload());
+        return PurchaseData::fromArray($this->getWebhookPurchasePaidPayload());
     }
 
     /**

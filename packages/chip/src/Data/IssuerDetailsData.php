@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-final class IssuerDetails
+final class IssuerDetailsData
 {
     public function __construct(
         public readonly ?string $website,

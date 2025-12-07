@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Services\Collect;
 
 use AIArmada\Chip\Clients\ChipCollectClient;
-use AIArmada\Chip\Data\ClientDetails;
-use AIArmada\Chip\Data\Product;
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\ClientDetailsData;
+use AIArmada\Chip\Data\ProductData;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 
@@ -26,7 +26,7 @@ final class PurchasesApi extends CollectApi
     /**
      * @param  array<string, mixed>  $data
      */
-    public function create(array $data): Purchase
+    public function create(array $data): PurchaseData
     {
         $data['brand_id'] = $data['brand_id'] ?? $this->client->getBrandId();
 
@@ -38,10 +38,10 @@ final class PurchasesApi extends CollectApi
             ['data' => $data]
         );
 
-        return Purchase::fromArray($response);
+        return PurchaseData::fromArray($response);
     }
 
-    public function find(string $purchaseId): Purchase
+    public function find(string $purchaseId): PurchaseData
     {
         $response = $this->attempt(
             fn () => $this->client->get("purchases/{$purchaseId}/"),
@@ -49,10 +49,10 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId]
         );
 
-        return Purchase::fromArray($response);
+        return PurchaseData::fromArray($response);
     }
 
-    public function cancel(string $purchaseId): Purchase
+    public function cancel(string $purchaseId): PurchaseData
     {
         $response = $this->attempt(
             fn () => $this->client->post("purchases/{$purchaseId}/cancel/"),
@@ -60,10 +60,10 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId]
         );
 
-        return Purchase::fromArray($response);
+        return PurchaseData::fromArray($response);
     }
 
-    public function refund(string $purchaseId, ?int $amount = null): Purchase
+    public function refund(string $purchaseId, ?int $amount = null): PurchaseData
     {
         $payload = [];
         if ($amount !== null) {
@@ -76,10 +76,10 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId, 'amount' => $amount]
         );
 
-        return Purchase::fromArray($response);
+        return PurchaseData::fromArray($response);
     }
 
-    public function charge(string $purchaseId, string $recurringToken): Purchase
+    public function charge(string $purchaseId, string $recurringToken): PurchaseData
     {
         $response = $this->attempt(
             fn () => $this->client->post("purchases/{$purchaseId}/charge/", [
@@ -89,10 +89,10 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId, 'recurring_token' => $recurringToken]
         );
 
-        return Purchase::fromArray($response);
+        return PurchaseData::fromArray($response);
     }
 
-    public function capture(string $purchaseId, ?int $amount = null): Purchase
+    public function capture(string $purchaseId, ?int $amount = null): PurchaseData
     {
         $payload = [];
         if ($amount !== null) {
@@ -105,10 +105,10 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId, 'amount' => $amount]
         );
 
-        return Purchase::fromArray($response);
+        return PurchaseData::fromArray($response);
     }
 
-    public function release(string $purchaseId): Purchase
+    public function release(string $purchaseId): PurchaseData
     {
         $response = $this->attempt(
             fn () => $this->client->post("purchases/{$purchaseId}/release/"),
@@ -116,10 +116,10 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId]
         );
 
-        return Purchase::fromArray($response);
+        return PurchaseData::fromArray($response);
     }
 
-    public function markAsPaid(string $purchaseId, ?int $paidOn = null): Purchase
+    public function markAsPaid(string $purchaseId, ?int $paidOn = null): PurchaseData
     {
         $payload = [];
         if ($paidOn !== null) {
@@ -132,10 +132,10 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId, 'paid_on' => $paidOn]
         );
 
-        return Purchase::fromArray($response);
+        return PurchaseData::fromArray($response);
     }
 
-    public function resendInvoice(string $purchaseId): Purchase
+    public function resendInvoice(string $purchaseId): PurchaseData
     {
         $response = $this->attempt(
             fn () => $this->client->post("purchases/{$purchaseId}/resend_invoice/"),
@@ -143,7 +143,7 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId]
         );
 
-        return Purchase::fromArray($response);
+        return PurchaseData::fromArray($response);
     }
 
     public function deleteRecurringToken(string $purchaseId): void
@@ -173,16 +173,16 @@ final class PurchasesApi extends CollectApi
     }
 
     /**
-     * @param  array<int, Product>  $products
+     * @param  array<int, ProductData>  $products
      * @param  array<string, mixed>  $options
      */
-    public function createCheckoutPurchase(array $products, ClientDetails $client, array $options = []): Purchase
+    public function createCheckoutPurchase(array $products, ClientDetailsData $client, array $options = []): PurchaseData
     {
         $data = [
             'client' => $client->toArray(),
             'purchase' => [
                 'products' => array_map(
-                    fn (Product $product) => $product->toArray(),
+                    fn (ProductData $product) => $product->toArray(),
                     $products
                 ),
                 'currency' => $options['currency'] ?? config('chip.defaults.currency', 'MYR'),

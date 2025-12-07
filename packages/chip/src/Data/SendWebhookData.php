@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Data;
 
 use Carbon\Carbon;
 
-final class SendWebhook
+final class SendWebhookData
 {
     /**
      * @param  array<int, string>  $event_hooks

@@ -12,7 +12,7 @@ use Carbon\Carbon;
  *
  * Represents a payout/disbursement from CHIP.
  */
-class Payout
+class PayoutData
 {
     public function __construct(
         public readonly string $id,

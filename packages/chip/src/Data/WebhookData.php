@@ -11,7 +11,7 @@ use Carbon\Carbon;
  * Incoming deliveries populate the event/payload/headers fields, while stored endpoint definitions
  * expose configuration metadata alongside processing status flags.
  */
-final class Webhook
+final class WebhookData
 {
     /**
      * @param  array<string, mixed>  $events
@@ -163,17 +163,17 @@ final class Webhook
         );
     }
 
-    public function getPurchase(): ?Purchase
+    public function getPurchase(): ?PurchaseData
     {
         // Handle wrapped data format (old format: {event: "purchase.paid", data: {...}})
         if ($this->event && str_starts_with($this->event, 'purchase.') && $this->data) {
-            return Purchase::fromArray($this->data);
+            return PurchaseData::fromArray($this->data);
         }
 
         // Handle current CHIP format where payload IS the purchase object
         // (format: {id: "...", type: "purchase", event_type: "purchase.paid", ...})
         if ($this->event_type && str_starts_with($this->event_type, 'purchase.') && $this->payload) {
-            return Purchase::fromArray($this->payload);
+            return PurchaseData::fromArray($this->payload);
         }
 
         return null;

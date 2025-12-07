@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\IssuerDetails;
+use AIArmada\Chip\Data\IssuerDetailsData;
 
 describe('IssuerDetails data object', function (): void {
     it('creates issuer details from array data', function (): void {
@@ -20,7 +20,7 @@ describe('IssuerDetails data object', function (): void {
             'tax_number' => 'TX1234567',
         ];
 
-        $details = IssuerDetails::fromArray($data);
+        $details = IssuerDetailsData::fromArray($data);
 
         expect($details->legal_name)->toBe('Chip Example Sdn Bhd');
         expect($details->bank_accounts)->toHaveCount(1);
@@ -28,7 +28,7 @@ describe('IssuerDetails data object', function (): void {
     });
 
     it('defaults missing fields to sensible values', function (): void {
-        $details = IssuerDetails::fromArray([]);
+        $details = IssuerDetailsData::fromArray([]);
 
         expect($details->bank_accounts)->toBe([]);
         expect($details->toArray())->toMatchArray([

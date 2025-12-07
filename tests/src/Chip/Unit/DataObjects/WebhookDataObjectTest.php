@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\Purchase;
-use AIArmada\Chip\Data\Webhook;
+use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Data\WebhookData;
 
 describe('Webhook data object', function (): void {
     it('creates a webhook from array data', function (): void {
@@ -25,7 +25,7 @@ describe('Webhook data object', function (): void {
             'processing_attempts' => 2,
         ];
 
-        $webhook = Webhook::fromArray($data);
+        $webhook = WebhookData::fromArray($data);
 
         expect($webhook->event)->toBe('purchase.paid');
         expect($webhook->event_type)->toBe('purchase.paid');
@@ -46,7 +46,7 @@ describe('Webhook data object', function (): void {
     });
 
     it('extracts purchase from webhook data', function (): void {
-        $webhook = Webhook::fromArray([
+        $webhook = WebhookData::fromArray([
             'event' => 'purchase.created',
             'data' => [
                 'id' => 'purchase_123',
@@ -58,13 +58,13 @@ describe('Webhook data object', function (): void {
 
         $purchase = $webhook->getPurchase();
 
-        expect($purchase)->toBeInstanceOf(Purchase::class);
+        expect($purchase)->toBeInstanceOf(PurchaseData::class);
         expect($purchase->id)->toBe('purchase_123');
         expect($purchase->getAmountInCents())->toBe(10000);
     });
 
     it('returns null for non-purchase webhook events', function (): void {
-        $webhook = Webhook::fromArray([
+        $webhook = WebhookData::fromArray([
             'event' => 'send_instruction.completed',
             'data' => [
                 'id' => 'send_123',
@@ -76,7 +76,7 @@ describe('Webhook data object', function (): void {
     });
 
     it('represents webhook configuration entries', function (): void {
-        $webhook = Webhook::fromArray([
+        $webhook = WebhookData::fromArray([
             'id' => 'wh_123',
             'type' => 'webhook',
             'created_on' => strtotime('2024-01-01T12:00:00Z'),

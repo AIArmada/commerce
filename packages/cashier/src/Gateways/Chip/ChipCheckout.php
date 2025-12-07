@@ -6,7 +6,7 @@ namespace AIArmada\Cashier\Gateways\Chip;
 
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Http\RedirectResponse;
 
 /**
@@ -18,7 +18,7 @@ class ChipCheckout implements CheckoutContract
      * Create a new CHIP checkout wrapper.
      */
     public function __construct(
-        protected Purchase $purchase
+        protected PurchaseData $purchase
     ) {}
 
     /**
@@ -174,7 +174,7 @@ class ChipCheckout implements CheckoutContract
     /**
      * Get the underlying gateway checkout object.
      */
-    public function asGatewayCheckout(): Purchase
+    public function asGatewayCheckout(): PurchaseData
     {
         return $this->purchase;
     }

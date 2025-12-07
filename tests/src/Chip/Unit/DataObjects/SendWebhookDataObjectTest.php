@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\SendWebhook;
+use AIArmada\Chip\Data\SendWebhookData;
 
 describe('SendWebhook data object', function (): void {
     it('parses webhook payloads with malformed callback key', function (): void {
@@ -17,7 +17,7 @@ describe('SendWebhook data object', function (): void {
             'updated_at' => '2024-04-02T10:00:00Z',
         ];
 
-        $webhook = SendWebhook::fromArray($payload);
+        $webhook = SendWebhookData::fromArray($payload);
 
         expect($webhook->id)->toBe(4)
             ->and($webhook->name)->toBe('Send webhook')

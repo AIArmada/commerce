@@ -6,7 +6,7 @@ namespace AIArmada\Cashier\Gateways\Chip;
 
 use AIArmada\Cashier\Contracts\InvoiceContract;
 use AIArmada\Cashier\Contracts\InvoiceLineItemContract;
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
@@ -21,7 +21,7 @@ class ChipInvoice implements InvoiceContract
      * Create a new CHIP invoice wrapper.
      */
     public function __construct(
-        protected Purchase $purchase
+        protected PurchaseData $purchase
     ) {}
 
     /**
@@ -241,7 +241,7 @@ class ChipInvoice implements InvoiceContract
     /**
      * Get the underlying gateway invoice object.
      */
-    public function asGatewayInvoice(): Purchase
+    public function asGatewayInvoice(): PurchaseData
     {
         return $this->purchase;
     }

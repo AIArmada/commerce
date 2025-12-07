@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\SubscriptionService;
@@ -16,7 +16,7 @@ afterEach(function (): void {
     Mockery::close();
 });
 
-function subscriptionFakePurchase(string $id, array $overrides = []): Purchase
+function subscriptionFakePurchase(string $id, array $overrides = []): PurchaseData
 {
     $base = [
         'id' => $id,
@@ -54,7 +54,7 @@ function subscriptionFakePurchase(string $id, array $overrides = []): Purchase
         'marked_as_paid' => false,
     ];
 
-    return Purchase::fromArray(array_replace_recursive($base, $overrides));
+    return PurchaseData::fromArray(array_replace_recursive($base, $overrides));
 }
 
 it('creates a free trial purchase with sensible defaults', function (): void {

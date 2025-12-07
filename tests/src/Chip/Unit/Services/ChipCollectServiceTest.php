@@ -5,9 +5,9 @@ declare(strict_types=1);
 use AIArmada\Chip\Builders\PurchaseBuilder;
 use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Data\ClientData;
-use AIArmada\Chip\Data\ClientDetails;
-use AIArmada\Chip\Data\Product;
-use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\ClientDetailsData;
+use AIArmada\Chip\Data\ProductData;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\SubscriptionService;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
@@ -170,7 +170,7 @@ describe('ChipCollectService Purchase Management', function (): void {
 
         $purchase = $this->service->createPurchase($requestData);
 
-        expect($purchase)->toBeInstanceOf(Purchase::class);
+        expect($purchase)->toBeInstanceOf(PurchaseData::class);
         expect($purchase->id)->toBe('purchase_123');
         expect($purchase->status)->toBe('created');
         expect($purchase->reference)->toBe('ORDER_001');
@@ -246,7 +246,7 @@ describe('ChipCollectService Purchase Management', function (): void {
 
         $purchase = $this->service->createPurchase($requestData);
 
-        expect($purchase)->toBeInstanceOf(Purchase::class);
+        expect($purchase)->toBeInstanceOf(PurchaseData::class);
         expect($purchase->client_id)->toBe('client_456');
         expect($purchase->client->email)->toBe('existing@example.com');
     });
@@ -318,7 +318,7 @@ describe('ChipCollectService Purchase Management', function (): void {
 
         $purchase = $this->service->getPurchase('purchase_123');
 
-        expect($purchase)->toBeInstanceOf(Purchase::class);
+        expect($purchase)->toBeInstanceOf(PurchaseData::class);
         expect($purchase->id)->toBe('purchase_123');
         expect($purchase->status)->toBe('paid');
     });
@@ -390,7 +390,7 @@ describe('ChipCollectService Purchase Management', function (): void {
 
         $purchase = $this->service->cancelPurchase('purchase_123');
 
-        expect($purchase)->toBeInstanceOf(Purchase::class);
+        expect($purchase)->toBeInstanceOf(PurchaseData::class);
         expect($purchase->status)->toBe('cancelled');
     });
 
@@ -688,7 +688,7 @@ describe('ChipCollectService Account & Reporting', function (): void {
         $statements = $this->service->listCompanyStatements(['status' => 'active']);
 
         expect($statements)->toHaveKey('data');
-        expect($statements['data'][0])->toBeInstanceOf(AIArmada\Chip\Data\CompanyStatement::class);
+        expect($statements['data'][0])->toBeInstanceOf(AIArmada\Chip\Data\CompanyStatementData::class);
         expect($statements['data'][0]->status)->toBe('queued');
         expect($statements['meta']['total'])->toBe(1);
     });
@@ -711,7 +711,7 @@ describe('ChipCollectService Account & Reporting', function (): void {
 
         $statement = $this->service->getCompanyStatement('statement_123');
 
-        expect($statement)->toBeInstanceOf(AIArmada\Chip\Data\CompanyStatement::class);
+        expect($statement)->toBeInstanceOf(AIArmada\Chip\Data\CompanyStatementData::class);
         expect($statement->status)->toBe('finished');
     });
 
@@ -733,7 +733,7 @@ describe('ChipCollectService Account & Reporting', function (): void {
 
         $cancelled = $this->service->cancelCompanyStatement('statement_123');
 
-        expect($cancelled)->toBeInstanceOf(AIArmada\Chip\Data\CompanyStatement::class);
+        expect($cancelled)->toBeInstanceOf(AIArmada\Chip\Data\CompanyStatementData::class);
         expect($cancelled->isCancelled())->toBeTrue();
     });
 });
@@ -841,8 +841,8 @@ describe('ChipCollectService Utilities', function (): void {
     });
 
     it('creates checkout purchases via the service facade', function (): void {
-        $clientDetails = ClientDetails::fromArray(['email' => 'checkout@example.com']);
-        $products = [Product::fromArray(['name' => 'Subscription', 'price' => 5000, 'quantity' => '1'])];
+        $clientDetails = ClientDetailsData::fromArray(['email' => 'checkout@example.com']);
+        $products = [ProductData::fromArray(['name' => 'Subscription', 'price' => 5000, 'quantity' => '1'])];
 
         $this->client->shouldReceive('getBrandId')
             ->andReturn('brand_checkout');

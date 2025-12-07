@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-final class ClientDetails
+final class ClientDetailsData
 {
     /**
      * @param  array<int, mixed>  $cc

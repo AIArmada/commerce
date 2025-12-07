@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Data\CompanyStatement;
+use AIArmada\Chip\Data\CompanyStatementData;
 
 describe('CompanyStatement data object', function (): void {
     it('normalises statement payload', function (): void {
@@ -22,7 +22,7 @@ describe('CompanyStatement data object', function (): void {
             'updated_on' => 1712078600,
         ];
 
-        $statement = CompanyStatement::fromArray($payload);
+        $statement = CompanyStatementData::fromArray($payload);
 
         expect($statement->id)->toBe('stmt_123')
             ->and($statement->format)->toBe('csv')
