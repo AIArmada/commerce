@@ -7,7 +7,7 @@ namespace AIArmada\CashierChip\Concerns;
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Exceptions\CustomerAlreadyCreated;
 use AIArmada\CashierChip\Exceptions\InvalidCustomer;
-use AIArmada\Chip\DataObjects\Client;
+use AIArmada\Chip\Data\Client;
 
 trait ManagesCustomer
 {

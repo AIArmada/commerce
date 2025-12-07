@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Testing;
 
-use AIArmada\Chip\DataObjects\BillingTemplateClient;
-use AIArmada\Chip\DataObjects\Payout;
-use AIArmada\Chip\DataObjects\Purchase;
-use AIArmada\Chip\DataObjects\Webhook;
+use AIArmada\Chip\Data\BillingTemplateClient;
+use AIArmada\Chip\Data\Payout;
+use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\Webhook;
 use AIArmada\Chip\Enums\WebhookEventType;
 use AIArmada\Chip\Events\BillingCancelled;
 use AIArmada\Chip\Events\PaymentRefunded;

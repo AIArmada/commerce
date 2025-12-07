@@ -9,7 +9,7 @@ use AIArmada\CashierChip\Exceptions\InvalidPaymentMethod;
 use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
 use AIArmada\CashierChip\Payment;
 use AIArmada\CashierChip\Subscription;
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Purchase;
 
 it('can create customer already created exception', function (): void {
     $owner = new class

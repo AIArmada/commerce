@@ -6,7 +6,7 @@ namespace AIArmada\Cashier\Gateways\Chip;
 
 use AIArmada\Cashier\Contracts\PaymentContract;
 use AIArmada\CashierChip\Payment;
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Purchase;
 use Illuminate\Http\RedirectResponse;
 
 /**

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Testing;
 
-use AIArmada\Chip\DataObjects\Client;
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Client;
+use AIArmada\Chip\Data\Purchase;
 use Illuminate\Support\Str;
 
 /**

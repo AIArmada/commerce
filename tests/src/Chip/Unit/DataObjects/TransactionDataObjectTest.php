@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\TransactionData;
+use AIArmada\Chip\Data\TransactionData;
 
 describe('TransactionData data object', function (): void {
     it('detects failed attempts and returns last attempt', function (): void {

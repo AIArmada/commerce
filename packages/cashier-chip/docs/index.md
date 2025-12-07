@@ -13,7 +13,7 @@ Cashier CHIP provides **Laravel Cashier patterns** adapted for the CHIP payment 
 - **Stripe-like API** – Familiar Cashier methods and patterns
 - **Local Subscriptions** – Subscription management without native CHIP support
 - **Recurring Tokens** – CHIP's equivalent of Stripe payment methods
-- **Type-safe** – Uses CHIP package's DataObjects for type safety
+- **Type-safe** – Uses CHIP package's Data for type safety
 
 ## Key Differences from Stripe Cashier
 

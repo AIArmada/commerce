@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Builders\PurchaseBuilder;
 use AIArmada\Chip\Clients\ChipCollectClient;
-use AIArmada\Chip\DataObjects\Client;
-use AIArmada\Chip\DataObjects\ClientDetails;
-use AIArmada\Chip\DataObjects\Product;
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Client;
+use AIArmada\Chip\Data\ClientDetails;
+use AIArmada\Chip\Data\Product;
+use AIArmada\Chip\Data\Purchase;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\SubscriptionService;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
@@ -688,7 +688,7 @@ describe('ChipCollectService Account & Reporting', function (): void {
         $statements = $this->service->listCompanyStatements(['status' => 'active']);
 
         expect($statements)->toHaveKey('data');
-        expect($statements['data'][0])->toBeInstanceOf(AIArmada\Chip\DataObjects\CompanyStatement::class);
+        expect($statements['data'][0])->toBeInstanceOf(AIArmada\Chip\Data\CompanyStatement::class);
         expect($statements['data'][0]->status)->toBe('queued');
         expect($statements['meta']['total'])->toBe(1);
     });
@@ -711,7 +711,7 @@ describe('ChipCollectService Account & Reporting', function (): void {
 
         $statement = $this->service->getCompanyStatement('statement_123');
 
-        expect($statement)->toBeInstanceOf(AIArmada\Chip\DataObjects\CompanyStatement::class);
+        expect($statement)->toBeInstanceOf(AIArmada\Chip\Data\CompanyStatement::class);
         expect($statement->status)->toBe('finished');
     });
 
@@ -733,7 +733,7 @@ describe('ChipCollectService Account & Reporting', function (): void {
 
         $cancelled = $this->service->cancelCompanyStatement('statement_123');
 
-        expect($cancelled)->toBeInstanceOf(AIArmada\Chip\DataObjects\CompanyStatement::class);
+        expect($cancelled)->toBeInstanceOf(AIArmada\Chip\Data\CompanyStatement::class);
         expect($cancelled->isCancelled())->toBeTrue();
     });
 });

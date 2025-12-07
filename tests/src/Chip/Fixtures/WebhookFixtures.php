@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Chip\Fixtures;
 
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Purchase;
 use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Testing\WebhookFactory;
 use RuntimeException;

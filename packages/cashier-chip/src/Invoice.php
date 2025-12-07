@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip;
 
-use AIArmada\Chip\DataObjects\Product;
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Product;
+use AIArmada\Chip\Data\Purchase;
 use Carbon\Carbon;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;

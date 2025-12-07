@@ -6,7 +6,7 @@ namespace AIArmada\Cashier\Gateways\Chip;
 
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
-use AIArmada\Chip\DataObjects\Client;
+use AIArmada\Chip\Data\Client;
 
 /**
  * Wrapper for CHIP customer (client).

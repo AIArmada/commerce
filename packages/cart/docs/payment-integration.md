@@ -22,7 +22,7 @@ $cart->getCheckoutMetadata();   // array
 ```php
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Chip\Gateways\ChipGateway;
-use AIArmada\CommerceSupport\DataObjects\Customer;
+use AIArmada\CommerceSupport\Data\Customer;
 
 // Build cart
 Cart::add('product-1', 'Widget', 99.00, 2);
@@ -108,7 +108,7 @@ foreach ($cart->getCheckoutLineItems() as $item) {
 ## Customer Data
 
 ```php
-use AIArmada\CommerceSupport\DataObjects\Customer;
+use AIArmada\CommerceSupport\Data\Customer;
 
 // From array
 $customer = Customer::fromArray([

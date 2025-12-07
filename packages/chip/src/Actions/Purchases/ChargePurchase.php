@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Actions\Purchases;
 
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Purchase;
 use AIArmada\Chip\Services\Collect\PurchasesApi;
 use Lorisleiva\Actions\Concerns\AsAction;
 

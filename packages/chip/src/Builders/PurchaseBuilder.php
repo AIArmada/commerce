@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Builders;
 
-use AIArmada\Chip\DataObjects\Product;
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Product;
+use AIArmada\Chip\Data\Purchase;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Contracts\Payment\CheckoutableInterface;

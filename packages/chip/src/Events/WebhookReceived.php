@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Events;
 
-use AIArmada\Chip\DataObjects\BillingTemplateClient;
-use AIArmada\Chip\DataObjects\Payout;
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\BillingTemplateClient;
+use AIArmada\Chip\Data\Payout;
+use AIArmada\Chip\Data\Purchase;
 use AIArmada\Chip\Enums\WebhookEventType;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;

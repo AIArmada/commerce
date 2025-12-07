@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\SendInstruction;
+use AIArmada\Chip\Data\SendInstruction;
 
 describe('SendInstruction data object', function (): void {
     it('creates a send instruction from array data', function (): void {

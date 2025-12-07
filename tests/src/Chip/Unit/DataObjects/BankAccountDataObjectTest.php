@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\BankAccount;
+use AIArmada\Chip\Data\BankAccount;
 
 describe('BankAccount data object', function (): void {
     it('creates a bank account from array data', function (): void {

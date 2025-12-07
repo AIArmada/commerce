@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\CurrencyConversion;
+use AIArmada\Chip\Data\CurrencyConversion;
 
 describe('CurrencyConversion data object', function (): void {
     it('converts original amount to major currency units', function (): void {

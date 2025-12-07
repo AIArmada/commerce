@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Services\Collect;
 
-use AIArmada\Chip\DataObjects\Client;
+use AIArmada\Chip\Data\Client;
 
 final class ClientsApi extends CollectApi
 {

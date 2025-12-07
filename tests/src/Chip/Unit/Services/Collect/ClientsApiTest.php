@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Clients\ChipCollectClient;
-use AIArmada\Chip\DataObjects\Client;
+use AIArmada\Chip\Data\Client;
 use AIArmada\Chip\Services\Collect\ClientsApi;
 
 beforeEach(function (): void {

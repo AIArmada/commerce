@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Clients\ChipCollectClient;
-use AIArmada\Chip\DataObjects\ClientDetails;
-use AIArmada\Chip\DataObjects\Product;
+use AIArmada\Chip\Data\ClientDetails;
+use AIArmada\Chip\Data\Product;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\Collect\PurchasesApi;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;

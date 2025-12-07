@@ -125,7 +125,7 @@ Route::post('/demo/simulate-payment/{order}', function (App\Models\Order $order)
         'status_history' => [],
     ];
 
-    $purchase = AIArmada\Chip\DataObjects\Purchase::fromArray($purchaseData);
+    $purchase = AIArmada\Chip\Data\Purchase::fromArray($purchaseData);
 
     // Dispatch the event
     AIArmada\Chip\Events\PurchasePaid::dispatch($purchase, $purchaseData);

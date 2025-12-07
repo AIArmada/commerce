@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Purchase;
 
 describe('Purchase data object', function (): void {
     it('creates a purchase from array data', function (): void {

@@ -30,7 +30,7 @@ Create payments with any `CheckoutableInterface` implementation:
 ```php
 use AIArmada\Chip\Gateways\ChipGateway;
 use AIArmada\CommerceSupport\Contracts\Payment\CheckoutableInterface;
-use AIArmada\CommerceSupport\DataObjects\Customer;
+use AIArmada\CommerceSupport\Data\Customer;
 
 // Your custom order/invoice implementing CheckoutableInterface
 class Order implements CheckoutableInterface
@@ -65,7 +65,7 @@ When `aiarmada/cart` is installed, Cart automatically implements `CheckoutableIn
 
 ```php
 use AIArmada\Chip\Gateways\ChipGateway;
-use AIArmada\CommerceSupport\DataObjects\Customer;
+use AIArmada\CommerceSupport\Data\Customer;
 
 class CheckoutController extends Controller
 {

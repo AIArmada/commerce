@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\Product;
-use AIArmada\Chip\DataObjects\PurchaseDetails;
+use AIArmada\Chip\Data\Product;
+use AIArmada\Chip\Data\PurchaseDetails;
 use Akaunting\Money\Money;
 
 describe('PurchaseDetails data object with Money', function (): void {

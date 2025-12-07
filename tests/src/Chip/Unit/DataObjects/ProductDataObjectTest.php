@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\Product;
+use AIArmada\Chip\Data\Product;
 use Akaunting\Money\Money;
 
 describe('Product data object', function (): void {

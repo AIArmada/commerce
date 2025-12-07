@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\SendWebhook;
+use AIArmada\Chip\Data\SendWebhook;
 
 describe('SendWebhook data object', function (): void {
     it('parses webhook payloads with malformed callback key', function (): void {
