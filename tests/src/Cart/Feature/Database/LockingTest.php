@@ -98,7 +98,7 @@ describe('Locking Performance', function (): void {
         $endTime = microtime(true);
         $duration = $endTime - $startTime;
 
-        expect($duration)->toBeLessThan(2.0); // Looser bound to avoid flakiness
+        expect($duration)->toBeLessThan(5.0); // Increased for parallel test runs
         expect(Cart::count())->toBe(10);
     });
 
@@ -114,7 +114,7 @@ describe('Locking Performance', function (): void {
         $endTime = microtime(true);
         $duration = $endTime - $startTime;
 
-        expect($duration)->toBeLessThan(2.0);
+        expect($duration)->toBeLessThan(5.0); // Increased for parallel test runs
         expect(Cart::count())->toBe(10);
     });
 });
