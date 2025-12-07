@@ -66,7 +66,7 @@ use function class_exists;
  * @property-read CampaignVariant|null $campaignVariant
  * @property-read \AIArmada\Affiliates\Models\Affiliate|null $affiliate
  */
-final class Voucher extends Model
+class Voucher extends Model
 {
     use HasFactory, HasUuids;
 
