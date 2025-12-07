@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPermissions\Services;
 
-use DB;
+use Closure;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -32,10 +33,10 @@ class PermissionCacheService
      *
      * @template T
      *
-     * @param  callable(): T  $callback
+     * @param  Closure(): T  $callback
      * @return T
      */
-    public function remember(string $key, callable $callback): mixed
+    public function remember(string $key, Closure $callback): mixed
     {
         if (! $this->enabled) {
             return $callback();

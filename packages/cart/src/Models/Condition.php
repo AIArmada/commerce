@@ -44,7 +44,7 @@ use InvalidArgumentException;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  */
-final class Condition extends Model
+class Condition extends Model
 {
     /** @use HasFactory<ConditionFactory> */
     use HasFactory;

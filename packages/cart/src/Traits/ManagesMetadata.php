@@ -34,6 +34,16 @@ trait ManagesMetadata
     }
 
     /**
+     * Retrieve all metadata from the cart
+     *
+     * @return array<string, mixed>
+     */
+    public function getAllMetadata(): array
+    {
+        return $this->storage->getAllMetadata($this->getIdentifier(), $this->instance());
+    }
+
+    /**
      * Check if metadata key exists
      */
     public function hasMetadata(string $key): bool

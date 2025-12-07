@@ -7,6 +7,7 @@ namespace AIArmada\FilamentPermissions\Support\Macros;
 use AIArmada\FilamentPermissions\Services\PermissionAggregator;
 use Filament\Forms\Components\Field;
 use Filament\Schemas\Components\Section;
+use Illuminate\Support\Facades\Auth;
 
 class FormMacros
 {
@@ -14,8 +15,9 @@ class FormMacros
     {
         Field::macro('visibleForPermission', function (string $permission): static {
             /** @var Field $this */
+            /** @phpstan-ignore return.type */
             return $this->visible(function () use ($permission): bool {
-                $user = auth()->user();
+                $user = Auth::user();
                 if ($user === null) {
                     return false;
                 }
@@ -30,13 +32,15 @@ class FormMacros
             /** @var Field $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
-            return $this->visible(fn (): bool => auth()->user()?->hasAnyRole($rolesArray) ?? false);
+            /** @phpstan-ignore return.type, method.notFound */
+            return $this->visible(fn (): bool => Auth::user()?->hasAnyRole($rolesArray) ?? false);
         });
 
         Field::macro('disabledWithoutPermission', function (string $permission): static {
             /** @var Field $this */
+            /** @phpstan-ignore return.type */
             return $this->disabled(function () use ($permission): bool {
-                $user = auth()->user();
+                $user = Auth::user();
                 if ($user === null) {
                     return true;
                 }
@@ -49,8 +53,9 @@ class FormMacros
 
         Section::macro('visibleForPermission', function (string $permission): static {
             /** @var Section $this */
+            /** @phpstan-ignore return.type */
             return $this->visible(function () use ($permission): bool {
-                $user = auth()->user();
+                $user = Auth::user();
                 if ($user === null) {
                     return false;
                 }
@@ -65,13 +70,15 @@ class FormMacros
             /** @var Section $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
-            return $this->visible(fn (): bool => auth()->user()?->hasAnyRole($rolesArray) ?? false);
+            /** @phpstan-ignore return.type, method.notFound */
+            return $this->visible(fn (): bool => Auth::user()?->hasAnyRole($rolesArray) ?? false);
         });
 
         Section::macro('collapsedWithoutPermission', function (string $permission): static {
             /** @var Section $this */
+            /** @phpstan-ignore return.type */
             return $this->collapsed(function () use ($permission): bool {
-                $user = auth()->user();
+                $user = Auth::user();
                 if ($user === null) {
                     return true;
                 }

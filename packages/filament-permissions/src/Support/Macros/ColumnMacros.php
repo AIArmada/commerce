@@ -7,6 +7,7 @@ namespace AIArmada\FilamentPermissions\Support\Macros;
 use AIArmada\FilamentPermissions\Services\PermissionAggregator;
 use Filament\Tables\Columns\Column;
 use Filament\Tables\Columns\TextColumn;
+use Illuminate\Support\Facades\Auth;
 
 class ColumnMacros
 {
@@ -14,8 +15,9 @@ class ColumnMacros
     {
         Column::macro('visibleForPermission', function (string $permission): static {
             /** @var Column $this */
+            /** @phpstan-ignore return.type */
             return $this->visible(function () use ($permission): bool {
-                $user = auth()->user();
+                $user = Auth::user();
                 if ($user === null) {
                     return false;
                 }
@@ -30,13 +32,15 @@ class ColumnMacros
             /** @var Column $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
-            return $this->visible(fn (): bool => auth()->user()?->hasAnyRole($rolesArray) ?? false);
+            /** @phpstan-ignore return.type, method.notFound */
+            return $this->visible(fn (): bool => Auth::user()?->hasAnyRole($rolesArray) ?? false);
         });
 
         Column::macro('visibleForAnyPermission', function (array $permissions): static {
             /** @var Column $this */
+            /** @phpstan-ignore return.type */
             return $this->visible(function () use ($permissions): bool {
-                $user = auth()->user();
+                $user = Auth::user();
                 if ($user === null) {
                     return false;
                 }
@@ -49,6 +53,7 @@ class ColumnMacros
 
         TextColumn::macro('formatPermission', function (): static {
             /** @var TextColumn $this */
+            /** @phpstan-ignore return.type */
             return $this
                 ->badge()
                 ->color(fn (string $state): string => match (true) {
@@ -62,6 +67,7 @@ class ColumnMacros
 
         TextColumn::macro('formatRole', function (): static {
             /** @var TextColumn $this */
+            /** @phpstan-ignore return.type */
             return $this
                 ->badge()
                 ->color('primary');

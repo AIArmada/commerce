@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPermissions\Services;
 
 use AIArmada\FilamentPermissions\Enums\ImpactLevel;
-use DB;
+use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 

@@ -19,6 +19,14 @@ trait ManagesInstances
     }
 
     /**
+     * Alias for instance() - provides consistent API naming.
+     */
+    public function getInstanceName(): string
+    {
+        return $this->instance();
+    }
+
+    /**
      * Get the storage interface
      */
     public function storage(): StorageInterface

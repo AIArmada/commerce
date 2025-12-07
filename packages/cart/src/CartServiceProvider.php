@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart;
 
+use AIArmada\Cart\Events\Store\CartEventRecorder;
+use AIArmada\Cart\Events\Store\CartEventRepositoryInterface;
+use AIArmada\Cart\Events\Store\EloquentCartEventRepository;
 use AIArmada\Cart\Http\Middleware\ThrottleCartOperations;
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
@@ -51,6 +54,7 @@ final class CartServiceProvider extends PackageServiceProvider
         $this->registerMigrationService();
         $this->registerTaxCalculator();
         $this->registerRateLimiter();
+        $this->registerEventStore();
     }
 
     public function bootingPackage(): void
@@ -80,12 +84,15 @@ final class CartServiceProvider extends PackageServiceProvider
             TaxCalculator::class,
             CartRateLimiter::class,
             ThrottleCartOperations::class,
+            CartEventRepositoryInterface::class,
+            CartEventRecorder::class,
             'cart.condition_resolver',
             'cart.storage.session',
             'cart.storage.cache',
             'cart.storage.database',
             'cart.tax',
             'cart.rate_limiter',
+            'cart.event_recorder',
         ];
     }
 
@@ -278,5 +285,30 @@ final class CartServiceProvider extends PackageServiceProvider
                 $app->make(CartRateLimiter::class)
             );
         });
+    }
+
+    /**
+     * Register event store for event sourcing
+     */
+    protected function registerEventStore(): void
+    {
+        // Register repository interface
+        $this->app->singleton(CartEventRepositoryInterface::class, EloquentCartEventRepository::class);
+
+        // Register event recorder
+        $this->app->singleton(CartEventRecorder::class, function (\Illuminate\Contracts\Foundation\Application $app) {
+            $recorder = new CartEventRecorder(
+                $app->make(CartEventRepositoryInterface::class)
+            );
+
+            // Disable recording if event sourcing is not enabled
+            if (! config('cart.event_sourcing.enabled', false)) {
+                $recorder->disable();
+            }
+
+            return $recorder;
+        });
+
+        $this->app->alias(CartEventRecorder::class, 'cart.event_recorder');
     }
 }

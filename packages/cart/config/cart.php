@@ -11,6 +11,7 @@ return [
     'database' => [
         'table' => env('CART_DB_TABLE', 'carts'),
         'conditions_table' => env('CART_CONDITIONS_TABLE', 'conditions'),
+        'events_table' => env('CART_EVENTS_TABLE', 'cart_events'),
         'json_column_type' => env('CART_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
         'ttl' => env('CART_DB_TTL', 60 * 60 * 24 * 30), // 30 days, null to disable
         'lock_for_update' => env('CART_DB_LOCK_FOR_UPDATE', false),
@@ -116,6 +117,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Event Sourcing
+    |--------------------------------------------------------------------------
+    |
+    | Event sourcing configuration for cart audit trails and replay.
+    | When enabled, cart events are persisted to the cart_events table.
+    |
+    */
+    'event_sourcing' => [
+        'enabled' => env('CART_EVENT_SOURCING_ENABLED', false),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Session Storage
     |--------------------------------------------------------------------------
     */
@@ -127,9 +141,18 @@ return [
     |--------------------------------------------------------------------------
     | Cache Storage
     |--------------------------------------------------------------------------
+    |
+    | Multi-tier caching configuration for cart data. When enabled, carts are
+    | cached using a read-through pattern with automatic cache invalidation.
+    |
     */
     'cache' => [
+        'enabled' => env('CART_CACHE_ENABLED', false),
+        'store' => env('CART_CACHE_STORE', 'redis'),
         'prefix' => env('CART_CACHE_PREFIX', 'cart'),
-        'ttl' => env('CART_CACHE_TTL', 86400),
+        'ttl' => env('CART_CACHE_TTL', 3600), // 1 hour
+        'queue' => env('CART_CACHE_QUEUE', 'default'),
+        'warm_on_create' => env('CART_CACHE_WARM_ON_CREATE', true),
+        'warm_on_invalidate' => env('CART_CACHE_WARM_ON_INVALIDATE', false),
     ],
 ];

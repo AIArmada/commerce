@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Events;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Events\Concerns\HasCartEventData;
 use AIArmada\Cart\Models\CartItem;
+use AIArmada\CommerceSupport\Contracts\Events\CartEventInterface;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -30,9 +32,9 @@ use Illuminate\Queue\SerializesModels;
  * });
  * ```
  */
-final class ItemAdded
+final class ItemAdded implements CartEventInterface
 {
-    use Dispatchable, InteractsWithSockets, SerializesModels;
+    use Dispatchable, HasCartEventData, InteractsWithSockets, SerializesModels;
 
     /**
      * Create a new item added event instance.
@@ -44,7 +46,39 @@ final class ItemAdded
         public readonly CartItem $item,
         public readonly Cart $cart
     ) {
-        //
+        $this->initializeEventData();
+    }
+
+    /**
+     * Get the event type identifier.
+     */
+    public function getEventType(): string
+    {
+        return 'cart.item.added';
+    }
+
+    /**
+     * Get the cart identifier this event belongs to.
+     */
+    public function getCartIdentifier(): string
+    {
+        return $this->cart->getIdentifier();
+    }
+
+    /**
+     * Get the cart instance name.
+     */
+    public function getCartInstance(): string
+    {
+        return $this->cart->instance();
+    }
+
+    /**
+     * Get the cart ID (UUID) if available.
+     */
+    public function getCartId(): ?string
+    {
+        return $this->cart->getId();
     }
 
     /**

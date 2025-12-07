@@ -544,7 +544,7 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     {
         $divisor = $this->parseMultiplier();
 
-        if ($divisor === 0) {
+        if ($divisor === 0.0) {
             return $amountCents;
         }
 
