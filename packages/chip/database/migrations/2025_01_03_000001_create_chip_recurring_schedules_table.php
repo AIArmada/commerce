@@ -35,7 +35,7 @@ return new class extends Migration
             $table->timestamps();
 
             $table->index(['status', 'next_charge_at']);
-            $table->index(['subscriber_type', 'subscriber_id']);
+            // Note: subscriber index is already created by nullableUuidMorphs
         });
     }
 
