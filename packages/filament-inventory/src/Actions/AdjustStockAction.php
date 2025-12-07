@@ -7,12 +7,13 @@ namespace AIArmada\FilamentInventory\Actions;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Grid;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 
 final class AdjustStockAction
 {
@@ -74,7 +75,7 @@ final class AdjustStockAction
                     newQuantity: (int) $data['new_quantity'],
                     reason: $data['reason'],
                     note: $data['notes'] ?? null,
-                    userId: auth()->id(),
+                    userId: Auth::id(),
                 );
 
                 Notification::make()

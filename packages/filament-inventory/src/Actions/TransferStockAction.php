@@ -7,12 +7,13 @@ namespace AIArmada\FilamentInventory\Actions;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use Filament\Actions\Action;
-use Filament\Forms\Components\Grid;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Filament\Schemas\Components\Grid;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Auth;
 use InvalidArgumentException;
 
 final class TransferStockAction
@@ -72,7 +73,7 @@ final class TransferStockAction
                         toLocationId: $data['to_location_id'],
                         quantity: (int) $data['quantity'],
                         note: $data['notes'] ?? null,
-                        userId: auth()->id(),
+                        userId: Auth::id(),
                     );
 
                     $fromLocation = InventoryLocation::find($data['from_location_id']);

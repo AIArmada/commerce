@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Widgets;
 
 use AIArmada\Inventory\Models\InventoryReorderSuggestion;
-use Filament\Tables\Actions\Action;
+use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
+use Illuminate\Support\Facades\Auth;
 
 final class ReorderSuggestionsWidget extends TableWidget
 {
@@ -84,7 +85,7 @@ final class ReorderSuggestionsWidget extends TableWidget
                     ->icon('heroicon-o-check')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->action(fn (InventoryReorderSuggestion $record) => $record->approve(auth()->id())),
+                    ->action(fn (InventoryReorderSuggestion $record) => $record->approve(Auth::id())),
 
                 Action::make('reject')
                     ->label('Reject')
