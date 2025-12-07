@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Services\Collect;
 
 use AIArmada\Chip\Clients\ChipCollectClient;
-use AIArmada\Chip\DataObjects\ClientDetails;
-use AIArmada\Chip\DataObjects\Product;
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\ClientDetails;
+use AIArmada\Chip\Data\Product;
+use AIArmada\Chip\Data\Purchase;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 

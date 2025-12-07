@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\ClientDetails;
+use AIArmada\Chip\Data\ClientDetails;
 
 describe('ClientDetails data object', function (): void {
     it('creates client details from array data', function (): void {

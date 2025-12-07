@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Purchase;
 use AIArmada\Chip\Gateways\ChipPaymentIntent;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentIntentInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;

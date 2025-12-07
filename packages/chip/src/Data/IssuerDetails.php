@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Chip\DataObjects;
+namespace AIArmada\Chip\Data;
 
 final class IssuerDetails
 {

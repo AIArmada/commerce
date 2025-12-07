@@ -58,7 +58,7 @@ $isValid = $service->verifySignature(
 ## Webhook Data Object
 
 ```php
-use AIArmada\Chip\DataObjects\Webhook;
+use AIArmada\Chip\Data\Webhook;
 
 $webhook = Webhook::fromArray($request->all());
 

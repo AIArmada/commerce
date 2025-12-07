@@ -237,7 +237,7 @@ parameters:
         # Ignore new.static (safe in our context)
         - identifier: 'new.static'
         # Ignore DocData constructor type (purchase_id can be int or string)
-        - message: '#Parameter \$docableId of class AIArmada\\Docs\\DataObjects\\DocData constructor expects string\|null, int given\.#'
+        - message: '#Parameter \$docableId of class AIArmada\\Docs\\Data\\DocData constructor expects string\|null, int given\.#'
         # Ignore CartManagerInterface method calls (proxied to Cart instance)
         - message: '#Call to an undefined method AIArmada\\Cart\\Contracts\\CartManagerInterface::.*#'
         # Ignore abstract method issues in wrapper classes (proxied implementations)

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\CompanyStatement;
+use AIArmada\Chip\Data\CompanyStatement;
 
 describe('CompanyStatement data object', function (): void {
     it('normalises statement payload', function (): void {

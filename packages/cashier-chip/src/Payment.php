@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip;
 
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Purchase;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Support\Traits\ForwardsCalls;

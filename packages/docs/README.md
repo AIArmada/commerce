@@ -204,7 +204,7 @@ Control JSON column types for the documents:
 
 ```php
 use AIArmada\Docs\Services\DocService;
-use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Enums\DocStatus;
 
 $docService = app(DocService::class);
@@ -1129,7 +1129,7 @@ Example test for document creation:
 
 ```php
 use AIArmada\Docs\Services\DocService;
-use AIArmada\Docs\DataObjects\DocData;
+use AIArmada\Docs\Data\DocData;
 use AIArmada\Docs\Models\Doc;
 
 test('creates invoice document', function () {

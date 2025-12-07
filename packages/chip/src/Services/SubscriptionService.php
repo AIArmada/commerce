@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Services;
 
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Purchase;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use InvalidArgumentException;
 

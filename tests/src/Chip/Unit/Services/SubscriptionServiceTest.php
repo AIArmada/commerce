@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Purchase;
 use AIArmada\Chip\Exceptions\ChipValidationException;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\SubscriptionService;

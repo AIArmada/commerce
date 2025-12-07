@@ -8,7 +8,7 @@ use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Checkout;
 use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment;
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Purchase;
 use Exception;
 
 trait PerformsCharges

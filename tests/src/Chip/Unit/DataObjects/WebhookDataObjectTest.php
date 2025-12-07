@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\Purchase;
-use AIArmada\Chip\DataObjects\Webhook;
+use AIArmada\Chip\Data\Purchase;
+use AIArmada\Chip\Data\Webhook;
 
 describe('Webhook data object', function (): void {
     it('creates a webhook from array data', function (): void {

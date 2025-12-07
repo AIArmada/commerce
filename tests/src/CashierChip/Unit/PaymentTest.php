@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Payment;
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Purchase;
 
 function createPurchaseData(array $overrides = []): array
 {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\Client;
+use AIArmada\Chip\Data\Client;
 
 describe('Client data object', function (): void {
     it('creates a client from array data', function (): void {

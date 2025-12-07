@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\Payment;
+use AIArmada\Chip\Data\Payment;
 use Akaunting\Money\Money;
 
 describe('Payment data object with Money', function (): void {

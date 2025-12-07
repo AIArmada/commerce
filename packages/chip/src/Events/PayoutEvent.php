@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Events;
 
-use AIArmada\Chip\DataObjects\Payout;
+use AIArmada\Chip\Data\Payout;
 use AIArmada\Chip\Enums\WebhookEventType;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;

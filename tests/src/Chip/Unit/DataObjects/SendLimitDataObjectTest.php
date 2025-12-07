@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\SendLimit;
+use AIArmada\Chip\Data\SendLimit;
 
 describe('SendLimit data object', function (): void {
     it('normalises API payload', function (): void {

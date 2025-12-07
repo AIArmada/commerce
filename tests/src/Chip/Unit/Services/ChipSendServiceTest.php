@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Clients\ChipSendClient;
-use AIArmada\Chip\DataObjects\BankAccount;
-use AIArmada\Chip\DataObjects\SendInstruction;
-use AIArmada\Chip\DataObjects\SendLimit;
-use AIArmada\Chip\DataObjects\SendWebhook;
+use AIArmada\Chip\Data\BankAccount;
+use AIArmada\Chip\Data\SendInstruction;
+use AIArmada\Chip\Data\SendLimit;
+use AIArmada\Chip\Data\SendWebhook;
 use AIArmada\Chip\Services\ChipSendService;
 
 describe('ChipSendService', function (): void {

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\DataObjects\IssuerDetails;
+use AIArmada\Chip\Data\IssuerDetails;
 
 describe('IssuerDetails data object', function (): void {
     it('creates issuer details from array data', function (): void {

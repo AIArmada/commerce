@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\CashierChip\Checkout;
 use AIArmada\CashierChip\CheckoutBuilder;
 use AIArmada\CashierChip\Payment;
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Purchase;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
 uses(CashierChipTestCase::class);

@@ -6,7 +6,7 @@ namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Invoice;
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Purchase;
 use Exception;
 use Illuminate\Support\Collection;
 

@@ -6,10 +6,10 @@ namespace AIArmada\Chip\Services;
 
 use AIArmada\Chip\Builders\PurchaseBuilder;
 use AIArmada\Chip\Clients\ChipCollectClient;
-use AIArmada\Chip\DataObjects\Client;
-use AIArmada\Chip\DataObjects\ClientDetails;
-use AIArmada\Chip\DataObjects\CompanyStatement;
-use AIArmada\Chip\DataObjects\Purchase;
+use AIArmada\Chip\Data\Client;
+use AIArmada\Chip\Data\ClientDetails;
+use AIArmada\Chip\Data\CompanyStatement;
+use AIArmada\Chip\Data\Purchase;
 use AIArmada\Chip\Services\Collect\AccountApi;
 use AIArmada\Chip\Services\Collect\ClientsApi;
 use AIArmada\Chip\Services\Collect\PurchasesApi;
@@ -181,7 +181,7 @@ class ChipCollectService
     }
 
     /**
-     * @param  array<int, \AIArmada\Chip\DataObjects\Product>  $products
+     * @param  array<int, \AIArmada\Chip\Data\Product>  $products
      * @param  array<string, mixed>  $options
      */
     public function createCheckoutPurchase(array $products, ClientDetails $clientDetails, array $options = []): Purchase
