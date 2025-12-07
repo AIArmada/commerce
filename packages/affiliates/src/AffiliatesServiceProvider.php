@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates;
 
+use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
 use AIArmada\Affiliates\Services\AffiliatePayoutService;
 use AIArmada\Affiliates\Services\AffiliateRegistrationService;
 use AIArmada\Affiliates\Services\AffiliateService;
@@ -84,6 +85,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
 
         $this->app->singleton(CartIntegrationRegistrar::class);
         $this->app->singleton(VoucherIntegrationRegistrar::class);
+        $this->app->singleton(AffiliateDiscountConditionProvider::class);
 
         $this->app->alias(AffiliateService::class, 'affiliates');
     }

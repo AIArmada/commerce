@@ -82,6 +82,8 @@ return [
         'metadata_key' => env('AFFILIATES_CART_METADATA_KEY', 'affiliate'),
         'register_manager_proxy' => env('AFFILIATES_CART_PROXY', true),
         'persist_metadata' => env('AFFILIATES_CART_PERSIST_METADATA', true),
+        // Enable affiliate customer discounts as cart conditions
+        'customer_discounts_enabled' => env('AFFILIATES_CUSTOMER_DISCOUNTS_ENABLED', false),
     ],
 
     /*

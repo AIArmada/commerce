@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $notes
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read string $status Alias for to_status
  * @property-read AffiliatePayout $payout
  */
 class AffiliatePayoutEvent extends Model
@@ -38,6 +40,18 @@ class AffiliatePayoutEvent extends Model
     public function getTable(): string
     {
         return config('affiliates.table_names.payout_events', parent::getTable());
+    }
+
+    /**
+     * Alias for to_status.
+     *
+     * @return Attribute<string, never>
+     */
+    protected function status(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->to_status,
+        );
     }
 
     public function payout(): BelongsTo

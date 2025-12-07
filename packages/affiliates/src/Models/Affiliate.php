@@ -10,9 +10,11 @@ use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -44,6 +46,8 @@ use function class_exists;
  * @property \Illuminate\Support\Carbon|null $activated_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read string|null $email Alias for contact_email
+ * @property-read int $commission_rate_basis_points Alias for commission_rate
  * @property-read Affiliate|null $parent
  * @property-read AffiliateRank|null $rank
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Affiliate> $children
@@ -55,6 +59,8 @@ use function class_exists;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutMethod> $payoutMethods
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutHold> $payoutHolds
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayout> $payouts
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateLink> $links
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateProgram> $programs
  * @property-read \Illuminate\Database\Eloquent\Collection<int, \AIArmada\Vouchers\Models\Voucher> $vouchers
  * @property-read Model|null $owner
  */
@@ -92,6 +98,30 @@ final class Affiliate extends Model
     }
 
     /**
+     * Alias for contact_email.
+     *
+     * @return Attribute<string|null, never>
+     */
+    protected function email(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->contact_email,
+        );
+    }
+
+    /**
+     * Alias for commission_rate.
+     *
+     * @return Attribute<int, never>
+     */
+    protected function commissionRateBasisPoints(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->commission_rate,
+        );
+    }
+
+    /**
      * @return HasMany<AffiliateAttribution, self>
      */
     public function attributions(): HasMany
@@ -113,6 +143,27 @@ final class Affiliate extends Model
     public function payouts(): HasMany
     {
         return $this->hasMany(AffiliatePayout::class);
+    }
+
+    /**
+     * @return HasMany<AffiliateLink, self>
+     */
+    public function links(): HasMany
+    {
+        return $this->hasMany(AffiliateLink::class);
+    }
+
+    /**
+     * @return BelongsToMany<AffiliateProgram, $this>
+     */
+    public function programs(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            AffiliateProgram::class,
+            config('affiliates.table_names.program_memberships', 'affiliate_program_memberships'),
+            'affiliate_id',
+            'affiliate_program_id'
+        );
     }
 
     /**

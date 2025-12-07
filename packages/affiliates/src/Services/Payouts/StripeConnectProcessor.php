@@ -57,7 +57,7 @@ final class StripeConnectProcessor implements PayoutProcessorInterface
                     'transfer_group' => $payout->batch_id ?? $payout->id,
                     'metadata' => [
                         'payout_id' => $payout->id,
-                        'affiliate_id' => $payout->affiliate_id,
+                        'affiliate_id' => $payout->owner_id,
                     ],
                 ]);
 

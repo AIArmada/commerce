@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\PayoutMethodType;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $verified_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read string $label Computed label from type and details
  * @property-read Affiliate $affiliate
  */
 class AffiliatePayoutMethod extends Model
@@ -51,6 +53,30 @@ class AffiliatePayoutMethod extends Model
         return config('affiliates.table_names.payout_methods', 'affiliate_payout_methods');
     }
 
+    /**
+     * Get a human-readable label for this payout method.
+     *
+     * @return Attribute<string, never>
+     */
+    protected function label(): Attribute
+    {
+        return Attribute::make(
+            get: function (): string {
+                $details = $this->details ?? [];
+
+                return match ($this->type) {
+                    PayoutMethodType::BankTransfer => $details['bank_name'] ?? 'Bank Transfer',
+                    PayoutMethodType::PayPal => $details['email'] ?? 'PayPal',
+                    PayoutMethodType::StripeConnect => 'Stripe Connect',
+                    default => $this->type?->value ?? 'Unknown',
+                };
+            },
+        );
+    }
+
+    /**
+     * @return BelongsTo<Affiliate, $this>
+     */
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);

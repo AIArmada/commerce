@@ -252,6 +252,7 @@ final class AffiliateService
         $affiliate = null;
 
         if (isset($payload['affiliate_id'])) {
+            /** @var Affiliate|null $affiliate */
             $affiliate = $this->query()->find($payload['affiliate_id']);
         }
 

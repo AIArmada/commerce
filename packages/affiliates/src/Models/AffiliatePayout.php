@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
  * @property string $id
@@ -22,6 +24,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property \Illuminate\Support\Carbon|null $paid_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read int $amount_minor Alias for total_minor
+ * @property-read string|null $external_reference From metadata
+ * @property-read string|null $notes From metadata
+ * @property-read Affiliate|null $affiliate Alias for owner when owner is an Affiliate
+ * @property-read Model|null $owner
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateConversion> $conversions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutEvent> $events
  */
@@ -51,6 +58,64 @@ class AffiliatePayout extends Model
     public function getTable(): string
     {
         return config('affiliates.table_names.payouts', parent::getTable());
+    }
+
+    /**
+     * Polymorphic owner (typically an Affiliate).
+     *
+     * @return MorphTo<Model, self>
+     */
+    public function owner(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    /**
+     * Get the affiliate (alias for owner when owner is an Affiliate).
+     *
+     * @return Attribute<Affiliate|null, never>
+     */
+    protected function affiliate(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->owner instanceof Affiliate ? $this->owner : null,
+        );
+    }
+
+    /**
+     * Alias for total_minor (for code compatibility).
+     *
+     * @return Attribute<int, never>
+     */
+    protected function amountMinor(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->total_minor,
+        );
+    }
+
+    /**
+     * Get external reference from metadata.
+     *
+     * @return Attribute<string|null, never>
+     */
+    protected function externalReference(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->metadata['external_reference'] ?? null,
+        );
+    }
+
+    /**
+     * Get notes from metadata.
+     *
+     * @return Attribute<string|null, never>
+     */
+    protected function notes(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->metadata['notes'] ?? null,
+        );
     }
 
     /**

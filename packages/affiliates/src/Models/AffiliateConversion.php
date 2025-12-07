@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\ConversionStatus;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -32,6 +33,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $approved_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read string|null $order_id Alias for order_reference
+ * @property-read string $currency Alias for commission_currency
  * @property-read Affiliate $affiliate
  * @property-read AffiliateAttribution|null $attribution
  * @property-read AffiliatePayout|null $payout
@@ -65,6 +68,30 @@ final class AffiliateConversion extends Model
     public function getTable(): string
     {
         return config('affiliates.table_names.conversions', parent::getTable());
+    }
+
+    /**
+     * Alias for order_reference.
+     *
+     * @return Attribute<string|null, never>
+     */
+    protected function orderId(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->order_reference,
+        );
+    }
+
+    /**
+     * Alias for commission_currency.
+     *
+     * @return Attribute<string, never>
+     */
+    protected function currency(): Attribute
+    {
+        return Attribute::make(
+            get: fn () => $this->commission_currency,
+        );
     }
 
     /**

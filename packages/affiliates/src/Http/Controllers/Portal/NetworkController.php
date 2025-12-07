@@ -55,17 +55,23 @@ final class NetworkController extends Controller
 
         $level = $request->get('level');
         $perPage = (int) $request->get('per_page', 20);
+        $page = (int) $request->get('page', 1);
 
-        $query = $this->networkService->getDownline($affiliate);
+        $collection = $this->networkService->getDownline($affiliate);
 
         if ($level !== null) {
-            $query->wherePivot('depth', (int) $level);
+            /** @var \Illuminate\Support\Collection<int, Affiliate> $collection */
+            $collection = $collection->filter(fn (Affiliate $a) => ($a->pivot?->depth ?? 0) === (int) $level);
         }
 
-        $downline = $query->paginate($perPage);
+        $total = $collection->count();
+        $lastPage = (int) max(1, ceil($total / $perPage));
+        $offset = ($page - 1) * $perPage;
+        /** @var \Illuminate\Support\Collection<int, Affiliate> $paginated */
+        $paginated = $collection->slice($offset, $perPage)->values();
 
         return response()->json([
-            'data' => $downline->map(fn (Affiliate $a) => [
+            'data' => $paginated->map(fn (Affiliate $a) => [
                 'id' => $a->id,
                 'name' => $a->name,
                 'code' => $a->code,
@@ -75,10 +81,10 @@ final class NetworkController extends Controller
                 'joined_at' => $a->created_at->toIso8601String(),
             ]),
             'meta' => [
-                'current_page' => $downline->currentPage(),
-                'last_page' => $downline->lastPage(),
-                'per_page' => $downline->perPage(),
-                'total' => $downline->total(),
+                'current_page' => $page,
+                'last_page' => $lastPage,
+                'per_page' => $perPage,
+                'total' => $total,
             ],
         ]);
     }
@@ -93,13 +99,13 @@ final class NetworkController extends Controller
 
     private function getNetworkStats(Affiliate $affiliate): array
     {
-        $downline = $this->networkService->getDownline($affiliate)->get();
+        $downline = $this->networkService->getDownline($affiliate);
 
         $totalMembers = $downline->count();
         $activeMembers = $downline->where('status', 'active')->count();
 
         $byLevel = $downline->groupBy(fn ($a) => $a->pivot?->depth ?? 0)
-            ->map->count()
+            ->map(fn ($group) => $group->count())
             ->all();
 
         $thisMonthJoined = $downline
