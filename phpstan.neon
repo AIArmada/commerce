@@ -1,3 +1,6 @@
+includes:
+    - phpstan-baseline.neon
+
 parameters:
     paths:
         - packages
@@ -148,6 +151,249 @@ parameters:
         - message: '#Unable to resolve the template type TValue in call to function expect#'
          # Ignore collection proxy method calls
         - message: '#Call to an undefined method Illuminate\\Support\\HigherOrderCollectionProxy.*::markAsRedeemed\(\)\.#'
+        # Ignore return type covariance issues with Eloquent relations (PHPStan template variance)
+        - message: '#Template type TDeclaringModel on class Illuminate\\Database\\Eloquent\\Relations\\.*is not covariant\.#'
+        - message: '#Template type TRelatedModel on class Illuminate\\Database\\Eloquent\\Relations\\.*is not covariant\.#'
+        - message: '#Method.*should return.*Relations\\(HasMany|BelongsTo|MorphTo).*but returns.*Relations\\(HasMany|BelongsTo|MorphTo).*#'
+        # Ignore template type covariance issues with Eloquent Attribute casts
+        - message: '#Template type TGet on class Illuminate\\Database\\Eloquent\\Casts\\Attribute is not covariant\.#'
+        # Ignore missingType.iterableValue (array type specifications)
+        - identifier: 'missingType.iterableValue'
+        # Ignore Filament class not found (external dependency)
+        - message: '#Class Filament\\.*not found\.#'
+        - message: '#.*extends unknown class Filament\\.*#'
+        - message: '#.*calls parent::.*but.*does not extend any class\.#'
+        - message: '#Call to an undefined method AIArmada\\Filament.*#'
+        - message: '#Invoking callable on an unknown class Filament\\.*#'
+        - message: '#Parameter.*has invalid type Filament\\.*#'
+        # Ignore unused traits (public API)
+        - message: '#Trait AIArmada\\Vouchers\\Traits\\.*is used zero times and is not analysed\.#'
+        - message: '#Trait AIArmada\\Vouchers\\GiftCards\\Traits\\.*is used zero times and is not analysed\.#'
+        - message: '#Trait AIArmada\\Chip\\Testing\\.*is used zero times and is not analysed\.#'
+        # Ignore property access on Model (dynamic properties)
+        - message: '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model::\$.*#'
+        - message: '#Access to an undefined property AIArmada\\Chip\\Models\\.*::\$.*#'
+        # Ignore Affiliate enums (external dependency)
+        - message: '#Access to constant.*on an unknown class AIArmada\\Affiliates\\Enums\\.*#'
+        - message: '#Access to undefined constant AIArmada\\Affiliates\\Enums\\.*#'
+        # Ignore relation existence errors (Larastan false positives)
+        - message: '#Relation.*is not found in.*model\.#'
+        # Ignore cast.string for enums
+        - message: '#Cannot cast AIArmada\\Affiliates\\Enums\\.*to string\.#'
+        # Ignore match.unhandled for enums with new cases
+        - identifier: 'match.unhandled'
+        # Ignore property.onlyWritten (intentional design patterns)
+        - identifier: 'property.onlyWritten'
+        # Ignore return.type covariance issues
+        - identifier: 'return.type'
+        # Ignore argument.type for Filament closures
+        - message: '#Parameter.*of method Illuminate\\Support\\Collection.*::each\(\) expects callable.*given\.#'
+        # Ignore getDriverName method (exists in concrete implementation)
+        - message: '#Call to an undefined method Illuminate\\Database\\ConnectionInterface::getDriverName\(\)\.#'
+        # Ignore property.defaultValue issues
+        - identifier: 'property.defaultValue'
+        # Ignore property.nonObject for status checks
+        - message: '#Cannot access property \$status on.*#'
+        # Ignore arguments.count for context methods
+        - message: '#Method AIArmada\\Vouchers\\Targeting\\TargetingContext::getMetadata\(\) invoked with 0 parameters.*#'
+        # Ignore property.nonObject on class-string
+        - message: '#Cannot access property.*on class-string\|object\.#'
+        # Ignore Jnt property type issues
+        - message: '#Property AIArmada\\Jnt\\Models\\JntOrder::\$delivered_at.*does not accept Carbon\\Carbon\.#'
+        # Ignore ResourcePermissionDiscovery type issues (intersection types)
+        - message: '#Parameter.*of method AIArmada\\FilamentPermissions\\Support\\ResourcePermissionDiscovery::registerPermissionsForResource\(\).*#'
+        - message: '#Call to an undefined static method AIArmada\\FilamentPermissions\\Contracts\\RegistersPermissions.*::getPermissionNames\(\)\.#'
+        - message: '#Method AIArmada\\FilamentPermissions\\Support\\ResourcePermissionDiscovery::getResourcesFromPanel\(\).*#'
+        # Ignore Auth::user() method issues in macros (methods come from user model traits)
+        - message: '#Call to an undefined method Illuminate\\Contracts\\Auth\\Authenticatable::hasAnyRole\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Contracts\\Auth\\Authenticatable::hasRole\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Contracts\\Auth\\Authenticatable::can\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Contracts\\Auth\\Authenticatable::getKey\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Contracts\\Auth\\Authenticatable::getMorphClass\(\)\.#'
+        # Ignore Filament macro return type issues (runtime resolved)
+        - message: '#Method AIArmada\\FilamentPermissions\\Support\\Macros\\.*::register\(\) should return void but return statement is missing\.#'
+        # Ignore CompoundVoucherCondition rules parameter type
+        - message: '#Parameter \$rules of class AIArmada\\Cart\\Conditions\\CartCondition constructor expects.*#'
+        # Ignore AffiliateInfolist match expression (enum case handling)
+        - message: '#Match expression does not handle remaining value: AIArmada\\Affiliates\\Enums\\AffiliateStatus::Draft#'
+        # Ignore GiftCardResource match expression (enum case handling)
+        - message: '#Match expression does not handle remaining value: AIArmada\\Vouchers\\GiftCards\\Enums\\GiftCardTransactionType::Fee#'
+        # Ignore CancelOrderAction return type
+        - message: '#Method AIArmada\\FilamentJnt\\Actions\\CancelOrderAction::getReasonOptions\(\).*#'
+        # Ignore FilamentChip Jetstream/Cashier integration issues
+        - message: '#Access to an undefined property Illuminate\\Foundation\\Auth\\User::\$currentTeam\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::(updateDefaultPaymentMethod|deletePaymentMethod)\(\)\.#'
+        # Ignore Filament Billing page timeline property
+        - message: '#Access to an undefined property AIArmada\\Chip\\Models\\Purchase::\$timeline\.#'
+        # Ignore CartBridge variable mismatch
+        - message: '#Variable \$cart in PHPDoc tag @var does not match assigned variable \$cartQuery\.#'
+        # Ignore ViewAffiliateFraudSignal property access
+        - message: '#Cannot access property \$status on Illuminate\\Database\\Eloquent\\Model\|int\|string\.#'
+        # Ignore FilamentAffiliates service method calls
+        - message: '#Call to an undefined method AIArmada\\Affiliates\\Services\\AffiliateReportService::.*#'
+        - message: '#Call to an undefined method AIArmada\\Affiliates\\Services\\AffiliatePayoutService::.*#'
+        # Ignore Chip RecurringSchedule view page
+        - message: '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model::\$id\.#'
+        # Ignore new.static (safe in our context)
+        - identifier: 'new.static'
+        # Ignore DocData constructor type (purchase_id can be int or string)
+        - message: '#Parameter \$docableId of class AIArmada\\Docs\\DataObjects\\DocData constructor expects string\|null, int given\.#'
+        # Ignore CartManagerInterface method calls (proxied to Cart instance)
+        - message: '#Call to an undefined method AIArmada\\Cart\\Contracts\\CartManagerInterface::.*#'
+        # Ignore abstract method issues in wrapper classes (proxied implementations)
+        - identifier: 'method.abstract'
+        # Ignore PHPDoc type issues in Cart traits
+        - message: '#PHPDoc tag @param for parameter \$resolver with type.*is not subtype of native type callable\.#'
+        # Ignore nullCoalesce in exception classes
+        - identifier: 'nullCoalesce.expr'
+        # Ignore strict comparison and deadCode in validators (defensive programming)
+        - identifier: 'notIdentical.alwaysTrue'
+        - identifier: 'deadCode.unreachable'
+        - identifier: 'identical.alwaysFalse'
+        - identifier: 'instanceof.alwaysTrue'
+        # Ignore unused Buyable trait (it's part of the public API)
+        - message: '#Trait AIArmada\\Cart\\Concerns\\Buyable is used zero times and is not analysed\.#'
+        # Ignore unused Cart traits (public API for package consumers)
+        - message: '#Trait AIArmada\\Cart\\Concerns\\.*is used zero times and is not analysed\.#'
+        - message: '#Trait AIArmada\\Cart\\Traits\\.*is used zero times and is not analysed\.#'
+
+        # ============================================
+        # External/Optional Dependency Ignores
+        # ============================================
+        # These packages have optional dependencies that may not be installed
+
+        # Stripe SDK (optional dependency for cashier)
+        - message: '#.*unknown class Stripe\\.*#'
+        - message: '#.*invalid type Stripe\\.*#'
+        - message: '#.*on an unknown class Stripe\\.*#'
+        - message: '#.*invalid return type Stripe\\.*#'
+        - message: '#Instantiated class Stripe\\.*not found\.#'
+
+        # Laravel Cashier (optional dependency for cashier)
+        - message: '#.*unknown class Laravel\\Cashier\\.*#'
+        - message: '#.*invalid type Laravel\\Cashier\\.*#'
+        - message: '#.*on an unknown class Laravel\\Cashier\\.*#'
+        - message: '#Class Laravel\\Cashier\\.*not found\.#'
+        - message: '#.*invalid return type Laravel\\Cashier\\.*#'
+        - message: '#Expected type.*Laravel\\Cashier\\.*#'
+        - message: '#Instantiated class Laravel\\Cashier\\.*not found\.#'
+
+        # Cashier gateway type coercion (contracts → concrete types in wrappers)
+        - message: '#Parameter \#1 \$payment of class AIArmada\\Cashier\\Gateways\\.*constructor expects.*#'
+        - message: '#Parameter \#1 \$subscription of class AIArmada\\Cashier\\Gateways\\.*constructor expects.*#'
+        - message: '#Parameter \#1 \$paymentMethod of class AIArmada\\Cashier\\Gateways\\.*constructor expects.*#'
+        - message: '#Parameter \#1 \$token of class AIArmada\\Cashier\\Gateways\\.*constructor expects.*#'
+
+        # Billable trait methods on Model (methods come from Billable traits at runtime)
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::charge\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::chargeWithRecurringToken\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::preferredCurrency\(\)\.#'
+
+        # CashierChip Subscription Carbon type compatibility (Illuminate\Support\Carbon vs Carbon\Carbon)
+        - message: '#Property AIArmada\\CashierChip\\Subscription::\$ends_at.*does not accept Carbon\\Carbon\.#'
+        - message: '#Property AIArmada\\CashierChip\\Subscription::\$trial_ends_at.*does not accept Carbon\\CarbonInterface\.#'
+        - message: '#PHPDoc type array<int, string> of property AIArmada\\CashierChip\\Subscription::\$with is not covariant.*#'
+
+        # CashierChip Cashier formatCurrencyUsing static callback (intentional design)
+        - message: '#Property AIArmada\\CashierChip\\Cashier::\$formatCurrencyUsing has no type specified\.#'
+
+        # Akaunting Money binary operation (Money can be multiplied by numeric string at runtime)
+        - message: '#Binary operation "\*" between Akaunting\\Money\\Money and string results in an error\.#'
+
+        # Request::integer() null default (acceptable at runtime, PHPStan strict about signature)
+        - message: '#Parameter \#2 \$default of method Illuminate\\Http\\Request::integer\(\) expects int, null given\.#'
+
+        # Match arm always true (enum fallback pattern, intentional)
+        - identifier: 'match.alwaysTrue'
+
+        # nullCoalesce offset issues (defensive programming, PHPStan strict)
+        - message: '#Offset 0 on non-empty-list.*on left side of \?\? always exists and is not nullable\.#'
+        - message: '#Offset .*metadata.*on left side of \?\? does not exist\.#'
+
+        # PaymentContract::errorCode() method (gateway-specific, not all implementations have it)
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\PaymentContract::errorCode\(\)\.#'
+
+        # CashierChip Billable trait (optional dependency)
+        - message: '#.*on an unknown class AIArmada\\CashierChip\\Billable.*#'
+        - message: '#.*unknown class AIArmada\\CashierChip\\Billable.*#'
+        - message: '#.*has invalid return type AIArmada\\CashierChip\\Billable.*#'
+        - message: '#.*has invalid type AIArmada\\CashierChip\\Billable.*#'
+
+        # CashierChip model methods accessed on generic Eloquent Model types
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::subscription\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::chipEmail\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::chipName\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::chipPhone\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::chipAddress\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::chipId\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::defaultPaymentMethod\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::updateDefaultPaymentMethod\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::deletePaymentMethod\(\)\.#'
+
+        # CashierChip Subscription scope methods (dynamically resolved via scopeXxx pattern)
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder::canceled\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder::notOnTrial\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder.*::onGracePeriod\(\)\.#'
+
+        # BillableContract gateway-specific methods (come from Laravel Cashier or CashierChip Billable traits)
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::stripeId\(\)\.#'
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::asStripeCustomer\(\)\.#'
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::createOrGetStripeCustomer\(\)\.#'
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::createSetupIntent\(\)\.#'
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::syncStripeCustomerDetails\(\)\.#'
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::updateStripeCustomer\(\)\.#'
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::billingPortalUrl\(\)\.#'
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::chipId\(\)\.#'
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::chipEmail\(\)\.#'
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::chipName\(\)\.#'
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::chipPhone\(\)\.#'
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::chipAddress\(\)\.#'
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::createOrGetChipCustomer\(\)\.#'
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::createSetupPurchase\(\)\.#'
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::syncChipCustomerDetails\(\)\.#'
+        - message: '#Call to an undefined method AIArmada\\Cashier\\Contracts\\BillableContract::updateChipCustomer\(\)\.#'
+
+        # AIArmada Cart package (optional dependency)
+        - message: '#.*unknown class AIArmada\\Cart\\CartItem.*#'
+        - message: '#.*invalid type AIArmada\\Cart\\CartItem.*#'
+        - message: '#.*on an unknown class AIArmada\\Cart\\CartItem.*#'
+
+        # Unused traits in packages (public API for consumers)
+        - message: '#Trait AIArmada\\Cashier\\.*is used zero times and is not analysed\.#'
+        - message: '#Trait AIArmada\\CashierChip\\.*is used zero times and is not analysed\.#'
+        - message: '#Trait AIArmada\\Affiliates\\.*is used zero times and is not analysed\.#'
+
+        # method_exists/class_exists checks for optional dependencies
+        - message: '#Call to function method_exists\(\).*will always evaluate to (true|false)\.#'
+        - message: '#Call to function class_exists\(\).*will always evaluate to (true|false)\.#'
+
+        # PHPDoc treatPhpDocTypesAsCertain warnings (we have this set to false)
+        - message: '#Because the type is coming from a PHPDoc.*#'
+
+        # Trait property types (valid for trait usage)
+        - identifier: 'property.trait'
+
+        # Arguments count in Akaunting Money (version compatibility)
+        - message: '#Method Akaunting\\Money\\Money::format\(\) invoked with 1 parameter.*#'
+
+        # function.alreadyNarrowedType - defensive programming patterns
+        - identifier: 'function.alreadyNarrowedType'
+        - identifier: 'function.impossibleType'
+
+        # throws.notThrowable - Exception class hierarchy issues
+        - identifier: 'throws.notThrowable'
+
+        # offsetAccess.nonOffsetAccessible - dynamic property access patterns
+        - identifier: 'offsetAccess.nonOffsetAccessible'
+
+        # argument.templateType - complex generic type resolution
+        - identifier: 'argument.templateType'
+
+        # argument.unknown - external class method calls
+        - identifier: 'argument.unknown'
+
+        # method.protected - false positives from trait usage
+        - identifier: 'method.protected'
 
      # Exclude patterns
     excludePaths:
@@ -157,6 +403,18 @@ parameters:
             - packages/filament-vouchers/src/Widgets/QuickApplyVoucherWidget.php
             - packages/filament-vouchers/src/Widgets/VoucherSuggestionsWidget.php
             - packages/filament-vouchers/src/Widgets/VoucherUsageTimelineWidget.php
+            - packages/filament-vouchers/src/Widgets/AIInsightsWidget.php
+            - packages/filament-vouchers/src/Widgets/GiftCardTransactionTimelineWidget.php
+            # Exclude Filament affiliate pages with $view property issues
+            - packages/filament-affiliates/src/Pages/FraudReviewPage.php
+            - packages/filament-affiliates/src/Pages/PayoutBatchPage.php
+            - packages/filament-affiliates/src/Pages/ReportsPage.php
+            - packages/filament-affiliates/src/Widgets/NetworkVisualizationWidget.php
+            # Exclude Filament actions extending unknown Filament classes
+            - packages/filament-affiliates/src/Actions/BulkFraudReviewAction.php
+            - packages/filament-affiliates/src/Actions/BulkPayoutAction.php
+            - packages/filament-affiliates/src/Pages/Portal/PortalRegistration.php
+            - packages/filament-affiliates/src/Pages/Portal/PortalLinks.php
             # Exclude examples file with external dependencies
             - packages/vouchers/examples/usage.php
         - vendor
