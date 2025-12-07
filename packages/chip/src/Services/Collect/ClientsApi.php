@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Services\Collect;
 
-use AIArmada\Chip\Data\Client;
+use AIArmada\Chip\Data\ClientData;
 
 final class ClientsApi extends CollectApi
 {
     /**
      * @param  array<string, mixed>  $data
      */
-    public function create(array $data): Client
+    public function create(array $data): ClientData
     {
         $response = $this->attempt(
             fn () => $this->client->post('clients/', $data),
@@ -19,10 +19,10 @@ final class ClientsApi extends CollectApi
             ['data' => $data]
         );
 
-        return Client::fromArray($response);
+        return ClientData::fromArray($response);
     }
 
-    public function find(string $clientId): Client
+    public function find(string $clientId): ClientData
     {
         $response = $this->attempt(
             fn () => $this->client->get("clients/{$clientId}/"),
@@ -30,7 +30,7 @@ final class ClientsApi extends CollectApi
             ['client_id' => $clientId]
         );
 
-        return Client::fromArray($response);
+        return ClientData::fromArray($response);
     }
 
     /**
@@ -52,7 +52,7 @@ final class ClientsApi extends CollectApi
     /**
      * @param  array<string, mixed>  $data
      */
-    public function update(string $clientId, array $data): Client
+    public function update(string $clientId, array $data): ClientData
     {
         $response = $this->attempt(
             fn () => $this->client->put("clients/{$clientId}/", $data),
@@ -60,13 +60,13 @@ final class ClientsApi extends CollectApi
             ['client_id' => $clientId, 'data' => $data]
         );
 
-        return Client::fromArray($response);
+        return ClientData::fromArray($response);
     }
 
     /**
      * @param  array<string, mixed>  $data
      */
-    public function partialUpdate(string $clientId, array $data): Client
+    public function partialUpdate(string $clientId, array $data): ClientData
     {
         $response = $this->attempt(
             fn () => $this->client->patch("clients/{$clientId}/", $data),
@@ -74,7 +74,7 @@ final class ClientsApi extends CollectApi
             ['client_id' => $clientId, 'data' => $data]
         );
 
-        return Client::fromArray($response);
+        return ClientData::fromArray($response);
     }
 
     public function delete(string $clientId): void
