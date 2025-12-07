@@ -22,7 +22,7 @@ abstract class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(function (string $modelName) {
-            return Str::replace('Models', 'Database\\Factories', $modelName).'Factory';
+            return Str::replace('Models', 'Database\\Factories', $modelName) . 'Factory';
         });
 
         // Start session for Livewire/Filament tests
@@ -39,6 +39,8 @@ abstract class TestCase extends Orchestra
     protected function getPackageProviders($app): array
     {
         return [
+            \Spatie\LaravelData\LaravelDataServiceProvider::class,
+            \AIArmada\CommerceSupport\SupportServiceProvider::class,
             \Illuminate\Events\EventServiceProvider::class,
             \Illuminate\Session\SessionServiceProvider::class,
             \Illuminate\View\ViewServiceProvider::class,
@@ -63,6 +65,8 @@ abstract class TestCase extends Orchestra
             \AIArmada\FilamentVouchers\FilamentVouchersServiceProvider::class,
             \AIArmada\Affiliates\AffiliatesServiceProvider::class,
             \AIArmada\FilamentAffiliates\FilamentAffiliatesServiceProvider::class,
+            \AIArmada\Shipping\ShippingServiceProvider::class,
+            \AIArmada\FilamentShipping\FilamentShippingServiceProvider::class,
             TestPanelProvider::class,
         ];
     }
@@ -72,13 +76,14 @@ abstract class TestCase extends Orchestra
         return [
             'Cart' => \AIArmada\Cart\Facades\Cart::class,
             'Voucher' => \AIArmada\Vouchers\Facades\Voucher::class,
+            'Shipping' => \AIArmada\Shipping\Facades\Shipping::class,
         ];
     }
 
     protected function defineEnvironment($app): void
     {
         // Setup the test environment
-        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
+        $app['config']->set('app.key', 'base64:' . base64_encode(random_bytes(32)));
         $app['config']->set('app.env', 'testing');
         $app['config']->set('database.default', 'testing');
 
@@ -171,10 +176,10 @@ abstract class TestCase extends Orchestra
 
     protected function defineDatabaseMigrations(): void
     {
-        $this->loadMigrationsFrom(__DIR__.'/../../packages/chip/database/migrations');
-        $this->loadMigrationsFrom(__DIR__.'/../../packages/vouchers/database/migrations');
-        $this->loadMigrationsFrom(__DIR__.'/../../vendor/spatie/laravel-permission/database/migrations');
-        $this->loadMigrationsFrom(__DIR__.'/../../packages/affiliates/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/chip/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/vouchers/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../vendor/spatie/laravel-permission/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/affiliates/database/migrations');
     }
 
     protected function setUpDatabase(): void
