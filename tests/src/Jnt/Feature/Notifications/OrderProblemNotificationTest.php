@@ -13,7 +13,7 @@ beforeEach(function (): void {
 });
 
 test('OrderProblemNotification → it uses mail and database channels', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [],
     );
@@ -24,7 +24,7 @@ test('OrderProblemNotification → it uses mail and database channels', function
 });
 
 test('OrderProblemNotification → it generates correct mail message', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [
             new TrackingDetailData(
@@ -57,7 +57,7 @@ test('OrderProblemNotification → it generates correct mail message', function 
 });
 
 test('OrderProblemNotification → it handles tracking without order ID', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [],
         orderId: null,
@@ -71,7 +71,7 @@ test('OrderProblemNotification → it handles tracking without order ID', functi
 });
 
 test('OrderProblemNotification → it handles tracking without support contact', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [],
     );
@@ -83,7 +83,7 @@ test('OrderProblemNotification → it handles tracking without support contact',
 });
 
 test('OrderProblemNotification → it handles tracking without problem details', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [],
     );
@@ -98,7 +98,7 @@ test('OrderProblemNotification → it handles tracking without problem details',
 });
 
 test('OrderProblemNotification → it generates correct array representation', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [
             new TrackingDetailData(
@@ -131,7 +131,7 @@ test('OrderProblemNotification → it generates correct array representation', f
 });
 
 test('OrderProblemNotification → it implements ShouldQueue', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [],
     );

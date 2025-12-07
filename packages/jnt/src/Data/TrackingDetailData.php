@@ -4,9 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
-use Deprecated;
+use Spatie\LaravelData\Attributes\MapInputName;
+use Spatie\LaravelData\Attributes\MapOutputName;
+use Spatie\LaravelData\Data;
+use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
-class TrackingDetailData
+/**
+ * Tracking detail data from JNT Express API.
+ */
+#[MapInputName(SnakeCaseMapper::class)]
+#[MapOutputName(SnakeCaseMapper::class)]
+class TrackingDetailData extends Data
 {
     public function __construct(
         public readonly string $scanTime,
@@ -47,7 +55,7 @@ class TrackingDetailData
     ) {}
 
     /**
-     * Create from API response array
+     * Create from JNT API response array.
      *
      * @param  array<string, mixed>  $data
      */
@@ -72,7 +80,6 @@ class TrackingDetailData
             longitude: $data['longitude'] ?? null,
             latitude: $data['latitude'] ?? null,
             timeZone: $data['timeZone'] ?? null,
-            // Additional fields
             otp: $data['otp'] ?? null,
             secondLevelTypeCode: $data['secondLevelTypeCode'] ?? null,
             wcTraceFlag: $data['wcTraceFlag'] ?? null,
@@ -93,16 +100,7 @@ class TrackingDetailData
     }
 
     /**
-     * @param  array<string, mixed>  $data
-     */
-    #[Deprecated(message: 'Use fromApiArray() instead')]
-    public static function fromArray(array $data): self
-    {
-        return self::fromApiArray($data);
-    }
-
-    /**
-     * Convert to API request array
+     * Convert to JNT API request array.
      *
      * @return array<string, string|int>
      */
@@ -127,7 +125,6 @@ class TrackingDetailData
             'longitude' => $this->longitude,
             'latitude' => $this->latitude,
             'timeZone' => $this->timeZone,
-            // Additional fields
             'otp' => $this->otp,
             'secondLevelTypeCode' => $this->secondLevelTypeCode,
             'wcTraceFlag' => $this->wcTraceFlag,
@@ -147,10 +144,27 @@ class TrackingDetailData
         ], fn (string|int|null $value): bool => $value !== null);
     }
 
-    /** @phpstan-ignore missingType.return */
-    #[Deprecated(message: 'Use toApiArray() instead')]
-    public function toArray()
+    public function getLocation(): string
     {
-        return $this->toApiArray();
+        return collect([
+            $this->scanNetworkArea,
+            $this->scanNetworkCity,
+            $this->scanNetworkProvince,
+        ])->filter()->implode(', ') ?: $this->scanNetworkName ?? '';
+    }
+
+    public function hasCoordinates(): bool
+    {
+        return $this->latitude !== null && $this->longitude !== null;
+    }
+
+    public function isDelivered(): bool
+    {
+        return in_array($this->scanType, ['SIGN', 'SIGN_STATION'], true);
+    }
+
+    public function isInTransit(): bool
+    {
+        return in_array($this->scanType, ['TMS_SIGN', 'ARRIVE', 'DEPARTURE', 'LOAD'], true);
     }
 }

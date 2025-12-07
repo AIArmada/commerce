@@ -6,13 +6,19 @@ namespace AIArmada\Jnt\Data;
 
 use AIArmada\Jnt\Enums\GoodsType;
 use AIArmada\Jnt\Support\TypeTransformer;
+use Spatie\LaravelData\Attributes\MapInputName;
+use Spatie\LaravelData\Attributes\MapOutputName;
+use Spatie\LaravelData\Data;
+use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
 /**
- * Package Info Data
+ * Package info data for JNT Express shipments.
  *
  * Represents package information for a shipment.
  */
-class PackageInfoData
+#[MapInputName(SnakeCaseMapper::class)]
+#[MapOutputName(SnakeCaseMapper::class)]
+class PackageInfoData extends Data
 {
     /**
      * @param  int|string  $quantity  Number of packages (1-999, required, integer)
@@ -34,7 +40,7 @@ class PackageInfoData
     ) {}
 
     /**
-     * Create from API response array
+     * Create from JNT API response array.
      *
      * @param  array<string, mixed>  $data  API response data
      */
@@ -46,17 +52,17 @@ class PackageInfoData
 
         return new self(
             quantity: (int) $data['packageQuantity'],
-            weight: (float) $data['weight'], // API sends kg with 2 decimals
-            value: (float) $data['packageValue'], // API sends MYR with 2 decimals
+            weight: (float) $data['weight'],
+            value: (float) $data['packageValue'],
             goodsType: $goodsType,
-            length: isset($data['length']) ? (float) $data['length'] : null, // API sends cm with 2 decimals
-            width: isset($data['width']) ? (float) $data['width'] : null, // API sends cm with 2 decimals
-            height: isset($data['height']) ? (float) $data['height'] : null, // API sends cm with 2 decimals
+            length: isset($data['length']) ? (float) $data['length'] : null,
+            width: isset($data['width']) ? (float) $data['width'] : null,
+            height: isset($data['height']) ? (float) $data['height'] : null,
         );
     }
 
     /**
-     * Convert to API request array
+     * Convert to JNT API request array.
      *
      * Uses context-aware transformers to ensure correct formatting:
      * - quantity: Integer string (1-999)
@@ -73,13 +79,55 @@ class PackageInfoData
             : $this->goodsType;
 
         return array_filter([
-            'packageQuantity' => TypeTransformer::toIntegerString($this->quantity), // 1-999
-            'weight' => TypeTransformer::forPackageWeight($this->weight), // KILOGRAMS with 2 decimals
-            'packageValue' => TypeTransformer::forMoney($this->value), // MYR with 2 decimals
+            'packageQuantity' => TypeTransformer::toIntegerString($this->quantity),
+            'weight' => TypeTransformer::forPackageWeight($this->weight),
+            'packageValue' => TypeTransformer::forMoney($this->value),
             'goodsType' => $goodsTypeValue,
-            'length' => $this->length !== null ? TypeTransformer::forDimension($this->length) : null, // CENTIMETERS with 2 decimals
-            'width' => $this->width !== null ? TypeTransformer::forDimension($this->width) : null, // CENTIMETERS with 2 decimals
-            'height' => $this->height !== null ? TypeTransformer::forDimension($this->height) : null, // CENTIMETERS with 2 decimals
+            'length' => $this->length !== null ? TypeTransformer::forDimension($this->length) : null,
+            'width' => $this->width !== null ? TypeTransformer::forDimension($this->width) : null,
+            'height' => $this->height !== null ? TypeTransformer::forDimension($this->height) : null,
         ], fn (?string $value): bool => $value !== null);
+    }
+
+    public function hasAllDimensions(): bool
+    {
+        return $this->length !== null && $this->width !== null && $this->height !== null;
+    }
+
+    /**
+     * Calculate volumetric weight in KG.
+     *
+     * @param  int  $divisor  The volumetric divisor (default 5000 for courier)
+     */
+    public function getVolumetricWeight(int $divisor = 5000): ?float
+    {
+        if (! $this->hasAllDimensions()) {
+            return null;
+        }
+
+        return ((float) $this->length * (float) $this->width * (float) $this->height) / $divisor;
+    }
+
+    /**
+     * Get chargeable weight (max of actual and volumetric).
+     */
+    public function getChargeableWeight(): float
+    {
+        $volumetric = $this->getVolumetricWeight();
+
+        if ($volumetric === null) {
+            return (float) $this->weight;
+        }
+
+        return max((float) $this->weight, $volumetric);
+    }
+
+    public function isDocument(): bool
+    {
+        if ($this->goodsType instanceof GoodsType) {
+            return $this->goodsType === GoodsType::DOCUMENT;
+        }
+
+        return $this->goodsType === 'ITN2';
     }
 }

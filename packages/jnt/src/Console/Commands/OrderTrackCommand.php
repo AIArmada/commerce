@@ -32,7 +32,7 @@ class OrderTrackCommand extends Command
                 'Tracking order: '.$orderId
             );
 
-            if ($tracking->details === []) {
+            if ($tracking->details->count() === 0) {
                 warning('No tracking information found for this order.');
 
                 return self::SUCCESS;
@@ -42,11 +42,11 @@ class OrderTrackCommand extends Command
 
             // Display tracking details
             $details = [];
-            foreach ($tracking->details as $detail) {
+            foreach ($tracking->details->toCollection() as $detail) {
                 $details[] = [
                     $detail->scanTime ?? 'N/A',
                     $detail->scanType ?? 'N/A',
-                    $detail->desc ?? 'No description',
+                    $detail->description ?? 'No description',
                 ];
             }
 

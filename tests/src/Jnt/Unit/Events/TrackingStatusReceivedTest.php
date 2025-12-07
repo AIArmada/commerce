@@ -31,7 +31,7 @@ describe('TrackingStatusReceived Event', function (): void {
             ),
         ];
 
-        $this->webhookData = new WebhookData(
+        $this->webhookData = WebhookData::make(
             billCode: 'JNTMY12345678',
             txlogisticId: 'ORDER-001',
             details: $this->details
@@ -74,7 +74,7 @@ describe('TrackingStatusReceived Event', function (): void {
     });
 
     it('detects collection status', function (): void {
-        $collectionData = new WebhookData(
+        $collectionData = WebhookData::make(
             billCode: 'JNTMY12345678',
             txlogisticId: null,
             details: [
@@ -95,7 +95,7 @@ describe('TrackingStatusReceived Event', function (): void {
     });
 
     it('detects problem status', function (): void {
-        $problemData = new WebhookData(
+        $problemData = WebhookData::make(
             billCode: 'JNTMY12345678',
             txlogisticId: null,
             details: [
@@ -116,7 +116,7 @@ describe('TrackingStatusReceived Event', function (): void {
     });
 
     it('detects return status as problem', function (): void {
-        $returnData = new WebhookData(
+        $returnData = WebhookData::make(
             billCode: 'JNTMY12345678',
             txlogisticId: null,
             details: [
@@ -136,7 +136,7 @@ describe('TrackingStatusReceived Event', function (): void {
     });
 
     it('detects reject status as problem', function (): void {
-        $rejectData = new WebhookData(
+        $rejectData = WebhookData::make(
             billCode: 'JNTMY12345678',
             txlogisticId: null,
             details: [
@@ -156,7 +156,7 @@ describe('TrackingStatusReceived Event', function (): void {
     });
 
     it('detects signed status as delivered', function (): void {
-        $signedData = new WebhookData(
+        $signedData = WebhookData::make(
             billCode: 'JNTMY12345678',
             txlogisticId: null,
             details: [
@@ -176,7 +176,7 @@ describe('TrackingStatusReceived Event', function (): void {
     });
 
     it('handles null txlogistic ID', function (): void {
-        $data = new WebhookData(
+        $data = WebhookData::make(
             billCode: 'JNTMY12345678',
             txlogisticId: null,
             details: $this->details
@@ -188,7 +188,7 @@ describe('TrackingStatusReceived Event', function (): void {
     });
 
     it('handles empty details array', function (): void {
-        $data = new WebhookData(
+        $data = WebhookData::make(
             billCode: 'JNTMY12345678',
             txlogisticId: null,
             details: []
@@ -206,7 +206,7 @@ describe('TrackingStatusReceived Event', function (): void {
     });
 
     it('handles partial location data', function (): void {
-        $partialData = new WebhookData(
+        $partialData = WebhookData::make(
             billCode: 'JNTMY12345678',
             txlogisticId: null,
             details: [
@@ -227,7 +227,7 @@ describe('TrackingStatusReceived Event', function (): void {
     });
 
     it('returns null location when all location fields are empty', function (): void {
-        $noLocationData = new WebhookData(
+        $noLocationData = WebhookData::make(
             billCode: 'JNTMY12345678',
             txlogisticId: null,
             details: [

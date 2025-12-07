@@ -4,9 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
-use Deprecated;
+use Spatie\LaravelData\Attributes\MapInputName;
+use Spatie\LaravelData\Attributes\MapOutputName;
+use Spatie\LaravelData\Data;
+use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
-class AddressData
+/**
+ * Address data for JNT Express shipments.
+ */
+#[MapInputName(SnakeCaseMapper::class)]
+#[MapOutputName(SnakeCaseMapper::class)]
+class AddressData extends Data
 {
     public function __construct(
         public readonly string $name,
@@ -22,9 +30,8 @@ class AddressData
     ) {}
 
     /**
-     * Create from API response array
-     */
-    /**
+     * Create from JNT API response array.
+     *
      * @param  array<string, mixed>  $data
      */
     public static function fromApiArray(array $data): self
@@ -44,16 +51,7 @@ class AddressData
     }
 
     /**
-     * @param  array<string, mixed>  $data
-     */
-    #[Deprecated(message: 'Use fromApiArray() instead')]
-    public static function fromArray(array $data): self
-    {
-        return self::fromApiArray($data);
-    }
-
-    /**
-     * Convert to API request array
+     * Convert to JNT API request array.
      *
      * @return array<string, string>
      */
@@ -73,10 +71,15 @@ class AddressData
         ], fn (?string $value): bool => $value !== null);
     }
 
-    /** @phpstan-ignore missingType.return */
-    #[Deprecated(message: 'Use toApiArray() instead')]
-    public function toArray()
+    public function getFullAddress(): string
     {
-        return $this->toApiArray();
+        return collect([
+            $this->address,
+            $this->area,
+            $this->city,
+            $this->state,
+            $this->postCode,
+            $this->countryCode,
+        ])->filter()->implode(', ');
     }
 }

@@ -22,8 +22,7 @@ final class AffiliatePayoutService
     public function __construct(
         private readonly CreatePayout $createPayout,
         private readonly UpdatePayoutStatus $updatePayoutStatus,
-    ) {
-    }
+    ) {}
 
     /**
      * Create a payout from the given conversion IDs.

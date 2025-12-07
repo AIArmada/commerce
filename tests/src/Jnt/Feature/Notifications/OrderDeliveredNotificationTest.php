@@ -13,7 +13,7 @@ beforeEach(function (): void {
 });
 
 test('OrderDeliveredNotification → it uses mail and database channels', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [],
     );
@@ -24,7 +24,7 @@ test('OrderDeliveredNotification → it uses mail and database channels', functi
 });
 
 test('OrderDeliveredNotification → it generates correct mail message', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [
             new TrackingDetailData(
@@ -58,7 +58,7 @@ test('OrderDeliveredNotification → it generates correct mail message', functio
 });
 
 test('OrderDeliveredNotification → it handles tracking without order ID', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [],
         orderId: null,
@@ -72,7 +72,7 @@ test('OrderDeliveredNotification → it handles tracking without order ID', func
 });
 
 test('OrderDeliveredNotification → it handles tracking without delivery details', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [],
     );
@@ -87,7 +87,7 @@ test('OrderDeliveredNotification → it handles tracking without delivery detail
 });
 
 test('OrderDeliveredNotification → it generates correct array representation', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [
             new TrackingDetailData(
@@ -121,7 +121,7 @@ test('OrderDeliveredNotification → it generates correct array representation',
 });
 
 test('OrderDeliveredNotification → it implements ShouldQueue', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [],
     );

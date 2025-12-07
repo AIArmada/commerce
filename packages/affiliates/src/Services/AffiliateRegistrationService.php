@@ -30,8 +30,7 @@ final class AffiliateRegistrationService
         private readonly ApproveAffiliate $approveAffiliate,
         private readonly RejectAffiliate $rejectAffiliate,
         private readonly GenerateAffiliateCode $generateCode,
-    ) {
-    }
+    ) {}
 
     /**
      * Register a new affiliate.

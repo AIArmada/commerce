@@ -7,9 +7,12 @@ namespace AIArmada\Jnt\Data;
 use AIArmada\Jnt\Exceptions\JntValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Spatie\LaravelData\Attributes\DataCollectionOf;
+use Spatie\LaravelData\Data;
+use Spatie\LaravelData\DataCollection;
 
 /**
- * Webhook payload received from J&T Express servers
+ * Webhook payload received from J&T Express servers.
  *
  * J&T sends tracking updates via POST webhooks with structure:
  * {
@@ -19,19 +22,34 @@ use Illuminate\Support\Str;
  *     "timestamp": "1622520000000"
  * }
  */
-readonly class WebhookData
+class WebhookData extends Data
 {
     /**
-     * @param  array<TrackingDetailData>  $details  Array of tracking update details
+     * @param  DataCollection<int, TrackingDetailData>  $details  Array of tracking update details
      */
     public function __construct(
-        public string $billCode,
-        public ?string $txlogisticId,
-        public array $details,
+        public readonly string $billCode,
+        public readonly ?string $txlogisticId,
+        #[DataCollectionOf(TrackingDetailData::class)]
+        public readonly DataCollection $details,
     ) {}
 
     /**
-     * Parse webhook payload from incoming request
+     * Create from array of TrackingDetailData objects.
+     *
+     * @param  array<int, TrackingDetailData>  $details
+     */
+    public static function make(string $billCode, ?string $txlogisticId, array $details): self
+    {
+        return new self(
+            billCode: $billCode,
+            txlogisticId: $txlogisticId,
+            details: new DataCollection(TrackingDetailData::class, $details),
+        );
+    }
+
+    /**
+     * Parse webhook payload from incoming request.
      *
      * @throws \Illuminate\Validation\ValidationException
      */
@@ -64,7 +82,7 @@ readonly class WebhookData
             $bizContent['details']
         );
 
-        return new self(
+        return self::make(
             billCode: $bizContent['billCode'],
             txlogisticId: $bizContent['txlogisticId'] ?? null,
             details: $details,
@@ -72,13 +90,13 @@ readonly class WebhookData
     }
 
     /**
-     * Generate successful webhook response for J&T
+     * Generate the standard J&T webhook acknowledgement response.
      *
      * J&T requires: {"code": "1", "msg": "success", "data": "SUCCESS"}
      *
      * @return array{code: string, msg: string, data: string, requestId: string}
      */
-    public function toResponse(): array
+    public function toJntAckResponse(): array
     {
         return [
             'code' => '1',
@@ -89,33 +107,47 @@ readonly class WebhookData
     }
 
     /**
-     * Get the latest tracking update
+     * @see \AIArmada\Jnt\Data\WebhookData::toJntAckResponse()
+     * @deprecated Use toJntAckResponse() instead
      */
-    public function getLatestDetail(): ?TrackingDetailData
+    public function toJntResponse(): array
     {
-        if ($this->details === []) {
-            return null;
-        }
-
-        return $this->details[array_key_last($this->details)] ?? null;
+        return $this->toJntAckResponse();
     }
 
     /**
-     * Convert to array for logging or event dispatching
-     *
-     * @return array{
-     *     billCode: string,
-     *     txlogisticId: string|null,
-     *     details: array,
-     *     latestStatus: string|null,
-     *     latestLocation: string|null,
-     *     latestTime: string|null
-     * }
+     * Get the latest tracking update.
      */
+    public function getLatestDetail(): ?TrackingDetailData
+    {
+        if ($this->details->count() === 0) {
+            return null;
+        }
+
+        return $this->details->last();
+    }
+
+    public function getLatestStatus(): ?string
+    {
+        return $this->getLatestDetail()?->scanType;
+    }
+
+    public function getLatestLocation(): ?string
+    {
+        return $this->getLatestDetail()?->scanNetworkName;
+    }
+
+    public function isDelivered(): bool
+    {
+        $latest = $this->getLatestDetail();
+
+        return $latest !== null && $latest->isDelivered();
+    }
+
     /**
-     * Convert to array representation
+     * Convert to array representation.
      *
-     * @return array<string,mixed>
+     * @return array<string, mixed>
      */
     public function toArray(): array
     {
@@ -129,7 +161,7 @@ readonly class WebhookData
                 'scanNetworkName' => $detail->scanNetworkName,
                 'description' => $detail->description,
                 'scanTime' => $detail->scanTime,
-            ], $this->details),
+            ], $this->details->all()),
             'latestStatus' => $latest?->scanType,
             'latestLocation' => $latest?->scanNetworkName,
             'latestTime' => $latest?->scanTime,

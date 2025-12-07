@@ -4,9 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
-use Deprecated;
+use Spatie\LaravelData\Attributes\MapInputName;
+use Spatie\LaravelData\Attributes\MapOutputName;
+use Spatie\LaravelData\Data;
+use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
-class OrderData
+/**
+ * Order data from JNT Express API.
+ */
+#[MapInputName(SnakeCaseMapper::class)]
+#[MapOutputName(SnakeCaseMapper::class)]
+class OrderData extends Data
 {
     /**
      * @param  array<string>|null  $additionalTrackingNumbers
@@ -21,7 +29,7 @@ class OrderData
     ) {}
 
     /**
-     * Create from API response array
+     * Create from JNT API response array.
      *
      * @param  array<string, mixed>  $data
      */
@@ -38,20 +46,9 @@ class OrderData
     }
 
     /**
-     * @param  array<string, mixed>  $data
-     */
-    #[Deprecated(message: 'Use fromApiArray() instead')]
-    public static function fromArray(array $data): self
-    {
-        return self::fromApiArray($data);
-    }
-
-    /**
-     * Convert to API request array
+     * Convert to JNT API request array.
      *
-     * @return array<string, string|array>
-     *
-     * @phpstan-ignore missingType.iterableValue
+     * @return array<string, string|array<string>>
      */
     public function toApiArray(): array
     {
@@ -65,10 +62,33 @@ class OrderData
         ], fn (string|array|null $value): bool => $value !== null);
     }
 
-    /** @phpstan-ignore missingType.return */
-    #[Deprecated(message: 'Use toApiArray() instead')]
-    public function toArray()
+    public function hasTrackingNumber(): bool
     {
-        return $this->toApiArray();
+        return $this->trackingNumber !== null;
+    }
+
+    public function hasMultipleTrackingNumbers(): bool
+    {
+        return $this->additionalTrackingNumbers !== null && count($this->additionalTrackingNumbers) > 0;
+    }
+
+    /**
+     * Get all tracking numbers including the primary one.
+     *
+     * @return array<string>
+     */
+    public function getAllTrackingNumbers(): array
+    {
+        $numbers = [];
+
+        if ($this->trackingNumber !== null) {
+            $numbers[] = $this->trackingNumber;
+        }
+
+        if ($this->additionalTrackingNumbers !== null) {
+            $numbers = array_merge($numbers, $this->additionalTrackingNumbers);
+        }
+
+        return $numbers;
     }
 }

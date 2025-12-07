@@ -33,12 +33,12 @@ class JntTrackingService
      */
     public function getCurrentStatus(TrackingData $trackingData): TrackingStatus
     {
-        if (empty($trackingData->details)) {
+        if ($trackingData->details->count() === 0) {
             return TrackingStatus::Pending;
         }
 
         // Get the most recent tracking detail
-        $latestDetail = $trackingData->details[0];
+        $latestDetail = $trackingData->details->first();
 
         return $this->getNormalizedStatus($latestDetail);
     }
@@ -64,7 +64,7 @@ class JntTrackingService
     {
         $events = [];
 
-        foreach ($trackingData->details as $detail) {
+        foreach ($trackingData->details->toCollection() as $detail) {
             $events[] = [
                 'status' => $this->getNormalizedStatus($detail),
                 'description' => $detail->description,
@@ -96,7 +96,7 @@ class JntTrackingService
         $trackingData = $this->expressService->trackParcel(trackingNumber: $trackingNumber);
 
         // Store new events
-        foreach ($trackingData->details as $detail) {
+        foreach ($trackingData->details->toCollection() as $detail) {
             $scanTime = Carbon::parse($detail->scanTime);
 
             JntTrackingEvent::firstOrCreate(
@@ -149,8 +149,8 @@ class JntTrackingService
         $currentStatus = $this->getCurrentStatus($trackingData);
         $previousStatusCode = $order->last_status_code;
 
-        if (! empty($trackingData->details)) {
-            $latestDetail = $trackingData->details[0];
+        if ($trackingData->details->count() > 0) {
+            $latestDetail = $trackingData->details->first();
             $order->last_status_code = $latestDetail->scanTypeCode;
             $order->last_status = $latestDetail->description;
             $order->last_tracked_at = now();
