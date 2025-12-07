@@ -8,6 +8,7 @@ use AIArmada\Jnt\Data\AddressData as JntAddressData;
 use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\PackageInfoData;
 use AIArmada\Jnt\Enums\CancellationReason;
+use AIArmada\Jnt\Enums\GoodsType;
 use AIArmada\Jnt\Enums\TrackingStatus as JntTrackingStatus;
 use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Jnt\Services\JntStatusMapper;
@@ -158,7 +159,7 @@ class JntShippingDriver implements ShippingDriverInterface
             return new ShipmentResultData(
                 success: true,
                 trackingNumber: $trackingNumber,
-                carrierReference: $orderData->txlogisticId,
+                carrierReference: $orderData->orderId,
                 labelUrl: $labelUrl,
                 rawResponse: $orderData->toArray(),
             );
@@ -175,7 +176,7 @@ class JntShippingDriver implements ShippingDriverInterface
         try {
             $response = $this->jntService->cancelOrder(
                 orderId: $trackingNumber,
-                reason: CancellationReason::CustomerRequest
+                reason: CancellationReason::CUSTOMER_REQUEST
             );
 
             return isset($response['success']) && $response['success'];
@@ -220,7 +221,7 @@ class JntShippingDriver implements ShippingDriverInterface
 
                 return new TrackingEventData(
                     code: $jntStatus->value,
-                    description: $event['description'] ?? '',
+                    description: $event['description'],
                     timestamp: $occurredAt->toDateTimeImmutable(),
                     normalizedStatus: $normalizedStatus,
                     location: $event['location'] ?? null,
@@ -266,12 +267,11 @@ class JntShippingDriver implements ShippingDriverInterface
     {
         return new JntAddressData(
             name: $address->name,
-            mobile: $address->phone,
             phone: $address->phone,
+            address: $address->address,
+            postCode: $address->postCode,
             city: $address->city ?? '',
             area: $address->state ?? '',
-            detailAddress: $address->address,
-            postcode: $address->postCode,
         );
     }
 
@@ -285,9 +285,10 @@ class JntShippingDriver implements ShippingDriverInterface
     {
         return array_map(function ($item) {
             return new ItemData(
-                itemName: $item->name,
+                name: $item->name,
                 quantity: $item->quantity,
-                itemValue: ($item->declaredValue ?? 0) / 100,
+                weight: $item->weight ?? 0,
+                price: ($item->declaredValue ?? 0) / 100,
             );
         }, $items);
     }
@@ -298,8 +299,10 @@ class JntShippingDriver implements ShippingDriverInterface
     protected function createPackageInfo(ShipmentData $data): PackageInfoData
     {
         return new PackageInfoData(
+            quantity: 1,
             weight: round($data->getTotalWeight() / 1000, 2),
-            goodsValue: ($data->declaredValue ?? 0) / 100,
+            value: ($data->declaredValue ?? 0) / 100,
+            goodsType: GoodsType::PACKAGE,
         );
     }
 
@@ -309,16 +312,16 @@ class JntShippingDriver implements ShippingDriverInterface
     protected function mapJntStatusToNormalized(JntTrackingStatus $jntStatus): TrackingStatus
     {
         return match ($jntStatus) {
-            JntTrackingStatus::Pending => TrackingStatus::Pending,
+            JntTrackingStatus::Pending => TrackingStatus::LabelCreated,
             JntTrackingStatus::PickedUp => TrackingStatus::PickedUp,
             JntTrackingStatus::InTransit => TrackingStatus::InTransit,
-            JntTrackingStatus::AtHub => TrackingStatus::AtFacility,
+            JntTrackingStatus::AtHub => TrackingStatus::ArrivedAtFacility,
             JntTrackingStatus::OutForDelivery => TrackingStatus::OutForDelivery,
-            JntTrackingStatus::DeliveryAttempted => TrackingStatus::DeliveryAttempt,
+            JntTrackingStatus::DeliveryAttempted => TrackingStatus::DeliveryAttemptFailed,
             JntTrackingStatus::Delivered => TrackingStatus::Delivered,
             JntTrackingStatus::ReturnInitiated => TrackingStatus::ReturnToSender,
-            JntTrackingStatus::Returned => TrackingStatus::Returned,
-            JntTrackingStatus::Exception => TrackingStatus::Exception,
+            JntTrackingStatus::Returned => TrackingStatus::ReturnDelivered,
+            JntTrackingStatus::Exception => TrackingStatus::OnHold,
         };
     }
 

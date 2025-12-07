@@ -5,13 +5,19 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Data;
 
 use AIArmada\Jnt\Support\TypeTransformer;
+use Spatie\LaravelData\Attributes\MapInputName;
+use Spatie\LaravelData\Attributes\MapOutputName;
+use Spatie\LaravelData\Data;
+use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
 /**
- * Item Data
+ * Item data for JNT Express shipments.
  *
  * Represents a single item in a shipment.
  */
-class ItemData
+#[MapInputName(SnakeCaseMapper::class)]
+#[MapOutputName(SnakeCaseMapper::class)]
+class ItemData extends Data
 {
     /**
      * @param  string  $name  Item name (max 200 chars, required)
@@ -33,7 +39,7 @@ class ItemData
     ) {}
 
     /**
-     * Create from API response array
+     * Create from JNT API response array.
      *
      * @param  array<string, mixed>  $data  API response data
      */
@@ -42,8 +48,8 @@ class ItemData
         return new self(
             name: $data['itemName'],
             quantity: (int) $data['number'],
-            weight: (float) $data['weight'], // API sends grams as integer
-            price: (float) $data['itemValue'], // API sends MYR with 2 decimals
+            weight: (float) $data['weight'],
+            price: (float) $data['itemValue'],
             englishName: $data['englishName'] ?? null,
             description: $data['itemDesc'] ?? null,
             currency: $data['itemCurrency'] ?? 'MYR',
@@ -51,7 +57,7 @@ class ItemData
     }
 
     /**
-     * Convert to API request array
+     * Convert to JNT API request array.
      *
      * Uses context-aware transformers to ensure correct formatting:
      * - quantity: Integer string (1-9999999)
@@ -65,11 +71,21 @@ class ItemData
         return array_filter([
             'itemName' => $this->name,
             'englishName' => $this->englishName,
-            'number' => TypeTransformer::toIntegerString($this->quantity), // 1-9999999
-            'weight' => TypeTransformer::forItemWeight($this->weight), // GRAMS as integer
-            'itemValue' => TypeTransformer::forMoney($this->price), // MYR with 2 decimals
+            'number' => TypeTransformer::toIntegerString($this->quantity),
+            'weight' => TypeTransformer::forItemWeight($this->weight),
+            'itemValue' => TypeTransformer::forMoney($this->price),
             'itemCurrency' => $this->currency,
             'itemDesc' => $this->description,
         ], fn (?string $value): bool => $value !== null);
+    }
+
+    public function getTotalValue(): float
+    {
+        return (float) $this->price * (int) $this->quantity;
+    }
+
+    public function getTotalWeight(): float
+    {
+        return (float) $this->weight * (int) $this->quantity;
     }
 }

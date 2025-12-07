@@ -182,15 +182,15 @@ describe('WebhookData', function (): void {
         })->throws(JntValidationException::class);
     });
 
-    describe('toResponse', function (): void {
+    describe('toJntResponse', function (): void {
         it('generates correct success response structure', function (): void {
-            $webhook = new WebhookData(
+            $webhook = WebhookData::make(
                 billCode: 'JT001',
                 txlogisticId: 'ORDER123',
                 details: []
             );
 
-            $response = $webhook->toResponse();
+            $response = $webhook->toJntResponse();
 
             expect($response)->toBeArray()
                 ->and($response)->toHaveKeys(['code', 'msg', 'data', 'requestId'])
@@ -202,14 +202,14 @@ describe('WebhookData', function (): void {
         });
 
         it('generates unique requestId for each response', function (): void {
-            $webhook = new WebhookData(
+            $webhook = WebhookData::make(
                 billCode: 'JT001',
                 txlogisticId: null,
                 details: []
             );
 
-            $response1 = $webhook->toResponse();
-            $response2 = $webhook->toResponse();
+            $response1 = $webhook->toJntResponse();
+            $response2 = $webhook->toJntResponse();
 
             expect($response1['requestId'])->not->toBe($response2['requestId']);
         });
@@ -241,7 +241,7 @@ describe('WebhookData', function (): void {
                 'scanNetworkProvince' => 'PP',
             ]);
 
-            $webhook = new WebhookData(
+            $webhook = WebhookData::make(
                 billCode: 'JT001',
                 txlogisticId: null,
                 details: [$detail1, $detail2]
@@ -255,7 +255,7 @@ describe('WebhookData', function (): void {
         });
 
         it('returns null when no details exist', function (): void {
-            $webhook = new WebhookData(
+            $webhook = WebhookData::make(
                 billCode: 'JT001',
                 txlogisticId: null,
                 details: []
@@ -277,7 +277,7 @@ describe('WebhookData', function (): void {
                 'scanNetworkProvince' => 'WP',
             ]);
 
-            $webhook = new WebhookData(
+            $webhook = WebhookData::make(
                 billCode: 'JT001',
                 txlogisticId: null,
                 details: [$detail]
@@ -287,8 +287,8 @@ describe('WebhookData', function (): void {
         });
     });
 
-    describe('toArray', function (): void {
-        it('converts webhook to array with all data', function (): void {
+    describe('toArray (Spatie Data)', function (): void {
+        it('converts webhook to array with camelCase keys', function (): void {
             $detail = TrackingDetailData::fromApiArray([
                 'scanType' => '收件',
                 'scanTime' => '2024-01-15 10:30:00',
@@ -301,7 +301,7 @@ describe('WebhookData', function (): void {
                 'scanNetworkProvince' => 'Wilayah Persekutuan',
             ]);
 
-            $webhook = new WebhookData(
+            $webhook = WebhookData::make(
                 billCode: 'JT001',
                 txlogisticId: 'ORDER123',
                 details: [$detail]
@@ -310,20 +310,15 @@ describe('WebhookData', function (): void {
             $array = $webhook->toArray();
 
             expect($array)->toBeArray()
-                ->and($array)->toHaveKeys(['billCode', 'txlogisticId', 'details', 'latestStatus', 'latestLocation', 'latestTime'])
+                ->and($array)->toHaveKeys(['billCode', 'txlogisticId', 'details'])
                 ->and($array['billCode'])->toBe('JT001')
                 ->and($array['txlogisticId'])->toBe('ORDER123')
                 ->and($array['details'])->toHaveCount(1)
-                ->and($array['details'][0])->toBeArray()
-                ->and($array['details'][0]['scanType'])->toBe('收件')
-                ->and($array['details'][0]['scanNetworkName'])->toBe('Kuala Lumpur Hub')
-                ->and($array['latestStatus'])->toBe('收件')
-                ->and($array['latestLocation'])->toBe('Kuala Lumpur Hub')
-                ->and($array['latestTime'])->toBe('2024-01-15 10:30:00');
+                ->and($array['details'][0])->toBeArray();
         });
 
         it('handles null txlogisticId', function (): void {
-            $webhook = new WebhookData(
+            $webhook = WebhookData::make(
                 billCode: 'JT002',
                 txlogisticId: null,
                 details: []
@@ -335,7 +330,7 @@ describe('WebhookData', function (): void {
         });
 
         it('handles empty details array', function (): void {
-            $webhook = new WebhookData(
+            $webhook = WebhookData::make(
                 billCode: 'JT003',
                 txlogisticId: 'ORDER789',
                 details: []
@@ -343,26 +338,13 @@ describe('WebhookData', function (): void {
 
             $array = $webhook->toArray();
 
-            expect($array['details'])->toBeArray()->toBeEmpty()
-                ->and($array['latestStatus'])->toBeNull()
-                ->and($array['latestLocation'])->toBeNull()
-                ->and($array['latestTime'])->toBeNull();
+            expect($array['details'])->toBeArray()->toBeEmpty();
         });
+    });
 
-        it('includes multiple details in correct format', function (): void {
-            $detail1 = TrackingDetailData::fromApiArray([
-                'scanType' => '收件',
-                'scanTime' => '2024-01-15 10:00:00',
-                'desc' => 'Collected',
-                'scanTypeCode' => '1',
-                'scanTypeName' => 'Collection',
-                'scanNetworkId' => '1',
-                'scanNetworkName' => 'Origin Hub',
-                'scanNetworkCity' => 'KL',
-                'scanNetworkProvince' => 'WP',
-            ]);
-
-            $detail2 = TrackingDetailData::fromApiArray([
+    describe('helper methods', function (): void {
+        it('getLatestStatus returns latest scan type', function (): void {
+            $detail = TrackingDetailData::fromApiArray([
                 'scanType' => '派件',
                 'scanTime' => '2024-01-16 14:00:00',
                 'desc' => 'Delivered',
@@ -374,19 +356,25 @@ describe('WebhookData', function (): void {
                 'scanNetworkProvince' => 'PP',
             ]);
 
-            $webhook = new WebhookData(
+            $webhook = WebhookData::make(
                 billCode: 'JT004',
                 txlogisticId: null,
-                details: [$detail1, $detail2]
+                details: [$detail]
             );
 
-            $array = $webhook->toArray();
+            expect($webhook->getLatestStatus())->toBe('派件')
+                ->and($webhook->getLatestLocation())->toBe('Destination Hub');
+        });
 
-            expect($array['details'])->toHaveCount(2)
-                ->and($array['details'][0]['scanType'])->toBe('收件')
-                ->and($array['details'][1]['scanType'])->toBe('派件')
-                ->and($array['latestStatus'])->toBe('派件')
-                ->and($array['latestTime'])->toBe('2024-01-16 14:00:00');
+        it('returns null for helper methods when empty', function (): void {
+            $webhook = WebhookData::make(
+                billCode: 'JT005',
+                txlogisticId: null,
+                details: []
+            );
+
+            expect($webhook->getLatestStatus())->toBeNull()
+                ->and($webhook->getLatestLocation())->toBeNull();
         });
     });
 
@@ -458,13 +446,12 @@ describe('WebhookData', function (): void {
                 ->and($webhook->getLatestDetail()->scanType)->toBe('派件')
                 ->and($webhook->getLatestDetail()->description)->toBe('Out for delivery');
 
-            $response = $webhook->toResponse();
+            $response = $webhook->toJntResponse();
             expect($response['code'])->toBe('1')
                 ->and($response['data'])->toBe('SUCCESS');
 
-            $array = $webhook->toArray();
-            expect($array['latestStatus'])->toBe('派件')
-                ->and($array['latestLocation'])->toBe('Penang Last Mile Delivery');
+            expect($webhook->getLatestStatus())->toBe('派件')
+                ->and($webhook->getLatestLocation())->toBe('Penang Last Mile Delivery');
         });
     });
 });

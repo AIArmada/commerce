@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Events;
 
 use AIArmada\Jnt\Data\TrackingData;
+use AIArmada\Jnt\Data\TrackingDetailData;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
@@ -29,42 +30,35 @@ class TrackingUpdatedEvent
 
     public function getLatestStatus(): ?string
     {
-        $details = $this->tracking->details;
-        if ($details === []) {
+        if ($this->tracking->details->count() === 0) {
             return null;
         }
 
-        $latest = end($details);
+        $latest = $this->tracking->details->last();
 
-        return $latest !== false && $latest instanceof \AIArmada\Jnt\Data\TrackingDetailData
-            ? $latest->scanType
-            : null;
+        return $latest instanceof TrackingDetailData ? $latest->scanType : null;
     }
 
     public function getLatestDescription(): ?string
     {
-        $details = $this->tracking->details;
-        if ($details === []) {
+        if ($this->tracking->details->count() === 0) {
             return null;
         }
 
-        $latest = end($details);
+        $latest = $this->tracking->details->last();
 
-        return $latest !== false && $latest instanceof \AIArmada\Jnt\Data\TrackingDetailData
-            ? $latest->description
-            : null;
+        return $latest instanceof TrackingDetailData ? $latest->description : null;
     }
 
     public function getLatestLocation(): ?string
     {
-        $details = $this->tracking->details;
-        if ($details === []) {
+        if ($this->tracking->details->count() === 0) {
             return null;
         }
 
-        $latest = end($details);
+        $latest = $this->tracking->details->last();
 
-        if ($latest === false || ! ($latest instanceof \AIArmada\Jnt\Data\TrackingDetailData)) {
+        if (! ($latest instanceof TrackingDetailData)) {
             return null;
         }
 
@@ -78,34 +72,42 @@ class TrackingUpdatedEvent
 
     public function isDelivered(): bool
     {
-        return array_any($this->tracking->details, fn ($detail): bool => in_array($detail->scanType, ['DELIVER', 'SIGNED'], true));
+        return $this->tracking->details->toCollection()->some(
+            fn (TrackingDetailData $detail): bool => in_array($detail->scanType, ['DELIVER', 'SIGNED'], true)
+        );
     }
 
     public function isInTransit(): bool
     {
-        return array_any($this->tracking->details, fn ($detail): bool => in_array($detail->scanType, ['TRANSFER', 'ARRIVAL'], true));
+        return $this->tracking->details->toCollection()->some(
+            fn (TrackingDetailData $detail): bool => in_array($detail->scanType, ['TRANSFER', 'ARRIVAL'], true)
+        );
     }
 
     public function hasProblems(): bool
     {
-        return array_any($this->tracking->details, fn ($detail): bool => in_array($detail->scanType, ['RETURN', 'REJECT', 'PROBLEM'], true));
+        return $this->tracking->details->toCollection()->some(
+            fn (TrackingDetailData $detail): bool => in_array($detail->scanType, ['RETURN', 'REJECT', 'PROBLEM'], true)
+        );
     }
 
     public function isCollected(): bool
     {
-        return array_any($this->tracking->details, fn ($detail): bool => $detail->scanType === 'COLLECT');
+        return $this->tracking->details->toCollection()->some(
+            fn (TrackingDetailData $detail): bool => $detail->scanType === 'COLLECT'
+        );
     }
 
     /**
-     * @return array<int, \AIArmada\Jnt\Data\TrackingDetailData>
+     * @return array<int, TrackingDetailData>
      */
     public function getDetails(): array
     {
-        return $this->tracking->details;
+        return $this->tracking->details->all();
     }
 
     public function getDetailCount(): int
     {
-        return count($this->tracking->details);
+        return $this->tracking->details->count();
     }
 }

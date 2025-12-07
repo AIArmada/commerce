@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Notifications;
 
 use AIArmada\Jnt\Data\TrackingData;
+use AIArmada\Jnt\Data\TrackingDetailData;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -48,10 +49,9 @@ class OrderShippedNotification extends Notification implements ShouldQueue
             $message->line('Estimated Delivery: '.$this->estimatedDelivery);
         }
 
-        $details = $this->tracking->details;
-        if ($details !== []) {
-            $latest = end($details);
-            if ($latest instanceof \AIArmada\Jnt\Data\TrackingDetailData && ($latest->scanNetworkCity !== null || $latest->scanNetworkProvince !== null)) {
+        if ($this->tracking->details->count() > 0) {
+            $latest = $this->tracking->details->last();
+            if ($latest instanceof TrackingDetailData && ($latest->scanNetworkCity !== null || $latest->scanNetworkProvince !== null)) {
                 $location = implode(', ', array_filter([
                     $latest->scanNetworkCity,
                     $latest->scanNetworkProvince,
@@ -71,12 +71,11 @@ class OrderShippedNotification extends Notification implements ShouldQueue
      */
     public function toArray(object $notifiable): array
     {
-        $details = $this->tracking->details;
         $location = null;
 
-        if ($details !== []) {
-            $latest = end($details);
-            if ($latest instanceof \AIArmada\Jnt\Data\TrackingDetailData && ($latest->scanNetworkCity !== null || $latest->scanNetworkProvince !== null)) {
+        if ($this->tracking->details->count() > 0) {
+            $latest = $this->tracking->details->last();
+            if ($latest instanceof TrackingDetailData && ($latest->scanNetworkCity !== null || $latest->scanNetworkProvince !== null)) {
                 $location = implode(', ', array_filter([
                     $latest->scanNetworkCity,
                     $latest->scanNetworkProvince,

@@ -5,29 +5,38 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Data;
 
 use AIArmada\Affiliates\Models\AffiliateAttribution;
-use DateTimeInterface;
+use Carbon\CarbonInterface;
+use Spatie\LaravelData\Attributes\MapInputName;
+use Spatie\LaravelData\Attributes\MapOutputName;
+use Spatie\LaravelData\Attributes\WithCast;
+use Spatie\LaravelData\Casts\DateTimeInterfaceCast;
+use Spatie\LaravelData\Data;
+use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
 /**
  * Lightweight DTO describing an attribution row.
  */
-readonly class AffiliateAttributionData
+#[MapInputName(SnakeCaseMapper::class)]
+#[MapOutputName(SnakeCaseMapper::class)]
+class AffiliateAttributionData extends Data
 {
     /**
      * @param  array<string, mixed>|null  $metadata
      */
     public function __construct(
-        public string $id,
-        public string $affiliateId,
-        public string $affiliateCode,
-        public ?string $cartIdentifier,
-        public string $cartInstance,
-        public ?string $cookieValue,
-        public ?string $voucherCode,
-        public ?string $source,
-        public ?string $medium,
-        public ?string $campaign,
-        public ?DateTimeInterface $expiresAt,
-        public ?array $metadata,
+        public readonly string $id,
+        public readonly string $affiliateId,
+        public readonly string $affiliateCode,
+        public readonly ?string $cartIdentifier = null,
+        public readonly string $cartInstance = 'default',
+        public readonly ?string $cookieValue = null,
+        public readonly ?string $voucherCode = null,
+        public readonly ?string $source = null,
+        public readonly ?string $medium = null,
+        public readonly ?string $campaign = null,
+        #[WithCast(DateTimeInterfaceCast::class)]
+        public readonly ?CarbonInterface $expiresAt = null,
+        public readonly ?array $metadata = null,
     ) {}
 
     public static function fromModel(AffiliateAttribution $attribution): self
@@ -48,24 +57,32 @@ readonly class AffiliateAttributionData
         );
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function toArray(): array
+    public function isExpired(): bool
     {
-        return [
-            'id' => $this->id,
-            'affiliate_id' => $this->affiliateId,
-            'affiliate_code' => $this->affiliateCode,
-            'cart_identifier' => $this->cartIdentifier,
-            'cart_instance' => $this->cartInstance,
-            'cookie_value' => $this->cookieValue,
-            'voucher_code' => $this->voucherCode,
-            'source' => $this->source,
-            'medium' => $this->medium,
-            'campaign' => $this->campaign,
-            'expires_at' => $this->expiresAt?->format('c'),
-            'metadata' => $this->metadata,
-        ];
+        if ($this->expiresAt === null) {
+            return false;
+        }
+
+        return $this->expiresAt->isPast();
+    }
+
+    public function hasUtmParameters(): bool
+    {
+        return $this->source !== null || $this->medium !== null || $this->campaign !== null;
+    }
+
+    public function getUtmString(): ?string
+    {
+        if (! $this->hasUtmParameters()) {
+            return null;
+        }
+
+        $parts = array_filter([
+            $this->source ? "utm_source={$this->source}" : null,
+            $this->medium ? "utm_medium={$this->medium}" : null,
+            $this->campaign ? "utm_campaign={$this->campaign}" : null,
+        ]);
+
+        return implode('&', $parts);
     }
 }

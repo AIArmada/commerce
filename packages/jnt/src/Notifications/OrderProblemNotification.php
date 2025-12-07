@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Notifications;
 
 use AIArmada\Jnt\Data\TrackingData;
+use AIArmada\Jnt\Data\TrackingDetailData;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -45,10 +46,9 @@ class OrderProblemNotification extends Notification implements ShouldQueue
         }
 
         // Get problem details
-        $details = $this->tracking->details;
-        if ($details !== []) {
-            $latest = end($details);
-            if ($latest instanceof \AIArmada\Jnt\Data\TrackingDetailData) {
+        if ($this->tracking->details->count() > 0) {
+            $latest = $this->tracking->details->last();
+            if ($latest instanceof TrackingDetailData) {
                 $message->line('Issue: '.$latest->description);
 
                 if ($latest->problemType !== null) {
@@ -78,15 +78,14 @@ class OrderProblemNotification extends Notification implements ShouldQueue
      */
     public function toArray(object $notifiable): array
     {
-        $details = $this->tracking->details;
         $problemDescription = null;
         $problemType = null;
         $problemDetails = null;
         $reportedAt = null;
 
-        if ($details !== []) {
-            $latest = end($details);
-            if ($latest instanceof \AIArmada\Jnt\Data\TrackingDetailData) {
+        if ($this->tracking->details->count() > 0) {
+            $latest = $this->tracking->details->last();
+            if ($latest instanceof TrackingDetailData) {
                 $problemDescription = $latest->description;
                 $problemType = $latest->problemType;
                 $problemDetails = $latest->remark;

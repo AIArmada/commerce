@@ -8,7 +8,7 @@ use AIArmada\Jnt\Events\TrackingUpdatedEvent;
 use Illuminate\Support\Facades\Event;
 
 test('TrackingUpdatedEvent → it exposes tracking data', function (): void {
-    $trackingData = new TrackingData(
+    $trackingData = TrackingData::make(
         trackingNumber: 'TRACK456',
         details: [
             new TrackingDetailData(
@@ -35,7 +35,7 @@ test('TrackingUpdatedEvent → it exposes tracking data', function (): void {
 });
 
 test('TrackingUpdatedEvent → it detects delivered status', function (): void {
-    $trackingData = new TrackingData(
+    $trackingData = TrackingData::make(
         trackingNumber: 'TRACK456',
         details: [
             new TrackingDetailData(
@@ -57,7 +57,7 @@ test('TrackingUpdatedEvent → it detects delivered status', function (): void {
 });
 
 test('TrackingUpdatedEvent → it detects in-transit status', function (): void {
-    $trackingData = new TrackingData(
+    $trackingData = TrackingData::make(
         trackingNumber: 'TRACK456',
         details: [
             new TrackingDetailData(
@@ -79,7 +79,7 @@ test('TrackingUpdatedEvent → it detects in-transit status', function (): void 
 });
 
 test('TrackingUpdatedEvent → it detects problem status', function (): void {
-    $trackingData = new TrackingData(
+    $trackingData = TrackingData::make(
         trackingNumber: 'TRACK456',
         details: [
             new TrackingDetailData(
@@ -101,7 +101,7 @@ test('TrackingUpdatedEvent → it detects problem status', function (): void {
 });
 
 test('TrackingUpdatedEvent → it detects collected status', function (): void {
-    $trackingData = new TrackingData(
+    $trackingData = TrackingData::make(
         trackingNumber: 'TRACK456',
         details: [
             new TrackingDetailData(
@@ -136,7 +136,7 @@ test('TrackingUpdatedEvent → it provides details array', function (): void {
         scanType: 'TRANSFER',
     );
 
-    $trackingData = new TrackingData(
+    $trackingData = TrackingData::make(
         trackingNumber: 'TRACK456',
         details: [$detail1, $detail2],
         orderId: 'ORDER123',
@@ -144,14 +144,17 @@ test('TrackingUpdatedEvent → it provides details array', function (): void {
 
     $event = new TrackingUpdatedEvent($trackingData);
 
-    expect($event->getDetails())->toBe([$detail1, $detail2])
+    expect($event->getDetails())->toHaveCount(2)
+        ->and($event->getDetails()[0])->toBeInstanceOf(TrackingDetailData::class)
+        ->and($event->getDetails()[0]->scanType)->toBe('DELIVER')
+        ->and($event->getDetails()[1]->scanType)->toBe('TRANSFER')
         ->and($event->getDetailCount())->toBe(2);
 });
 
 test('TrackingUpdatedEvent → it can be dispatched', function (): void {
     Event::fake();
 
-    $trackingData = new TrackingData(
+    $trackingData = TrackingData::make(
         trackingNumber: 'TRACK456',
         details: [],
         orderId: 'ORDER123',

@@ -13,7 +13,7 @@ beforeEach(function (): void {
 });
 
 test('OrderShippedNotification → it uses mail and database channels', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [],
     );
@@ -24,7 +24,7 @@ test('OrderShippedNotification → it uses mail and database channels', function
 });
 
 test('OrderShippedNotification → it generates correct mail message', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [
             new TrackingDetailData(
@@ -54,7 +54,7 @@ test('OrderShippedNotification → it generates correct mail message', function 
 });
 
 test('OrderShippedNotification → it handles tracking without order ID', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [],
         orderId: null,
@@ -68,7 +68,7 @@ test('OrderShippedNotification → it handles tracking without order ID', functi
 });
 
 test('OrderShippedNotification → it handles tracking without estimated delivery', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [],
     );
@@ -80,7 +80,7 @@ test('OrderShippedNotification → it handles tracking without estimated deliver
 });
 
 test('OrderShippedNotification → it generates correct array representation', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [
             new TrackingDetailData(
@@ -110,7 +110,7 @@ test('OrderShippedNotification → it generates correct array representation', f
 });
 
 test('OrderShippedNotification → it implements ShouldQueue', function (): void {
-    $tracking = new TrackingData(
+    $tracking = TrackingData::make(
         trackingNumber: 'TRACK123',
         details: [],
     );

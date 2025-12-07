@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
+use Spatie\LaravelData\Data;
+
 /**
  * Data Transfer Object for waybill printing responses.
  *
@@ -11,15 +13,15 @@ namespace AIArmada\Jnt\Data;
  * either base64-encoded PDF content (single parcel) or a URL to
  * download the PDF (multi-parcel).
  */
-final readonly class PrintWaybillData
+class PrintWaybillData extends Data
 {
     public function __construct(
-        public string $orderId,
-        public ?string $trackingNumber,
-        public ?string $base64Content,
-        public ?string $urlContent,
-        public bool $isMultiParcel,
-        public ?string $templateName = null,
+        public readonly string $orderId,
+        public readonly ?string $trackingNumber = null,
+        public readonly ?string $base64Content = null,
+        public readonly ?string $urlContent = null,
+        public readonly bool $isMultiParcel = false,
+        public readonly ?string $templateName = null,
     ) {}
 
     /**
@@ -46,7 +48,7 @@ final readonly class PrintWaybillData
     }
 
     /**
-     * Convert to array representation.
+     * Convert to array representation (camelCase to match constructor params).
      *
      * @return array<string, string|bool|null>
      */

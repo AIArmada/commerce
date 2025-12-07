@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Notifications;
 
 use AIArmada\Jnt\Data\TrackingData;
+use AIArmada\Jnt\Data\TrackingDetailData;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
@@ -42,10 +43,9 @@ class OrderDeliveredNotification extends Notification implements ShouldQueue
         }
 
         // Get delivery details
-        $details = $this->tracking->details;
-        if ($details !== []) {
-            $latest = end($details);
-            if ($latest instanceof \AIArmada\Jnt\Data\TrackingDetailData) {
+        if ($this->tracking->details->count() > 0) {
+            $latest = $this->tracking->details->last();
+            if ($latest instanceof TrackingDetailData) {
                 $message->line('Delivered At: '.$latest->scanTime);
 
                 if ($latest->scanNetworkCity !== null || $latest->scanNetworkProvince !== null) {
@@ -77,15 +77,14 @@ class OrderDeliveredNotification extends Notification implements ShouldQueue
      */
     public function toArray(object $notifiable): array
     {
-        $details = $this->tracking->details;
         $deliveryTime = null;
         $deliveryLocation = null;
         $deliveredBy = null;
         $hasSignature = false;
 
-        if ($details !== []) {
-            $latest = end($details);
-            if ($latest instanceof \AIArmada\Jnt\Data\TrackingDetailData) {
+        if ($this->tracking->details->count() > 0) {
+            $latest = $this->tracking->details->last();
+            if ($latest instanceof TrackingDetailData) {
                 $deliveryTime = $latest->scanTime;
                 $deliveredBy = $latest->staffName;
                 $hasSignature = $latest->signaturePictureUrl !== null;

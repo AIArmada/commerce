@@ -7,25 +7,31 @@ namespace AIArmada\Affiliates\Data;
 use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
+use Spatie\LaravelData\Attributes\MapInputName;
+use Spatie\LaravelData\Attributes\MapOutputName;
+use Spatie\LaravelData\Data;
+use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 
 /**
  * Immutable projection of an affiliate partner/program.
  */
-readonly class AffiliateData
+#[MapInputName(SnakeCaseMapper::class)]
+#[MapOutputName(SnakeCaseMapper::class)]
+class AffiliateData extends Data
 {
     /**
      * @param  array<string, mixed>|null  $metadata
      */
     public function __construct(
-        public string $id,
-        public string $code,
-        public string $name,
-        public AffiliateStatus $status,
-        public CommissionType $commissionType,
-        public int $commissionRate,
-        public string $currency,
-        public ?string $defaultVoucherCode,
-        public ?array $metadata,
+        public readonly string $id,
+        public readonly string $code,
+        public readonly string $name,
+        public readonly AffiliateStatus $status,
+        public readonly CommissionType $commissionType,
+        public readonly int $commissionRate,
+        public readonly string $currency,
+        public readonly ?string $defaultVoucherCode = null,
+        public readonly ?array $metadata = null,
     ) {}
 
     public static function fromModel(Affiliate $affiliate): self
@@ -43,21 +49,22 @@ readonly class AffiliateData
         );
     }
 
-    /**
-     * @return array<string, mixed>
-     */
-    public function toArray(): array
+    public function isActive(): bool
     {
-        return [
-            'id' => $this->id,
-            'code' => $this->code,
-            'name' => $this->name,
-            'status' => $this->status->value,
-            'commission_type' => $this->commissionType->value,
-            'commission_rate' => $this->commissionRate,
-            'currency' => $this->currency,
-            'default_voucher_code' => $this->defaultVoucherCode,
-            'metadata' => $this->metadata,
-        ];
+        return $this->status === AffiliateStatus::Active;
+    }
+
+    public function isPercentageCommission(): bool
+    {
+        return $this->commissionType === CommissionType::Percentage;
+    }
+
+    public function getFormattedCommissionRate(): string
+    {
+        if ($this->isPercentageCommission()) {
+            return number_format($this->commissionRate / 100, 2).'%';
+        }
+
+        return number_format($this->commissionRate / 100, 2).' '.$this->currency;
     }
 }

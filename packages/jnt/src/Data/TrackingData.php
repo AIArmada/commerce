@@ -4,21 +4,41 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Data;
 
-use Deprecated;
+use Spatie\LaravelData\Attributes\DataCollectionOf;
+use Spatie\LaravelData\Data;
+use Spatie\LaravelData\DataCollection;
 
-class TrackingData
+/**
+ * Tracking data from JNT Express API.
+ */
+class TrackingData extends Data
 {
     /**
-     * @param  array<TrackingDetailData>  $details
+     * @param  DataCollection<int, TrackingDetailData>  $details
      */
     public function __construct(
         public readonly string $trackingNumber,
-        public readonly array $details,
+        #[DataCollectionOf(TrackingDetailData::class)]
+        public readonly DataCollection $details,
         public readonly ?string $orderId = null,
     ) {}
 
     /**
-     * Create from API response array
+     * Create from array of TrackingDetailData objects.
+     *
+     * @param  array<int, TrackingDetailData>  $details
+     */
+    public static function make(string $trackingNumber, array $details, ?string $orderId = null): self
+    {
+        return new self(
+            trackingNumber: $trackingNumber,
+            details: new DataCollection(TrackingDetailData::class, $details),
+            orderId: $orderId,
+        );
+    }
+
+    /**
+     * Create from JNT API response array.
      *
      * @param  array<string, mixed>  $data
      */
@@ -29,7 +49,7 @@ class TrackingData
             $data['details'] ?? []
         );
 
-        return new self(
+        return self::make(
             trackingNumber: $data['billCode'],
             details: $details,
             orderId: $data['txlogisticId'] ?? null,
@@ -37,32 +57,42 @@ class TrackingData
     }
 
     /**
-     * @param  array<string, mixed>  $data
-     */
-    #[Deprecated(message: 'Use fromApiArray() instead')]
-    public static function fromArray(array $data): self
-    {
-        return self::fromApiArray($data);
-    }
-
-    /**
-     * Convert to API request array
+     * Convert to JNT API request array.
      *
-     * @return array{billCode: string, txlogisticId: string, details: array<int, array<string, mixed>>}
+     * @return array{billCode: string, txlogisticId: string|null, details: array<int, array<string, mixed>>}
      */
     public function toApiArray(): array
     {
         return [
             'billCode' => $this->trackingNumber,
             'txlogisticId' => $this->orderId,
-            'details' => array_map(fn (TrackingDetailData $detail): array => $detail->toApiArray(), $this->details),
+            'details' => $this->details->toArray(),
         ];
     }
 
-    /** @phpstan-ignore missingType.return */
-    #[Deprecated(message: 'Use toApiArray() instead')]
-    public function toArray()
+    public function getLatestDetail(): ?TrackingDetailData
     {
-        return $this->toApiArray();
+        if ($this->details->count() === 0) {
+            return null;
+        }
+
+        return $this->details->first();
+    }
+
+    public function getLatestStatus(): ?string
+    {
+        return $this->getLatestDetail()?->scanType;
+    }
+
+    public function getLatestLocation(): ?string
+    {
+        return $this->getLatestDetail()?->scanNetworkName;
+    }
+
+    public function isDelivered(): bool
+    {
+        $latest = $this->getLatestDetail();
+
+        return $latest !== null && in_array($latest->scanType, ['SIGN', 'SIGN_STATION'], true);
     }
 }
