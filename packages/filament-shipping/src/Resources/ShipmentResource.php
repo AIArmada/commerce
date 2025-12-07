@@ -1,0 +1,190 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentShipping\Resources;
+
+use AIArmada\FilamentShipping\Resources\ShipmentResource\Pages;
+use AIArmada\FilamentShipping\Resources\ShipmentResource\RelationManagers;
+use AIArmada\Shipping\Enums\ShipmentStatus;
+use AIArmada\Shipping\Models\Shipment;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+
+class ShipmentResource extends Resource
+{
+    protected static ?string $model = Shipment::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-truck';
+
+    protected static ?string $navigationGroup = 'Shipping';
+
+    protected static ?int $navigationSort = 1;
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Section::make('Shipment Details')
+                    ->schema([
+                        Forms\Components\TextInput::make('reference')
+                            ->required()
+                            ->maxLength(255),
+
+                        Forms\Components\Select::make('carrier_code')
+                            ->label('Carrier')
+                            ->options(fn () => static::getCarrierOptions())
+                            ->required(),
+
+                        Forms\Components\TextInput::make('service_code')
+                            ->maxLength(50),
+
+                        Forms\Components\Select::make('status')
+                            ->options(collect(ShipmentStatus::cases())
+                                ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()]))
+                            ->required(),
+
+                        Forms\Components\TextInput::make('tracking_number')
+                            ->maxLength(255),
+                    ])
+                    ->columns(2),
+
+                Forms\Components\Section::make('Origin Address')
+                    ->schema([
+                        Forms\Components\KeyValue::make('origin_address')
+                            ->keyLabel('Field')
+                            ->valueLabel('Value'),
+                    ])
+                    ->collapsible(),
+
+                Forms\Components\Section::make('Destination Address')
+                    ->schema([
+                        Forms\Components\KeyValue::make('destination_address')
+                            ->keyLabel('Field')
+                            ->valueLabel('Value'),
+                    ])
+                    ->collapsible(),
+
+                Forms\Components\Section::make('Package Info')
+                    ->schema([
+                        Forms\Components\TextInput::make('package_count')
+                            ->numeric()
+                            ->default(1)
+                            ->minValue(1),
+
+                        Forms\Components\TextInput::make('total_weight')
+                            ->numeric()
+                            ->suffix('g'),
+
+                        Forms\Components\TextInput::make('declared_value')
+                            ->numeric()
+                            ->prefix('RM')
+                            ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
+                            ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : null),
+
+                        Forms\Components\TextInput::make('shipping_cost')
+                            ->numeric()
+                            ->prefix('RM')
+                            ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
+                            ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : null),
+                    ])
+                    ->columns(2),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('reference')
+                    ->searchable()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('carrier_code')
+                    ->label('Carrier')
+                    ->badge()
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('tracking_number')
+                    ->searchable()
+                    ->copyable()
+                    ->copyMessage('Tracking number copied'),
+
+                Tables\Columns\TextColumn::make('status')
+                    ->badge()
+                    ->color(fn (ShipmentStatus $state) => $state->getColor())
+                    ->icon(fn (ShipmentStatus $state) => $state->getIcon()),
+
+                Tables\Columns\TextColumn::make('total_weight')
+                    ->label('Weight')
+                    ->formatStateUsing(fn ($state) => number_format($state / 1000, 2).' kg')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('shipping_cost')
+                    ->label('Cost')
+                    ->money('MYR', divideBy: 100)
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('shipped_at')
+                    ->dateTime()
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('created_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->options(collect(ShipmentStatus::cases())
+                        ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()])),
+
+                Tables\Filters\SelectFilter::make('carrier_code')
+                    ->label('Carrier')
+                    ->options(fn () => static::getCarrierOptions()),
+            ])
+            ->actions([
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make(),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ])
+            ->defaultSort('created_at', 'desc');
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            RelationManagers\ItemsRelationManager::class,
+            RelationManagers\EventsRelationManager::class,
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListShipments::route('/'),
+            'create' => Pages\CreateShipment::route('/create'),
+            'view' => Pages\ViewShipment::route('/{record}'),
+            'edit' => Pages\EditShipment::route('/{record}/edit'),
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    protected static function getCarrierOptions(): array
+    {
+        $shipping = app(\AIArmada\Shipping\ShippingManager::class);
+
+        return collect($shipping->getAvailableDrivers())
+            ->mapWithKeys(fn ($driver) => [$driver => ucfirst($driver)])
+            ->toArray();
+    }
+}
