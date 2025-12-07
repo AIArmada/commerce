@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Events;
 
+use AIArmada\CommerceSupport\Contracts\Events\InventoryEventInterface;
+use AIArmada\Inventory\Events\Concerns\HasInventoryEventData;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-final class InventoryAllocated
+final class InventoryAllocated implements InventoryEventInterface
 {
     use Dispatchable;
+    use HasInventoryEventData;
     use SerializesModels;
 
     /**
@@ -22,7 +25,17 @@ final class InventoryAllocated
         public Model $inventoryable,
         public Collection $allocations,
         public string $cartId
-    ) {}
+    ) {
+        $this->initializeEventData();
+    }
+
+    /**
+     * Get the event type identifier.
+     */
+    public function getEventType(): string
+    {
+        return 'inventory.allocated';
+    }
 
     /**
      * Get total quantity allocated.
