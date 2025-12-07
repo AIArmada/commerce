@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource;
 use AIArmada\Shipping\Models\ReturnAuthorization;
+use Filament\Support\Icons\Heroicon;
 
 uses(TestCase::class);
 
@@ -13,7 +14,7 @@ uses(TestCase::class);
 // ============================================
 
 it('has correct navigation icon', function (): void {
-    expect(ReturnAuthorizationResource::getNavigationIcon())->toBe('heroicon-o-arrow-uturn-left');
+    expect(ReturnAuthorizationResource::getNavigationIcon())->toBe(Heroicon::OutlinedArrowUturnLeft);
 });
 
 it('has correct navigation group', function (): void {

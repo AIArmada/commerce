@@ -14,7 +14,7 @@ use AIArmada\Vouchers\Stacking\Rules\MaxVouchersRule;
 use AIArmada\Vouchers\Stacking\Rules\MutualExclusionRule;
 use AIArmada\Vouchers\Stacking\Rules\TypeRestrictionRule;
 
-function createTestCart(): Cart
+function createStackingTestCart(): Cart
 {
     $storage = new InMemoryStorage();
 
@@ -57,7 +57,7 @@ describe('MaxVouchersRule', function (): void {
         $rule = new MaxVouchersRule();
         $newVoucher = createVoucherCondition('NEW');
         $existing = collect([createVoucherCondition('EXISTING')]);
-        $cart = createTestCart();
+        $cart = createStackingTestCart();
 
         $decision = $rule->evaluate($newVoucher, $existing, $cart, ['value' => 3]);
 
@@ -72,7 +72,7 @@ describe('MaxVouchersRule', function (): void {
             createVoucherCondition('B'),
             createVoucherCondition('C'),
         ]);
-        $cart = createTestCart();
+        $cart = createStackingTestCart();
 
         $decision = $rule->evaluate($newVoucher, $existing, $cart, ['value' => 3]);
 
@@ -87,7 +87,7 @@ describe('MaxVouchersRule', function (): void {
             fn ($i) => createVoucherCondition("V{$i}"),
             range(1, 10)
         ));
-        $cart = createTestCart();
+        $cart = createStackingTestCart();
 
         $decision = $rule->evaluate($newVoucher, $existing, $cart, ['value' => -1]);
 
@@ -107,7 +107,7 @@ describe('MutualExclusionRule', function (): void {
         $rule = new MutualExclusionRule();
         $newVoucher = createVoucherCondition('NEW', metadata: ['exclusion_groups' => ['group_a']]);
         $existing = collect([createVoucherCondition('EXISTING', metadata: ['exclusion_groups' => ['group_b']])]);
-        $cart = createTestCart();
+        $cart = createStackingTestCart();
 
         $decision = $rule->evaluate($newVoucher, $existing, $cart, ['groups' => ['group_a', 'group_b']]);
 
@@ -118,7 +118,7 @@ describe('MutualExclusionRule', function (): void {
         $rule = new MutualExclusionRule();
         $newVoucher = createVoucherCondition('NEW', metadata: ['exclusion_groups' => ['flash_sale']]);
         $existing = collect([createVoucherCondition('EXISTING', metadata: ['exclusion_groups' => ['flash_sale']])]);
-        $cart = createTestCart();
+        $cart = createStackingTestCart();
 
         $decision = $rule->evaluate($newVoucher, $existing, $cart, ['groups' => ['flash_sale']]);
 
@@ -131,7 +131,7 @@ describe('MutualExclusionRule', function (): void {
         $rule = new MutualExclusionRule();
         $newVoucher = createVoucherCondition('NEW');
         $existing = collect([createVoucherCondition('EXISTING', metadata: ['exclusion_groups' => ['flash_sale']])]);
-        $cart = createTestCart();
+        $cart = createStackingTestCart();
 
         $decision = $rule->evaluate($newVoucher, $existing, $cart, ['groups' => ['flash_sale']]);
 
@@ -151,7 +151,7 @@ describe('TypeRestrictionRule', function (): void {
         $rule = new TypeRestrictionRule();
         $newVoucher = createVoucherCondition('NEW', VoucherType::Fixed, 1000);
         $existing = collect();
-        $cart = createTestCart();
+        $cart = createStackingTestCart();
 
         $decision = $rule->evaluate($newVoucher, $existing, $cart, [
             'max_per_type' => ['percentage' => 1, 'fixed' => 2],
@@ -164,7 +164,7 @@ describe('TypeRestrictionRule', function (): void {
         $rule = new TypeRestrictionRule();
         $newVoucher = createVoucherCondition('NEW', VoucherType::Percentage, 1000);
         $existing = collect([createVoucherCondition('EXISTING', VoucherType::Percentage, 500)]);
-        $cart = createTestCart();
+        $cart = createStackingTestCart();
 
         $decision = $rule->evaluate($newVoucher, $existing, $cart, [
             'max_per_type' => ['percentage' => 1, 'fixed' => 2],

@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource;
 use AIArmada\Shipping\Models\ShippingZone;
+use Filament\Support\Icons\Heroicon;
 
 uses(TestCase::class);
 
@@ -13,7 +14,7 @@ uses(TestCase::class);
 // ============================================
 
 it('has correct navigation icon', function (): void {
-    expect(ShippingZoneResource::getNavigationIcon())->toBe('heroicon-o-map');
+    expect(ShippingZoneResource::getNavigationIcon())->toBe(Heroicon::OutlinedMap);
 });
 
 it('has correct navigation group', function (): void {

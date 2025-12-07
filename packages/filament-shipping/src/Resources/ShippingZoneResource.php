@@ -6,25 +6,28 @@ namespace AIArmada\FilamentShipping\Resources;
 
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource\Pages;
 use AIArmada\Shipping\Models\ShippingZone;
+use BackedEnum;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class ShippingZoneResource extends Resource
 {
     protected static ?string $model = ShippingZone::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-map';
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMap;
 
-    protected static ?string $navigationGroup = 'Shipping';
+    protected static string|UnitEnum|null $navigationGroup = 'Shipping';
 
     protected static ?int $navigationSort = 2;
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Forms\Components\Section::make('Zone Details')
                     ->schema([

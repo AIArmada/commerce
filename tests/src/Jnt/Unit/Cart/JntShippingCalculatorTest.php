@@ -9,7 +9,7 @@ use AIArmada\Jnt\Data\AddressData;
 use AIArmada\Jnt\Services\JntExpressService;
 use Illuminate\Support\Facades\DB;
 
-function createTestCart(string $identifier = 'test-user'): Cart
+function createJntTestCart(string $identifier = 'test-user'): Cart
 {
     $storage = new DatabaseStorage(DB::connection('testing'), 'carts');
 
@@ -60,7 +60,7 @@ describe('JntShippingCalculator', function (): void {
     });
 
     it('calculates cart weight from items correctly', function (): void {
-        $cart = createTestCart('weight-test-1');
+        $cart = createJntTestCart('weight-test-1');
 
         // Add items with weight attribute
         $cart->add([
@@ -86,7 +86,7 @@ describe('JntShippingCalculator', function (): void {
     });
 
     it('returns zero weight for empty cart', function (): void {
-        $cart = createTestCart('empty-weight');
+        $cart = createJntTestCart('empty-weight');
 
         $calculator = new JntShippingCalculator(createTestJntExpressService());
         $weight = $calculator->getCartWeight($cart);
@@ -95,7 +95,7 @@ describe('JntShippingCalculator', function (): void {
     });
 
     it('handles items without weight attribute', function (): void {
-        $cart = createTestCart('no-weight-attr');
+        $cart = createJntTestCart('no-weight-attr');
         $cart->add([
             'id' => 'no-weight-item',
             'name' => 'No Weight',
@@ -110,7 +110,7 @@ describe('JntShippingCalculator', function (): void {
     });
 
     it('calculates shipping for peninsular Malaysia', function (): void {
-        $cart = createTestCart('peninsular-test');
+        $cart = createJntTestCart('peninsular-test');
         $cart->add([
             'id' => 'weighted-item',
             'name' => 'Weighted Item',
@@ -139,7 +139,7 @@ describe('JntShippingCalculator', function (): void {
     });
 
     it('applies east Malaysia multiplier for Sabah', function (): void {
-        $cart = createTestCart('sabah-test');
+        $cart = createJntTestCart('sabah-test');
         $cart->add([
             'id' => 'sabah-item',
             'name' => 'Sabah Item',
@@ -174,7 +174,7 @@ describe('JntShippingCalculator', function (): void {
     });
 
     it('returns null when cart has zero weight', function (): void {
-        $cart = createTestCart('zero-weight');
+        $cart = createJntTestCart('zero-weight');
 
         $destination = new AddressData(
             name: 'Test',
@@ -192,7 +192,7 @@ describe('JntShippingCalculator', function (): void {
     it('returns null when origin address not configured', function (): void {
         config(['jnt.shipping.origin' => null]);
 
-        $cart = createTestCart('no-origin');
+        $cart = createJntTestCart('no-origin');
         $cart->add([
             'id' => 'origin-test',
             'name' => 'Origin Test',
@@ -215,7 +215,7 @@ describe('JntShippingCalculator', function (): void {
     });
 
     it('includes quote ID and timestamp', function (): void {
-        $cart = createTestCart('quote-id-test');
+        $cart = createJntTestCart('quote-id-test');
         $cart->add([
             'id' => 'quote-test-item',
             'name' => 'Quote Test',
@@ -257,7 +257,7 @@ describe('JntShippingCalculator Weight-Based Pricing', function (): void {
     });
 
     it('charges base rate for first kg', function (): void {
-        $cart = createTestCart('base-rate-test');
+        $cart = createJntTestCart('base-rate-test');
         $cart->add([
             'id' => 'base-item',
             'name' => 'Base Item',
@@ -280,7 +280,7 @@ describe('JntShippingCalculator Weight-Based Pricing', function (): void {
     });
 
     it('adds per-kg rate for additional weight', function (): void {
-        $cart = createTestCart('per-kg-test');
+        $cart = createJntTestCart('per-kg-test');
         $cart->add([
             'id' => 'heavy-item',
             'name' => 'Heavy Item',
@@ -309,7 +309,7 @@ describe('JntShippingCalculator Weight-Based Pricing', function (): void {
             'jnt.shipping.min_charge' => 800,
         ]);
 
-        $cart = createTestCart('min-charge-test');
+        $cart = createJntTestCart('min-charge-test');
         $cart->add([
             'id' => 'light-item',
             'name' => 'Light Item',

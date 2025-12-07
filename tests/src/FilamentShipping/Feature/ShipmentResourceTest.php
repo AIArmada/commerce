@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Models\Shipment;
+use Filament\Support\Icons\Heroicon;
 
 uses(TestCase::class);
 
@@ -13,7 +14,7 @@ uses(TestCase::class);
 // ============================================
 
 it('has correct navigation icon', function (): void {
-    expect(ShipmentResource::getNavigationIcon())->toBe('heroicon-o-truck');
+    expect(ShipmentResource::getNavigationIcon())->toBe(Heroicon::OutlinedTruck);
 });
 
 it('has correct navigation group', function (): void {

@@ -7,7 +7,7 @@ use AIArmada\Cart\Storage\StorageInterface;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 
-function createTestCart(string $instance = 'test'): Cart
+function createMoneyTestCart(string $instance = 'test'): Cart
 {
     return new Cart(
         storage: new class implements StorageInterface
@@ -264,7 +264,7 @@ beforeEach(function (): void {
 });
 
 it('demonstrates money integration with cart package', function (): void {
-    $cart = createTestCart('shopping');
+    $cart = createMoneyTestCart('shopping');
 
     // Add items with float prices (treated as dollars, converted to cents)
     $cart->add('product-1', 'Widget', 19.99, 2);  // $19.99 = 1999 cents
@@ -285,7 +285,7 @@ it('demonstrates money integration with cart package', function (): void {
 });
 
 it('shows money precision advantages over float arithmetic', function (): void {
-    $cart = createTestCart('precision_test');
+    $cart = createMoneyTestCart('precision_test');
 
     // Add items with prices that cause float precision issues
     $trickyPrice = 10.0; // 0.1 USD = 10 cents
@@ -302,7 +302,7 @@ it('shows money precision advantages over float arithmetic', function (): void {
 });
 
 it('handles complex cart scenarios with money precision', function (): void {
-    $cart = createTestCart('complex_test');
+    $cart = createMoneyTestCart('complex_test');
 
     // Add items with float prices (dollars converted to cents)
     $cart->add('expensive', 'Luxury Item', 1299.99, 1);  // $1299.99 = 129999 cents
@@ -322,7 +322,7 @@ it('handles complex cart scenarios with money precision', function (): void {
 });
 
 it('demonstrates money currency safety', function (): void {
-    $cart = createTestCart('currency_test');
+    $cart = createMoneyTestCart('currency_test');
 
     // Add items with different currencies - should maintain currency integrity
     $usdPrice = 1999.0; // 19.99 in cents
@@ -336,7 +336,7 @@ it('demonstrates money currency safety', function (): void {
 });
 
 it('shows item-level money calculations', function (): void {
-    $cart = createTestCart('item_calculations');
+    $cart = createMoneyTestCart('item_calculations');
 
     // Add an item with quantity
     // 24.99 as float is treated as $24.99 and converted to 2499 cents
