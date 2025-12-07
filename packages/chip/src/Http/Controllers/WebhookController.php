@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Http\Controllers;
 
-use AIArmada\Chip\Data\BillingTemplateClient;
+use AIArmada\Chip\Data\BillingTemplateClientData;
 use AIArmada\Chip\Data\Payout;
 use AIArmada\Chip\Data\Purchase;
 use AIArmada\Chip\Enums\WebhookEventType;
@@ -154,16 +154,16 @@ class WebhookController extends Controller
     }
 
     /**
-     * Extract BillingTemplateClient data object from payload.
+     * Extract BillingTemplateClientData data object from payload.
      *
      * @param  array<string, mixed>  $payload
      */
-    protected function extractBillingTemplateClient(array $payload): ?BillingTemplateClient
+    protected function extractBillingTemplateClient(array $payload): ?BillingTemplateClientData
     {
         $type = $payload['type'] ?? '';
 
         if ($type === 'billing_template_client' || str_starts_with($payload['event_type'] ?? '', 'billing_template_client.')) {
-            return BillingTemplateClient::fromArray($payload);
+            return BillingTemplateClientData::fromArray($payload);
         }
 
         return null;

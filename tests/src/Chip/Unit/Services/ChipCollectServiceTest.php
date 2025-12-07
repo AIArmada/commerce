@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Builders\PurchaseBuilder;
 use AIArmada\Chip\Clients\ChipCollectClient;
-use AIArmada\Chip\Data\Client;
+use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\ClientDetails;
 use AIArmada\Chip\Data\Product;
 use AIArmada\Chip\Data\Purchase;
@@ -513,7 +513,7 @@ describe('ChipCollectService Client Management', function (): void {
 
         $client = $this->service->createClient($requestData);
 
-        expect($client)->toBeInstanceOf(Client::class);
+        expect($client)->toBeInstanceOf(ClientData::class);
         expect($client->id)->toBe('client_123');
         expect($client->email)->toBe('john@example.com');
         expect($client->full_name)->toBe('John Doe');
@@ -537,7 +537,7 @@ describe('ChipCollectService Client Management', function (): void {
 
         $client = $this->service->getClient('client_123');
 
-        expect($client)->toBeInstanceOf(Client::class);
+        expect($client)->toBeInstanceOf(ClientData::class);
         expect($client->id)->toBe('client_123');
         expect($client->full_name)->toBe('John Doe');
     });

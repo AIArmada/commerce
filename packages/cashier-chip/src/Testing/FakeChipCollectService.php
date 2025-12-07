@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Testing;
 
-use AIArmada\Chip\Data\Client;
+use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\ClientDetails;
 use AIArmada\Chip\Data\Purchase;
 
@@ -163,21 +163,21 @@ class FakeChipCollectService
      *
      * @param  array<string, mixed>  $data
      */
-    public function createClient(array $data): Client
+    public function createClient(array $data): ClientData
     {
         $response = $this->fakeClient->createClient($data);
 
-        return Client::fromArray($response);
+        return ClientData::fromArray($response);
     }
 
     /**
      * Get a client.
      */
-    public function getClient(string $clientId): Client
+    public function getClient(string $clientId): ClientData
     {
         $response = $this->fakeClient->getClient($clientId);
 
-        return Client::fromArray($response ?? []);
+        return ClientData::fromArray($response ?? []);
     }
 
     /**
@@ -196,11 +196,11 @@ class FakeChipCollectService
      *
      * @param  array<string, mixed>  $data
      */
-    public function updateClient(string $clientId, array $data): Client
+    public function updateClient(string $clientId, array $data): ClientData
     {
         $response = $this->fakeClient->updateClient($clientId, $data);
 
-        return Client::fromArray($response ?? []);
+        return ClientData::fromArray($response ?? []);
     }
 
     /**
@@ -208,11 +208,11 @@ class FakeChipCollectService
      *
      * @param  array<string, mixed>  $data
      */
-    public function partialUpdateClient(string $clientId, array $data): Client
+    public function partialUpdateClient(string $clientId, array $data): ClientData
     {
         $response = $this->fakeClient->updateClient($clientId, $data);
 
-        return Client::fromArray($response ?? []);
+        return ClientData::fromArray($response ?? []);
     }
 
     /**

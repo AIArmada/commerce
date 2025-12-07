@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Services;
 
 use AIArmada\Chip\Clients\ChipSendClient;
-use AIArmada\Chip\Data\BankAccount;
+use AIArmada\Chip\Data\BankAccountData;
 use AIArmada\Chip\Data\SendInstruction;
 use AIArmada\Chip\Data\SendLimit;
 use AIArmada\Chip\Data\SendWebhook;
@@ -85,7 +85,7 @@ class ChipSendService
         string $accountNumber,
         string $accountHolderName,
         ?string $reference = null
-    ): BankAccount {
+    ): BankAccountData {
         $data = [
             'bank_code' => $bankCode,
             'account_number' => $accountNumber,
@@ -98,14 +98,14 @@ class ChipSendService
 
         $response = $this->client->post('send/bank_accounts', $data);
 
-        return BankAccount::fromArray($response);
+        return BankAccountData::fromArray($response);
     }
 
-    public function getBankAccount(string $id): BankAccount
+    public function getBankAccount(string $id): BankAccountData
     {
         $response = $this->client->get("send/bank_accounts/{$id}");
 
-        return BankAccount::fromArray($response);
+        return BankAccountData::fromArray($response);
     }
 
     /**
@@ -123,11 +123,11 @@ class ChipSendService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function updateBankAccount(string $id, array $data): BankAccount
+    public function updateBankAccount(string $id, array $data): BankAccountData
     {
         $response = $this->client->put("send/bank_accounts/{$id}", $data);
 
-        return BankAccount::fromArray($response);
+        return BankAccountData::fromArray($response);
     }
 
     public function deleteBankAccount(string $id): void

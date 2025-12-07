@@ -7,7 +7,7 @@ namespace AIArmada\CashierChip\Concerns;
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Exceptions\CustomerAlreadyCreated;
 use AIArmada\CashierChip\Exceptions\InvalidCustomer;
-use AIArmada\Chip\Data\Client;
+use AIArmada\Chip\Data\ClientData;
 
 trait ManagesCustomer
 {
@@ -34,7 +34,7 @@ trait ManagesCustomer
      *
      * @throws CustomerAlreadyCreated
      */
-    public function createAsChipCustomer(array $options = []): Client
+    public function createAsChipCustomer(array $options = []): ClientData
     {
         if ($this->hasChipId()) {
             throw CustomerAlreadyCreated::exists($this);
@@ -65,7 +65,7 @@ trait ManagesCustomer
      *
      * @param  array<string, mixed>  $options
      */
-    public function updateChipCustomer(array $options = []): Client
+    public function updateChipCustomer(array $options = []): ClientData
     {
         $this->assertCustomerExists();
 
@@ -77,7 +77,7 @@ trait ManagesCustomer
      *
      * @param  array<string, mixed>  $options
      */
-    public function createOrGetChipCustomer(array $options = []): Client
+    public function createOrGetChipCustomer(array $options = []): ClientData
     {
         if ($this->hasChipId()) {
             return $this->asChipCustomer();
@@ -91,7 +91,7 @@ trait ManagesCustomer
      *
      * @param  array<string, mixed>  $options
      */
-    public function updateOrCreateChipCustomer(array $options = []): Client
+    public function updateOrCreateChipCustomer(array $options = []): ClientData
     {
         if ($this->hasChipId()) {
             return $this->updateChipCustomer($options);
@@ -105,7 +105,7 @@ trait ManagesCustomer
      *
      * @param  array<string, mixed>  $options
      */
-    public function syncOrCreateChipCustomer(array $options = []): Client
+    public function syncOrCreateChipCustomer(array $options = []): ClientData
     {
         if ($this->hasChipId()) {
             return $this->syncChipCustomerDetails();
@@ -117,7 +117,7 @@ trait ManagesCustomer
     /**
      * Get the CHIP customer for the model.
      */
-    public function asChipCustomer(): Client
+    public function asChipCustomer(): ClientData
     {
         $this->assertCustomerExists();
 
@@ -177,7 +177,7 @@ trait ManagesCustomer
     /**
      * Sync the customer's information to CHIP.
      */
-    public function syncChipCustomerDetails(): Client
+    public function syncChipCustomerDetails(): ClientData
     {
         return $this->updateChipCustomer(array_filter([
             'full_name' => $this->chipName(),

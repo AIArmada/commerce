@@ -7,11 +7,11 @@ namespace AIArmada\Chip\Data;
 use Carbon\Carbon;
 
 /**
- * CHIP BillingTemplateClient data object.
+ * CHIP BillingTemplateClientData data object.
  *
  * Represents a client subscribed to a billing template (subscription).
  */
-class BillingTemplateClient
+class BillingTemplateClientData
 {
     public function __construct(
         public readonly string $id,

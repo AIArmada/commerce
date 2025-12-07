@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Data;
 
 use Carbon\Carbon;
 
-final class BankAccount
+final class BankAccountData
 {
     public function __construct(
         public readonly int $id,
