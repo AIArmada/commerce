@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Services;
 
 use AIArmada\Chip\Builders\PurchaseBuilder;
 use AIArmada\Chip\Clients\ChipCollectClient;
-use AIArmada\Chip\Data\Client;
+use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\ClientDetails;
 use AIArmada\Chip\Data\CompanyStatement;
 use AIArmada\Chip\Data\Purchase;
@@ -119,12 +119,12 @@ class ChipCollectService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function createClient(array $data): Client
+    public function createClient(array $data): ClientData
     {
         return $this->clients->create($data);
     }
 
-    public function getClient(string $clientId): Client
+    public function getClient(string $clientId): ClientData
     {
         return $this->clients->find($clientId);
     }
@@ -141,7 +141,7 @@ class ChipCollectService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function updateClient(string $clientId, array $data): Client
+    public function updateClient(string $clientId, array $data): ClientData
     {
         return $this->clients->update($clientId, $data);
     }
@@ -149,7 +149,7 @@ class ChipCollectService
     /**
      * @param  array<string, mixed>  $data
      */
-    public function partialUpdateClient(string $clientId, array $data): Client
+    public function partialUpdateClient(string $clientId, array $data): ClientData
     {
         return $this->clients->partialUpdate($clientId, $data);
     }
