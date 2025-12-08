@@ -10,15 +10,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('shipment_events', function (Blueprint $table): void {
-            $table->id();
-            $table->foreignId('shipment_id')->constrained()->cascadeOnDelete();
+        $tableName = config('shipping.database.tables.shipment_events', 'shipment_events');
+        $jsonType = (string) config('shipping.database.json_column_type', 'json');
+
+        Schema::create($tableName, function (Blueprint $table) use ($tableName, $jsonType): void {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('shipment_id');
 
             $table->string('carrier_event_code', 50)->nullable();
             $table->string('normalized_status', 50)->index();
             $table->text('description')->nullable();
 
-            // Location
             $table->string('location')->nullable();
             $table->string('city')->nullable();
             $table->string('state')->nullable();
@@ -26,20 +28,19 @@ return new class extends Migration
             $table->string('postal_code', 20)->nullable();
 
             $table->timestamp('occurred_at')->index();
-            $table->json('raw_data')->nullable();
+            $table->{$jsonType}('raw_data')->nullable();
 
             $table->timestamps();
 
-            // Prevent duplicate events
             $table->unique(
                 ['shipment_id', 'carrier_event_code', 'occurred_at'],
-                'shipment_events_unique'
+                $tableName.'_unique'
             );
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('shipment_events');
+        Schema::dropIfExists(config('shipping.database.tables.shipment_events', 'shipment_events'));
     }
 };

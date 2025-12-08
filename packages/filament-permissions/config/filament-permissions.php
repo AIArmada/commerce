@@ -2,6 +2,17 @@
 
 declare(strict_types=1);
 
+$tablePrefix = env('PERMISSIONS_TABLE_PREFIX', env('COMMERCE_TABLE_PREFIX', ''));
+
+$tables = [
+    'permission_groups' => $tablePrefix.'perm_permission_groups',
+    'role_templates' => $tablePrefix.'perm_role_templates',
+    'permission_group_permission' => $tablePrefix.'perm_permission_group_permission',
+    'scoped_permissions' => $tablePrefix.'perm_scoped_permissions',
+    'access_policies' => $tablePrefix.'perm_access_policies',
+    'audit_logs' => $tablePrefix.'perm_audit_logs',
+];
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -9,15 +20,9 @@ return [
     |--------------------------------------------------------------------------
     */
     'database' => [
+        'table_prefix' => $tablePrefix,
         'json_column_type' => env('PERMISSIONS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
-        'tables' => [
-            'permission_groups' => 'perm_permission_groups',
-            'role_templates' => 'perm_role_templates',
-            'permission_group_permission' => 'perm_permission_group_permission',
-            'scoped_permissions' => 'perm_scoped_permissions',
-            'access_policies' => 'perm_access_policies',
-            'audit_logs' => 'perm_audit_logs',
-        ],
+        'tables' => $tables,
     ],
 
     /*

@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * @property int $id
- * @property int $shipment_id
+ * @property string $id
+ * @property string $shipment_id
  * @property string $format
  * @property string|null $size
  * @property string|null $url
@@ -21,7 +22,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ShipmentLabel extends Model
 {
-    protected $table = 'shipment_labels';
+    use HasUuids;
+
+    protected $keyType = 'string';
+
+    public $incrementing = false;
 
     protected $fillable = [
         'shipment_id',
@@ -31,6 +36,11 @@ class ShipmentLabel extends Model
         'content',
         'generated_at',
     ];
+
+    public function getTable(): string
+    {
+        return config('shipping.database.tables.shipment_labels', 'shipment_labels');
+    }
 
     /**
      * @return BelongsTo<Shipment, ShipmentLabel>

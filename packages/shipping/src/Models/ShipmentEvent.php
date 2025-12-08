@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Models;
 
 use AIArmada\Shipping\Enums\TrackingStatus;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * @property int $id
- * @property int $shipment_id
+ * @property string $id
+ * @property string $shipment_id
  * @property string|null $carrier_event_code
  * @property TrackingStatus $normalized_status
  * @property string|null $description
@@ -27,7 +28,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ShipmentEvent extends Model
 {
-    protected $table = 'shipment_events';
+    use HasUuids;
+
+    protected $keyType = 'string';
+
+    public $incrementing = false;
 
     protected $fillable = [
         'shipment_id',
@@ -42,6 +47,11 @@ class ShipmentEvent extends Model
         'occurred_at',
         'raw_data',
     ];
+
+    public function getTable(): string
+    {
+        return config('shipping.database.tables.shipment_events', 'shipment_events');
+    }
 
     /**
      * @return BelongsTo<Shipment, ShipmentEvent>
