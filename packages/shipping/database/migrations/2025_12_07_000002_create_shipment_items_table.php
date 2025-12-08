@@ -10,33 +10,35 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('shipment_items', function (Blueprint $table): void {
-            $table->id();
-            $table->foreignId('shipment_id')->constrained()->cascadeOnDelete();
+        $tableName = config('shipping.database.tables.shipment_items', 'shipment_items');
+        $shipmentsTable = config('shipping.database.tables.shipments', 'shipments');
+        $jsonType = (string) config('shipping.database.json_column_type', 'json');
 
-            // Polymorphic link to original item
-            $table->nullableMorphs('shippable_item');
+        Schema::create($tableName, function (Blueprint $table) use ($tableName, $shipmentsTable, $jsonType): void {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('shipment_id');
+
+            $table->nullableUuidMorphs('shippable_item');
 
             $table->string('sku')->nullable();
             $table->string('name');
             $table->text('description')->nullable();
             $table->unsignedInteger('quantity')->default(1);
-            $table->unsignedInteger('weight')->default(0); // grams
-            $table->unsignedInteger('declared_value')->default(0); // cents
+            $table->unsignedInteger('weight')->default(0);
+            $table->unsignedInteger('declared_value')->default(0);
 
-            // For customs
             $table->string('hs_code')->nullable();
             $table->string('origin_country', 3)->nullable();
 
-            $table->json('metadata')->nullable();
+            $table->{$jsonType}('metadata')->nullable();
             $table->timestamps();
 
-            $table->index(['shipment_id', 'sku']);
+            $table->index(['shipment_id', 'sku'], $tableName.'_shipment_sku');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('shipment_items');
+        Schema::dropIfExists(config('shipping.database.tables.shipment_items', 'shipment_items'));
     }
 };

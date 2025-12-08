@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- * @property int $id
- * @property int $shipment_id
+ * @property string $id
+ * @property string $shipment_id
  * @property string|null $sku
  * @property string $name
  * @property string|null $description
@@ -26,7 +27,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class ShipmentItem extends Model
 {
-    protected $table = 'shipment_items';
+    use HasUuids;
+
+    protected $keyType = 'string';
+
+    public $incrementing = false;
 
     protected $fillable = [
         'shipment_id',
@@ -42,6 +47,11 @@ class ShipmentItem extends Model
         'origin_country',
         'metadata',
     ];
+
+    public function getTable(): string
+    {
+        return config('shipping.database.tables.shipment_items', 'shipment_items');
+    }
 
     /**
      * @var array<string, mixed>

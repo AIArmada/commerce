@@ -6,6 +6,7 @@ namespace AIArmada\Shipping\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Shipping\Enums\ReturnReason;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,16 +15,16 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string $rma_number
- * @property int|null $original_shipment_id
+ * @property string|null $original_shipment_id
  * @property string|null $order_reference
- * @property int|null $customer_id
+ * @property string|null $customer_id
  * @property string $status
  * @property string $type
  * @property string $reason
  * @property string|null $reason_details
- * @property int|null $approved_by
+ * @property string|null $approved_by
  * @property \Illuminate\Support\Carbon|null $approved_at
  * @property \Illuminate\Support\Carbon|null $received_at
  * @property \Illuminate\Support\Carbon|null $completed_at
@@ -38,10 +39,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class ReturnAuthorization extends Model
 {
+    use HasUuids;
     use HasOwner;
     use SoftDeletes;
 
-    protected $table = 'return_authorizations';
+    protected $keyType = 'string';
+
+    public $incrementing = false;
 
     protected $fillable = [
         'owner_id',
@@ -61,6 +65,11 @@ class ReturnAuthorization extends Model
         'expires_at',
         'metadata',
     ];
+
+    public function getTable(): string
+    {
+        return config('shipping.database.tables.return_authorizations', 'return_authorizations');
+    }
 
     /**
      * @var array<string, mixed>
@@ -179,6 +188,10 @@ class ReturnAuthorization extends Model
             if (empty($rma->rma_number)) {
                 $rma->rma_number = static::generateRmaNumber();
             }
+        });
+
+        static::deleting(function (ReturnAuthorization $rma): void {
+            $rma->items()->delete();
         });
     }
 

@@ -7,13 +7,14 @@ namespace AIArmada\Shipping\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 /**
- * @property int $id
+ * @property string $id
  * @property string $ulid
  * @property string $reference
  * @property string $carrier_code
@@ -46,10 +47,13 @@ use Illuminate\Support\Str;
  */
 class Shipment extends Model
 {
+    use HasUuids;
     use HasOwner;
     use SoftDeletes;
 
-    protected $table = 'shipments';
+    protected $keyType = 'string';
+
+    public $incrementing = false;
 
     protected $fillable = [
         'owner_id',
@@ -79,6 +83,11 @@ class Shipment extends Model
         'last_tracking_sync',
         'metadata',
     ];
+
+    public function getTable(): string
+    {
+        return config('shipping.database.tables.shipments', 'shipments');
+    }
 
     /**
      * @var array<string, mixed>
@@ -193,6 +202,12 @@ class Shipment extends Model
             if (empty($shipment->ulid)) {
                 $shipment->ulid = (string) Str::ulid();
             }
+        });
+
+        static::deleting(function (Shipment $shipment): void {
+            $shipment->items()->delete();
+            $shipment->events()->delete();
+            $shipment->labels()->delete();
         });
     }
 
