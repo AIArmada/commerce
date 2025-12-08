@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Conditions\ConditionTarget;
+use AIArmada\Cart\Contracts\CartableInterface;
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 
 /*
 |--------------------------------------------------------------------------
@@ -25,6 +27,8 @@ pest()->extend(TestCase::class)->in(
     'src/Vouchers',
 );
 
+pest()->extend(InventoryTestCase::class)->in('src/Inventory');
+
 // CashierChip tests use their own CashierChipTestCase via uses() in each test file
 // Cashier (unified) tests use their own CashierTestCase via uses() in each test file
 
@@ -34,9 +38,9 @@ pest()->extend(TestCase::class)->in(
 |--------------------------------------------------------------------------
 */
 
-expect()->extend('toBeCartable', function () {
-    return $this->toBeInstanceOf(AIArmada\Cart\Contracts\CartableInterface::class);
-});
+// expect()->extend('toBeCartable', function () {
+//     return $this->toBeInstanceOf(AIArmada\Cart\Contracts\CartableInterface::class);
+// });
 
 expect()->extend('toHaveValidCartStructure', function () {
     return $this->toHaveKeys(['items', 'conditions', 'metadata']);
@@ -75,7 +79,6 @@ function createSampleConditionData(): array
             'name' => 'Test Discount',
             'type' => 'discount',
             'target' => 'cart@grand_total/aggregate',
-            'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
             'target_definition' => ConditionTarget::from('cart@grand_total/aggregate')->toArray(),
             'value' => '-10%',
         ],
@@ -83,7 +86,6 @@ function createSampleConditionData(): array
             'name' => 'Test Tax',
             'type' => 'tax',
             'target' => 'cart@grand_total/aggregate',
-            'target_definition' => conditionTargetDefinition('cart@grand_total/aggregate'),
             'target_definition' => ConditionTarget::from('cart@grand_total/aggregate')->toArray(),
             'value' => '+8.5%',
         ],
@@ -91,7 +93,6 @@ function createSampleConditionData(): array
             'name' => 'Test Shipping',
             'type' => 'shipping',
             'target' => 'cart@shipping/aggregate',
-            'target_definition' => conditionTargetDefinition('cart@shipping/aggregate'),
             'target_definition' => ConditionTarget::from('cart@shipping/aggregate')->toArray(),
             'value' => '+15.00',
         ],
