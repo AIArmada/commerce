@@ -15,7 +15,7 @@ it('exposes a stable plugin id', function (): void {
 });
 
 it('registers JNT resources and widgets', function (): void {
-    /** @var Panel&\Mockery\MockInterface $panel */
+    /** @var Panel&Mockery\MockInterface $panel */
     $panel = Mockery::mock(Panel::class);
 
     // @phpstan-ignore method.notFound

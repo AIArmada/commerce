@@ -16,9 +16,13 @@ use Illuminate\Support\Facades\Event;
 class InventoryAllocationServiceTest extends InventoryTestCase
 {
     protected InventoryService $inventoryService;
+
     protected InventoryAllocationService $allocationService;
+
     protected InventoryItem $item;
+
     protected InventoryLocation $locationA;
+
     protected InventoryLocation $locationB;
 
     protected function setUp(): void

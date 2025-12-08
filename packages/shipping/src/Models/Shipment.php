@@ -6,8 +6,8 @@ namespace AIArmada\Shipping\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Shipping\Enums\ShipmentStatus;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
@@ -47,13 +47,13 @@ use Illuminate\Support\Str;
  */
 class Shipment extends Model
 {
-    use HasUuids;
     use HasOwner;
+    use HasUuids;
     use SoftDeletes;
 
-    protected $keyType = 'string';
-
     public $incrementing = false;
+
+    protected $keyType = 'string';
 
     protected $fillable = [
         'owner_id',
@@ -84,11 +84,6 @@ class Shipment extends Model
         'metadata',
     ];
 
-    public function getTable(): string
-    {
-        return config('shipping.database.tables.shipments', 'shipments');
-    }
-
     /**
      * @var array<string, mixed>
      */
@@ -101,6 +96,11 @@ class Shipment extends Model
         'shipping_cost' => 0,
         'insurance_cost' => 0,
     ];
+
+    public function getTable(): string
+    {
+        return config('shipping.database.tables.shipments', 'shipments');
+    }
 
     // ─────────────────────────────────────────────────────────────
     // RELATIONSHIPS

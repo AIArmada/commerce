@@ -36,9 +36,9 @@ class ShippingRate extends Model
 {
     use HasUuids;
 
-    protected $keyType = 'string';
-
     public $incrementing = false;
+
+    protected $keyType = 'string';
 
     protected $fillable = [
         'zone_id',
@@ -59,11 +59,6 @@ class ShippingRate extends Model
         'active',
     ];
 
-    public function getTable(): string
-    {
-        return config('shipping.database.tables.shipping_rates', 'shipping_rates');
-    }
-
     /**
      * @var array<string, mixed>
      */
@@ -72,6 +67,11 @@ class ShippingRate extends Model
         'per_unit_rate' => 0,
         'active' => true,
     ];
+
+    public function getTable(): string
+    {
+        return config('shipping.database.tables.shipping_rates', 'shipping_rates');
+    }
 
     // ─────────────────────────────────────────────────────────────
     // RELATIONSHIPS

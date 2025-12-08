@@ -6,8 +6,8 @@ namespace AIArmada\Shipping\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Shipping\Data\AddressData;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -31,12 +31,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 class ShippingZone extends Model
 {
-    use HasUuids;
     use HasOwner;
-
-    protected $keyType = 'string';
+    use HasUuids;
 
     public $incrementing = false;
+
+    protected $keyType = 'string';
 
     protected $fillable = [
         'owner_id',
@@ -55,11 +55,6 @@ class ShippingZone extends Model
         'active',
     ];
 
-    public function getTable(): string
-    {
-        return config('shipping.database.tables.shipping_zones', 'shipping_zones');
-    }
-
     /**
      * @var array<string, mixed>
      */
@@ -68,6 +63,11 @@ class ShippingZone extends Model
         'is_default' => false,
         'active' => true,
     ];
+
+    public function getTable(): string
+    {
+        return config('shipping.database.tables.shipping_zones', 'shipping_zones');
+    }
 
     // ─────────────────────────────────────────────────────────────
     // RELATIONSHIPS

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentVouchers\Services\VoucherStatsAggregator;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use AIArmada\Commerce\Tests\TestCase;
 
 uses(TestCase::class);
 

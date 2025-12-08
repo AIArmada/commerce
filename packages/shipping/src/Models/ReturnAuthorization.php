@@ -6,8 +6,8 @@ namespace AIArmada\Shipping\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Shipping\Enums\ReturnReason;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -39,13 +39,13 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  */
 class ReturnAuthorization extends Model
 {
-    use HasUuids;
     use HasOwner;
+    use HasUuids;
     use SoftDeletes;
 
-    protected $keyType = 'string';
-
     public $incrementing = false;
+
+    protected $keyType = 'string';
 
     protected $fillable = [
         'owner_id',
@@ -66,11 +66,6 @@ class ReturnAuthorization extends Model
         'metadata',
     ];
 
-    public function getTable(): string
-    {
-        return config('shipping.database.tables.return_authorizations', 'return_authorizations');
-    }
-
     /**
      * @var array<string, mixed>
      */
@@ -81,6 +76,11 @@ class ReturnAuthorization extends Model
     public static function generateRmaNumber(): string
     {
         return 'RMA-'.mb_strtoupper(uniqid());
+    }
+
+    public function getTable(): string
+    {
+        return config('shipping.database.tables.return_authorizations', 'return_authorizations');
     }
 
     // ─────────────────────────────────────────────────────────────
