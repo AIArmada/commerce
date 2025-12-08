@@ -227,7 +227,7 @@ class ChipPayment implements PaymentContract
             return $this->payment->currency();
         }
 
-        return $this->payment->purchase['currency'] ?? 'MYR';
+        return $this->payment->purchase->currency ?? 'MYR';
     }
 
     /**
@@ -252,9 +252,9 @@ class ChipPayment implements PaymentContract
         }
 
         // CHIP returns amount in decimal, convert to cents
-        $amount = $this->payment->purchase['total'] ?? $this->payment->amount ?? 0;
+        $amount = $this->payment->purchase->getTotalInCents();
 
-        return (int) ($amount * 100);
+        return (int) $amount;
     }
 
     /**
@@ -292,7 +292,7 @@ class ChipPayment implements PaymentContract
             return $this->payment->recurringToken();
         }
 
-        return $this->payment->recurringToken;
+        return $this->payment->recurring_token;
     }
 
     /**

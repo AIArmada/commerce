@@ -105,13 +105,12 @@ final class DocInfolist
 
                                         TextEntry::make('price')
                                             ->label('Price')
-                                            ->money('MYR'),
+                                            ->money(fn ($record): string => $record->currency ?? 'MYR'),
 
                                         TextEntry::make('line_total')
                                             ->label('Total')
-                                            ->getStateUsing(fn (array $state): float => ($state['quantity'] ?? 1) * ($state['price'] ?? 0)
-                                            )
-                                            ->money('MYR'),
+                                            ->getStateUsing(fn (array $state): float => ($state['quantity'] ?? 1) * ($state['price'] ?? 0))
+                                            ->money(fn ($record): string => $record->currency ?? 'MYR'),
                                     ]),
 
                                 TextEntry::make('description')

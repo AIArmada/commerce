@@ -87,7 +87,7 @@ class ReturnAuthorization extends Model
     }
 
     /**
-     * @return HasOne<Shipment>
+     * @return HasOne<Shipment, ReturnAuthorization>
      */
     public function returnShipment(): HasOne
     {
@@ -96,7 +96,7 @@ class ReturnAuthorization extends Model
     }
 
     /**
-     * @return HasMany<ReturnAuthorizationItem>
+     * @return HasMany<ReturnAuthorizationItem, ReturnAuthorization>
      */
     public function items(): HasMany
     {

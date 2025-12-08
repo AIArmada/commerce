@@ -19,7 +19,7 @@ describe('PurchaseDetails data object with Money', function (): void {
             'debt' => 500,
         ];
 
-        $details = PurchaseDetailsData::fromArray($data);
+        $details = PurchaseDetailsData::from($data);
 
         expect($details->total)->toBeInstanceOf(Money::class)
             ->and($details->debt)->toBeInstanceOf(Money::class)
@@ -38,7 +38,7 @@ describe('PurchaseDetails data object with Money', function (): void {
             'total' => 20000,
         ];
 
-        $details = PurchaseDetailsData::fromArray($data);
+        $details = PurchaseDetailsData::from($data);
         $subtotal = $details->getSubtotal();
 
         expect($subtotal)->toBeInstanceOf(Money::class)
@@ -57,7 +57,7 @@ describe('PurchaseDetails data object with Money', function (): void {
             'total_override' => 9100,
         ];
 
-        $details = PurchaseDetailsData::fromArray($data);
+        $details = PurchaseDetailsData::from($data);
 
         expect($details->subtotal_override)->toBeInstanceOf(Money::class)
             ->and($details->total_tax_override)->toBeInstanceOf(Money::class)
@@ -105,7 +105,7 @@ describe('PurchaseDetails data object with Money', function (): void {
             'total' => 10000,
         ];
 
-        $details = PurchaseDetailsData::fromArray($data);
+        $details = PurchaseDetailsData::from($data);
 
         expect($details->getTotalInCurrency())->toBe(100.0)
             ->and($details->getSubtotalInCurrency())->toBe(100.0);
@@ -118,7 +118,7 @@ describe('PurchaseDetails data object with Money', function (): void {
             'total' => 5000,
         ];
 
-        $details = PurchaseDetailsData::fromArray($data);
+        $details = PurchaseDetailsData::from($data);
 
         expect($details->subtotal_override)->toBeNull()
             ->and($details->total_tax_override)->toBeNull()
@@ -135,7 +135,7 @@ describe('PurchaseDetails data object with Money', function (): void {
             'total' => 5000,
         ];
 
-        $details = PurchaseDetailsData::fromArray($data);
+        $details = PurchaseDetailsData::from($data);
 
         expect($details->products[0]->getCurrency())->toBe('USD')
             ->and($details->products[0]->price->getCurrency()->getCurrency())->toBe('USD');

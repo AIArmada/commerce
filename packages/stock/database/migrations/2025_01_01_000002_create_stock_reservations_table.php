@@ -13,9 +13,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        $tableName = config('stock.reservations_table', 'stock_reservations');
+        $database = config('stock.database', []);
+        $tablePrefix = $database['table_prefix'] ?? 'stock_';
+        $tables = $database['tables'] ?? [];
+        $tableName = $tables['reservations'] ?? $tablePrefix.'reservations';
 
-        Schema::create($tableName, function (Blueprint $table): void {
+        Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
             $table->uuidMorphs('stockable');
             $table->string('cart_id')->index();
@@ -24,8 +27,8 @@ return new class extends Migration
             $table->timestamps();
 
             // Unique constraint: One reservation per product per cart
-            $table->unique(['stockable_type', 'stockable_id', 'cart_id'], 'stock_reservations_unique');
-            $table->index(['stockable_type', 'stockable_id', 'expires_at'], 'stock_reservations_expiry_idx');
+            $table->unique(['stockable_type', 'stockable_id', 'cart_id'], $tableName.'_stockable_cart_unique');
+            $table->index(['stockable_type', 'stockable_id', 'expires_at'], $tableName.'_expiry_idx');
         });
     }
 
@@ -34,6 +37,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists(config('stock.reservations_table', 'stock_reservations'));
+        $database = config('stock.database', []);
+        $tablePrefix = $database['table_prefix'] ?? 'stock_';
+        $tables = $database['tables'] ?? [];
+
+        Schema::dropIfExists($tables['reservations'] ?? $tablePrefix.'reservations');
     }
 };

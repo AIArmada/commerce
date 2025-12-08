@@ -31,6 +31,19 @@ it('allows operations within rate limits', function (): void {
     expect($result->remainingHour)->toBeGreaterThan(0);
 });
 
+it('short-circuits when rate limiting is disabled', function (): void {
+    RateLimiter::shouldReceive('tooManyAttempts')->never();
+    RateLimiter::shouldReceive('hit')->never();
+
+    $limiter = new CartRateLimiter([], 'cart', false);
+
+    $result = $limiter->check('test-user', 'add_item');
+
+    expect($result->allowed)->toBeTrue();
+    expect($result->remainingMinute)->toBe(PHP_INT_MAX);
+    expect($result->remainingHour)->toBe(PHP_INT_MAX);
+});
+
 it('blocks operations when minute limit exceeded', function (): void {
     $limiter = new CartRateLimiter([
         'add_item' => ['perMinute' => 2, 'perHour' => 100],

@@ -48,11 +48,13 @@ final class DocTemplateForm
                             ->schema([
                                 Select::make('doc_type')
                                     ->label('Document Type')
-                                    ->options([
-                                        'invoice' => 'Invoice',
-                                        'receipt' => 'Receipt',
-                                    ])
-                                    ->default('invoice')
+                                    ->options(
+                                        collect(config('docs.types', []))
+                                            ->keys()
+                                            ->mapWithKeys(static fn (string $type): array => [$type => Str::headline($type)])
+                                            ->all()
+                                    )
+                                    ->default(array_key_first(config('docs.types', ['invoice' => []])))
                                     ->required(),
 
                                 TextInput::make('view_name')

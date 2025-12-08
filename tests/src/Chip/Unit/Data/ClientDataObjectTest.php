@@ -23,7 +23,7 @@ describe('Client data object', function (): void {
             'nationality' => 'MY',
         ];
 
-        $client = ClientData::fromArray($data);
+        $client = ClientData::from($data);
 
         expect($client->id)->toBe('client_123');
         expect($client->fullName)->toBe('John Doe');
@@ -40,7 +40,7 @@ describe('Client data object', function (): void {
     });
 
     it('handles minimal client data', function (): void {
-        $client = ClientData::fromArray([
+        $client = ClientData::from([
             'id' => 'client_123',
             'full_name' => 'John Doe',
         ]);
@@ -52,7 +52,7 @@ describe('Client data object', function (): void {
     });
 
     it('exposes helpers for timelines and company detection', function (): void {
-        $client = ClientData::fromArray([
+        $client = ClientData::from([
             'id' => 'client_company',
             'full_name' => 'ACME Operations',
             'created_on' => strtotime('2024-01-01T00:00:00Z'),

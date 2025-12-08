@@ -7,7 +7,7 @@ use Akaunting\Money\Money;
 
 describe('Product data object', function (): void {
     it('calculates price helpers in currency', function (): void {
-        $product = ProductData::fromArray([
+        $product = ProductData::from([
             'name' => 'Premium Plan',
             'quantity' => 2,
             'price' => 19900,

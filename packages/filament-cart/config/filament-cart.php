@@ -9,6 +9,8 @@ return [
     |--------------------------------------------------------------------------
     */
     'database' => [
+        'table_prefix' => 'cart_',
+        'json_column_type' => 'json',
         'tables' => [
             'snapshots' => 'cart_snapshots',
             'snapshot_items' => 'cart_snapshot_items',

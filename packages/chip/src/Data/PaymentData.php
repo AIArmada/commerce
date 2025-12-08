@@ -7,7 +7,7 @@ namespace AIArmada\Chip\Data;
 use Akaunting\Money\Money;
 use Carbon\Carbon;
 
-final class PaymentData
+final class PaymentData extends ChipData
 {
     public function __construct(
         public readonly bool $is_outgoing,
@@ -26,10 +26,11 @@ final class PaymentData
      * Create a Payment from array data (typically from CHIP API response).
      * Amounts in the array are expected to be in cents (minor units).
      *
-     * @param  array<string, mixed>  $data
+        * @param  array<string, mixed>|self  ...$payloads
      */
-    public static function fromArray(array $data): self
+    public static function from(mixed ...$payloads): static
     {
+        $data = self::resolvePayload(...$payloads);
         $currency = $data['currency'] ?? 'MYR';
 
         return new self(

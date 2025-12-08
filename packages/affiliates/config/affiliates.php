@@ -4,10 +4,47 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 
+$tablePrefix = env('AFFILIATES_TABLE_PREFIX', 'affiliate_');
+$tables = [
+    'affiliates' => $tablePrefix.'affiliates',
+    'attributions' => $tablePrefix.'attributions',
+    'conversions' => $tablePrefix.'conversions',
+    'payouts' => $tablePrefix.'payouts',
+    'payout_events' => $tablePrefix.'payout_events',
+    'touchpoints' => $tablePrefix.'touchpoints',
+    'ranks' => $tablePrefix.'ranks',
+    'network' => $tablePrefix.'network',
+    'rank_histories' => $tablePrefix.'rank_histories',
+    'daily_stats' => $tablePrefix.'daily_stats',
+    'fraud_signals' => $tablePrefix.'fraud_signals',
+    'balances' => $tablePrefix.'balances',
+    'payout_methods' => $tablePrefix.'payout_methods',
+    'payout_holds' => $tablePrefix.'payout_holds',
+    'programs' => $tablePrefix.'programs',
+    'program_tiers' => $tablePrefix.'program_tiers',
+    'program_memberships' => $tablePrefix.'program_memberships',
+    'program_creatives' => $tablePrefix.'program_creatives',
+    'links' => $tablePrefix.'links',
+    'commission_rules' => $tablePrefix.'commission_rules',
+    'volume_tiers' => $tablePrefix.'volume_tiers',
+    'commission_promotions' => $tablePrefix.'commission_promotions',
+];
+
 return [
     /*
     |--------------------------------------------------------------------------
-    | Default Currency & Formatting
+    | Database
+    |--------------------------------------------------------------------------
+    */
+    'database' => [
+        'table_prefix' => $tablePrefix,
+        'json_column_type' => env('AFFILIATES_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+        'tables' => $tables,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Defaults
     |--------------------------------------------------------------------------
     |
     | Commission calculations store amounts in the smallest unit (cents).
@@ -21,36 +58,7 @@ return [
         'percentage_scale' => env('AFFILIATES_PERCENTAGE_SCALE', 100), // basis points (100 = 1%)
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Database Tables
-    |--------------------------------------------------------------------------
-    */
-
-    'table_names' => [
-        'affiliates' => 'affiliates',
-        'attributions' => 'affiliate_attributions',
-        'conversions' => 'affiliate_conversions',
-        'payouts' => 'affiliate_payouts',
-        'payout_events' => 'affiliate_payout_events',
-        'touchpoints' => 'affiliate_touchpoints',
-        'ranks' => 'affiliate_ranks',
-        'network' => 'affiliate_network',
-        'rank_histories' => 'affiliate_rank_histories',
-        'daily_stats' => 'affiliate_daily_stats',
-        'fraud_signals' => 'affiliate_fraud_signals',
-        'balances' => 'affiliate_balances',
-        'payout_methods' => 'affiliate_payout_methods',
-        'payout_holds' => 'affiliate_payout_holds',
-        'programs' => 'affiliate_programs',
-        'program_tiers' => 'affiliate_program_tiers',
-        'program_memberships' => 'affiliate_program_memberships',
-        'program_creatives' => 'affiliate_program_creatives',
-        'links' => 'affiliate_links',
-        'commission_rules' => 'affiliate_commission_rules',
-        'volume_tiers' => 'affiliate_volume_tiers',
-        'commission_promotions' => 'affiliate_commission_promotions',
-    ],
+    'table_names' => $tables,
 
     /*
     |--------------------------------------------------------------------------

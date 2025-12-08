@@ -7,7 +7,7 @@ use Akaunting\Money\Money;
 
 describe('Product data object with Money', function (): void {
     it('creates product from array with Money objects', function (): void {
-        $product = ProductData::fromArray([
+        $product = ProductData::from([
             'name' => 'Premium Plan',
             'quantity' => 2,
             'price' => 19900,
@@ -43,7 +43,7 @@ describe('Product data object with Money', function (): void {
     });
 
     it('calculates total price as Money', function (): void {
-        $product = ProductData::fromArray([
+        $product = ProductData::from([
             'name' => 'Premium Plan',
             'quantity' => 2,
             'price' => 19900,
@@ -75,11 +75,12 @@ describe('Product data object with Money', function (): void {
     });
 
     it('handles different currencies', function (): void {
-        $product = ProductData::fromArray([
+        $product = ProductData::from([
             'name' => 'USD Product',
             'quantity' => 1,
             'price' => 1000,
-        ], 'USD');
+            'currency' => 'USD',
+        ]);
 
         expect($product->getCurrency())->toBe('USD')
             ->and($product->price->getCurrency()->getCurrency())->toBe('USD');
@@ -97,7 +98,7 @@ describe('Product data object with Money', function (): void {
     });
 
     it('maintains backward compatibility with deprecated methods', function (): void {
-        $product = ProductData::fromArray([
+        $product = ProductData::from([
             'name' => 'Test',
             'quantity' => 1,
             'price' => 10000,

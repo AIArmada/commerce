@@ -11,8 +11,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('cart_snapshots', function (Blueprint $table): void {
-            $jsonType = (string) commerce_json_column_type('cart', 'json');
+        $databaseConfig = config('filament-cart.database', []);
+        $tablePrefix = $databaseConfig['table_prefix'] ?? 'cart_';
+        $tables = $databaseConfig['tables'] ?? [];
+        $tableName = $tables['snapshots'] ?? $tablePrefix.'snapshots';
+        $jsonType = (string) ($databaseConfig['json_column_type'] ?? commerce_json_column_type('cart', 'json'));
+
+        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('identifier');
             $table->string('instance')->default('default');
@@ -39,18 +44,22 @@ return new class extends Migration
             $table->index('updated_at');
         });
 
-        // GIN indexes only work with jsonb in PostgreSQL
-        if (commerce_json_column_type('cart', 'json') === 'jsonb') {
-            Schema::table('cart_snapshots', function (Blueprint $table): void {
-                DB::statement('CREATE INDEX cart_snapshots_items_gin_index ON cart_snapshots USING GIN (items)');
-                DB::statement('CREATE INDEX cart_snapshots_conditions_gin_index ON cart_snapshots USING GIN (conditions)');
-                DB::statement('CREATE INDEX cart_snapshots_metadata_gin_index ON cart_snapshots USING GIN (metadata)');
+        if (($databaseConfig['json_column_type'] ?? commerce_json_column_type('cart', 'json')) === 'jsonb') {
+            Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
+                DB::statement("CREATE INDEX {$tableName}_items_gin_index ON {$tableName} USING GIN (items)");
+                DB::statement("CREATE INDEX {$tableName}_conditions_gin_index ON {$tableName} USING GIN (conditions)");
+                DB::statement("CREATE INDEX {$tableName}_metadata_gin_index ON {$tableName} USING GIN (metadata)");
             });
         }
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('cart_snapshots');
+        $databaseConfig = config('filament-cart.database', []);
+        $tablePrefix = $databaseConfig['table_prefix'] ?? 'cart_';
+        $tables = $databaseConfig['tables'] ?? [];
+        $tableName = $tables['snapshots'] ?? $tablePrefix.'snapshots';
+
+        Schema::dropIfExists($tableName);
     }
 };

@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Cart;
 
-use AIArmada\Cart\Conditions\Condition;
+use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\Enums\ConditionApplication;
+use AIArmada\Cart\Conditions\Enums\ConditionPhase;
+use AIArmada\Cart\Conditions\Enums\ConditionScope;
 
 /**
  * Shipping condition applied to the cart.
  */
-class ShippingCondition extends Condition
+class ShippingCondition
 {
+    private CartCondition $condition;
+
     /**
      * @param  array<string, mixed>  $attributes
      */
@@ -20,32 +25,39 @@ class ShippingCondition extends Condition
         int|float|string $value,
         array $attributes = []
     ) {
-        parent::__construct($name, $type, $value, $attributes);
+        $this->condition = new CartCondition(
+            name: $name,
+            type: $type,
+            target: $this->defaultTarget(),
+            value: $value,
+            attributes: $attributes,
+            order: $attributes['order'] ?? 0,
+        );
     }
 
     public function getCarrier(): ?string
     {
-        return $this->getAttribute('carrier');
+        return $this->condition->getAttribute('carrier');
     }
 
     public function getService(): ?string
     {
-        return $this->getAttribute('service');
+        return $this->condition->getAttribute('service');
     }
 
     public function getEstimatedDays(): ?int
     {
-        return $this->getAttribute('estimated_days');
+        return $this->condition->getAttribute('estimated_days');
     }
 
     public function getQuoteId(): ?string
     {
-        return $this->getAttribute('quote_id');
+        return $this->condition->getAttribute('quote_id');
     }
 
     public function isFreeShipping(): bool
     {
-        return $this->getValue() === 0;
+        return $this->condition->getValue() === 0;
     }
 
     public function getFormattedValue(): string
@@ -54,9 +66,26 @@ class ShippingCondition extends Condition
             return 'FREE';
         }
 
-        $value = $this->getValue();
-        $currency = $this->getAttribute('currency') ?? 'MYR';
+        $value = $this->condition->getValue();
+        $currency = $this->condition->getAttribute('currency') ?? 'MYR';
 
         return number_format($value / 100, 2).' '.$currency;
+    }
+
+    public function asCartCondition(): CartCondition
+    {
+        return $this->condition;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function defaultTarget(): array
+    {
+        return [
+            'scope' => ConditionScope::CART->value,
+            'phase' => ConditionPhase::SHIPPING->value,
+            'application' => ConditionApplication::AGGREGATE->value,
+        ];
     }
 }

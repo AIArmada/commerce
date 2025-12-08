@@ -11,14 +11,10 @@ return new class extends Migration
     /**
      * Run the migrations.
      *
-     * This migration only runs when cart owner is enabled.
+    * Add owner columns to support multi-tenancy scoping regardless of runtime configuration.
      */
     public function up(): void
     {
-        if (! config('cart.owner.enabled', false)) {
-            return;
-        }
-
         $tableName = config('cart.database.table', 'carts');
 
         if (Schema::hasColumn($tableName, 'owner_type')) {
@@ -42,10 +38,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if (! config('cart.owner.enabled', false)) {
-            return;
-        }
-
         $tableName = config('cart.database.table', 'carts');
 
         if (! Schema::hasColumn($tableName, 'owner_type')) {

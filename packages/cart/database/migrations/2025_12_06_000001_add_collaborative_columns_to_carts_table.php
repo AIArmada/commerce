@@ -14,20 +14,20 @@ return new class extends Migration
     public function up(): void
     {
         $table = config('cart.database.table', 'carts');
+        $jsonType = (string) commerce_json_column_type('cart', 'json');
 
-        Schema::table($table, function (Blueprint $table): void {
+        Schema::table($table, function (Blueprint $table) use ($jsonType): void {
             $table->boolean('is_collaborative')->default(false)->after('metadata');
             $table->foreignUuid('owner_user_id')->nullable()->after('is_collaborative');
-            $table->json('collaborators')->nullable()->after('owner_user_id');
+            $table->{$jsonType}('collaborators')->nullable()->after('owner_user_id');
             $table->integer('max_collaborators')->default(5)->after('collaborators');
             $table->string('collaboration_mode', 20)->default('edit')->after('max_collaborators');
             $table->string('share_token', 64)->nullable()->unique()->after('collaboration_mode');
             $table->timestamp('share_expires_at')->nullable()->after('share_token');
             $table->bigInteger('crdt_version')->default(0)->after('share_expires_at');
-            $table->json('crdt_vector_clock')->nullable()->after('crdt_version');
+            $table->{$jsonType}('crdt_vector_clock')->nullable()->after('crdt_version');
 
             $table->index('is_collaborative', 'idx_carts_collaborative');
-            $table->index('share_token', 'idx_carts_share_token');
             $table->index('owner_user_id', 'idx_carts_owner');
         });
     }
@@ -41,7 +41,6 @@ return new class extends Migration
 
         Schema::table($table, function (Blueprint $table): void {
             $table->dropIndex('idx_carts_collaborative');
-            $table->dropIndex('idx_carts_share_token');
             $table->dropIndex('idx_carts_owner');
 
             $table->dropColumn([

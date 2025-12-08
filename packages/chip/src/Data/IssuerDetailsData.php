@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-final class IssuerDetailsData
+final class IssuerDetailsData extends ChipData
 {
     public function __construct(
         public readonly ?string $website,
@@ -21,11 +21,10 @@ final class IssuerDetailsData
         public readonly ?string $tax_number,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public static function fromArray(array $data): self
+    public static function from(mixed ...$payloads): static
     {
+        $data = self::resolvePayload(...$payloads);
+
         return new self(
             website: $data['website'] ?? null,
             legal_street_address: $data['legal_street_address'] ?? null,

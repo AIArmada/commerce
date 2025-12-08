@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Data;
 
 use Carbon\Carbon;
 
-final class BankAccountData
+final class BankAccountData extends ChipData
 {
     public function __construct(
         public readonly int $id,
@@ -24,11 +24,10 @@ final class BankAccountData
         public readonly ?string $rejection_reason,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public static function fromArray(array $data): self
+    public static function from(mixed ...$payloads): static
     {
+        $data = self::resolvePayload(...$payloads);
+
         return new self(
             id: (int) $data['id'],
             status: $data['status'] ?? 'pending',

@@ -56,7 +56,11 @@ final class StockTransaction extends Model
      */
     public function getTable(): string
     {
-        return config('stock.table_name', 'stock_transactions');
+        $database = config('stock.database', []);
+        $tablePrefix = $database['table_prefix'] ?? 'stock_';
+        $tables = $database['tables'] ?? [];
+
+        return $tables['transactions'] ?? config('stock.table_name', $tablePrefix.'transactions');
     }
 
     /**

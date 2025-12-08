@@ -26,10 +26,16 @@ final class CartRateLimiter
      */
     private string $keyPrefix;
 
-    public function __construct(?array $limits = null, string $keyPrefix = 'cart')
+    /**
+     * Whether rate limiting is enabled (short-circuits checks when false).
+     */
+    private bool $enabled;
+
+    public function __construct(?array $limits = null, string $keyPrefix = 'cart', bool $enabled = true)
     {
         $this->keyPrefix = $keyPrefix;
         $this->limits = $limits ?? $this->getDefaultLimits();
+        $this->enabled = $enabled;
     }
 
     /**
@@ -41,6 +47,14 @@ final class CartRateLimiter
      */
     public function check(string $identifier, string $operation): CartRateLimitResult
     {
+        if (! $this->enabled) {
+            return CartRateLimitResult::allowed(
+                operation: $operation,
+                remainingMinute: PHP_INT_MAX,
+                remainingHour: PHP_INT_MAX
+            );
+        }
+
         $config = $this->limits[$operation] ?? $this->limits['default'];
 
         // Per-minute check
@@ -85,6 +99,14 @@ final class CartRateLimiter
      */
     public function checkMultiple(string $identifier, array $operations): CartRateLimitResult
     {
+        if (! $this->enabled) {
+            return CartRateLimitResult::allowed(
+                operation: 'batch',
+                remainingMinute: PHP_INT_MAX,
+                remainingHour: PHP_INT_MAX
+            );
+        }
+
         foreach ($operations as $operation) {
             $result = $this->check($identifier, $operation);
 
@@ -107,6 +129,10 @@ final class CartRateLimiter
      */
     public function clear(string $identifier, string $operation): void
     {
+        if (! $this->enabled) {
+            return;
+        }
+
         $minuteKey = $this->buildKey($operation, $identifier, 'minute');
         $hourKey = $this->buildKey($operation, $identifier, 'hour');
 
@@ -119,6 +145,10 @@ final class CartRateLimiter
      */
     public function clearAll(string $identifier): void
     {
+        if (! $this->enabled) {
+            return;
+        }
+
         foreach (array_keys($this->limits) as $operation) {
             $this->clear($identifier, $operation);
         }
@@ -131,6 +161,13 @@ final class CartRateLimiter
      */
     public function remaining(string $identifier, string $operation): array
     {
+        if (! $this->enabled) {
+            return [
+                'minute' => PHP_INT_MAX,
+                'hour' => PHP_INT_MAX,
+            ];
+        }
+
         $config = $this->limits[$operation] ?? $this->limits['default'];
 
         $minuteKey = $this->buildKey($operation, $identifier, 'minute');

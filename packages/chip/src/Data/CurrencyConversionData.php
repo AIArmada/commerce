@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-final class CurrencyConversionData
+final class CurrencyConversionData extends ChipData
 {
     public function __construct(
         public readonly string $original_currency,
@@ -12,15 +12,14 @@ final class CurrencyConversionData
         public readonly float $exchange_rate,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public static function fromArray(array $data): self
+    public static function from(mixed ...$payloads): static
     {
+        $data = self::resolvePayload(...$payloads);
+
         return new self(
-            original_currency: $data['original_currency'],
-            original_amount: $data['original_amount'],
-            exchange_rate: $data['exchange_rate'],
+            original_currency: (string) $data['original_currency'],
+            original_amount: (int) $data['original_amount'],
+            exchange_rate: (float) $data['exchange_rate'],
         );
     }
 

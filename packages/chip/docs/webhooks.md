@@ -60,7 +60,7 @@ $isValid = $service->verifySignature(
 ```php
 use AIArmada\Chip\Data\WebhookData;
 
-$webhook = WebhookData::fromArray($request->all());
+$webhook = WebhookData::from($request->all());
 
 $webhook->event;           // 'purchase.paid'
 $webhook->data;            // Event payload

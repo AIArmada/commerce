@@ -12,7 +12,7 @@ use Filament\Widgets\StatsOverviewWidget\Stat;
 
 class ShippingDashboardWidget extends StatsOverviewWidget
 {
-    protected static ?string $pollingInterval = '30s';
+    protected ?string $pollingInterval = '30s';
 
     protected function getStats(): array
     {

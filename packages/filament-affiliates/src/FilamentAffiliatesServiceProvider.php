@@ -35,8 +35,13 @@ final class FilamentAffiliatesServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         Filament::serving(function (): void {
-            app(CartBridge::class)->warm();
-            app(VoucherBridge::class)->warm();
+            if (config('filament-affiliates.integrations.filament_cart', true)) {
+                app(CartBridge::class)->warm();
+            }
+
+            if (config('filament-affiliates.integrations.filament_vouchers', true)) {
+                app(VoucherBridge::class)->warm();
+            }
         });
 
         Gate::policy(\AIArmada\Affiliates\Models\AffiliatePayout::class, Policies\AffiliatePayoutPolicy::class);

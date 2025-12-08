@@ -51,14 +51,14 @@ class ChipSendService
 
         $response = $this->client->post('send/send_instructions', $data);
 
-        return SendInstructionData::fromArray($response);
+        return SendInstructionData::from($response);
     }
 
     public function getSendInstruction(string $id): SendInstructionData
     {
         $response = $this->client->get("send/send_instructions/{$id}");
 
-        return SendInstructionData::fromArray($response);
+        return SendInstructionData::from($response);
     }
 
     /**
@@ -77,7 +77,7 @@ class ChipSendService
     {
         $response = $this->client->get("send/send_limits/{$id}");
 
-        return SendLimitData::fromArray($response);
+        return SendLimitData::from($response);
     }
 
     public function createBankAccount(
@@ -98,14 +98,14 @@ class ChipSendService
 
         $response = $this->client->post('send/bank_accounts', $data);
 
-        return BankAccountData::fromArray($response);
+        return BankAccountData::from($response);
     }
 
     public function getBankAccount(string $id): BankAccountData
     {
         $response = $this->client->get("send/bank_accounts/{$id}");
 
-        return BankAccountData::fromArray($response);
+        return BankAccountData::from($response);
     }
 
     /**
@@ -127,7 +127,7 @@ class ChipSendService
     {
         $response = $this->client->put("send/bank_accounts/{$id}", $data);
 
-        return BankAccountData::fromArray($response);
+        return BankAccountData::from($response);
     }
 
     public function deleteBankAccount(string $id): void
@@ -139,7 +139,7 @@ class ChipSendService
     {
         $response = $this->client->post("send/send_instructions/{$id}/cancel");
 
-        return SendInstructionData::fromArray($response['data'] ?? $response);
+        return SendInstructionData::from($response['data'] ?? $response);
     }
 
     /**
@@ -205,7 +205,7 @@ class ChipSendService
     {
         $response = $this->client->post('send/webhooks', $data);
 
-        return SendWebhookData::fromArray($response);
+        return SendWebhookData::from($response);
     }
 
     /**
@@ -215,7 +215,7 @@ class ChipSendService
     {
         $response = $this->client->get("send/webhooks/{$id}");
 
-        return SendWebhookData::fromArray($response);
+        return SendWebhookData::from($response);
     }
 
     /**
@@ -227,7 +227,7 @@ class ChipSendService
     {
         $response = $this->client->put("send/webhooks/{$id}", $data);
 
-        return SendWebhookData::fromArray($response);
+        return SendWebhookData::from($response);
     }
 
     /**
@@ -250,13 +250,13 @@ class ChipSendService
         $response = $this->client->get($endpoint);
 
         if (isset($response['data']) && is_array($response['data'])) {
-            $response['data'] = array_map(static fn (array $item) => SendWebhookData::fromArray($item), $response['data']);
+            $response['data'] = array_map(static fn (array $item) => SendWebhookData::from($item), $response['data']);
 
             return $response;
         }
 
         if (array_is_list($response)) {
-            return array_map(static fn (array $item) => SendWebhookData::fromArray($item), $response);
+            return array_map(static fn (array $item) => SendWebhookData::from($item), $response);
         }
 
         return [];

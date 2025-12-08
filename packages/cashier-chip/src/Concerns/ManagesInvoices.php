@@ -53,7 +53,7 @@ trait ManagesInvoices
             $purchaseData = Cashier::chip()->getPurchase($invoiceId);
 
             if (is_array($purchaseData)) {
-                $purchase = PurchaseData::fromArray($purchaseData);
+                $purchase = PurchaseData::from($purchaseData);
             } else {
                 $purchase = $purchaseData;
             }

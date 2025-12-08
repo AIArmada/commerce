@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Data;
 
 use Akaunting\Money\Money;
 
-final class PurchaseDetailsData
+final class PurchaseDetailsData extends ChipData
 {
     public function __construct(
         public readonly string $currency,
@@ -33,16 +33,17 @@ final class PurchaseDetailsData
      * Create PurchaseDetails from array data (typically from CHIP API response).
      * Amounts in the array are expected to be in cents (minor units).
      *
-     * @param  array<string, mixed>  $data
+        * @param  array<string, mixed>|self  ...$payloads
      */
-    public static function fromArray(array $data): self
+    public static function from(mixed ...$payloads): static
     {
+        $data = self::resolvePayload(...$payloads);
         $currency = $data['currency'] ?? 'MYR';
 
         return new self(
             currency: $currency,
             products: isset($data['products'])
-                ? array_map(fn ($product) => ProductData::fromArray($product, $currency), $data['products'])
+                ? array_map(fn ($product) => ProductData::from($product + ['currency' => $currency]), $data['products'])
                 : [],
             total: Money::{$currency}($data['total'] ?? 0),
             language: $data['language'] ?? 'en',

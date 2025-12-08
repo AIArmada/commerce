@@ -841,8 +841,8 @@ describe('ChipCollectService Utilities', function (): void {
     });
 
     it('creates checkout purchases via the service facade', function (): void {
-        $clientDetails = ClientDetailsData::fromArray(['email' => 'checkout@example.com']);
-        $products = [ProductData::fromArray(['name' => 'Subscription', 'price' => 5000, 'quantity' => '1'])];
+        $clientDetails = ClientDetailsData::from(['email' => 'checkout@example.com']);
+        $products = [ProductData::from(['name' => 'Subscription', 'price' => 5000, 'quantity' => '1'])];
 
         $this->client->shouldReceive('getBrandId')
             ->andReturn('brand_checkout');

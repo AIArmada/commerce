@@ -49,7 +49,7 @@ it('can create invalid payment method exception for not found', function (): voi
 });
 
 it('can create incomplete payment exception for redirect', function (): void {
-    $payment = new Payment(PurchaseData::fromArray([
+    $payment = new Payment(PurchaseData::from([
         'id' => 'test-id',
         'status' => 'pending',
         'checkout_url' => 'https://chip.com/checkout',
@@ -63,7 +63,7 @@ it('can create incomplete payment exception for redirect', function (): void {
 });
 
 it('can create incomplete payment exception for failed', function (): void {
-    $payment = new Payment(PurchaseData::fromArray([
+    $payment = new Payment(PurchaseData::from([
         'id' => 'test-id',
         'status' => 'failed',
     ]));
@@ -75,7 +75,7 @@ it('can create incomplete payment exception for failed', function (): void {
 });
 
 it('can create incomplete payment exception for expired', function (): void {
-    $payment = new Payment(PurchaseData::fromArray([
+    $payment = new Payment(PurchaseData::from([
         'id' => 'test-id',
         'status' => 'expired',
     ]));

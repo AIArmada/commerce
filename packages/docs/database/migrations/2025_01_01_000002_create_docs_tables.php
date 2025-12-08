@@ -10,11 +10,19 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('doc_templates', function (Blueprint $table): void {
+        $database = config('docs.database', []);
+        $tablePrefix = $database['table_prefix'] ?? 'docs_';
+        $tables = $database['tables'] ?? [];
+
+        $templatesTable = $tables['doc_templates'] ?? $tablePrefix.'doc_templates';
+        $docsTable = $tables['docs'] ?? $tablePrefix.'docs';
+        $statusTable = $tables['doc_status_histories'] ?? $tablePrefix.'doc_status_histories';
+
+        Schema::create($templatesTable, function (Blueprint $table) use ($templatesTable): void {
             $jsonType = (string) commerce_json_column_type('docs', 'json');
             $table->uuid('id')->primary();
             $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('slug')->unique($templatesTable.'_slug_unique');
             $table->text('description')->nullable();
             $table->string('view_name');
             $table->string('doc_type')->default('invoice');
@@ -22,14 +30,14 @@ return new class extends Migration
             $table->{$jsonType}('settings')->nullable();
             $table->timestamps();
 
-            $table->index('is_default');
-            $table->index('doc_type');
+            $table->index('is_default', $templatesTable.'_is_default_index');
+            $table->index('doc_type', $templatesTable.'_doc_type_index');
         });
 
-        Schema::create('docs', function (Blueprint $table): void {
+        Schema::create($docsTable, function (Blueprint $table) use ($docsTable): void {
             $jsonType = (string) commerce_json_column_type('docs', 'json');
             $table->uuid('id')->primary();
-            $table->string('doc_number')->unique();
+            $table->string('doc_number')->unique($docsTable.'_doc_number_unique');
             $table->string('doc_type')->default('invoice');
             $table->foreignUuid('doc_template_id')->nullable();
             $table->nullableUuidMorphs('docable');
@@ -51,13 +59,13 @@ return new class extends Migration
             $table->string('pdf_path')->nullable();
             $table->timestamps();
 
-            $table->index('doc_type');
-            $table->index('status');
-            $table->index('issue_date');
-            $table->index('due_date');
+            $table->index('doc_type', $docsTable.'_doc_type_index');
+            $table->index('status', $docsTable.'_status_index');
+            $table->index('issue_date', $docsTable.'_issue_date_index');
+            $table->index('due_date', $docsTable.'_due_date_index');
         });
 
-        Schema::create('doc_status_histories', function (Blueprint $table): void {
+        Schema::create($statusTable, function (Blueprint $table) use ($statusTable, $docsTable): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('doc_id');
             $table->string('status');
@@ -65,15 +73,23 @@ return new class extends Migration
             $table->string('changed_by')->nullable();
             $table->timestamps();
 
-            $table->index('doc_id');
-            $table->index('status');
+            $table->index('doc_id', $statusTable.'_doc_id_index');
+            $table->index('status', $statusTable.'_status_index');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('doc_status_histories');
-        Schema::dropIfExists('docs');
-        Schema::dropIfExists('doc_templates');
+        $database = config('docs.database', []);
+        $tablePrefix = $database['table_prefix'] ?? 'docs_';
+        $tables = $database['tables'] ?? [];
+
+        $templatesTable = $tables['doc_templates'] ?? $tablePrefix.'doc_templates';
+        $docsTable = $tables['docs'] ?? $tablePrefix.'docs';
+        $statusTable = $tables['doc_status_histories'] ?? $tablePrefix.'doc_status_histories';
+
+        Schema::dropIfExists($statusTable);
+        Schema::dropIfExists($docsTable);
+        Schema::dropIfExists($templatesTable);
     }
 };

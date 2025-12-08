@@ -224,13 +224,13 @@ class ChipCollectService
         $response = $this->account->companyStatements($filters);
 
         if (isset($response['data']) && is_array($response['data'])) {
-            $response['data'] = array_map(static fn (array $item) => CompanyStatementData::fromArray($item), $response['data']);
+            $response['data'] = array_map(static fn (array $item) => CompanyStatementData::from($item), $response['data']);
 
             return $response;
         }
 
         if (array_is_list($response)) {
-            return array_map(static fn (array $item) => CompanyStatementData::fromArray($item), $response);
+            return array_map(static fn (array $item) => CompanyStatementData::from($item), $response);
         }
 
         return [];
@@ -240,14 +240,14 @@ class ChipCollectService
     {
         $response = $this->account->companyStatement($statementId);
 
-        return CompanyStatementData::fromArray($response);
+        return CompanyStatementData::from($response);
     }
 
     public function cancelCompanyStatement(string $statementId): CompanyStatementData
     {
         $response = $this->account->cancelCompanyStatement($statementId);
 
-        return CompanyStatementData::fromArray($response);
+        return CompanyStatementData::from($response);
     }
 
     /**

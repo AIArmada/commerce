@@ -21,11 +21,17 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 
 final class DocsTable
 {
     public static function configure(Table $table): Table
     {
+        $docTypeOptions = collect(config('docs.types', []))
+            ->keys()
+            ->mapWithKeys(static fn (string $type): array => [$type => Str::headline($type)])
+            ->all();
+
         return $table
             ->columns([
                 TextColumn::make('doc_number')
@@ -84,10 +90,7 @@ final class DocsTable
             ->filters([
                 SelectFilter::make('doc_type')
                     ->label('Type')
-                    ->options([
-                        'invoice' => 'Invoice',
-                        'receipt' => 'Receipt',
-                    ]),
+                    ->options($docTypeOptions),
 
                 SelectFilter::make('status')
                     ->label('Status')

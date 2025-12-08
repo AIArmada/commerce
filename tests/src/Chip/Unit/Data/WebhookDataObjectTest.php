@@ -25,7 +25,7 @@ describe('Webhook data object', function (): void {
             'processing_attempts' => 2,
         ];
 
-        $webhook = WebhookData::fromArray($data);
+        $webhook = WebhookData::from($data);
 
         expect($webhook->event)->toBe('purchase.paid');
         expect($webhook->event_type)->toBe('purchase.paid');
@@ -46,7 +46,7 @@ describe('Webhook data object', function (): void {
     });
 
     it('extracts purchase from webhook data', function (): void {
-        $webhook = WebhookData::fromArray([
+        $webhook = WebhookData::from([
             'event' => 'purchase.created',
             'data' => [
                 'id' => 'purchase_123',
@@ -64,7 +64,7 @@ describe('Webhook data object', function (): void {
     });
 
     it('returns null for non-purchase webhook events', function (): void {
-        $webhook = WebhookData::fromArray([
+        $webhook = WebhookData::from([
             'event' => 'send_instruction.completed',
             'data' => [
                 'id' => 'send_123',
@@ -76,7 +76,7 @@ describe('Webhook data object', function (): void {
     });
 
     it('represents webhook configuration entries', function (): void {
-        $webhook = WebhookData::fromArray([
+        $webhook = WebhookData::from([
             'id' => 'wh_123',
             'type' => 'webhook',
             'created_on' => strtotime('2024-01-01T12:00:00Z'),

@@ -94,8 +94,9 @@ final class CartCondition extends Model
     public function getTable(): string
     {
         $tables = config('filament-cart.database.tables', []);
+        $prefix = config('filament-cart.database.table_prefix', 'cart_');
 
-        return $tables['snapshot_conditions'] ?? 'cart_snapshot_conditions';
+        return $tables['snapshot_conditions'] ?? $prefix.'snapshot_conditions';
     }
 
     /**

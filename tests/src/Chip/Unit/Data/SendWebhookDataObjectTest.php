@@ -17,7 +17,7 @@ describe('SendWebhook data object', function (): void {
             'updated_at' => '2024-04-02T10:00:00Z',
         ];
 
-        $webhook = SendWebhookData::fromArray($payload);
+        $webhook = SendWebhookData::from($payload);
 
         expect($webhook->id)->toBe(4)
             ->and($webhook->name)->toBe('Send webhook')

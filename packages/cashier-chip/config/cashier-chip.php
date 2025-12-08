@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 return [
+    'table_prefix' => env('CASHIER_CHIP_TABLE_PREFIX', 'cashier_chip_'),
+
     /*
     |--------------------------------------------------------------------------
     | Database
@@ -11,10 +13,14 @@ return [
     'database' => [
         'table_prefix' => env('CASHIER_CHIP_TABLE_PREFIX', 'cashier_chip_'),
         'json_column_type' => env('CASHIER_CHIP_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
-        'tables' => [
-            'subscriptions' => 'chip_subscriptions',
-            'subscription_items' => 'chip_subscription_items',
-        ],
+        'tables' => (static function (): array {
+            $prefix = env('CASHIER_CHIP_TABLE_PREFIX', 'cashier_chip_');
+
+            return [
+                'subscriptions' => $prefix.'subscriptions',
+                'subscription_items' => $prefix.'subscription_items',
+            ];
+        })(),
     ],
 
     /*

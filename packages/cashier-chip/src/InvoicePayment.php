@@ -57,7 +57,7 @@ class InvoicePayment implements Arrayable, Jsonable, JsonSerializable
     public function rawAmount(): int
     {
         // CHIP stores amounts in smallest unit (cents/sen)
-        return (int) ($this->purchase->payment->amount ?? 0);
+        return $this->purchase->payment?->getAmountInCents() ?? 0;
     }
 
     /**
@@ -65,7 +65,7 @@ class InvoicePayment implements Arrayable, Jsonable, JsonSerializable
      */
     public function currency(): string
     {
-        return $this->purchase->payment->currency ?? config('cashier-chip.currency', 'MYR');
+        return $this->purchase->payment?->getCurrency() ?? config('cashier-chip.currency', 'MYR');
     }
 
     /**

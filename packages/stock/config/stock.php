@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 
+$tablePrefix = env('STOCK_TABLE_PREFIX', 'stock_');
+
+$transactionsTable = env('STOCK_TRANSACTIONS_TABLE', $tablePrefix.'transactions');
+$reservationsTable = env('STOCK_RESERVATIONS_TABLE', $tablePrefix.'reservations');
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -11,17 +16,13 @@ return [
     |--------------------------------------------------------------------------
     */
     'database' => [
+        'table_prefix' => $tablePrefix,
         'json_column_type' => env('STOCK_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
         'tables' => [
-            'transactions' => env('STOCK_TABLE_NAME', 'stock_transactions'),
-            'reservations' => env('STOCK_RESERVATIONS_TABLE', 'stock_reservations'),
+            'transactions' => $transactionsTable,
+            'reservations' => $reservationsTable,
         ],
     ],
-
-    // @deprecated Use database.tables.transactions instead
-    'table_name' => env('STOCK_TABLE_NAME', 'stock_transactions'),
-    // @deprecated Use database.tables.reservations instead
-    'reservations_table' => env('STOCK_RESERVATIONS_TABLE', 'stock_reservations'),
 
     /*
     |--------------------------------------------------------------------------

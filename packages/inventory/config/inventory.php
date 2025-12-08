@@ -4,30 +4,39 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 
+$tablePrefix = env('INVENTORY_TABLE_PREFIX', 'inventory_');
+
+$tables = [
+    'locations' => env('INVENTORY_LOCATIONS_TABLE', $tablePrefix.'locations'),
+    'levels' => env('INVENTORY_LEVELS_TABLE', $tablePrefix.'levels'),
+    'movements' => env('INVENTORY_MOVEMENTS_TABLE', $tablePrefix.'movements'),
+    'allocations' => env('INVENTORY_ALLOCATIONS_TABLE', $tablePrefix.'allocations'),
+    'batches' => env('INVENTORY_BATCHES_TABLE', $tablePrefix.'batches'),
+    'serials' => env('INVENTORY_SERIALS_TABLE', $tablePrefix.'serials'),
+    'serial_history' => env('INVENTORY_SERIAL_HISTORY_TABLE', $tablePrefix.'serial_history'),
+    'cost_layers' => env('INVENTORY_COST_LAYERS_TABLE', $tablePrefix.'cost_layers'),
+    'standard_costs' => env('INVENTORY_STANDARD_COSTS_TABLE', $tablePrefix.'standard_costs'),
+    'valuation_snapshots' => env('INVENTORY_VALUATION_SNAPSHOTS_TABLE', $tablePrefix.'valuation_snapshots'),
+    'backorders' => env('INVENTORY_BACKORDERS_TABLE', $tablePrefix.'backorders'),
+    'demand_history' => env('INVENTORY_DEMAND_HISTORY_TABLE', $tablePrefix.'demand_history'),
+    'supplier_leadtimes' => env('INVENTORY_SUPPLIER_LEADTIMES_TABLE', $tablePrefix.'supplier_leadtimes'),
+    'reorder_suggestions' => env('INVENTORY_REORDER_SUGGESTIONS_TABLE', $tablePrefix.'reorder_suggestions'),
+];
+
 return [
     /*
     |--------------------------------------------------------------------------
     | Database
     |--------------------------------------------------------------------------
     */
-    'table_names' => [
-        'locations' => env('INVENTORY_LOCATIONS_TABLE', 'inventory_locations'),
-        'levels' => env('INVENTORY_LEVELS_TABLE', 'inventory_levels'),
-        'movements' => env('INVENTORY_MOVEMENTS_TABLE', 'inventory_movements'),
-        'allocations' => env('INVENTORY_ALLOCATIONS_TABLE', 'inventory_allocations'),
-        'batches' => env('INVENTORY_BATCHES_TABLE', 'inventory_batches'),
-        'serials' => env('INVENTORY_SERIALS_TABLE', 'inventory_serials'),
-        'serial_history' => env('INVENTORY_SERIAL_HISTORY_TABLE', 'inventory_serial_history'),
-        'cost_layers' => env('INVENTORY_COST_LAYERS_TABLE', 'inventory_cost_layers'),
-        'standard_costs' => env('INVENTORY_STANDARD_COSTS_TABLE', 'inventory_standard_costs'),
-        'valuation_snapshots' => env('INVENTORY_VALUATION_SNAPSHOTS_TABLE', 'inventory_valuation_snapshots'),
-        'backorders' => env('INVENTORY_BACKORDERS_TABLE', 'inventory_backorders'),
-        'demand_history' => env('INVENTORY_DEMAND_HISTORY_TABLE', 'inventory_demand_history'),
-        'supplier_leadtimes' => env('INVENTORY_SUPPLIER_LEADTIMES_TABLE', 'inventory_supplier_leadtimes'),
-        'reorder_suggestions' => env('INVENTORY_REORDER_SUGGESTIONS_TABLE', 'inventory_reorder_suggestions'),
+    'database' => [
+        'table_prefix' => $tablePrefix,
+        'json_column_type' => env('INVENTORY_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+        'tables' => $tables,
     ],
 
-    'json_column_type' => env('INVENTORY_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+    // Legacy compatibility for existing references
+    'table_names' => $tables,
 
     /*
     |--------------------------------------------------------------------------

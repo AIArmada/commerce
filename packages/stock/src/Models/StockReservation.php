@@ -43,7 +43,11 @@ final class StockReservation extends Model
      */
     public function getTable(): string
     {
-        return config('stock.reservations_table', 'stock_reservations');
+        $database = config('stock.database', []);
+        $tablePrefix = $database['table_prefix'] ?? 'stock_';
+        $tables = $database['tables'] ?? [];
+
+        return $tables['reservations'] ?? config('stock.reservations_table', $tablePrefix.'reservations');
     }
 
     /**

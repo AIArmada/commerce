@@ -55,7 +55,7 @@ class FakeChipCollectService
     {
         $response = $this->fakeClient->createPurchase($data);
 
-        return PurchaseData::fromArray($response);
+        return PurchaseData::from($response);
     }
 
     /**
@@ -65,7 +65,7 @@ class FakeChipCollectService
     {
         $response = $this->fakeClient->getPurchase($purchaseId);
 
-        return PurchaseData::fromArray($response ?? []);
+        return PurchaseData::from($response ?? []);
     }
 
     /**
@@ -75,7 +75,7 @@ class FakeChipCollectService
     {
         $response = $this->fakeClient->cancelPurchase($purchaseId);
 
-        return PurchaseData::fromArray($response ?? []);
+        return PurchaseData::from($response ?? []);
     }
 
     /**
@@ -85,7 +85,7 @@ class FakeChipCollectService
     {
         $response = $this->fakeClient->refundPurchase($purchaseId, $amount);
 
-        return PurchaseData::fromArray($response ?? []);
+        return PurchaseData::from($response ?? []);
     }
 
     /**
@@ -106,7 +106,7 @@ class FakeChipCollectService
     {
         $response = $this->fakeClient->chargePurchase($purchaseId, $recurringToken);
 
-        return PurchaseData::fromArray($response ?? []);
+        return PurchaseData::from($response ?? []);
     }
 
     /**
@@ -116,7 +116,7 @@ class FakeChipCollectService
     {
         $response = $this->fakeClient->capturePurchase($purchaseId, $amount);
 
-        return PurchaseData::fromArray($response ?? []);
+        return PurchaseData::from($response ?? []);
     }
 
     /**
@@ -126,7 +126,7 @@ class FakeChipCollectService
     {
         $response = $this->fakeClient->releasePurchase($purchaseId);
 
-        return PurchaseData::fromArray($response ?? []);
+        return PurchaseData::from($response ?? []);
     }
 
     /**
@@ -136,7 +136,7 @@ class FakeChipCollectService
     {
         $response = $this->fakeClient->markPurchaseAsPaid($purchaseId, $paidOn);
 
-        return PurchaseData::fromArray($response ?? []);
+        return PurchaseData::from($response ?? []);
     }
 
     /**
@@ -147,7 +147,7 @@ class FakeChipCollectService
         // Just return the purchase as-is
         $response = $this->fakeClient->getPurchase($purchaseId);
 
-        return PurchaseData::fromArray($response ?? []);
+        return PurchaseData::from($response ?? []);
     }
 
     /**
@@ -167,7 +167,7 @@ class FakeChipCollectService
     {
         $response = $this->fakeClient->createClient($data);
 
-        return ClientData::fromArray($response);
+        return ClientData::from($response);
     }
 
     /**
@@ -177,7 +177,7 @@ class FakeChipCollectService
     {
         $response = $this->fakeClient->getClient($clientId);
 
-        return ClientData::fromArray($response ?? []);
+        return ClientData::from($response ?? []);
     }
 
     /**
@@ -200,7 +200,7 @@ class FakeChipCollectService
     {
         $response = $this->fakeClient->updateClient($clientId, $data);
 
-        return ClientData::fromArray($response ?? []);
+        return ClientData::from($response ?? []);
     }
 
     /**
@@ -212,7 +212,7 @@ class FakeChipCollectService
     {
         $response = $this->fakeClient->updateClient($clientId, $data);
 
-        return ClientData::fromArray($response ?? []);
+        return ClientData::from($response ?? []);
     }
 
     /**
@@ -263,18 +263,18 @@ class FakeChipCollectService
             'client' => [
                 'email' => $clientDetails->email,
                 'phone' => $clientDetails->phone,
-                'full_name' => $clientDetails->fullName,
+                'full_name' => $clientDetails->full_name,
             ],
             'purchase' => [
                 'products' => array_map(fn ($p) => $p->toArray(), $products),
                 'currency' => $options['currency'] ?? 'MYR',
-                'total' => array_sum(array_map(fn ($p) => $p->price * $p->quantity, $products)),
+                'total' => array_sum(array_map(fn ($p) => $p->getTotalPriceInCents(), $products)),
             ],
         ], $options);
 
         $response = $this->fakeClient->createPurchase($data);
 
-        return PurchaseData::fromArray($response);
+        return PurchaseData::from($response);
     }
 
     /**
@@ -417,7 +417,7 @@ class FakeChipCollectService
     {
         $response = $this->fakeClient->simulatePaymentComplete($purchaseId, $recurringToken);
 
-        return $response ? PurchaseData::fromArray($response) : null;
+        return $response ? PurchaseData::from($response) : null;
     }
 
     /**
@@ -427,6 +427,6 @@ class FakeChipCollectService
     {
         $response = $this->fakeClient->simulatePaymentFailure($purchaseId, $reason);
 
-        return $response ? PurchaseData::fromArray($response) : null;
+        return $response ? PurchaseData::from($response) : null;
     }
 }

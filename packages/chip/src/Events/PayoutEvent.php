@@ -41,7 +41,7 @@ abstract class PayoutEvent
      */
     final public static function fromPayload(array $payload): static
     {
-        $payout = PayoutData::fromArray($payload);
+        $payout = PayoutData::from($payload);
 
         return new static(
             payout: $payout,

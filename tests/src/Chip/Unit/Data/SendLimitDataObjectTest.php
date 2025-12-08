@@ -22,7 +22,7 @@ describe('SendLimit data object', function (): void {
             'updated_at' => '2024-04-02T12:00:00Z',
         ];
 
-        $limit = SendLimitData::fromArray($payload);
+        $limit = SendLimitData::from($payload);
 
         expect($limit->id)->toBe(7)
             ->and($limit->currency)->toBe('MYR')
