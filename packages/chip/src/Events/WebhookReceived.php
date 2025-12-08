@@ -50,11 +50,11 @@ class WebhookReceived
         $type = $payload['type'] ?? '';
 
         if ($type === 'purchase' || str_starts_with($eventType, 'purchase.')) {
-            $purchase = PurchaseData::fromArray($payload);
+            $purchase = PurchaseData::from($payload);
         } elseif ($type === 'payout' || str_starts_with($eventType, 'payout.')) {
-            $payout = PayoutData::fromArray($payload);
+            $payout = PayoutData::from($payload);
         } elseif ($type === 'billing_template_client' || str_starts_with($eventType, 'billing_template_client.')) {
-            $billingTemplateClient = BillingTemplateClientData::fromArray($payload);
+            $billingTemplateClient = BillingTemplateClientData::from($payload);
         }
 
         return new self(

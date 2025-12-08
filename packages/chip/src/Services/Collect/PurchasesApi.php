@@ -38,7 +38,7 @@ final class PurchasesApi extends CollectApi
             ['data' => $data]
         );
 
-        return PurchaseData::fromArray($response);
+        return PurchaseData::from($response);
     }
 
     public function find(string $purchaseId): PurchaseData
@@ -49,7 +49,7 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId]
         );
 
-        return PurchaseData::fromArray($response);
+        return PurchaseData::from($response);
     }
 
     public function cancel(string $purchaseId): PurchaseData
@@ -60,7 +60,7 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId]
         );
 
-        return PurchaseData::fromArray($response);
+        return PurchaseData::from($response);
     }
 
     public function refund(string $purchaseId, ?int $amount = null): PurchaseData
@@ -76,7 +76,7 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId, 'amount' => $amount]
         );
 
-        return PurchaseData::fromArray($response);
+        return PurchaseData::from($response);
     }
 
     public function charge(string $purchaseId, string $recurringToken): PurchaseData
@@ -89,7 +89,7 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId, 'recurring_token' => $recurringToken]
         );
 
-        return PurchaseData::fromArray($response);
+        return PurchaseData::from($response);
     }
 
     public function capture(string $purchaseId, ?int $amount = null): PurchaseData
@@ -105,7 +105,7 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId, 'amount' => $amount]
         );
 
-        return PurchaseData::fromArray($response);
+        return PurchaseData::from($response);
     }
 
     public function release(string $purchaseId): PurchaseData
@@ -116,7 +116,7 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId]
         );
 
-        return PurchaseData::fromArray($response);
+        return PurchaseData::from($response);
     }
 
     public function markAsPaid(string $purchaseId, ?int $paidOn = null): PurchaseData
@@ -132,7 +132,7 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId, 'paid_on' => $paidOn]
         );
 
-        return PurchaseData::fromArray($response);
+        return PurchaseData::from($response);
     }
 
     public function resendInvoice(string $purchaseId): PurchaseData
@@ -143,7 +143,7 @@ final class PurchasesApi extends CollectApi
             ['purchase_id' => $purchaseId]
         );
 
-        return PurchaseData::fromArray($response);
+        return PurchaseData::from($response);
     }
 
     public function deleteRecurringToken(string $purchaseId): void

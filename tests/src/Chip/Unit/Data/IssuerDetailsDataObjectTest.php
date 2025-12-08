@@ -20,7 +20,7 @@ describe('IssuerDetails data object', function (): void {
             'tax_number' => 'TX1234567',
         ];
 
-        $details = IssuerDetailsData::fromArray($data);
+        $details = IssuerDetailsData::from($data);
 
         expect($details->legal_name)->toBe('Chip Example Sdn Bhd');
         expect($details->bank_accounts)->toHaveCount(1);
@@ -28,7 +28,7 @@ describe('IssuerDetails data object', function (): void {
     });
 
     it('defaults missing fields to sensible values', function (): void {
-        $details = IssuerDetailsData::fromArray([]);
+        $details = IssuerDetailsData::from([]);
 
         expect($details->bank_accounts)->toBe([]);
         expect($details->toArray())->toMatchArray([

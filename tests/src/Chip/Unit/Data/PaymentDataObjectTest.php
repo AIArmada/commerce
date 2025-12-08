@@ -21,7 +21,7 @@ describe('Payment data object', function (): void {
             'remote_paid_on' => 1640995800,
         ];
 
-        $payment = PaymentData::fromArray($data);
+        $payment = PaymentData::from($data);
 
         expect($payment->payment_type)->toBe('purchase');
         expect($payment->amount)->toBeInstanceOf(Money::class);
@@ -34,7 +34,7 @@ describe('Payment data object', function (): void {
     });
 
     it('handles null payment method', function (): void {
-        $payment = PaymentData::fromArray([
+        $payment = PaymentData::from([
             'is_outgoing' => false,
             'payment_type' => 'purchase',
             'amount' => 10000,
@@ -53,7 +53,7 @@ describe('Payment data object', function (): void {
     });
 
     it('calculates net amount after fees', function (): void {
-        $payment = PaymentData::fromArray([
+        $payment = PaymentData::from([
             'is_outgoing' => false,
             'payment_type' => 'purchase',
             'amount' => 10000,
@@ -72,7 +72,7 @@ describe('Payment data object', function (): void {
     });
 
     it('exposes paid timestamps and array output', function (): void {
-        $payment = PaymentData::fromArray([
+        $payment = PaymentData::from([
             'is_outgoing' => true,
             'payment_type' => 'refund',
             'amount' => 5000,

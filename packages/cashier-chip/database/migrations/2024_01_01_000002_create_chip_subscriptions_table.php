@@ -13,11 +13,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (Schema::hasTable('chip_subscriptions')) {
+        $databaseConfig = config('cashier-chip.database', []);
+        $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
+        $tables = $databaseConfig['tables'] ?? [];
+        $tableName = $tables['subscriptions'] ?? $tablePrefix.'subscriptions';
+
+        if (Schema::hasTable($tableName)) {
             return;
         }
 
-        Schema::create('chip_subscriptions', function (Blueprint $table): void {
+        Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('user_id');
             $table->string('type');
@@ -40,7 +45,7 @@ return new class extends Migration
             $table->index('trial_ends_at');
             $table->index('next_billing_at');
             $table->index('ends_at');
-            $table->index(['user_id', 'type'], 'chip_subscriptions_user_type_idx');
+            $table->index(['user_id', 'type'], $tableName.'_user_type_idx');
         });
     }
 
@@ -49,6 +54,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('chip_subscriptions');
+        $databaseConfig = config('cashier-chip.database', []);
+        $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
+        $tables = $databaseConfig['tables'] ?? [];
+        $tableName = $tables['subscriptions'] ?? $tablePrefix.'subscriptions';
+
+        Schema::dropIfExists($tableName);
     }
 };

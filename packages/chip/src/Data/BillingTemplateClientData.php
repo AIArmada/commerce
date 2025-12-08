@@ -11,7 +11,7 @@ use Carbon\Carbon;
  *
  * Represents a client subscribed to a billing template (subscription).
  */
-class BillingTemplateClientData
+class BillingTemplateClientData extends ChipData
 {
     public function __construct(
         public readonly string $id,
@@ -30,11 +30,10 @@ class BillingTemplateClientData
         public readonly array $metadata,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public static function fromArray(array $data): self
+    public static function from(mixed ...$payloads): static
     {
+        $data = self::resolvePayload(...$payloads);
+
         return new self(
             id: $data['id'] ?? '',
             type: $data['type'] ?? 'billing_template_client',

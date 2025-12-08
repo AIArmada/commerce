@@ -18,7 +18,7 @@ describe('SendInstruction data object', function (): void {
             'updated_at' => '2023-07-20T10:41:25.302Z',
         ];
 
-        $instruction = SendInstructionData::fromArray($data);
+        $instruction = SendInstructionData::from($data);
 
         expect($instruction->id)->toBe(50);
         expect($instruction->bank_account_id)->toBe(1);
@@ -31,7 +31,7 @@ describe('SendInstruction data object', function (): void {
     });
 
     it('handles rejected send instruction', function (): void {
-        $instruction = SendInstructionData::fromArray([
+        $instruction = SendInstructionData::from([
             'id' => 51,
             'bank_account_id' => 2,
             'amount' => '250.00',
@@ -49,7 +49,7 @@ describe('SendInstruction data object', function (): void {
     });
 
     it('provides amount helpers and array export', function (): void {
-        $instruction = SendInstructionData::fromArray([
+        $instruction = SendInstructionData::from([
             'id' => 52,
             'bank_account_id' => 3,
             'amount' => '125.50',

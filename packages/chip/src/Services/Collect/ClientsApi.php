@@ -19,7 +19,7 @@ final class ClientsApi extends CollectApi
             ['data' => $data]
         );
 
-        return ClientData::fromArray($response);
+        return ClientData::from($response);
     }
 
     public function find(string $clientId): ClientData
@@ -30,7 +30,7 @@ final class ClientsApi extends CollectApi
             ['client_id' => $clientId]
         );
 
-        return ClientData::fromArray($response);
+        return ClientData::from($response);
     }
 
     /**
@@ -60,7 +60,7 @@ final class ClientsApi extends CollectApi
             ['client_id' => $clientId, 'data' => $data]
         );
 
-        return ClientData::fromArray($response);
+        return ClientData::from($response);
     }
 
     /**
@@ -74,7 +74,7 @@ final class ClientsApi extends CollectApi
             ['client_id' => $clientId, 'data' => $data]
         );
 
-        return ClientData::fromArray($response);
+        return ClientData::from($response);
     }
 
     public function delete(string $clientId): void

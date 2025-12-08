@@ -4,6 +4,16 @@ declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 
+$tablePrefix = env('JNT_TABLE_PREFIX', 'jnt_');
+
+$tables = [
+    'orders' => env('JNT_ORDERS_TABLE', $tablePrefix.'orders'),
+    'order_items' => env('JNT_ORDER_ITEMS_TABLE', $tablePrefix.'order_items'),
+    'order_parcels' => env('JNT_ORDER_PARCELS_TABLE', $tablePrefix.'order_parcels'),
+    'tracking_events' => env('JNT_TRACKING_EVENTS_TABLE', $tablePrefix.'tracking_events'),
+    'webhook_logs' => env('JNT_WEBHOOK_LOGS_TABLE', $tablePrefix.'webhook_logs'),
+];
+
 return [
     /*
     |--------------------------------------------------------------------------
@@ -11,8 +21,9 @@ return [
     |--------------------------------------------------------------------------
     */
     'database' => [
-        'table_prefix' => env('JNT_TABLE_PREFIX', 'jnt_'),
+        'table_prefix' => $tablePrefix,
         'json_column_type' => env('JNT_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+        'tables' => $tables,
     ],
 
     /*

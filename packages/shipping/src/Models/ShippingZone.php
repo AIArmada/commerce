@@ -65,7 +65,7 @@ class ShippingZone extends Model
     // ─────────────────────────────────────────────────────────────
 
     /**
-     * @return HasMany<ShippingRate>
+     * @return HasMany<ShippingRate, ShippingZone>
      */
     public function rates(): HasMany
     {

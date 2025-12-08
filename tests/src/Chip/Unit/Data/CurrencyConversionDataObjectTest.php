@@ -6,7 +6,7 @@ use AIArmada\Chip\Data\CurrencyConversionData;
 
 describe('CurrencyConversion data object', function (): void {
     it('converts original amount to major currency units', function (): void {
-        $conversion = CurrencyConversionData::fromArray([
+        $conversion = CurrencyConversionData::from([
             'original_currency' => 'USD',
             'original_amount' => 12345,
             'exchange_rate' => 4.56,

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-final class TransactionData
+final class TransactionData extends ChipData
 {
     public function __construct(
         public readonly ?string $payment_method,
@@ -15,11 +15,10 @@ final class TransactionData
         public readonly array $attempts,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public static function fromArray(array $data): self
+    public static function from(mixed ...$payloads): static
     {
+        $data = self::resolvePayload(...$payloads);
+
         return new self(
             payment_method: $data['payment_method'] ?? null,
             extra: $data['extra'] ?? [],

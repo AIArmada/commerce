@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\CartServiceProvider;
 use AIArmada\Cart\Services\CartMigrationService;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Schema;
 
 describe('CartServiceProvider', function (): void {
     afterEach(function (): void {
@@ -173,6 +174,18 @@ it('integration: registers all storage drivers', function (): void {
     }
 });
 
+it('integration: fails fast when cache storage is selected but disabled', function (): void {
+    Config::set('cart.storage', 'cache');
+    Config::set('cart.cache.enabled', false);
+
+    $app = app();
+    $provider = new CartServiceProvider($app);
+    $provider->register();
+
+    expect(fn () => $app->make(AIArmada\Cart\Storage\StorageInterface::class))
+        ->toThrow(RuntimeException::class, 'Cache storage selected but cart.cache.enabled is false. Enable cache or choose another driver.');
+});
+
 it('integration: registers cart manager and aliases', function (): void {
     $app = app();
     $provider = new CartServiceProvider($app);
@@ -198,6 +211,26 @@ it('integration: publishes config, migrations, and views', function (): void {
     expect($package->name)->toBe('cart');
     expect($package->commands)->toHaveCount(1);
     expect(true)->toBeTrue(); // Package was configured successfully
+});
+
+it('integration: uses configured conditions table name when migrating', function (): void {
+    $tableName = 'custom_conditions';
+    Config::set('cart.database.conditions_table', $tableName);
+
+    $migrationPath = getcwd().'/packages/cart/database/migrations/2025_09_29_184331_create_conditions_table.php';
+    expect(file_exists($migrationPath))->toBeTrue();
+
+    /** @var object{up: callable, down: callable} $migration */
+    $migration = include $migrationPath;
+
+    Schema::dropIfExists($tableName);
+    $migration->up();
+
+    expect(Schema::hasTable($tableName))->toBeTrue();
+
+    $migration->down();
+
+    expect(Schema::hasTable($tableName))->toBeFalse();
 });
 
 it('integration: registers event listeners based on config', function (): void {

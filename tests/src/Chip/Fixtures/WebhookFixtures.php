@@ -45,7 +45,7 @@ trait WebhookFixtures
      */
     protected function getPurchaseFromPaidWebhook(): PurchaseData
     {
-        return PurchaseData::fromArray($this->getWebhookPurchasePaidPayload());
+        return PurchaseData::from($this->getWebhookPurchasePaidPayload());
     }
 
     /**

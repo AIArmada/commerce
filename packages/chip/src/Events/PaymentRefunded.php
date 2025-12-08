@@ -37,7 +37,7 @@ final class PaymentRefunded
      */
     public static function fromPayload(array $payload): self
     {
-        $purchase = PurchaseData::fromArray($payload);
+        $purchase = PurchaseData::from($payload);
 
         return new self(
             purchase: $purchase,

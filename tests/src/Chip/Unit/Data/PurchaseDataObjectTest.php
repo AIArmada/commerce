@@ -19,7 +19,7 @@ describe('Purchase data object', function (): void {
             'updated_at' => '2024-01-01T12:00:00Z',
         ];
 
-        $purchase = PurchaseData::fromArray($data);
+        $purchase = PurchaseData::from($data);
 
         expect($purchase->id)->toBe('purchase_123');
         expect($purchase->getAmountInCents())->toBe(10000);
@@ -39,7 +39,7 @@ describe('Purchase data object', function (): void {
             'status' => 'created',
         ];
 
-        $purchase = PurchaseData::fromArray($data);
+        $purchase = PurchaseData::from($data);
 
         expect($purchase->reference)->toBeNull();
         expect($purchase->getCheckoutUrl())->toBeNull();
@@ -48,7 +48,7 @@ describe('Purchase data object', function (): void {
     });
 
     it('returns amount as Money object', function (): void {
-        $purchase = PurchaseData::fromArray([
+        $purchase = PurchaseData::from([
             'id' => 'purchase_123',
             'amount_in_cents' => 12345,
             'currency' => 'MYR',
@@ -83,7 +83,7 @@ describe('Purchase data object', function (): void {
             'payment_method_whitelist' => ['fpx'],
         ];
 
-        $purchase = PurchaseData::fromArray($data);
+        $purchase = PurchaseData::from($data);
 
         expect($purchase->isPaid())->toBeTrue();
         expect($purchase->isRefunded())->toBeFalse();

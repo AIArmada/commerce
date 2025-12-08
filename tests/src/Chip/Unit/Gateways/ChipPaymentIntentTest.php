@@ -30,28 +30,28 @@ describe('ChipPaymentIntent', function (): void {
     });
 
     it('implements PaymentIntentInterface', function (): void {
-        $purchase = PurchaseData::fromArray($this->purchaseData);
+        $purchase = PurchaseData::from($this->purchaseData);
         $intent = new ChipPaymentIntent($purchase);
 
         expect($intent)->toBeInstanceOf(PaymentIntentInterface::class);
     });
 
     it('returns payment id', function (): void {
-        $purchase = PurchaseData::fromArray($this->purchaseData);
+        $purchase = PurchaseData::from($this->purchaseData);
         $intent = new ChipPaymentIntent($purchase);
 
         expect($intent->getPaymentId())->toBe('purchase-123');
     });
 
     it('returns reference', function (): void {
-        $purchase = PurchaseData::fromArray($this->purchaseData);
+        $purchase = PurchaseData::from($this->purchaseData);
         $intent = new ChipPaymentIntent($purchase);
 
         expect($intent->getReference())->toBe('ORDER-001');
     });
 
     it('returns amount as Money', function (): void {
-        $purchase = PurchaseData::fromArray($this->purchaseData);
+        $purchase = PurchaseData::from($this->purchaseData);
         $intent = new ChipPaymentIntent($purchase);
 
         $amount = $intent->getAmount();
@@ -61,14 +61,14 @@ describe('ChipPaymentIntent', function (): void {
     });
 
     it('returns checkout url', function (): void {
-        $purchase = PurchaseData::fromArray($this->purchaseData);
+        $purchase = PurchaseData::from($this->purchaseData);
         $intent = new ChipPaymentIntent($purchase);
 
         expect($intent->getCheckoutUrl())->toBe('https://gate.chip-in.asia/checkout/purchase-123');
     });
 
     it('returns success and failure urls', function (): void {
-        $purchase = PurchaseData::fromArray($this->purchaseData);
+        $purchase = PurchaseData::from($this->purchaseData);
         $intent = new ChipPaymentIntent($purchase);
 
         expect($intent->getSuccessUrl())->toBe('https://example.com/success')
@@ -76,21 +76,21 @@ describe('ChipPaymentIntent', function (): void {
     });
 
     it('returns test mode status', function (): void {
-        $purchase = PurchaseData::fromArray($this->purchaseData);
+        $purchase = PurchaseData::from($this->purchaseData);
         $intent = new ChipPaymentIntent($purchase);
 
         expect($intent->isTest())->toBeTrue();
     });
 
     it('returns gateway name', function (): void {
-        $purchase = PurchaseData::fromArray($this->purchaseData);
+        $purchase = PurchaseData::from($this->purchaseData);
         $intent = new ChipPaymentIntent($purchase);
 
         expect($intent->getGatewayName())->toBe('chip');
     });
 
     it('returns raw response as array', function (): void {
-        $purchase = PurchaseData::fromArray($this->purchaseData);
+        $purchase = PurchaseData::from($this->purchaseData);
         $intent = new ChipPaymentIntent($purchase);
 
         $rawResponse = $intent->getRawResponse();
@@ -100,7 +100,7 @@ describe('ChipPaymentIntent', function (): void {
     });
 
     it('provides access to underlying purchase', function (): void {
-        $purchase = PurchaseData::fromArray($this->purchaseData);
+        $purchase = PurchaseData::from($this->purchaseData);
         $intent = new ChipPaymentIntent($purchase);
 
         expect($intent->getPurchase())->toBe($purchase);
@@ -109,7 +109,7 @@ describe('ChipPaymentIntent', function (): void {
     describe('status mapping', function (): void {
         it('maps created status', function (): void {
             $data = array_merge($this->purchaseData, ['status' => 'created']);
-            $purchase = PurchaseData::fromArray($data);
+            $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
             expect($intent->getStatus())->toBe(PaymentStatus::CREATED)
@@ -119,7 +119,7 @@ describe('ChipPaymentIntent', function (): void {
 
         it('maps pending_execute status', function (): void {
             $data = array_merge($this->purchaseData, ['status' => 'pending_execute']);
-            $purchase = PurchaseData::fromArray($data);
+            $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
             expect($intent->getStatus())->toBe(PaymentStatus::PENDING);
@@ -127,7 +127,7 @@ describe('ChipPaymentIntent', function (): void {
 
         it('maps pending_charge status', function (): void {
             $data = array_merge($this->purchaseData, ['status' => 'pending_charge']);
-            $purchase = PurchaseData::fromArray($data);
+            $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
             expect($intent->getStatus())->toBe(PaymentStatus::PENDING);
@@ -135,7 +135,7 @@ describe('ChipPaymentIntent', function (): void {
 
         it('maps paid status', function (): void {
             $data = array_merge($this->purchaseData, ['status' => 'paid']);
-            $purchase = PurchaseData::fromArray($data);
+            $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
             expect($intent->getStatus())->toBe(PaymentStatus::PAID)
@@ -144,7 +144,7 @@ describe('ChipPaymentIntent', function (): void {
 
         it('maps refunded status', function (): void {
             $data = array_merge($this->purchaseData, ['status' => 'refunded']);
-            $purchase = PurchaseData::fromArray($data);
+            $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
             expect($intent->getStatus())->toBe(PaymentStatus::REFUNDED)
@@ -153,7 +153,7 @@ describe('ChipPaymentIntent', function (): void {
 
         it('maps partially_refunded status', function (): void {
             $data = array_merge($this->purchaseData, ['status' => 'partially_refunded']);
-            $purchase = PurchaseData::fromArray($data);
+            $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
             expect($intent->getStatus())->toBe(PaymentStatus::PARTIALLY_REFUNDED);
@@ -161,7 +161,7 @@ describe('ChipPaymentIntent', function (): void {
 
         it('maps cancelled status', function (): void {
             $data = array_merge($this->purchaseData, ['status' => 'cancelled']);
-            $purchase = PurchaseData::fromArray($data);
+            $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
             expect($intent->getStatus())->toBe(PaymentStatus::CANCELLED)
@@ -170,7 +170,7 @@ describe('ChipPaymentIntent', function (): void {
 
         it('maps expired status', function (): void {
             $data = array_merge($this->purchaseData, ['status' => 'expired']);
-            $purchase = PurchaseData::fromArray($data);
+            $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
             expect($intent->getStatus())->toBe(PaymentStatus::EXPIRED);
@@ -178,7 +178,7 @@ describe('ChipPaymentIntent', function (): void {
 
         it('maps error status', function (): void {
             $data = array_merge($this->purchaseData, ['status' => 'error']);
-            $purchase = PurchaseData::fromArray($data);
+            $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
             expect($intent->getStatus())->toBe(PaymentStatus::FAILED)
@@ -187,7 +187,7 @@ describe('ChipPaymentIntent', function (): void {
 
         it('maps blocked status', function (): void {
             $data = array_merge($this->purchaseData, ['status' => 'blocked']);
-            $purchase = PurchaseData::fromArray($data);
+            $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
             expect($intent->getStatus())->toBe(PaymentStatus::FAILED);
@@ -195,7 +195,7 @@ describe('ChipPaymentIntent', function (): void {
 
         it('maps hold/preauthorized status to authorized', function (): void {
             $data = array_merge($this->purchaseData, ['status' => 'hold']);
-            $purchase = PurchaseData::fromArray($data);
+            $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
             expect($intent->getStatus())->toBe(PaymentStatus::AUTHORIZED);
@@ -206,7 +206,7 @@ describe('ChipPaymentIntent', function (): void {
         it('returns created at timestamp', function (): void {
             $now = time();
             $data = array_merge($this->purchaseData, ['created_on' => $now]);
-            $purchase = PurchaseData::fromArray($data);
+            $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
             expect($intent->getCreatedAt())->toBeInstanceOf(DateTimeInterface::class);
@@ -215,7 +215,7 @@ describe('ChipPaymentIntent', function (): void {
         it('returns updated at timestamp', function (): void {
             $now = time();
             $data = array_merge($this->purchaseData, ['updated_on' => $now]);
-            $purchase = PurchaseData::fromArray($data);
+            $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
             expect($intent->getUpdatedAt())->toBeInstanceOf(DateTimeInterface::class);
@@ -225,7 +225,7 @@ describe('ChipPaymentIntent', function (): void {
     describe('refundable amount', function (): void {
         it('returns refundable amount as Money', function (): void {
             $data = array_merge($this->purchaseData, ['refundable_amount' => 5000]);
-            $purchase = PurchaseData::fromArray($data);
+            $purchase = PurchaseData::from($data);
             $intent = new ChipPaymentIntent($purchase);
 
             $refundable = $intent->getRefundableAmount();

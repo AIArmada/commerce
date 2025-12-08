@@ -22,7 +22,7 @@ describe('BankAccountData data object', function (): void {
             'rejection_reason' => null,
         ];
 
-        $account = BankAccountData::fromArray($data);
+        $account = BankAccountData::from($data);
 
         expect($account->id)->toBe(84);
         expect($account->status)->toBe('verified');
@@ -34,7 +34,7 @@ describe('BankAccountData data object', function (): void {
     });
 
     it('handles unverified bank account', function (): void {
-        $account = BankAccountData::fromArray([
+        $account = BankAccountData::from([
             'id' => 85,
             'status' => 'pending',
             'account_number' => '157380222222',
@@ -56,7 +56,7 @@ describe('BankAccountData data object', function (): void {
     });
 
     it('exposes date helpers and account capabilities', function (): void {
-        $account = BankAccountData::fromArray([
+        $account = BankAccountData::from([
             'id' => 99,
             'status' => 'verified',
             'account_number' => '9876543210',

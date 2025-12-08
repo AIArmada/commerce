@@ -487,7 +487,7 @@ final class WebhookSimulator
      */
     public function toPurchase(): PurchaseData
     {
-        return PurchaseData::fromArray($this->factory->toArray());
+        return PurchaseData::from($this->factory->toArray());
     }
 
     /**
@@ -495,7 +495,7 @@ final class WebhookSimulator
      */
     public function toWebhook(): WebhookData
     {
-        return WebhookData::fromArray($this->factory->toArray());
+        return WebhookData::from($this->factory->toArray());
     }
 
     /**
@@ -507,7 +507,7 @@ final class WebhookSimulator
     {
         // Only create the DTO that's actually needed for the event type
         if ($eventType->isPurchaseEvent() || $eventType->isPaymentEvent()) {
-            $purchase = PurchaseData::fromArray($payload);
+            $purchase = PurchaseData::from($payload);
 
             match ($eventType) {
                 WebhookEventType::PurchaseCreated => PurchaseCreated::dispatch($purchase, $payload),
@@ -530,10 +530,10 @@ final class WebhookSimulator
                 default => null,
             };
         } elseif ($eventType->isBillingEvent()) {
-            $billingClient = BillingTemplateClientData::fromArray($payload);
+            $billingClient = BillingTemplateClientData::from($payload);
             BillingCancelled::dispatch($billingClient, $payload);
         } elseif ($eventType->isPayoutEvent()) {
-            $payout = PayoutData::fromArray($payload);
+            $payout = PayoutData::from($payload);
 
             match ($eventType) {
                 WebhookEventType::PayoutPending => PayoutPending::dispatch($payout, $payload),

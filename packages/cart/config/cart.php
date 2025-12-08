@@ -152,7 +152,5 @@ return [
         'prefix' => env('CART_CACHE_PREFIX', 'cart'),
         'ttl' => env('CART_CACHE_TTL', 3600), // 1 hour
         'queue' => env('CART_CACHE_QUEUE', 'default'),
-        'warm_on_create' => env('CART_CACHE_WARM_ON_CREATE', true),
-        'warm_on_invalidate' => env('CART_CACHE_WARM_ON_INVALIDATE', false),
     ],
 ];

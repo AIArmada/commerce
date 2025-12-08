@@ -70,7 +70,7 @@ final class DocTemplate extends Model
             $query->where('owner_type', $this->owner_type)
                 ->where('owner_id', $this->owner_id);
         } else {
-            $query->whereNull('owner_type');
+            $query->whereNull('owner_type')->whereNull('owner_id');
         }
 
         $query->update(['is_default' => false]);

@@ -8,6 +8,7 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Illuminate\Support\Facades\Route;
 
 final class StockTransactionInfolist
 {
@@ -83,7 +84,20 @@ final class StockTransactionInfolist
                             TextEntry::make('stockable.name')
                                 ->label('Item')
                                 ->default('-')
-                                ->url(fn ($record): ?string => $record->stockable ? route('filament.admin.resources.products.view', ['record' => $record->stockable_id]) : null),
+                                ->url(function ($record): ?string {
+                                    if (! $record->stockable) {
+                                        return null;
+                                    }
+
+                                    $routeName = config('filament-stock.resources.stockable_view_route');
+                                    $routeParam = config('filament-stock.resources.stockable_view_route_param', 'record');
+
+                                    if (! is_string($routeName) || $routeName === '' || ! Route::has($routeName)) {
+                                        return null;
+                                    }
+
+                                    return route($routeName, [$routeParam => $record->stockable_id]);
+                                }),
                         ]),
                 ]),
 

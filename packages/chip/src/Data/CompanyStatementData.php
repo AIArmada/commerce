@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Data;
 
 use Carbon\Carbon;
 
-final class CompanyStatementData
+final class CompanyStatementData extends ChipData
 {
     public function __construct(
         public readonly string $id,
@@ -24,11 +24,10 @@ final class CompanyStatementData
         public readonly int $updated_on,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public static function fromArray(array $data): self
+    public static function from(mixed ...$payloads): static
     {
+        $data = self::resolvePayload(...$payloads);
+
         return new self(
             id: (string) $data['id'],
             type: (string) ($data['type'] ?? 'statement'),

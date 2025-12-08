@@ -34,7 +34,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static string getPublicKey()
  * @method static array<string, mixed> getAccountBalance()
  * @method static array<string, mixed> getAccountTurnover(array<string, mixed> $filters = [])
- * @method static array<int, \AIArmada\Chip\Data\CompanyStatement>|array{data: array<int, \AIArmada\Chip\Data\CompanyStatement>, meta?: array<string, mixed>} listCompanyStatements(array<string, mixed> $filters = [])
+ * @method static array<int, \AIArmada\Chip\Data\CompanyStatementData>|array{data: array<int, \AIArmada\Chip\Data\CompanyStatementData>, meta?: array<string, mixed>} listCompanyStatements(array<string, mixed> $filters = [])
  * @method static \AIArmada\Chip\Data\CompanyStatementData getCompanyStatement(string $statementId)
  * @method static \AIArmada\Chip\Data\CompanyStatementData cancelCompanyStatement(string $statementId)
  * @method static array<string, mixed> createWebhook(array<string, mixed> $data)

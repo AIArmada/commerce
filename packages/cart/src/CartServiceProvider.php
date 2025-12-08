@@ -149,8 +149,11 @@ final class CartServiceProvider extends PackageServiceProvider
         });
 
         $this->app->bind('cart.storage.cache', function (\Illuminate\Contracts\Foundation\Application $app) {
+            $cacheStore = config('cart.cache.store', 'redis');
+            $cacheRepository = $app->make(\Illuminate\Cache\CacheManager::class)->store($cacheStore);
+
             $storage = new CacheStorage(
-                $app->make(\Illuminate\Contracts\Cache\Repository::class),
+                $cacheRepository,
                 config('cart.cache.prefix', 'cart'),
                 config('cart.cache.ttl', 86400)
             );
@@ -173,6 +176,10 @@ final class CartServiceProvider extends PackageServiceProvider
         // Bind StorageInterface to the configured storage driver
         $this->app->bind(StorageInterface::class, function (\Illuminate\Contracts\Foundation\Application $app): StorageInterface {
             $driver = config('cart.storage', 'session');
+
+            if ($driver === 'cache' && ! config('cart.cache.enabled', false)) {
+                throw new RuntimeException('Cache storage selected but cart.cache.enabled is false. Enable cache or choose another driver.');
+            }
 
             return $app->make(sprintf('cart.storage.%s', $driver));
         });
@@ -273,8 +280,9 @@ final class CartServiceProvider extends PackageServiceProvider
     {
         $this->app->singleton(CartRateLimiter::class, function (\Illuminate\Contracts\Foundation\Application $app) {
             $limits = config('cart.rate_limiting.limits');
+            $enabled = config('cart.rate_limiting.enabled', true);
 
-            return new CartRateLimiter($limits);
+            return new CartRateLimiter($limits, 'cart', $enabled);
         });
 
         $this->app->alias(CartRateLimiter::class, 'cart.rate_limiter');

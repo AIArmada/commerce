@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Data;
 
 use Carbon\Carbon;
 
-final class ClientData
+final class ClientData extends ChipData
 {
     /**
      * @param  array<int, mixed>  $cc
@@ -81,11 +81,10 @@ final class ClientData
         return in_array($name, ['fullName', 'personalCode', 'streetAddress', 'zipCode', 'legalName', 'brandName', 'registrationNumber', 'taxNumber', 'address', 'identityType', 'identityNumber']);
     }
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public static function fromArray(array $data): self
+    public static function from(mixed ...$payloads): static
     {
+        $data = self::resolvePayload(...$payloads);
+
         return new self(
             id: $data['id'],
             type: $data['type'] ?? 'client',

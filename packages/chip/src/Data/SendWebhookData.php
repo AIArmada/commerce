@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Data;
 
 use Carbon\Carbon;
 
-final class SendWebhookData
+final class SendWebhookData extends ChipData
 {
     /**
      * @param  array<int, string>  $event_hooks
@@ -22,11 +22,10 @@ final class SendWebhookData
         public readonly string $updated_at,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public static function fromArray(array $data): self
+    public static function from(mixed ...$payloads): static
     {
+        $data = self::resolvePayload(...$payloads);
+
         $callbackKey = array_key_exists('callback_url', $data) ? 'callback_url' : 'callback_url"';
 
         $eventHooks = $data['event_hooks'] ?? [];

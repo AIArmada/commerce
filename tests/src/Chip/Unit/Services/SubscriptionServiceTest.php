@@ -54,7 +54,7 @@ function subscriptionFakePurchase(string $id, array $overrides = []): PurchaseDa
         'marked_as_paid' => false,
     ];
 
-    return PurchaseData::fromArray(array_replace_recursive($base, $overrides));
+    return PurchaseData::from(array_replace_recursive($base, $overrides));
 }
 
 it('creates a free trial purchase with sensible defaults', function (): void {

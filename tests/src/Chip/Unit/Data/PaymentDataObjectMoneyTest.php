@@ -7,7 +7,7 @@ use Akaunting\Money\Money;
 
 describe('Payment data object with Money', function (): void {
     it('creates payment from array with Money objects', function (): void {
-        $payment = PaymentData::fromArray([
+        $payment = PaymentData::from([
             'is_outgoing' => false,
             'payment_type' => 'purchase',
             'amount' => 10000,
@@ -25,7 +25,7 @@ describe('Payment data object with Money', function (): void {
     });
 
     it('returns amounts in cents for API communication', function (): void {
-        $payment = PaymentData::fromArray([
+        $payment = PaymentData::from([
             'amount' => 10000,
             'net_amount' => 9700,
             'fee_amount' => 300,
@@ -40,7 +40,7 @@ describe('Payment data object with Money', function (): void {
     });
 
     it('returns currency code from Money object', function (): void {
-        $payment = PaymentData::fromArray([
+        $payment = PaymentData::from([
             'amount' => 10000,
             'currency' => 'USD',
         ]);
@@ -50,7 +50,7 @@ describe('Payment data object with Money', function (): void {
     });
 
     it('exports to array with amounts in cents', function (): void {
-        $payment = PaymentData::fromArray([
+        $payment = PaymentData::from([
             'is_outgoing' => true,
             'payment_type' => 'refund',
             'amount' => 5000,
@@ -71,13 +71,13 @@ describe('Payment data object with Money', function (): void {
     });
 
     it('handles paid status with Money amounts', function (): void {
-        $paidPayment = PaymentData::fromArray([
+        $paidPayment = PaymentData::from([
             'amount' => 10000,
             'currency' => 'MYR',
             'paid_on' => 1700000000,
         ]);
 
-        $unpaidPayment = PaymentData::fromArray([
+        $unpaidPayment = PaymentData::from([
             'amount' => 10000,
             'currency' => 'MYR',
         ]);

@@ -98,7 +98,7 @@ class Shipment extends Model
     // ─────────────────────────────────────────────────────────────
 
     /**
-     * @return HasMany<ShipmentItem>
+     * @return HasMany<ShipmentItem, Shipment>
      */
     public function items(): HasMany
     {
@@ -106,7 +106,7 @@ class Shipment extends Model
     }
 
     /**
-     * @return HasMany<ShipmentEvent>
+     * @return HasMany<ShipmentEvent, Shipment>
      */
     public function events(): HasMany
     {
@@ -114,7 +114,7 @@ class Shipment extends Model
     }
 
     /**
-     * @return HasMany<ShipmentLabel>
+     * @return HasMany<ShipmentLabel, Shipment>
      */
     public function labels(): HasMany
     {
