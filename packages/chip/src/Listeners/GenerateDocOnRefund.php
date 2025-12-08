@@ -112,7 +112,7 @@ final class GenerateDocOnRefund implements ShouldQueue
             ],
             notes: $notes,
             docableType: Purchase::class,
-            docableId: $purchase->id,
+            docableId: (string) $purchase->id,
             generatePdf: config('chip.integrations.docs.generate_pdf', true),
             metadata: $metadata,
         );

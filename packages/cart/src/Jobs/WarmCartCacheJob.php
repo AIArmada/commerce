@@ -42,6 +42,10 @@ final class WarmCartCacheJob implements ShouldQueue
 
     public function handle(StorageInterface $storage, CacheRepository $cache): void
     {
+        if (! config('cart.cache.enabled', false)) {
+            return;
+        }
+
         $ttl = config('cart.cache.ttl', 3600);
 
         $cachedRepository = new CachedCartRepository($storage, $cache, $ttl);

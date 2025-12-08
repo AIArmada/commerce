@@ -11,8 +11,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('cart_snapshot_conditions', function (Blueprint $table): void {
-            $jsonType = (string) commerce_json_column_type('cart', 'json');
+        $databaseConfig = config('filament-cart.database', []);
+        $tablePrefix = $databaseConfig['table_prefix'] ?? 'cart_';
+        $tables = $databaseConfig['tables'] ?? [];
+        $tableName = $tables['snapshot_conditions'] ?? $tablePrefix.'snapshot_conditions';
+        $jsonType = (string) ($databaseConfig['json_column_type'] ?? commerce_json_column_type('cart', 'json'));
+
+        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('cart_id');
             $table->foreignUuid('cart_item_id')->nullable();
@@ -50,16 +55,21 @@ return new class extends Migration
         });
 
         // GIN indexes only work with jsonb in PostgreSQL
-        if (commerce_json_column_type('cart', 'json') === 'jsonb') {
-            Schema::table('cart_snapshot_conditions', function (Blueprint $table): void {
-                DB::statement('CREATE INDEX cart_snapshot_conditions_rules_gin_index ON cart_snapshot_conditions USING GIN (rules)');
-                DB::statement('CREATE INDEX cart_snapshot_conditions_attributes_gin_index ON cart_snapshot_conditions USING GIN (attributes)');
+        if (($databaseConfig['json_column_type'] ?? commerce_json_column_type('cart', 'json')) === 'jsonb') {
+            Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
+                DB::statement("CREATE INDEX {$tableName}_rules_gin_index ON {$tableName} USING GIN (rules)");
+                DB::statement("CREATE INDEX {$tableName}_attributes_gin_index ON {$tableName} USING GIN (attributes)");
             });
         }
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('cart_snapshot_conditions');
+        $databaseConfig = config('filament-cart.database', []);
+        $tablePrefix = $databaseConfig['table_prefix'] ?? 'cart_';
+        $tables = $databaseConfig['tables'] ?? [];
+        $tableName = $tables['snapshot_conditions'] ?? $tablePrefix.'snapshot_conditions';
+
+        Schema::dropIfExists($tableName);
     }
 };

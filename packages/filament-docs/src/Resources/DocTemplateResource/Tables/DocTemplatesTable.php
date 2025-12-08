@@ -16,11 +16,17 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Support\Str;
 
 final class DocTemplatesTable
 {
     public static function configure(Table $table): Table
     {
+        $docTypeOptions = collect(config('docs.types', []))
+            ->keys()
+            ->mapWithKeys(static fn (string $type): array => [$type => Str::headline($type)])
+            ->all();
+
         return $table
             ->columns([
                 TextColumn::make('name')
@@ -71,10 +77,7 @@ final class DocTemplatesTable
             ->filters([
                 SelectFilter::make('doc_type')
                     ->label('Document Type')
-                    ->options([
-                        'invoice' => 'Invoice',
-                        'receipt' => 'Receipt',
-                    ]),
+                    ->options($docTypeOptions),
 
                 TernaryFilter::make('is_default')
                     ->label('Default Only'),

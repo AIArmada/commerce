@@ -15,6 +15,8 @@ return [
             'stock_transactions' => 10,
             'stock_reservations' => 20,
         ],
+        'stockable_view_route' => env('FILAMENT_STOCK_STOCKABLE_VIEW_ROUTE'),
+        'stockable_view_route_param' => env('FILAMENT_STOCK_STOCKABLE_VIEW_ROUTE_PARAM', 'record'),
     ],
 
     /*

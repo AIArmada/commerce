@@ -14,7 +14,10 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('conditions', function (Blueprint $table): void {
+        $tableName = config('cart.database.conditions_table', 'conditions');
+        $jsonType = (string) commerce_json_column_type('cart', 'json');
+
+        Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
 
             // Core identification
@@ -25,7 +28,6 @@ return new class extends Migration
             // Condition definition
             $table->string('type'); // discount, tax, fee, shipping, etc.
             $table->string('target'); // cart@cart_subtotal/aggregate, etc. (DSL string for UI/filtering)
-            $jsonType = (string) commerce_json_column_type('cart', 'json');
             $table->{$jsonType}('target_definition'); // structured scope/phase/application payload
             $table->string('value'); // e.g., "-10%", "+5", "15"
 
@@ -59,12 +61,13 @@ return new class extends Migration
             $table->index('order');
         });
 
-        if (commerce_json_column_type('cart', 'json') === 'jsonb') {
-            Schema::table('conditions', function (Blueprint $table): void {
-                DB::statement('CREATE INDEX conditions_attributes_gin_index ON conditions USING GIN (attributes)');
-                DB::statement('CREATE INDEX conditions_rules_gin_index ON conditions USING GIN (rules)');
-                DB::statement('CREATE INDEX conditions_target_definition_gin_index ON conditions USING GIN (target_definition)');
-            });
+        if (
+            $jsonType === 'jsonb'
+            && Schema::getConnection()->getDriverName() === 'pgsql'
+        ) {
+            DB::statement("CREATE INDEX {$tableName}_attributes_gin_index ON \"{$tableName}\" USING GIN (\"attributes\")");
+            DB::statement("CREATE INDEX {$tableName}_rules_gin_index ON \"{$tableName}\" USING GIN (\"rules\")");
+            DB::statement("CREATE INDEX {$tableName}_target_definition_gin_index ON \"{$tableName}\" USING GIN (\"target_definition\")");
         }
     }
 
@@ -73,6 +76,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('conditions');
+        Schema::dropIfExists(config('cart.database.conditions_table', 'conditions'));
     }
 };

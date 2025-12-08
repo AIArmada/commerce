@@ -13,11 +13,16 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (Schema::hasTable('chip_subscription_items')) {
+        $databaseConfig = config('cashier-chip.database', []);
+        $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
+        $tables = $databaseConfig['tables'] ?? [];
+        $tableName = $tables['subscription_items'] ?? $tablePrefix.'subscription_items';
+
+        if (Schema::hasTable($tableName)) {
             return;
         }
 
-        Schema::create('chip_subscription_items', function (Blueprint $table): void {
+        Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('subscription_id');
             $table->string('chip_id')->unique();
@@ -38,6 +43,11 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('chip_subscription_items');
+        $databaseConfig = config('cashier-chip.database', []);
+        $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
+        $tables = $databaseConfig['tables'] ?? [];
+        $tableName = $tables['subscription_items'] ?? $tablePrefix.'subscription_items';
+
+        Schema::dropIfExists($tableName);
     }
 };

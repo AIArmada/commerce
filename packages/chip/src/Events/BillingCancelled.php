@@ -34,7 +34,7 @@ final class BillingCancelled
      */
     public static function fromPayload(array $payload): self
     {
-        $billingTemplateClient = BillingTemplateClientData::fromArray($payload);
+        $billingTemplateClient = BillingTemplateClientData::from($payload);
 
         return new self(
             billingTemplateClient: $billingTemplateClient,

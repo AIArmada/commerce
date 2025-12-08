@@ -29,7 +29,7 @@ describe('PurchaseDetails data object', function (): void {
             'metadata' => ['order_id' => 'ORD-123'],
         ];
 
-        $details = PurchaseDetailsData::fromArray($data);
+        $details = PurchaseDetailsData::from($data);
 
         expect($details->getTotalInCurrency())->toBe(195.0);
         expect($details->getSubtotalInCurrency())->toEqual((10000 + (5000 * 2)) / 100);

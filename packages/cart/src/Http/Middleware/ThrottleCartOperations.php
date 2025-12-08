@@ -28,6 +28,10 @@ final class ThrottleCartOperations
      */
     public function handle(Request $request, Closure $next, ?string $operation = null): Response
     {
+        if (! config('cart.rate_limiting.enabled', true)) {
+            return $next($request);
+        }
+
         $identifier = $this->resolveIdentifier($request);
         $operation = $operation ?? $this->resolveOperation($request);
 

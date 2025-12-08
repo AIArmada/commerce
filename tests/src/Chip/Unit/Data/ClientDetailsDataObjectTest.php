@@ -31,7 +31,7 @@ describe('ClientDetails data object', function (): void {
             'tax_number' => 'TX1234567',
         ];
 
-        $details = ClientDetailsData::fromArray($data);
+        $details = ClientDetailsData::from($data);
 
         expect($details->email)->toBe('customer@example.com');
         expect($details->shipping_city)->toBe('Kuala Lumpur');
@@ -39,7 +39,7 @@ describe('ClientDetails data object', function (): void {
     });
 
     it('uses defaults for missing optional fields', function (): void {
-        $details = ClientDetailsData::fromArray([]);
+        $details = ClientDetailsData::from([]);
 
         expect($details->email)->toBeNull();
         expect($details->cc)->toBe([]);

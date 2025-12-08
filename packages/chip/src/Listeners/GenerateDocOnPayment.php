@@ -77,7 +77,7 @@ final class GenerateDocOnPayment implements ShouldQueue
             items: $items,
             notes: $this->generateNotes($purchase, $event),
             docableType: Purchase::class,
-            docableId: $purchase->id,
+            docableId: (string) $purchase->id,
             generatePdf: config('chip.integrations.docs.generate_pdf', true),
             metadata: [
                 'chip_purchase_id' => $event->getPurchaseId(),

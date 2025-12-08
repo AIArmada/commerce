@@ -13,7 +13,12 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create(config('stock.table_name', 'stock_transactions'), function (Blueprint $table): void {
+        $database = config('stock.database', []);
+        $tablePrefix = $database['table_prefix'] ?? 'stock_';
+        $tables = $database['tables'] ?? [];
+        $tableName = $tables['transactions'] ?? $tablePrefix.'transactions';
+
+        Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
             $table->uuidMorphs('stockable');
             $table->uuid('user_id')->nullable();
@@ -28,9 +33,9 @@ return new class extends Migration
             $table->index('reason');
             $table->index('transaction_date');
             $table->index('user_id');
-            $table->index(['stockable_type', 'stockable_id', 'type'], 'stock_transactions_stockable_type_idx');
-            $table->index(['stockable_type', 'stockable_id', 'transaction_date'], 'stock_transactions_stockable_history_idx');
-            $table->index(['user_id', 'transaction_date'], 'stock_transactions_user_history_idx');
+            $table->index(['stockable_type', 'stockable_id', 'type'], $tableName.'_stockable_type_idx');
+            $table->index(['stockable_type', 'stockable_id', 'transaction_date'], $tableName.'_stockable_history_idx');
+            $table->index(['user_id', 'transaction_date'], $tableName.'_user_history_idx');
         });
     }
 
@@ -39,6 +44,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists(config('stock.table_name', 'stock_transactions'));
+        $database = config('stock.database', []);
+        $tablePrefix = $database['table_prefix'] ?? 'stock_';
+        $tables = $database['tables'] ?? [];
+
+        Schema::dropIfExists($tables['transactions'] ?? $tablePrefix.'transactions');
     }
 };

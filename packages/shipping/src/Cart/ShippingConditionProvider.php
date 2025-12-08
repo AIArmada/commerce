@@ -5,19 +5,27 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Cart;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Contracts\ConditionProviderInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Services\FreeShippingEvaluator;
 use AIArmada\Shipping\Services\RateShoppingEngine;
-use Illuminate\Support\Collection;
 
 /**
  * Provides shipping conditions for the cart.
  */
 class ShippingConditionProvider implements ConditionProviderInterface
 {
+    private const string CONDITION_TYPE = 'shipping';
+
+    private const int CONDITION_PRIORITY = 80;
+
+    private const string SHIPPING_ADDRESS_KEY = 'shipping_address';
+
+    private const string SELECTED_METHOD_KEY = 'selected_shipping_method';
+
     public function __construct(
         protected readonly RateShoppingEngine $rateEngine,
         protected readonly ?FreeShippingEvaluator $freeShippingEvaluator = null
@@ -26,20 +34,20 @@ class ShippingConditionProvider implements ConditionProviderInterface
     /**
      * Get shipping conditions for the cart.
      *
-     * @return Collection<int, ShippingCondition>
+     * @return array<CartCondition>
      */
-    public function getConditions(Cart $cart): Collection
+    public function getConditionsFor(Cart $cart): array
     {
         $destination = $this->getShippingAddress($cart);
 
         if ($destination === null) {
-            return collect();
+            return [];
         }
 
         $rate = $this->getSelectedRate($cart, $destination);
 
         if ($rate === null) {
-            return collect();
+            return [];
         }
 
         // Apply free shipping if qualified
@@ -50,20 +58,40 @@ class ShippingConditionProvider implements ConditionProviderInterface
             }
         }
 
-        return collect([
-            new ShippingCondition(
-                name: $rate->service,
-                type: 'shipping',
-                value: $rate->rate,
-                attributes: [
-                    'carrier' => $rate->carrier,
-                    'service' => $rate->service,
-                    'estimated_days' => $rate->estimatedDays,
-                    'quote_id' => $rate->quoteId,
-                    'note' => $rate->note,
-                ],
-            ),
-        ]);
+        $condition = new ShippingCondition(
+            name: $rate->service,
+            type: self::CONDITION_TYPE,
+            value: $rate->rate,
+            attributes: [
+                'carrier' => $rate->carrier,
+                'service' => $rate->service,
+                'estimated_days' => $rate->estimatedDays,
+                'quote_id' => $rate->quoteId,
+                'note' => $rate->note,
+                'order' => self::CONDITION_PRIORITY,
+            ],
+        );
+
+        return [$condition->asCartCondition()];
+    }
+
+    public function validate(CartCondition $condition, Cart $cart): bool
+    {
+        if ($condition->getType() !== self::CONDITION_TYPE) {
+            return true;
+        }
+
+        return $this->getShippingAddress($cart) !== null;
+    }
+
+    public function getType(): string
+    {
+        return self::CONDITION_TYPE;
+    }
+
+    public function getPriority(): int
+    {
+        return self::CONDITION_PRIORITY;
     }
 
     /**
@@ -71,8 +99,11 @@ class ShippingConditionProvider implements ConditionProviderInterface
      */
     protected function getSelectedRate(Cart $cart, AddressData $destination): ?RateQuoteData
     {
-        $metadata = $cart->metadata ?? [];
-        $selectedMethod = $metadata['selected_shipping_method'] ?? null;
+        $selectedMethod = $cart->getMetadata(self::SELECTED_METHOD_KEY);
+
+        if (! is_array($selectedMethod)) {
+            $selectedMethod = null;
+        }
 
         $origin = $this->getOriginAddress();
         $packages = $this->cartToPackages($cart);
@@ -96,10 +127,9 @@ class ShippingConditionProvider implements ConditionProviderInterface
      */
     protected function getShippingAddress(Cart $cart): ?AddressData
     {
-        $metadata = $cart->metadata ?? [];
-        $addressData = $metadata['shipping_address'] ?? null;
+        $addressData = $cart->getMetadata(self::SHIPPING_ADDRESS_KEY);
 
-        if ($addressData === null || ! is_array($addressData)) {
+        if (! is_array($addressData)) {
             return null;
         }
 

@@ -7,7 +7,7 @@ namespace AIArmada\Chip\Data;
 use Akaunting\Money\Money;
 use Carbon\Carbon;
 
-class PurchaseData
+class PurchaseData extends ChipData
 {
     public function __construct(
         public readonly string $id, // UUID as string
@@ -69,14 +69,14 @@ class PurchaseData
     ) {}
 
     /**
-     * @param  array<string, mixed>  $data
+        * @param  array<string, mixed>|self  ...$payloads
      */
-    public static function fromArray(array $data): self
+    public static function from(mixed ...$payloads): static
     {
+        $data = self::resolvePayload(...$payloads);
+
         // Sanitize UUID fields - PostgreSQL UUID columns cannot accept empty strings
         $data = self::sanitizeUuidFields($data);
-
-        // Handle both API response structure and simplified test data
 
         // For timestamps, convert string dates to timestamps if needed
         $created_on = $data['created_on'] ?? null;
@@ -99,28 +99,18 @@ class PurchaseData
         }
         $updated_on = $updated_on ?? time();
 
-        // Handle client data
-        $client = null;
-        if (isset($data['client'])) {
-            $client = ClientDetailsData::fromArray($data['client']);
-        } else {
-            // Create minimal client for test data
-            $client = ClientDetailsData::fromArray([]);
-        }
+        $client = isset($data['client'])
+            ? ClientDetailsData::from($data['client'])
+            : ClientDetailsData::from([]);
 
-        // Handle purchase data
-        $purchase = null;
-        if (isset($data['purchase'])) {
-            $purchase = PurchaseDetailsData::fromArray($data['purchase']);
-        } else {
-            // Create purchase from flat test data structure
-            $purchase = PurchaseDetailsData::fromArray([
+        $purchase = isset($data['purchase'])
+            ? PurchaseDetailsData::from($data['purchase'])
+            : PurchaseDetailsData::from([
                 'total' => $data['amount_in_cents'] ?? 0,
                 'currency' => $data['currency'] ?? 'MYR',
                 'products' => [],
                 'metadata' => $data['metadata'] ?? null,
             ]);
-        }
 
         return new self(
             id: $data['id'],
@@ -130,9 +120,9 @@ class PurchaseData
             client: $client,
             purchase: $purchase,
             brand_id: $data['brand_id'] ?? '',
-            payment: isset($data['payment']) ? PaymentData::fromArray($data['payment']) : null,
-            issuer_details: isset($data['issuer_details']) ? IssuerDetailsData::fromArray($data['issuer_details']) : IssuerDetailsData::fromArray(['legal_name' => '']),
-            transaction_data: isset($data['transaction_data']) ? TransactionData::fromArray($data['transaction_data']) : TransactionData::fromArray(['payment_method' => '', 'attempts' => []]),
+            payment: isset($data['payment']) ? PaymentData::from($data['payment']) : null,
+            issuer_details: isset($data['issuer_details']) ? IssuerDetailsData::from($data['issuer_details']) : IssuerDetailsData::from(['legal_name' => '']),
+            transaction_data: isset($data['transaction_data']) ? TransactionData::from($data['transaction_data']) : TransactionData::from(['payment_method' => '', 'attempts' => []]),
             status: $data['status'] ?? 'created',
             status_history: $data['status_history'] ?? [],
             viewed_on: $data['viewed_on'] ?? null,
@@ -153,7 +143,7 @@ class PurchaseData
             due: $data['due'] ?? null,
             refund_availability: $data['refund_availability'] ?? 'all',
             refundable_amount: Money::{$purchase->currency}($data['refundable_amount'] ?? 0),
-            currency_conversion: isset($data['currency_conversion']) ? CurrencyConversionData::fromArray($data['currency_conversion']) : null,
+            currency_conversion: isset($data['currency_conversion']) ? CurrencyConversionData::from($data['currency_conversion']) : null,
             payment_method_whitelist: $data['payment_method_whitelist'] ?? [],
             success_redirect: $data['success_redirect'] ?? null,
             failure_redirect: $data['failure_redirect'] ?? null,

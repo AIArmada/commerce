@@ -33,7 +33,7 @@ class ChipCustomer implements CustomerContract
      */
     public function id(): string
     {
-        return $this->client?->id ?? $this->billable->chipId() ?? '';
+        return $this->client?->id ?? $this->billable->gatewayId('chip') ?? '';
     }
 
     /**
@@ -49,7 +49,7 @@ class ChipCustomer implements CustomerContract
      */
     public function email(): ?string
     {
-        return $this->client?->email ?? $this->billable->chipEmail();
+        return $this->client?->email ?? $this->billable->customerEmail();
     }
 
     /**
@@ -57,7 +57,7 @@ class ChipCustomer implements CustomerContract
      */
     public function name(): ?string
     {
-        return $this->client?->fullName ?? $this->client?->legalName ?? $this->billable->chipName();
+        return $this->client?->full_name ?? $this->client?->legal_name ?? $this->billable->customerName();
     }
 
     /**
@@ -65,7 +65,7 @@ class ChipCustomer implements CustomerContract
      */
     public function phone(): ?string
     {
-        return $this->client?->phone ?? $this->billable->chipPhone();
+        return $this->client?->phone ?? $this->billable->customerPhone();
     }
 
     /**
@@ -75,18 +75,18 @@ class ChipCustomer implements CustomerContract
      */
     public function address(): ?array
     {
-        if ($this->client?->streetAddress) {
+        if ($this->client?->street_address) {
             return [
-                'line1' => $this->client->streetAddress,
-                'line2' => $this->client->streetAddress2 ?? null,
+                'line1' => $this->client->street_address,
+                'line2' => null,
                 'city' => $this->client->city,
-                'state' => $this->client->stateOrProvince ?? null,
-                'postal_code' => $this->client->zipCode,
+                'state' => $this->client->state,
+                'postal_code' => $this->client->zip_code,
                 'country' => $this->client->country,
             ];
         }
 
-        $address = $this->billable->chipAddress();
+        $address = $this->billable->customerAddress();
 
         return ! empty($address) ? $address : null;
     }
@@ -103,14 +103,13 @@ class ChipCustomer implements CustomerContract
         }
 
         return [
-            'brand_id' => $this->client->brandId,
-            'shipping_street_address' => $this->client->shippingStreetAddress,
-            'shipping_city' => $this->client->shippingCity,
-            'shipping_zip_code' => $this->client->shippingZipCode,
-            'shipping_country' => $this->client->shippingCountry,
-            'bank_account' => $this->client->bankAccount,
-            'bank_code' => $this->client->bankCode,
-            'notes' => $this->client->notes,
+            'brand_name' => $this->client->brand_name,
+            'shipping_street_address' => $this->client->shipping_street_address,
+            'shipping_city' => $this->client->shipping_city,
+            'shipping_zip_code' => $this->client->shipping_zip_code,
+            'shipping_country' => $this->client->shipping_country,
+            'bank_account' => $this->client->bank_account,
+            'bank_code' => $this->client->bank_code,
         ];
     }
 
@@ -146,5 +145,6 @@ class ChipCustomer implements CustomerContract
             'address' => $this->address(),
             'metadata' => $this->metadata(),
         ];
+
     }
 }

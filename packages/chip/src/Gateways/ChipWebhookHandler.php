@@ -97,7 +97,7 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
 
         try {
             // We can construct a Purchase directly from webhook data
-            $purchase = PurchaseData::fromArray($payload);
+            $purchase = PurchaseData::from($payload);
 
             return new ChipPaymentIntent($purchase);
         } catch (Throwable) {

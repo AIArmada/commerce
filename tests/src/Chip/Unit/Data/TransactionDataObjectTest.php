@@ -16,7 +16,7 @@ describe('TransactionData data object', function (): void {
             ],
         ];
 
-        $transaction = TransactionData::fromArray($data);
+        $transaction = TransactionData::from($data);
 
         expect($transaction->getLastAttempt())->toBe(['id' => 'attempt_1', 'successful' => false]);
         expect($transaction->hasFailedAttempts())->toBeTrue();
@@ -25,7 +25,7 @@ describe('TransactionData data object', function (): void {
     });
 
     it('handles empty attempts gracefully', function (): void {
-        $transaction = TransactionData::fromArray([]);
+        $transaction = TransactionData::from([]);
 
         expect($transaction->getLastAttempt())->toBeNull();
         expect($transaction->hasFailedAttempts())->toBeFalse();

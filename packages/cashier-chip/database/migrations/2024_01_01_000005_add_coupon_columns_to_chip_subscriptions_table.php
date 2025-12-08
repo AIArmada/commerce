@@ -13,25 +13,30 @@ return new class extends Migration
      */
     public function up(): void
     {
-        if (! Schema::hasTable('chip_subscriptions')) {
+        $databaseConfig = config('cashier-chip.database', []);
+        $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
+        $tables = $databaseConfig['tables'] ?? [];
+        $tableName = $tables['subscriptions'] ?? $tablePrefix.'subscriptions';
+
+        if (! Schema::hasTable($tableName)) {
             return;
         }
 
-        Schema::table('chip_subscriptions', function (Blueprint $table): void {
-            if (! Schema::hasColumn('chip_subscriptions', 'coupon_id')) {
+        Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
+            if (! Schema::hasColumn($tableName, 'coupon_id')) {
                 $table->string('coupon_id')->nullable()->after('ends_at');
                 $table->index('coupon_id');
             }
 
-            if (! Schema::hasColumn('chip_subscriptions', 'coupon_discount')) {
+            if (! Schema::hasColumn($tableName, 'coupon_discount')) {
                 $table->integer('coupon_discount')->nullable()->after('coupon_id');
             }
 
-            if (! Schema::hasColumn('chip_subscriptions', 'coupon_duration')) {
+            if (! Schema::hasColumn($tableName, 'coupon_duration')) {
                 $table->string('coupon_duration')->nullable()->after('coupon_discount');
             }
 
-            if (! Schema::hasColumn('chip_subscriptions', 'coupon_applied_at')) {
+            if (! Schema::hasColumn($tableName, 'coupon_applied_at')) {
                 $table->timestamp('coupon_applied_at')->nullable()->after('coupon_duration');
             }
         });
@@ -42,13 +47,18 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if (! Schema::hasTable('chip_subscriptions')) {
+        $databaseConfig = config('cashier-chip.database', []);
+        $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
+        $tables = $databaseConfig['tables'] ?? [];
+        $tableName = $tables['subscriptions'] ?? $tablePrefix.'subscriptions';
+
+        if (! Schema::hasTable($tableName)) {
             return;
         }
 
-        Schema::table('chip_subscriptions', function (Blueprint $table): void {
-            if (Schema::hasColumn('chip_subscriptions', 'coupon_id')) {
-                $table->dropIndex(['coupon_id']);
+        Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
+            if (Schema::hasColumn($tableName, 'coupon_id')) {
+                $table->dropIndex($tableName.'_coupon_id_index');
                 $table->dropColumn('coupon_id');
             }
 

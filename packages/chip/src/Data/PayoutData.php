@@ -12,7 +12,7 @@ use Carbon\Carbon;
  *
  * Represents a payout/disbursement from CHIP.
  */
-class PayoutData
+class PayoutData extends ChipData
 {
     public function __construct(
         public readonly string $id,
@@ -35,11 +35,9 @@ class PayoutData
         public readonly array $error,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public static function fromArray(array $data): self
+    public static function from(mixed ...$payloads): static
     {
+        $data = self::resolvePayload(...$payloads);
         $currency = $data['currency'] ?? 'MYR';
         $amount = $data['amount'] ?? 0;
 

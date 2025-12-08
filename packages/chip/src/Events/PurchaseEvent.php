@@ -43,7 +43,7 @@ abstract class PurchaseEvent
      */
     final public static function fromPayload(array $payload): static
     {
-        $purchase = PurchaseData::fromArray($payload);
+        $purchase = PurchaseData::from($payload);
 
         return new static(
             purchase: $purchase,

@@ -22,7 +22,7 @@ describe('CompanyStatement data object', function (): void {
             'updated_on' => 1712078600,
         ];
 
-        $statement = CompanyStatementData::fromArray($payload);
+        $statement = CompanyStatementData::from($payload);
 
         expect($statement->id)->toBe('stmt_123')
             ->and($statement->format)->toBe('csv')

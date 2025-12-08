@@ -131,7 +131,7 @@ class WebhookController extends Controller
         $type = $payload['type'] ?? '';
 
         if ($type === 'purchase' || str_starts_with($payload['event_type'] ?? '', 'purchase.') || str_starts_with($payload['event_type'] ?? '', 'payment.')) {
-            return PurchaseData::fromArray($payload);
+            return PurchaseData::from($payload);
         }
 
         return null;
@@ -147,7 +147,7 @@ class WebhookController extends Controller
         $type = $payload['type'] ?? '';
 
         if ($type === 'payout' || str_starts_with($payload['event_type'] ?? '', 'payout.')) {
-            return PayoutData::fromArray($payload);
+            return PayoutData::from($payload);
         }
 
         return null;
@@ -163,7 +163,7 @@ class WebhookController extends Controller
         $type = $payload['type'] ?? '';
 
         if ($type === 'billing_template_client' || str_starts_with($payload['event_type'] ?? '', 'billing_template_client.')) {
-            return BillingTemplateClientData::fromArray($payload);
+            return BillingTemplateClientData::from($payload);
         }
 
         return null;

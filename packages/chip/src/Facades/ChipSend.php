@@ -31,7 +31,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \AIArmada\Chip\Data\SendWebhookData getSendWebhook(string $id)
  * @method static \AIArmada\Chip\Data\SendWebhookData updateSendWebhook(string $id, array<string, mixed> $data)
  * @method static void deleteSendWebhook(string $id)
- * @method static array<int, \AIArmada\Chip\Data\SendWebhook>|array{data: array<int, \AIArmada\Chip\Data\SendWebhook>, meta?: array<string, mixed>} listSendWebhooks(array<string, mixed> $filters = [])
+ * @method static array<int, \AIArmada\Chip\Data\SendWebhookData>|array{data: array<int, \AIArmada\Chip\Data\SendWebhookData>, meta?: array<string, mixed>} listSendWebhooks(array<string, mixed> $filters = [])
  *
  * @see ChipSendService
  */

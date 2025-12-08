@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Data;
 
 use Carbon\Carbon;
 
-final class SendLimitData
+final class SendLimitData extends ChipData
 {
     public function __construct(
         public readonly int $id,
@@ -24,16 +24,15 @@ final class SendLimitData
         public readonly string $updated_at,
     ) {}
 
-    /**
-     * @param  array<string, mixed>  $data
-     */
-    public static function fromArray(array $data): self
+    public static function from(mixed ...$payloads): static
     {
+        $data = self::resolvePayload(...$payloads);
+
         return new self(
             id: (int) $data['id'],
-            currency: $data['currency'],
-            fee_type: $data['fee_type'],
-            transaction_type: $data['transaction_type'],
+            currency: (string) $data['currency'],
+            fee_type: (string) $data['fee_type'],
+            transaction_type: (string) $data['transaction_type'],
             amount: (int) ($data['amount'] ?? 0),
             fee: (int) ($data['fee'] ?? 0),
             net_amount: (int) ($data['net_amount'] ?? 0),
