@@ -10,20 +10,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('shipping_zones', function (Blueprint $table): void {
-            $table->id();
-            $table->morphs('owner');
+        $tableName = config('shipping.database.tables.shipping_zones', 'shipping_zones');
+        $jsonType = (string) config('shipping.database.json_column_type', 'json');
+
+        Schema::create($tableName, function (Blueprint $table) use ($tableName, $jsonType): void {
+            $table->uuid('id')->primary();
+            $table->uuidMorphs('owner');
 
             $table->string('name');
             $table->string('code', 50)->unique();
-            $table->string('type', 20); // country, state, postcode, radius
+            $table->string('type', 20);
 
-            // Geographic conditions (JSON)
-            $table->json('countries')->nullable();
-            $table->json('states')->nullable();
-            $table->json('postcode_ranges')->nullable(); // [{"from": "40000", "to": "49999"}]
+            $table->{$jsonType}('countries')->nullable();
+            $table->{$jsonType}('states')->nullable();
+            $table->{$jsonType}('postcode_ranges')->nullable();
 
-            // For radius-based zones
             $table->decimal('center_lat', 10, 8)->nullable();
             $table->decimal('center_lng', 11, 8)->nullable();
             $table->unsignedInteger('radius_km')->nullable();
@@ -34,13 +35,13 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['owner_id', 'owner_type', 'active']);
-            $table->index('priority');
+            $table->index(['owner_id', 'owner_type', 'active'], $tableName.'_owner_active');
+            $table->index('priority', $tableName.'_priority');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('shipping_zones');
+        Schema::dropIfExists(config('shipping.database.tables.shipping_zones', 'shipping_zones'));
     }
 };

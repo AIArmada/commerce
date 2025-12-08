@@ -4,13 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Models;
 
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
- * @property int $id
- * @property int $return_authorization_id
+ * @property string $id
+ * @property string $return_authorization_id
  * @property string|null $sku
  * @property string $name
  * @property int $quantity_requested
@@ -25,7 +26,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 class ReturnAuthorizationItem extends Model
 {
-    protected $table = 'return_authorization_items';
+    use HasUuids;
+
+    protected $keyType = 'string';
+
+    public $incrementing = false;
 
     protected $fillable = [
         'return_authorization_id',
@@ -40,6 +45,11 @@ class ReturnAuthorizationItem extends Model
         'condition',
         'metadata',
     ];
+
+    public function getTable(): string
+    {
+        return config('shipping.database.tables.return_authorization_items', 'return_authorization_items');
+    }
 
     /**
      * @var array<string, mixed>

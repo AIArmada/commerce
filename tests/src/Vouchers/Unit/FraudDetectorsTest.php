@@ -74,19 +74,17 @@ describe('PatternDetector', function (): void {
 
     it('detects unusual time patterns', function (): void {
         $detector = new PatternDetector();
-        $detector->setUnusualHours([0, 1, 2, 3, 4, 5]);
-
         $cart = new stdClass();
         $currentHour = (int) date('G');
 
+        // Force the detector to treat the current hour as unusual so the assertion always runs
+        $detector->setUnusualHours([$currentHour]);
+
         $result = $detector->detect('TEST-CODE', $cart, null, []);
 
-        // If current hour is unusual, we should get a signal
-        if (in_array($currentHour, [0, 1, 2, 3, 4, 5], true)) {
-            expect($result->hasSignals())->toBeTrue();
-            $signal = $result->signals[0];
-            expect($signal->type)->toBe(FraudSignalType::UnusualTimePattern);
-        }
+        expect($result->hasSignals())->toBeTrue();
+        $signal = $result->signals[0];
+        expect($signal->type)->toBe(FraudSignalType::UnusualTimePattern);
     });
 
     it('detects geo anomalies for impossible travel', function (): void {

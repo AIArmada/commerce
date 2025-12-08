@@ -10,44 +10,43 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('return_authorizations', function (Blueprint $table): void {
-            $table->id();
-            $table->morphs('owner');
+        $tableName = config('shipping.database.tables.return_authorizations', 'return_authorizations');
+        $itemsTable = config('shipping.database.tables.return_authorization_items', 'return_authorization_items');
+        $jsonType = (string) config('shipping.database.json_column_type', 'json');
+
+        Schema::create($tableName, function (Blueprint $table) use ($tableName, $jsonType): void {
+            $table->uuid('id')->primary();
+            $table->uuidMorphs('owner');
 
             $table->string('rma_number')->unique();
-            $table->foreignId('original_shipment_id')
-                ->nullable()
-                ->constrained('shipments')
-                ->nullOnDelete();
+            $table->foreignUuid('original_shipment_id')->nullable();
 
             $table->string('order_reference')->nullable();
-            $table->foreignId('customer_id')->nullable();
+            $table->foreignUuid('customer_id')->nullable();
 
-            $table->string('status', 50)->default('pending'); // pending, approved, rejected, received, completed, cancelled
-            $table->string('type', 50); // refund, exchange, store_credit
+            $table->string('status', 50)->default('pending');
+            $table->string('type', 50);
             $table->string('reason', 100);
             $table->text('reason_details')->nullable();
 
-            $table->foreignId('approved_by')->nullable();
+            $table->foreignUuid('approved_by')->nullable();
             $table->timestamp('approved_at')->nullable();
             $table->timestamp('received_at')->nullable();
             $table->timestamp('completed_at')->nullable();
             $table->timestamp('expires_at')->nullable();
 
-            $table->json('metadata')->nullable();
+            $table->{$jsonType}('metadata')->nullable();
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['owner_id', 'owner_type', 'status']);
+            $table->index(['owner_id', 'owner_type', 'status'], $tableName.'_owner_status');
         });
 
-        Schema::create('return_authorization_items', function (Blueprint $table): void {
-            $table->id();
-            $table->foreignId('return_authorization_id')
-                ->constrained('return_authorizations')
-                ->cascadeOnDelete();
+        Schema::create($itemsTable, function (Blueprint $table) use ($itemsTable, $jsonType): void {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('return_authorization_id');
 
-            $table->nullableMorphs('original_item');
+            $table->nullableUuidMorphs('original_item');
 
             $table->string('sku')->nullable();
             $table->string('name');
@@ -56,16 +55,18 @@ return new class extends Migration
             $table->unsignedInteger('quantity_received')->default(0);
 
             $table->string('reason', 100)->nullable();
-            $table->string('condition', 50)->nullable(); // unused, opened, damaged
+            $table->string('condition', 50)->nullable();
 
-            $table->json('metadata')->nullable();
+            $table->{$jsonType}('metadata')->nullable();
             $table->timestamps();
+
+            $table->index('return_authorization_id', $itemsTable.'_ra_id');
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('return_authorization_items');
-        Schema::dropIfExists('return_authorizations');
+        Schema::dropIfExists(config('shipping.database.tables.return_authorization_items', 'return_authorization_items'));
+        Schema::dropIfExists(config('shipping.database.tables.return_authorizations', 'return_authorizations'));
     }
 };

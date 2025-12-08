@@ -6,12 +6,13 @@ namespace AIArmada\Shipping\Models;
 
 use AIArmada\Shipping\Data\PackageData;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
- * @property int $id
- * @property int $zone_id
+ * @property string $id
+ * @property string $zone_id
  * @property string|null $carrier_code
  * @property string $method_code
  * @property string $name
@@ -33,7 +34,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class ShippingRate extends Model
 {
-    protected $table = 'shipping_rates';
+    use HasUuids;
+
+    protected $keyType = 'string';
+
+    public $incrementing = false;
 
     protected $fillable = [
         'zone_id',
@@ -53,6 +58,11 @@ class ShippingRate extends Model
         'conditions',
         'active',
     ];
+
+    public function getTable(): string
+    {
+        return config('shipping.database.tables.shipping_rates', 'shipping_rates');
+    }
 
     /**
      * @var array<string, mixed>
