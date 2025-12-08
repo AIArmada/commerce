@@ -3,9 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Conditions\ConditionTarget;
-use AIArmada\Cart\Contracts\CartableInterface;
-use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
+use AIArmada\Commerce\Tests\TestCase;
 
 /*
 |--------------------------------------------------------------------------

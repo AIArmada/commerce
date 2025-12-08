@@ -28,9 +28,9 @@ class ReturnAuthorizationItem extends Model
 {
     use HasUuids;
 
-    protected $keyType = 'string';
-
     public $incrementing = false;
+
+    protected $keyType = 'string';
 
     protected $fillable = [
         'return_authorization_id',
@@ -46,11 +46,6 @@ class ReturnAuthorizationItem extends Model
         'metadata',
     ];
 
-    public function getTable(): string
-    {
-        return config('shipping.database.tables.return_authorization_items', 'return_authorization_items');
-    }
-
     /**
      * @var array<string, mixed>
      */
@@ -59,6 +54,11 @@ class ReturnAuthorizationItem extends Model
         'quantity_approved' => 0,
         'quantity_received' => 0,
     ];
+
+    public function getTable(): string
+    {
+        return config('shipping.database.tables.return_authorization_items', 'return_authorization_items');
+    }
 
     /**
      * @return BelongsTo<ReturnAuthorization, ReturnAuthorizationItem>

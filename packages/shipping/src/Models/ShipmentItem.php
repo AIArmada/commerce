@@ -29,9 +29,9 @@ class ShipmentItem extends Model
 {
     use HasUuids;
 
-    protected $keyType = 'string';
-
     public $incrementing = false;
+
+    protected $keyType = 'string';
 
     protected $fillable = [
         'shipment_id',
@@ -48,11 +48,6 @@ class ShipmentItem extends Model
         'metadata',
     ];
 
-    public function getTable(): string
-    {
-        return config('shipping.database.tables.shipment_items', 'shipment_items');
-    }
-
     /**
      * @var array<string, mixed>
      */
@@ -61,6 +56,11 @@ class ShipmentItem extends Model
         'weight' => 0,
         'declared_value' => 0,
     ];
+
+    public function getTable(): string
+    {
+        return config('shipping.database.tables.shipment_items', 'shipment_items');
+    }
 
     /**
      * @return BelongsTo<Shipment, ShipmentItem>

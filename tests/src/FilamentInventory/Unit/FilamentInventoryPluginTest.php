@@ -32,7 +32,7 @@ it('registers resources and widgets based on feature toggles', function (): void
     config()->set('filament-inventory.features.movement_trends_chart', false);
     config()->set('filament-inventory.features.abc_analysis_chart', false);
 
-    /** @var Panel&\Mockery\MockInterface $panel */
+    /** @var Panel&Mockery\MockInterface $panel */
     $panel = Mockery::mock(Panel::class);
 
     // @phpstan-ignore method.notFound
@@ -63,7 +63,7 @@ it('includes optional resources when toggles are enabled', function (): void {
     config()->set('filament-inventory.features.batch_resource', true);
     config()->set('filament-inventory.features.serial_resource', true);
 
-    /** @var Panel&\Mockery\MockInterface $panel */
+    /** @var Panel&Mockery\MockInterface $panel */
     $panel = Mockery::mock(Panel::class);
 
     // @phpstan-ignore method.notFound
