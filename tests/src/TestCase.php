@@ -165,6 +165,9 @@ abstract class TestCase extends Orchestra
             'serialize' => false,
         ]);
 
+        // Configure cart cache to use array driver in tests (avoid Redis connection issues in CI)
+        $app['config']->set('cart.cache.store', 'array');
+
         // Configure Spatie Laravel Data settings for testing
         $app['config']->set('data.date_format', DATE_ATOM);
         $app['config']->set('data.date_timezone', null);
