@@ -19,6 +19,7 @@ return [
         'cancel_error' => 'Unable to cancel subscription.',
         'resume_success' => 'Subscription resumed successfully.',
         'resume_error' => 'Unable to resume subscription.',
+        'unauthorized' => 'You are not authorized to perform this action.',
     ],
 
     'payment_methods' => [

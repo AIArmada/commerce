@@ -17,12 +17,13 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 final class UnifiedSubscriptionResource extends Resource
 {
     protected static ?string $model = null;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCreditCard;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCreditCard;
 
     protected static ?int $navigationSort = 10;
 
@@ -173,7 +174,7 @@ final class UnifiedSubscriptionResource extends Resource
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')
                         ->requiresConfirmation()
-                        ->action(function (\Illuminate\Support\Collection $records): void {
+                        ->action(function (Collection $records): void {
                             $records->each(function (UnifiedSubscription $record): void {
                                 if (method_exists($record->original, 'cancel')) {
                                     $record->original->cancel();
@@ -205,10 +206,8 @@ final class UnifiedSubscriptionResource extends Resource
 
     /**
      * Disable Eloquent binding - we use DTOs.
-     *
-     * @param  Closure|null  $modifyQuery
      */
-    public static function resolveRecordRouteBinding(int|string $key, ?Closure $modifyQuery = null): ?Model
+    public static function resolveRecordRouteBinding(int | string $key, ?Closure $modifyQuery = null): ?Model
     {
         return null;
     }

@@ -17,7 +17,6 @@ return [
         'navigation_sort' => [
             'subscriptions' => 10,
             'invoices' => 20,
-            'customers' => 30,
         ],
     ],
 

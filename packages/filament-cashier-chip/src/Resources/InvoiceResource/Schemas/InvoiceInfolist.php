@@ -111,8 +111,9 @@ final class InvoiceInfolist
 
                             TextEntry::make('purchase.total_discount_override')
                                 ->label('Discount')
-                                ->formatStateUsing(fn (?int $state, Purchase $record): ?string => $state !== null
-                                    ? '-'.self::formatAmount($state, Arr::get($record->purchase, 'currency', 'MYR'))
+                                ->formatStateUsing(
+                                    fn (?int $state, Purchase $record): ?string => $state !== null
+                                    ? '-' . self::formatAmount($state, Arr::get($record->purchase, 'currency', 'MYR'))
                                     : null
                                 )
                                 ->color('success')
@@ -184,7 +185,7 @@ final class InvoiceInfolist
 
                             TextEntry::make('payment.card_last_4')
                                 ->label('Card')
-                                ->formatStateUsing(fn (?string $state): ?string => $state !== null ? '•••• '.$state : null)
+                                ->formatStateUsing(fn (?string $state): ?string => $state !== null ? '•••• ' . $state : null)
                                 ->placeholder('—'),
                         ]),
 
@@ -264,6 +265,6 @@ final class InvoiceInfolist
         $precision = (int) config('filament-cashier-chip.tables.amount_precision', 2);
         $value = $amount / 100;
 
-        return mb_strtoupper($currency).' '.number_format($value, $precision, '.', ',');
+        return mb_strtoupper($currency) . ' ' . number_format($value, $precision, '.', ',');
     }
 }

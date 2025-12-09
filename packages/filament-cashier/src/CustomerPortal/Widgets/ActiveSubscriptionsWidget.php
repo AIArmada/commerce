@@ -8,12 +8,13 @@ use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Collection;
+use Laravel\Cashier\Subscription;
 
 final class ActiveSubscriptionsWidget extends Widget
 {
     protected string $view = 'filament-cashier::customer-portal.widgets.active-subscriptions';
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     protected static ?int $sort = 1;
 
@@ -31,10 +32,10 @@ final class ActiveSubscriptionsWidget extends Widget
         $subscriptions = collect();
         $detector = app(GatewayDetector::class);
 
-        if ($detector->isAvailable('stripe') && class_exists(\Laravel\Cashier\Subscription::class)) {
-            $stripeSubscriptions = \Laravel\Cashier\Subscription::query()
+        if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
+            $stripeSubscriptions = Subscription::query()
                 ->where('user_id', $user->getAuthIdentifier())
-                ->where(function ($query) {
+                ->where(function ($query): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', now());
                 })
@@ -47,7 +48,7 @@ final class ActiveSubscriptionsWidget extends Widget
         if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
             $chipSubscriptions = \AIArmada\CashierChip\Models\Subscription::query()
                 ->where('user_id', $user->getAuthIdentifier())
-                ->where(function ($query) {
+                ->where(function ($query): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', now());
                 })

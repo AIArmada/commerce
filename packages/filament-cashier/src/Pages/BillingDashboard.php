@@ -16,7 +16,7 @@ use Filament\Support\Icons\Heroicon;
 
 final class BillingDashboard extends BaseDashboard
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedChartBar;
 
     protected static ?int $navigationSort = 0;
 
@@ -42,7 +42,7 @@ final class BillingDashboard extends BaseDashboard
     /**
      * @return array<string, int>|int
      */
-    public function getColumns(): int|array
+    public function getColumns(): int | array
     {
         return [
             'sm' => 1,

@@ -8,10 +8,11 @@ use AIArmada\FilamentCashier\FilamentCashierPlugin;
 use BackedEnum;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
+use Laravel\Cashier\Cashier;
 
 final class GatewaySetup extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCog6Tooth;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCog6Tooth;
 
     protected string $view = 'filament-cashier::pages.gateway-setup';
 
@@ -42,7 +43,7 @@ final class GatewaySetup extends Page
                 'name' => __('filament-cashier::gateway.setup.stripe.name'),
                 'description' => __('filament-cashier::gateway.setup.stripe.description'),
                 'install' => __('filament-cashier::gateway.setup.stripe.install'),
-                'available' => class_exists(\Laravel\Cashier\Cashier::class),
+                'available' => class_exists(Cashier::class),
             ],
             [
                 'name' => __('filament-cashier::gateway.setup.chip.name'),

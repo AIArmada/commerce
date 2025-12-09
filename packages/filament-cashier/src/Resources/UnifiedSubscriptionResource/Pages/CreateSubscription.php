@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 
+use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
+use Exception;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -16,6 +18,9 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Schema;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\HtmlString;
+use RuntimeException;
 
 final class CreateSubscription extends CreateRecord
 {
@@ -98,7 +103,7 @@ final class CreateSubscription extends CreateRecord
                                 ->options(fn (Get $get) => $this->getPaymentMethodsForUser($get('user_id'), $get('gateway'))),
                         ]),
                 ])
-                    ->submitAction(new \Illuminate\Support\HtmlString(view('filament-cashier::components.wizard-submit-button')->render()))
+                    ->submitAction(new HtmlString(view('filament-cashier::components.wizard-submit-button')->render()))
                     ->columnSpanFull(),
             ]);
     }
@@ -183,7 +188,7 @@ final class CreateSubscription extends CreateRecord
             if ($gateway === 'stripe' && method_exists($user, 'paymentMethods')) {
                 return $user->paymentMethods()
                     ->mapWithKeys(fn ($pm) => [
-                        $pm->id => ($pm->card->brand ?? 'Card').' •••• '.($pm->card->last4 ?? '****'),
+                        $pm->id => ($pm->card->brand ?? 'Card') . ' •••• ' . ($pm->card->last4 ?? '****'),
                     ])
                     ->toArray();
             }
@@ -191,26 +196,26 @@ final class CreateSubscription extends CreateRecord
             if ($gateway === 'chip' && method_exists($user, 'chipPaymentMethods')) {
                 return $user->chipPaymentMethods()
                     ->mapWithKeys(fn ($pm) => [
-                        $pm->id => $pm->type.' •••• '.($pm->last4 ?? '****'),
+                        $pm->id => $pm->type . ' •••• ' . ($pm->last4 ?? '****'),
                     ])
                     ->toArray();
             }
-        } catch (\Exception) {
+        } catch (Exception) {
             // Silently fail if gateway API is not configured
         }
 
         return [];
     }
 
-    protected function handleRecordCreation(array $data): \Illuminate\Database\Eloquent\Model
+    protected function handleRecordCreation(array $data): Model
     {
         $billableModel = config('cashier.models.billable', 'App\\Models\\User');
         $user = $billableModel::findOrFail($data['user_id']);
         $gateway = $data['gateway'];
 
         // Build the subscription using the unified cashier interface
-        if (class_exists(\AIArmada\Cashier\Facades\Cashier::class)) {
-            $builder = \AIArmada\Cashier\Facades\Cashier::gateway($gateway)
+        if (class_exists(Cashier::class)) {
+            $builder = Cashier::gateway($gateway)
                 ->newSubscription($user, $data['type'] ?? 'default', $data['plan_id']);
 
             if (isset($data['quantity']) && $data['quantity'] > 1) {
@@ -247,7 +252,7 @@ final class CreateSubscription extends CreateRecord
             return $builder->create();
         }
 
-        throw new \RuntimeException("Unable to create subscription on gateway: {$gateway}");
+        throw new RuntimeException("Unable to create subscription on gateway: {$gateway}");
     }
 
     protected function getCreatedNotification(): ?Notification

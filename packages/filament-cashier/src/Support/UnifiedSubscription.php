@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashier\Support;
 
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Unified Subscription DTO - normalizes subscription data across gateways.
@@ -100,10 +101,10 @@ final readonly class UnifiedSubscription
             'USD' => '$',
             'EUR' => '€',
             'GBP' => '£',
-            default => $this->currency.' ',
+            default => $this->currency . ' ',
         };
 
-        return $symbol.number_format($this->amount / 100, 2);
+        return $symbol . number_format($this->amount / 100, 2);
     }
 
     /**
@@ -112,7 +113,7 @@ final readonly class UnifiedSubscription
     public function billingCycle(): string
     {
         // Try to infer from plan ID naming conventions
-        $planLower = strtolower($this->planId);
+        $planLower = mb_strtolower($this->planId);
 
         if (str_contains($planLower, 'annual') || str_contains($planLower, 'yearly')) {
             return __('filament-cashier::subscriptions.cycle.yearly');
@@ -193,7 +194,7 @@ final readonly class UnifiedSubscription
         }
 
         if (method_exists($subscription, 'items') && $subscription->items()->exists()) {
-            return (int) $subscription->items()->sum(\Illuminate\Support\Facades\DB::raw('quantity * unit_amount'));
+            return (int) $subscription->items()->sum(DB::raw('quantity * unit_amount'));
         }
 
         return 0;

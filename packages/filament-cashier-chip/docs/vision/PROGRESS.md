@@ -293,3 +293,23 @@ FilamentCashierChipPlugin::make()
   - Phase 5: InvoiceResource with Tables, Schemas, Pages
 - Full package structure with 30+ files created
 - English and Malay translations included
+
+### December 9, 2025 (Audit - Part 1)
+- **PHPStan Level 6**: ✅ Passing
+- **Pint Code Style**: ✅ Passing
+- **Fixes Applied**:
+  - Replaced hardcoded model labels with translation keys (SubscriptionResource, CustomerResource, InvoiceResource, BillingDashboard)
+  - Created shared `FormatsSubscriptionStatus` trait to eliminate duplicate formatting methods
+  - Added `intervals` translations for billing cycle display
+  - Removed duplicate `getStatusColor()`, `formatStatus()`, `formatInterval()`, `formatAmount()` methods from Tables and Infolists
+- **New Files Created**:
+  - `src/Support/FormatsSubscriptionStatus.php` - Shared trait for status formatting
+
+### December 9, 2025 (Audit - Part 2)
+- **New Features**:
+  - Standardized plugin API: Added `dashboard()` alias method for consistency with filament-cashier
+  - Added PHPDoc comments to all plugin methods
+- **All Tests Located**: Tests exist in `tests/src/FilamentCashierChip/`
+- **Tests**: ✅ 100% Passing (77 tests, 77 assertions)
+- **Pint Code Style**: ✅ Fixed (types, spaces, concatenation)
+- **Rector**: ✅ Fixed files (rules applied: AddClosureVoidReturnTypeWhereNoReturnRector)

@@ -14,7 +14,7 @@ final class SubscriptionDistributionWidget extends ChartWidget
 
     protected static ?int $sort = 5;
 
-    protected int|string|array $columnSpan = 1;
+    protected int | string | array $columnSpan = 1;
 
     protected ?string $pollingInterval = '120s';
 

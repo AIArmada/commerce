@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\RelationManagers;
 
-use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\SubscriptionItem;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
@@ -156,6 +155,6 @@ final class SubscriptionItemsRelationManager extends RelationManager
         $currency = config('filament-cashier-chip.currency', 'MYR');
         $value = $amount / 100;
 
-        return mb_strtoupper($currency).' '.number_format($value, 2, '.', ',');
+        return mb_strtoupper($currency) . ' ' . number_format($value, 2, '.', ',');
     }
 }

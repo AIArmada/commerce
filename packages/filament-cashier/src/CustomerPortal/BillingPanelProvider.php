@@ -62,11 +62,11 @@ final class BillingPanelProvider extends PanelProvider
     /**
      * @return array<int, int>|string
      */
-    protected function parsePrimaryColor(string $color): array|string
+    protected function parsePrimaryColor(string $color): array | string
     {
         // If it's a hex color, try to match to a preset
         if (str_starts_with($color, '#')) {
-            return match (strtolower($color)) {
+            return match (mb_strtolower($color)) {
                 '#6366f1' => Color::Indigo,
                 '#3b82f6' => Color::Blue,
                 '#10b981' => Color::Emerald,

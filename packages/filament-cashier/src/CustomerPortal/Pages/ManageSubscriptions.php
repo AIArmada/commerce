@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\CustomerPortal\Pages;
 
+use AIArmada\FilamentCashier\Policies\SubscriptionPolicy;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use BackedEnum;
@@ -12,10 +13,11 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
+use Laravel\Cashier\Subscription;
 
 final class ManageSubscriptions extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCreditCard;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCreditCard;
 
     protected static ?int $navigationSort = 1;
 
@@ -46,8 +48,8 @@ final class ManageSubscriptions extends Page
         $detector = app(GatewayDetector::class);
 
         // Get Stripe subscriptions for this user
-        if ($detector->isAvailable('stripe') && class_exists(\Laravel\Cashier\Subscription::class)) {
-            $stripeSubscriptions = \Laravel\Cashier\Subscription::query()
+        if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
+            $stripeSubscriptions = Subscription::query()
                 ->where('user_id', $user->getAuthIdentifier())
                 ->orderByDesc('created_at')
                 ->get()
@@ -70,20 +72,6 @@ final class ManageSubscriptions extends Page
         return $subscriptions->sortByDesc('createdAt')->values();
     }
 
-    /**
-     * @return array<Action>
-     */
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('new_subscription')
-                ->label(__('filament-cashier::portal.subscriptions.new'))
-                ->icon('heroicon-o-plus')
-                ->url(fn () => route('filament.billing.pages.new-subscription'))
-                ->visible(fn () => config('filament-cashier.billing_portal.features.subscriptions', true)),
-        ];
-    }
-
     public function cancelSubscription(string $gateway, string $id): void
     {
         $subscription = $this->findSubscription($gateway, $id);
@@ -91,6 +79,16 @@ final class ManageSubscriptions extends Page
         if ($subscription === null || ! $subscription->status->isCancelable()) {
             Notification::make()
                 ->title(__('filament-cashier::portal.subscriptions.cancel_error'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        // Policy authorization check
+        if (! $this->authorizeAction('cancel', $subscription)) {
+            Notification::make()
+                ->title(__('filament-cashier::portal.subscriptions.unauthorized'))
                 ->danger()
                 ->send();
 
@@ -120,6 +118,16 @@ final class ManageSubscriptions extends Page
             return;
         }
 
+        // Policy authorization check
+        if (! $this->authorizeAction('resume', $subscription)) {
+            Notification::make()
+                ->title(__('filament-cashier::portal.subscriptions.unauthorized'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
         if (method_exists($subscription->original, 'resume')) {
             $subscription->original->resume();
 
@@ -130,13 +138,49 @@ final class ManageSubscriptions extends Page
         }
     }
 
+    /**
+     * Authorize an action using the SubscriptionPolicy.
+     */
+    protected function authorizeAction(string $ability, UnifiedSubscription $subscription): bool
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        $policy = app(SubscriptionPolicy::class);
+
+        return match ($ability) {
+            'cancel' => $policy->cancel($user, $subscription->original),
+            'resume' => $policy->resume($user, $subscription->original),
+            'view' => $policy->view($user, $subscription->original),
+            'update' => $policy->update($user, $subscription->original),
+            default => false,
+        };
+    }
+
+    /**
+     * @return array<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('new_subscription')
+                ->label(__('filament-cashier::portal.subscriptions.new'))
+                ->icon('heroicon-o-plus')
+                ->url(fn () => route('filament.billing.pages.new-subscription'))
+                ->visible(fn () => config('filament-cashier.billing_portal.features.subscriptions', true)),
+        ];
+    }
+
     protected function findSubscription(string $gateway, string $id): ?UnifiedSubscription
     {
         $detector = app(GatewayDetector::class);
         $userId = auth()->id();
 
-        if ($gateway === 'stripe' && $detector->isAvailable('stripe') && class_exists(\Laravel\Cashier\Subscription::class)) {
-            $sub = \Laravel\Cashier\Subscription::query()
+        if ($gateway === 'stripe' && $detector->isAvailable('stripe') && class_exists(Subscription::class)) {
+            $sub = Subscription::query()
                 ->where('user_id', $userId)
                 ->where('id', $id)
                 ->first();

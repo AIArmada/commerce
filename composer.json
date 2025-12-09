@@ -143,7 +143,7 @@
             "pint",
             "npm run prettier"
         ],
-        "pint": "pint --config pint-strict-imports.json",
+        "pint": "pint",
         "rector": "rector",
         "test:pest": "pest --parallel",
         "test:phpstan": "phpstan analyse",

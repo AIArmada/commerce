@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\Support;
 
 use Illuminate\Support\Collection;
+use Laravel\Cashier\Cashier;
 
 /**
  * Detects available payment gateways based on installed packages.
@@ -19,7 +20,7 @@ final class GatewayDetector
     public function availableGateways(): Collection
     {
         return collect([
-            'stripe' => class_exists(\Laravel\Cashier\Cashier::class),
+            'stripe' => class_exists(Cashier::class),
             'chip' => class_exists(\AIArmada\CashierChip\Cashier::class),
         ])->filter()->keys();
     }

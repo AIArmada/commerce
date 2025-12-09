@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Widgets;
 
+use AIArmada\CashierChip\Cashier;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Collection;
+use Laravel\Cashier\Subscription;
 
 final class GatewayBreakdownWidget extends ChartWidget
 {
@@ -17,7 +18,7 @@ final class GatewayBreakdownWidget extends ChartWidget
 
     protected static ?int $sort = 3;
 
-    protected int|string|array $columnSpan = 1;
+    protected int | string | array $columnSpan = 1;
 
     public function getHeading(): ?string
     {
@@ -78,9 +79,10 @@ final class GatewayBreakdownWidget extends ChartWidget
         $detector = app(GatewayDetector::class);
         $revenue = [];
 
-        if ($detector->isAvailable('stripe') && class_exists(\Laravel\Cashier\Subscription::class)) {
-            $stripeRevenue = \Laravel\Cashier\Subscription::query()
-                ->where(function ($query) {
+        if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
+            $stripeRevenue = Subscription::query()
+                ->with('items')
+                ->where(function ($query): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', now());
                 })
@@ -94,9 +96,10 @@ final class GatewayBreakdownWidget extends ChartWidget
             }
         }
 
-        if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
-            $chipRevenue = \AIArmada\CashierChip\Models\Subscription::query()
-                ->where(function ($query) {
+        if ($detector->isAvailable('chip') && class_exists(Cashier::class)) {
+            $chipRevenue = Cashier::$subscriptionModel::query()
+                ->with('items')
+                ->where(function ($query): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', now());
                 })

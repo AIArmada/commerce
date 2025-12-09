@@ -8,12 +8,13 @@ use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Actions;
-use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Pages\ViewRecord;
+use Filament\Schemas\Components\Component;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
+use Laravel\Cashier\Subscription;
 
 final class ViewSubscription extends ViewRecord
 {
@@ -21,7 +22,7 @@ final class ViewSubscription extends ViewRecord
 
     protected ?UnifiedSubscription $subscription = null;
 
-    public function mount(int|string $record): void
+    public function mount(int | string $record): void
     {
         // Parse the composite key (gateway-id)
         [$gateway, $id] = explode('-', (string) $record, 2);
@@ -31,71 +32,6 @@ final class ViewSubscription extends ViewRecord
         if ($this->subscription === null) {
             abort(404);
         }
-    }
-
-    protected function resolveSubscription(string $gateway, string $id): ?UnifiedSubscription
-    {
-        $detector = app(GatewayDetector::class);
-
-        if ($gateway === 'stripe' && $detector->isAvailable('stripe') && class_exists(\Laravel\Cashier\Subscription::class)) {
-            $sub = \Laravel\Cashier\Subscription::find($id);
-            if ($sub) {
-                return UnifiedSubscription::fromStripe($sub);
-            }
-        }
-
-        if ($gateway === 'chip' && $detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
-            $sub = \AIArmada\CashierChip\Models\Subscription::find($id);
-            if ($sub) {
-                return UnifiedSubscription::fromChip($sub);
-            }
-        }
-
-        return null;
-    }
-
-    protected function getHeaderActions(): array
-    {
-        if ($this->subscription === null) {
-            return [];
-        }
-
-        return [
-            Actions\Action::make('cancel')
-                ->label(__('filament-cashier::subscriptions.actions.cancel'))
-                ->icon('heroicon-o-x-circle')
-                ->color('danger')
-                ->visible($this->subscription->status->isCancelable())
-                ->requiresConfirmation()
-                ->modalHeading(__('filament-cashier::subscriptions.actions.cancel_heading', [
-                    'gateway' => $this->subscription->gatewayConfig()['label'],
-                ]))
-                ->modalDescription(__('filament-cashier::subscriptions.actions.cancel_description'))
-                ->action(function (): void {
-                    if ($this->subscription && method_exists($this->subscription->original, 'cancel')) {
-                        $this->subscription->original->cancel();
-                    }
-                }),
-
-            Actions\Action::make('resume')
-                ->label(__('filament-cashier::subscriptions.actions.resume'))
-                ->icon('heroicon-o-play')
-                ->color('success')
-                ->visible($this->subscription->status->isResumable())
-                ->action(function (): void {
-                    if ($this->subscription && method_exists($this->subscription->original, 'resume')) {
-                        $this->subscription->original->resume();
-                    }
-                }),
-
-            Actions\Action::make('view_external')
-                ->label(__('filament-cashier::subscriptions.actions.view_external', [
-                    'gateway' => $this->subscription->gatewayConfig()['label'],
-                ]))
-                ->icon('heroicon-o-arrow-top-right-on-square')
-                ->url($this->subscription->externalDashboardUrl())
-                ->openUrlInNewTab(),
-        ];
     }
 
     public function infolist(Schema $schema): Schema
@@ -191,8 +127,87 @@ final class ViewSubscription extends ViewRecord
             ]);
     }
 
+    public function getHeading(): string
+    {
+        if ($this->subscription === null) {
+            return __('filament-cashier::subscriptions.details.title');
+        }
+
+        return $this->subscription->gatewayConfig()['label'] . ': ' . $this->subscription->type . ' Subscription';
+    }
+
+    public function getSubheading(): ?string
+    {
+        return $this->subscription?->planId;
+    }
+
+    protected function resolveSubscription(string $gateway, string $id): ?UnifiedSubscription
+    {
+        $detector = app(GatewayDetector::class);
+
+        if ($gateway === 'stripe' && $detector->isAvailable('stripe') && class_exists(Subscription::class)) {
+            $sub = Subscription::find($id);
+            if ($sub) {
+                return UnifiedSubscription::fromStripe($sub);
+            }
+        }
+
+        if ($gateway === 'chip' && $detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
+            $sub = \AIArmada\CashierChip\Models\Subscription::find($id);
+            if ($sub) {
+                return UnifiedSubscription::fromChip($sub);
+            }
+        }
+
+        return null;
+    }
+
+    protected function getHeaderActions(): array
+    {
+        if ($this->subscription === null) {
+            return [];
+        }
+
+        return [
+            Actions\Action::make('cancel')
+                ->label(__('filament-cashier::subscriptions.actions.cancel'))
+                ->icon('heroicon-o-x-circle')
+                ->color('danger')
+                ->visible($this->subscription->status->isCancelable())
+                ->requiresConfirmation()
+                ->modalHeading(__('filament-cashier::subscriptions.actions.cancel_heading', [
+                    'gateway' => $this->subscription->gatewayConfig()['label'],
+                ]))
+                ->modalDescription(__('filament-cashier::subscriptions.actions.cancel_description'))
+                ->action(function (): void {
+                    if ($this->subscription && method_exists($this->subscription->original, 'cancel')) {
+                        $this->subscription->original->cancel();
+                    }
+                }),
+
+            Actions\Action::make('resume')
+                ->label(__('filament-cashier::subscriptions.actions.resume'))
+                ->icon('heroicon-o-play')
+                ->color('success')
+                ->visible($this->subscription->status->isResumable())
+                ->action(function (): void {
+                    if ($this->subscription && method_exists($this->subscription->original, 'resume')) {
+                        $this->subscription->original->resume();
+                    }
+                }),
+
+            Actions\Action::make('view_external')
+                ->label(__('filament-cashier::subscriptions.actions.view_external', [
+                    'gateway' => $this->subscription->gatewayConfig()['label'],
+                ]))
+                ->icon('heroicon-o-arrow-top-right-on-square')
+                ->url($this->subscription->externalDashboardUrl())
+                ->openUrlInNewTab(),
+        ];
+    }
+
     /**
-     * @return array<\Filament\Schemas\Components\Component>
+     * @return array<Component>
      */
     protected function getGatewayDetailsSchema(): array
     {
@@ -239,19 +254,5 @@ final class ViewSubscription extends ViewRecord
                 ->label(__('filament-cashier::subscriptions.details.subscription_id'))
                 ->copyable(),
         ];
-    }
-
-    public function getHeading(): string
-    {
-        if ($this->subscription === null) {
-            return __('filament-cashier::subscriptions.details.title');
-        }
-
-        return $this->subscription->gatewayConfig()['label'].': '.$this->subscription->type.' Subscription';
-    }
-
-    public function getSubheading(): ?string
-    {
-        return $this->subscription?->planId;
     }
 }

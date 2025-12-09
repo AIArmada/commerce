@@ -16,12 +16,14 @@ use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class UnifiedInvoiceResource extends Resource
 {
     protected static ?string $model = null;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedDocumentText;
 
     protected static ?int $navigationSort = 20;
 
@@ -123,8 +125,8 @@ final class UnifiedInvoiceResource extends Resource
                     Tables\Actions\BulkAction::make('export')
                         ->label(__('filament-cashier::subscriptions.bulk.export'))
                         ->icon('heroicon-o-arrow-down-tray')
-                        ->action(function (\Illuminate\Support\Collection $records): \Symfony\Component\HttpFoundation\StreamedResponse {
-                            return response()->streamDownload(function () use ($records) {
+                        ->action(function (Collection $records): StreamedResponse {
+                            return response()->streamDownload(function () use ($records): void {
                                 $output = fopen('php://output', 'w');
                                 fputcsv($output, ['Invoice #', 'Gateway', 'Amount', 'Status', 'Date', 'Paid At']);
 
@@ -140,7 +142,7 @@ final class UnifiedInvoiceResource extends Resource
                                 }
 
                                 fclose($output);
-                            }, 'invoices-'.now()->format('Y-m-d').'.csv');
+                            }, 'invoices-' . now()->format('Y-m-d') . '.csv');
                         }),
                 ]),
             ])
@@ -158,10 +160,7 @@ final class UnifiedInvoiceResource extends Resource
         ];
     }
 
-    /**
-     * @param  Closure|null  $modifyQuery
-     */
-    public static function resolveRecordRouteBinding(int|string $key, ?Closure $modifyQuery = null): ?Model
+    public static function resolveRecordRouteBinding(int | string $key, ?Closure $modifyQuery = null): ?Model
     {
         return null;
     }

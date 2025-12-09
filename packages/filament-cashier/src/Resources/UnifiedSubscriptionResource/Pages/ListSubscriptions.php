@@ -8,12 +8,14 @@ use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\SubscriptionStatus;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Laravel\Cashier\Subscription;
 
 final class ListSubscriptions extends ListRecords
 {
@@ -27,13 +29,6 @@ final class ListSubscriptions extends ListRecords
      * @var Collection<int, UnifiedSubscription>|null
      */
     protected ?Collection $allSubscriptions = null;
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            \Filament\Actions\CreateAction::make(),
-        ];
-    }
 
     public function getTabs(): array
     {
@@ -65,6 +60,40 @@ final class ListSubscriptions extends ListRecords
     }
 
     /**
+     * Override to use collection-based records instead of Eloquent.
+     *
+     * @return Collection<int, UnifiedSubscription>|Paginator|CursorPaginator
+     */
+    public function getTableRecords(): Collection | Paginator | CursorPaginator
+    {
+        return $this->getFilteredSubscriptions();
+    }
+
+    /**
+     * Get table record key.
+     */
+    public function getTableRecordKey(Model | array $record): string
+    {
+        // @phpstan-ignore instanceof.alwaysFalse
+        if ($record instanceof UnifiedSubscription) {
+            return $record->gateway . '-' . $record->id;
+        }
+
+        if (is_array($record)) {
+            return ($record['gateway'] ?? 'unknown') . '-' . ($record['id'] ?? 'unknown');
+        }
+
+        return (string) $record->getKey();
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            CreateAction::make(),
+        ];
+    }
+
+    /**
      * Get all subscriptions across all gateways.
      *
      * @return Collection<int, UnifiedSubscription>
@@ -79,8 +108,8 @@ final class ListSubscriptions extends ListRecords
         $detector = app(GatewayDetector::class);
 
         // Collect from Stripe if available
-        if ($detector->isAvailable('stripe') && class_exists(\Laravel\Cashier\Subscription::class)) {
-            $stripeSubscriptions = \Laravel\Cashier\Subscription::query()
+        if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
+            $stripeSubscriptions = Subscription::query()
                 ->with('user')
                 ->orderByDesc('created_at')
                 ->get()
@@ -138,32 +167,5 @@ final class ListSubscriptions extends ListRecords
         }
 
         return $subscriptions->values();
-    }
-
-    /**
-     * Override to use collection-based records instead of Eloquent.
-     *
-     * @return Collection<int, UnifiedSubscription>|Paginator|CursorPaginator
-     */
-    public function getTableRecords(): Collection|Paginator|CursorPaginator
-    {
-        return $this->getFilteredSubscriptions();
-    }
-
-    /**
-     * Get table record key.
-     */
-    public function getTableRecordKey(Model|array $record): string
-    {
-        // @phpstan-ignore instanceof.alwaysFalse
-        if ($record instanceof UnifiedSubscription) {
-            return $record->gateway.'-'.$record->id;
-        }
-
-        if (is_array($record)) {
-            return ($record['gateway'] ?? 'unknown').'-'.($record['id'] ?? 'unknown');
-        }
-
-        return (string) $record->getKey();
     }
 }

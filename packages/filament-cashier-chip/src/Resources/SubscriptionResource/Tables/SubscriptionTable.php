@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Tables;
 
 use AIArmada\CashierChip\Subscription;
+use AIArmada\FilamentCashierChip\Support\FormatsSubscriptionStatus;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\IconColumn;
@@ -18,6 +19,8 @@ use Illuminate\Database\Eloquent\Builder;
 
 final class SubscriptionTable
 {
+    use FormatsSubscriptionStatus;
+
     public static function configure(Table $table): Table
     {
         return $table
@@ -147,51 +150,5 @@ final class SubscriptionTable
             ->defaultSort('created_at', 'desc')
             ->paginated([25, 50, 100])
             ->poll(config('filament-cashier-chip.polling_interval', '45s'));
-    }
-
-    private static function getStatusColor(string $status): string
-    {
-        return match ($status) {
-            Subscription::STATUS_ACTIVE => 'success',
-            Subscription::STATUS_TRIALING => 'warning',
-            Subscription::STATUS_CANCELED => 'danger',
-            Subscription::STATUS_PAST_DUE => 'danger',
-            Subscription::STATUS_PAUSED => 'gray',
-            Subscription::STATUS_INCOMPLETE => 'warning',
-            Subscription::STATUS_UNPAID => 'danger',
-            default => 'gray',
-        };
-    }
-
-    private static function formatStatus(string $status): string
-    {
-        return match ($status) {
-            Subscription::STATUS_ACTIVE => 'Active',
-            Subscription::STATUS_TRIALING => 'Trialing',
-            Subscription::STATUS_CANCELED => 'Canceled',
-            Subscription::STATUS_PAST_DUE => 'Past Due',
-            Subscription::STATUS_PAUSED => 'Paused',
-            Subscription::STATUS_INCOMPLETE => 'Incomplete',
-            Subscription::STATUS_INCOMPLETE_EXPIRED => 'Incomplete Expired',
-            Subscription::STATUS_UNPAID => 'Unpaid',
-            default => ucfirst($status),
-        };
-    }
-
-    private static function formatInterval(?string $interval, ?int $count): string
-    {
-        if ($interval === null) {
-            return '—';
-        }
-
-        $count = $count ?? 1;
-
-        return match ($interval) {
-            'day' => $count === 1 ? 'Daily' : "Every {$count} days",
-            'week' => $count === 1 ? 'Weekly' : "Every {$count} weeks",
-            'month' => $count === 1 ? 'Monthly' : "Every {$count} months",
-            'year' => $count === 1 ? 'Yearly' : "Every {$count} years",
-            default => "{$count} {$interval}",
-        };
     }
 }

@@ -19,15 +19,15 @@ use Filament\Panel;
 
 final class FilamentCashierChipPlugin implements Plugin
 {
-    protected bool $hasSubscriptions = true;
+    private bool $hasSubscriptions = true;
 
-    protected bool $hasCustomers = true;
+    private bool $hasCustomers = true;
 
-    protected bool $hasInvoices = true;
+    private bool $hasInvoices = true;
 
-    protected bool $hasDashboardWidgets = true;
+    private bool $hasDashboardWidgets = true;
 
-    protected bool $hasBillingDashboard = true;
+    private bool $hasBillingDashboard = true;
 
     public static function make(): static
     {
@@ -47,6 +47,9 @@ final class FilamentCashierChipPlugin implements Plugin
         return 'filament-cashier-chip';
     }
 
+    /**
+     * Enable or disable the subscriptions resource.
+     */
     public function subscriptions(bool $enabled = true): static
     {
         $this->hasSubscriptions = $enabled;
@@ -54,6 +57,9 @@ final class FilamentCashierChipPlugin implements Plugin
         return $this;
     }
 
+    /**
+     * Enable or disable the customers resource.
+     */
     public function customers(bool $enabled = true): static
     {
         $this->hasCustomers = $enabled;
@@ -61,6 +67,9 @@ final class FilamentCashierChipPlugin implements Plugin
         return $this;
     }
 
+    /**
+     * Enable or disable the invoices resource.
+     */
     public function invoices(bool $enabled = true): static
     {
         $this->hasInvoices = $enabled;
@@ -68,6 +77,9 @@ final class FilamentCashierChipPlugin implements Plugin
         return $this;
     }
 
+    /**
+     * Enable or disable dashboard widgets.
+     */
     public function dashboardWidgets(bool $enabled = true): static
     {
         $this->hasDashboardWidgets = $enabled;
@@ -75,11 +87,22 @@ final class FilamentCashierChipPlugin implements Plugin
         return $this;
     }
 
+    /**
+     * Enable or disable the billing dashboard page.
+     */
     public function billingDashboard(bool $enabled = true): static
     {
         $this->hasBillingDashboard = $enabled;
 
         return $this;
+    }
+
+    /**
+     * Alias for billingDashboard() for API consistency with filament-cashier.
+     */
+    public function dashboard(bool $enabled = true): static
+    {
+        return $this->billingDashboard($enabled);
     }
 
     public function register(Panel $panel): void
