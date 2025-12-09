@@ -120,7 +120,8 @@ final class StockTransactionForm
                         ->options($registry->options())
                         ->live()
                         ->afterStateUpdated(fn (Set $set) => $set('stockable_id', null))
-                        ->dehydrateStateUsing(static fn (?string $state): ?string => $state !== null && $state !== ''
+                        ->dehydrateStateUsing(
+                            static fn (?string $state): ?string => $state !== null && $state !== ''
                             ? Relation::getMorphAlias($state)
                             : null
                         )

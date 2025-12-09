@@ -32,7 +32,7 @@ class PermissionAggregator
             return new Collection();
         }
 
-        $cacheKey = self::CACHE_KEY_PREFIX."user:{$user->getKey()}";
+        $cacheKey = self::CACHE_KEY_PREFIX . "user:{$user->getKey()}";
         $ttl = config('filament-authz.cache_ttl', 3600);
 
         return Cache::remember($cacheKey, $ttl, function () use ($user): Collection {
@@ -66,7 +66,7 @@ class PermissionAggregator
      */
     public function getEffectiveRolePermissions(Role $role): Collection
     {
-        $cacheKey = self::CACHE_KEY_PREFIX."role:{$role->id}";
+        $cacheKey = self::CACHE_KEY_PREFIX . "role:{$role->id}";
         $ttl = config('filament-authz.cache_ttl', 3600);
 
         return Cache::remember($cacheKey, $ttl, function () use ($role): Collection {
@@ -247,7 +247,7 @@ class PermissionAggregator
      */
     public function clearUserCache($user): void
     {
-        Cache::forget(self::CACHE_KEY_PREFIX."user:{$user->getKey()}");
+        Cache::forget(self::CACHE_KEY_PREFIX . "user:{$user->getKey()}");
     }
 
     /**
@@ -255,12 +255,12 @@ class PermissionAggregator
      */
     public function clearRoleCache(Role $role): void
     {
-        Cache::forget(self::CACHE_KEY_PREFIX."role:{$role->id}");
+        Cache::forget(self::CACHE_KEY_PREFIX . "role:{$role->id}");
 
         // Also clear descendants
         $descendants = $this->roleInheritance->getDescendants($role);
         foreach ($descendants as $descendant) {
-            Cache::forget(self::CACHE_KEY_PREFIX."role:{$descendant->id}");
+            Cache::forget(self::CACHE_KEY_PREFIX . "role:{$descendant->id}");
         }
     }
 

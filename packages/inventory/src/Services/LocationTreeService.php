@@ -53,7 +53,7 @@ final class LocationTreeService
         $locations = InventoryLocation::query()
             ->where(function ($q) use ($root): void {
                 $q->where('id', $root->id)
-                    ->orWhere('path', 'like', $root->path.'/%');
+                    ->orWhere('path', 'like', $root->path . '/%');
             })
             ->orderBy('depth')
             ->orderBy('name')
@@ -95,7 +95,7 @@ final class LocationTreeService
             ->orderByRaw('COALESCE(path, id)')
             ->get()
             ->mapWithKeys(fn (InventoryLocation $loc): array => [
-                $loc->id => str_repeat('— ', $loc->depth).$loc->name.' ('.$loc->code.')',
+                $loc->id => str_repeat('— ', $loc->depth) . $loc->name . ' (' . $loc->code . ')',
             ])
             ->toArray();
     }
@@ -130,7 +130,7 @@ final class LocationTreeService
 
             // Update path after we have ID
             if ($parent !== null) {
-                $location->path = $parent->path.'/'.$location->id;
+                $location->path = $parent->path . '/' . $location->id;
             } else {
                 $location->path = $location->id;
             }
@@ -283,7 +283,7 @@ final class LocationTreeService
         $children = InventoryLocation::where('parent_id', $parent->id)->get();
 
         foreach ($children as $child) {
-            $child->path = $parent->path.'/'.$child->id;
+            $child->path = $parent->path . '/' . $child->id;
             $child->depth = $parent->depth + 1;
             $child->saveQuietly();
             $count++;

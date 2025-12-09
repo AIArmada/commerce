@@ -29,7 +29,7 @@ class PolicyDesignerPage extends Page
 
     public string $combiningAlgorithm = 'all';
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-paint-brush';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-paint-brush';
 
     protected static ?string $navigationLabel = 'Policy Designer';
 

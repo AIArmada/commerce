@@ -16,9 +16,9 @@ return [
         'table_prefix' => $tablePrefix,
         'json_column_type' => env('DOCS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
         'tables' => [
-            'docs' => env('DOCS_TABLE', $tablePrefix.'docs'),
-            'doc_templates' => env('DOC_TEMPLATES_TABLE', $tablePrefix.'doc_templates'),
-            'doc_status_histories' => env('DOC_STATUS_HISTORIES_TABLE', $tablePrefix.'doc_status_histories'),
+            'docs' => env('DOCS_TABLE', $tablePrefix . 'docs'),
+            'doc_templates' => env('DOC_TEMPLATES_TABLE', $tablePrefix . 'doc_templates'),
+            'doc_status_histories' => env('DOC_STATUS_HISTORIES_TABLE', $tablePrefix . 'doc_status_histories'),
         ],
     ],
 

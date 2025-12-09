@@ -17,7 +17,7 @@ final class VoucherUsageResource extends Resource
 {
     protected static ?string $model = VoucherUsage::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
 
     protected static ?string $navigationLabel = 'Voucher Usage';
 
@@ -44,7 +44,7 @@ final class VoucherUsageResource extends Resource
         return ['id'];
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-vouchers.navigation_group');
     }

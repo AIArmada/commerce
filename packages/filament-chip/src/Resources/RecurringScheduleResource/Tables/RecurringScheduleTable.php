@@ -51,7 +51,8 @@ final class RecurringScheduleTable
                     ->label('Interval')
                     ->badge()
                     ->color('info')
-                    ->formatStateUsing(fn (RecurringSchedule $record): string => $record->interval_count > 1
+                    ->formatStateUsing(
+                        fn (RecurringSchedule $record): string => $record->interval_count > 1
                         ? "Every {$record->interval_count} {$record->interval->label()}s"
                         : $record->interval->label()
                     )

@@ -19,9 +19,9 @@ class ShippingZoneResource extends Resource
 {
     protected static ?string $model = ShippingZone::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMap;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedMap;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Shipping';
+    protected static string | UnitEnum | null $navigationGroup = 'Shipping';
 
     protected static ?int $navigationSort = 2;
 

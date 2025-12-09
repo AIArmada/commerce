@@ -35,7 +35,7 @@ final class SyncCartOnEvent
     public function __construct(private CartSyncManager $syncManager) {}
 
     public function handle(
-        CartCreated|CartCleared|CartDestroyed|ItemAdded|ItemUpdated|ItemRemoved|CartConditionAdded|CartConditionRemoved|ItemConditionAdded|ItemConditionRemoved $event
+        CartCreated | CartCleared | CartDestroyed | ItemAdded | ItemUpdated | ItemRemoved | CartConditionAdded | CartConditionRemoved | ItemConditionAdded | ItemConditionRemoved $event
     ): void {
         // CartDestroyed: cart no longer exists → delete normalized cart
         if ($event instanceof CartDestroyed) {

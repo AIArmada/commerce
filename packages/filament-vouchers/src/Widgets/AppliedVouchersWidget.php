@@ -19,7 +19,7 @@ final class AppliedVouchersWidget extends BaseWidget
 {
     public ?Model $record = null;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     public function table(Table $table): Table
     {
@@ -57,7 +57,7 @@ final class AppliedVouchersWidget extends BaseWidget
                         $currency = $state['currency'] ?? 'MYR';
 
                         return match ($type) {
-                            'percentage' => number_format($value / 100, 2).' %',
+                            'percentage' => number_format($value / 100, 2) . ' %',
                             'fixed' => Money::{$currency}($value)->format(),
                             'free_shipping' => 'Free Shipping',
                             default => 'N/A',

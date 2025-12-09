@@ -23,7 +23,10 @@ use Illuminate\Queue\SerializesModels;
  */
 final class ItemConditionRemoved implements CartEventInterface
 {
-    use Dispatchable, HasCartEventData, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use HasCartEventData;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * Create a new item condition removed event

@@ -30,7 +30,7 @@ class ChipCollectClient extends BaseHttpClient
      *
      * @return array<string, mixed>|string
      */
-    public function get(string $endpoint): array|string
+    public function get(string $endpoint): array | string
     {
         if ($endpoint === 'public_key/' || $endpoint === '/public_key/') {
             $url = $this->buildUrl($endpoint);

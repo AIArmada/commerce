@@ -33,7 +33,7 @@ final class InventoryBatchResource extends Resource
 {
     protected static ?string $model = InventoryBatch::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedRectangleStack;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedRectangleStack;
 
     protected static ?string $recordTitleAttribute = 'batch_number';
 
@@ -247,7 +247,7 @@ final class InventoryBatchResource extends Resource
         return 'warning';
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-inventory.navigation_group');
     }

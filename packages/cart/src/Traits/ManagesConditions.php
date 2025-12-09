@@ -258,11 +258,11 @@ trait ManagesConditions
     /**
      * @param  ConditionTarget|string|array<string, mixed>|null  $target
      */
-    public function addDiscount(string $name, string $value, ConditionTarget|string|array|null $target = null): static
+    public function addDiscount(string $name, string $value, ConditionTarget | string | array | null $target = null): static
     {
         // Ensure discount values are negative
         if (! str_starts_with($value, '-')) {
-            $value = '-'.$value;
+            $value = '-' . $value;
         }
         $condition = new CartCondition(
             name: $name,
@@ -282,7 +282,7 @@ trait ManagesConditions
     /**
      * @param  ConditionTarget|string|array<string, mixed>|null  $target
      */
-    public function addFee(string $name, string $value, ConditionTarget|string|array|null $target = null): static
+    public function addFee(string $name, string $value, ConditionTarget | string | array | null $target = null): static
     {
         $condition = new CartCondition(
             name: $name,
@@ -304,7 +304,7 @@ trait ManagesConditions
     /**
      * @param  ConditionTarget|string|array<string, mixed>|null  $target
      */
-    public function addTax(string $name, string $value, ConditionTarget|string|array|null $target = null): static
+    public function addTax(string $name, string $value, ConditionTarget | string | array | null $target = null): static
     {
         $condition = new CartCondition(
             name: $name,
@@ -329,14 +329,14 @@ trait ManagesConditions
      */
     public function addShipping(
         string $name,
-        string|float $value,
-        ConditionTarget|string|array|null $target = null,
+        string | float $value,
+        ConditionTarget | string | array | null $target = null,
         string $method = 'standard',
         array $attributes = []
     ): static {
         // Ensure value is prefixed with + if it's a string and doesn't start with an operator
         if (is_string($value) && ! preg_match('/^[+\-*\/%]/', $value)) {
-            $value = '+'.$value;
+            $value = '+' . $value;
         }
 
         // Merge the attributes with the shipping method
@@ -443,8 +443,8 @@ trait ManagesConditions
      * @param  ConditionTarget|string|array<string, mixed>  $fallback
      */
     private function normalizeConditionTarget(
-        ConditionTarget|string|array|null $target,
-        ConditionTarget|string|array $fallback
+        ConditionTarget | string | array | null $target,
+        ConditionTarget | string | array $fallback
     ): ConditionTarget {
         return ConditionTarget::from($target ?? $fallback);
     }

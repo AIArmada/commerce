@@ -59,7 +59,7 @@ class OrderData extends Data
             'thirdSortingCode' => $this->thirdSortingCode,
             'multipleVoteBillCodes' => $this->additionalTrackingNumbers,
             'packageChargeWeight' => $this->chargeableWeight,
-        ], fn (string|array|null $value): bool => $value !== null);
+        ], fn (string | array | null $value): bool => $value !== null);
     }
 
     public function hasTrackingNumber(): bool

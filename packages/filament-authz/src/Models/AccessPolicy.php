@@ -209,7 +209,7 @@ class AccessPolicy extends Model
             // Handle wildcard patterns like 'orders.*'
             $parts = explode('.', $action);
             if (count($parts) > 1) {
-                $q->orWhere('target_action', $parts[0].'.*');
+                $q->orWhere('target_action', $parts[0] . '.*');
             }
         });
     }
@@ -232,7 +232,7 @@ class AccessPolicy extends Model
                 // Handle wildcard patterns
                 $parts = explode('.', $resource);
                 if (count($parts) > 1) {
-                    $q->orWhere('target_resource', $parts[0].'.*');
+                    $q->orWhere('target_resource', $parts[0] . '.*');
                 }
             }
         });
@@ -270,7 +270,7 @@ class AccessPolicy extends Model
         if (str_ends_with($targetAction, '.*')) {
             $prefix = mb_substr($targetAction, 0, -2);
 
-            return str_starts_with($action, $prefix.'.');
+            return str_starts_with($action, $prefix . '.');
         }
 
         return false;
@@ -297,7 +297,7 @@ class AccessPolicy extends Model
         if (str_ends_with($targetResource, '.*')) {
             $prefix = mb_substr($targetResource, 0, -2);
 
-            return str_starts_with((string) $resource, $prefix.'.');
+            return str_starts_with((string) $resource, $prefix . '.');
         }
 
         return false;

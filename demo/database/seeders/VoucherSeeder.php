@@ -273,8 +273,8 @@ final class VoucherSeeder extends Seeder
         foreach ($users as $index => $user) {
             // Birthday voucher
             Voucher::create([
-                'code' => 'BDAY'.mb_strtoupper(mb_substr($user->name, 0, 3)).($index + 1),
-                'name' => 'Birthday Gift for '.$user->name,
+                'code' => 'BDAY' . mb_strtoupper(mb_substr($user->name, 0, 3)) . ($index + 1),
+                'name' => 'Birthday Gift for ' . $user->name,
                 'description' => 'Special birthday discount',
                 'type' => VoucherType::Fixed,
                 'value' => 5000, // RM 50

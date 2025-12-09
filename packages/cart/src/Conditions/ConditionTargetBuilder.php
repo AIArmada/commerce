@@ -64,7 +64,7 @@ final class ConditionTargetBuilder
         return $this->apply(ConditionApplication::PER_PAYMENT);
     }
 
-    public function where(string $field, ConditionFilterOperator|string $operator, mixed $value): self
+    public function where(string $field, ConditionFilterOperator | string $operator, mixed $value): self
     {
         $operator = $operator instanceof ConditionFilterOperator
             ? $operator
@@ -75,9 +75,9 @@ final class ConditionTargetBuilder
         return $this;
     }
 
-    public function whereAttribute(string $attribute, ConditionFilterOperator|string $operator, mixed $value): self
+    public function whereAttribute(string $attribute, ConditionFilterOperator | string $operator, mixed $value): self
     {
-        return $this->where('attributes.'.$attribute, $operator, $value);
+        return $this->where('attributes.' . $attribute, $operator, $value);
     }
 
     public function groupBy(?string $field, ?string $weightField = null, ?int $limit = null): self

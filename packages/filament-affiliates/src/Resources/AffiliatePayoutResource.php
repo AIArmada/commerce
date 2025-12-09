@@ -19,7 +19,7 @@ final class AffiliatePayoutResource extends Resource
 {
     protected static ?string $model = AffiliatePayout::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBanknotes;
 
     protected static ?string $navigationLabel = 'Affiliate Payouts';
 
@@ -57,7 +57,7 @@ final class AffiliatePayoutResource extends Resource
         ];
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-affiliates.navigation_group');
     }

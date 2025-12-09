@@ -166,6 +166,6 @@ trait InteractsWithAffiliate
 
         $divisor = $decimals === 0 ? 1 : 100;
 
-        return $currency.' '.number_format($amount / $divisor, $decimals);
+        return $currency . ' ' . number_format($amount / $divisor, $decimals);
     }
 }

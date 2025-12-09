@@ -25,7 +25,7 @@ final class ConditionPipelineResult
         return $this->phases;
     }
 
-    public function getPhaseResult(ConditionPhase|string $phase): ?ConditionPhaseResult
+    public function getPhaseResult(ConditionPhase | string $phase): ?ConditionPhaseResult
     {
         $key = $phase instanceof ConditionPhase ? $phase->value : (string) $phase;
 

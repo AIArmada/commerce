@@ -80,7 +80,7 @@ class SubscriptionBuilder
      * @param  string|string[]|array[]  $prices
      * @return void
      */
-    public function __construct($owner, string $type, string|array $prices = [])
+    public function __construct($owner, string $type, string | array $prices = [])
     {
         $this->type = $type;
         $this->owner = $owner;
@@ -95,7 +95,7 @@ class SubscriptionBuilder
      *
      * @return $this
      */
-    public function price(string|array $price, ?int $quantity = 1)
+    public function price(string | array $price, ?int $quantity = 1)
     {
         $options = is_array($price) ? $price : ['price' => $price];
 
@@ -231,7 +231,7 @@ class SubscriptionBuilder
      *
      * @return $this
      */
-    public function anchorBillingCycleOn(DateTimeInterface|CarbonInterface $date)
+    public function anchorBillingCycleOn(DateTimeInterface | CarbonInterface $date)
     {
         $this->billingCycleAnchor = Carbon::instance($date);
 

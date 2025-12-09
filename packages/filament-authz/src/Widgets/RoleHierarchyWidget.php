@@ -14,7 +14,7 @@ class RoleHierarchyWidget extends Widget
 
     protected static ?int $sort = 2;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     /**
      * @return array<int, array{id: string, name: string, level: int, children: array<int, mixed>}>

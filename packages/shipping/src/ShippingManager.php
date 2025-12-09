@@ -168,7 +168,7 @@ class ShippingManager
         }
 
         // Check for built-in drivers
-        $method = 'create'.ucfirst($driver).'Driver';
+        $method = 'create' . ucfirst($driver) . 'Driver';
 
         if (method_exists($this, $method)) {
             return $this->{$method}();

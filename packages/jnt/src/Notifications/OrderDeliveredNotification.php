@@ -36,28 +36,28 @@ class OrderDeliveredNotification extends Notification implements ShouldQueue
             ->subject('Your Order Has Been Delivered')
             ->greeting('Great news!')
             ->line('Your order has been successfully delivered.')
-            ->line('Tracking Number: '.$this->tracking->trackingNumber);
+            ->line('Tracking Number: ' . $this->tracking->trackingNumber);
 
         if ($this->tracking->orderId !== null) {
-            $message->line('Order ID: '.$this->tracking->orderId);
+            $message->line('Order ID: ' . $this->tracking->orderId);
         }
 
         // Get delivery details
         if ($this->tracking->details->count() > 0) {
             $latest = $this->tracking->details->last();
             if ($latest instanceof TrackingDetailData) {
-                $message->line('Delivered At: '.$latest->scanTime);
+                $message->line('Delivered At: ' . $latest->scanTime);
 
                 if ($latest->scanNetworkCity !== null || $latest->scanNetworkProvince !== null) {
                     $location = implode(', ', array_filter([
                         $latest->scanNetworkCity,
                         $latest->scanNetworkProvince,
                     ]));
-                    $message->line('Delivery Location: '.$location);
+                    $message->line('Delivery Location: ' . $location);
                 }
 
                 if ($latest->staffName !== null) {
-                    $message->line('Delivered By: '.$latest->staffName);
+                    $message->line('Delivered By: ' . $latest->staffName);
                 }
 
                 if ($latest->signaturePictureUrl !== null) {

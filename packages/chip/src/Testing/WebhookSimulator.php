@@ -555,7 +555,7 @@ final class WebhookSimulator
         $formatted = [];
 
         foreach ($headers as $key => $value) {
-            $formatted['HTTP_'.mb_strtoupper(str_replace('-', '_', $key))] = $value;
+            $formatted['HTTP_' . mb_strtoupper(str_replace('-', '_', $key))] = $value;
         }
 
         return $formatted;

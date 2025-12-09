@@ -92,11 +92,13 @@ final class AffiliateForm
                             ->suffix(fn (Get $get): string => $get('commission_type') === CommissionType::Percentage->value ? '%' : $get('currency') ?? $currency)
                             ->formatStateUsing(fn (?int $state, Get $get): ?string => $state === null
                                 ? null
-                                : ($get('commission_type') === CommissionType::Percentage->value
+                                : (
+                                    $get('commission_type') === CommissionType::Percentage->value
                                     ? number_format($state / 100, 2, '.', '')
                                     : number_format($state / 100, 2, '.', '')
                                 ))
-                            ->dehydrateStateUsing(fn (?string $state, Get $get): ?int => $state === null || $state === ''
+                            ->dehydrateStateUsing(
+                                fn (?string $state, Get $get): ?int => $state === null || $state === ''
                                 ? null
                                 : (int) round((float) $state * 100)
                             ),

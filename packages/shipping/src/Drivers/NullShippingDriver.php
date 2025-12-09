@@ -90,8 +90,8 @@ class NullShippingDriver implements ShippingDriverInterface
     {
         return new ShipmentResultData(
             success: true,
-            trackingNumber: 'TEST-'.mb_strtoupper(Str::random(10)),
-            carrierReference: 'NULL-'.mb_strtoupper(Str::random(8)),
+            trackingNumber: 'TEST-' . mb_strtoupper(Str::random(10)),
+            carrierReference: 'NULL-' . mb_strtoupper(Str::random(8)),
         );
     }
 

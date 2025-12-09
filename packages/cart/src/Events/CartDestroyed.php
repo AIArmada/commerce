@@ -32,7 +32,10 @@ use Illuminate\Queue\SerializesModels;
  */
 final class CartDestroyed implements CartEventInterface
 {
-    use Dispatchable, HasCartEventData, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use HasCartEventData;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * Create a new cart destroyed event instance.

@@ -16,7 +16,7 @@ class WebhookService
     /**
      * Verify webhook signature using Request object
      */
-    public function verifySignature(Request|string $payloadOrRequest, ?string $signature = null, ?string $publicKey = null): bool
+    public function verifySignature(Request | string $payloadOrRequest, ?string $signature = null, ?string $publicKey = null): bool
     {
         if ($payloadOrRequest instanceof Request) {
             $payload = $payloadOrRequest->getContent();
@@ -56,7 +56,7 @@ class WebhookService
         try {
             $pemKey = str_contains($publicKey, 'BEGIN PUBLIC KEY')
                 ? $publicKey
-                : "-----BEGIN PUBLIC KEY-----\n".chunk_split(str_replace(["\n", "\r", ' '], '', $publicKey), 64, "\n").'-----END PUBLIC KEY-----';
+                : "-----BEGIN PUBLIC KEY-----\n" . chunk_split(str_replace(["\n", "\r", ' '], '', $publicKey), 64, "\n") . '-----END PUBLIC KEY-----';
 
             $publicKeyResource = openssl_pkey_get_public($pemKey);
             if (! $publicKeyResource) {
@@ -77,7 +77,7 @@ class WebhookService
                     'error' => $e->getMessage(),
                 ]);
 
-            throw new WebhookVerificationException('Signature verification failed: '.$e->getMessage());
+            throw new WebhookVerificationException('Signature verification failed: ' . $e->getMessage());
         }
     }
 
@@ -91,7 +91,7 @@ class WebhookService
      */
     public function getPublicKey(?string $webhookId = null): string
     {
-        $cacheKey = config('chip.cache.prefix').'public_key'.($webhookId ? ":{$webhookId}" : '');
+        $cacheKey = config('chip.cache.prefix') . 'public_key' . ($webhookId ? ":{$webhookId}" : '');
 
         return Cache::remember(
             $cacheKey,

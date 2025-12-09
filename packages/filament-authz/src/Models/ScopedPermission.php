@@ -211,7 +211,7 @@ class ScopedPermission extends Model
      * @param  Builder<ScopedPermission>  $query
      * @return Builder<ScopedPermission>
      */
-    public function scopeOfType(Builder $query, PermissionScope|string $scopeType): Builder
+    public function scopeOfType(Builder $query, PermissionScope | string $scopeType): Builder
     {
         $type = $scopeType instanceof PermissionScope ? $scopeType->value : $scopeType;
 
@@ -224,7 +224,7 @@ class ScopedPermission extends Model
      * @param  Builder<ScopedPermission>  $query
      * @return Builder<ScopedPermission>
      */
-    public function scopeForScope(Builder $query, PermissionScope|string $scopeType, string $scopeId): Builder
+    public function scopeForScope(Builder $query, PermissionScope | string $scopeType, string $scopeId): Builder
     {
         $type = $scopeType instanceof PermissionScope ? $scopeType->value : $scopeType;
 

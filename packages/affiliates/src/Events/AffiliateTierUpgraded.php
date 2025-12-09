@@ -12,7 +12,8 @@ use Illuminate\Queue\SerializesModels;
 
 final class AffiliateTierUpgraded
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
+    use SerializesModels;
 
     public function __construct(
         public readonly Affiliate $affiliate,

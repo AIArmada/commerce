@@ -37,7 +37,7 @@ class CompositeMatcher extends AbstractProductMatcher
     public static function all(array $matcherConfigs): self
     {
         $matchers = array_map(
-            fn (ProductMatcherInterface|array $config): ProductMatcherInterface => $config instanceof ProductMatcherInterface
+            fn (ProductMatcherInterface | array $config): ProductMatcherInterface => $config instanceof ProductMatcherInterface
                 ? $config
                 : AbstractProductMatcher::create($config),
             $matcherConfigs
@@ -54,7 +54,7 @@ class CompositeMatcher extends AbstractProductMatcher
     public static function any(array $matcherConfigs): self
     {
         $matchers = array_map(
-            fn (ProductMatcherInterface|array $config): ProductMatcherInterface => $config instanceof ProductMatcherInterface
+            fn (ProductMatcherInterface | array $config): ProductMatcherInterface => $config instanceof ProductMatcherInterface
                 ? $config
                 : AbstractProductMatcher::create($config),
             $matcherConfigs

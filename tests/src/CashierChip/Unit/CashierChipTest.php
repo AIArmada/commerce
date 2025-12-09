@@ -29,7 +29,7 @@ it('can format amount with specific currency', function (): void {
 
 it('can use custom currency formatter', function (): void {
     Cashier::formatCurrencyUsing(function ($amount, $currency) {
-        return 'CUSTOM: '.$amount.' '.$currency;
+        return 'CUSTOM: ' . $amount . ' ' . $currency;
     });
 
     $formatted = Cashier::formatAmount(10000, 'MYR');

@@ -27,7 +27,7 @@ final class AppliedVoucherBadgesWidget extends Widget
     /** @phpstan-ignore-next-line */
     protected string $view = 'filament-vouchers::widgets.applied-voucher-badges';
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     /**
      * Get applied vouchers for the cart
@@ -59,7 +59,7 @@ final class AppliedVoucherBadgesWidget extends Widget
 
                 // Determine discount text based on type
                 $discountText = match ($type) {
-                    'percentage' => number_format($value / 100, 2).' %',
+                    'percentage' => number_format($value / 100, 2) . ' %',
                     'fixed' => Money::{$currency}($value)->format(),
                     'free_shipping' => 'Free Shipping',
                     default => 'Discount',
@@ -93,7 +93,7 @@ final class AppliedVoucherBadgesWidget extends Widget
      */
     public function removeVoucherAction(string $voucherCode): Action
     {
-        return Action::make('remove_'.$voucherCode)
+        return Action::make('remove_' . $voucherCode)
             ->label('Remove')
             ->icon(Heroicon::OutlinedXMark)
             ->color('danger')

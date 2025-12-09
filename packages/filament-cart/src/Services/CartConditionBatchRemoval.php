@@ -68,7 +68,7 @@ final class CartConditionBatchRemoval
                         ),
                         default => $query->orWhereRaw(
                             'normalized_data LIKE ?',
-                            ['%"name":"'.str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], $conditionName).'"%']
+                            ['%"name":"' . str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], $conditionName) . '"%']
                         ),
                     };
                 })

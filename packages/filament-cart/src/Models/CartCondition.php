@@ -96,7 +96,7 @@ final class CartCondition extends Model
         $tables = config('filament-cart.database.tables', []);
         $prefix = config('filament-cart.database.table_prefix', 'cart_');
 
-        return $tables['snapshot_conditions'] ?? $prefix.'snapshot_conditions';
+        return $tables['snapshot_conditions'] ?? $prefix . 'snapshot_conditions';
     }
 
     /**
@@ -199,7 +199,7 @@ final class CartCondition extends Model
         $money = Money::{$this->resolveCurrency()}($normalized);
 
         return str_starts_with($rawValue, '+')
-            ? '+'.$money
+            ? '+' . $money
             : (string) $money;
     }
 

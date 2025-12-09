@@ -62,9 +62,9 @@ class AffiliateData extends Data
     public function getFormattedCommissionRate(): string
     {
         if ($this->isPercentageCommission()) {
-            return number_format($this->commissionRate / 100, 2).'%';
+            return number_format($this->commissionRate / 100, 2) . '%';
         }
 
-        return number_format($this->commissionRate / 100, 2).' '.$this->currency;
+        return number_format($this->commissionRate / 100, 2) . ' ' . $this->currency;
     }
 }

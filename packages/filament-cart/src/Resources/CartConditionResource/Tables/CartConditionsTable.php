@@ -53,7 +53,7 @@ final class CartConditionsTable
                         $state === null => Money::MYR(0),
                         str_contains($state, '%') => $state,
                         default => (str_starts_with($state, '+')
-                            ? '+'.Money::MYR(mb_ltrim($state, '+'))
+                            ? '+' . Money::MYR(mb_ltrim($state, '+'))
                             : Money::MYR($state))
                     })
                     ->sortable(),

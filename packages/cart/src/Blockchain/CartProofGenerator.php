@@ -151,7 +151,7 @@ final class CartProofGenerator
             for ($i = 0; $i < count($currentLevel); $i += 2) {
                 $left = $currentLevel[$i];
                 $right = $currentLevel[$i + 1] ?? $left;
-                $combined = hash('sha256', $left.$right);
+                $combined = hash('sha256', $left . $right);
                 $nextLevel[] = $combined;
             }
 
@@ -214,7 +214,7 @@ final class CartProofGenerator
     private function sign(string $rootHash, array $metadata): string
     {
         $key = config('cart.blockchain.signing_key', config('app.key'));
-        $data = $rootHash.json_encode($metadata, JSON_THROW_ON_ERROR);
+        $data = $rootHash . json_encode($metadata, JSON_THROW_ON_ERROR);
 
         return hash_hmac('sha256', $data, $key);
     }

@@ -32,12 +32,12 @@ class TestPanelProvider extends PanelProvider
             ->colors([
                 'primary' => Color::Amber,
             ])
-            ->discoverResources(in: __DIR__.'/../Resources', for: 'AIArmada\\FilamentChip\\Resources')
-            ->discoverPages(in: __DIR__.'/../Pages', for: 'AIArmada\\FilamentChip\\Pages')
+            ->discoverResources(in: __DIR__ . '/../Resources', for: 'AIArmada\\FilamentChip\\Resources')
+            ->discoverPages(in: __DIR__ . '/../Pages', for: 'AIArmada\\FilamentChip\\Pages')
             ->pages([
                 Dashboard::class,
             ])
-            ->discoverWidgets(in: __DIR__.'/../Widgets', for: 'AIArmada\\FilamentChip\\Widgets')
+            ->discoverWidgets(in: __DIR__ . '/../Widgets', for: 'AIArmada\\FilamentChip\\Widgets')
             ->widgets([
             ])
             ->middleware([

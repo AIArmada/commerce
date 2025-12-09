@@ -221,7 +221,7 @@ foreach ($history as $usage) {
 
 if (Cart::canAddVoucher()) {
     // User can add another voucher
-    echo 'You can add '.(config('vouchers.cart.max_vouchers_per_cart') - count(Cart::getAppliedVouchers())).' more voucher(s)';
+    echo 'You can add ' . (config('vouchers.cart.max_vouchers_per_cart') - count(Cart::getAppliedVouchers())) . ' more voucher(s)';
 } else {
     echo 'Maximum vouchers reached';
 }

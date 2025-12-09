@@ -25,9 +25,9 @@ final class ReportsPage extends Page implements HasForms
 
     public array $reportData = [];
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-chart-bar';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Affiliates';
+    protected static string | UnitEnum | null $navigationGroup = 'Affiliates';
 
     protected static ?string $navigationLabel = 'Reports';
 

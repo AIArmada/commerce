@@ -144,7 +144,7 @@ final class CartVoucherActions
      */
     public static function removeVoucher(string $voucherCode): Action
     {
-        return Action::make('remove_voucher_'.$voucherCode)
+        return Action::make('remove_voucher_' . $voucherCode)
             ->label('Remove')
             ->icon(Heroicon::OutlinedXMark)
             ->color('danger')
@@ -219,10 +219,10 @@ final class CartVoucherActions
             foreach ($vouchers as $voucher) {
                 $entries[] = Grid::make(2)
                     ->schema([
-                        Placeholder::make('code_'.$voucher->code)
+                        Placeholder::make('code_' . $voucher->code)
                             ->label('Code')
                             ->content($voucher->code),
-                        Placeholder::make('type_'.$voucher->code)
+                        Placeholder::make('type_' . $voucher->code)
                             ->label('Type')
                             ->content(ucfirst($voucher->type->value ?? 'unknown')),
                     ]);

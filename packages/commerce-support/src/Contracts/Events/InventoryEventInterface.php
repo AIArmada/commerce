@@ -20,7 +20,7 @@ interface InventoryEventInterface extends CommerceEventInterface
     /**
      * Get the inventoryable model ID.
      */
-    public function getInventoryableId(): string|int;
+    public function getInventoryableId(): string | int;
 
     /**
      * Get the quantity affected by this event.

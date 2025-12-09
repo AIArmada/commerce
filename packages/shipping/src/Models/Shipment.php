@@ -188,7 +188,7 @@ class Shipment extends Model
 
     public function getFormattedShippingCost(): string
     {
-        return number_format($this->shipping_cost / 100, 2).' '.$this->currency;
+        return number_format($this->shipping_cost / 100, 2) . ' ' . $this->currency;
     }
 
     public function getTotalWeightKg(): float

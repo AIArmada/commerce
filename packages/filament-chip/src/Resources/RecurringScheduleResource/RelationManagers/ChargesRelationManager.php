@@ -19,7 +19,7 @@ final class ChargesRelationManager extends RelationManager
 
     protected static ?string $title = 'Charge History';
 
-    protected static string|BackedEnum|null $icon = Heroicon::OutlinedBanknotes;
+    protected static string | BackedEnum | null $icon = Heroicon::OutlinedBanknotes;
 
     public function table(Table $table): Table
     {

@@ -34,7 +34,8 @@ final class StockReservationsTable
                     ->state(fn (StockReservation $record): string => $record->isValid() ? 'Active' : 'Expired')
                     ->badge()
                     ->color(fn (StockReservation $record): string => $record->isValid() ? 'success' : 'danger')
-                    ->icon(fn (StockReservation $record): Heroicon => $record->isValid()
+                    ->icon(
+                        fn (StockReservation $record): Heroicon => $record->isValid()
                         ? Heroicon::CheckCircle
                         : Heroicon::XCircle
                     )
@@ -114,9 +115,10 @@ final class StockReservationsTable
 
                 Filter::make('expiring_soon')
                     ->label('Expiring within 5 minutes')
-                    ->query(fn (Builder $query): Builder => $query
-                        ->where('expires_at', '>', now())
-                        ->where('expires_at', '<=', now()->addMinutes(5))
+                    ->query(
+                        fn (Builder $query): Builder => $query
+                            ->where('expires_at', '>', now())
+                            ->where('expires_at', '<=', now()->addMinutes(5))
                     ),
             ])
             ->actions([
@@ -147,7 +149,7 @@ final class StockReservationsTable
                     return null;
                 }
 
-                return is_numeric($interval) ? $interval.'s' : (string) $interval;
+                return is_numeric($interval) ? $interval . 's' : (string) $interval;
             })
             ->paginated([25, 50, 100])
             ->striped();

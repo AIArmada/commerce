@@ -21,7 +21,7 @@ class PortalConversions extends Page implements HasTable
     use InteractsWithAffiliate;
     use InteractsWithTable;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBar;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedChartBar;
 
     protected static ?int $navigationSort = 2;
 
@@ -32,7 +32,7 @@ class PortalConversions extends Page implements HasTable
         return __('Conversions');
     }
 
-    public function getTitle(): string|Htmlable
+    public function getTitle(): string | Htmlable
     {
         return __('Conversion History');
     }

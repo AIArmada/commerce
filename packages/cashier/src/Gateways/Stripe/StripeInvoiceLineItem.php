@@ -125,6 +125,6 @@ class StripeInvoiceLineItem implements InvoiceLineItemContract
      */
     protected function formatAmount(int $amount): string
     {
-        return number_format($amount / 100, 2).' '.mb_strtoupper($this->currency());
+        return number_format($amount / 100, 2) . ' ' . mb_strtoupper($this->currency());
     }
 }

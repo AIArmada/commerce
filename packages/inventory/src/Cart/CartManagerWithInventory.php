@@ -105,7 +105,7 @@ final class CartManagerWithInventory implements CartManagerInterface
         return $this->manager->getOwnerType();
     }
 
-    public function getOwnerId(): string|int|null
+    public function getOwnerId(): string | int | null
     {
         return $this->manager->getOwnerId();
     }

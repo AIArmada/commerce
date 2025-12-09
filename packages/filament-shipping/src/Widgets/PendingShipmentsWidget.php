@@ -15,7 +15,7 @@ class PendingShipmentsWidget extends BaseWidget
 {
     protected static ?string $heading = 'Pending Shipments';
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     protected static ?int $sort = 2;
 
@@ -42,7 +42,7 @@ class PendingShipmentsWidget extends BaseWidget
 
                 Tables\Columns\TextColumn::make('total_weight')
                     ->label('Weight')
-                    ->formatStateUsing(fn ($state) => number_format($state / 1000, 2).' kg'),
+                    ->formatStateUsing(fn ($state) => number_format($state / 1000, 2) . ' kg'),
 
                 Tables\Columns\TextColumn::make('created_at')
                     ->dateTime()

@@ -20,9 +20,9 @@ class ReturnAuthorizationResource extends Resource
 {
     protected static ?string $model = ReturnAuthorization::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowUturnLeft;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedArrowUturnLeft;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Shipping';
+    protected static string | UnitEnum | null $navigationGroup = 'Shipping';
 
     protected static ?int $navigationSort = 3;
 

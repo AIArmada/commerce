@@ -78,8 +78,9 @@ final class InventoryAllocationInfolist
 
                         TextEntry::make('time_remaining')
                             ->label('Time Remaining')
-                            ->state(fn ($record): string => $record->isExpired()
-                                ? 'Expired '.$record->expires_at->diffForHumans()
+                            ->state(
+                                fn ($record): string => $record->isExpired()
+                                ? 'Expired ' . $record->expires_at->diffForHumans()
                                 : $record->expires_at->diffForHumans(['parts' => 2])
                             )
                             ->color(fn ($record): string => $record->isExpired() ? 'danger' : 'info'),

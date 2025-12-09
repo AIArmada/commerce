@@ -13,14 +13,14 @@ abstract class BaseChipResource extends Resource
 
     abstract protected static function navigationSortKey(): string;
 
-    final public static function getNavigationGroup(): string|UnitEnum|null
+    final public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-chip.navigation_group');
     }
 
     final public static function getNavigationSort(): ?int
     {
-        return config('filament-chip.resources.navigation_sort.'.static::navigationSortKey());
+        return config('filament-chip.resources.navigation_sort.' . static::navigationSortKey());
     }
 
     final public static function getNavigationBadge(): ?string

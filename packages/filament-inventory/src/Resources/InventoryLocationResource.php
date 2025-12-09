@@ -25,7 +25,7 @@ final class InventoryLocationResource extends Resource
 
     protected static ?string $tenantOwnershipRelationshipName = 'owner';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBuildingOffice2;
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -79,7 +79,7 @@ final class InventoryLocationResource extends Resource
         return 'success';
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-inventory.navigation_group');
     }

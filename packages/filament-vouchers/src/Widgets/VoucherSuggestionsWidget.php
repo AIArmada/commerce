@@ -31,7 +31,7 @@ final class VoucherSuggestionsWidget extends Widget
     /** @phpstan-ignore-next-line */
     protected string $view = 'filament-vouchers::widgets.voucher-suggestions';
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     /**
      * Get eligible voucher suggestions for this cart
@@ -211,7 +211,7 @@ final class VoucherSuggestionsWidget extends Widget
         }
 
         if ($voucher->expires_at && $voucher->expires_at->diffInDays() <= 3) {
-            return 'Expires in '.$voucher->expires_at->diffInDays().' days!';
+            return 'Expires in ' . $voucher->expires_at->diffInDays() . ' days!';
         }
 
         if ($voucher->usage_limit) {

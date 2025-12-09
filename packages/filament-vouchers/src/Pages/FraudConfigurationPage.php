@@ -27,7 +27,7 @@ final class FraudConfigurationPage extends Page implements HasForms
      */
     public array $data = [];
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldCheck;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedShieldCheck;
 
     protected string $view = 'filament-vouchers::pages.fraud-configuration';
 
@@ -35,7 +35,7 @@ final class FraudConfigurationPage extends Page implements HasForms
 
     protected static ?string $title = 'Fraud Detection Configuration';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Vouchers & Discounts';
+    protected static string | UnitEnum | null $navigationGroup = 'Vouchers & Discounts';
 
     protected static ?int $navigationSort = 102;
 

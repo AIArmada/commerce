@@ -59,7 +59,7 @@ trait ManagesGateway
     public function gatewayId(?string $gateway = null): ?string
     {
         $gateway = $gateway ?? $this->preferredGateway();
-        $column = $gateway.'_id';
+        $column = $gateway . '_id';
 
         return $this->{$column} ?? null;
     }
@@ -117,7 +117,7 @@ trait ManagesGateway
      *
      * @param  string|array<string>  $prices
      */
-    public function newGatewaySubscription(string $type, string|array $prices = [], ?string $gateway = null): SubscriptionBuilderContract
+    public function newGatewaySubscription(string $type, string | array $prices = [], ?string $gateway = null): SubscriptionBuilderContract
     {
         return $this->gateway($gateway)->newSubscription($this, $type, $prices);
     }

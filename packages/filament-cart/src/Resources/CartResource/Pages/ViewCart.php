@@ -20,7 +20,7 @@ final class ViewCart extends ViewRecord
     public function getTitle(): string
     {
         /** @phpstan-ignore-next-line */
-        return 'Cart: '.$this->record->identifier;
+        return 'Cart: ' . $this->record->identifier;
     }
 
     public function getSubheading(): string
@@ -35,20 +35,20 @@ final class ViewCart extends ViewRecord
         /** @phpstan-ignore-next-line */
         $totalQty = $this->record->quantity;
 
-        $summary = "{$itemCount} ".str('item')->plural($itemCount).
-            " ({$totalQty} ".str('unit')->plural($totalQty).')';
+        $summary = "{$itemCount} " . str('item')->plural($itemCount) .
+            " ({$totalQty} " . str('unit')->plural($totalQty) . ')';
 
         /** @phpstan-ignore-next-line */
-        $summary .= ' • Subtotal '.$this->record->formatMoney($this->record->subtotal);
+        $summary .= ' • Subtotal ' . $this->record->formatMoney($this->record->subtotal);
 
         /** @phpstan-ignore-next-line */
         if ($this->record->savings > 0) {
             /** @phpstan-ignore-next-line */
-            $summary .= ' • Savings '.$this->record->formatMoney($this->record->savings);
+            $summary .= ' • Savings ' . $this->record->formatMoney($this->record->savings);
         }
 
         /** @phpstan-ignore-next-line */
-        $summary .= ' • Total '.$this->record->formatMoney($this->record->total);
+        $summary .= ' • Total ' . $this->record->formatMoney($this->record->total);
 
         return $summary;
     }
@@ -95,8 +95,8 @@ final class ViewCart extends ViewRecord
                 $record = $this->record;
 
                 return response()->download(
-                    storage_path('app/temp/cart_'.$record->identifier.'.json'),
-                    'cart_'.$record->identifier.'.json',
+                    storage_path('app/temp/cart_' . $record->identifier . '.json'),
+                    'cart_' . $record->identifier . '.json',
                     ['Content-Type' => 'application/json']
                 );
             })
@@ -118,7 +118,7 @@ final class ViewCart extends ViewRecord
                 }
 
                 file_put_contents(
-                    storage_path('app/temp/cart_'.$record->identifier.'.json'),
+                    storage_path('app/temp/cart_' . $record->identifier . '.json'),
                     json_encode($cartData, JSON_PRETTY_PRINT)
                 );
             });

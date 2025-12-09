@@ -26,7 +26,7 @@ final class CancelOrder
      */
     public function handle(
         string $orderId,
-        CancellationReason|string $reason,
+        CancellationReason | string $reason,
         ?string $trackingNumber = null
     ): array {
         return $this->jntService->cancelOrder($orderId, $reason, $trackingNumber);

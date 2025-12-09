@@ -61,7 +61,7 @@ class ChipInvoiceLineItem implements InvoiceLineItemContract
      */
     public function unitAmount(): string
     {
-        return number_format($this->rawUnitAmount() / 100, 2).' '.mb_strtoupper($this->currency());
+        return number_format($this->rawUnitAmount() / 100, 2) . ' ' . mb_strtoupper($this->currency());
     }
 
     /**
@@ -77,7 +77,7 @@ class ChipInvoiceLineItem implements InvoiceLineItemContract
      */
     public function total(): string
     {
-        return number_format($this->rawTotal() / 100, 2).' '.mb_strtoupper($this->currency());
+        return number_format($this->rawTotal() / 100, 2) . ' ' . mb_strtoupper($this->currency());
     }
 
     /**

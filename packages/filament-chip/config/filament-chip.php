@@ -12,8 +12,8 @@ return [
         'table_prefix' => env('FILAMENT_CHIP_TABLE_PREFIX', 'chip_'),
         'json_column_type' => env('FILAMENT_CHIP_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
         'tables' => [
-            'purchases' => env('FILAMENT_CHIP_TABLE_PREFIX', 'chip_').'purchases',
-            'payments' => env('FILAMENT_CHIP_TABLE_PREFIX', 'chip_').'payments',
+            'purchases' => env('FILAMENT_CHIP_TABLE_PREFIX', 'chip_') . 'purchases',
+            'payments' => env('FILAMENT_CHIP_TABLE_PREFIX', 'chip_') . 'payments',
         ],
     ],
 

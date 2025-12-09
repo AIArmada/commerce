@@ -70,7 +70,7 @@ final class CartItem extends Model
         $tables = config('filament-cart.database.tables', []);
         $prefix = config('filament-cart.database.table_prefix', 'cart_');
 
-        return $tables['snapshot_items'] ?? $prefix.'snapshot_items';
+        return $tables['snapshot_items'] ?? $prefix . 'snapshot_items';
     }
 
     /**

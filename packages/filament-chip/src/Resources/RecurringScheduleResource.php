@@ -20,7 +20,7 @@ final class RecurringScheduleResource extends BaseChipResource
 {
     protected static ?string $model = RecurringSchedule::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowPath;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedArrowPath;
 
     protected static ?string $modelLabel = 'Recurring Schedule';
 

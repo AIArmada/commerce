@@ -11,7 +11,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $tableName = config('jnt.database.tables.orders', config('jnt.database.table_prefix', 'jnt_').'orders');
+        $tableName = config('jnt.database.tables.orders', config('jnt.database.table_prefix', 'jnt_') . 'orders');
 
         $jsonType = (string) commerce_json_column_type('jnt', 'json');
 
@@ -66,16 +66,16 @@ return new class extends Migration
         // GIN indexes only work with jsonb in PostgreSQL
         if ($jsonType === 'jsonb') {
             Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
-                DB::statement('CREATE INDEX jnt_orders_sender_gin_index ON '.$tableName.' USING GIN (sender)');
-                DB::statement('CREATE INDEX jnt_orders_receiver_gin_index ON '.$tableName.' USING GIN (receiver)');
-                DB::statement('CREATE INDEX jnt_orders_metadata_gin_index ON '.$tableName.' USING GIN (metadata)');
+                DB::statement('CREATE INDEX jnt_orders_sender_gin_index ON ' . $tableName . ' USING GIN (sender)');
+                DB::statement('CREATE INDEX jnt_orders_receiver_gin_index ON ' . $tableName . ' USING GIN (receiver)');
+                DB::statement('CREATE INDEX jnt_orders_metadata_gin_index ON ' . $tableName . ' USING GIN (metadata)');
             });
         }
     }
 
     public function down(): void
     {
-        $tableName = config('jnt.database.tables.orders', config('jnt.database.table_prefix', 'jnt_').'orders');
+        $tableName = config('jnt.database.tables.orders', config('jnt.database.table_prefix', 'jnt_') . 'orders');
         Schema::dropIfExists($tableName);
     }
 };

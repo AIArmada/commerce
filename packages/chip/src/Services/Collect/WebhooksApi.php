@@ -60,7 +60,7 @@ final class WebhooksApi extends CollectApi
     public function list(array $filters = []): array
     {
         $queryString = http_build_query($filters);
-        $endpoint = 'webhooks/'.($queryString ? '?'.$queryString : '');
+        $endpoint = 'webhooks/' . ($queryString ? '?' . $queryString : '');
 
         return $this->attempt(
             fn () => $this->client->get($endpoint),

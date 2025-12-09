@@ -25,7 +25,7 @@ final class StockTransactionResource extends Resource
 
     protected static ?string $tenantOwnershipRelationshipName = 'owner';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCube;
 
     protected static ?string $recordTitleAttribute = 'id';
 
@@ -77,7 +77,7 @@ final class StockTransactionResource extends Resource
         return 'primary';
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-stock.navigation_group');
     }

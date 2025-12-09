@@ -51,7 +51,8 @@ use Illuminate\Support\Str;
  */
 class Campaign extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasUuids;
+    use SoftDeletes;
 
     protected $fillable = [
         'name',

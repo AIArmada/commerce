@@ -174,7 +174,7 @@ class CartManager implements CartManagerInterface
     /**
      * Get the current owner ID if operating in owner-scoped mode
      */
-    public function getOwnerId(): string|int|null
+    public function getOwnerId(): string | int | null
     {
         return $this->storage->getOwnerId();
     }

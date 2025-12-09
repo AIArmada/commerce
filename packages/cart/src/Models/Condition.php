@@ -303,7 +303,7 @@ class Condition extends Model
         $money = Money::{$this->resolveCurrency()}($normalized);
 
         return str_starts_with($rawValue, '+')
-            ? '+'.$money
+            ? '+' . $money
             : (string) $money;
     }
 

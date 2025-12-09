@@ -103,8 +103,9 @@ final class CampaignInfolist
 
                         TextEntry::make('budget_utilization')
                             ->label('Utilization')
-                            ->formatStateUsing(fn (?float $state): string => $state !== null
-                                ? number_format($state, 1).'%'
+                            ->formatStateUsing(
+                                fn (?float $state): string => $state !== null
+                                ? number_format($state, 1) . '%'
                                 : 'N/A'
                             )
                             ->badge()
@@ -129,7 +130,8 @@ final class CampaignInfolist
                     Grid::make(3)->schema([
                         TextEntry::make('max_redemptions')
                             ->label('Max Redemptions')
-                            ->formatStateUsing(fn (?int $state): string => $state !== null
+                            ->formatStateUsing(
+                                fn (?int $state): string => $state !== null
                                 ? number_format($state)
                                 : 'Unlimited'
                             ),
@@ -140,7 +142,8 @@ final class CampaignInfolist
 
                         TextEntry::make('remaining_redemptions')
                             ->label('Remaining')
-                            ->formatStateUsing(fn (?int $state): string => $state !== null
+                            ->formatStateUsing(
+                                fn (?int $state): string => $state !== null
                                 ? number_format($state)
                                 : 'Unlimited'
                             ),

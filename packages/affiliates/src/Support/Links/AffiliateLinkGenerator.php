@@ -66,7 +66,7 @@ final class AffiliateLinkGenerator
 
         $base = $this->stripQuery($url);
 
-        return $base.(str_contains($base, '?') ? '&' : '?').http_build_query($merged);
+        return $base . (str_contains($base, '?') ? '&' : '?') . http_build_query($merged);
     }
 
     /**

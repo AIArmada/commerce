@@ -97,16 +97,20 @@ test('events are dispatched for attribution and conversion flows', function (): 
     Cart::attachAffiliate($this->affiliate->code);
     Cart::recordAffiliateConversion(['subtotal' => 2000]);
 
-    Event::assertDispatched(AffiliateAttributed::class, fn (AffiliateAttributed $event): bool => $event->affiliate->code === $this->affiliate->code
+    Event::assertDispatched(
+        AffiliateAttributed::class,
+        fn (AffiliateAttributed $event): bool => $event->affiliate->code === $this->affiliate->code
     );
 
-    Event::assertDispatched(AffiliateConversionRecorded::class, fn (AffiliateConversionRecorded $event): bool => $event->conversion->affiliateCode === $this->affiliate->code
+    Event::assertDispatched(
+        AffiliateConversionRecorded::class,
+        fn (AffiliateConversionRecorded $event): bool => $event->conversion->affiliateCode === $this->affiliate->code
     );
 });
 
 test('middleware captures affiliate visits via cookies', function (): void {
     $cookieName = config('affiliates.cookies.name', 'affiliate_session');
-    $request = Request::create('/checkout?aff='.$this->affiliate->code.'&utm_source=newsletter', 'GET');
+    $request = Request::create('/checkout?aff=' . $this->affiliate->code . '&utm_source=newsletter', 'GET');
 
     app()->instance('request', $request);
 
@@ -128,7 +132,7 @@ test('middleware captures affiliate visits via cookies', function (): void {
 
 test('cart metadata hydrates from affiliate cookie automatically', function (): void {
     $cookieName = config('affiliates.cookies.name', 'affiliate_session');
-    $request = Request::create('/landing?aff='.$this->affiliate->code, 'GET');
+    $request = Request::create('/landing?aff=' . $this->affiliate->code, 'GET');
 
     app()->instance('request', $request);
 
@@ -177,7 +181,7 @@ test('affiliate cookies honor owner scoping', function (): void {
     ]);
 
     $cookieName = config('affiliates.cookies.name', 'affiliate_session');
-    $request = Request::create('/touch?aff='.$affiliate->code, 'GET');
+    $request = Request::create('/touch?aff=' . $affiliate->code, 'GET');
     app()->instance('request', $request);
 
     $middleware = app(TrackAffiliateCookie::class);
@@ -235,7 +239,7 @@ test('consent is required when configured', function (): void {
     config(['affiliates.cookies.require_consent' => true]);
 
     $cookieName = config('affiliates.cookies.name', 'affiliate_session');
-    $request = Request::create('/landing?aff='.$this->affiliate->code, 'GET');
+    $request = Request::create('/landing?aff=' . $this->affiliate->code, 'GET');
     app()->instance('request', $request);
 
     $middleware = app(TrackAffiliateCookie::class);
@@ -247,7 +251,7 @@ test('consent is required when configured', function (): void {
     expect($cookie)->toBeNull()
         ->and(AffiliateAttribution::count())->toBe(0);
 
-    $consentedRequest = Request::create('/landing?aff='.$this->affiliate->code.'&affiliate_consent=1', 'GET');
+    $consentedRequest = Request::create('/landing?aff=' . $this->affiliate->code . '&affiliate_consent=1', 'GET');
     app()->instance('request', $consentedRequest);
 
     $responseWithConsent = $middleware->handle($consentedRequest, fn () => response('ok'));

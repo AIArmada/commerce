@@ -134,8 +134,8 @@ final class InventoryStatsAggregator
      */
     public function clearCache(): void
     {
-        Cache::forget(self::CACHE_PREFIX.'overview_stats');
-        Cache::forget(self::CACHE_PREFIX.'low_stock_count');
+        Cache::forget(self::CACHE_PREFIX . 'overview_stats');
+        Cache::forget(self::CACHE_PREFIX . 'low_stock_count');
     }
 
     /**
@@ -172,7 +172,7 @@ final class InventoryStatsAggregator
         }
 
         return Cache::remember(
-            self::CACHE_PREFIX.$key,
+            self::CACHE_PREFIX . $key,
             $ttl,
             $callback
         );

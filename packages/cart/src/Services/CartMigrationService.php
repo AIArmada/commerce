@@ -74,7 +74,7 @@ class CartMigrationService
      * - Migrates from identifier 'abc123' to identifier '42'
      * - For the 'default' cart instance
      */
-    public function migrateGuestCartToUser(string|int $userId, string $instance, string $sessionId): bool
+    public function migrateGuestCartToUser(string | int $userId, string $instance, string $sessionId): bool
     {
         $guestIdentifier = $sessionId;
         $userIdentifier = (string) $userId;

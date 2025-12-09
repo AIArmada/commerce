@@ -5,14 +5,14 @@ declare(strict_types=1);
 $tablePrefix = env('SHIPPING_TABLE_PREFIX', env('COMMERCE_TABLE_PREFIX', ''));
 
 $tables = [
-    'shipments' => $tablePrefix.'shipments',
-    'shipment_items' => $tablePrefix.'shipment_items',
-    'shipment_labels' => $tablePrefix.'shipment_labels',
-    'shipment_events' => $tablePrefix.'shipment_events',
-    'shipping_zones' => $tablePrefix.'shipping_zones',
-    'shipping_rates' => $tablePrefix.'shipping_rates',
-    'return_authorizations' => $tablePrefix.'return_authorizations',
-    'return_authorization_items' => $tablePrefix.'return_authorization_items',
+    'shipments' => $tablePrefix . 'shipments',
+    'shipment_items' => $tablePrefix . 'shipment_items',
+    'shipment_labels' => $tablePrefix . 'shipment_labels',
+    'shipment_events' => $tablePrefix . 'shipment_events',
+    'shipping_zones' => $tablePrefix . 'shipping_zones',
+    'shipping_rates' => $tablePrefix . 'shipping_rates',
+    'return_authorizations' => $tablePrefix . 'return_authorizations',
+    'return_authorization_items' => $tablePrefix . 'return_authorization_items',
 ];
 
 return [

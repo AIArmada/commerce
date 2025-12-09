@@ -123,8 +123,8 @@ class FilamentAuthzPlugin implements Plugin
             $panel->authGuard($guard);
             $panel->middleware([
                 'web',
-                'auth:'.$guard,
-                'permission:access '.$panel->getId(),
+                'auth:' . $guard,
+                'permission:access ' . $panel->getId(),
             ]);
         }
 

@@ -18,7 +18,7 @@ final class ManualPayoutProcessor implements PayoutProcessorInterface
     public function process(AffiliatePayout $payout): PayoutResult
     {
         return PayoutResult::pending(
-            externalReference: 'MANUAL-'.Str::upper(Str::random(12)),
+            externalReference: 'MANUAL-' . Str::upper(Str::random(12)),
             metadata: [
                 'type' => 'manual',
                 'requires_admin_action' => true,

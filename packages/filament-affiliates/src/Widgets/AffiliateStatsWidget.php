@@ -37,7 +37,7 @@ final class AffiliateStatsWidget extends BaseWidget
                 ->descriptionIcon(Heroicon::OutlinedBanknotes)
                 ->color('success'),
 
-            Stat::make('Conversion Rate', $overview['conversion_rate'] !== null ? number_format($overview['conversion_rate'], 1).' %' : '—')
+            Stat::make('Conversion Rate', $overview['conversion_rate'] !== null ? number_format($overview['conversion_rate'], 1) . ' %' : '—')
                 ->description('Approved vs total')
                 ->descriptionIcon(Heroicon::OutlinedBolt)
                 ->color('info'),

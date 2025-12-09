@@ -59,7 +59,7 @@ class UserAttributeEvaluator implements TargetingRuleEvaluator
 
         $validOperators = ['equals', 'eq', '=', 'not_equals', 'neq', '!=', 'contains', 'starts_with', 'ends_with', 'in', 'not_in', 'gt', '>', 'gte', '>=', 'lt', '<', 'lte', '<=', 'exists', 'not_exists'];
         if (isset($rule['operator']) && ! in_array($rule['operator'], $validOperators, true)) {
-            $errors[] = 'Invalid operator. Valid operators: '.implode(', ', $validOperators);
+            $errors[] = 'Invalid operator. Valid operators: ' . implode(', ', $validOperators);
         }
 
         return $errors;
@@ -76,7 +76,7 @@ class UserAttributeEvaluator implements TargetingRuleEvaluator
         }
 
         // Check for getter method
-        $getter = 'get'.str_replace('_', '', ucwords($attribute, '_'));
+        $getter = 'get' . str_replace('_', '', ucwords($attribute, '_'));
         if (method_exists($user, $getter)) {
             return $user->{$getter}();
         }

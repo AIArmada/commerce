@@ -46,7 +46,7 @@ class ConfiguredNumberStrategyRegistry extends NumberStrategyRegistry
         }
 
         // 2. Auto-detect convention-based strategy: App\Numbering\{DocType}NumberStrategy
-        $customClass = 'App\\Numbering\\'.Str::studly($docType).'NumberStrategy';
+        $customClass = 'App\\Numbering\\' . Str::studly($docType) . 'NumberStrategy';
 
         if (class_exists($customClass) && is_subclass_of($customClass, DocumentNumberStrategy::class)) {
             return app($customClass);

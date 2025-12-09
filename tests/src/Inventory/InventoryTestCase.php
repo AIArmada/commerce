@@ -22,7 +22,7 @@ abstract class InventoryTestCase extends TestCase
     {
         parent::defineDatabaseMigrations();
 
-        $this->loadMigrationsFrom(__DIR__.'/../../../packages/inventory/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../../packages/inventory/database/migrations');
     }
 
     protected function setUpDatabase(): void

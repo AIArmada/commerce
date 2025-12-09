@@ -28,7 +28,7 @@ class WidgetTransformer
             fqcn: $widgetClass,
             name: Str::snake(class_basename($widgetClass)),
             type: $this->detectWidgetType($widgetClass),
-            permissions: ['view'.class_basename($widgetClass)],
+            permissions: ['view' . class_basename($widgetClass)],
             metadata: $this->extractMetadata($widgetClass),
             panel: $panel,
         );

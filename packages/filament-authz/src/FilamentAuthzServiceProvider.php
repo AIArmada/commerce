@@ -35,26 +35,26 @@ class FilamentAuthzServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(FilamentAuthzPlugin::class);
-        $this->mergeConfigFrom(__DIR__.'/../config/filament-authz.php', 'filament-authz');
+        $this->mergeConfigFrom(__DIR__ . '/../config/filament-authz.php', 'filament-authz');
 
         $this->registerServices();
     }
 
     public function boot(): void
     {
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'filament-authz');
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'filament-authz');
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
         $this->publishes([
-            __DIR__.'/../config/filament-authz.php' => config_path('filament-authz.php'),
+            __DIR__ . '/../config/filament-authz.php' => config_path('filament-authz.php'),
         ], 'filament-authz-config');
 
         $this->publishes([
-            __DIR__.'/../resources/views' => resource_path('views/vendor/filament-authz'),
+            __DIR__ . '/../resources/views' => resource_path('views/vendor/filament-authz'),
         ], 'filament-authz-views');
 
         $this->publishes([
-            __DIR__.'/../database/migrations' => database_path('migrations'),
+            __DIR__ . '/../database/migrations' => database_path('migrations'),
         ], 'filament-authz-migrations');
 
         $this->registerGateBefore();

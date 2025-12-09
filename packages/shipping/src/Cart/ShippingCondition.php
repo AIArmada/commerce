@@ -22,7 +22,7 @@ class ShippingCondition
     public function __construct(
         string $name,
         string $type,
-        int|float|string $value,
+        int | float | string $value,
         array $attributes = []
     ) {
         $this->condition = new CartCondition(
@@ -69,7 +69,7 @@ class ShippingCondition
         $value = $this->condition->getValue();
         $currency = $this->condition->getAttribute('currency') ?? 'MYR';
 
-        return number_format($value / 100, 2).' '.$currency;
+        return number_format($value / 100, 2) . ' ' . $currency;
     }
 
     public function asCartCondition(): CartCondition

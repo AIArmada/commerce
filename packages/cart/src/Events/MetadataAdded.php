@@ -21,7 +21,10 @@ use Illuminate\Queue\SerializesModels;
  */
 final class MetadataAdded implements CartEventInterface
 {
-    use Dispatchable, HasCartEventData, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use HasCartEventData;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * Create a new metadata added event

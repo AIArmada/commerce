@@ -126,10 +126,10 @@ final class AffiliateIntegrationRegistrar
         $format = config('vouchers.integrations.affiliates.code_format', 'prefix_code');
 
         return match ($format) {
-            'prefix_code' => mb_strtoupper($prefix.$affiliate->code),
+            'prefix_code' => mb_strtoupper($prefix . $affiliate->code),
             'code_only' => mb_strtoupper($affiliate->code),
-            'prefix_random' => mb_strtoupper($prefix.bin2hex(random_bytes(4))),
-            default => mb_strtoupper($prefix.$affiliate->code),
+            'prefix_random' => mb_strtoupper($prefix . bin2hex(random_bytes(4))),
+            default => mb_strtoupper($prefix . $affiliate->code),
         };
     }
 

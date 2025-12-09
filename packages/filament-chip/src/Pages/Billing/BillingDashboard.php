@@ -15,7 +15,7 @@ class BillingDashboard extends Page
 {
     use InteractsWithBillable;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedHome;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedHome;
 
     protected static ?int $navigationSort = -2;
 
@@ -26,7 +26,7 @@ class BillingDashboard extends Page
         return __('Dashboard');
     }
 
-    public function getTitle(): string|Htmlable
+    public function getTitle(): string | Htmlable
     {
         return __('Billing Dashboard');
     }
@@ -56,7 +56,7 @@ class BillingDashboard extends Page
         // Fallback formatting
         $currency = config('cashier-chip.currency', 'MYR');
 
-        return $currency.' '.number_format($amount / 100, 2);
+        return $currency . ' ' . number_format($amount / 100, 2);
     }
 
     /**

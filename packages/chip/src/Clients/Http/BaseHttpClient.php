@@ -94,7 +94,7 @@ abstract class BaseHttpClient
 
     protected function buildUrl(string $endpoint): string
     {
-        return mb_rtrim($this->resolveBaseUrl(), '/').'/'.mb_ltrim($endpoint, '/');
+        return mb_rtrim($this->resolveBaseUrl(), '/') . '/' . mb_ltrim($endpoint, '/');
     }
 
     protected function shouldRetry(?Throwable $exception, ?Response $response): bool
@@ -238,7 +238,7 @@ abstract class BaseHttpClient
             throw $exception;
         }
 
-        throw new ChipApiException('API request failed: '.$exception->getMessage(), 0, [], $exception);
+        throw new ChipApiException('API request failed: ' . $exception->getMessage(), 0, [], $exception);
     }
 
     /**

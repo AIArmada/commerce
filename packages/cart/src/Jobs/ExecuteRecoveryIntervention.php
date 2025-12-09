@@ -293,7 +293,7 @@ final class ExecuteRecoveryIntervention implements ShouldQueue
      */
     private function generateRecoveryToken(object $cartRecord): string
     {
-        $data = $this->cartId.$cartRecord->identifier.($cartRecord->user_id ?? '');
+        $data = $this->cartId . $cartRecord->identifier . ($cartRecord->user_id ?? '');
 
         return hash_hmac('sha256', $data, config('app.key'));
     }

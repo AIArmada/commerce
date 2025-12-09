@@ -25,7 +25,7 @@ final class CartResource extends Resource
 {
     protected static ?string $model = Cart::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShoppingCart;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedShoppingCart;
 
     protected static ?string $recordTitleAttribute = 'identifier';
 
@@ -80,7 +80,7 @@ final class CartResource extends Resource
         return 'primary';
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-cart.navigation_group');
     }

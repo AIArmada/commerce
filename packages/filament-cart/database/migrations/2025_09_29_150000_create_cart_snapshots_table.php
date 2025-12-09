@@ -14,7 +14,7 @@ return new class extends Migration
         $databaseConfig = config('filament-cart.database', []);
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cart_';
         $tables = $databaseConfig['tables'] ?? [];
-        $tableName = $tables['snapshots'] ?? $tablePrefix.'snapshots';
+        $tableName = $tables['snapshots'] ?? $tablePrefix . 'snapshots';
         $jsonType = (string) ($databaseConfig['json_column_type'] ?? commerce_json_column_type('cart', 'json'));
 
         Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
@@ -58,7 +58,7 @@ return new class extends Migration
         $databaseConfig = config('filament-cart.database', []);
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cart_';
         $tables = $databaseConfig['tables'] ?? [];
-        $tableName = $tables['snapshots'] ?? $tablePrefix.'snapshots';
+        $tableName = $tables['snapshots'] ?? $tablePrefix . 'snapshots';
 
         Schema::dropIfExists($tableName);
     }

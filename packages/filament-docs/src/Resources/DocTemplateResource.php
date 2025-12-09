@@ -25,7 +25,7 @@ final class DocTemplateResource extends Resource
 
     protected static ?string $tenantOwnershipRelationshipName = 'owner';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentDuplicate;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedDocumentDuplicate;
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -77,7 +77,7 @@ final class DocTemplateResource extends Resource
         return 'gray';
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-docs.navigation_group');
     }

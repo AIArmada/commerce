@@ -68,12 +68,12 @@ class ChipSendService
     public function listSendInstructions(array $filters = []): array
     {
         $queryString = http_build_query($filters);
-        $endpoint = 'send/send_instructions'.($queryString ? "?{$queryString}" : '');
+        $endpoint = 'send/send_instructions' . ($queryString ? "?{$queryString}" : '');
 
         return $this->client->get($endpoint);
     }
 
-    public function getSendLimit(int|string $id): SendLimitData
+    public function getSendLimit(int | string $id): SendLimitData
     {
         $response = $this->client->get("send/send_limits/{$id}");
 
@@ -115,7 +115,7 @@ class ChipSendService
     public function listBankAccounts(array $filters = []): array
     {
         $queryString = http_build_query($filters);
-        $endpoint = 'send/bank_accounts'.($queryString ? "?{$queryString}" : '');
+        $endpoint = 'send/bank_accounts' . ($queryString ? "?{$queryString}" : '');
 
         return $this->client->get($endpoint);
     }
@@ -191,7 +191,7 @@ class ChipSendService
     public function listGroups(array $filters = []): array
     {
         $queryString = http_build_query($filters);
-        $endpoint = 'send/groups'.($queryString ? '?'.$queryString : '');
+        $endpoint = 'send/groups' . ($queryString ? '?' . $queryString : '');
 
         return $this->client->get($endpoint);
     }
@@ -245,7 +245,7 @@ class ChipSendService
     public function listSendWebhooks(array $filters = []): array
     {
         $queryString = http_build_query($filters);
-        $endpoint = 'send/webhooks'.($queryString ? '?'.$queryString : '');
+        $endpoint = 'send/webhooks' . ($queryString ? '?' . $queryString : '');
 
         $response = $this->client->get($endpoint);
 

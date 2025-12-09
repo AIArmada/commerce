@@ -92,22 +92,24 @@ final class CartsTable
             ])
             ->filters([
                 SelectFilter::make('instance')
-                    ->options(fn () => Cart::query()
-                        ->select('instance')
-                        ->distinct()
-                        ->orderBy('instance')
-                        ->pluck('instance', 'instance')
-                        ->toArray()
+                    ->options(
+                        fn () => Cart::query()
+                            ->select('instance')
+                            ->distinct()
+                            ->orderBy('instance')
+                            ->pluck('instance', 'instance')
+                            ->toArray()
                     )
                     ->multiple(),
 
                 SelectFilter::make('currency')
-                    ->options(fn () => Cart::query()
-                        ->select('currency')
-                        ->distinct()
-                        ->orderBy('currency')
-                        ->pluck('currency', 'currency')
-                        ->toArray()
+                    ->options(
+                        fn () => Cart::query()
+                            ->select('currency')
+                            ->distinct()
+                            ->orderBy('currency')
+                            ->pluck('currency', 'currency')
+                            ->toArray()
                     ),
 
                 Filter::make('has_items')
@@ -201,7 +203,7 @@ final class CartsTable
                     }),
             ])
             ->defaultSort('updated_at', 'desc')
-            ->poll(fn () => config('filament-cart.polling_interval', 30).'s')
+            ->poll(fn () => config('filament-cart.polling_interval', 30) . 's')
             ->striped();
     }
 }

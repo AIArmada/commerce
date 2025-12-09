@@ -25,7 +25,7 @@ class AuthzDashboardPage extends Page
 
     public int $refreshInterval = 30; // seconds
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-chart-bar';
 
     protected static ?string $navigationLabel = 'Authz Dashboard';
 
@@ -48,7 +48,7 @@ class AuthzDashboardPage extends Page
      */
     public function getStats(): array
     {
-        $cacheKey = 'authz_dashboard_stats_'.$this->timeRange;
+        $cacheKey = 'authz_dashboard_stats_' . $this->timeRange;
 
         return Cache::remember($cacheKey, 60, function () {
             $since = $this->getTimeRangeStart();
@@ -148,7 +148,7 @@ class AuthzDashboardPage extends Page
             $breakdown = [];
             for ($i = 0; $i < 24; $i++) {
                 $hour = now()->subHours(24 - $i)->format('H');
-                $breakdown[$hour.':00'] = $results[(int) $hour] ?? 0;
+                $breakdown[$hour . ':00'] = $results[(int) $hour] ?? 0;
             }
 
             return $breakdown;
@@ -230,12 +230,12 @@ class AuthzDashboardPage extends Page
     public function setTimeRange(string $range): void
     {
         $this->timeRange = $range;
-        Cache::forget('authz_dashboard_stats_'.$range);
+        Cache::forget('authz_dashboard_stats_' . $range);
     }
 
     public function refreshData(): void
     {
-        Cache::forget('authz_dashboard_stats_'.$this->timeRange);
+        Cache::forget('authz_dashboard_stats_' . $this->timeRange);
     }
 
     /**
@@ -246,7 +246,7 @@ class AuthzDashboardPage extends Page
         $breakdown = [];
         for ($i = 0; $i < 24; $i++) {
             $hour = now()->subHours(24 - $i)->format('H');
-            $breakdown[$hour.':00'] = 0;
+            $breakdown[$hour . ':00'] = 0;
         }
 
         return $breakdown;

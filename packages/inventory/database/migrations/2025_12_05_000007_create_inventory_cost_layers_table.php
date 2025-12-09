@@ -13,7 +13,7 @@ return new class extends Migration
         $tables = config('inventory.database.tables', []);
         $prefix = config('inventory.database.table_prefix', 'inventory_');
 
-        $tableName = $tables['cost_layers'] ?? $prefix.'cost_layers';
+        $tableName = $tables['cost_layers'] ?? $prefix . 'cost_layers';
 
         Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
@@ -40,7 +40,7 @@ return new class extends Migration
     {
         $tables = config('inventory.database.tables', []);
         $prefix = config('inventory.database.table_prefix', 'inventory_');
-        $tableName = $tables['cost_layers'] ?? $prefix.'cost_layers';
+        $tableName = $tables['cost_layers'] ?? $prefix . 'cost_layers';
 
         Schema::dropIfExists($tableName);
     }

@@ -39,32 +39,32 @@ class OrderProblemNotification extends Notification implements ShouldQueue
             ->subject('Issue with Your Order')
             ->greeting('Attention Required')
             ->line('There is an issue with your order that requires attention.')
-            ->line('Tracking Number: '.$this->tracking->trackingNumber);
+            ->line('Tracking Number: ' . $this->tracking->trackingNumber);
 
         if ($this->tracking->orderId !== null) {
-            $message->line('Order ID: '.$this->tracking->orderId);
+            $message->line('Order ID: ' . $this->tracking->orderId);
         }
 
         // Get problem details
         if ($this->tracking->details->count() > 0) {
             $latest = $this->tracking->details->last();
             if ($latest instanceof TrackingDetailData) {
-                $message->line('Issue: '.$latest->description);
+                $message->line('Issue: ' . $latest->description);
 
                 if ($latest->problemType !== null) {
-                    $message->line('Problem Type: '.$latest->problemType);
+                    $message->line('Problem Type: ' . $latest->problemType);
                 }
 
                 if ($latest->remark !== null) {
-                    $message->line('Details: '.$latest->remark);
+                    $message->line('Details: ' . $latest->remark);
                 }
 
-                $message->line('Reported At: '.$latest->scanTime);
+                $message->line('Reported At: ' . $latest->scanTime);
             }
         }
 
         if ($this->supportContact !== null) {
-            $message->line('For assistance, please contact: '.$this->supportContact);
+            $message->line('For assistance, please contact: ' . $this->supportContact);
         }
 
         return $message

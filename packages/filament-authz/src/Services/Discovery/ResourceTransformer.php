@@ -63,7 +63,7 @@ class ResourceTransformer
         // Detect bulk actions
         $bulkActions = $this->detectBulkActions($resourceClass);
         foreach ($bulkActions as $action) {
-            $permissions[] = 'bulk'.Str::studly($action);
+            $permissions[] = 'bulk' . Str::studly($action);
         }
 
         // Detect table actions

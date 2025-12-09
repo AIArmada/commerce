@@ -14,7 +14,7 @@ class PortalDashboard extends Page
 {
     use InteractsWithAffiliate;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedHome;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedHome;
 
     protected static ?int $navigationSort = -2;
 
@@ -25,7 +25,7 @@ class PortalDashboard extends Page
         return __('Dashboard');
     }
 
-    public function getTitle(): string|Htmlable
+    public function getTitle(): string | Htmlable
     {
         return __('Affiliate Dashboard');
     }

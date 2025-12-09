@@ -32,7 +32,7 @@ class ExportAuthzCommand extends Command
         ];
 
         $fs->put($path, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES));
-        $this->info('Exported to: '.$path);
+        $this->info('Exported to: ' . $path);
 
         return self::SUCCESS;
     }

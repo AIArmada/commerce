@@ -199,7 +199,7 @@ class PatternDetector extends AbstractFraudDetector
                 type: FraudSignalType::DeviceFingerprintMismatch,
                 message: 'Unknown device fingerprint detected',
                 metadata: [
-                    'current_fingerprint' => mb_substr((string) $currentFingerprint, 0, 16).'...',
+                    'current_fingerprint' => mb_substr((string) $currentFingerprint, 0, 16) . '...',
                     'known_fingerprints_count' => count($knownFingerprints),
                 ],
             ));

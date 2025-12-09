@@ -22,7 +22,7 @@ final class StockTransactionTimelineWidget extends Widget
     /** @phpstan-ignore-next-line */
     protected string $view = 'filament-stock::widgets.stock-transaction-timeline';
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     /**
      * Get timeline events from stock transaction history.

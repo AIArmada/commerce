@@ -51,7 +51,7 @@ final class ChipServiceProvider extends PackageServiceProvider
         }
 
         Route::middleware(config('chip.webhooks.middleware', ['api']))
-            ->group(fn () => $this->loadRoutesFrom(__DIR__.'/../routes/webhooks.php'));
+            ->group(fn () => $this->loadRoutesFrom(__DIR__ . '/../routes/webhooks.php'));
     }
 
     public function packageRegistered(): void

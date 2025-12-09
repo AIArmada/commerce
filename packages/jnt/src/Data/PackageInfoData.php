@@ -30,13 +30,13 @@ class PackageInfoData extends Data
      * @param  float|int|string|null  $height  Height in CENTIMETERS (0.01-999.99, optional, 2 decimals)
      */
     public function __construct(
-        public readonly int|string $quantity,
-        public readonly float|int|string $weight,
-        public readonly float|int|string $value,
-        public readonly GoodsType|string $goodsType,
-        public readonly float|int|string|null $length = null,
-        public readonly float|int|string|null $width = null,
-        public readonly float|int|string|null $height = null,
+        public readonly int | string $quantity,
+        public readonly float | int | string $weight,
+        public readonly float | int | string $value,
+        public readonly GoodsType | string $goodsType,
+        public readonly float | int | string | null $length = null,
+        public readonly float | int | string | null $width = null,
+        public readonly float | int | string | null $height = null,
     ) {}
 
     /**

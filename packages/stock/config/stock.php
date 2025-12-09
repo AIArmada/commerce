@@ -6,8 +6,8 @@ use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 
 $tablePrefix = env('STOCK_TABLE_PREFIX', 'stock_');
 
-$transactionsTable = env('STOCK_TRANSACTIONS_TABLE', $tablePrefix.'transactions');
-$reservationsTable = env('STOCK_RESERVATIONS_TABLE', $tablePrefix.'reservations');
+$transactionsTable = env('STOCK_TRANSACTIONS_TABLE', $tablePrefix . 'transactions');
+$reservationsTable = env('STOCK_RESERVATIONS_TABLE', $tablePrefix . 'reservations');
 
 return [
     /*

@@ -93,7 +93,7 @@ class OrderCreateCommand extends Command
 
             return self::SUCCESS;
         } catch (JntValidationException $e) {
-            $this->error('Validation Error: '.$e->getMessage());
+            $this->error('Validation Error: ' . $e->getMessage());
 
             if ($e->errors) {
                 $this->warn('Validation Errors:');
@@ -106,20 +106,20 @@ class OrderCreateCommand extends Command
 
             return self::FAILURE;
         } catch (JntNetworkException $e) {
-            $this->error('Network Error: '.$e->getMessage());
+            $this->error('Network Error: ' . $e->getMessage());
             $this->warn('Please check your internet connection and try again.');
 
             return self::FAILURE;
         } catch (JntApiException $e) {
-            $this->error('API Error: '.$e->getMessage());
+            $this->error('API Error: ' . $e->getMessage());
 
             if ($e->errorCode) {
-                $this->warn('Error Code: '.$e->errorCode);
+                $this->warn('Error Code: ' . $e->errorCode);
             }
 
             return self::FAILURE;
         } catch (Exception $e) {
-            $this->error('Unexpected Error: '.$e->getMessage());
+            $this->error('Unexpected Error: ' . $e->getMessage());
 
             return self::FAILURE;
         }

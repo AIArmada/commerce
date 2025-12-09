@@ -98,7 +98,7 @@ test('WaybillPrintedEvent → it can save PDF', function (): void {
 
     $event = new WaybillPrintedEvent($waybillData);
 
-    $path = sys_get_temp_dir().'/test_waybill.pdf';
+    $path = sys_get_temp_dir() . '/test_waybill.pdf';
 
     expect($event->savePdf($path))->toBeTrue();
 

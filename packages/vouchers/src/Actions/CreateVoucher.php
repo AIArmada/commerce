@@ -54,7 +54,7 @@ final class CreateVoucher
         $length = config('vouchers.code_length', 8);
 
         do {
-            $code = $prefix.Str::upper(Str::random($length));
+            $code = $prefix . Str::upper(Str::random($length));
         } while (VoucherModel::where('code', $code)->exists());
 
         return $code;

@@ -15,7 +15,7 @@ final class NetworkVisualizationWidget extends Widget
 
     protected static ?int $sort = 5;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     protected static string $view = 'filament-affiliates::widgets.network-visualization';
 

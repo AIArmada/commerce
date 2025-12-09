@@ -141,7 +141,7 @@ class TrackingDetailData extends Data
             'electronicSignaturePicUrl' => $this->electronicSignaturePicUrl,
             'scanNetworkId' => $this->scanNetworkId,
             'scanNetworkCountray' => $this->scanNetworkCountry, // API has typo
-        ], fn (string|int|null $value): bool => $value !== null);
+        ], fn (string | int | null $value): bool => $value !== null);
     }
 
     public function getLocation(): string

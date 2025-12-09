@@ -203,7 +203,7 @@ final readonly class FraudAnalysis
         $summary = implode(', ', $labels);
 
         if (count($signals) > 3) {
-            $summary .= ' and '.(count($signals) - 3).' more';
+            $summary .= ' and ' . (count($signals) - 3) . ' more';
         }
 
         return $summary;

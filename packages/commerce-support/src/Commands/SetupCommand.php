@@ -153,7 +153,7 @@ final class SetupCommand extends Command
         // Find existing keys
         foreach ($lines as $index => $line) {
             foreach ($updates as $key => $value) {
-                if (str_starts_with(mb_trim($line), $key.'=')) {
+                if (str_starts_with(mb_trim($line), $key . '=')) {
                     $existingKeys[$key] = $index;
 
                     if (! $this->option('force')) {
@@ -166,7 +166,7 @@ final class SetupCommand extends Command
 
         // Update existing or append new
         foreach ($updates as $key => $value) {
-            $envLine = $key.'='.(str_contains($value, ' ') ? '"'.$value.'"' : $value);
+            $envLine = $key . '=' . (str_contains($value, ' ') ? '"' . $value . '"' : $value);
 
             if (isset($existingKeys[$key])) {
                 // Update existing line

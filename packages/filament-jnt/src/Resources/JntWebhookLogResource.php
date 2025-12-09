@@ -19,7 +19,7 @@ final class JntWebhookLogResource extends BaseJntResource
 {
     protected static ?string $model = JntWebhookLog::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBolt;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBolt;
 
     protected static ?string $modelLabel = 'Webhook Log';
 

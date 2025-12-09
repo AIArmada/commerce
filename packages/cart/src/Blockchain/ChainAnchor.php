@@ -132,7 +132,7 @@ final class ChainAnchor
      */
     private function anchorInternal(string $proofHash): array
     {
-        $anchorId = hash('sha256', $proofHash.now()->timestamp);
+        $anchorId = hash('sha256', $proofHash . now()->timestamp);
 
         return [
             'success' => true,
@@ -178,7 +178,7 @@ final class ChainAnchor
                 'params' => [
                     [
                         'to' => $contractAddress,
-                        'data' => '0x'.bin2hex($proofHash),
+                        'data' => '0x' . bin2hex($proofHash),
                     ],
                 ],
             ]);
@@ -307,7 +307,7 @@ final class ChainAnchor
             for ($i = 0; $i < count($current); $i += 2) {
                 $left = $current[$i];
                 $right = $current[$i + 1] ?? $left;
-                $next[] = hash('sha256', $left.$right);
+                $next[] = hash('sha256', $left . $right);
             }
 
             $current = $next;

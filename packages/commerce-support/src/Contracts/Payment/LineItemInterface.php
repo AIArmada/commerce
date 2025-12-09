@@ -35,7 +35,7 @@ interface LineItemInterface
     /**
      * Get the quantity of this line item.
      */
-    public function getLineItemQuantity(): int|float;
+    public function getLineItemQuantity(): int | float;
 
     /**
      * Get the discount amount as a Money object.

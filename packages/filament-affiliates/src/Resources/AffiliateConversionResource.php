@@ -21,7 +21,7 @@ final class AffiliateConversionResource extends Resource
 {
     protected static ?string $model = AffiliateConversion::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedReceiptPercent;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedReceiptPercent;
 
     protected static ?string $navigationLabel = 'Affiliate Conversions';
 
@@ -57,7 +57,7 @@ final class AffiliateConversionResource extends Resource
         ];
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-affiliates.navigation_group');
     }

@@ -90,7 +90,7 @@ class ChipApiException extends Exception
                 $details[] = "{$key}: {$value}";
             }
 
-            $message .= ' - '.implode(', ', $details);
+            $message .= ' - ' . implode(', ', $details);
         }
 
         return $message;

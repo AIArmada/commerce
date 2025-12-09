@@ -252,7 +252,7 @@ class CampaignService
         }
 
         // Consistent hashing for deterministic assignment
-        $hash = crc32($campaign->id.$userIdentifier);
+        $hash = crc32($campaign->id . $userIdentifier);
         $bucket = abs($hash) % 100;
 
         $cumulativePercentage = 0;

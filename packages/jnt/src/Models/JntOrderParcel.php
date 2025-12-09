@@ -45,7 +45,7 @@ final class JntOrderParcel extends Model
         $tables = config('jnt.database.tables', []);
         $prefix = config('jnt.database.table_prefix', 'jnt_');
 
-        return $tables['order_parcels'] ?? $prefix.'order_parcels';
+        return $tables['order_parcels'] ?? $prefix . 'order_parcels';
     }
 
     /**

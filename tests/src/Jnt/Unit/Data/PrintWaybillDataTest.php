@@ -291,7 +291,7 @@ describe('PrintWaybillData', function (): void {
             isMultiParcel: false
         );
 
-        $tempFile = sys_get_temp_dir().'/test_waybill_'.uniqid().'.pdf';
+        $tempFile = sys_get_temp_dir() . '/test_waybill_' . uniqid() . '.pdf';
 
         try {
             $result = $data->savePdf($tempFile);
@@ -316,8 +316,8 @@ describe('PrintWaybillData', function (): void {
             isMultiParcel: false
         );
 
-        $tempDir = sys_get_temp_dir().'/jnt_test_'.uniqid();
-        $tempFile = $tempDir.'/waybill.pdf';
+        $tempDir = sys_get_temp_dir() . '/jnt_test_' . uniqid();
+        $tempFile = $tempDir . '/waybill.pdf';
 
         try {
             $result = $data->savePdf($tempFile);

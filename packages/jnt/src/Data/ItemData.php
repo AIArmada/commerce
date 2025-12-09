@@ -30,9 +30,9 @@ class ItemData extends Data
      */
     public function __construct(
         public readonly string $name,
-        public readonly int|string $quantity,
-        public readonly float|int|string $weight,
-        public readonly float|int|string $price,
+        public readonly int | string $quantity,
+        public readonly float | int | string $weight,
+        public readonly float | int | string $price,
         public readonly ?string $englishName = null,
         public readonly ?string $description = null,
         public readonly string $currency = 'MYR',

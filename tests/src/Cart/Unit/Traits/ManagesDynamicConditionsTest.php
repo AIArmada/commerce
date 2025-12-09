@@ -53,7 +53,7 @@ final class RecordingRulesFactory implements RulesFactoryInterface
 beforeEach(function (): void {
     $connection = DB::connection('testing');
     $this->storage = new DatabaseStorage($connection, 'carts');
-    $this->identifier = 'dynamic-user-'.uniqid();
+    $this->identifier = 'dynamic-user-' . uniqid();
 });
 
 describe('dynamic condition lifecycle', function (): void {

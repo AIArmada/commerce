@@ -30,7 +30,7 @@ class FilterMacros
             });
         });
 
-        Filter::macro('visibleForRole', function (string|array $roles): static {
+        Filter::macro('visibleForRole', function (string | array $roles): static {
             /** @var Filter $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
@@ -49,7 +49,7 @@ class FilterMacros
             $query = Permission::query();
 
             if ($prefix !== null) {
-                $query->where('name', 'like', $prefix.'%');
+                $query->where('name', 'like', $prefix . '%');
             }
 
             /** @phpstan-ignore return.type */

@@ -34,7 +34,7 @@ return new class extends Migration
 
             $table->unique(
                 ['shipment_id', 'carrier_event_code', 'occurred_at'],
-                $tableName.'_unique'
+                $tableName . '_unique'
             );
         });
     }

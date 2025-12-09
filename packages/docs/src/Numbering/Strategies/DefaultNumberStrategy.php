@@ -48,7 +48,7 @@ class DefaultNumberStrategy implements DocumentNumberStrategy
         $length = max(1, min($length, 12));
 
         // uniqid ensures unique base, substr for deterministic length
-        $random = Str::upper(Str::substr(uniqid('', true).Str::random(8), -$length));
+        $random = Str::upper(Str::substr(uniqid('', true) . Str::random(8), -$length));
 
         return $random;
     }

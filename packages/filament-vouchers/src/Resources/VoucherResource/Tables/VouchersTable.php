@@ -46,7 +46,7 @@ final class VouchersTable
                 TextColumn::make('type')
                     ->label('Type')
                     ->badge()
-                    ->color(static fn (VoucherType|string $state): string => match ($state instanceof VoucherType ? $state : VoucherType::from($state)) {
+                    ->color(static fn (VoucherType | string $state): string => match ($state instanceof VoucherType ? $state : VoucherType::from($state)) {
                         VoucherType::Percentage => 'primary',
                         VoucherType::Fixed => 'success',
                         VoucherType::FreeShipping => 'warning',
@@ -55,7 +55,7 @@ final class VouchersTable
                         VoucherType::Bundle => 'primary',
                         VoucherType::Cashback => 'success',
                     })
-                    ->formatStateUsing(static fn (VoucherType|string $state): string => $state instanceof VoucherType ? $state->label() : VoucherType::from($state)->label())
+                    ->formatStateUsing(static fn (VoucherType | string $state): string => $state instanceof VoucherType ? $state->label() : VoucherType::from($state)->label())
                     ->sortable(),
 
                 TextColumn::make('value')
@@ -68,7 +68,7 @@ final class VouchersTable
                             // Value is stored as basis points (e.g., 1050 = 10.50%)
                             $percentage = (int) $state / 100;
 
-                            return mb_rtrim(mb_rtrim(number_format($percentage, 2), '0'), '.').' %';
+                            return mb_rtrim(mb_rtrim(number_format($percentage, 2), '0'), '.') . ' %';
                         }
 
                         // Value is stored as cents
@@ -118,7 +118,7 @@ final class VouchersTable
                 TextColumn::make('usageProgress')
                     ->label('Usage %')
                     ->state(fn (Voucher $record): ?float => $record->usageProgress)
-                    ->formatStateUsing(static fn (?float $state): string => $state === null ? '—' : number_format($state, 1).'%')
+                    ->formatStateUsing(static fn (?float $state): string => $state === null ? '—' : number_format($state, 1) . '%')
                     ->badge()
                     ->color('success')
                     ->toggleable(isToggledHiddenByDefault: true),
@@ -139,13 +139,13 @@ final class VouchersTable
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->color(static fn (VoucherStatus|string $state): string => match ($state instanceof VoucherStatus ? $state : VoucherStatus::from($state)) {
+                    ->color(static fn (VoucherStatus | string $state): string => match ($state instanceof VoucherStatus ? $state : VoucherStatus::from($state)) {
                         VoucherStatus::Active => 'success',
                         VoucherStatus::Paused => 'warning',
                         VoucherStatus::Expired => 'danger',
                         VoucherStatus::Depleted => 'gray',
                     })
-                    ->formatStateUsing(static fn (VoucherStatus|string $state): string => $state instanceof VoucherStatus ? $state->label() : VoucherStatus::from($state)->label())
+                    ->formatStateUsing(static fn (VoucherStatus | string $state): string => $state instanceof VoucherStatus ? $state->label() : VoucherStatus::from($state)->label())
                     ->sortable(),
 
                 IconColumn::make('allows_manual_redemption')
@@ -230,7 +230,7 @@ final class VouchersTable
                     return null;
                 }
 
-                return is_numeric($interval) ? $interval.'s' : (string) $interval;
+                return is_numeric($interval) ? $interval . 's' : (string) $interval;
             })
             ->paginated([25, 50, 100])
             ->striped();

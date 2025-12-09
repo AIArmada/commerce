@@ -107,7 +107,7 @@ class TemporalPermissionService
             user: $user,
             permission: $permission,
             scope: PermissionScope::Temporal,
-            scopeValue: 'days:'.implode(',', $days),
+            scopeValue: 'days:' . implode(',', $days),
             conditions: [
                 'allowed_days' => $days,
             ],

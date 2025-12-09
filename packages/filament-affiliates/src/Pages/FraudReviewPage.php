@@ -22,9 +22,9 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shield-exclamation';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-shield-exclamation';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Affiliates';
+    protected static string | UnitEnum | null $navigationGroup = 'Affiliates';
 
     protected static ?string $navigationLabel = 'Fraud Review';
 
@@ -68,7 +68,7 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('score')
                     ->label('Risk Score')
-                    ->formatStateUsing(fn ($state): string => $state.'%'),
+                    ->formatStateUsing(fn ($state): string => $state . '%'),
 
                 Tables\Columns\TextColumn::make('detected_at')
                     ->dateTime()

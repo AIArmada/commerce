@@ -62,7 +62,7 @@ interface CartManagerInterface
     /**
      * Get the current owner ID if operating in owner-scoped mode
      */
-    public function getOwnerId(): string|int|null;
+    public function getOwnerId(): string | int | null;
 
     /**
      * Get session storage access for session-specific operations

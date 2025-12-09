@@ -34,7 +34,7 @@ class WebhookController extends Controller
             return $this->successMethod('Webhook received');
         }
 
-        $method = 'handle'.Str::studly(str_replace('.', '_', $eventType));
+        $method = 'handle' . Str::studly(str_replace('.', '_', $eventType));
 
         if (method_exists($this, $method)) {
             $response = $this->{$method}($payload);

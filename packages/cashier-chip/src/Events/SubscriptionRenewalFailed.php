@@ -10,7 +10,8 @@ use Illuminate\Queue\SerializesModels;
 
 class SubscriptionRenewalFailed
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
+    use SerializesModels;
 
     /**
      * The subscription instance.

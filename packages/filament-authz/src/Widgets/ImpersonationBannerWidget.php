@@ -11,7 +11,7 @@ class ImpersonationBannerWidget extends Widget
 {
     protected string $view = 'filament-authz::widgets.impersonation-banner';
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     public static function canView(): bool
     {

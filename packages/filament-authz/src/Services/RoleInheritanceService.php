@@ -78,7 +78,7 @@ class RoleInheritanceService
      */
     public function getAncestors(Role $role): Collection
     {
-        $cacheKey = self::CACHE_KEY_PREFIX."ancestors:{$role->id}";
+        $cacheKey = self::CACHE_KEY_PREFIX . "ancestors:{$role->id}";
         $ttl = config('filament-authz.cache_ttl', 3600);
 
         if (config('filament-authz.hierarchies.cache_hierarchy', true)) {
@@ -95,7 +95,7 @@ class RoleInheritanceService
      */
     public function getDescendants(Role $role): Collection
     {
-        $cacheKey = self::CACHE_KEY_PREFIX."descendants:{$role->id}";
+        $cacheKey = self::CACHE_KEY_PREFIX . "descendants:{$role->id}";
         $ttl = config('filament-authz.cache_ttl', 3600);
 
         if (config('filament-authz.hierarchies.cache_hierarchy', true)) {
@@ -164,7 +164,7 @@ class RoleInheritanceService
      */
     public function getHierarchyTree(): Collection
     {
-        $cacheKey = self::CACHE_KEY_PREFIX.'tree';
+        $cacheKey = self::CACHE_KEY_PREFIX . 'tree';
         $ttl = config('filament-authz.cache_ttl', 3600);
 
         if (config('filament-authz.hierarchies.cache_hierarchy', true)) {
@@ -213,13 +213,13 @@ class RoleInheritanceService
     public function clearCache(): void
     {
         // Clear tree cache
-        Cache::forget(self::CACHE_KEY_PREFIX.'tree');
+        Cache::forget(self::CACHE_KEY_PREFIX . 'tree');
 
         // Clear individual role caches
         $roles = Role::query()->pluck('id');
         foreach ($roles as $roleId) {
-            Cache::forget(self::CACHE_KEY_PREFIX."ancestors:{$roleId}");
-            Cache::forget(self::CACHE_KEY_PREFIX."descendants:{$roleId}");
+            Cache::forget(self::CACHE_KEY_PREFIX . "ancestors:{$roleId}");
+            Cache::forget(self::CACHE_KEY_PREFIX . "descendants:{$roleId}");
         }
     }
 

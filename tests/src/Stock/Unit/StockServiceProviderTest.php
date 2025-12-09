@@ -39,6 +39,7 @@ test('registers cart integration when enabled', function (): void {
     while ($current !== null) {
         if ($current instanceof CartManagerWithStock) {
             $found = true;
+
             break;
         }
         if (method_exists($current, 'getBaseManager')) {

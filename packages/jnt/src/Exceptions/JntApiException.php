@@ -32,7 +32,7 @@ class JntApiException extends JntException
     public static function orderCreationFailed(string $reason, mixed $response = null): self
     {
         return new self(
-            message: 'Order creation failed: '.$reason,
+            message: 'Order creation failed: ' . $reason,
             errorCode: 'ORDER_CREATE_ERROR',
             apiResponse: $response,
             endpoint: 'order/addOrder'
@@ -58,7 +58,7 @@ class JntApiException extends JntException
     public static function trackingFailed(string $orderId, mixed $response = null): self
     {
         return new self(
-            message: 'Failed to retrieve tracking information for order '.$orderId,
+            message: 'Failed to retrieve tracking information for order ' . $orderId,
             errorCode: 'TRACKING_ERROR',
             apiResponse: $response,
             endpoint: 'logistics/trace'
@@ -71,7 +71,7 @@ class JntApiException extends JntException
     public static function orderQueryFailed(string $orderId, mixed $response = null): self
     {
         return new self(
-            message: 'Failed to query order '.$orderId,
+            message: 'Failed to query order ' . $orderId,
             errorCode: 'ORDER_QUERY_ERROR',
             apiResponse: $response,
             endpoint: 'order/getOrders'
@@ -97,7 +97,7 @@ class JntApiException extends JntException
     public static function invalidApiResponse(string $endpoint, mixed $response): self
     {
         return new self(
-            message: 'Invalid API response format from '.$endpoint,
+            message: 'Invalid API response format from ' . $endpoint,
             errorCode: 'INVALID_RESPONSE',
             apiResponse: $response,
             endpoint: $endpoint
@@ -110,7 +110,7 @@ class JntApiException extends JntException
     public static function rateLimitExceeded(string $endpoint, mixed $response = null): self
     {
         return new self(
-            message: 'Rate limit exceeded for '.$endpoint,
+            message: 'Rate limit exceeded for ' . $endpoint,
             errorCode: 'RATE_LIMIT_EXCEEDED',
             apiResponse: $response,
             endpoint: $endpoint
@@ -123,7 +123,7 @@ class JntApiException extends JntException
     public static function authenticationFailed(string $reason, mixed $response = null): self
     {
         return new self(
-            message: 'API authentication failed: '.$reason,
+            message: 'API authentication failed: ' . $reason,
             errorCode: 'AUTH_ERROR',
             apiResponse: $response
         );

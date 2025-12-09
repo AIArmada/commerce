@@ -70,9 +70,10 @@ final class VoucherForm
                             Select::make('type')
                                 ->label('Type')
                                 ->required()
-                                ->options(static fn (): array => collect(VoucherType::cases())
-                                    ->mapWithKeys(static fn (VoucherType $type): array => [$type->value => $type->label()])
-                                    ->toArray()
+                                ->options(
+                                    static fn (): array => collect(VoucherType::cases())
+                                        ->mapWithKeys(static fn (VoucherType $type): array => [$type->value => $type->label()])
+                                        ->toArray()
                                 ),
 
                             TextInput::make('value')
@@ -84,15 +85,18 @@ final class VoucherForm
                                 ->suffix(fn (Get $get): string => $get('type') === VoucherType::Percentage->value ? '%' : $get('currency') ?? $defaultCurrency)
                                 ->live()
                                 // Convert from cents/basis points to decimal for display
-                                ->formatStateUsing(fn (?int $state, Get $get): ?string => $state !== null
-                                    ? ($get('type') === VoucherType::Percentage->value
+                                ->formatStateUsing(
+                                    fn (?int $state, Get $get): ?string => $state !== null
+                                    ? (
+                                        $get('type') === VoucherType::Percentage->value
                                         ? number_format($state / 100, 2, '.', '') // Basis points to percentage (1000 -> 10.00)
                                         : number_format($state / 100, 2, '.', '') // Cents to currency
                                     )
                                     : null
                                 )
                                 // Convert from decimal input to cents/basis points for storage
-                                ->dehydrateStateUsing(fn (?string $state, Get $get): ?int => $state !== null && $state !== ''
+                                ->dehydrateStateUsing(
+                                    fn (?string $state, Get $get): ?int => $state !== null && $state !== ''
                                     ? (int) round((float) $state * 100) // Multiply by 100 to store as basis points or cents
                                     : null
                                 ),
@@ -160,12 +164,14 @@ final class VoucherForm
                                 ->helperText('Optional minimum subtotal required to redeem')
                                 ->suffix($defaultCurrency)
                                 // Convert from cents to decimal for display
-                                ->formatStateUsing(fn (?int $state): ?string => $state !== null
+                                ->formatStateUsing(
+                                    fn (?int $state): ?string => $state !== null
                                     ? number_format($state / 100, 2, '.', '')
                                     : null
                                 )
                                 // Convert from decimal input to cents for storage
-                                ->dehydrateStateUsing(fn (?string $state): ?int => $state !== null && $state !== ''
+                                ->dehydrateStateUsing(
+                                    fn (?string $state): ?int => $state !== null && $state !== ''
                                     ? (int) round((float) $state * 100)
                                     : null
                                 ),
@@ -176,12 +182,14 @@ final class VoucherForm
                                 ->helperText('Cap the total discount for percentage vouchers')
                                 ->suffix(fn (Get $get): string => $get('currency') ?? $defaultCurrency)
                                 // Convert from cents to decimal for display
-                                ->formatStateUsing(fn (?int $state): ?string => $state !== null
+                                ->formatStateUsing(
+                                    fn (?int $state): ?string => $state !== null
                                     ? number_format($state / 100, 2, '.', '')
                                     : null
                                 )
                                 // Convert from decimal input to cents for storage
-                                ->dehydrateStateUsing(fn (?string $state): ?int => $state !== null && $state !== ''
+                                ->dehydrateStateUsing(
+                                    fn (?string $state): ?int => $state !== null && $state !== ''
                                     ? (int) round((float) $state * 100)
                                     : null
                                 ),
@@ -222,9 +230,10 @@ final class VoucherForm
 
                             Select::make('status')
                                 ->label('Status')
-                                ->options(static fn (): array => collect(VoucherStatus::cases())
-                                    ->mapWithKeys(static fn (VoucherStatus $status): array => [$status->value => $status->label()])
-                                    ->toArray()
+                                ->options(
+                                    static fn (): array => collect(VoucherStatus::cases())
+                                        ->mapWithKeys(static fn (VoucherStatus $status): array => [$status->value => $status->label()])
+                                        ->toArray()
                                 )
                                 ->default(VoucherStatus::Active->value)
                                 ->required(),
@@ -247,7 +256,8 @@ final class VoucherForm
                                 ->live()
                                 ->helperText('Determines which vendor or store can manage this voucher')
                                 // Always save as morph map alias
-                                ->dehydrateStateUsing(static fn (?string $state): ?string => $state !== null && $state !== '' ? Relation::getMorphAlias($state) : null
+                                ->dehydrateStateUsing(
+                                    static fn (?string $state): ?string => $state !== null && $state !== '' ? Relation::getMorphAlias($state) : null
                                 )
                                 // Always load as full class name from morph map alias
                                 ->afterStateHydrated(static function (?string $state, Set $set): void {

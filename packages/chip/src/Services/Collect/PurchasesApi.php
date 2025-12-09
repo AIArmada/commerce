@@ -165,7 +165,7 @@ final class PurchasesApi extends CollectApi
             return $this->fetchPaymentMethods($filters);
         }
 
-        $cacheKey = config('chip.cache.prefix', 'chip:').'payment_methods:'.md5((string) json_encode($filters));
+        $cacheKey = config('chip.cache.prefix', 'chip:') . 'payment_methods:' . md5((string) json_encode($filters));
         $ttl = config('chip.cache.ttl.payment_methods')
             ?? config('chip.cache.default_ttl', 3600);
 
@@ -251,7 +251,7 @@ final class PurchasesApi extends CollectApi
     protected function fetchPaymentMethods(array $filters): array
     {
         $queryString = http_build_query($filters);
-        $endpoint = 'payment_methods/'.($queryString ? '?'.$queryString : '');
+        $endpoint = 'payment_methods/' . ($queryString ? '?' . $queryString : '');
 
         return $this->attempt(
             fn () => $this->client->get($endpoint),

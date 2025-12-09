@@ -17,7 +17,7 @@ beforeEach(function (): void {
 function createAffiliate(array $overrides = []): Affiliate
 {
     return Affiliate::create(array_merge([
-        'code' => 'AFF-'.Str::uuid(),
+        'code' => 'AFF-' . Str::uuid(),
         'name' => 'Partner',
         'description' => null,
         'status' => AffiliateStatus::Draft,

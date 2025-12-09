@@ -28,7 +28,7 @@ final class ClientResource extends BaseChipResource
 {
     protected static ?string $model = Client::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedUsers;
 
     protected static ?string $modelLabel = 'Client';
 

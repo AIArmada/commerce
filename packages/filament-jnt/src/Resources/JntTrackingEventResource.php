@@ -19,7 +19,7 @@ final class JntTrackingEventResource extends BaseJntResource
 {
     protected static ?string $model = JntTrackingEvent::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMapPin;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedMapPin;
 
     protected static ?string $modelLabel = 'Tracking Event';
 

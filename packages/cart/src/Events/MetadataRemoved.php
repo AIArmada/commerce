@@ -21,7 +21,10 @@ use Illuminate\Queue\SerializesModels;
  */
 final class MetadataRemoved implements CartEventInterface
 {
-    use Dispatchable, HasCartEventData, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use HasCartEventData;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * Create a new metadata removed event

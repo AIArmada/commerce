@@ -55,7 +55,7 @@ final class PurchaseBuilder
     public function addProductMoney(
         string $name,
         Money $price,
-        string|float|int $quantity = 1,
+        string | float | int $quantity = 1,
         ?Money $discount = null,
         float $taxPercent = 0,
         ?string $category = null
@@ -136,7 +136,7 @@ final class PurchaseBuilder
     public function addProduct(
         string $name,
         int $price,
-        string|float|int $quantity = 1,
+        string | float | int $quantity = 1,
         int $discount = 0,
         float $taxPercent = 0,
         ?string $category = null

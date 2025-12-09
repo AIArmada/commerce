@@ -28,7 +28,7 @@ class FormMacros
             });
         });
 
-        Field::macro('visibleForRole', function (string|array $roles): static {
+        Field::macro('visibleForRole', function (string | array $roles): static {
             /** @var Field $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
@@ -66,7 +66,7 @@ class FormMacros
             });
         });
 
-        Section::macro('visibleForRole', function (string|array $roles): static {
+        Section::macro('visibleForRole', function (string | array $roles): static {
             /** @var Section $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 

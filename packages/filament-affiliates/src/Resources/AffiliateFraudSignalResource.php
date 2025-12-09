@@ -19,9 +19,9 @@ final class AffiliateFraudSignalResource extends Resource
 {
     protected static ?string $model = AffiliateFraudSignal::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shield-exclamation';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-shield-exclamation';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Affiliates';
+    protected static string | UnitEnum | null $navigationGroup = 'Affiliates';
 
     protected static ?string $navigationLabel = 'Fraud Signals';
 
@@ -103,7 +103,7 @@ final class AffiliateFraudSignalResource extends Resource
 
                 Tables\Columns\TextColumn::make('score')
                     ->label('Score')
-                    ->formatStateUsing(fn ($state) => $state.'%')
+                    ->formatStateUsing(fn ($state) => $state . '%')
                     ->sortable(),
 
                 Tables\Columns\BadgeColumn::make('status')

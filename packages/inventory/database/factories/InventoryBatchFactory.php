@@ -46,7 +46,7 @@ class InventoryBatchFactory extends Factory
     /**
      * Set specific location.
      */
-    public function forLocation(InventoryLocation|string $location): static
+    public function forLocation(InventoryLocation | string $location): static
     {
         return $this->state(fn (array $attributes): array => [
             'location_id' => $location instanceof InventoryLocation ? $location->id : $location,

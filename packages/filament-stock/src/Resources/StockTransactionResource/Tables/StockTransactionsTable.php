@@ -172,7 +172,7 @@ final class StockTransactionsTable
                     return null;
                 }
 
-                return is_numeric($interval) ? $interval.'s' : (string) $interval;
+                return is_numeric($interval) ? $interval . 's' : (string) $interval;
             })
             ->paginated([25, 50, 100])
             ->striped();

@@ -87,8 +87,8 @@ final class VoucherCartStatsWidget extends BaseWidget
                     $query->whereJsonContains('conditions', ['voucher' => $voucher->code]);
 
                     match ($driver) {
-                        'pgsql' => $query->orWhereRaw('conditions::text LIKE ?', ['%"code":"'.$escapedCode.'"%']),
-                        default => $query->orWhereRaw('conditions LIKE ?', ['%"code":"'.$escapedCode.'"%']),
+                        'pgsql' => $query->orWhereRaw('conditions::text LIKE ?', ['%"code":"' . $escapedCode . '"%']),
+                        default => $query->orWhereRaw('conditions LIKE ?', ['%"code":"' . $escapedCode . '"%']),
                     };
                 })
                 ->count();

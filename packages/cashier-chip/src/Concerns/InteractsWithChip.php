@@ -13,7 +13,7 @@ trait InteractsWithChip
     /**
      * Get the CHIP Collect service client.
      */
-    public static function chip(): ChipCollectService|FakeChipCollectService
+    public static function chip(): ChipCollectService | FakeChipCollectService
     {
         return Cashier::chip();
     }

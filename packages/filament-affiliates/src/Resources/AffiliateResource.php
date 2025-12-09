@@ -26,7 +26,7 @@ final class AffiliateResource extends Resource
 
     protected static ?string $tenantOwnershipRelationshipName = 'owner';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedUsers;
 
     protected static ?string $navigationLabel = 'Affiliates';
 
@@ -66,7 +66,7 @@ final class AffiliateResource extends Resource
         ];
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-affiliates.navigation_group');
     }

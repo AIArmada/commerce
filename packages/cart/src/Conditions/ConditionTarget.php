@@ -53,7 +53,7 @@ final class ConditionTarget implements Arrayable, JsonSerializable
             return self::fromArray($target);
         }
 
-        throw new InvalidArgumentException('Unable to build condition target from '.get_debug_type($target));
+        throw new InvalidArgumentException('Unable to build condition target from ' . get_debug_type($target));
     }
 
     /**
@@ -170,7 +170,7 @@ final class ConditionTarget implements Arrayable, JsonSerializable
         $filters = $this->selector?->toDslFilters();
 
         if ($filters !== null && $filters !== '') {
-            $scopeSegment .= ':'.$filters;
+            $scopeSegment .= ':' . $filters;
         }
 
         $phaseSegment = $this->phase->value;

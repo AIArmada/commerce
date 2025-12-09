@@ -89,7 +89,7 @@ class RenewSubscriptionsCommand extends Command
             $this->line("Processing: {$subscription->type} for {$owner->chipEmail()}");
 
             if ($dryRun) {
-                $this->info('  → Would charge: '.$this->formatAmount($subscription));
+                $this->info('  → Would charge: ' . $this->formatAmount($subscription));
                 $renewed++;
 
                 continue;

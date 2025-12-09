@@ -85,7 +85,7 @@ class FlatRateShippingDriver implements ShippingDriverInterface
     {
         return new ShipmentResultData(
             success: true,
-            trackingNumber: 'FLAT-'.mb_strtoupper(uniqid()),
+            trackingNumber: 'FLAT-' . mb_strtoupper(uniqid()),
             requiresManualFulfillment: true,
         );
     }

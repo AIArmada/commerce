@@ -99,7 +99,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function total(): string
     {
-        return number_format($this->rawTotal() / 100, 2).' '.mb_strtoupper($this->currency());
+        return number_format($this->rawTotal() / 100, 2) . ' ' . mb_strtoupper($this->currency());
     }
 
     /**
@@ -117,7 +117,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function subtotal(): string
     {
-        return number_format($this->rawSubtotal() / 100, 2).' '.mb_strtoupper($this->currency());
+        return number_format($this->rawSubtotal() / 100, 2) . ' ' . mb_strtoupper($this->currency());
     }
 
     /**
@@ -135,7 +135,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function tax(): string
     {
-        return number_format($this->rawTax() / 100, 2).' '.mb_strtoupper($this->currency());
+        return number_format($this->rawTax() / 100, 2) . ' ' . mb_strtoupper($this->currency());
     }
 
     /**

@@ -16,7 +16,7 @@ return new class extends Migration
         $database = config('stock.database', []);
         $tablePrefix = $database['table_prefix'] ?? 'stock_';
         $tables = $database['tables'] ?? [];
-        $tableName = $tables['transactions'] ?? $tablePrefix.'transactions';
+        $tableName = $tables['transactions'] ?? $tablePrefix . 'transactions';
 
         Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
@@ -33,9 +33,9 @@ return new class extends Migration
             $table->index('reason');
             $table->index('transaction_date');
             $table->index('user_id');
-            $table->index(['stockable_type', 'stockable_id', 'type'], $tableName.'_stockable_type_idx');
-            $table->index(['stockable_type', 'stockable_id', 'transaction_date'], $tableName.'_stockable_history_idx');
-            $table->index(['user_id', 'transaction_date'], $tableName.'_user_history_idx');
+            $table->index(['stockable_type', 'stockable_id', 'type'], $tableName . '_stockable_type_idx');
+            $table->index(['stockable_type', 'stockable_id', 'transaction_date'], $tableName . '_stockable_history_idx');
+            $table->index(['user_id', 'transaction_date'], $tableName . '_user_history_idx');
         });
     }
 
@@ -48,6 +48,6 @@ return new class extends Migration
         $tablePrefix = $database['table_prefix'] ?? 'stock_';
         $tables = $database['tables'] ?? [];
 
-        Schema::dropIfExists($tables['transactions'] ?? $tablePrefix.'transactions');
+        Schema::dropIfExists($tables['transactions'] ?? $tablePrefix . 'transactions');
     }
 };

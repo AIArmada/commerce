@@ -23,9 +23,9 @@ final class SubscriptionItemFactory extends Factory
     {
         return [
             'subscription_id' => Subscription::factory(),
-            'chip_id' => 'si_'.Str::random(40),
-            'chip_product' => 'prod_'.Str::random(24),
-            'chip_price' => 'price_'.Str::random(24),
+            'chip_id' => 'si_' . Str::random(40),
+            'chip_product' => 'prod_' . Str::random(24),
+            'chip_price' => 'price_' . Str::random(24),
             'quantity' => 1,
             'unit_amount' => $this->faker->numberBetween(1000, 10000),
         ];

@@ -59,7 +59,8 @@ final class VoucherUsagesTable
                 TextColumn::make('redeemedBy.order_number')
                     ->label('Order Number')
                     ->toggleable()
-                    ->formatStateUsing(fn ($state, VoucherUsage $record) => $record->redeemed_by_type === 'order' ? $state : null
+                    ->formatStateUsing(
+                        fn ($state, VoucherUsage $record) => $record->redeemed_by_type === 'order' ? $state : null
                     )
                     ->url(function (VoucherUsage $record): ?string {
                         if ($record->redeemed_by_type !== 'order' || ! $record->redeemedBy) {

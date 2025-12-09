@@ -20,7 +20,7 @@ final class StockReservationResource extends Resource
 {
     protected static ?string $model = StockReservation::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClock;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedClock;
 
     protected static ?string $recordTitleAttribute = 'id';
 
@@ -76,7 +76,7 @@ final class StockReservationResource extends Resource
         return $count > 0 ? 'warning' : 'success';
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-stock.navigation_group');
     }

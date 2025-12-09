@@ -28,7 +28,7 @@ class AuditLogPage extends Page
     /** @var Collection<int, PermissionAuditLog> */
     public Collection $logs;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-clipboard-document-list';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-clipboard-document-list';
 
     protected string $view = 'filament-authz::pages.audit-log';
 
@@ -99,7 +99,7 @@ class AuditLogPage extends Page
 
         return response()->streamDownload(function () use ($csv): void {
             echo $csv;
-        }, 'audit-log-'.now()->format('Y-m-d').'.csv');
+        }, 'audit-log-' . now()->format('Y-m-d') . '.csv');
     }
 
     /**

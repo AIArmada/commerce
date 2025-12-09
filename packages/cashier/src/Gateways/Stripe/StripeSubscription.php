@@ -258,7 +258,7 @@ class StripeSubscription implements SubscriptionContract
      *
      * @param  array<string, mixed>  $options
      */
-    public function swap(string|array $prices, array $options = []): static
+    public function swap(string | array $prices, array $options = []): static
     {
         $this->subscription->swap($prices, $options);
 

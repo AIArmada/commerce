@@ -305,7 +305,7 @@ class PermissionImpactAnalyzer
             ImpactLevel::Critical => 'Critical impact - approval required:',
         };
 
-        return $prefix.' '.implode(', ', $parts);
+        return $prefix . ' ' . implode(', ', $parts);
     }
 
     /**
@@ -319,7 +319,7 @@ class PermissionImpactAnalyzer
             $parts[] = "{$childCount} child role(s) will be orphaned";
         }
 
-        return $this->generateReasoning($level, $userCount, 1).'. '.implode('. ', $parts);
+        return $this->generateReasoning($level, $userCount, 1) . '. ' . implode('. ', $parts);
     }
 
     /**

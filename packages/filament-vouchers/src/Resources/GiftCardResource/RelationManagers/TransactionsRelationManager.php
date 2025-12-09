@@ -25,7 +25,7 @@ final class TransactionsRelationManager extends RelationManager
                 TextColumn::make('type')
                     ->label('Type')
                     ->badge()
-                    ->color(static fn (GiftCardTransactionType|string $state): string => match ($state instanceof GiftCardTransactionType ? $state : GiftCardTransactionType::from($state)) {
+                    ->color(static fn (GiftCardTransactionType | string $state): string => match ($state instanceof GiftCardTransactionType ? $state : GiftCardTransactionType::from($state)) {
                         GiftCardTransactionType::Issue => 'info',
                         GiftCardTransactionType::Activate => 'success',
                         GiftCardTransactionType::TopUp => 'success',
@@ -36,7 +36,7 @@ final class TransactionsRelationManager extends RelationManager
                         GiftCardTransactionType::Merge => 'info',
                         GiftCardTransactionType::Adjustment => 'gray',
                     })
-                    ->formatStateUsing(static fn (GiftCardTransactionType|string $state): string => $state instanceof GiftCardTransactionType ? $state->label() : GiftCardTransactionType::from($state)->label()),
+                    ->formatStateUsing(static fn (GiftCardTransactionType | string $state): string => $state instanceof GiftCardTransactionType ? $state->label() : GiftCardTransactionType::from($state)->label()),
 
                 TextColumn::make('amount')
                     ->label('Amount')
@@ -45,7 +45,7 @@ final class TransactionsRelationManager extends RelationManager
                         $giftCard = $record->giftCard;
                         $formatted = (string) Money::{$giftCard->currency}(abs($state));
 
-                        return $state >= 0 ? '+'.$formatted : '-'.$formatted;
+                        return $state >= 0 ? '+' . $formatted : '-' . $formatted;
                     })
                     ->color(static fn (int $state): string => $state >= 0 ? 'success' : 'danger')
                     ->alignEnd(),

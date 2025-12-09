@@ -13,7 +13,8 @@ use Illuminate\Queue\SerializesModels;
  */
 final class OutOfStock
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
+    use SerializesModels;
 
     public function __construct(
         public readonly Model $stockable

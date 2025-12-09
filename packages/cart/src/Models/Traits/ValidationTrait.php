@@ -60,14 +60,16 @@ trait ValidationTrait
     private function validateDataSize(array $data, string $type): void
     {
         $maxDataSize = config('cart.limits.max_data_size_bytes', 1024 * 1024); // 1MB default
+
         try {
             $jsonSize = mb_strlen(json_encode($data, JSON_THROW_ON_ERROR));
             if ($jsonSize > $maxDataSize) {
                 $maxSizeMB = round($maxDataSize / (1024 * 1024), 2);
+
                 throw new InvalidCartItemException("Cart item {$type} data size ({$jsonSize} bytes) exceeds maximum allowed size of {$maxSizeMB}MB");
             }
         } catch (JsonException $e) {
-            throw new InvalidCartItemException("Cannot validate {$type} data size: ".$e->getMessage());
+            throw new InvalidCartItemException("Cannot validate {$type} data size: " . $e->getMessage());
         }
     }
 }

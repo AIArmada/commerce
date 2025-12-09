@@ -20,7 +20,7 @@ interface SubscriptionBuilderContract
     /**
      * Set a price on the subscription.
      */
-    public function price(string|array $price, ?int $quantity = 1): self;
+    public function price(string | array $price, ?int $quantity = 1): self;
 
     /**
      * Set the quantity.
@@ -70,7 +70,7 @@ interface SubscriptionBuilderContract
     /**
      * Anchor the billing cycle to a date.
      */
-    public function anchorBillingCycleOn(DateTimeInterface|CarbonInterface $date): self;
+    public function anchorBillingCycleOn(DateTimeInterface | CarbonInterface $date): self;
 
     /**
      * Set the coupon/promotion code.

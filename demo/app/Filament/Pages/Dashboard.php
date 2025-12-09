@@ -10,7 +10,7 @@ use Filament\Support\Icons\Heroicon;
 
 final class Dashboard extends BaseDashboard
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::Home;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::Home;
 
     protected static ?int $navigationSort = -2;
 

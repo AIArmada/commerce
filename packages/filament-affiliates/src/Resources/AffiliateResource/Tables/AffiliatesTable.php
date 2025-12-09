@@ -38,14 +38,14 @@ final class AffiliatesTable
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn (AffiliateStatus|string $state): string => match ($state instanceof AffiliateStatus ? $state : AffiliateStatus::from($state)) {
+                    ->color(fn (AffiliateStatus | string $state): string => match ($state instanceof AffiliateStatus ? $state : AffiliateStatus::from($state)) {
                         AffiliateStatus::Active => 'success',
                         AffiliateStatus::Pending => 'warning',
                         AffiliateStatus::Paused => 'gray',
                         AffiliateStatus::Disabled => 'danger',
                         default => 'info',
                     })
-                    ->formatStateUsing(fn (AffiliateStatus|string $state): string => $state instanceof AffiliateStatus ? $state->label() : AffiliateStatus::from($state)->label())
+                    ->formatStateUsing(fn (AffiliateStatus | string $state): string => $state instanceof AffiliateStatus ? $state->label() : AffiliateStatus::from($state)->label())
                     ->sortable(),
 
                 TextColumn::make('commission_rate')
@@ -58,7 +58,7 @@ final class AffiliatesTable
                         $value = (int) $record->commission_rate;
 
                         return $type === CommissionType::Percentage
-                            ? number_format($value / 100, 2).' %'
+                            ? number_format($value / 100, 2) . ' %'
                             : sprintf('%s %.2f', $record->currency, $value / 100);
                     })
                     ->badge()

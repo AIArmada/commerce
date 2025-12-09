@@ -45,7 +45,7 @@ final class GiftCardStatsWidget extends StatsOverviewWidget
                 ->description('Amount used')
                 ->color('warning'),
 
-            Stat::make('Utilization', number_format($record->balance_utilization, 1).'%')
+            Stat::make('Utilization', number_format($record->balance_utilization, 1) . '%')
                 ->description('Of initial balance used'),
 
             Stat::make('Transactions', (string) $transactionCount)
@@ -66,7 +66,7 @@ final class GiftCardStatsWidget extends StatsOverviewWidget
 
         return [
             Stat::make('Total Gift Cards', (string) $stats['total_cards'])
-                ->description($stats['active_cards'].' active'),
+                ->description($stats['active_cards'] . ' active'),
 
             Stat::make('Total Issued', (string) Money::{$currency}($stats['total_issued_cents']))
                 ->description('Value issued'),
@@ -75,7 +75,7 @@ final class GiftCardStatsWidget extends StatsOverviewWidget
                 ->description('Unredeemed balance')
                 ->color('success'),
 
-            Stat::make('Redemption Rate', number_format($stats['redemption_rate'], 1).'%')
+            Stat::make('Redemption Rate', number_format($stats['redemption_rate'], 1) . '%')
                 ->description('Of issued value redeemed'),
         ];
     }

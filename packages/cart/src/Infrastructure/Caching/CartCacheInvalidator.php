@@ -36,20 +36,20 @@ final class CartCacheInvalidator
     /**
      * Invalidate all cached data for a specific cart.
      */
-    public function invalidateCart(string $identifier, string $instance, ?string $ownerType = null, string|int|null $ownerId = null): void
+    public function invalidateCart(string $identifier, string $instance, ?string $ownerType = null, string | int | null $ownerId = null): void
     {
         $ownerPart = '';
         if ($ownerType !== null && $ownerId !== null) {
-            $ownerPart = ':'.$ownerType.':'.$ownerId;
+            $ownerPart = ':' . $ownerType . ':' . $ownerId;
         }
 
         foreach (self::CACHE_KEYS as $key) {
-            $cacheKey = self::CACHE_PREFIX.$identifier.':'.$instance.$ownerPart.':'.$key;
+            $cacheKey = self::CACHE_PREFIX . $identifier . ':' . $instance . $ownerPart . ':' . $key;
             $this->cache->forget($cacheKey);
         }
 
         // Also invalidate instances cache
-        $this->cache->forget(self::CACHE_PREFIX.$identifier.':*'.$ownerPart.':instances');
+        $this->cache->forget(self::CACHE_PREFIX . $identifier . ':*' . $ownerPart . ':instances');
 
         Log::debug('Cart cache invalidated', [
             'identifier' => $identifier,
@@ -64,15 +64,15 @@ final class CartCacheInvalidator
      *
      * @param  array<string>  $keys
      */
-    public function invalidateKeys(string $identifier, string $instance, array $keys, ?string $ownerType = null, string|int|null $ownerId = null): void
+    public function invalidateKeys(string $identifier, string $instance, array $keys, ?string $ownerType = null, string | int | null $ownerId = null): void
     {
         $ownerPart = '';
         if ($ownerType !== null && $ownerId !== null) {
-            $ownerPart = ':'.$ownerType.':'.$ownerId;
+            $ownerPart = ':' . $ownerType . ':' . $ownerId;
         }
 
         foreach ($keys as $key) {
-            $cacheKey = self::CACHE_PREFIX.$identifier.':'.$instance.$ownerPart.':'.$key;
+            $cacheKey = self::CACHE_PREFIX . $identifier . ':' . $instance . $ownerPart . ':' . $key;
             $this->cache->forget($cacheKey);
         }
     }
@@ -82,7 +82,7 @@ final class CartCacheInvalidator
      *
      * @param  array<string>  $instances
      */
-    public function invalidateIdentifier(string $identifier, array $instances = [], ?string $ownerType = null, string|int|null $ownerId = null): void
+    public function invalidateIdentifier(string $identifier, array $instances = [], ?string $ownerType = null, string | int | null $ownerId = null): void
     {
         foreach ($instances as $instance) {
             $this->invalidateCart($identifier, $instance, $ownerType, $ownerId);
@@ -91,16 +91,16 @@ final class CartCacheInvalidator
         // Invalidate the instances list itself
         $ownerPart = '';
         if ($ownerType !== null && $ownerId !== null) {
-            $ownerPart = ':'.$ownerType.':'.$ownerId;
+            $ownerPart = ':' . $ownerType . ':' . $ownerId;
         }
 
-        $this->cache->forget(self::CACHE_PREFIX.$identifier.':*'.$ownerPart.':instances');
+        $this->cache->forget(self::CACHE_PREFIX . $identifier . ':*' . $ownerPart . ':instances');
     }
 
     /**
      * Invalidate items cache (after add/remove/update).
      */
-    public function invalidateItems(string $identifier, string $instance, ?string $ownerType = null, string|int|null $ownerId = null): void
+    public function invalidateItems(string $identifier, string $instance, ?string $ownerType = null, string | int | null $ownerId = null): void
     {
         $this->invalidateKeys($identifier, $instance, ['items', 'version'], $ownerType, $ownerId);
     }
@@ -108,7 +108,7 @@ final class CartCacheInvalidator
     /**
      * Invalidate conditions cache (after condition changes).
      */
-    public function invalidateConditions(string $identifier, string $instance, ?string $ownerType = null, string|int|null $ownerId = null): void
+    public function invalidateConditions(string $identifier, string $instance, ?string $ownerType = null, string | int | null $ownerId = null): void
     {
         $this->invalidateKeys($identifier, $instance, ['conditions', 'version'], $ownerType, $ownerId);
     }
@@ -116,7 +116,7 @@ final class CartCacheInvalidator
     /**
      * Invalidate metadata cache (after metadata changes).
      */
-    public function invalidateMetadata(string $identifier, string $instance, ?string $ownerType = null, string|int|null $ownerId = null): void
+    public function invalidateMetadata(string $identifier, string $instance, ?string $ownerType = null, string | int | null $ownerId = null): void
     {
         $this->invalidateKeys($identifier, $instance, ['metadata', 'version'], $ownerType, $ownerId);
     }

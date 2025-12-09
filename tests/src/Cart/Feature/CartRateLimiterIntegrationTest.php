@@ -26,6 +26,7 @@ it('blocks cart add operation when rate limit exceeded via integrated cart', fun
             $itemsAdded++;
         } catch (RateLimitExceededException) {
             $blocked = true;
+
             break;
         }
     }
@@ -56,6 +57,7 @@ it('allows different users to add items independently', function (): void {
 
     // User 1 should be blocked
     $user1Blocked = false;
+
     try {
         $cart1->add('item-3', 'Product 3', 1000, 1);
     } catch (RateLimitExceededException) {

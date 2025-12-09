@@ -16,7 +16,7 @@ class TableComponentMacros
             return $this->visible(fn (): bool => auth()->user()?->can($permission) ?? false);
         });
 
-        Column::macro('requiresRole', function (string|array $roles): static {
+        Column::macro('requiresRole', function (string | array $roles): static {
             /** @var Column $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
@@ -28,7 +28,7 @@ class TableComponentMacros
             return $this->visible(fn (): bool => auth()->user()?->can($permission) ?? false);
         });
 
-        BaseFilter::macro('requiresRole', function (string|array $roles): static {
+        BaseFilter::macro('requiresRole', function (string | array $roles): static {
             /** @var BaseFilter $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 

@@ -27,7 +27,7 @@ final readonly class DatabaseStorage implements StorageInterface
         private string $table = 'carts',
         private ?int $ttl = null,
         private ?string $ownerType = null,
-        private string|int|null $ownerId = null,
+        private string | int | null $ownerId = null,
     ) {}
 
     /**
@@ -55,7 +55,7 @@ final readonly class DatabaseStorage implements StorageInterface
     /**
      * Get the current owner ID.
      */
-    public function getOwnerId(): string|int|null
+    public function getOwnerId(): string | int | null
     {
         return $this->ownerId;
     }
@@ -647,10 +647,11 @@ final readonly class DatabaseStorage implements StorageInterface
             $jsonSize = mb_strlen(json_encode($data, JSON_THROW_ON_ERROR));
             if ($jsonSize > $maxDataSize) {
                 $maxSizeMB = round($maxDataSize / (1024 * 1024), 2);
+
                 throw new InvalidArgumentException("Cart {$type} data size ({$jsonSize} bytes) exceeds maximum allowed size of {$maxSizeMB}MB");
             }
         } catch (JsonException $e) {
-            throw new InvalidArgumentException("Cannot validate {$type} data size: ".$e->getMessage());
+            throw new InvalidArgumentException("Cannot validate {$type} data size: " . $e->getMessage());
         }
     }
 
@@ -721,7 +722,7 @@ final readonly class DatabaseStorage implements StorageInterface
         try {
             return json_encode($data, JSON_THROW_ON_ERROR);
         } catch (JsonException $e) {
-            throw new InvalidArgumentException("Cannot encode {$type} to JSON: ".$e->getMessage());
+            throw new InvalidArgumentException("Cannot encode {$type} to JSON: " . $e->getMessage());
         }
     }
 

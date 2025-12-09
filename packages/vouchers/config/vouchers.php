@@ -5,17 +5,17 @@ declare(strict_types=1);
 $tablePrefix = env('VOUCHERS_TABLE_PREFIX', env('COMMERCE_TABLE_PREFIX', ''));
 
 $tables = [
-    'vouchers' => $tablePrefix.'vouchers',
-    'voucher_usage' => $tablePrefix.'voucher_usage',
-    'voucher_wallets' => $tablePrefix.'voucher_wallets',
-    'voucher_assignments' => $tablePrefix.'voucher_assignments',
-    'voucher_transactions' => $tablePrefix.'voucher_transactions',
-    'campaigns' => $tablePrefix.'voucher_campaigns',
-    'campaign_variants' => $tablePrefix.'voucher_campaign_variants',
-    'campaign_events' => $tablePrefix.'voucher_campaign_events',
-    'gift_cards' => $tablePrefix.'gift_cards',
-    'gift_card_transactions' => $tablePrefix.'gift_card_transactions',
-    'voucher_fraud_signals' => $tablePrefix.'voucher_fraud_signals',
+    'vouchers' => $tablePrefix . 'vouchers',
+    'voucher_usage' => $tablePrefix . 'voucher_usage',
+    'voucher_wallets' => $tablePrefix . 'voucher_wallets',
+    'voucher_assignments' => $tablePrefix . 'voucher_assignments',
+    'voucher_transactions' => $tablePrefix . 'voucher_transactions',
+    'campaigns' => $tablePrefix . 'voucher_campaigns',
+    'campaign_variants' => $tablePrefix . 'voucher_campaign_variants',
+    'campaign_events' => $tablePrefix . 'voucher_campaign_events',
+    'gift_cards' => $tablePrefix . 'gift_cards',
+    'gift_card_transactions' => $tablePrefix . 'gift_card_transactions',
+    'voucher_fraud_signals' => $tablePrefix . 'voucher_fraud_signals',
 ];
 
 return [

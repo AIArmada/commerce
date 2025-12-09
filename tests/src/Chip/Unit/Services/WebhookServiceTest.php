@@ -93,7 +93,7 @@ describe('WebhookService', function (): void {
     });
 
     it('retrieves and caches public keys from the collect service', function (): void {
-        Cache::forget(config('chip.cache.prefix').'public_key');
+        Cache::forget(config('chip.cache.prefix') . 'public_key');
 
         // Clear the company_public_key to force API fetch
         config(['chip.webhooks.company_public_key' => null]);

@@ -13,7 +13,7 @@ final class LatestOrders extends BaseWidget
 {
     protected static ?int $sort = -1;
 
-    protected int|string|array $columnSpan = [
+    protected int | string | array $columnSpan = [
         'default' => 'full',
         // 'lg' => 1,
     ];

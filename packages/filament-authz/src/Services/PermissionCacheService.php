@@ -43,7 +43,7 @@ class PermissionCacheService
         }
 
         return $this->cache->remember(
-            self::PREFIX.$key,
+            self::PREFIX . $key,
             $this->ttl,
             $callback
         );
@@ -101,8 +101,8 @@ class PermissionCacheService
      */
     public function forgetUser($user): void
     {
-        $this->cache->forget(self::PREFIX."user:{$user->getKey()}:permissions");
-        $this->cache->forget(self::PREFIX."user:{$user->getKey()}:roles");
+        $this->cache->forget(self::PREFIX . "user:{$user->getKey()}:permissions");
+        $this->cache->forget(self::PREFIX . "user:{$user->getKey()}:roles");
     }
 
     /**
@@ -110,7 +110,7 @@ class PermissionCacheService
      */
     public function forgetRole(Role $role): void
     {
-        $this->cache->forget(self::PREFIX."role:{$role->id}:permissions");
+        $this->cache->forget(self::PREFIX . "role:{$role->id}:permissions");
     }
 
     /**
@@ -118,7 +118,7 @@ class PermissionCacheService
      */
     public function forgetPermission(Permission $permission): void
     {
-        $this->cache->forget(self::PREFIX."permission:{$permission->id}");
+        $this->cache->forget(self::PREFIX . "permission:{$permission->id}");
     }
 
     /**
@@ -132,18 +132,18 @@ class PermissionCacheService
             ->pluck('model_id');
 
         foreach ($users as $userId) {
-            $this->cache->forget(self::PREFIX."user:{$userId}:permissions");
-            $this->cache->forget(self::PREFIX."user:{$userId}:roles");
+            $this->cache->forget(self::PREFIX . "user:{$userId}:permissions");
+            $this->cache->forget(self::PREFIX . "user:{$userId}:roles");
         }
 
         // Flush role caches
         $roles = Role::all();
         foreach ($roles as $role) {
-            $this->cache->forget(self::PREFIX."role:{$role->id}:permissions");
+            $this->cache->forget(self::PREFIX . "role:{$role->id}:permissions");
         }
 
         // Flush hierarchy cache
-        $this->cache->forget(self::PREFIX.'hierarchy:tree');
+        $this->cache->forget(self::PREFIX . 'hierarchy:tree');
     }
 
     /**

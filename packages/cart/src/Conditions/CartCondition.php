@@ -16,7 +16,7 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
 
     private ?PercentageRate $percentageRate = null;
 
-    private string|int $value;
+    private string | int $value;
 
     /**
      * @param  array<string, mixed>  $attributes
@@ -26,8 +26,8 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     public function __construct(
         private string $name,
         private string $type,
-        ConditionTarget|string|array $target,
-        string|int|float $value,
+        ConditionTarget | string | array $target,
+        string | int | float $value,
         private array $attributes = [],
         private int $order = 0,
         private ?array $rules = null,
@@ -103,7 +103,7 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     /**
      * Get condition value
      */
-    public function getValue(): string|int
+    public function getValue(): string | int
     {
         return $this->value;
     }
@@ -382,7 +382,7 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
      * Float values (non-percentage) are converted to int cents.
      * String values (percentages or with operators) are kept as strings.
      */
-    private function normalizeValue(string|int|float $value): string|int
+    private function normalizeValue(string | int | float $value): string | int
     {
         if (is_string($value)) {
             return $value;

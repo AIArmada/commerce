@@ -61,6 +61,6 @@ final class CreateShipment
     {
         $prefix = config('shipping.reference_prefix', 'SHP-');
 
-        return $prefix.Str::upper(Str::random(10));
+        return $prefix . Str::upper(Str::random(10));
     }
 }

@@ -47,7 +47,7 @@ final class CachedCartRepository implements StorageInterface
         return $this->storage->getOwnerType();
     }
 
-    public function getOwnerId(): string|int|null
+    public function getOwnerId(): string | int | null
     {
         return $this->storage->getOwnerId();
     }
@@ -367,10 +367,10 @@ final class CachedCartRepository implements StorageInterface
     {
         $ownerPart = '';
         if ($this->getOwnerType() !== null && $this->getOwnerId() !== null) {
-            $ownerPart = ':'.$this->getOwnerType().':'.$this->getOwnerId();
+            $ownerPart = ':' . $this->getOwnerType() . ':' . $this->getOwnerId();
         }
 
-        return self::CACHE_PREFIX.$identifier.':'.$instance.$ownerPart.':'.$property;
+        return self::CACHE_PREFIX . $identifier . ':' . $instance . $ownerPart . ':' . $property;
     }
 
     /**

@@ -93,7 +93,7 @@ final class CampaignsTable
 
                         $percentage = ($record->spent_cents / $record->budget_cents) * 100;
 
-                        return number_format($percentage, 1).'% used';
+                        return number_format($percentage, 1) . '% used';
                     }),
 
                 TextColumn::make('redemptions_display')
@@ -147,23 +147,26 @@ final class CampaignsTable
             ->filters([
                 SelectFilter::make('type')
                     ->label('Campaign Type')
-                    ->options(static fn (): array => collect(CampaignType::cases())
-                        ->mapWithKeys(fn (CampaignType $type): array => [$type->value => $type->label()])
-                        ->toArray()
+                    ->options(
+                        static fn (): array => collect(CampaignType::cases())
+                            ->mapWithKeys(fn (CampaignType $type): array => [$type->value => $type->label()])
+                            ->toArray()
                     ),
 
                 SelectFilter::make('status')
                     ->label('Status')
-                    ->options(static fn (): array => collect(CampaignStatus::cases())
-                        ->mapWithKeys(fn (CampaignStatus $status): array => [$status->value => $status->label()])
-                        ->toArray()
+                    ->options(
+                        static fn (): array => collect(CampaignStatus::cases())
+                            ->mapWithKeys(fn (CampaignStatus $status): array => [$status->value => $status->label()])
+                            ->toArray()
                     ),
 
                 SelectFilter::make('objective')
                     ->label('Objective')
-                    ->options(static fn (): array => collect(CampaignObjective::cases())
-                        ->mapWithKeys(fn (CampaignObjective $obj): array => [$obj->value => $obj->label()])
-                        ->toArray()
+                    ->options(
+                        static fn (): array => collect(CampaignObjective::cases())
+                            ->mapWithKeys(fn (CampaignObjective $obj): array => [$obj->value => $obj->label()])
+                            ->toArray()
                     ),
 
                 Filter::make('ab_testing')
@@ -172,25 +175,29 @@ final class CampaignsTable
 
                 Filter::make('active_now')
                     ->label('Active Now')
-                    ->query(static fn (Builder $query): Builder => $query
-                        ->where('status', CampaignStatus::Active->value)
-                        ->where(fn (Builder $q): Builder => $q
-                            ->whereNull('starts_at')
-                            ->orWhere('starts_at', '<=', now())
-                        )
-                        ->where(fn (Builder $q): Builder => $q
-                            ->whereNull('ends_at')
-                            ->orWhere('ends_at', '>=', now())
-                        )
+                    ->query(
+                        static fn (Builder $query): Builder => $query
+                            ->where('status', CampaignStatus::Active->value)
+                            ->where(
+                                fn (Builder $q): Builder => $q
+                                    ->whereNull('starts_at')
+                                    ->orWhere('starts_at', '<=', now())
+                            )
+                            ->where(
+                                fn (Builder $q): Builder => $q
+                                    ->whereNull('ends_at')
+                                    ->orWhere('ends_at', '>=', now())
+                            )
                     ),
 
                 Filter::make('has_budget_remaining')
                     ->label('Has Budget Remaining')
-                    ->query(static fn (Builder $query): Builder => $query
-                        ->where(static function (Builder $q): void {
-                            $q->whereNull('budget_cents')
-                                ->orWhereRaw('spent_cents < budget_cents');
-                        })
+                    ->query(
+                        static fn (Builder $query): Builder => $query
+                            ->where(static function (Builder $q): void {
+                                $q->whereNull('budget_cents')
+                                    ->orWhereRaw('spent_cents < budget_cents');
+                            })
                     ),
             ])
             ->actions([
@@ -234,7 +241,7 @@ final class CampaignsTable
                     return null;
                 }
 
-                return is_numeric($interval) ? $interval.'s' : (string) $interval;
+                return is_numeric($interval) ? $interval . 's' : (string) $interval;
             })
             ->paginated([25, 50, 100])
             ->striped();

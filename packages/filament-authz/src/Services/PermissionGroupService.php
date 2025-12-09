@@ -132,7 +132,7 @@ class PermissionGroupService
      */
     public function getGroupPermissions(PermissionGroup $group, bool $includeInherited = true): Collection
     {
-        $cacheKey = self::CACHE_KEY_PREFIX."permissions:{$group->id}:".($includeInherited ? 'inherited' : 'direct');
+        $cacheKey = self::CACHE_KEY_PREFIX . "permissions:{$group->id}:" . ($includeInherited ? 'inherited' : 'direct');
         $ttl = config('filament-authz.cache_ttl', 3600);
 
         return Cache::remember($cacheKey, $ttl, function () use ($group, $includeInherited): Collection {
@@ -164,7 +164,7 @@ class PermissionGroupService
      */
     public function getHierarchyTree(): Collection
     {
-        $cacheKey = self::CACHE_KEY_PREFIX.'hierarchy_tree';
+        $cacheKey = self::CACHE_KEY_PREFIX . 'hierarchy_tree';
         $ttl = config('filament-authz.cache_ttl', 3600);
 
         return Cache::remember($cacheKey, $ttl, function (): Collection {
@@ -258,7 +258,7 @@ class PermissionGroupService
      */
     public function clearCache(): void
     {
-        Cache::forget(self::CACHE_KEY_PREFIX.'hierarchy_tree');
+        Cache::forget(self::CACHE_KEY_PREFIX . 'hierarchy_tree');
         // Note: Individual group permission caches will expire naturally
     }
 

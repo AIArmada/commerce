@@ -67,7 +67,7 @@ trait HasInventoryEventData
     /**
      * Get the inventoryable model ID.
      */
-    public function getInventoryableId(): string|int
+    public function getInventoryableId(): string | int
     {
         if (property_exists($this, 'inventoryable') && $this->inventoryable instanceof Model) {
             return $this->inventoryable->getKey();

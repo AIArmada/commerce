@@ -12,7 +12,7 @@ use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class DocDownloadController
 {
-    public function __invoke(Doc $doc): BinaryFileResponse|StreamedResponse
+    public function __invoke(Doc $doc): BinaryFileResponse | StreamedResponse
     {
         if ($doc->pdf_path === null) {
             throw new NotFoundHttpException('PDF not found for this document.');

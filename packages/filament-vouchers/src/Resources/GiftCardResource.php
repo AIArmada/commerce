@@ -24,7 +24,7 @@ final class GiftCardResource extends Resource
 {
     protected static ?string $model = GiftCard::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedGift;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedGift;
 
     protected static ?string $recordTitleAttribute = 'code';
 
@@ -78,7 +78,7 @@ final class GiftCardResource extends Resource
         return 'success';
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-vouchers.navigation_group');
     }

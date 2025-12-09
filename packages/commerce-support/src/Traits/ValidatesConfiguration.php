@@ -32,7 +32,7 @@ trait ValidatesConfiguration
 
             if ($value === null) {
                 throw new RuntimeException(
-                    "Required configuration key [{$fullKey}] is not set. ".
+                    "Required configuration key [{$fullKey}] is not set. " .
                     "Please publish the configuration file with: php artisan vendor:publish --tag={$configFile}-config"
                 );
             }

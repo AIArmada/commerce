@@ -40,7 +40,7 @@ class ActionMacros
                 });
         });
 
-        Action::macro('requiresRole', function (string|array $roles): static {
+        Action::macro('requiresRole', function (string | array $roles): static {
             /** @var Action $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
@@ -102,7 +102,7 @@ class ActionMacros
                 });
         });
 
-        Action::macro('requiresTeamPermission', function (string $permission, string|int $teamId): static {
+        Action::macro('requiresTeamPermission', function (string $permission, string | int $teamId): static {
             /** @var Action $this */
             /** @phpstan-ignore return.type */
             return $this

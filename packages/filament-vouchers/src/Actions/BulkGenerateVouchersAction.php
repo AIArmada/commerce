@@ -88,11 +88,11 @@ final class BulkGenerateVouchersAction extends Action
             $created = 0;
 
             for ($i = 0; $i < $count; $i++) {
-                $code = mb_strtoupper($data['prefix']).'-'.mb_strtoupper(Str::random(6));
+                $code = mb_strtoupper($data['prefix']) . '-' . mb_strtoupper(Str::random(6));
 
                 $service->create([
                     'code' => $code,
-                    'name' => $data['name'].' #'.($i + 1),
+                    'name' => $data['name'] . ' #' . ($i + 1),
                     'type' => VoucherType::from($data['type']),
                     'value' => (int) round((float) $data['value'] * 100),
                     'currency' => $data['currency'],

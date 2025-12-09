@@ -116,7 +116,7 @@ class Cart extends Model
         $tables = config('filament-cart.database.tables', []);
         $prefix = config('filament-cart.database.table_prefix', 'cart_');
 
-        return $tables['snapshots'] ?? $prefix.'snapshots';
+        return $tables['snapshots'] ?? $prefix . 'snapshots';
     }
 
     public function getCartInstance(): ?BaseCart

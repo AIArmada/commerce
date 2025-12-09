@@ -105,7 +105,7 @@ final class PaymentStage implements CheckoutStageInterface
             return StageResult::success('Payment processed', $data);
         } catch (Throwable $e) {
             return StageResult::failure(
-                'Payment processing failed: '.$e->getMessage(),
+                'Payment processing failed: ' . $e->getMessage(),
                 ['payment' => $e->getMessage()]
             );
         }

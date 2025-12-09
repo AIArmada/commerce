@@ -58,7 +58,7 @@ abstract class CashierChipTestCase extends Orchestra
 
     protected function defineEnvironment($app): void
     {
-        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
+        $app['config']->set('app.key', 'base64:' . base64_encode(random_bytes(32)));
         $app['config']->set('app.env', 'testing');
         $app['config']->set('database.default', 'testing');
 
@@ -113,7 +113,7 @@ abstract class CashierChipTestCase extends Orchestra
         });
 
         // Load package migrations
-        $this->loadMigrationsFrom(__DIR__.'/../../../packages/cashier-chip/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../../packages/cashier-chip/database/migrations');
     }
 
     protected function createUser(array $attributes = []): User

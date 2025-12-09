@@ -31,11 +31,11 @@ final class GenerateAffiliateCode
         }
 
         $suffix = Str::upper(Str::random(4));
-        $code = $base.$suffix;
+        $code = $base . $suffix;
 
         while (Affiliate::where('code', $code)->exists()) {
             $suffix = Str::upper(Str::random(4));
-            $code = $base.$suffix;
+            $code = $base . $suffix;
         }
 
         return $code;

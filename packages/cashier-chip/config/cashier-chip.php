@@ -17,8 +17,8 @@ return [
             $prefix = env('CASHIER_CHIP_TABLE_PREFIX', 'cashier_chip_');
 
             return [
-                'subscriptions' => $prefix.'subscriptions',
-                'subscription_items' => $prefix.'subscription_items',
+                'subscriptions' => $prefix . 'subscriptions',
+                'subscription_items' => $prefix . 'subscription_items',
             ];
         })(),
     ],

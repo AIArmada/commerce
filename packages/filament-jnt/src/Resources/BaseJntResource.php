@@ -13,14 +13,14 @@ abstract class BaseJntResource extends Resource
 
     abstract protected static function navigationSortKey(): string;
 
-    final public static function getNavigationGroup(): string|UnitEnum|null
+    final public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-jnt.navigation_group');
     }
 
     final public static function getNavigationSort(): ?int
     {
-        return config('filament-jnt.resources.navigation_sort.'.static::navigationSortKey());
+        return config('filament-jnt.resources.navigation_sort.' . static::navigationSortKey());
     }
 
     final public static function getNavigationBadge(): ?string

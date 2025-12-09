@@ -34,7 +34,7 @@ final class JntStatsWidget extends BaseWidget
                 ->color('primary'),
 
             Stat::make('Delivered', $deliveredCount)
-                ->description($deliveryRate.'% delivery rate')
+                ->description($deliveryRate . '% delivery rate')
                 ->descriptionIcon(Heroicon::CheckCircle)
                 ->color('success'),
 

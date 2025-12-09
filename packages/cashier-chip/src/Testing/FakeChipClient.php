@@ -71,7 +71,7 @@ class FakeChipClient
      */
     public function createClient(array $data): array
     {
-        $id = 'cli_'.Str::random(20);
+        $id = 'cli_' . Str::random(20);
 
         $client = array_merge([
             'id' => $id,
@@ -169,7 +169,7 @@ class FakeChipClient
      */
     public function createPurchase(array $data): array
     {
-        $id = 'pur_'.Str::random(20);
+        $id = 'pur_' . Str::random(20);
 
         $purchase = array_merge([
             'id' => $id,
@@ -188,8 +188,8 @@ class FakeChipClient
                 'notes' => $data['purchase']['notes'] ?? null,
             ],
             'client' => $data['client'] ?? null,
-            'checkout_url' => 'https://gate.chip-in.asia/checkout/'.$id,
-            'direct_post_url' => 'https://gate.chip-in.asia/direct-post/'.$id,
+            'checkout_url' => 'https://gate.chip-in.asia/checkout/' . $id,
+            'direct_post_url' => 'https://gate.chip-in.asia/direct-post/' . $id,
             'success_redirect' => $data['success_redirect'] ?? null,
             'failure_redirect' => $data['failure_redirect'] ?? null,
             'cancel_redirect' => $data['cancel_redirect'] ?? null,
@@ -419,7 +419,7 @@ class FakeChipClient
      */
     public function addRecurringToken(string $clientId, ?array $data = null): array
     {
-        $tokenId = 'tok_'.Str::random(20);
+        $tokenId = 'tok_' . Str::random(20);
 
         $token = array_merge([
             'id' => $tokenId,
@@ -480,7 +480,7 @@ class FakeChipClient
      */
     public function createWebhook(array $data): array
     {
-        $id = 'whk_'.Str::random(20);
+        $id = 'whk_' . Str::random(20);
 
         $webhook = [
             'id' => $id,
@@ -558,7 +558,7 @@ class FakeChipClient
             return null;
         }
 
-        $token = $recurringToken ?? 'tok_'.Str::random(20);
+        $token = $recurringToken ?? 'tok_' . Str::random(20);
 
         $this->purchases[$purchaseId]['status'] = 'paid';
         $this->purchases[$purchaseId]['recurring_token'] = $token;

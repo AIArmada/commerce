@@ -114,6 +114,6 @@ final class ChipStatsWidget extends BaseWidget
         $currency = config('filament-chip.default_currency', 'MYR');
         $amount = $amountInCents / 100;
 
-        return mb_strtoupper($currency).' '.number_format($amount, 2);
+        return mb_strtoupper($currency) . ' ' . number_format($amount, 2);
     }
 }

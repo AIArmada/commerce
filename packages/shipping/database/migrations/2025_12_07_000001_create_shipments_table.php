@@ -53,8 +53,8 @@ return new class extends Migration
             $table->timestamps();
             $table->softDeletes();
 
-            $table->index(['owner_id', 'owner_type', 'status'], $tableName.'_owner_status');
-            $table->index(['carrier_code', 'status', 'created_at'], $tableName.'_carrier_status');
+            $table->index(['owner_id', 'owner_type', 'status'], $tableName . '_owner_status');
+            $table->index(['carrier_code', 'status', 'created_at'], $tableName . '_carrier_status');
         });
     }
 

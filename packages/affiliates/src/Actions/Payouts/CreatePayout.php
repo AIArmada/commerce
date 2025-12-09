@@ -64,6 +64,6 @@ final class CreatePayout
     {
         $prefix = (string) config('affiliates.payouts.reference_prefix', 'PO-');
 
-        return $prefix.Str::upper(Str::random(10));
+        return $prefix . Str::upper(Str::random(10));
     }
 }

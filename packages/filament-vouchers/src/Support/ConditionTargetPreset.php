@@ -33,7 +33,7 @@ enum ConditionTargetPreset: string
         $options = [];
 
         foreach (self::cases() as $case) {
-            $options[$case->value] = $case->label().' – '.$case->description();
+            $options[$case->value] = $case->label() . ' – ' . $case->description();
         }
 
         return $options;

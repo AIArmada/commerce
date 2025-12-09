@@ -310,7 +310,7 @@ class VoucherCondition implements Arrayable, CartConditionConvertible
     /**
      * Get the condition value.
      */
-    public function getValue(): string|float
+    public function getValue(): string | float
     {
         return $this->value;
     }
@@ -488,7 +488,7 @@ class VoucherCondition implements Arrayable, CartConditionConvertible
     private function formatVoucherValue(VoucherData $voucher): string
     {
         return match ($voucher->type) {
-            VoucherType::Percentage => '-'.($voucher->value / 100).'%', // Convert basis points to percentage (1000 = 10.00%)
+            VoucherType::Percentage => '-' . ($voucher->value / 100) . '%', // Convert basis points to percentage (1000 = 10.00%)
             VoucherType::Fixed => "-{$voucher->value}", // Value is already in cents
             VoucherType::FreeShipping => '+0', // Free shipping is handled separately
             // Compound types - value is calculated dynamically

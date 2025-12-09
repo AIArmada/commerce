@@ -19,7 +19,7 @@ final class JntOrderResource extends BaseJntResource
 {
     protected static ?string $model = JntOrder::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedTruck;
 
     protected static ?string $modelLabel = 'Shipping Order';
 

@@ -24,7 +24,7 @@ final class VoucherUsageTimelineWidget extends Widget
     /** @phpstan-ignore-next-line */
     protected string $view = 'filament-vouchers::widgets.voucher-usage-timeline';
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     /**
      * Get timeline events from voucher usage history

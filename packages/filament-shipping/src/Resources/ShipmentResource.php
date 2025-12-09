@@ -21,9 +21,9 @@ class ShipmentResource extends Resource
 {
     protected static ?string $model = Shipment::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedTruck;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Shipping';
+    protected static string | UnitEnum | null $navigationGroup = 'Shipping';
 
     protected static ?int $navigationSort = 1;
 
@@ -123,7 +123,7 @@ class ShipmentResource extends Resource
 
                 Tables\Columns\TextColumn::make('total_weight')
                     ->label('Weight')
-                    ->formatStateUsing(fn ($state) => number_format($state / 1000, 2).' kg')
+                    ->formatStateUsing(fn ($state) => number_format($state / 1000, 2) . ' kg')
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('shipping_cost')

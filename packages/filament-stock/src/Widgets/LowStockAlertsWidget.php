@@ -21,7 +21,7 @@ use Livewire\Attributes\Lazy;
 #[Lazy]
 final class LowStockAlertsWidget extends TableWidget
 {
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     protected static ?int $sort = 3;
 

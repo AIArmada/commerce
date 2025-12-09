@@ -235,28 +235,28 @@ class DocService
                 return 'docs::templates.doc-default';
             }
             if (str_starts_with($suffix, 'templates.')) {
-                return 'docs::'.$suffix; // becomes docs::templates.<slug>
+                return 'docs::' . $suffix; // becomes docs::templates.<slug>
             }
 
-            return 'docs::templates.'.$suffix; // ensure templates prefix
+            return 'docs::templates.' . $suffix; // ensure templates prefix
         }
 
         // Dot notation like docs.templates.slug
         if (str_starts_with($viewName, 'docs.templates.')) {
             $slug = mb_substr($viewName, mb_strlen('docs.templates.')) ?: 'doc-default';
 
-            return 'docs::templates.'.$slug;
+            return 'docs::templates.' . $slug;
         }
 
         // Starting with templates.
         if (str_starts_with($viewName, 'templates.')) {
             $slug = mb_substr($viewName, mb_strlen('templates.')) ?: 'doc-default';
 
-            return 'docs::templates.'.$slug;
+            return 'docs::templates.' . $slug;
         }
 
         // Fallback plain slug
-        return 'docs::templates.'.$viewName;
+        return 'docs::templates.' . $viewName;
     }
 
     /**
@@ -281,7 +281,7 @@ class DocService
     {
         $docType = $doc->doc_type ?? 'invoice';
         $basePath = $this->resolveStoragePath($docType);
-        $filename = $doc->doc_number.'.pdf';
+        $filename = $doc->doc_number . '.pdf';
 
         return "{$basePath}/{$filename}";
     }

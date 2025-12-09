@@ -45,7 +45,7 @@ class GeneratePoliciesCommand extends Command
             return Command::SUCCESS;
         }
 
-        $this->info("🔧 Generating {$type->value} policies for ".$resources->count()." resources...\n");
+        $this->info("🔧 Generating {$type->value} policies for " . $resources->count() . " resources...\n");
 
         $generated = 0;
         $skipped = 0;
@@ -67,17 +67,17 @@ class GeneratePoliciesCommand extends Command
             }
 
             if (file_exists($policy->path) && ! $this->option('force')) {
-                $this->line('<fg=yellow>⏭</> Skipped: '.class_basename($modelClass).'Policy (exists)');
+                $this->line('<fg=yellow>⏭</> Skipped: ' . class_basename($modelClass) . 'Policy (exists)');
                 $skipped++;
 
                 continue;
             }
 
             if ($policy->write($this->option('force'))) {
-                $this->line('<fg=green>✓</> Generated: '.class_basename($modelClass).'Policy');
+                $this->line('<fg=green>✓</> Generated: ' . class_basename($modelClass) . 'Policy');
                 $generated++;
             } else {
-                $this->line('<fg=red>✗</> Failed: '.class_basename($modelClass).'Policy');
+                $this->line('<fg=red>✗</> Failed: ' . class_basename($modelClass) . 'Policy');
             }
         }
 
@@ -86,7 +86,7 @@ class GeneratePoliciesCommand extends Command
         if ($this->option('dry-run')) {
             $this->info('Dry run complete. Use without --dry-run to generate policies.');
         } else {
-            $this->info("✅ Generated {$generated} policies".($skipped > 0 ? ", skipped {$skipped}" : ''));
+            $this->info("✅ Generated {$generated} policies" . ($skipped > 0 ? ", skipped {$skipped}" : ''));
         }
 
         return Command::SUCCESS;

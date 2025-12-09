@@ -28,9 +28,9 @@ final class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shopping-bag';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-shopping-bag';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Sales';
+    protected static string | UnitEnum | null $navigationGroup = 'Sales';
 
     protected static ?int $navigationSort = 1;
 
@@ -49,7 +49,7 @@ final class OrderResource extends Resource
                         TextInput::make('order_number')
                             ->required()
                             ->unique(ignoreRecord: true)
-                            ->default(fn () => 'ORD-'.mb_strtoupper(uniqid())),
+                            ->default(fn () => 'ORD-' . mb_strtoupper(uniqid())),
 
                         Select::make('status')
                             ->options([
@@ -160,7 +160,7 @@ final class OrderResource extends Resource
 
                         TextEntry::make('status')
                             ->badge()
-                            ->color(fn (string $state): string|array => match ($state) {
+                            ->color(fn (string $state): string | array => match ($state) {
                                 'pending' => 'warning',
                                 'processing' => 'info',
                                 'shipped' => 'primary',
@@ -172,7 +172,7 @@ final class OrderResource extends Resource
 
                         TextEntry::make('payment_status')
                             ->badge()
-                            ->color(fn (string $state): string|array => match ($state) {
+                            ->color(fn (string $state): string | array => match ($state) {
                                 'pending' => 'warning',
                                 'paid' => 'success',
                                 'failed' => 'danger',
@@ -189,23 +189,23 @@ final class OrderResource extends Resource
                 Section::make('Order Totals')
                     ->schema([
                         TextEntry::make('subtotal')
-                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR '.number_format($state / 100, 2) : null),
+                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR ' . number_format($state / 100, 2) : null),
 
                         TextEntry::make('tax_total')
                             ->label('Tax')
-                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR '.number_format($state / 100, 2) : null),
+                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR ' . number_format($state / 100, 2) : null),
 
                         TextEntry::make('discount_total')
                             ->label('Discount')
-                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR '.number_format($state / 100, 2) : null),
+                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR ' . number_format($state / 100, 2) : null),
 
                         TextEntry::make('shipping_total')
                             ->label('Shipping')
-                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR '.number_format($state / 100, 2) : null),
+                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR ' . number_format($state / 100, 2) : null),
 
                         TextEntry::make('grand_total')
                             ->label('Total')
-                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR '.number_format($state / 100, 2) : null)
+                            ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR ' . number_format($state / 100, 2) : null)
                             ->size('lg'),
                     ])
                     ->columns(5),
@@ -290,7 +290,7 @@ final class OrderResource extends Resource
 
                 TextColumn::make('grand_total')
                     ->label('Total')
-                    ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR '.number_format($state / 100, 2) : null)
+                    ->formatStateUsing(fn (?int $state): ?string => $state !== null ? 'MYR ' . number_format($state / 100, 2) : null)
                     ->sortable(),
 
                 TextColumn::make('created_at')
@@ -353,7 +353,7 @@ final class OrderResource extends Resource
         return (string) self::getModel()::where('status', 'pending')->count() ?: null;
     }
 
-    public static function getNavigationBadgeColor(): string|array|null
+    public static function getNavigationBadgeColor(): string | array | null
     {
         return 'warning';
     }

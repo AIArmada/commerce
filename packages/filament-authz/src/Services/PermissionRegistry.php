@@ -50,7 +50,7 @@ class PermissionRegistry
     ): self {
         foreach ($abilities as $ability) {
             $name = "{$resource}.{$ability}";
-            $description = ucfirst($ability).' '.str_replace('_', ' ', $resource);
+            $description = ucfirst($ability) . ' ' . str_replace('_', ' ', $resource);
 
             $this->register($name, $description, $group, $resource);
         }
