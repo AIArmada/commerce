@@ -1,0 +1,68 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentCashierChip\Pages;
+
+use AIArmada\FilamentCashierChip\Widgets\ActiveSubscribersWidget;
+use AIArmada\FilamentCashierChip\Widgets\ChurnRateWidget;
+use AIArmada\FilamentCashierChip\Widgets\MRRWidget;
+use AIArmada\FilamentCashierChip\Widgets\RevenueChartWidget;
+use AIArmada\FilamentCashierChip\Widgets\SubscriptionDistributionWidget;
+use AIArmada\FilamentCashierChip\Widgets\TrialConversionsWidget;
+use BackedEnum;
+use Filament\Pages\Page;
+use Filament\Support\Icons\Heroicon;
+use UnitEnum;
+
+final class BillingDashboard extends Page
+{
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBarSquare;
+
+    protected string $view = 'filament-cashier-chip::pages.billing-dashboard';
+
+    protected static ?string $navigationLabel = 'Billing Dashboard';
+
+    protected static ?string $title = 'Billing Dashboard';
+
+    protected static ?string $slug = 'billing-dashboard';
+
+    protected static ?int $navigationSort = 0;
+
+    public static function getNavigationGroup(): string|UnitEnum|null
+    {
+        return config('filament-cashier-chip.navigation_group');
+    }
+
+    public function getHeaderWidgets(): array
+    {
+        return [
+            MRRWidget::class,
+            ActiveSubscribersWidget::class,
+            ChurnRateWidget::class,
+        ];
+    }
+
+    public function getFooterWidgets(): array
+    {
+        return [
+            RevenueChartWidget::class,
+            SubscriptionDistributionWidget::class,
+            TrialConversionsWidget::class,
+        ];
+    }
+
+    public function getHeaderWidgetsColumns(): int|array
+    {
+        return 3;
+    }
+
+    public function getFooterWidgetsColumns(): int|array
+    {
+        return [
+            'default' => 1,
+            'md' => 2,
+            'lg' => 3,
+        ];
+    }
+}

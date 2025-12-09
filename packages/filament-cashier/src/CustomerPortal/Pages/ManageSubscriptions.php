@@ -1,0 +1,162 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentCashier\CustomerPortal\Pages;
+
+use AIArmada\FilamentCashier\Support\GatewayDetector;
+use AIArmada\FilamentCashier\Support\UnifiedSubscription;
+use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Notifications\Notification;
+use Filament\Pages\Page;
+use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Collection;
+
+final class ManageSubscriptions extends Page
+{
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCreditCard;
+
+    protected static ?int $navigationSort = 1;
+
+    protected string $view = 'filament-cashier::customer-portal.manage-subscriptions';
+
+    public static function getNavigationLabel(): string
+    {
+        return __('filament-cashier::portal.subscriptions.title');
+    }
+
+    public function getTitle(): string
+    {
+        return __('filament-cashier::portal.subscriptions.title');
+    }
+
+    /**
+     * @return Collection<int, UnifiedSubscription>
+     */
+    public function getSubscriptions(): Collection
+    {
+        $user = auth()->user();
+
+        if ($user === null) {
+            return collect();
+        }
+
+        $subscriptions = collect();
+        $detector = app(GatewayDetector::class);
+
+        // Get Stripe subscriptions for this user
+        if ($detector->isAvailable('stripe') && class_exists(\Laravel\Cashier\Subscription::class)) {
+            $stripeSubscriptions = \Laravel\Cashier\Subscription::query()
+                ->where('user_id', $user->getAuthIdentifier())
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(fn ($sub) => UnifiedSubscription::fromStripe($sub));
+
+            $subscriptions = $subscriptions->merge($stripeSubscriptions);
+        }
+
+        // Get CHIP subscriptions for this user
+        if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
+            $chipSubscriptions = \AIArmada\CashierChip\Models\Subscription::query()
+                ->where('user_id', $user->getAuthIdentifier())
+                ->orderByDesc('created_at')
+                ->get()
+                ->map(fn ($sub) => UnifiedSubscription::fromChip($sub));
+
+            $subscriptions = $subscriptions->merge($chipSubscriptions);
+        }
+
+        return $subscriptions->sortByDesc('createdAt')->values();
+    }
+
+    /**
+     * @return array<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('new_subscription')
+                ->label(__('filament-cashier::portal.subscriptions.new'))
+                ->icon('heroicon-o-plus')
+                ->url(fn () => route('filament.billing.pages.new-subscription'))
+                ->visible(fn () => config('filament-cashier.billing_portal.features.subscriptions', true)),
+        ];
+    }
+
+    public function cancelSubscription(string $gateway, string $id): void
+    {
+        $subscription = $this->findSubscription($gateway, $id);
+
+        if ($subscription === null || ! $subscription->status->isCancelable()) {
+            Notification::make()
+                ->title(__('filament-cashier::portal.subscriptions.cancel_error'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        if (method_exists($subscription->original, 'cancel')) {
+            $subscription->original->cancel();
+
+            Notification::make()
+                ->title(__('filament-cashier::portal.subscriptions.cancel_success'))
+                ->success()
+                ->send();
+        }
+    }
+
+    public function resumeSubscription(string $gateway, string $id): void
+    {
+        $subscription = $this->findSubscription($gateway, $id);
+
+        if ($subscription === null || ! $subscription->status->isResumable()) {
+            Notification::make()
+                ->title(__('filament-cashier::portal.subscriptions.resume_error'))
+                ->danger()
+                ->send();
+
+            return;
+        }
+
+        if (method_exists($subscription->original, 'resume')) {
+            $subscription->original->resume();
+
+            Notification::make()
+                ->title(__('filament-cashier::portal.subscriptions.resume_success'))
+                ->success()
+                ->send();
+        }
+    }
+
+    protected function findSubscription(string $gateway, string $id): ?UnifiedSubscription
+    {
+        $detector = app(GatewayDetector::class);
+        $userId = auth()->id();
+
+        if ($gateway === 'stripe' && $detector->isAvailable('stripe') && class_exists(\Laravel\Cashier\Subscription::class)) {
+            $sub = \Laravel\Cashier\Subscription::query()
+                ->where('user_id', $userId)
+                ->where('id', $id)
+                ->first();
+
+            if ($sub) {
+                return UnifiedSubscription::fromStripe($sub);
+            }
+        }
+
+        if ($gateway === 'chip' && $detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
+            $sub = \AIArmada\CashierChip\Models\Subscription::query()
+                ->where('user_id', $userId)
+                ->where('id', $id)
+                ->first();
+
+            if ($sub) {
+                return UnifiedSubscription::fromChip($sub);
+            }
+        }
+
+        return null;
+    }
+}
