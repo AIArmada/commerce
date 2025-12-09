@@ -128,7 +128,7 @@ class DelegationService
     {
         return Delegation::where('delegatee_id', $user->id)
             ->whereNull('revoked_at')
-            ->where(function ($query) {
+            ->where(function ($query): void {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
             })
@@ -155,7 +155,7 @@ class DelegationService
         return Delegation::where('delegatee_id', $user->id)
             ->where('permission', $permission)
             ->whereNull('revoked_at')
-            ->where(function ($query) {
+            ->where(function ($query): void {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
             })

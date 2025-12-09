@@ -136,7 +136,7 @@ PHP);
     $manipulator->addUse('App\\Services\\SomeService');
 
     $preview = $manipulator->preview();
-    $count = substr_count($preview, 'use App\\Services\\SomeService;');
+    $count = mb_substr_count($preview, 'use App\\Services\\SomeService;');
 
     expect($count)->toBe(1);
 

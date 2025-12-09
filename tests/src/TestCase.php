@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests;
 
+use BackedEnum;
+use DateInterval;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,7 +25,7 @@ abstract class TestCase extends Orchestra
         parent::setUp();
 
         Factory::guessFactoryNamesUsing(function (string $modelName) {
-            return Str::replace('Models', 'Database\\Factories', $modelName) . 'Factory';
+            return Str::replace('Models', 'Database\\Factories', $modelName).'Factory';
         });
 
         // Start session for Livewire/Filament tests
@@ -84,7 +87,7 @@ abstract class TestCase extends Orchestra
     protected function defineEnvironment($app): void
     {
         // Setup the test environment
-        $app['config']->set('app.key', 'base64:' . base64_encode(random_bytes(32)));
+        $app['config']->set('app.key', 'base64:'.base64_encode(random_bytes(32)));
         $app['config']->set('app.env', 'testing');
         $app['config']->set('database.default', 'testing');
 
@@ -129,13 +132,13 @@ abstract class TestCase extends Orchestra
         $app['config']->set('data.throw_when_max_transformation_depth_reached', true);
         $app['config']->set('data.features.cast_and_transform_iterables', true);
         $app['config']->set('data.transformers', [
-            \DateTimeInterface::class => \Spatie\LaravelData\Transformers\DateTimeInterfaceTransformer::class,
+            DateTimeInterface::class => \Spatie\LaravelData\Transformers\DateTimeInterfaceTransformer::class,
             \Illuminate\Contracts\Support\Arrayable::class => \Spatie\LaravelData\Transformers\ArrayableTransformer::class,
-            \BackedEnum::class => \Spatie\LaravelData\Transformers\EnumTransformer::class,
+            BackedEnum::class => \Spatie\LaravelData\Transformers\EnumTransformer::class,
         ]);
         $app['config']->set('data.casts', [
-            \DateTimeInterface::class => \Spatie\LaravelData\Casts\DateTimeInterfaceCast::class,
-            \BackedEnum::class => \Spatie\LaravelData\Casts\EnumCast::class,
+            DateTimeInterface::class => \Spatie\LaravelData\Casts\DateTimeInterfaceCast::class,
+            BackedEnum::class => \Spatie\LaravelData\Casts\EnumCast::class,
         ]);
 
         // Configure cart settings for testing
@@ -221,7 +224,7 @@ abstract class TestCase extends Orchestra
         $app['config']->set('permission.cache', [
             'key' => 'spatie.permission.cache',
             'store' => 'array',
-            'expiration_time' => \DateInterval::createFromDateString('24 hours'),
+            'expiration_time' => DateInterval::createFromDateString('24 hours'),
         ]);
 
         // Configure filament-authz settings for testing
@@ -234,10 +237,10 @@ abstract class TestCase extends Orchestra
 
     protected function defineDatabaseMigrations(): void
     {
-        $this->loadMigrationsFrom(__DIR__ . '/../../packages/chip/database/migrations');
-        $this->loadMigrationsFrom(__DIR__ . '/../../packages/vouchers/database/migrations');
-        $this->loadMigrationsFrom(__DIR__ . '/../../vendor/spatie/laravel-permission/database/migrations');
-        $this->loadMigrationsFrom(__DIR__ . '/../../packages/affiliates/database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../../packages/chip/database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../../packages/vouchers/database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../../vendor/spatie/laravel-permission/database/migrations');
+        $this->loadMigrationsFrom(__DIR__.'/../../packages/affiliates/database/migrations');
     }
 
     protected function setUpDatabase(): void

@@ -2,13 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentAuthz\Models\PermissionSnapshot;
-use AIArmada\FilamentAuthz\Models\PermissionRequest;
 use AIArmada\FilamentAuthz\Models\Delegation;
-use AIArmada\FilamentAuthz\Services\PermissionVersioningService;
+use AIArmada\FilamentAuthz\Models\PermissionRequest;
+use AIArmada\FilamentAuthz\Models\PermissionSnapshot;
 use AIArmada\FilamentAuthz\Services\DelegationService;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Services\PermissionVersioningService;
 
 test('permission versioning service can be instantiated', function (): void {
     $service = app(PermissionVersioningService::class);
