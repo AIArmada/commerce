@@ -28,9 +28,9 @@ class ConditionFactory extends Factory
         ]);
 
         return [
-            'name' => 'condition_'.Str::lower(Str::random(8)),
-            'display_name' => 'Condition '.Str::upper(Str::random(4)),
-            'description' => 'Auto generated condition '.Str::lower(Str::random(12)),
+            'name' => 'condition_' . Str::lower(Str::random(8)),
+            'display_name' => 'Condition ' . Str::upper(Str::random(4)),
+            'description' => 'Auto generated condition ' . Str::lower(Str::random(12)),
             'type' => $this->randomFrom(['discount', 'tax', 'fee', 'shipping', 'surcharge']),
             'target' => $target,
             'target_definition' => ConditionTarget::from($target)->toArray(),
@@ -52,7 +52,7 @@ class ConditionFactory extends Factory
 
             return [
                 'type' => 'discount',
-                'value' => '-'.random_int(5, 50).'%',
+                'value' => '-' . random_int(5, 50) . '%',
                 'target' => $target,
                 'target_definition' => ConditionTarget::from($target)->toArray(),
             ];
@@ -66,7 +66,7 @@ class ConditionFactory extends Factory
 
             return [
                 'type' => 'tax',
-                'value' => random_int(5, 15).'%',
+                'value' => random_int(5, 15) . '%',
                 'target' => $target,
                 'target_definition' => ConditionTarget::from($target)->toArray(),
             ];
@@ -80,7 +80,7 @@ class ConditionFactory extends Factory
 
             return [
                 'type' => 'fee',
-                'value' => '+'.random_int(200, 5000),
+                'value' => '+' . random_int(200, 5000),
                 'target' => $target,
                 'target_definition' => ConditionTarget::from($target)->toArray(),
             ];
@@ -94,7 +94,7 @@ class ConditionFactory extends Factory
 
             return [
                 'type' => 'shipping',
-                'value' => '+'.random_int(500, 8000),
+                'value' => '+' . random_int(500, 8000),
                 'target' => $target,
                 'target_definition' => ConditionTarget::from($target)->toArray(),
                 'attributes' => [
@@ -149,10 +149,10 @@ class ConditionFactory extends Factory
     private function generateValue(): string
     {
         return match ($this->randomFrom(['percentage', 'fixed_positive', 'fixed_negative'])) {
-            'percentage' => random_int(1, 50).'%',
-            'fixed_positive' => '+'.random_int(100, 10000),
-            'fixed_negative' => '-'.random_int(100, 10000),
-            default => '+'.random_int(100, 10000), // fallback
+            'percentage' => random_int(1, 50) . '%',
+            'fixed_positive' => '+' . random_int(100, 10000),
+            'fixed_negative' => '-' . random_int(100, 10000),
+            default => '+' . random_int(100, 10000), // fallback
         };
     }
 

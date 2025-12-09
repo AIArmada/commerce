@@ -37,7 +37,7 @@ final class QuickApplyVoucherWidget extends Widget implements HasForms
     /** @phpstan-ignore-next-line */
     protected string $view = 'filament-vouchers::widgets.quick-apply-voucher';
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     public function form(Schema $form): Schema
     {

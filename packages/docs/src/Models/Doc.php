@@ -135,7 +135,7 @@ final class Doc extends Model
 
         $this->statusHistories()->create([
             'status' => DocStatus::PAID,
-            'notes' => $notes ?? "Status changed from {$oldStatus->label()} to ".DocStatus::PAID->label(),
+            'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::PAID->label(),
         ]);
     }
 
@@ -148,7 +148,7 @@ final class Doc extends Model
 
             $this->statusHistories()->create([
                 'status' => DocStatus::SENT,
-                'notes' => $notes ?? "Status changed from {$oldStatus->label()} to ".DocStatus::SENT->label(),
+                'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::SENT->label(),
             ]);
         }
     }
@@ -162,7 +162,7 @@ final class Doc extends Model
 
             $this->statusHistories()->create([
                 'status' => DocStatus::CANCELLED,
-                'notes' => $notes ?? "Status changed from {$oldStatus->label()} to ".DocStatus::CANCELLED->label(),
+                'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::CANCELLED->label(),
             ]);
         }
     }
@@ -179,7 +179,7 @@ final class Doc extends Model
 
             $this->statusHistories()->create([
                 'status' => DocStatus::OVERDUE,
-                'notes' => "Status changed from {$oldStatus->label()} to ".DocStatus::OVERDUE->label().' (automatic overdue detection)',
+                'notes' => "Status changed from {$oldStatus->label()} to " . DocStatus::OVERDUE->label() . ' (automatic overdue detection)',
             ]);
         }
     }

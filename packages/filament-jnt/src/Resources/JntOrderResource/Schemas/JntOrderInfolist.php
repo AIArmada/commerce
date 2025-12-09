@@ -286,7 +286,7 @@ final class JntOrderInfolist
                                 ->label('Qty'),
                             TextEntry::make('weight_grams')
                                 ->label('Weight')
-                                ->formatStateUsing(fn (int $state): string => number_format($state / 1000, 2).' kg'),
+                                ->formatStateUsing(fn (int $state): string => number_format($state / 1000, 2) . ' kg'),
                             TextEntry::make('unit_price')
                                 ->label('Unit Price')
                                 ->money('MYR'),

@@ -16,7 +16,7 @@ return new class extends Migration
         $databaseConfig = config('cashier-chip.database', []);
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
         $tables = $databaseConfig['tables'] ?? [];
-        $tableName = $tables['subscriptions'] ?? $tablePrefix.'subscriptions';
+        $tableName = $tables['subscriptions'] ?? $tablePrefix . 'subscriptions';
 
         if (! Schema::hasTable($tableName)) {
             return;
@@ -50,7 +50,7 @@ return new class extends Migration
         $databaseConfig = config('cashier-chip.database', []);
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
         $tables = $databaseConfig['tables'] ?? [];
-        $tableName = $tables['subscriptions'] ?? $tablePrefix.'subscriptions';
+        $tableName = $tables['subscriptions'] ?? $tablePrefix . 'subscriptions';
 
         if (! Schema::hasTable($tableName)) {
             return;
@@ -58,7 +58,7 @@ return new class extends Migration
 
         Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
             if (Schema::hasColumn($tableName, 'coupon_id')) {
-                $table->dropIndex($tableName.'_coupon_id_index');
+                $table->dropIndex($tableName . '_coupon_id_index');
                 $table->dropColumn('coupon_id');
             }
 

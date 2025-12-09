@@ -10,7 +10,8 @@ use Illuminate\Queue\SerializesModels;
 
 final class FraudSignalDetected
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
+    use SerializesModels;
 
     public function __construct(
         public readonly AffiliateFraudSignal $signal

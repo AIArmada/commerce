@@ -25,9 +25,9 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-banknotes';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Affiliates';
+    protected static string | UnitEnum | null $navigationGroup = 'Affiliates';
 
     protected static ?string $navigationLabel = 'Payout Batch';
 

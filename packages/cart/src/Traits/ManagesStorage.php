@@ -113,7 +113,7 @@ trait ManagesStorage
     /**
      * Restore associated model from array format
      */
-    private function restoreAssociatedModel(mixed $associatedData): object|string|null
+    private function restoreAssociatedModel(mixed $associatedData): object | string | null
     {
         if (is_string($associatedData)) {
             return $associatedData;

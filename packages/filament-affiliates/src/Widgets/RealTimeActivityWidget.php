@@ -13,7 +13,7 @@ final class RealTimeActivityWidget extends BaseWidget
 {
     protected static ?int $sort = 2;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     protected ?string $pollingInterval = '10s';
 

@@ -9,7 +9,8 @@ use Illuminate\Queue\SerializesModels;
 
 class WebhookHandled
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
+    use SerializesModels;
 
     /**
      * The webhook payload.

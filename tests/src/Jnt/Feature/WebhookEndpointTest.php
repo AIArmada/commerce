@@ -35,7 +35,7 @@ describe('Webhook Endpoint', function (): void {
             ],
         ]);
 
-        $signature = base64_encode(md5($bizContent.$this->privateKey, true));
+        $signature = base64_encode(md5($bizContent . $this->privateKey, true));
 
         $response = $this->postJson('/webhooks/jnt/status', [
             'bizContent' => $bizContent,
@@ -111,7 +111,7 @@ describe('Webhook Endpoint', function (): void {
         // Even with a valid signature, missing bizContent fails signature verification
         // because signature verification happens in middleware before controller
         $bizContent = '';
-        $signature = base64_encode(md5($bizContent.$this->privateKey, true));
+        $signature = base64_encode(md5($bizContent . $this->privateKey, true));
 
         $response = $this->postJson('/webhooks/jnt/status', [], [
             'digest' => $signature,
@@ -131,7 +131,7 @@ describe('Webhook Endpoint', function (): void {
         Event::fake();
 
         $bizContent = 'invalid-json';
-        $signature = base64_encode(md5($bizContent.$this->privateKey, true));
+        $signature = base64_encode(md5($bizContent . $this->privateKey, true));
 
         $response = $this->postJson('/webhooks/jnt/status', [
             'bizContent' => $bizContent,
@@ -155,7 +155,7 @@ describe('Webhook Endpoint', function (): void {
             'details' => [],
         ]);
 
-        $signature = base64_encode(md5($bizContent.$this->privateKey, true));
+        $signature = base64_encode(md5($bizContent . $this->privateKey, true));
 
         $response = $this->postJson('/webhooks/jnt/status', [
             'bizContent' => $bizContent,
@@ -206,7 +206,7 @@ describe('Webhook Endpoint', function (): void {
             ],
         ]);
 
-        $signature = base64_encode(md5($bizContent.$this->privateKey, true));
+        $signature = base64_encode(md5($bizContent . $this->privateKey, true));
 
         $response = $this->postJson('/webhooks/jnt/status', [
             'bizContent' => $bizContent,
@@ -245,7 +245,7 @@ describe('Webhook Endpoint', function (): void {
             ],
         ]);
 
-        $signature = base64_encode(md5($bizContent.$this->privateKey, true));
+        $signature = base64_encode(md5($bizContent . $this->privateKey, true));
 
         $this->postJson('/webhooks/jnt/status', [
             'bizContent' => $bizContent,
@@ -279,7 +279,7 @@ describe('Webhook Endpoint', function (): void {
             ],
         ]);
 
-        $signature = base64_encode(md5($bizContent.$this->privateKey, true));
+        $signature = base64_encode(md5($bizContent . $this->privateKey, true));
 
         $this->postJson('/webhooks/jnt/status', [
             'bizContent' => $bizContent,
@@ -326,7 +326,7 @@ describe('Webhook Endpoint', function (): void {
             ],
         ]);
 
-        $signature = base64_encode(md5($bizContent.$this->privateKey, true));
+        $signature = base64_encode(md5($bizContent . $this->privateKey, true));
 
         $response = $this->postJson('/webhooks/jnt/status', [
             'bizContent' => $bizContent,
@@ -355,7 +355,7 @@ describe('Webhook Endpoint', function (): void {
             ],
         ]);
 
-        $signature = base64_encode(md5($bizContent.$this->privateKey, true));
+        $signature = base64_encode(md5($bizContent . $this->privateKey, true));
 
         $response1 = $this->postJson('/webhooks/jnt/status', [
             'bizContent' => $bizContent,

@@ -27,7 +27,7 @@ class NavigationMacros
             });
         });
 
-        NavigationItem::macro('visibleForRole', function (string|array $roles): static {
+        NavigationItem::macro('visibleForRole', function (string | array $roles): static {
             /** @var NavigationItem $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 

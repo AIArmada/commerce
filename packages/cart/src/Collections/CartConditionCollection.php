@@ -75,7 +75,7 @@ final class CartConditionCollection extends Collection
      *
      * @param  ConditionTarget|string|array<string, mixed>  $target
      */
-    public function byTarget(ConditionTarget|string|array $target): static
+    public function byTarget(ConditionTarget | string | array $target): static
     {
         $targetDefinition = ConditionTarget::from($target);
         $dsl = $targetDefinition->toDsl();
@@ -86,7 +86,7 @@ final class CartConditionCollection extends Collection
     /**
      * Filter conditions by scope
      */
-    public function byScope(ConditionScope|string $scope): static
+    public function byScope(ConditionScope | string $scope): static
     {
         $scope = $scope instanceof ConditionScope ? $scope : ConditionScope::fromString((string) $scope);
 
@@ -96,7 +96,7 @@ final class CartConditionCollection extends Collection
     /**
      * Filter conditions by phase
      */
-    public function byPhase(ConditionPhase|string $phase): static
+    public function byPhase(ConditionPhase | string $phase): static
     {
         $phase = $phase instanceof ConditionPhase ? $phase : ConditionPhase::fromString((string) $phase);
 
@@ -106,7 +106,7 @@ final class CartConditionCollection extends Collection
     /**
      * Filter conditions by application strategy
      */
-    public function byApplication(ConditionApplication|string $application): static
+    public function byApplication(ConditionApplication | string $application): static
     {
         $application = $application instanceof ConditionApplication
             ? $application
@@ -120,7 +120,7 @@ final class CartConditionCollection extends Collection
     /**
      * Filter conditions by value
      */
-    public function byValue(string|float $value): static
+    public function byValue(string | float $value): static
     {
         return $this->filter(fn (CartCondition $condition) => $condition->getValue() === $value);
     }
@@ -314,7 +314,7 @@ final class CartConditionCollection extends Collection
      *
      * @param  ConditionTarget|string|array<string, mixed>  $target
      */
-    public function removeByTarget(ConditionTarget|string|array $target): static
+    public function removeByTarget(ConditionTarget | string | array $target): static
     {
         $targetDefinition = ConditionTarget::from($target);
         $dsl = $targetDefinition->toDsl();

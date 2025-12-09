@@ -101,7 +101,7 @@ class BillingPanelProvider extends PanelProvider
 
         $allowedRoles = (array) config('filament-chip.billing.allowed_roles', []);
         if (! empty($allowedRoles)) {
-            $middleware[] = 'role:'.implode('|', $allowedRoles);
+            $middleware[] = 'role:' . implode('|', $allowedRoles);
         }
 
         return $middleware;

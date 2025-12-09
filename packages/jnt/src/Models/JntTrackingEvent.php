@@ -108,7 +108,7 @@ final class JntTrackingEvent extends Model
         $tables = config('jnt.database.tables', []);
         $prefix = config('jnt.database.table_prefix', 'jnt_');
 
-        return $tables['tracking_events'] ?? $prefix.'tracking_events';
+        return $tables['tracking_events'] ?? $prefix . 'tracking_events';
     }
 
     /**

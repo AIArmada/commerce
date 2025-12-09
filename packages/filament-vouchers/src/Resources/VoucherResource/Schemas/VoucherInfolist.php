@@ -36,7 +36,7 @@ final class VoucherInfolist
                         ->schema([
                             TextEntry::make('type')
                                 ->label('Type')
-                                ->formatStateUsing(static fn (VoucherType|string $state): string => $state instanceof VoucherType ? $state->label() : VoucherType::from($state)->label())
+                                ->formatStateUsing(static fn (VoucherType | string $state): string => $state instanceof VoucherType ? $state->label() : VoucherType::from($state)->label())
                                 ->badge(),
 
                             TextEntry::make('value_label')
@@ -44,7 +44,7 @@ final class VoucherInfolist
 
                             TextEntry::make('status')
                                 ->label('Status')
-                                ->formatStateUsing(static fn (VoucherStatus|string $state): string => $state instanceof VoucherStatus ? $state->label() : VoucherStatus::from($state)->label())
+                                ->formatStateUsing(static fn (VoucherStatus | string $state): string => $state instanceof VoucherStatus ? $state->label() : VoucherStatus::from($state)->label())
                                 ->badge(),
                         ]),
 
@@ -158,7 +158,7 @@ final class VoucherInfolist
 
                             TextEntry::make('usageProgress')
                                 ->label('Usage %')
-                                ->state(static fn ($record): string => $record->usageProgress === null ? '—' : number_format($record->usageProgress, 1).'%')
+                                ->state(static fn ($record): string => $record->usageProgress === null ? '—' : number_format($record->usageProgress, 1) . '%')
                                 ->badge(),
                         ]),
                 ]),

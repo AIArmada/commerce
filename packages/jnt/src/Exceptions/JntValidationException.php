@@ -62,7 +62,7 @@ class JntValidationException extends JntException
 
         return new self(
             message: sprintf("Invalid value for field '%s': expected %s, got %s", $field, $expected, $valueStr),
-            errors: [$field => ['Expected '.$expected]],
+            errors: [$field => ['Expected ' . $expected]],
             field: $field
         );
     }
@@ -116,7 +116,7 @@ class JntValidationException extends JntException
 
         return new self(
             message: $message,
-            errors: [$field => ['Expected format: '.$expectedFormat]],
+            errors: [$field => ['Expected format: ' . $expectedFormat]],
             field: $field
         );
     }

@@ -33,13 +33,13 @@ final class GiftCardInfolist
                             TextEntry::make('type')
                                 ->label('Type')
                                 ->badge()
-                                ->color(static fn (GiftCardType|string $state): string => $state instanceof GiftCardType ? $state->color() : GiftCardType::from($state)->color())
-                                ->formatStateUsing(static fn (GiftCardType|string $state): string => $state instanceof GiftCardType ? $state->label() : GiftCardType::from($state)->label()),
+                                ->color(static fn (GiftCardType | string $state): string => $state instanceof GiftCardType ? $state->color() : GiftCardType::from($state)->color())
+                                ->formatStateUsing(static fn (GiftCardType | string $state): string => $state instanceof GiftCardType ? $state->label() : GiftCardType::from($state)->label()),
 
                             TextEntry::make('status')
                                 ->label('Status')
                                 ->badge()
-                                ->color(static fn (GiftCardStatus|string $state): string => match ($state instanceof GiftCardStatus ? $state : GiftCardStatus::from($state)) {
+                                ->color(static fn (GiftCardStatus | string $state): string => match ($state instanceof GiftCardStatus ? $state : GiftCardStatus::from($state)) {
                                     GiftCardStatus::Active => 'success',
                                     GiftCardStatus::Inactive => 'warning',
                                     GiftCardStatus::Suspended => 'danger',
@@ -47,7 +47,7 @@ final class GiftCardInfolist
                                     GiftCardStatus::Exhausted => 'info',
                                     GiftCardStatus::Cancelled => 'danger',
                                 })
-                                ->formatStateUsing(static fn (GiftCardStatus|string $state): string => $state instanceof GiftCardStatus ? $state->label() : GiftCardStatus::from($state)->label()),
+                                ->formatStateUsing(static fn (GiftCardStatus | string $state): string => $state instanceof GiftCardStatus ? $state->label() : GiftCardStatus::from($state)->label()),
                         ]),
 
                     Grid::make(3)
@@ -63,7 +63,7 @@ final class GiftCardInfolist
 
                             TextEntry::make('balance_utilization')
                                 ->label('Utilization')
-                                ->formatStateUsing(static fn (float $state): string => number_format($state, 1).'%')
+                                ->formatStateUsing(static fn (float $state): string => number_format($state, 1) . '%')
                                 ->badge()
                                 ->color(static fn (float $state): string => match (true) {
                                     $state >= 75 => 'success',

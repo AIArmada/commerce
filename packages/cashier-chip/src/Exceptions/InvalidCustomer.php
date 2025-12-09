@@ -17,7 +17,7 @@ class InvalidCustomer extends Exception
     public static function notYetCreated($owner)
     {
         return new static(
-            class_basename($owner).' is not a CHIP customer yet. See the createAsChipCustomer method.'
+            class_basename($owner) . ' is not a CHIP customer yet. See the createAsChipCustomer method.'
         );
     }
 }

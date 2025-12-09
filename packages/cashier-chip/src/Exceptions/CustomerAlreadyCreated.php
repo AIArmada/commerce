@@ -17,7 +17,7 @@ class CustomerAlreadyCreated extends Exception
     public static function exists($owner)
     {
         return new static(
-            class_basename($owner)." is already a CHIP customer with ID {$owner->chip_id}."
+            class_basename($owner) . " is already a CHIP customer with ID {$owner->chip_id}."
         );
     }
 }

@@ -55,10 +55,10 @@ final class Tax1099Generator
 
         $content .= "RECIPIENT'S INFORMATION:\n";
         $content .= "Name: {$taxInfo['legal_name']}\n";
-        $content .= 'Address: '.($taxInfo['address'] ?? '')."\n";
-        $content .= 'TIN: '.$this->maskTin($taxInfo['tin'])."\n\n";
+        $content .= 'Address: ' . ($taxInfo['address'] ?? '') . "\n";
+        $content .= 'TIN: ' . $this->maskTin($taxInfo['tin']) . "\n\n";
 
-        $content .= 'Box 1 - Nonemployee Compensation: $'.number_format($totalAmountMinor / 100, 2)."\n";
+        $content .= 'Box 1 - Nonemployee Compensation: $' . number_format($totalAmountMinor / 100, 2) . "\n";
 
         return $content;
     }
@@ -68,9 +68,9 @@ final class Tax1099Generator
         $cleaned = preg_replace('/[^0-9]/', '', $tin);
 
         if (mb_strlen($cleaned) === 9) {
-            return 'XXX-XX-'.mb_substr($cleaned, -4);
+            return 'XXX-XX-' . mb_substr($cleaned, -4);
         }
 
-        return 'XX-XXX'.mb_substr($cleaned, -4);
+        return 'XX-XXX' . mb_substr($cleaned, -4);
     }
 }

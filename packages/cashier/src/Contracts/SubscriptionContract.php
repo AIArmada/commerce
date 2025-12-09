@@ -163,7 +163,7 @@ interface SubscriptionContract extends Arrayable, Jsonable
      * @param  string|array<string>  $prices
      * @param  array<string, mixed>  $options
      */
-    public function swap(string|array $prices, array $options = []): static;
+    public function swap(string | array $prices, array $options = []): static;
 
     /**
      * Update the quantity.

@@ -17,7 +17,7 @@ describe('WebhookService', function (): void {
     describe('verifySignature()', function (): void {
         it('verifies valid signature correctly', function (): void {
             $bizContent = '{"billCode":"TEST123","details":[]}';
-            $signature = base64_encode(md5($bizContent.$this->privateKey, true));
+            $signature = base64_encode(md5($bizContent . $this->privateKey, true));
 
             expect($this->service->verifySignature($signature, $bizContent))->toBeTrue();
         });
@@ -32,14 +32,14 @@ describe('WebhookService', function (): void {
         it('rejects signature with wrong private key', function (): void {
             $bizContent = '{"billCode":"TEST123","details":[]}';
             $wrongKey = 'wrong-private-key';
-            $wrongSignature = base64_encode(md5($bizContent.$wrongKey, true));
+            $wrongSignature = base64_encode(md5($bizContent . $wrongKey, true));
 
             expect($this->service->verifySignature($wrongSignature, $bizContent))->toBeFalse();
         });
 
         it('rejects signature with modified content', function (): void {
             $originalContent = '{"billCode":"TEST123","details":[]}';
-            $signature = base64_encode(md5($originalContent.$this->privateKey, true));
+            $signature = base64_encode(md5($originalContent . $this->privateKey, true));
 
             $modifiedContent = '{"billCode":"MODIFIED","details":[]}';
 
@@ -62,7 +62,7 @@ describe('WebhookService', function (): void {
             // This test ensures hash_equals is being used
             // by verifying the method exists and works correctly
             $bizContent = '{"billCode":"TEST123","details":[]}';
-            $validSignature = base64_encode(md5($bizContent.$this->privateKey, true));
+            $validSignature = base64_encode(md5($bizContent . $this->privateKey, true));
 
             // Test multiple times to ensure consistent behavior
             foreach (range(1, 10) as $i) {
@@ -74,7 +74,7 @@ describe('WebhookService', function (): void {
     describe('generateSignature()', function (): void {
         it('generates correct signature', function (): void {
             $bizContent = '{"billCode":"TEST123","details":[]}';
-            $expectedSignature = base64_encode(md5($bizContent.$this->privateKey, true));
+            $expectedSignature = base64_encode(md5($bizContent . $this->privateKey, true));
 
             expect($this->service->generateSignature($bizContent))->toBe($expectedSignature);
         });
@@ -257,7 +257,7 @@ describe('WebhookService', function (): void {
                 ],
             ]);
 
-            $signature = base64_encode(md5($bizContent.$this->privateKey, true));
+            $signature = base64_encode(md5($bizContent . $this->privateKey, true));
 
             $request = Request::create('/webhook', 'POST', [
                 'bizContent' => $bizContent,
@@ -349,7 +349,7 @@ describe('WebhookService', function (): void {
             ]);
 
             // Generate valid signature
-            $signature = base64_encode(md5($bizContent.$this->privateKey, true));
+            $signature = base64_encode(md5($bizContent . $this->privateKey, true));
 
             // Create request
             $request = Request::create('/webhook', 'POST', [
@@ -386,7 +386,7 @@ describe('WebhookService', function (): void {
                 'details' => [],
             ]);
 
-            $validSignature = base64_encode(md5($originalContent.$this->privateKey, true));
+            $validSignature = base64_encode(md5($originalContent . $this->privateKey, true));
 
             // Attacker modifies the content
             $modifiedContent = json_encode([

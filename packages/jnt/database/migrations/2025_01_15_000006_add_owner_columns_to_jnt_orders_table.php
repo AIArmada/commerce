@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $tableName = config('jnt.database.table_prefix', 'jnt_').'orders';
+        $tableName = config('jnt.database.table_prefix', 'jnt_') . 'orders';
 
         Schema::table($tableName, function (Blueprint $table): void {
             // nullableMorphs already creates an index on owner_type and owner_id
@@ -20,7 +20,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        $tableName = config('jnt.database.table_prefix', 'jnt_').'orders';
+        $tableName = config('jnt.database.table_prefix', 'jnt_') . 'orders';
 
         Schema::table($tableName, function (Blueprint $table): void {
             $table->dropIndex(['owner_type', 'owner_id']);

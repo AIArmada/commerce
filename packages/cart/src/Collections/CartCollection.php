@@ -126,7 +126,7 @@ final class CartCollection extends Collection
      *
      * @param  ConditionTarget|string|array<string, mixed>  $target
      */
-    public function filterByConditionTarget(ConditionTarget|string|array $target): static
+    public function filterByConditionTarget(ConditionTarget | string | array $target): static
     {
         $targetDefinition = ConditionTarget::from($target);
         $dsl = $targetDefinition->toDsl();
@@ -141,7 +141,7 @@ final class CartCollection extends Collection
     /**
      * Filter items by condition value
      */
-    public function filterByConditionValue(string|int $value): static
+    public function filterByConditionValue(string | int $value): static
     {
         return $this->filter(function (CartItem $item) use ($value) {
             return $item->getConditions()->contains(fn ($condition) => $condition->getValue() === $value);

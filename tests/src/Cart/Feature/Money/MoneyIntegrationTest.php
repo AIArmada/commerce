@@ -152,7 +152,7 @@ function createMoneyTestCart(string $instance = 'test'): Cart
                 return null;
             }
 
-            public function getOwnerId(): string|int|null
+            public function getOwnerId(): string | int | null
             {
                 return null;
             }

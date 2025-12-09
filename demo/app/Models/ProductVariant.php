@@ -49,7 +49,7 @@ final class ProductVariant extends Model
      */
     public function getFormattedPriceAttribute(): string
     {
-        return 'RM '.number_format($this->price / 100, 2);
+        return 'RM ' . number_format($this->price / 100, 2);
     }
 
     /**

@@ -29,19 +29,19 @@ class OrderPrintCommand extends Command
         try {
             $result = spin(
                 fn () => $jnt->printOrder($orderId),
-                'Printing waybill for order: '.$orderId
+                'Printing waybill for order: ' . $orderId
             );
 
             $waybill = PrintWaybillData::fromApiArray($result);
 
             if ($waybill->hasBase64Content()) {
-                $filename = $orderId.'.pdf';
+                $filename = $orderId . '.pdf';
                 $fullPath = base_path(sprintf('%s/%s', $path, $filename));
 
                 if ($waybill->savePdf($fullPath)) {
                     info('✓ Waybill saved successfully!');
-                    $this->line('Location: '.$fullPath);
-                    $this->line('Size: '.$waybill->getFormattedSize());
+                    $this->line('Location: ' . $fullPath);
+                    $this->line('Size: ' . $waybill->getFormattedSize());
                 } else {
                     error('Failed to save waybill PDF.');
 
@@ -49,7 +49,7 @@ class OrderPrintCommand extends Command
                 }
             } elseif ($waybill->hasUrlContent()) {
                 info('✓ Waybill URL generated!');
-                $this->line('Download URL: '.$waybill->getDownloadUrl());
+                $this->line('Download URL: ' . $waybill->getDownloadUrl());
             } else {
                 warning('No waybill content available.');
 
@@ -58,11 +58,11 @@ class OrderPrintCommand extends Command
 
             return self::SUCCESS;
         } catch (JntApiException $e) {
-            error('API Error: '.$e->getMessage());
+            error('API Error: ' . $e->getMessage());
 
             return self::FAILURE;
         } catch (Exception $e) {
-            error('Error: '.$e->getMessage());
+            error('Error: ' . $e->getMessage());
 
             return self::FAILURE;
         }

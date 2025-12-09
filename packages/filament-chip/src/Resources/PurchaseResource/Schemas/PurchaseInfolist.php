@@ -227,6 +227,6 @@ final class PurchaseInfolist
         $value = $amount / 100;
         $formatted = number_format($value, $precision, '.', ',');
 
-        return mb_trim(sprintf('%s%s', $currency !== null && $currency !== '' && $currency !== '0' ? mb_strtoupper($currency).' ' : '', $formatted));
+        return mb_trim(sprintf('%s%s', $currency !== null && $currency !== '' && $currency !== '0' ? mb_strtoupper($currency) . ' ' : '', $formatted));
     }
 }

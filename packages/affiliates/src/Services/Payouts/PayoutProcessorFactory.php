@@ -22,7 +22,7 @@ final class PayoutProcessorFactory
         'paypal' => PayPalProcessor::class,
     ];
 
-    public function make(string|PayoutMethodType $type): PayoutProcessorInterface
+    public function make(string | PayoutMethodType $type): PayoutProcessorInterface
     {
         $typeString = $type instanceof PayoutMethodType ? $type->value : $type;
 
@@ -37,7 +37,7 @@ final class PayoutProcessorFactory
     {
         if (! is_a($processorClass, PayoutProcessorInterface::class, true)) {
             throw new InvalidArgumentException(
-                'Processor class must implement '.PayoutProcessorInterface::class
+                'Processor class must implement ' . PayoutProcessorInterface::class
             );
         }
 

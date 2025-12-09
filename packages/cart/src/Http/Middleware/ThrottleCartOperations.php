@@ -57,16 +57,16 @@ final class ThrottleCartOperations
     {
         // Prefer authenticated user ID
         if ($request->user()) {
-            return 'user:'.$request->user()->getAuthIdentifier();
+            return 'user:' . $request->user()->getAuthIdentifier();
         }
 
         // Fall back to session ID
         if ($request->hasSession()) {
-            return 'session:'.$request->session()->getId();
+            return 'session:' . $request->session()->getId();
         }
 
         // Last resort: IP address
-        return 'ip:'.$request->ip();
+        return 'ip:' . $request->ip();
     }
 
     /**

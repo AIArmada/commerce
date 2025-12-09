@@ -18,7 +18,7 @@ trait ManagesSubscriptions
      *
      * @param  string|array<string>  $prices
      */
-    public function newSubscription(string $type, string|array $prices = []): SubscriptionBuilder
+    public function newSubscription(string $type, string | array $prices = []): SubscriptionBuilder
     {
         return new SubscriptionBuilder($this, $type, $prices);
     }
@@ -156,7 +156,7 @@ trait ManagesSubscriptions
      *
      * @param  string|array<string>  $products
      */
-    public function subscribedToProduct(string|array $products, string $type = 'default'): bool
+    public function subscribedToProduct(string | array $products, string $type = 'default'): bool
     {
         $subscription = $this->subscription($type);
 
@@ -178,7 +178,7 @@ trait ManagesSubscriptions
      *
      * @param  string|array<string>  $prices
      */
-    public function subscribedToPrice(string|array $prices, string $type = 'default'): bool
+    public function subscribedToPrice(string | array $prices, string $type = 'default'): bool
     {
         $subscription = $this->subscription($type);
 

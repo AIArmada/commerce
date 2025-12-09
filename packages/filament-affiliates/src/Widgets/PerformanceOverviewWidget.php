@@ -69,7 +69,7 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
         ];
     }
 
-    private function getChangeDescription(int|float $current, int|float $previous): string
+    private function getChangeDescription(int | float $current, int | float $previous): string
     {
         if ($previous === 0) {
             return $current > 0 ? '+100%' : '0%';
@@ -78,7 +78,7 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
         $change = (($current - $previous) / $previous) * 100;
         $sign = $change >= 0 ? '+' : '';
 
-        return $sign.Number::format($change, precision: 1).'% from last month';
+        return $sign . Number::format($change, precision: 1) . '% from last month';
     }
 
     private function formatMoney(int $amountMinor): string

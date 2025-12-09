@@ -50,7 +50,7 @@ describe('CampaignAnalytics Funnel Metrics', function (): void {
             CampaignEvent::create([
                 'campaign_id' => $this->campaign->id,
                 'event_type' => CampaignEventType::Application,
-                'voucher_code' => 'CODE'.$i,
+                'voucher_code' => 'CODE' . $i,
                 'occurred_at' => Carbon::now()->subHours(rand(1, 24)),
             ]);
         }
@@ -60,7 +60,7 @@ describe('CampaignAnalytics Funnel Metrics', function (): void {
             CampaignEvent::create([
                 'campaign_id' => $this->campaign->id,
                 'event_type' => CampaignEventType::Conversion,
-                'voucher_code' => 'CODE'.$i,
+                'voucher_code' => 'CODE' . $i,
                 'value_cents' => 50000,
                 'discount_cents' => 5000,
                 'occurred_at' => Carbon::now()->subHours(rand(1, 24)),
@@ -72,7 +72,7 @@ describe('CampaignAnalytics Funnel Metrics', function (): void {
             CampaignEvent::create([
                 'campaign_id' => $this->campaign->id,
                 'event_type' => CampaignEventType::Abandonment,
-                'voucher_code' => 'ABANDONED'.$i,
+                'voucher_code' => 'ABANDONED' . $i,
                 'occurred_at' => Carbon::now()->subHours(rand(1, 24)),
             ]);
         }
@@ -212,7 +212,7 @@ describe('CampaignAnalytics Channel Performance', function (): void {
                     'campaign_id' => $this->campaign->id,
                     'event_type' => CampaignEventType::Application,
                     'channel' => $channel,
-                    'voucher_code' => $channel.'_CODE',
+                    'voucher_code' => $channel . '_CODE',
                     'occurred_at' => Carbon::now()->subHours(rand(1, 24)),
                 ]);
             }
@@ -224,7 +224,7 @@ describe('CampaignAnalytics Channel Performance', function (): void {
                     'campaign_id' => $this->campaign->id,
                     'event_type' => CampaignEventType::Conversion,
                     'channel' => $channel,
-                    'voucher_code' => $channel.'_CODE',
+                    'voucher_code' => $channel . '_CODE',
                     'value_cents' => 50000,
                     'discount_cents' => 5000,
                     'occurred_at' => Carbon::now()->subHours(rand(1, 24)),

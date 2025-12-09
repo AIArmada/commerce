@@ -50,7 +50,8 @@ final class RecurringScheduleInfolist
                                 ->weight(FontWeight::SemiBold),
                             TextEntry::make('interval')
                                 ->label('Billing Interval')
-                                ->formatStateUsing(fn (RecurringSchedule $record): string => $record->interval_count > 1
+                                ->formatStateUsing(
+                                    fn (RecurringSchedule $record): string => $record->interval_count > 1
                                     ? "Every {$record->interval_count} {$record->interval->label()}s"
                                     : $record->interval->label()
                                 )

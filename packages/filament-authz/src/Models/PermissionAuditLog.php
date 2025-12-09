@@ -121,7 +121,7 @@ class PermissionAuditLog extends Model
         $description = $eventType->label();
 
         if ($this->target_name !== null) {
-            $description .= ': '.$this->target_name;
+            $description .= ': ' . $this->target_name;
         }
 
         return $description;
@@ -168,7 +168,7 @@ class PermissionAuditLog extends Model
      * @param  Builder<PermissionAuditLog>  $query
      * @return Builder<PermissionAuditLog>
      */
-    public function scopeOfEventType(Builder $query, AuditEventType|string $eventType): Builder
+    public function scopeOfEventType(Builder $query, AuditEventType | string $eventType): Builder
     {
         $type = $eventType instanceof AuditEventType ? $eventType->value : $eventType;
 
@@ -181,7 +181,7 @@ class PermissionAuditLog extends Model
      * @param  Builder<PermissionAuditLog>  $query
      * @return Builder<PermissionAuditLog>
      */
-    public function scopeOfSeverity(Builder $query, AuditSeverity|string $severity): Builder
+    public function scopeOfSeverity(Builder $query, AuditSeverity | string $severity): Builder
     {
         $sev = $severity instanceof AuditSeverity ? $severity->value : $severity;
 

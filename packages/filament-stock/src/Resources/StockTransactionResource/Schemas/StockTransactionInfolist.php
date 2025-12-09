@@ -58,7 +58,8 @@ final class StockTransactionInfolist
                                     'expired' => 'danger',
                                     default => 'gray',
                                 })
-                                ->formatStateUsing(fn (?string $state): string => $state !== null
+                                ->formatStateUsing(
+                                    fn (?string $state): string => $state !== null
                                     ? ucfirst($state)
                                     : '-'
                                 ),

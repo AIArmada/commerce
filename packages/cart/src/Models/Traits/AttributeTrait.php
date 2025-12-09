@@ -86,7 +86,7 @@ trait AttributeTrait
     /**
      * Set item price (value will be converted to integer cents).
      */
-    public function setPrice(float|int|string $price): static
+    public function setPrice(float | int | string $price): static
     {
         // Use the normalizeToInt method from CartItem
         $normalizedPrice = $this->normalizeToInt($price);

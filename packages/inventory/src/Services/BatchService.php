@@ -159,7 +159,7 @@ final class BatchService
      * @param  Collection<int, InventoryBatch>|array<InventoryBatch>  $batches
      * @return Collection<int, InventoryBatch>
      */
-    public function recallBatches(Collection|array $batches, string $reason): Collection
+    public function recallBatches(Collection | array $batches, string $reason): Collection
     {
         if (is_array($batches)) {
             $batches = new Collection($batches);

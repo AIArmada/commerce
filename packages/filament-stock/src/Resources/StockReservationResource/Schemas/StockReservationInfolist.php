@@ -76,12 +76,14 @@ final class StockReservationInfolist
 
                             TextEntry::make('cart_link_status')
                                 ->label('Cart Integration')
-                                ->state(fn (): string => app(FilamentCartBridge::class)->isAvailable()
+                                ->state(
+                                    fn (): string => app(FilamentCartBridge::class)->isAvailable()
                                     ? 'Linked'
                                     : 'Not Available'
                                 )
                                 ->badge()
-                                ->color(fn (): string => app(FilamentCartBridge::class)->isAvailable()
+                                ->color(
+                                    fn (): string => app(FilamentCartBridge::class)->isAvailable()
                                     ? 'success'
                                     : 'gray'
                                 ),

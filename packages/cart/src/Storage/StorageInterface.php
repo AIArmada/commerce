@@ -31,7 +31,7 @@ interface StorageInterface
      *
      * @return string|int|null The current owner ID or null if not set
      */
-    public function getOwnerId(): string|int|null;
+    public function getOwnerId(): string | int | null;
 
     /**
      * Check if cart exists in storage

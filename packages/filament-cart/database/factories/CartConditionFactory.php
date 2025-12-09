@@ -36,7 +36,7 @@ final class CartConditionFactory extends Factory
         return [
             'cart_id' => Cart::factory(),
             'cart_item_id' => null, // Cart-level by default
-            'name' => $this->faker->words(2, true).'_'.$type,
+            'name' => $this->faker->words(2, true) . '_' . $type,
             'type' => $type,
             'target' => $target,
             'target_definition' => ConditionTarget::from($target)->toArray(),
@@ -55,7 +55,7 @@ final class CartConditionFactory extends Factory
     {
         return $this->state(fn () => [
             'type' => 'discount',
-            'value' => '-'.$this->faker->numberBetween(5, 50).'%',
+            'value' => '-' . $this->faker->numberBetween(5, 50) . '%',
             'attributes' => [
                 'description' => 'Promotional discount',
                 'promo_code' => $this->faker->regexify('[A-Z]{4}[0-9]{2}'),
@@ -70,7 +70,7 @@ final class CartConditionFactory extends Factory
     {
         return $this->state(fn () => [
             'type' => 'tax',
-            'value' => $this->faker->randomFloat(2, 5, 15).'%',
+            'value' => $this->faker->randomFloat(2, 5, 15) . '%',
             'attributes' => [
                 'tax_type' => $this->faker->randomElement(['VAT', 'Sales Tax', 'GST']),
                 'tax_region' => $this->faker->stateAbbr(), // @phpstan-ignore method.notFound
@@ -85,7 +85,7 @@ final class CartConditionFactory extends Factory
     {
         return $this->state(fn () => [
             'type' => 'fee',
-            'value' => '+'.$this->faker->numberBetween(100, 2500),
+            'value' => '+' . $this->faker->numberBetween(100, 2500),
             'attributes' => [
                 'fee_type' => $this->faker->randomElement(['Processing Fee', 'Service Fee', 'Handling Fee']),
                 'description' => 'Additional processing fee',
@@ -100,7 +100,7 @@ final class CartConditionFactory extends Factory
     {
         return $this->state(fn () => [
             'type' => 'shipping',
-            'value' => '+'.$this->faker->numberBetween(500, 5000),
+            'value' => '+' . $this->faker->numberBetween(500, 5000),
             'attributes' => [
                 'shipping_method' => $this->faker->randomElement(['Standard', 'Express', 'Overnight']),
                 'carrier' => $this->faker->randomElement(['UPS', 'FedEx', 'USPS', 'DHL']),
@@ -142,7 +142,7 @@ final class CartConditionFactory extends Factory
     public function percentage(): static
     {
         return $this->state(fn () => [
-            'value' => $this->faker->randomElement(['-', '+']).$this->faker->numberBetween(5, 50).'%',
+            'value' => $this->faker->randomElement(['-', '+']) . $this->faker->numberBetween(5, 50) . '%',
         ]);
     }
 
@@ -152,7 +152,7 @@ final class CartConditionFactory extends Factory
     public function fixedAmount(): static
     {
         return $this->state(fn () => [
-            'value' => $this->faker->randomElement(['-', '+']).$this->faker->numberBetween(100, 10000),
+            'value' => $this->faker->randomElement(['-', '+']) . $this->faker->numberBetween(100, 10000),
         ]);
     }
 
@@ -162,11 +162,11 @@ final class CartConditionFactory extends Factory
     private function generateValue(string $type): string
     {
         return match ($type) {
-            'discount' => '-'.$this->faker->numberBetween(5, 50).'%',
-            'tax' => $this->faker->randomFloat(2, 5, 15).'%',
-            'fee' => '+'.$this->faker->numberBetween(100, 2500),
-            'shipping' => '+'.$this->faker->numberBetween(500, 5000),
-            default => '+'.$this->faker->numberBetween(100, 10000),
+            'discount' => '-' . $this->faker->numberBetween(5, 50) . '%',
+            'tax' => $this->faker->randomFloat(2, 5, 15) . '%',
+            'fee' => '+' . $this->faker->numberBetween(100, 2500),
+            'shipping' => '+' . $this->faker->numberBetween(500, 5000),
+            default => '+' . $this->faker->numberBetween(100, 10000),
         };
     }
 

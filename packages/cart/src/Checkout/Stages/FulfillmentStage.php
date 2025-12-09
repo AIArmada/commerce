@@ -92,7 +92,7 @@ final class FulfillmentStage implements CheckoutStageInterface
             return StageResult::success('Order created', $data);
         } catch (Throwable $e) {
             return StageResult::failure(
-                'Order creation failed: '.$e->getMessage(),
+                'Order creation failed: ' . $e->getMessage(),
                 ['fulfillment' => $e->getMessage()]
             );
         }

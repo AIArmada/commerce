@@ -28,7 +28,7 @@ class ItemsRelationManager extends RelationManager
                     ->numeric(),
 
                 Tables\Columns\TextColumn::make('weight')
-                    ->formatStateUsing(fn ($state) => number_format($state / 1000, 2).' kg'),
+                    ->formatStateUsing(fn ($state) => number_format($state / 1000, 2) . ' kg'),
 
                 Tables\Columns\TextColumn::make('declared_value')
                     ->money('MYR', divideBy: 100),

@@ -35,13 +35,14 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
      * @param  array<string, mixed>|Collection<string, CartCondition>  $conditions
      */
     public function __construct(
-        string|int $id,
+        string | int $id,
         public string $name,
-        int|float|string $price,
+        int | float | string $price,
         public int $quantity,
         array $attributes = [],
-        /** @var array|Collection<string, CartCondition> */ array|Collection $conditions = [],
-        public string|object|null $associatedModel = null
+        /** @var array|Collection<string, CartCondition> */
+        array | Collection $conditions = [],
+        public string | object | null $associatedModel = null
     ) {
         // Normalize ID to string for consistent handling
         $this->id = (string) $id;
@@ -109,7 +110,7 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
      *                                   - float: treated as decimal dollars, converted to cents
      *                                   - string: sanitized and converted
      */
-    private function normalizeToInt(int|float|string $price): int
+    private function normalizeToInt(int | float | string $price): int
     {
         if (is_int($price)) {
             return $price;

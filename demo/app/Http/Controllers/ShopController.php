@@ -71,9 +71,9 @@ final class ShopController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%'.$request->search.'%')
-                    ->orWhere('description', 'like', '%'.$request->search.'%')
-                    ->orWhere('sku', 'like', '%'.$request->search.'%');
+                $q->where('name', 'like', '%' . $request->search . '%')
+                    ->orWhere('description', 'like', '%' . $request->search . '%')
+                    ->orWhere('sku', 'like', '%' . $request->search . '%');
             });
         }
 
@@ -241,7 +241,7 @@ final class ShopController extends Controller
             Cart::applyVoucher($request->voucher_code);
             session(['applied_voucher' => mb_strtoupper($request->voucher_code)]);
 
-            return back()->with('success', 'Voucher '.mb_strtoupper($request->voucher_code).' applied!');
+            return back()->with('success', 'Voucher ' . mb_strtoupper($request->voucher_code) . ' applied!');
         } catch (\AIArmada\Vouchers\Exceptions\InvalidVoucherException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -266,7 +266,7 @@ final class ShopController extends Controller
     /**
      * Checkout page.
      */
-    public function checkout(): View|RedirectResponse
+    public function checkout(): View | RedirectResponse
     {
         if (Cart::isEmpty()) {
             return redirect()->route('shop.cart')->with('error', 'Your cart is empty.');
@@ -316,7 +316,7 @@ final class ShopController extends Controller
 
         // Create order with pending_payment status
         $order = Order::create([
-            'order_number' => 'ORD-'.mb_strtoupper(Str::random(8)),
+            'order_number' => 'ORD-' . mb_strtoupper(Str::random(8)),
             'user_id' => auth()->id(),
             'status' => 'pending_payment',
             'payment_status' => 'pending',
@@ -327,7 +327,7 @@ final class ShopController extends Controller
             'grand_total' => $subtotalWithConditions + $shippingCost,
             'currency' => 'MYR',
             'shipping_address' => [
-                'name' => $request->first_name.' '.$request->last_name,
+                'name' => $request->first_name . ' ' . $request->last_name,
                 'email' => $request->email,
                 'phone' => $request->phone,
                 'address_line_1' => $request->address_line_1,
@@ -373,7 +373,7 @@ final class ShopController extends Controller
                 ->reference($order->order_number)
                 ->customer(
                     email: $request->email,
-                    fullName: $request->first_name.' '.$request->last_name,
+                    fullName: $request->first_name . ' ' . $request->last_name,
                     phone: $request->phone,
                     country: 'MY'
                 )
@@ -397,7 +397,7 @@ final class ShopController extends Controller
             // Add shipping as a product if applicable
             if ($shippingCost > 0) {
                 $purchase->addProduct(
-                    name: 'Shipping ('.ucfirst(str_replace('_', ' ', $request->shipping_method)).')',
+                    name: 'Shipping (' . ucfirst(str_replace('_', ' ', $request->shipping_method)) . ')',
                     price: $shippingCost,
                     quantity: 1
                 );
@@ -449,7 +449,7 @@ final class ShopController extends Controller
             $order->update(['status' => 'payment_failed']);
 
             return redirect()->route('shop.checkout')
-                ->with('error', 'Payment initialization failed. Please try again. Error: '.$e->getMessage());
+                ->with('error', 'Payment initialization failed. Please try again. Error: ' . $e->getMessage());
         }
     }
 

@@ -80,7 +80,7 @@ final class ApplyConditionAction extends Action
                 } catch (Exception $e) {
                     Notification::make()
                         ->title('Failed to Apply Condition')
-                        ->body('An error occurred while applying the condition: '.$e->getMessage())
+                        ->body('An error occurred while applying the condition: ' . $e->getMessage())
                         ->danger()
                         ->send();
                 }
@@ -153,7 +153,7 @@ final class ApplyConditionAction extends Action
                 } catch (Exception $e) {
                     Notification::make()
                         ->title('Failed to Apply Item Condition')
-                        ->body('An error occurred while applying the condition: '.$e->getMessage())
+                        ->body('An error occurred while applying the condition: ' . $e->getMessage())
                         ->danger()
                         ->send();
                 }
@@ -246,7 +246,7 @@ final class ApplyConditionAction extends Action
                     ->columnSpanFull()
                     ->keyPlaceholder('e.g., min, amount, ids')
                     ->valuePlaceholder('e.g., 3 or ["VIP","GOLD"]')
-                    ->hint(static fn (): string => 'Available keys: '.self::ruleOptionsHint())
+                    ->hint(static fn (): string => 'Available keys: ' . self::ruleOptionsHint())
                     ->hintIcon('heroicon-m-information-circle')
                     ->reorderable(false)
                     ->default([])
@@ -332,7 +332,7 @@ final class ApplyConditionAction extends Action
                 } catch (Exception $e) {
                     Notification::make()
                         ->title('Failed to Apply Custom Condition')
-                        ->body('An error occurred while applying the condition: '.$e->getMessage())
+                        ->body('An error occurred while applying the condition: ' . $e->getMessage())
                         ->danger()
                         ->send();
                 }

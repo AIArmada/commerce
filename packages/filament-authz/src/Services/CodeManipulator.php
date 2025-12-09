@@ -91,13 +91,13 @@ class CodeManipulator
             if (! empty($matches[3])) {
                 // Append to existing trait use statement
                 $existingUse = mb_rtrim($matches[3], ';');
-                $newUse = $existingUse.", {$traitName};";
+                $newUse = $existingUse . ", {$traitName};";
                 $content = str_replace($matches[3], $newUse, $content);
             } else {
                 // Add new use statement after class opening brace
                 $classOpening = $matches[1];
                 $whitespace = $matches[2] ?: "\n";
-                $replacement = $classOpening.$whitespace."    use {$traitName};\n";
+                $replacement = $classOpening . $whitespace . "    use {$traitName};\n";
                 $content = preg_replace($classPattern, $replacement, $content, 1);
             }
         }
@@ -156,7 +156,7 @@ class CodeManipulator
 PHP;
 
         // Add before last closing brace
-        $content = preg_replace('/}(\s*)$/', $method."\n}$1", $content, 1);
+        $content = preg_replace('/}(\s*)$/', $method . "\n}$1", $content, 1);
 
         $this->setContent($content);
 
@@ -192,7 +192,7 @@ PHP;
             if (mb_trim($arrayContent) === '') {
                 $newArrayContent = "\n        {$newEntry},\n    ";
             } else {
-                $newArrayContent = mb_rtrim($arrayContent).",\n        {$newEntry},\n    ";
+                $newArrayContent = mb_rtrim($arrayContent) . ",\n        {$newEntry},\n    ";
             }
 
             $replacement = "{$matches[1]}{$matches[2]} {$matches[3]}array \${$property} = [{$newArrayContent}];";
@@ -221,10 +221,10 @@ PHP;
 
             if ($origLine !== $modLine) {
                 if ($origLine !== '') {
-                    $diff[] = '- '.$origLine;
+                    $diff[] = '- ' . $origLine;
                 }
                 if ($modLine !== '') {
-                    $diff[] = '+ '.$modLine;
+                    $diff[] = '+ ' . $modLine;
                 }
             }
         }
@@ -341,7 +341,7 @@ PHP;
                 }
             }
 
-            return '['.implode(', ', $items).']';
+            return '[' . implode(', ', $items) . ']';
         }
 
         return (string) $value;

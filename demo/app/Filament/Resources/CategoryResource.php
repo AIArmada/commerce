@@ -22,9 +22,9 @@ final class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-folder';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-folder';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Commerce';
+    protected static string | UnitEnum | null $navigationGroup = 'Commerce';
 
     protected static ?int $navigationSort = 1;
 

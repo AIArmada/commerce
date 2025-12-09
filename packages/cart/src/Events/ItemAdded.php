@@ -34,7 +34,10 @@ use Illuminate\Queue\SerializesModels;
  */
 final class ItemAdded implements CartEventInterface
 {
-    use Dispatchable, HasCartEventData, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use HasCartEventData;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * Create a new item added event instance.

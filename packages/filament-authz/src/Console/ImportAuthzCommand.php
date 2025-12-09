@@ -21,7 +21,7 @@ class ImportAuthzCommand extends Command
         $path = $this->argument('path');
         $fs = app(Filesystem::class);
         if (! $fs->exists($path)) {
-            $this->error('File not found: '.$path);
+            $this->error('File not found: ' . $path);
 
             return self::FAILURE;
         }

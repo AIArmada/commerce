@@ -14,7 +14,7 @@ it('returns detailed result object when migrating for user succeeds', function (
     {
         public bool $called = false;
 
-        public function migrateGuestCartToUser(string|int $userId, string $instance, string $sessionId): bool
+        public function migrateGuestCartToUser(string | int $userId, string $instance, string $sessionId): bool
         {
             $this->called = true;
 
@@ -41,7 +41,7 @@ it('returns failure result object when no items to migrate', function (): void {
     {
         public bool $called = false;
 
-        public function migrateGuestCartToUser(string|int $userId, string $instance, string $sessionId): bool
+        public function migrateGuestCartToUser(string | int $userId, string $instance, string $sessionId): bool
         {
             $this->called = true;
 

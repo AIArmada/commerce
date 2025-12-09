@@ -43,7 +43,7 @@ class InvalidCoupon extends Exception
     public static function cannotUseForeverAmountOffInCheckout(string $couponId): self
     {
         return new self(
-            "The coupon [{$couponId}] is a forever amount_off coupon and cannot be used in checkout sessions. ".
+            "The coupon [{$couponId}] is a forever amount_off coupon and cannot be used in checkout sessions. " .
             'Please use a different coupon or apply it directly to the subscription.'
         );
     }
@@ -54,7 +54,7 @@ class InvalidCoupon extends Exception
     public static function cannotApplyForeverAmountOffToSubscription(string $couponId): self
     {
         return new self(
-            "The coupon [{$couponId}] is a forever amount_off coupon and cannot be applied to subscriptions. ".
+            "The coupon [{$couponId}] is a forever amount_off coupon and cannot be applied to subscriptions. " .
             'Please use a percentage coupon or a fixed duration amount_off coupon.'
         );
     }

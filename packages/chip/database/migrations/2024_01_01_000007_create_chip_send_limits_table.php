@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        Schema::create($tablePrefix.'send_limits', function (Blueprint $table): void {
+        Schema::create($tablePrefix . 'send_limits', function (Blueprint $table): void {
             // Core API fields - Send Limit structure from CHIP Send API
             $table->integer('id')->primary();
 
@@ -46,6 +46,6 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        Schema::dropIfExists($tablePrefix.'send_limits');
+        Schema::dropIfExists($tablePrefix . 'send_limits');
     }
 };

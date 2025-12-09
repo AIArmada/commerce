@@ -68,7 +68,7 @@ class ReferrerEvaluator implements TargetingRuleEvaluator
 
         $validTypes = ['referrer', 'referrer_url', 'utm_source', 'utm_medium', 'utm_campaign', 'channel'];
         if (isset($rule['type']) && ! in_array($rule['type'], $validTypes, true)) {
-            $errors[] = 'Invalid type. Valid types: '.implode(', ', $validTypes);
+            $errors[] = 'Invalid type. Valid types: ' . implode(', ', $validTypes);
         }
 
         return $errors;
@@ -190,7 +190,7 @@ class ReferrerEvaluator implements TargetingRuleEvaluator
         $host = $parsedUrl['host'] ?? '';
 
         foreach ($domains as $domain) {
-            if ($host === $domain || str_ends_with($host, '.'.$domain)) {
+            if ($host === $domain || str_ends_with($host, '.' . $domain)) {
                 return true;
             }
         }

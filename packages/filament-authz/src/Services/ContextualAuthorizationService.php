@@ -202,7 +202,7 @@ class ContextualAuthorizationService
      */
     public function clearCache($user): void
     {
-        Cache::forget(self::CACHE_KEY_PREFIX."user:{$user->getKey()}");
+        Cache::forget(self::CACHE_KEY_PREFIX . "user:{$user->getKey()}");
     }
 
     /**

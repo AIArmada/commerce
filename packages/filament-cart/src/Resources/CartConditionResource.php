@@ -20,9 +20,9 @@ final class CartConditionResource extends Resource
 {
     protected static ?string $model = CartCondition::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTag;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedTag;
 
-    protected static string|UnitEnum|null $navigationGroup = null;
+    protected static string | UnitEnum | null $navigationGroup = null;
 
     protected static ?string $recordTitleAttribute = 'name';
 
@@ -34,7 +34,7 @@ final class CartConditionResource extends Resource
 
     protected static ?int $navigationSort = 32;
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-cart.navigation_group');
     }

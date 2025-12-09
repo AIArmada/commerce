@@ -62,7 +62,7 @@ class WebhookService
     public function generateSignature(string $bizContent): string
     {
         // J&T's signature algorithm: base64(md5(content + key))
-        return base64_encode(md5($bizContent.$this->privateKey, true));
+        return base64_encode(md5($bizContent . $this->privateKey, true));
     }
 
     /**

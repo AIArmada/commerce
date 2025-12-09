@@ -75,7 +75,7 @@ class ReturnAuthorization extends Model
 
     public static function generateRmaNumber(): string
     {
-        return 'RMA-'.mb_strtoupper(uniqid());
+        return 'RMA-' . mb_strtoupper(uniqid());
     }
 
     public function getTable(): string

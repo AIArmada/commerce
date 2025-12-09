@@ -84,7 +84,7 @@ class InventoryMovementFactory extends Factory
     /**
      * Set from location.
      */
-    public function fromLocation(InventoryLocation|string $location): static
+    public function fromLocation(InventoryLocation | string $location): static
     {
         return $this->state(fn (array $attributes): array => [
             'from_location_id' => $location instanceof InventoryLocation ? $location->id : $location,
@@ -94,7 +94,7 @@ class InventoryMovementFactory extends Factory
     /**
      * Set to location.
      */
-    public function toLocation(InventoryLocation|string $location): static
+    public function toLocation(InventoryLocation | string $location): static
     {
         return $this->state(fn (array $attributes): array => [
             'to_location_id' => $location instanceof InventoryLocation ? $location->id : $location,

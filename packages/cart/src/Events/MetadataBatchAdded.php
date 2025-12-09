@@ -21,7 +21,10 @@ use Illuminate\Queue\SerializesModels;
  */
 final class MetadataBatchAdded implements CartEventInterface
 {
-    use Dispatchable, HasCartEventData, InteractsWithSockets, SerializesModels;
+    use Dispatchable;
+    use HasCartEventData;
+    use InteractsWithSockets;
+    use SerializesModels;
 
     /**
      * @param  array<string, mixed>  $metadata

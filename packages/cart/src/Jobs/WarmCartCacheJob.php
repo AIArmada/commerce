@@ -37,7 +37,7 @@ final class WarmCartCacheJob implements ShouldQueue
         private readonly string $identifier,
         private readonly array $instances = ['default'],
         private readonly ?string $ownerType = null,
-        private readonly string|int|null $ownerId = null
+        private readonly string | int | null $ownerId = null
     ) {}
 
     public function handle(StorageInterface $storage, CacheRepository $cache): void

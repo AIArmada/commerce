@@ -40,7 +40,7 @@ final class ClientsApi extends CollectApi
     public function list(array $filters = []): array
     {
         $queryString = http_build_query($filters);
-        $endpoint = 'clients/'.($queryString ? '?'.$queryString : '');
+        $endpoint = 'clients/' . ($queryString ? '?' . $queryString : '');
 
         return $this->attempt(
             fn () => $this->client->get($endpoint),

@@ -16,7 +16,7 @@ class PaymentMethods extends Page
 {
     use InteractsWithBillable;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCreditCard;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCreditCard;
 
     protected static ?int $navigationSort = 20;
 

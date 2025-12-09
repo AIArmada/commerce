@@ -63,7 +63,7 @@ class EntityDiscoveryService
      */
     public function discoverResources(array $options = []): Collection
     {
-        $cacheKey = 'authz_resources_'.md5(json_encode($options) ?: '');
+        $cacheKey = 'authz_resources_' . md5(json_encode($options) ?: '');
 
         if ($this->shouldUseCache() && isset($this->resourceCache[$cacheKey])) {
             return $this->resourceCache[$cacheKey];
@@ -92,7 +92,7 @@ class EntityDiscoveryService
      */
     public function discoverPages(array $options = []): Collection
     {
-        $cacheKey = 'authz_pages_'.md5(json_encode($options) ?: '');
+        $cacheKey = 'authz_pages_' . md5(json_encode($options) ?: '');
 
         if ($this->shouldUseCache() && isset($this->pageCache[$cacheKey])) {
             return $this->pageCache[$cacheKey];
@@ -121,7 +121,7 @@ class EntityDiscoveryService
      */
     public function discoverWidgets(array $options = []): Collection
     {
-        $cacheKey = 'authz_widgets_'.md5(json_encode($options) ?: '');
+        $cacheKey = 'authz_widgets_' . md5(json_encode($options) ?: '');
 
         if ($this->shouldUseCache() && isset($this->widgetCache[$cacheKey])) {
             return $this->widgetCache[$cacheKey];
@@ -207,9 +207,9 @@ class EntityDiscoveryService
         $this->widgetCache = [];
 
         // Clear stored cache
-        Cache::forget('authz_resources_'.md5('[]'));
-        Cache::forget('authz_pages_'.md5('[]'));
-        Cache::forget('authz_widgets_'.md5('[]'));
+        Cache::forget('authz_resources_' . md5('[]'));
+        Cache::forget('authz_pages_' . md5('[]'));
+        Cache::forget('authz_widgets_' . md5('[]'));
     }
 
     /**
@@ -366,6 +366,7 @@ class EntityDiscoveryService
             foreach ($includeNamespaces as $pattern) {
                 if (Str::is($pattern, $resource->fqcn)) {
                     $included = true;
+
                     break;
                 }
             }

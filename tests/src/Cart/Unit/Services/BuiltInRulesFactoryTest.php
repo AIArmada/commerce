@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\DB;
 if (! function_exists('makeRulesFactoryCart')) {
     function makeRulesFactoryCart(string $suffix = ''): Cart
     {
-        $identifier = 'builtin-rules-'.($suffix !== '' ? $suffix : uniqid());
+        $identifier = 'builtin-rules-' . ($suffix !== '' ? $suffix : uniqid());
         $storage = new DatabaseStorage(DB::connection('testing'), 'carts');
 
         return new Cart($storage, $identifier, events: null);

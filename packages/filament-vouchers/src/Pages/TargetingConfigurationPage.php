@@ -26,7 +26,7 @@ final class TargetingConfigurationPage extends Page implements HasForms
      */
     public array $data = [];
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedFunnel;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedFunnel;
 
     protected string $view = 'filament-vouchers::pages.targeting-configuration';
 
@@ -34,7 +34,7 @@ final class TargetingConfigurationPage extends Page implements HasForms
 
     protected static ?string $title = 'Voucher Targeting Configuration';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Vouchers & Discounts';
+    protected static string | UnitEnum | null $navigationGroup = 'Vouchers & Discounts';
 
     protected static ?int $navigationSort = 101;
 

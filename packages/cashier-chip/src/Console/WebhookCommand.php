@@ -29,7 +29,7 @@ class WebhookCommand extends Command
     {
         $this->components->info('CHIP Webhook URL Configuration');
 
-        $webhookUrl = url(config('cashier-chip.path', 'chip').'/webhook');
+        $webhookUrl = url(config('cashier-chip.path', 'chip') . '/webhook');
 
         $this->components->twoColumnDetail(
             'Webhook URL',

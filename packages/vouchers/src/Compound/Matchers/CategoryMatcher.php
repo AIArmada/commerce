@@ -53,14 +53,16 @@ class CategoryMatcher extends AbstractProductMatcher
 
             if (in_array($normalizedCategory, $this->categories, true)) {
                 $inCategory = true;
+
                 break;
             }
 
             // Check if category is a child of any target category
             if ($this->includeChildren) {
                 foreach ($this->categories as $targetCategory) {
-                    if (str_starts_with($normalizedCategory, $targetCategory.'/')) {
+                    if (str_starts_with($normalizedCategory, $targetCategory . '/')) {
                         $inCategory = true;
+
                         break 2;
                     }
                 }

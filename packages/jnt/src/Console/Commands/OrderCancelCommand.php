@@ -55,11 +55,11 @@ class OrderCancelCommand extends Command
 
             return self::SUCCESS;
         } catch (JntApiException $e) {
-            error('API Error: '.$e->getMessage());
+            error('API Error: ' . $e->getMessage());
 
             return self::FAILURE;
         } catch (Exception $e) {
-            error('Error: '.$e->getMessage());
+            error('Error: ' . $e->getMessage());
 
             return self::FAILURE;
         }

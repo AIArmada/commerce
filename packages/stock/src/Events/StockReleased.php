@@ -13,7 +13,8 @@ use Illuminate\Queue\SerializesModels;
  */
 final class StockReleased
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
+    use SerializesModels;
 
     public function __construct(
         public readonly Model $stockable,

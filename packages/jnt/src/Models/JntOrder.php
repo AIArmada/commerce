@@ -119,7 +119,7 @@ final class JntOrder extends Model
         $tables = config('jnt.database.tables', []);
         $prefix = config('jnt.database.table_prefix', 'jnt_');
 
-        return $tables['orders'] ?? $prefix.'orders';
+        return $tables['orders'] ?? $prefix . 'orders';
     }
 
     /**

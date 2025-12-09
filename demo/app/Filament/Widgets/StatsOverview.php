@@ -22,7 +22,7 @@ final class StatsOverview extends BaseWidget
 {
     protected static ?int $sort = -3;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     protected function getStats(): array
     {
@@ -44,7 +44,7 @@ final class StatsOverview extends BaseWidget
             ->count();
 
         return [
-            Stat::make('Total Revenue', 'RM '.Number::format($totalRevenue / 100, 2))
+            Stat::make('Total Revenue', 'RM ' . Number::format($totalRevenue / 100, 2))
                 ->description('From paid orders')
                 ->descriptionIcon('heroicon-m-banknotes')
                 ->color('success')
@@ -56,22 +56,22 @@ final class StatsOverview extends BaseWidget
                 ->color($pendingOrders > 0 ? 'warning' : 'success'),
 
             Stat::make('Products', Product::count())
-                ->description($lowStockProducts > 0 ? $lowStockProducts.' low stock' : 'All stocked')
+                ->description($lowStockProducts > 0 ? $lowStockProducts . ' low stock' : 'All stocked')
                 ->descriptionIcon($lowStockProducts > 0 ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-cube')
                 ->color($lowStockProducts > 0 ? 'warning' : 'info'),
 
             Stat::make('Active Vouchers', $activeVouchers)
-                ->description($voucherRedemptions.' redemptions')
+                ->description($voucherRedemptions . ' redemptions')
                 ->descriptionIcon('heroicon-m-ticket')
                 ->color('primary'),
 
             Stat::make('Affiliates', $activeAffiliates)
-                ->description('RM '.Number::format($pendingCommissions / 100, 2).' pending')
+                ->description('RM ' . Number::format($pendingCommissions / 100, 2) . ' pending')
                 ->descriptionIcon('heroicon-m-users')
                 ->color('success'),
 
             Stat::make('Customers', User::count())
-                ->description(Order::distinct('user_id')->count().' with orders')
+                ->description(Order::distinct('user_id')->count() . ' with orders')
                 ->descriptionIcon('heroicon-m-user-group')
                 ->color('info'),
         ];

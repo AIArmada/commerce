@@ -392,6 +392,6 @@ class CodeAbuseDetector extends AbstractFraudDetector
             return str_repeat('*', $length);
         }
 
-        return mb_substr($code, 0, 3).str_repeat('*', $length - 5).mb_substr($code, -2);
+        return mb_substr($code, 0, 3) . str_repeat('*', $length - 5) . mb_substr($code, -2);
     }
 }

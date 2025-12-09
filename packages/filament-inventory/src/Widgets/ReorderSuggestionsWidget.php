@@ -15,7 +15,7 @@ final class ReorderSuggestionsWidget extends TableWidget
 {
     protected static ?int $sort = 40;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     protected static ?string $heading = 'Reorder Suggestions';
 

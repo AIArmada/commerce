@@ -55,7 +55,7 @@ class StripeSubscriptionBuilder implements SubscriptionBuilderContract
     public function __construct(
         protected BillableContract $billable,
         protected string $type,
-        string|array $prices = []
+        string | array $prices = []
     ) {
         // Directly instantiate the native SubscriptionBuilder to avoid
         // conflicts with the unified cashier package's method overrides
@@ -78,7 +78,7 @@ class StripeSubscriptionBuilder implements SubscriptionBuilderContract
     /**
      * Set the price for the subscription.
      */
-    public function price(string|array $price, ?int $quantity = 1): self
+    public function price(string | array $price, ?int $quantity = 1): self
     {
         $priceId = is_array($price) ? ($price['price'] ?? $price[0]) : $price;
         $qty = is_array($price) ? ($price['quantity'] ?? $quantity) : $quantity;
@@ -181,7 +181,7 @@ class StripeSubscriptionBuilder implements SubscriptionBuilderContract
     /**
      * Anchor the billing cycle to a date.
      */
-    public function anchorBillingCycleOn(DateTimeInterface|CarbonInterface $date): self
+    public function anchorBillingCycleOn(DateTimeInterface | CarbonInterface $date): self
     {
         if ($date instanceof DateTimeInterface && ! $date instanceof CarbonInterface) {
             $date = Carbon::instance($date);

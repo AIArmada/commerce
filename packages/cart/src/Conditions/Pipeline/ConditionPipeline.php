@@ -119,7 +119,7 @@ final class ConditionPipeline
             }
 
             if ($scope === ConditionScope::SHIPMENTS) {
-                file_put_contents('/tmp/scope-debug.log', 'processing shipments scope'.PHP_EOL, FILE_APPEND);
+                file_put_contents('/tmp/scope-debug.log', 'processing shipments scope' . PHP_EOL, FILE_APPEND);
             }
 
             $amount = $this->getResolverForScope($scope)->resolve(

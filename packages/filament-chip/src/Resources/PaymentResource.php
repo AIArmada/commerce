@@ -29,7 +29,7 @@ final class PaymentResource extends BaseChipResource
 {
     protected static ?string $model = Payment::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBanknotes;
 
     protected static ?string $modelLabel = 'Payment';
 

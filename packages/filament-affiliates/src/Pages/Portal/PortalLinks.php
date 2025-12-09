@@ -24,7 +24,7 @@ class PortalLinks extends Page
 
     public ?string $generatedLink = null;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedLink;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedLink;
 
     protected static ?int $navigationSort = 1;
 
@@ -35,7 +35,7 @@ class PortalLinks extends Page
         return __('Links');
     }
 
-    public function getTitle(): string|Htmlable
+    public function getTitle(): string | Htmlable
     {
         return __('Affiliate Links');
     }
@@ -78,7 +78,7 @@ class PortalLinks extends Page
             // Fallback to simple URL parameter if link generator fails validation
             $param = config('affiliates.links.parameter', 'aff');
 
-            return url('/').'?'.$param.'='.$affiliate->code;
+            return url('/') . '?' . $param . '=' . $affiliate->code;
         }
     }
 

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         $tables = config('jnt.database.tables', []);
         $prefix = config('jnt.database.table_prefix', 'jnt_');
-        $trackingEventsTable = $tables['tracking_events'] ?? $prefix.'tracking_events';
+        $trackingEventsTable = $tables['tracking_events'] ?? $prefix . 'tracking_events';
 
         Schema::create($trackingEventsTable, function (Blueprint $table): void {
             $table->uuid('id')->primary();
@@ -65,7 +65,7 @@ return new class extends Migration
         // GIN indexes only work with jsonb in PostgreSQL
         if (commerce_json_column_type('jnt', 'json') === 'jsonb') {
             Schema::table($trackingEventsTable, function (Blueprint $table) use ($trackingEventsTable): void {
-                DB::statement('CREATE INDEX jnt_tracking_events_payload_gin_index ON '.$trackingEventsTable.' USING GIN (payload)');
+                DB::statement('CREATE INDEX jnt_tracking_events_payload_gin_index ON ' . $trackingEventsTable . ' USING GIN (payload)');
             });
         }
     }
@@ -75,7 +75,7 @@ return new class extends Migration
         $tables = config('jnt.database.tables', []);
         $prefix = config('jnt.database.table_prefix', 'jnt_');
 
-        $trackingEventsTable = $tables['tracking_events'] ?? $prefix.'tracking_events';
+        $trackingEventsTable = $tables['tracking_events'] ?? $prefix . 'tracking_events';
 
         Schema::dropIfExists($trackingEventsTable);
     }

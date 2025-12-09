@@ -259,7 +259,7 @@ final class ShowcaseSeeder extends Seeder
             }
         }
 
-        $this->command->info('   ✓ Created '.count($allVouchers).' voucher campaigns');
+        $this->command->info('   ✓ Created ' . count($allVouchers) . ' voucher campaigns');
     }
 
     private function createVoucherUsageHistory(Voucher $voucher, int $count): void
@@ -276,7 +276,7 @@ final class ShowcaseSeeder extends Seeder
                 'channel' => fake()->randomElement(['automatic', 'manual', 'api']),
                 'used_at' => now()->subDays(rand(1, 60)),
                 'metadata' => [
-                    'order_id' => 'ORD-'.Str::upper(Str::random(8)),
+                    'order_id' => 'ORD-' . Str::upper(Str::random(8)),
                     'source' => fake()->randomElement(['checkout', 'cart', 'api']),
                 ],
             ]);
@@ -492,7 +492,7 @@ final class ShowcaseSeeder extends Seeder
         // Create attributions and conversions for active affiliates
         $this->createAffiliateActivity($allAffiliates);
 
-        $this->command->info('   ✓ Created '.(count($topInfluencers) + count($businessPartners) + count($regularAffiliates) + count($pendingAffiliates)).' affiliates');
+        $this->command->info('   ✓ Created ' . (count($topInfluencers) + count($businessPartners) + count($regularAffiliates) + count($pendingAffiliates)) . ' affiliates');
     }
 
     /**
@@ -525,10 +525,10 @@ final class ShowcaseSeeder extends Seeder
                         '/sale',
                     ]),
                     'referrer_url' => fake()->randomElement([
-                        'https://youtube.com/watch?v='.Str::random(11),
-                        'https://tiktok.com/@'.Str::random(8),
-                        'https://instagram.com/p/'.Str::random(11),
-                        'https://facebook.com/posts/'.rand(1000000, 9999999),
+                        'https://youtube.com/watch?v=' . Str::random(11),
+                        'https://tiktok.com/@' . Str::random(8),
+                        'https://instagram.com/p/' . Str::random(11),
+                        'https://facebook.com/posts/' . rand(1000000, 9999999),
                         null,
                     ]),
                     'source' => $affiliate->code,
@@ -570,7 +570,7 @@ final class ShowcaseSeeder extends Seeder
                 AffiliateConversion::create([
                     'affiliate_id' => $affiliate->id,
                     'affiliate_code' => $affiliate->code,
-                    'order_reference' => 'ORD-'.Str::upper(Str::random(8)),
+                    'order_reference' => 'ORD-' . Str::upper(Str::random(8)),
                     'subtotal_minor' => $orderValue,
                     'total_minor' => $orderValue,
                     'commission_minor' => $commissionAmount,
@@ -613,7 +613,7 @@ final class ShowcaseSeeder extends Seeder
                 'type' => 'in',
                 'quantity' => $initialStock,
                 'reason' => 'purchase',
-                'note' => 'Initial inventory - PO#'.rand(10000, 99999),
+                'note' => 'Initial inventory - PO#' . rand(10000, 99999),
                 'transaction_date' => now()->subDays(90),
             ]);
             $transactionCount++;
@@ -628,7 +628,7 @@ final class ShowcaseSeeder extends Seeder
                     'type' => 'out',
                     'quantity' => rand(1, 5),
                     'reason' => 'sale',
-                    'note' => 'Order ORD-'.Str::upper(Str::random(8)),
+                    'note' => 'Order ORD-' . Str::upper(Str::random(8)),
                     'transaction_date' => now()->subDays(rand(1, 85)),
                 ]);
                 $transactionCount++;
@@ -644,7 +644,7 @@ final class ShowcaseSeeder extends Seeder
                     'type' => 'in',
                     'quantity' => rand(50, 200),
                     'reason' => 'restock',
-                    'note' => 'Restock - PO#'.rand(10000, 99999),
+                    'note' => 'Restock - PO#' . rand(10000, 99999),
                     'transaction_date' => now()->subDays(rand(1, 60)),
                 ]);
                 $transactionCount++;
@@ -675,7 +675,7 @@ final class ShowcaseSeeder extends Seeder
                     'type' => 'in',
                     'quantity' => rand(1, 3),
                     'reason' => 'return',
-                    'note' => 'Customer return - RMA#'.rand(1000, 9999),
+                    'note' => 'Customer return - RMA#' . rand(1000, 9999),
                     'transaction_date' => now()->subDays(rand(1, 30)),
                 ]);
                 $transactionCount++;
@@ -697,7 +697,7 @@ final class ShowcaseSeeder extends Seeder
             }
         }
 
-        $this->command->info('   ✓ Created '.$transactionCount.' stock transactions');
+        $this->command->info('   ✓ Created ' . $transactionCount . ' stock transactions');
     }
 
     private function seedCarts(): void

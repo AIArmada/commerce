@@ -45,7 +45,7 @@ final class CheckoutException extends CartException
     public static function validationFailed(array $errors): self
     {
         $exception = new self(
-            'Cart validation failed: '.implode(', ', $errors)
+            'Cart validation failed: ' . implode(', ', $errors)
         );
         $exception->stageName = 'validation';
         $exception->stageErrors = $errors;

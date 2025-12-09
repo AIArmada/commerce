@@ -45,8 +45,8 @@ final class ConversionsRelationManager extends RelationManager
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn (ConversionStatus|string $state): string => AffiliateConversionsTable::statusColor($state))
-                    ->formatStateUsing(fn (ConversionStatus|string $state): string => AffiliateConversionsTable::statusLabel($state))
+                    ->color(fn (ConversionStatus | string $state): string => AffiliateConversionsTable::statusColor($state))
+                    ->formatStateUsing(fn (ConversionStatus | string $state): string => AffiliateConversionsTable::statusLabel($state))
                     ->sortable(),
 
                 TextColumn::make('occurred_at')

@@ -33,24 +33,24 @@ final class FraudSignalsTable
                     ->label('Signal')
                     ->badge()
                     ->color('info')
-                    ->formatStateUsing(static fn (FraudSignalType|string $state): string => $state instanceof FraudSignalType ? $state->getLabel() : FraudSignalType::from($state)->getLabel())
-                    ->tooltip(static fn (FraudSignalType|string $state): string => $state instanceof FraudSignalType ? $state->getDescription() : FraudSignalType::from($state)->getDescription()),
+                    ->formatStateUsing(static fn (FraudSignalType | string $state): string => $state instanceof FraudSignalType ? $state->getLabel() : FraudSignalType::from($state)->getLabel())
+                    ->tooltip(static fn (FraudSignalType | string $state): string => $state instanceof FraudSignalType ? $state->getDescription() : FraudSignalType::from($state)->getDescription()),
 
                 TextColumn::make('risk_level')
                     ->label('Risk')
                     ->badge()
-                    ->color(static fn (FraudRiskLevel|string $state): string => match ($state instanceof FraudRiskLevel ? $state : FraudRiskLevel::from($state)) {
+                    ->color(static fn (FraudRiskLevel | string $state): string => match ($state instanceof FraudRiskLevel ? $state : FraudRiskLevel::from($state)) {
                         FraudRiskLevel::Low => 'success',
                         FraudRiskLevel::Medium => 'warning',
                         FraudRiskLevel::High => 'danger',
                         FraudRiskLevel::Critical => 'danger',
                     })
-                    ->formatStateUsing(static fn (FraudRiskLevel|string $state): string => $state instanceof FraudRiskLevel ? $state->getLabel() : FraudRiskLevel::from($state)->getLabel())
+                    ->formatStateUsing(static fn (FraudRiskLevel | string $state): string => $state instanceof FraudRiskLevel ? $state->getLabel() : FraudRiskLevel::from($state)->getLabel())
                     ->sortable(),
 
                 TextColumn::make('score')
                     ->label('Score')
-                    ->formatStateUsing(static fn (float $state): string => number_format($state * 100, 0).'%')
+                    ->formatStateUsing(static fn (float $state): string => number_format($state * 100, 0) . '%')
                     ->sortable(),
 
                 TextColumn::make('detector')

@@ -12,6 +12,6 @@ abstract class FilamentStockTestCase extends TestCase
     {
         parent::defineDatabaseMigrations();
 
-        $this->loadMigrationsFrom(__DIR__.'/../../../packages/stock/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../../packages/stock/database/migrations');
     }
 }

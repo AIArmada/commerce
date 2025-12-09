@@ -24,14 +24,14 @@ trait ManagesItems
      * @param  array<string, mixed>|object|null  $conditions
      */
     public function add(
-        string|int|array $id,
+        string | int | array $id,
         ?string $name = null,
-        float|int|string|null $price = null,
+        float | int | string | null $price = null,
         int $quantity = 1,
         array $attributes = [],
-        array|object|null $conditions = null,
-        string|object|null $associatedModel = null
-    ): CartItem|CartCollection {
+        array | object | null $conditions = null,
+        string | object | null $associatedModel = null
+    ): CartItem | CartCollection {
         // Check rate limit before adding
         $this->checkRateLimitIfEnabled('add_item');
 
@@ -80,7 +80,7 @@ trait ManagesItems
      *
      * @param  array<string, mixed>  $data
      */
-    public function update(string|int $id, array $data): ?CartItem
+    public function update(string | int $id, array $data): ?CartItem
     {
         // Check rate limit before updating
         $this->checkRateLimitIfEnabled('update_item');
@@ -120,7 +120,7 @@ trait ManagesItems
         // Update other properties
         foreach (['name', 'price', 'attributes'] as $property) {
             if (isset($data[$property])) {
-                $method = 'set'.ucfirst($property);
+                $method = 'set' . ucfirst($property);
                 $value = $property === 'price' ? $this->normalizePrice($data[$property]) : $data[$property];
                 $item = $item->$method($value);
             }
@@ -146,7 +146,7 @@ trait ManagesItems
     /**
      * Remove item from cart
      */
-    public function remove(string|int $id): ?CartItem
+    public function remove(string | int $id): ?CartItem
     {
         // Check rate limit before removing
         $this->checkRateLimitIfEnabled('remove_item');
@@ -186,7 +186,7 @@ trait ManagesItems
     /**
      * Get cart item by ID
      */
-    public function get(string|int $id): ?CartItem
+    public function get(string | int $id): ?CartItem
     {
         // Normalize ID to string for consistent handling
         $id = (string) $id;
@@ -197,7 +197,7 @@ trait ManagesItems
     /**
      * Check if cart has item with given ID
      */
-    public function has(string|int $id): bool
+    public function has(string | int $id): bool
     {
         // Normalize ID to string for consistent handling
         $id = (string) $id;
@@ -220,13 +220,13 @@ trait ManagesItems
      * @param  array<string, mixed>|object|null  $conditions
      */
     private function addItemInternal(
-        string|int $id,
+        string | int $id,
         ?string $name,
-        float|int|string|null $price,
+        float | int | string | null $price,
         int $quantity,
         array $attributes,
-        array|object|null $conditions,
-        string|object|null $associatedModel
+        array | object | null $conditions,
+        string | object | null $associatedModel
     ): CartItem {
         // Normalize ID to string for consistent handling
         $id = (string) $id;
@@ -398,7 +398,7 @@ trait ManagesItems
      * - string: sanitized and converted (e.g., "$19.99" → 1999, "500" → 500)
      * - null: returns 0
      */
-    private function normalizePrice(float|int|string|null $price): int
+    private function normalizePrice(float | int | string | null $price): int
     {
         if ($price === null) {
             return 0;

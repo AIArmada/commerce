@@ -15,7 +15,7 @@ class Invoices extends Page
 {
     use InteractsWithBillable;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedDocumentText;
 
     protected static ?int $navigationSort = 30;
 

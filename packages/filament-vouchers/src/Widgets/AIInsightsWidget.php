@@ -10,7 +10,7 @@ final class AIInsightsWidget extends Widget
 {
     protected string $view = 'filament-vouchers::widgets.ai-insights';
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     /**
      * @return array<string, mixed>

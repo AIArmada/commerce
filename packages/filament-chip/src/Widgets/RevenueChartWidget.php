@@ -14,7 +14,7 @@ final class RevenueChartWidget extends ChartWidget
 
     protected static ?int $sort = 2;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     protected ?string $pollingInterval = '120s';
 
@@ -53,7 +53,7 @@ final class RevenueChartWidget extends ChartWidget
                 'y' => [
                     'beginAtZero' => true,
                     'ticks' => [
-                        'callback' => 'function(value) { return "'.config('filament-chip.default_currency', 'MYR').' " + value.toLocaleString(); }',
+                        'callback' => 'function(value) { return "' . config('filament-chip.default_currency', 'MYR') . ' " + value.toLocaleString(); }',
                     ],
                 ],
             ],

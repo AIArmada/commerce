@@ -56,7 +56,7 @@ final class RemoveConditionAction extends Action
                 } catch (Exception $e) {
                     Notification::make()
                         ->title('Failed to Remove Condition')
-                        ->body('An error occurred while removing the condition: '.$e->getMessage())
+                        ->body('An error occurred while removing the condition: ' . $e->getMessage())
                         ->danger()
                         ->send();
                 }
@@ -108,7 +108,7 @@ final class RemoveConditionAction extends Action
                 } catch (Exception $e) {
                     Notification::make()
                         ->title('Failed to Clear Conditions')
-                        ->body('An error occurred while clearing conditions: '.$e->getMessage())
+                        ->body('An error occurred while clearing conditions: ' . $e->getMessage())
                         ->danger()
                         ->send();
                 }
@@ -163,7 +163,7 @@ final class RemoveConditionAction extends Action
                 } catch (Exception $e) {
                     Notification::make()
                         ->title('Failed to Clear Conditions')
-                        ->body('An error occurred while clearing conditions: '.$e->getMessage())
+                        ->body('An error occurred while clearing conditions: ' . $e->getMessage())
                         ->danger()
                         ->send();
                 }

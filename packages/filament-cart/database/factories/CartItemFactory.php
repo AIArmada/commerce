@@ -23,7 +23,7 @@ final class CartItemFactory extends Factory
 
         return [
             'cart_id' => Cart::factory(),
-            'item_id' => 'product_'.$this->faker->unique()->numberBetween(1, 99999),
+            'item_id' => 'product_' . $this->faker->unique()->numberBetween(1, 99999),
             'name' => $this->faker->words(3, true),
             'price' => $price,
             'quantity' => $quantity,

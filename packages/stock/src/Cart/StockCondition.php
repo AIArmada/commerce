@@ -91,7 +91,7 @@ final class StockCondition implements CartConditionConvertible
     /**
      * Get condition value (no monetary effect).
      */
-    public function getValue(): float|int|string
+    public function getValue(): float | int | string
     {
         return 0;
     }
@@ -121,7 +121,7 @@ final class StockCondition implements CartConditionConvertible
     /**
      * Calculate value (no monetary effect).
      */
-    public function getCalculatedValue(int|float $subtotal): float|int
+    public function getCalculatedValue(int | float $subtotal): float | int
     {
         return 0;
     }

@@ -68,7 +68,7 @@ final class VouchersRelationManager extends RelationManager
                         if ($type === VoucherType::Percentage) {
                             $percentage = (int) $state / 100;
 
-                            return mb_rtrim(mb_rtrim(number_format($percentage, 2), '0'), '.').' %';
+                            return mb_rtrim(mb_rtrim(number_format($percentage, 2), '0'), '.') . ' %';
                         }
 
                         $currency = mb_strtoupper((string) config('filament-vouchers.default_currency', 'MYR'));

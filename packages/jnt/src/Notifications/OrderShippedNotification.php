@@ -39,14 +39,14 @@ class OrderShippedNotification extends Notification implements ShouldQueue
             ->subject('Your Order Has Been Shipped')
             ->greeting('Good news!')
             ->line('Your order has been shipped and is on its way to you.')
-            ->line('Tracking Number: '.$this->tracking->trackingNumber);
+            ->line('Tracking Number: ' . $this->tracking->trackingNumber);
 
         if ($this->tracking->orderId !== null) {
-            $message->line('Order ID: '.$this->tracking->orderId);
+            $message->line('Order ID: ' . $this->tracking->orderId);
         }
 
         if ($this->estimatedDelivery !== null) {
-            $message->line('Estimated Delivery: '.$this->estimatedDelivery);
+            $message->line('Estimated Delivery: ' . $this->estimatedDelivery);
         }
 
         if ($this->tracking->details->count() > 0) {
@@ -56,7 +56,7 @@ class OrderShippedNotification extends Notification implements ShouldQueue
                     $latest->scanNetworkCity,
                     $latest->scanNetworkProvince,
                 ]));
-                $message->line('Current Location: '.$location);
+                $message->line('Current Location: ' . $location);
             }
         }
 

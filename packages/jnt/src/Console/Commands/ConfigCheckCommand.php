@@ -57,7 +57,7 @@ class ConfigCheckCommand extends Command
         $connectivityCheck = $this->testConnectivity();
 
         if (! $connectivityCheck['success']) {
-            $this->error('Connectivity test failed: '.$connectivityCheck['message']);
+            $this->error('Connectivity test failed: ' . $connectivityCheck['message']);
 
             return self::FAILURE;
         }

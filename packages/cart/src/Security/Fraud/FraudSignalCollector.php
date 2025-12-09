@@ -357,7 +357,7 @@ final class FraudSignalCollector
      */
     private function getCacheKey(FraudContext $context): string
     {
-        return self::CACHE_PREFIX.$context->getCartId().':'.$context->timestamp->format('YmdHis');
+        return self::CACHE_PREFIX . $context->getCartId() . ':' . $context->timestamp->format('YmdHis');
     }
 
     /**

@@ -28,7 +28,7 @@ final class SubscriptionFactory extends Factory
         return [
             (new $model)->getForeignKey() => ($model)::factory(),
             'type' => 'default',
-            'chip_id' => 'sub_'.Str::random(40),
+            'chip_id' => 'sub_' . Str::random(40),
             'chip_status' => Subscription::STATUS_ACTIVE,
             'chip_price' => null,
             'quantity' => null,
@@ -36,7 +36,7 @@ final class SubscriptionFactory extends Factory
             'ends_at' => null,
             'next_billing_at' => Carbon::now()->addMonth(),
             'billing_interval' => 'month',
-            'recurring_token' => 'tok_'.Str::random(32),
+            'recurring_token' => 'tok_' . Str::random(32),
         ];
     }
 

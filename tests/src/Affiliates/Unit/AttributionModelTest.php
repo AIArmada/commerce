@@ -10,7 +10,7 @@ function makeTouch(string $affiliateId, string $timestamp): AffiliateTouchpoint
 {
     return new AffiliateTouchpoint([
         'affiliate_id' => $affiliateId,
-        'affiliate_code' => 'CODE-'.$affiliateId,
+        'affiliate_code' => 'CODE-' . $affiliateId,
         'touched_at' => $timestamp,
     ]);
 }

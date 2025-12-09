@@ -54,7 +54,7 @@ class JntExpressService
         array $additionalData = [],
     ): OrderData {
         $orderData = [
-            'txlogisticId' => $orderId ?? 'TXN-'.time(),
+            'txlogisticId' => $orderId ?? 'TXN-' . time(),
             'actionType' => 'add',
             'serviceType' => '1',
             'payType' => 'PP_PM',
@@ -128,7 +128,7 @@ class JntExpressService
     /**
      * @return array<string, mixed>
      */
-    public function cancelOrder(string $orderId, \AIArmada\Jnt\Enums\CancellationReason|string $reason, ?string $trackingNumber = null): array
+    public function cancelOrder(string $orderId, \AIArmada\Jnt\Enums\CancellationReason | string $reason, ?string $trackingNumber = null): array
     {
         $payload = [
             'customerCode' => $this->customerCode,
@@ -375,7 +375,7 @@ class JntExpressService
      * echo "Failed: " . count($result['failed']) . "\n";
      * ```
      */
-    public function batchCancelOrders(array $orderIds, \AIArmada\Jnt\Enums\CancellationReason|string $reason): array
+    public function batchCancelOrders(array $orderIds, \AIArmada\Jnt\Enums\CancellationReason | string $reason): array
     {
         $successful = [];
         $failed = [];

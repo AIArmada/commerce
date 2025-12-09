@@ -15,7 +15,7 @@ class NavigationItemMacros
             return $this->visible(fn (): bool => auth()->user()?->can($permission) ?? false);
         });
 
-        NavigationItem::macro('requiresRole', function (string|array $roles): static {
+        NavigationItem::macro('requiresRole', function (string | array $roles): static {
             /** @var NavigationItem $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 

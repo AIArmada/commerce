@@ -97,7 +97,8 @@ final class CartForm
                             ->collapsible()
                             ->cloneable()
                             ->reorderable()
-                            ->itemLabel(fn (array $state): string => $state['name'] ?? 'New Item'
+                            ->itemLabel(
+                                fn (array $state): string => $state['name'] ?? 'New Item'
                             )
                             ->columnSpanFull(),
                     ])
@@ -137,7 +138,8 @@ final class CartForm
                             ])
                             ->collapsible()
                             ->cloneable()
-                            ->itemLabel(fn (array $state): string => $state['name'] ?? 'New Condition'
+                            ->itemLabel(
+                                fn (array $state): string => $state['name'] ?? 'New Condition'
                             )
                             ->columnSpanFull(),
                     ])

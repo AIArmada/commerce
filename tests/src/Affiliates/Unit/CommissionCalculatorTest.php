@@ -14,7 +14,7 @@ beforeEach(function (): void {
 function createAffiliateForCommission(array $overrides = []): Affiliate
 {
     return Affiliate::create(array_merge([
-        'code' => 'COM-'.Str::uuid(),
+        'code' => 'COM-' . Str::uuid(),
         'name' => 'Commission Tester',
         'description' => null,
         'status' => 'active',

@@ -356,7 +356,7 @@ final class VelocityAnalyzer implements FraudDetectorInterface
      */
     private function getOperationCount(string $sessionId, int $windowSeconds): int
     {
-        $key = self::CACHE_PREFIX."session:{$sessionId}:ops";
+        $key = self::CACHE_PREFIX . "session:{$sessionId}:ops";
 
         return (int) Cache::get($key, 0);
     }
@@ -366,7 +366,7 @@ final class VelocityAnalyzer implements FraudDetectorInterface
      */
     private function getUniqueCartsForIp(string $ipAddress, int $windowSeconds): int
     {
-        $key = self::CACHE_PREFIX."ip:{$ipAddress}:carts";
+        $key = self::CACHE_PREFIX . "ip:{$ipAddress}:carts";
         $carts = Cache::get($key, []);
 
         $cutoff = now()->timestamp - $windowSeconds;
@@ -379,7 +379,7 @@ final class VelocityAnalyzer implements FraudDetectorInterface
      */
     private function getRecentCartsForUser(string $userId, int $windowSeconds): int
     {
-        $key = self::CACHE_PREFIX."user:{$userId}:carts";
+        $key = self::CACHE_PREFIX . "user:{$userId}:carts";
         $carts = Cache::get($key, []);
 
         $cutoff = now()->timestamp - $windowSeconds;
@@ -392,7 +392,7 @@ final class VelocityAnalyzer implements FraudDetectorInterface
      */
     private function getCheckoutAttempts(string $userId, int $windowSeconds): int
     {
-        $key = self::CACHE_PREFIX."user:{$userId}:checkouts";
+        $key = self::CACHE_PREFIX . "user:{$userId}:checkouts";
 
         return (int) Cache::get($key, 0);
     }
@@ -402,7 +402,7 @@ final class VelocityAnalyzer implements FraudDetectorInterface
      */
     private function getFailedCheckoutsForIp(string $ipAddress, int $windowSeconds): int
     {
-        $key = self::CACHE_PREFIX."ip:{$ipAddress}:failed_checkouts";
+        $key = self::CACHE_PREFIX . "ip:{$ipAddress}:failed_checkouts";
 
         return (int) Cache::get($key, 0);
     }
@@ -414,7 +414,7 @@ final class VelocityAnalyzer implements FraudDetectorInterface
      */
     private function getItemAddTimestamps(string $cartId): array
     {
-        $key = self::CACHE_PREFIX."cart:{$cartId}:item_timestamps";
+        $key = self::CACHE_PREFIX . "cart:{$cartId}:item_timestamps";
 
         return Cache::get($key, []);
     }
@@ -436,7 +436,7 @@ final class VelocityAnalyzer implements FraudDetectorInterface
      */
     private function incrementCounter(string $key, int $ttl): void
     {
-        $fullKey = self::CACHE_PREFIX.$key;
+        $fullKey = self::CACHE_PREFIX . $key;
         $current = (int) Cache::get($fullKey, 0);
         Cache::put($fullKey, $current + 1, $ttl);
     }
@@ -446,7 +446,7 @@ final class VelocityAnalyzer implements FraudDetectorInterface
      */
     private function recordCartForIp(string $ipAddress, string $cartId): void
     {
-        $key = self::CACHE_PREFIX."ip:{$ipAddress}:carts";
+        $key = self::CACHE_PREFIX . "ip:{$ipAddress}:carts";
         $carts = Cache::get($key, []);
 
         if (! isset($carts[$cartId])) {
@@ -460,7 +460,7 @@ final class VelocityAnalyzer implements FraudDetectorInterface
      */
     private function recordCartForUser(string $userId, string $cartId): void
     {
-        $key = self::CACHE_PREFIX."user:{$userId}:carts";
+        $key = self::CACHE_PREFIX . "user:{$userId}:carts";
         $carts = Cache::get($key, []);
 
         if (! isset($carts[$cartId])) {
@@ -474,7 +474,7 @@ final class VelocityAnalyzer implements FraudDetectorInterface
      */
     private function recordItemAddTimestamp(string $cartId, float $timestamp): void
     {
-        $key = self::CACHE_PREFIX."cart:{$cartId}:item_timestamps";
+        $key = self::CACHE_PREFIX . "cart:{$cartId}:item_timestamps";
         $timestamps = Cache::get($key, []);
         $timestamps[] = $timestamp;
 

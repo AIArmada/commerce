@@ -51,7 +51,8 @@ class CashierChipServiceProvider extends ServiceProvider
     protected function configure(): void
     {
         $this->mergeConfigFrom(
-            __DIR__.'/../config/cashier-chip.php', 'cashier-chip'
+            __DIR__ . '/../config/cashier-chip.php',
+            'cashier-chip'
         );
     }
 
@@ -82,8 +83,8 @@ class CashierChipServiceProvider extends ServiceProvider
      */
     protected function registerResources(): void
     {
-        $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
-        $this->loadViewsFrom(__DIR__.'/../resources/views', 'cashier-chip');
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'cashier-chip');
     }
 
     /**
@@ -93,7 +94,7 @@ class CashierChipServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__.'/../config/cashier-chip.php' => $this->app->configPath('cashier-chip.php'),
+                __DIR__ . '/../config/cashier-chip.php' => $this->app->configPath('cashier-chip.php'),
             ], 'cashier-chip-config');
 
             $publishesMigrationsMethod = method_exists($this, 'publishesMigrations')
@@ -101,11 +102,11 @@ class CashierChipServiceProvider extends ServiceProvider
                 : 'publishes';
 
             $this->{$publishesMigrationsMethod}([
-                __DIR__.'/../database/migrations' => $this->app->databasePath('migrations'),
+                __DIR__ . '/../database/migrations' => $this->app->databasePath('migrations'),
             ], 'cashier-chip-migrations');
 
             $this->publishes([
-                __DIR__.'/../resources/views' => $this->app->resourcePath('views/vendor/cashier-chip'),
+                __DIR__ . '/../resources/views' => $this->app->resourcePath('views/vendor/cashier-chip'),
             ], 'cashier-chip-views');
         }
     }

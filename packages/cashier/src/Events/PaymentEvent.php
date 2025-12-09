@@ -13,7 +13,8 @@ use Illuminate\Queue\SerializesModels;
  */
 abstract class PaymentEvent
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
+    use SerializesModels;
 
     /**
      * Create a new event instance.

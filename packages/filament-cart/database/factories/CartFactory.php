@@ -108,7 +108,7 @@ final class CartFactory extends Factory
                 : $this->faker->numberBetween(500, 5000); // cents
 
             $items[] = [
-                'id' => 'product_'.$this->faker->unique()->numberBetween(1, 99999),
+                'id' => 'product_' . $this->faker->unique()->numberBetween(1, 99999),
                 'name' => $this->faker->words(3, true),
                 'price' => $price,
                 'quantity' => $lineQuantity,

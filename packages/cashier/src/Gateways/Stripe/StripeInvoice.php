@@ -21,12 +21,12 @@ class StripeInvoice implements InvoiceContract
     /**
      * The Stripe invoice instance.
      */
-    protected StripeInvoiceObject|Invoice $invoice;
+    protected StripeInvoiceObject | Invoice $invoice;
 
     /**
      * Create a new Stripe invoice wrapper.
      */
-    public function __construct(StripeInvoiceObject|Invoice $invoice)
+    public function __construct(StripeInvoiceObject | Invoice $invoice)
     {
         $this->invoice = $invoice;
     }
@@ -310,6 +310,6 @@ class StripeInvoice implements InvoiceContract
      */
     protected function formatAmount(int $amount): string
     {
-        return number_format($amount / 100, 2).' '.mb_strtoupper($this->currency());
+        return number_format($amount / 100, 2) . ' ' . mb_strtoupper($this->currency());
     }
 }

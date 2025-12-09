@@ -29,7 +29,7 @@ class PermissionMatrixPage extends Page
     /** @var array<string, array<string, Permission>> */
     public array $groupedPermissions = [];
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-table-cells';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-table-cells';
 
     protected string $view = 'filament-authz::pages.permission-matrix';
 

@@ -12,6 +12,6 @@ abstract class FilamentJntTestCase extends TestCase
     {
         parent::defineDatabaseMigrations();
 
-        $this->loadMigrationsFrom(__DIR__.'/../../../packages/jnt/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../../packages/jnt/database/migrations');
     }
 }

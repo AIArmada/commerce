@@ -14,7 +14,7 @@ final class RevenueChart extends ChartWidget
 
     protected static ?int $sort = -2;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     protected ?string $maxHeight = '300px';
 

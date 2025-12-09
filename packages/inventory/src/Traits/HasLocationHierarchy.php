@@ -85,7 +85,7 @@ trait HasLocationHierarchy
         }
 
         return InventoryLocation::query()
-            ->where('path', 'like', $this->path.'/%')
+            ->where('path', 'like', $this->path . '/%')
             ->orderBy('depth')
             ->orderBy('name')
             ->get();
@@ -158,7 +158,7 @@ trait HasLocationHierarchy
             return false;
         }
 
-        return str_starts_with($location->path, $this->path.'/');
+        return str_starts_with($location->path, $this->path . '/');
     }
 
     /**
@@ -234,7 +234,7 @@ trait HasLocationHierarchy
     {
         return $query->where(function (Builder $q) use ($ancestor): void {
             $q->where('id', $ancestor->id)
-                ->orWhere('path', 'like', $ancestor->path.'/%');
+                ->orWhere('path', 'like', $ancestor->path . '/%');
         });
     }
 
@@ -278,7 +278,7 @@ trait HasLocationHierarchy
             $parent = $this->parent ?? InventoryLocation::find($this->parent_id);
 
             if ($parent !== null) {
-                $this->path = $parent->path.'/'.$this->id;
+                $this->path = $parent->path . '/' . $this->id;
                 $this->depth = $parent->depth + 1;
             }
         }
@@ -292,7 +292,7 @@ trait HasLocationHierarchy
         $descendants = $this->children()->get();
 
         foreach ($descendants as $child) {
-            $child->path = $this->path.'/'.$child->id;
+            $child->path = $this->path . '/' . $child->id;
             $child->depth = $this->depth + 1;
             $child->saveQuietly();
             $child->rebuildDescendantPaths();

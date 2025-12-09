@@ -48,7 +48,7 @@ final class DocStatsWidget extends BaseWidget
                 ->color('success'),
 
             Stat::make('Overdue', $overdueCount)
-                ->description($this->formatCurrency($pendingRevenue).' outstanding')
+                ->description($this->formatCurrency($pendingRevenue) . ' outstanding')
                 ->descriptionIcon(Heroicon::ExclamationTriangle)
                 ->color($overdueCount > 0 ? 'danger' : 'success'),
         ];
@@ -59,10 +59,10 @@ final class DocStatsWidget extends BaseWidget
         return 5;
     }
 
-    private function formatCurrency(string|float $amount): string
+    private function formatCurrency(string | float $amount): string
     {
         $currency = config('docs.defaults.currency', 'MYR');
 
-        return $currency.' '.number_format((float) $amount, 2);
+        return $currency . ' ' . number_format((float) $amount, 2);
     }
 }

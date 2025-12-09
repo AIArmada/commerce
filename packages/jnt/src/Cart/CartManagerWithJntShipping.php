@@ -106,7 +106,7 @@ final class CartManagerWithJntShipping implements CartManagerInterface
         return $this->manager->getOwnerType();
     }
 
-    public function getOwnerId(): string|int|null
+    public function getOwnerId(): string | int | null
     {
         return $this->manager->getOwnerId();
     }
@@ -153,7 +153,7 @@ final class CartManagerWithJntShipping implements CartManagerInterface
      *
      * @param  AddressData|array<string, mixed>  $address  Shipping address
      */
-    public function setShippingAddress(AddressData|array $address): self
+    public function setShippingAddress(AddressData | array $address): self
     {
         $addressArray = $address instanceof AddressData
             ? $address->toApiArray()

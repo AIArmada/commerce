@@ -27,7 +27,7 @@ class TypeTransformer
      * TypeTransformer::toIntegerString(5.7) → "5"
      * TypeTransformer::toIntegerString("5") → "5"
      */
-    public static function toIntegerString(int|float|string $value): string
+    public static function toIntegerString(int | float | string $value): string
     {
         return (string) (int) $value;
     }
@@ -45,7 +45,7 @@ class TypeTransformer
      * TypeTransformer::toDecimalString(5.1, 2) → "5.10"
      * TypeTransformer::toDecimalString(5.456, 2) → "5.46"
      */
-    public static function toDecimalString(float|int|string $value, int $decimals = 2): string
+    public static function toDecimalString(float | int | string $value, int $decimals = 2): string
     {
         return number_format((float) $value, $decimals, '.', '');
     }
@@ -64,7 +64,7 @@ class TypeTransformer
      * TypeTransformer::forItemWeight(500.5) → "500"
      * TypeTransformer::forItemWeight("500") → "500"
      */
-    public static function forItemWeight(float|int|string $grams): string
+    public static function forItemWeight(float | int | string $grams): string
     {
         return self::toIntegerString($grams);
     }
@@ -84,7 +84,7 @@ class TypeTransformer
      * TypeTransformer::forPackageWeight(5.456) → "5.46"
      * TypeTransformer::forPackageWeight("5.5") → "5.50"
      */
-    public static function forPackageWeight(float|int|string $kg): string
+    public static function forPackageWeight(float | int | string $kg): string
     {
         return self::toDecimalString($kg, 2);
     }
@@ -104,7 +104,7 @@ class TypeTransformer
      * TypeTransformer::forDimension(25.756) → "25.76"
      * TypeTransformer::forDimension("25") → "25.00"
      */
-    public static function forDimension(float|int|string $cm): string
+    public static function forDimension(float | int | string $cm): string
     {
         return self::toDecimalString($cm, 2);
     }
@@ -124,7 +124,7 @@ class TypeTransformer
      * TypeTransformer::forMoney(150.5) → "150.50"
      * TypeTransformer::forMoney("150") → "150.00"
      */
-    public static function forMoney(float|int|string $myr): string
+    public static function forMoney(float | int | string $myr): string
     {
         return self::toDecimalString($myr, 2);
     }
@@ -143,7 +143,7 @@ class TypeTransformer
      * TypeTransformer::toBooleanString("Y") → "Y"
      * TypeTransformer::toBooleanString("n") → "N"
      */
-    public static function toBooleanString(bool|string $value): string
+    public static function toBooleanString(bool | string $value): string
     {
         if (is_string($value)) {
             return mb_strtoupper($value) === 'Y' ? 'Y' : 'N';
@@ -162,7 +162,7 @@ class TypeTransformer
      * TypeTransformer::fromBooleanString('N') → false
      * TypeTransformer::fromBooleanString(true) → true
      */
-    public static function fromBooleanString(string|bool $value): bool
+    public static function fromBooleanString(string | bool $value): bool
     {
         if (is_bool($value)) {
             return $value;

@@ -256,7 +256,7 @@ class PermissionBuilder
             'bulkUpdate' => "Bulk update {$resourceLabel}",
             'manage' => "Full management of {$resourceLabel}",
             '*' => "All {$resourceLabel} permissions",
-            default => Str::headline($ability)." {$resourceLabel}",
+            default => Str::headline($ability) . " {$resourceLabel}",
         };
     }
 }

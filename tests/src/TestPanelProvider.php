@@ -32,9 +32,9 @@ class TestPanelProvider extends PanelProvider
             ->colors([
                 'primary' => '#6366f1',
             ])
-            ->discoverResources(in: __DIR__.'/../../packages/filament-chip/src/Resources', for: 'AIArmada\\FilamentChip\\Resources')
-            ->discoverPages(in: __DIR__.'/../../packages/filament-chip/src/Pages', for: 'AIArmada\\FilamentChip\\Pages')
-            ->discoverWidgets(in: __DIR__.'/../../packages/filament-chip/src/Widgets', for: 'AIArmada\\FilamentChip\\Widgets')
+            ->discoverResources(in: __DIR__ . '/../../packages/filament-chip/src/Resources', for: 'AIArmada\\FilamentChip\\Resources')
+            ->discoverPages(in: __DIR__ . '/../../packages/filament-chip/src/Pages', for: 'AIArmada\\FilamentChip\\Pages')
+            ->discoverWidgets(in: __DIR__ . '/../../packages/filament-chip/src/Widgets', for: 'AIArmada\\FilamentChip\\Widgets')
             ->plugins([
                 FilamentCartPlugin::make(),
                 FilamentVouchersPlugin::make(),

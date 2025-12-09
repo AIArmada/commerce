@@ -39,7 +39,8 @@ use Illuminate\Support\Str;
  */
 class AffiliateProgram extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasUuids;
+    use SoftDeletes;
 
     protected $fillable = [
         'name',

@@ -36,6 +36,6 @@ class JntException extends Exception
 
     public static function missingCredentials(string $credential): self
     {
-        return new self('Missing required credential: '.$credential);
+        return new self('Missing required credential: ' . $credential);
     }
 }

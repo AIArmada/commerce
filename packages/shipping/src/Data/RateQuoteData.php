@@ -65,7 +65,7 @@ class RateQuoteData extends Data
 
     public function getFormattedRate(): string
     {
-        return number_format($this->rate / 100, 2).' '.$this->currency;
+        return number_format($this->rate / 100, 2) . ' ' . $this->currency;
     }
 
     public function getDeliveryEstimate(): string

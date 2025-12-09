@@ -28,7 +28,7 @@ class ColumnMacros
             });
         });
 
-        Column::macro('visibleForRole', function (string|array $roles): static {
+        Column::macro('visibleForRole', function (string | array $roles): static {
             /** @var Column $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 

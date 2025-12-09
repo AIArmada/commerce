@@ -134,7 +134,8 @@ final class CartInfolist
                             ->label('Additional Information'),
                     ])
                     ->collapsible()
-                    ->visible(fn ($record): bool => is_array($record->metadata) && ! empty($record->metadata)
+                    ->visible(
+                        fn ($record): bool => is_array($record->metadata) && ! empty($record->metadata)
                     ),
 
                 Section::make('Timestamps')

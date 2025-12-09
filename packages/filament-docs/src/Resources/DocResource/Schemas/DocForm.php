@@ -194,8 +194,9 @@ final class DocForm
                             ->collapsible()
                             ->cloneable()
                             ->reorderable()
-                            ->itemLabel(fn (array $state): string => ($state['name'] ?? 'New Item').
-                                (isset($state['quantity'], $state['price']) ? ' - '.$state['quantity'].' × $'.number_format((float) $state['price'], 2) : '')
+                            ->itemLabel(
+                                fn (array $state): string => ($state['name'] ?? 'New Item') .
+                                (isset($state['quantity'], $state['price']) ? ' - ' . $state['quantity'] . ' × $' . number_format((float) $state['price'], 2) : '')
                             )
                             ->columnSpanFull()
                             ->defaultItems(1),

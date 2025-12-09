@@ -148,7 +148,7 @@ trait HasPageAuthz
             return $this->getTitle();
         }
 
-        return $this->getTitle()." [{$this->getPagePermissionKey()}]";
+        return $this->getTitle() . " [{$this->getPagePermissionKey()}]";
     }
 
     /**

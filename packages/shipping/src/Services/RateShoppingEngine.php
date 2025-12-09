@@ -194,9 +194,9 @@ class RateShoppingEngine
     {
         $totalWeight = array_sum(array_map(fn (PackageData $p) => $p->weight, $packages));
 
-        return 'shipping:rates:'.md5(serialize([
+        return 'shipping:rates:' . md5(serialize([
             'origin' => $origin->postCode,
-            'destination' => $destination->postCode.$destination->countryCode,
+            'destination' => $destination->postCode . $destination->countryCode,
             'weight' => $totalWeight,
             'packages' => count($packages),
         ]));

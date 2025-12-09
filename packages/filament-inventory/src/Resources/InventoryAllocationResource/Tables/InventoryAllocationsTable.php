@@ -97,9 +97,10 @@ final class InventoryAllocationsTable
 
                 Filter::make('expiring_soon')
                     ->label('Expiring in 15 minutes')
-                    ->query(fn (Builder $query): Builder => $query
-                        ->where('expires_at', '>', now())
-                        ->where('expires_at', '<', now()->addMinutes(15))
+                    ->query(
+                        fn (Builder $query): Builder => $query
+                            ->where('expires_at', '>', now())
+                            ->where('expires_at', '<', now()->addMinutes(15))
                     ),
             ])
             ->actions([

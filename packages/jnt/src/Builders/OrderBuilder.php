@@ -24,11 +24,11 @@ class OrderBuilder
 {
     protected string $orderId;
 
-    protected ExpressType|string $expressType = 'EZ';
+    protected ExpressType | string $expressType = 'EZ';
 
-    protected ServiceType|string $serviceType = '1';
+    protected ServiceType | string $serviceType = '1';
 
-    protected PaymentType|string $paymentType = 'PP_PM';
+    protected PaymentType | string $paymentType = 'PP_PM';
 
     protected ?AddressData $sender = null;
 
@@ -66,21 +66,21 @@ class OrderBuilder
         return $this;
     }
 
-    public function expressType(ExpressType|string $expressType): self
+    public function expressType(ExpressType | string $expressType): self
     {
         $this->expressType = $expressType;
 
         return $this;
     }
 
-    public function serviceType(ServiceType|string $serviceType): self
+    public function serviceType(ServiceType | string $serviceType): self
     {
         $this->serviceType = $serviceType;
 
         return $this;
     }
 
-    public function paymentType(PaymentType|string $paymentType): self
+    public function paymentType(PaymentType | string $paymentType): self
     {
         $this->paymentType = $paymentType;
 
@@ -146,14 +146,14 @@ class OrderBuilder
         return $this;
     }
 
-    public function insurance(float|string $insuranceValue): self
+    public function insurance(float | string $insuranceValue): self
     {
         $this->insuranceValue = (string) $insuranceValue;
 
         return $this;
     }
 
-    public function cashOnDelivery(float|string $cashOnDeliveryAmount): self
+    public function cashOnDelivery(float | string $cashOnDeliveryAmount): self
     {
         $this->cashOnDeliveryAmount = (string) $cashOnDeliveryAmount;
 

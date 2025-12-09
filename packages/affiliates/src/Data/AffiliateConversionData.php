@@ -80,11 +80,11 @@ class AffiliateConversionData extends Data
 
     public function getFormattedCommission(): string
     {
-        return number_format($this->commissionMinor / 100, 2).' '.$this->commissionCurrency;
+        return number_format($this->commissionMinor / 100, 2) . ' ' . $this->commissionCurrency;
     }
 
     public function getFormattedTotal(): string
     {
-        return number_format($this->totalMinor / 100, 2).' '.$this->commissionCurrency;
+        return number_format($this->totalMinor / 100, 2) . ' ' . $this->commissionCurrency;
     }
 }

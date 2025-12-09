@@ -98,9 +98,10 @@ final class DocsTable
 
                 Filter::make('overdue')
                     ->label('Overdue')
-                    ->query(fn (Builder $query): Builder => $query
-                        ->where('due_date', '<', now())
-                        ->whereNotIn('status', [DocStatus::PAID->value, DocStatus::CANCELLED->value])
+                    ->query(
+                        fn (Builder $query): Builder => $query
+                            ->where('due_date', '<', now())
+                            ->whereNotIn('status', [DocStatus::PAID->value, DocStatus::CANCELLED->value])
                     ),
 
                 Filter::make('paid')
@@ -113,8 +114,9 @@ final class DocsTable
 
                 Filter::make('this_month')
                     ->label('This Month')
-                    ->query(fn (Builder $query): Builder => $query->whereMonth('issue_date', now()->month)
-                        ->whereYear('issue_date', now()->year)
+                    ->query(
+                        fn (Builder $query): Builder => $query->whereMonth('issue_date', now()->month)
+                            ->whereYear('issue_date', now()->year)
                     ),
             ])
             ->recordActions([
@@ -166,7 +168,7 @@ final class DocsTable
                         $docService = app(DocService::class);
                         /** @var Collection<int|string, Doc> $records */
                         $records->each(fn (Doc $record) => $docService->generatePdf($record, save: true));
-                        Notification::make()->title('PDFs generated for '.count($records).' documents')->success()->send();
+                        Notification::make()->title('PDFs generated for ' . count($records) . ' documents')->success()->send();
                     }),
 
                 BulkAction::make('mark_as_sent')

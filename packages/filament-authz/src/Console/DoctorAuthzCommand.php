@@ -25,31 +25,31 @@ class DoctorAuthzCommand extends Command
 
         if ($badRoles->isNotEmpty()) {
             $issues += $badRoles->count();
-            $this->warn('Roles with invalid guard: '.$badRoles->pluck('name')->join(', '));
+            $this->warn('Roles with invalid guard: ' . $badRoles->pluck('name')->join(', '));
         }
         if ($badPerms->isNotEmpty()) {
             $issues += $badPerms->count();
-            $this->warn('Permissions with invalid guard: '.$badPerms->pluck('name')->join(', '));
+            $this->warn('Permissions with invalid guard: ' . $badPerms->pluck('name')->join(', '));
         }
 
         // Unused authz: never attached to any role.
         $unused = Permission::query()->whereDoesntHave('roles')->get();
         if ($unused->isNotEmpty()) {
             $issues += $unused->count();
-            $this->line('Unused authz: '.$unused->pluck('name')->join(', '));
+            $this->line('Unused authz: ' . $unused->pluck('name')->join(', '));
         }
 
         // Empty roles.
         $emptyRoles = Role::query()->whereDoesntHave('permissions')->get();
         if ($emptyRoles->isNotEmpty()) {
             $issues += $emptyRoles->count();
-            $this->line('Roles without authz: '.$emptyRoles->pluck('name')->join(', '));
+            $this->line('Roles without authz: ' . $emptyRoles->pluck('name')->join(', '));
         }
 
         if ($issues === 0) {
             $this->info('No issues detected.');
         } else {
-            $this->warn('Total issues: '.$issues);
+            $this->warn('Total issues: ' . $issues);
         }
 
         return $issues === 0 ? self::SUCCESS : self::FAILURE;

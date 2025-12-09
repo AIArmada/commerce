@@ -62,7 +62,7 @@ class WildcardPermissionResolver
         if (str_ends_with($wildcardPattern, '.*')) {
             $prefix = mb_substr($wildcardPattern, 0, -2);
 
-            return str_starts_with($permission, $prefix.'.');
+            return str_starts_with($permission, $prefix . '.');
         }
 
         // Pattern wildcard (e.g., '*.view' matches 'orders.view')
@@ -205,7 +205,7 @@ class WildcardPermissionResolver
         $prefix = mb_substr($wildcardPermission, 0, -2);
 
         /** @var Collection<int, string> */
-        return $allPermissions->filter(fn (string $p): bool => str_starts_with($p, $prefix.'.'));
+        return $allPermissions->filter(fn (string $p): bool => str_starts_with($p, $prefix . '.'));
     }
 
     /**
@@ -229,6 +229,6 @@ class WildcardPermissionResolver
         $escaped = preg_quote($wildcard, '/');
         $pattern = str_replace('\*', '[^.]+', $escaped);
 
-        return '/^'.$pattern.'$/';
+        return '/^' . $pattern . '$/';
     }
 }

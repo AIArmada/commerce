@@ -14,12 +14,12 @@ describe('Package bootstrap', function (): void {
     it('migrates package tables', function (): void {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        expect(Schema::hasTable($tablePrefix.'purchases'))->toBeTrue();
-        expect(Schema::hasTable($tablePrefix.'payments'))->toBeTrue();
-        expect(Schema::hasTable($tablePrefix.'webhooks'))->toBeTrue();
-        expect(Schema::hasTable($tablePrefix.'send_instructions'))->toBeTrue();
-        expect(Schema::hasTable($tablePrefix.'bank_accounts'))->toBeTrue();
-        expect(Schema::hasTable($tablePrefix.'clients'))->toBeTrue();
+        expect(Schema::hasTable($tablePrefix . 'purchases'))->toBeTrue();
+        expect(Schema::hasTable($tablePrefix . 'payments'))->toBeTrue();
+        expect(Schema::hasTable($tablePrefix . 'webhooks'))->toBeTrue();
+        expect(Schema::hasTable($tablePrefix . 'send_instructions'))->toBeTrue();
+        expect(Schema::hasTable($tablePrefix . 'bank_accounts'))->toBeTrue();
+        expect(Schema::hasTable($tablePrefix . 'clients'))->toBeTrue();
     });
 
     it('loads configuration from chip config file', function (): void {

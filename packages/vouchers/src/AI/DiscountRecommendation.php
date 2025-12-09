@@ -109,7 +109,7 @@ final readonly class DiscountRecommendation
     {
         $amount = $this->recommendedDiscountCents / 100;
 
-        return $currencySymbol.number_format($amount, 2);
+        return $currencySymbol . number_format($amount, 2);
     }
 
     /**

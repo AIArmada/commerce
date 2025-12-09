@@ -88,7 +88,7 @@ class SetupCommand extends Command
 
     protected function detectEnvironment(): void
     {
-        $this->info(SetupStage::Detection->icon().' Detecting environment...');
+        $this->info(SetupStage::Detection->icon() . ' Detecting environment...');
         $this->newLine();
 
         // Detect Spatie Permission
@@ -102,7 +102,7 @@ class SetupCommand extends Command
 
         // Detect Filament panels
         $panels = collect(Filament::getPanels());
-        $this->displayDetection('Filament Panels', $panels->isNotEmpty(), $panels->count().' found');
+        $this->displayDetection('Filament Panels', $panels->isNotEmpty(), $panels->count() . ' found');
         $this->state['panels'] = $panels->keys()->toArray();
 
         // Detect existing config
@@ -141,7 +141,7 @@ class SetupCommand extends Command
             return;
         }
 
-        $this->info(SetupStage::Configuration->icon().' Configuration');
+        $this->info(SetupStage::Configuration->icon() . ' Configuration');
         $this->newLine();
 
         // Super Admin Role
@@ -220,7 +220,7 @@ class SetupCommand extends Command
 
     protected function setupDatabase(): void
     {
-        $this->info(SetupStage::Database->icon().' Database Setup');
+        $this->info(SetupStage::Database->icon() . ' Database Setup');
         $this->newLine();
 
         // Check for existing tables
@@ -268,7 +268,7 @@ class SetupCommand extends Command
 
     protected function setupRoles(): void
     {
-        $this->info(SetupStage::Roles->icon().' Role Setup');
+        $this->info(SetupStage::Roles->icon() . ' Role Setup');
         $this->newLine();
 
         // Create Super Admin
@@ -309,7 +309,7 @@ class SetupCommand extends Command
             return;
         }
 
-        $this->info(SetupStage::Permissions->icon().' Permission Discovery & Generation');
+        $this->info(SetupStage::Permissions->icon() . ' Permission Discovery & Generation');
         $this->newLine();
 
         $discovery = app(EntityDiscoveryService::class);
@@ -359,7 +359,7 @@ class SetupCommand extends Command
             return;
         }
 
-        $this->info(SetupStage::Policies->icon().' Policy Generation');
+        $this->info(SetupStage::Policies->icon() . ' Policy Generation');
         $this->newLine();
 
         if (! $this->option('minimal')) {
@@ -389,7 +389,7 @@ class SetupCommand extends Command
 
     protected function setupSuperAdmin(): void
     {
-        $this->info(SetupStage::UserSetup->icon().' Super Admin Assignment');
+        $this->info(SetupStage::UserSetup->icon() . ' Super Admin Assignment');
         $this->newLine();
 
         $userModel = $this->state['userModel'];
@@ -440,7 +440,7 @@ class SetupCommand extends Command
 
     protected function verify(): void
     {
-        $this->info(SetupStage::Verification->icon().' Verification');
+        $this->info(SetupStage::Verification->icon() . ' Verification');
         $this->newLine();
 
         $checks = [

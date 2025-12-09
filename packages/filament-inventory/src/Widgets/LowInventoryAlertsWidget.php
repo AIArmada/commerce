@@ -17,7 +17,7 @@ final class LowInventoryAlertsWidget extends TableWidget
 
     protected ?string $pollingInterval = '60s';
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     public static function canView(): bool
     {

@@ -45,8 +45,8 @@ final class AffiliateConversionsTable
 
                 TextColumn::make('status')
                     ->badge()
-                    ->color(fn (ConversionStatus|string $state): string => self::statusColor($state))
-                    ->formatStateUsing(fn (ConversionStatus|string $state): string => self::statusLabel($state))
+                    ->color(fn (ConversionStatus | string $state): string => self::statusColor($state))
+                    ->formatStateUsing(fn (ConversionStatus | string $state): string => self::statusLabel($state))
                     ->sortable(),
 
                 TextColumn::make('occurred_at')
@@ -116,7 +116,7 @@ final class AffiliateConversionsTable
             ->bulkActions([]);
     }
 
-    public static function statusColor(ConversionStatus|string $state): string
+    public static function statusColor(ConversionStatus | string $state): string
     {
         return match (self::statusEnum($state)) {
             ConversionStatus::Pending => 'warning',
@@ -127,12 +127,12 @@ final class AffiliateConversionsTable
         };
     }
 
-    public static function statusLabel(ConversionStatus|string $state): string
+    public static function statusLabel(ConversionStatus | string $state): string
     {
         return self::statusEnum($state)->label();
     }
 
-    public static function statusEnum(ConversionStatus|string $state): ConversionStatus
+    public static function statusEnum(ConversionStatus | string $state): ConversionStatus
     {
         return $state instanceof ConversionStatus ? $state : ConversionStatus::from((string) $state);
     }

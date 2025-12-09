@@ -86,7 +86,8 @@ final class WalletEntriesTable
                     ->falseIcon(Heroicon::OutlinedCheckCircle)
                     ->trueColor('danger')
                     ->falseColor('success')
-                    ->tooltip(fn (VoucherWallet $record): string => $record->isExpired()
+                    ->tooltip(
+                        fn (VoucherWallet $record): string => $record->isExpired()
                         ? 'This voucher has expired'
                         : 'This voucher is still valid'
                     )

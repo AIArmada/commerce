@@ -75,7 +75,7 @@ trait WebhookFixtures
      */
     protected function loadFixture(string $filename): array
     {
-        $path = __DIR__.'/'.$filename;
+        $path = __DIR__ . '/' . $filename;
 
         if (! file_exists($path)) {
             throw new RuntimeException("Fixture file not found: {$path}");

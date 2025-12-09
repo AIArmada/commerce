@@ -34,7 +34,7 @@ abstract class ChipModel extends Model
     {
         $prefix = (string) config('chip.database.table_prefix', 'chip_');
 
-        return $prefix.static::tableSuffix();
+        return $prefix . static::tableSuffix();
     }
 
     /**

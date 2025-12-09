@@ -217,7 +217,7 @@ it('integration: uses configured conditions table name when migrating', function
     $tableName = 'custom_conditions';
     Config::set('cart.database.conditions_table', $tableName);
 
-    $migrationPath = getcwd().'/packages/cart/database/migrations/2025_09_29_184331_create_conditions_table.php';
+    $migrationPath = getcwd() . '/packages/cart/database/migrations/2025_09_29_184331_create_conditions_table.php';
     expect(file_exists($migrationPath))->toBeTrue();
 
     /** @var object{up: callable, down: callable} $migration */

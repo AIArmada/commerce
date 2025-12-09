@@ -78,14 +78,14 @@ interface GatewayContract
      *
      * @param  string|array<string>  $prices
      */
-    public function newSubscription(BillableContract $billable, string $type, string|array $prices = []): SubscriptionBuilderContract;
+    public function newSubscription(BillableContract $billable, string $type, string | array $prices = []): SubscriptionBuilderContract;
 
     /**
      * Create a new subscription builder (alias for newSubscription).
      *
      * @param  string|array<string>  $prices
      */
-    public function subscription(BillableContract $billable, string $type, string|array $prices = []): SubscriptionBuilderContract;
+    public function subscription(BillableContract $billable, string $type, string | array $prices = []): SubscriptionBuilderContract;
 
     /**
      * Get all subscriptions for a billable entity.
@@ -155,7 +155,7 @@ interface GatewayContract
      * @param  bool|array<string, mixed>  $parameters  Either includePending bool or parameters array
      * @return Collection<int, InvoiceContract>
      */
-    public function invoices(BillableContract $billable, bool|array $parameters = false): Collection;
+    public function invoices(BillableContract $billable, bool | array $parameters = false): Collection;
 
     /**
      * Find a specific invoice.

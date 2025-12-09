@@ -53,7 +53,7 @@ final class JntWebhookLog extends Model
         $tables = config('jnt.database.tables', []);
         $prefix = config('jnt.database.table_prefix', 'jnt_');
 
-        return $tables['webhook_logs'] ?? $prefix.'webhook_logs';
+        return $tables['webhook_logs'] ?? $prefix . 'webhook_logs';
     }
 
     /**

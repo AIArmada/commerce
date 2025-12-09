@@ -97,7 +97,7 @@ final class CartCRDT
      */
     public function apply(CRDTOperation $operation): bool
     {
-        $key = self::CACHE_PREFIX.$operation->cartId.':operations';
+        $key = self::CACHE_PREFIX . $operation->cartId . ':operations';
         $operations = Cache::get($key, []);
 
         if ($this->hasConflict($operation, $operations)) {
@@ -126,7 +126,7 @@ final class CartCRDT
      */
     public function merge(string $cartId, array $remoteOperations): array
     {
-        $key = self::CACHE_PREFIX.$cartId.':operations';
+        $key = self::CACHE_PREFIX . $cartId . ':operations';
         $localOperations = Cache::get($key, []);
 
         $merged = [];
@@ -163,7 +163,7 @@ final class CartCRDT
      */
     public function getOperations(string $cartId, ?int $sinceVersion = null): array
     {
-        $key = self::CACHE_PREFIX.$cartId.':operations';
+        $key = self::CACHE_PREFIX . $cartId . ':operations';
         $operations = Cache::get($key, []);
 
         $result = array_map(fn ($op) => CRDTOperation::fromArray($op), $operations);
@@ -185,7 +185,7 @@ final class CartCRDT
      */
     public function getVectorClock(string $cartId): array
     {
-        $key = self::CACHE_PREFIX.$cartId.':clock';
+        $key = self::CACHE_PREFIX . $cartId . ':clock';
 
         return Cache::get($key, []);
     }
@@ -204,15 +204,18 @@ final class CartCRDT
             switch ($operation->type) {
                 case 'add':
                     $state[$operation->itemId] = $operation->data;
+
                     break;
                 case 'update':
                     $state[$operation->itemId] = array_merge(
                         $state[$operation->itemId] ?? [],
                         $operation->data
                     );
+
                     break;
                 case 'remove':
                     unset($state[$operation->itemId]);
+
                     break;
             }
         }
@@ -311,7 +314,7 @@ final class CartCRDT
      */
     private function incrementClock(string $cartId, string $userId): array
     {
-        $key = self::CACHE_PREFIX.$cartId.':clock';
+        $key = self::CACHE_PREFIX . $cartId . ':clock';
         $clock = Cache::get($key, []);
 
         $clock[$userId] = ($clock[$userId] ?? 0) + 1;
@@ -328,7 +331,7 @@ final class CartCRDT
      */
     private function updateVectorClock(string $cartId, array $newClock): void
     {
-        $key = self::CACHE_PREFIX.$cartId.':clock';
+        $key = self::CACHE_PREFIX . $cartId . ':clock';
         $clock = Cache::get($key, []);
 
         foreach ($newClock as $userId => $version) {

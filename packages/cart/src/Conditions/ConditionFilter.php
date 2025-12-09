@@ -21,7 +21,7 @@ final class ConditionFilter implements Arrayable, JsonSerializable
         }
 
         if ($this->operator->requiresArrayValue() && ! is_array($value)) {
-            throw new InvalidArgumentException('Operator '.$this->operator->value.' expects an array value.');
+            throw new InvalidArgumentException('Operator ' . $this->operator->value . ' expects an array value.');
         }
     }
 
@@ -68,7 +68,7 @@ final class ConditionFilter implements Arrayable, JsonSerializable
         if (is_array($value)) {
             $items = array_map(fn ($item) => $this->formatScalarValue($item), $value);
 
-            return '['.implode(',', $items).']';
+            return '[' . implode(',', $items) . ']';
         }
 
         return $this->formatScalarValue($value);
@@ -85,7 +85,7 @@ final class ConditionFilter implements Arrayable, JsonSerializable
                 return $value;
             }
 
-            return '"'.addcslashes($value, '"\\').'"';
+            return '"' . addcslashes($value, '"\\') . '"';
         }
 
         if (is_bool($value)) {

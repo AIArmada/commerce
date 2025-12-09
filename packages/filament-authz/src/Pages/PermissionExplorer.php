@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Auth;
 
 class PermissionExplorer extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::MagnifyingGlass;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::MagnifyingGlass;
 
     protected string $view = 'filament-authz::pages.permission-explorer';
 

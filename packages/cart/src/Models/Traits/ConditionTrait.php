@@ -102,7 +102,7 @@ trait ConditionTrait
     /**
      * @param  array<string, CartCondition|array<string, mixed>>|Collection  $conditions
      */
-    private function normalizeConditions(array|Collection $conditions): CartConditionCollection
+    private function normalizeConditions(array | Collection $conditions): CartConditionCollection
     {
         if ($conditions instanceof CartConditionCollection) {
             return $conditions;

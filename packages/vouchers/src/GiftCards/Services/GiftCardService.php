@@ -202,7 +202,7 @@ class GiftCardService
             $targetCard->credit(
                 amount: $totalMerged,
                 type: GiftCardTransactionType::Merge,
-                description: 'Merged from '.($giftCards->count() - 1).' cards',
+                description: 'Merged from ' . ($giftCards->count() - 1) . ' cards',
                 actor: $actor,
                 metadata: ['merged_from' => $giftCards->skip(1)->pluck('id')->toArray()]
             );

@@ -299,7 +299,7 @@ final class PriceManipulationDetector implements FraudDetectorInterface
      */
     private function getOriginalCartPrice(string $cartId, string $itemId): ?int
     {
-        $key = self::CACHE_PREFIX."{$cartId}:{$itemId}";
+        $key = self::CACHE_PREFIX . "{$cartId}:{$itemId}";
 
         return Cache::get($key);
     }
@@ -309,7 +309,7 @@ final class PriceManipulationDetector implements FraudDetectorInterface
      */
     private function storeOriginalCartPrice(string $cartId, string $itemId, int $price): void
     {
-        $key = self::CACHE_PREFIX."{$cartId}:{$itemId}";
+        $key = self::CACHE_PREFIX . "{$cartId}:{$itemId}";
         Cache::put($key, $price, 86400);
     }
 }

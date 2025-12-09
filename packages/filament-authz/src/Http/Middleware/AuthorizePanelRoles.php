@@ -41,7 +41,7 @@ class AuthorizePanelRoles
             }
         }
 
-        $roles = (array) (config('filament-authz.panel_roles.'.$panelId) ?? []);
+        $roles = (array) (config('filament-authz.panel_roles.' . $panelId) ?? []);
         if ($roles === [] || count($roles) === 0) {
             return $next($request);
         }

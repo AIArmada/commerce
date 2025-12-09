@@ -27,7 +27,7 @@ it('discovers all core package configs for publishing', function (): void {
         ]);
 
         expect($publishables)->toBe(0)
-            ->and(File::exists(config_path(str_replace('-config', '', $tag).'.php')))
+            ->and(File::exists(config_path(str_replace('-config', '', $tag) . '.php')))
             ->toBeTrue("Config file for {$tag} should exist after package discovery");
     }
 })->group('package', 'discovery');

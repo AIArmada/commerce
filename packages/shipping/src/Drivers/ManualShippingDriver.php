@@ -94,7 +94,7 @@ class ManualShippingDriver implements ShippingDriverInterface
         // Creates a local reference without external API
         return new ShipmentResultData(
             success: true,
-            trackingNumber: 'MAN-'.mb_strtoupper(uniqid()),
+            trackingNumber: 'MAN-' . mb_strtoupper(uniqid()),
             requiresManualFulfillment: true,
         );
     }

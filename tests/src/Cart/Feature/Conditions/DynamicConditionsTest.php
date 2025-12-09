@@ -325,7 +325,8 @@ it('handles complex business logic rules', function (): void {
         rules: [
             fn (Cart $cart) => $cart->getRawSubtotalWithoutConditions() > 100,
             fn (Cart $cart) => $cart->getItems()->count() >= 3,
-            fn (Cart $cart) => $cart->getItems()->filter(fn ($item) => $item->getAttribute('category') === 'premium'
+            fn (Cart $cart) => $cart->getItems()->filter(
+                fn ($item) => $item->getAttribute('category') === 'premium'
             )->count() >= 1,
         ]
     );
@@ -417,7 +418,8 @@ it('handles conditions with attribute-based rules', function (): void {
         target: 'cart@grand_total/aggregate',
         value: '-10%',
         rules: [
-            fn (Cart $cart) => $cart->getItems()->filter(fn ($item) => $item->getAttribute('category') === 'electronics'
+            fn (Cart $cart) => $cart->getItems()->filter(
+                fn ($item) => $item->getAttribute('category') === 'electronics'
             )->count() >= 2,
         ]
     );

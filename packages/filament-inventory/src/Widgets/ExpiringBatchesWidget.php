@@ -14,7 +14,7 @@ final class ExpiringBatchesWidget extends TableWidget
 {
     protected static ?int $sort = 30;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     protected static ?string $heading = 'Expiring Batches';
 
@@ -66,9 +66,10 @@ final class ExpiringBatchesWidget extends TableWidget
 
                 TextColumn::make('daysUntilExpiry')
                     ->label('Days Left')
-                    ->state(fn (InventoryBatch $record): string => $record->is_expired
+                    ->state(
+                        fn (InventoryBatch $record): string => $record->is_expired
                         ? 'Expired'
-                        : ($record->days_until_expiry ?? 0).' days'
+                        : ($record->days_until_expiry ?? 0) . ' days'
                     )
                     ->badge()
                     ->color(fn (InventoryBatch $record): string => match (true) {

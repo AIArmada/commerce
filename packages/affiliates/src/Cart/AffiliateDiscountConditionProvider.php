@@ -181,7 +181,7 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
         $value = $this->formatDiscountValue($discount);
 
         return new CartCondition(
-            name: 'affiliate_discount_'.$affiliateData->code,
+            name: 'affiliate_discount_' . $affiliateData->code,
             type: self::CONDITION_TYPE,
             target: $this->buildTargetDefinition(),
             value: $value,
@@ -201,11 +201,11 @@ final readonly class AffiliateDiscountConditionProvider implements ConditionProv
             // Value is in basis points (e.g., 500 = 5%)
             $percentage = $discount['value'] / 100;
 
-            return '-'.$percentage.'%';
+            return '-' . $percentage . '%';
         }
 
         // Fixed amount in minor units (cents)
-        return '-'.(string) $discount['value'];
+        return '-' . (string) $discount['value'];
     }
 
     /**

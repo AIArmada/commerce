@@ -36,7 +36,7 @@ final class CampaignStatsWidget extends BaseWidget
                 ->color('success'),
 
             Stat::make('Budget Spent', (string) Money::{$currency}((int) $totalSpent))
-                ->description('of '.(string) Money::{$currency}((int) $totalBudget).' allocated')
+                ->description('of ' . (string) Money::{$currency}((int) $totalBudget) . ' allocated')
                 ->descriptionIcon(Heroicon::Banknotes)
                 ->color($totalBudget > 0 && ($totalSpent / $totalBudget) > 0.8 ? 'warning' : 'info'),
 

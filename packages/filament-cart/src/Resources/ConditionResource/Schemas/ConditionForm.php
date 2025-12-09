@@ -129,7 +129,7 @@ final class ConditionForm
                             ->addActionLabel('Add Context Value')
                             ->keyPlaceholder('e.g., min, amount, ids')
                             ->valuePlaceholder('e.g., 3 or ["A","B"]')
-                            ->hint(static fn (): string => 'Available keys: '.self::ruleOptionsHint())
+                            ->hint(static fn (): string => 'Available keys: ' . self::ruleOptionsHint())
                             ->hintIcon('heroicon-m-information-circle')
                             ->reorderable(false)
                             ->default([])

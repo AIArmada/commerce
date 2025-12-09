@@ -65,7 +65,7 @@ abstract class AbstractGateway implements GatewayContract
     /**
      * Create a new subscription builder (alias).
      */
-    abstract public function subscription(BillableContract $billable, string $type, string|array $prices = []): SubscriptionBuilderContract;
+    abstract public function subscription(BillableContract $billable, string $type, string | array $prices = []): SubscriptionBuilderContract;
 
     /**
      * Get the customer adapter for this gateway.
@@ -110,7 +110,7 @@ abstract class AbstractGateway implements GatewayContract
      * @param  bool|array<string, mixed>  $parameters  Either includePending bool or parameters array
      * @return Collection<int, InvoiceContract>
      */
-    abstract public function invoices(BillableContract $billable, bool|array $parameters = false): Collection;
+    abstract public function invoices(BillableContract $billable, bool | array $parameters = false): Collection;
 
     /**
      * Get all payment methods for a customer.
@@ -235,7 +235,7 @@ abstract class AbstractGateway implements GatewayContract
     /**
      * Create a new subscription builder.
      */
-    final public function newSubscription(BillableContract $billable, string $type, string|array $prices = []): SubscriptionBuilderContract
+    final public function newSubscription(BillableContract $billable, string $type, string | array $prices = []): SubscriptionBuilderContract
     {
         return $this->subscription($billable, $type, $prices);
     }
@@ -287,6 +287,6 @@ abstract class AbstractGateway implements GatewayContract
      */
     protected function gatewayIdColumn(): string
     {
-        return $this->name().'_id';
+        return $this->name() . '_id';
     }
 }

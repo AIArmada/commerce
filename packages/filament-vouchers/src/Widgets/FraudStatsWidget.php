@@ -45,7 +45,7 @@ final class FraudStatsWidget extends StatsOverviewWidget
                 ->color('info'),
 
             Stat::make('Today', (string) $todayCount)
-                ->description(($trend >= 0 ? '+' : '').$trend.'% vs yesterday')
+                ->description(($trend >= 0 ? '+' : '') . $trend . '% vs yesterday')
                 ->color($trend > 20 ? 'danger' : 'success'),
         ];
     }

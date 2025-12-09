@@ -23,14 +23,14 @@ class WebhookTestCommand extends Command
     {
         $url = $this->option('url') ?: config('jnt.webhook.url', route('jnt.webhook'));
 
-        info('Testing webhook endpoint: '.$url);
+        info('Testing webhook endpoint: ' . $url);
 
         // Generate sample webhook payload
         $samplePayload = [
             'digest' => '',
             'bizContent' => json_encode([
-                'billCode' => 'TEST'.time(),
-                'txlogisticId' => 'TEST-ORDER-'.time(),
+                'billCode' => 'TEST' . time(),
+                'txlogisticId' => 'TEST-ORDER-' . time(),
                 'details' => [
                     [
                         'scanTime' => now()->toIso8601String(),
@@ -53,19 +53,19 @@ class WebhookTestCommand extends Command
 
             if ($response->successful()) {
                 info('✓ Webhook test successful!');
-                $this->line('Status: '.$response->status());
-                $this->line('Response: '.$response->body());
+                $this->line('Status: ' . $response->status());
+                $this->line('Response: ' . $response->body());
             } else {
                 error('✗ Webhook test failed!');
-                $this->line('Status: '.$response->status());
-                $this->line('Response: '.$response->body());
+                $this->line('Status: ' . $response->status());
+                $this->line('Response: ' . $response->body());
 
                 return self::FAILURE;
             }
 
             return self::SUCCESS;
         } catch (Exception $exception) {
-            error('Error: '.$exception->getMessage());
+            error('Error: ' . $exception->getMessage());
 
             return self::FAILURE;
         }

@@ -17,7 +17,7 @@ final class VoucherWalletResource extends Resource
 {
     protected static ?string $model = VoucherWallet::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedWallet;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedWallet;
 
     protected static ?string $navigationLabel = 'Voucher Wallets';
 
@@ -51,7 +51,7 @@ final class VoucherWalletResource extends Resource
         return 'info';
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-vouchers.navigation_group');
     }

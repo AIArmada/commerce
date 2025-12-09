@@ -35,8 +35,8 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['owner_id', 'owner_type', 'active'], $tableName.'_owner_active');
-            $table->index('priority', $tableName.'_priority');
+            $table->index(['owner_id', 'owner_type', 'active'], $tableName . '_owner_active');
+            $table->index('priority', $tableName . '_priority');
         });
     }
 

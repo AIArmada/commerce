@@ -145,7 +145,7 @@ class RoleTemplateCommand extends Command
         $role = $service->createRoleFromTemplate($template, $roleName);
 
         info("Role '{$role->name}' created from template '{$template->name}'.");
-        info('Permissions assigned: '.implode(', ', $template->default_permissions ?? []));
+        info('Permissions assigned: ' . implode(', ', $template->default_permissions ?? []));
 
         return self::SUCCESS;
     }
@@ -219,7 +219,7 @@ class RoleTemplateCommand extends Command
         $roles = $service->getRolesFromTemplate($template);
 
         if ($roles->isNotEmpty()) {
-            warning("Template is used by {$roles->count()} roles: ".$roles->pluck('name')->implode(', '));
+            warning("Template is used by {$roles->count()} roles: " . $roles->pluck('name')->implode(', '));
 
             if (! confirm('Delete anyway?', false)) {
                 return self::FAILURE;

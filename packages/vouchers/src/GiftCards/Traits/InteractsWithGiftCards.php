@@ -72,7 +72,7 @@ trait InteractsWithGiftCards
      */
     public function removeGiftCard(string $code): static
     {
-        $conditionName = 'gift_card_'.mb_strtoupper($code);
+        $conditionName = 'gift_card_' . mb_strtoupper($code);
 
         $cart = $this->getUnderlyingCart();
         $cart->removeCondition($conditionName);
@@ -100,7 +100,7 @@ trait InteractsWithGiftCards
      */
     public function hasGiftCard(string $code): bool
     {
-        $conditionName = 'gift_card_'.mb_strtoupper($code);
+        $conditionName = 'gift_card_' . mb_strtoupper($code);
 
         return $this->getAppliedGiftCards()
             ->contains(fn (CartCondition $c) => $c->getName() === $conditionName);

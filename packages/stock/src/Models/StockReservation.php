@@ -47,7 +47,7 @@ final class StockReservation extends Model
         $tablePrefix = $database['table_prefix'] ?? 'stock_';
         $tables = $database['tables'] ?? [];
 
-        return $tables['reservations'] ?? config('stock.reservations_table', $tablePrefix.'reservations');
+        return $tables['reservations'] ?? config('stock.reservations_table', $tablePrefix . 'reservations');
     }
 
     /**

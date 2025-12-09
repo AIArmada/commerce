@@ -56,7 +56,7 @@ class JntClient
                     'timestamp' => (string) $timestamp,
                 ])
                 ->asForm()
-                ->post($this->baseUrl.$endpoint, [
+                ->post($this->baseUrl . $endpoint, [
                     'bizContent' => $jsonBizContent,
                 ]);
 
@@ -75,7 +75,7 @@ class JntClient
                             'timestamp' => (string) $timestamp,
                         ])
                         ->asForm()
-                        ->post($this->baseUrl.$endpoint, [
+                        ->post($this->baseUrl . $endpoint, [
                             'bizContent' => $jsonBizContent,
                         ]);
 
@@ -136,7 +136,7 @@ class JntClient
 
     protected function generateDigest(string $bizContent): string
     {
-        $toSign = $bizContent.$this->privateKey;
+        $toSign = $bizContent . $this->privateKey;
         $md5Raw = md5($toSign, true);
 
         return base64_encode($md5Raw);
@@ -189,7 +189,7 @@ class JntClient
         }
 
         if (isset($masked['customerCode'])) {
-            $masked['customerCode'] = mb_substr((string) $masked['customerCode'], 0, 3).'***';
+            $masked['customerCode'] = mb_substr((string) $masked['customerCode'], 0, 3) . '***';
         }
 
         return $masked;

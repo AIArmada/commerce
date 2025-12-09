@@ -23,7 +23,7 @@ class RoleHierarchyPage extends Page
     /** @var array<string, array<string, mixed>> */
     public array $hierarchyTree = [];
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-arrow-trending-up';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-arrow-trending-up';
 
     protected string $view = 'filament-authz::pages.role-hierarchy';
 

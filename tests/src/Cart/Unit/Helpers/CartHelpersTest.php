@@ -6,7 +6,7 @@ use AIArmada\Cart\Cart as CartClass;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart;
 
-require_once __DIR__.'/../../../../../packages/cart/src/helpers.php';
+require_once __DIR__ . '/../../../../../packages/cart/src/helpers.php';
 
 it('returns current cart instance when no name is given', function (): void {
     $manager = app('cart');

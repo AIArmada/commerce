@@ -28,7 +28,7 @@ function createVoucherCondition(
     array $metadata = []
 ): VoucherCondition {
     $data = VoucherData::fromArray([
-        'id' => 'voucher-'.mb_strtolower($code),
+        'id' => 'voucher-' . mb_strtolower($code),
         'code' => $code,
         'name' => "Test Voucher {$code}",
         'description' => null,

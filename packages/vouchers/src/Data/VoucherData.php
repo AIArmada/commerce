@@ -45,7 +45,7 @@ class VoucherData extends Data
         public readonly ?int $usageLimit,
         public readonly ?int $usageLimitPerUser,
         public readonly bool $allowsManualRedemption,
-        public readonly int|string|null $ownerId,
+        public readonly int | string | null $ownerId,
         public readonly ?string $ownerType,
         #[WithCast(DateTimeInterfaceCast::class)]
         public readonly ?DateTimeInterface $startsAt,
@@ -303,9 +303,9 @@ class VoucherData extends Data
     public function getFormattedValue(): string
     {
         if ($this->isPercentage()) {
-            return $this->value.'%';
+            return $this->value . '%';
         }
 
-        return $this->currency.' '.number_format($this->value, 2);
+        return $this->currency . ' ' . number_format($this->value, 2);
     }
 }

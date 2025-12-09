@@ -5,15 +5,15 @@ declare(strict_types=1);
 $tablePrefix = env('AUTHZ_TABLE_PREFIX', env('COMMERCE_TABLE_PREFIX', ''));
 
 $tables = [
-    'permission_groups' => $tablePrefix.'authz_permission_groups',
-    'role_templates' => $tablePrefix.'authz_role_templates',
-    'permission_group_permission' => $tablePrefix.'authz_permission_group_permission',
-    'scoped_permissions' => $tablePrefix.'authz_scoped_permissions',
-    'access_policies' => $tablePrefix.'authz_access_policies',
-    'audit_logs' => $tablePrefix.'authz_audit_logs',
-    'permission_snapshots' => $tablePrefix.'authz_permission_snapshots',
-    'permission_requests' => $tablePrefix.'authz_permission_requests',
-    'delegations' => $tablePrefix.'authz_delegations',
+    'permission_groups' => $tablePrefix . 'authz_permission_groups',
+    'role_templates' => $tablePrefix . 'authz_role_templates',
+    'permission_group_permission' => $tablePrefix . 'authz_permission_group_permission',
+    'scoped_permissions' => $tablePrefix . 'authz_scoped_permissions',
+    'access_policies' => $tablePrefix . 'authz_access_policies',
+    'audit_logs' => $tablePrefix . 'authz_audit_logs',
+    'permission_snapshots' => $tablePrefix . 'authz_permission_snapshots',
+    'permission_requests' => $tablePrefix . 'authz_permission_requests',
+    'delegations' => $tablePrefix . 'authz_delegations',
 ];
 
 return [

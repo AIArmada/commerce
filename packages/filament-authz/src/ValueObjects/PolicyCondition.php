@@ -171,7 +171,7 @@ final readonly class PolicyCondition
 
         $operatorLabel = $this->operator->label();
         $valueDisplay = is_array($this->value)
-            ? '['.implode(', ', array_map(fn ($v) => (string) $v, $this->value)).']'
+            ? '[' . implode(', ', array_map(fn ($v) => (string) $v, $this->value)) . ']'
             : (string) $this->value;
 
         return "{$this->attribute} {$operatorLabel} {$valueDisplay}";

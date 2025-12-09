@@ -21,7 +21,7 @@ class PortalPayouts extends Page implements HasTable
     use InteractsWithAffiliate;
     use InteractsWithTable;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBanknotes;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBanknotes;
 
     protected static ?int $navigationSort = 3;
 
@@ -32,7 +32,7 @@ class PortalPayouts extends Page implements HasTable
         return __('Payouts');
     }
 
-    public function getTitle(): string|Htmlable
+    public function getTitle(): string | Htmlable
     {
         return __('Payout History');
     }

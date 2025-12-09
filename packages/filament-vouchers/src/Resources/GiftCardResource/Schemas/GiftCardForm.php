@@ -49,9 +49,10 @@ final class GiftCardForm
                             Select::make('type')
                                 ->label('Type')
                                 ->required()
-                                ->options(static fn (): array => collect(GiftCardType::cases())
-                                    ->mapWithKeys(static fn (GiftCardType $type): array => [$type->value => $type->label()])
-                                    ->toArray()
+                                ->options(
+                                    static fn (): array => collect(GiftCardType::cases())
+                                        ->mapWithKeys(static fn (GiftCardType $type): array => [$type->value => $type->label()])
+                                        ->toArray()
                                 )
                                 ->default(GiftCardType::Standard->value),
                         ]),
@@ -64,11 +65,13 @@ final class GiftCardForm
                                 ->minValue(0.01)
                                 ->required()
                                 ->suffix(fn (Get $get): string => $get('currency') ?? $defaultCurrency)
-                                ->formatStateUsing(fn (?int $state): ?string => $state !== null
+                                ->formatStateUsing(
+                                    fn (?int $state): ?string => $state !== null
                                     ? number_format($state / 100, 2, '.', '')
                                     : null
                                 )
-                                ->dehydrateStateUsing(fn (?string $state): ?int => $state !== null && $state !== ''
+                                ->dehydrateStateUsing(
+                                    fn (?string $state): ?int => $state !== null && $state !== ''
                                     ? (int) round((float) $state * 100)
                                     : null
                                 ),
@@ -77,11 +80,13 @@ final class GiftCardForm
                                 ->label('Current Balance')
                                 ->numeric()
                                 ->suffix(fn (Get $get): string => $get('currency') ?? $defaultCurrency)
-                                ->formatStateUsing(fn (?int $state): ?string => $state !== null
+                                ->formatStateUsing(
+                                    fn (?int $state): ?string => $state !== null
                                     ? number_format($state / 100, 2, '.', '')
                                     : null
                                 )
-                                ->dehydrateStateUsing(fn (?string $state): ?int => $state !== null && $state !== ''
+                                ->dehydrateStateUsing(
+                                    fn (?string $state): ?int => $state !== null && $state !== ''
                                     ? (int) round((float) $state * 100)
                                     : null
                                 )
@@ -110,9 +115,10 @@ final class GiftCardForm
                         ->schema([
                             Select::make('status')
                                 ->label('Status')
-                                ->options(static fn (): array => collect(GiftCardStatus::cases())
-                                    ->mapWithKeys(static fn (GiftCardStatus $status): array => [$status->value => $status->label()])
-                                    ->toArray()
+                                ->options(
+                                    static fn (): array => collect(GiftCardStatus::cases())
+                                        ->mapWithKeys(static fn (GiftCardStatus $status): array => [$status->value => $status->label()])
+                                        ->toArray()
                                 )
                                 ->default(GiftCardStatus::Inactive->value)
                                 ->required(),

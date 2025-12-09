@@ -30,7 +30,7 @@ class JntNetworkException extends JntException
     public static function connectionFailed(string $endpoint, Throwable $previous): self
     {
         return new self(
-            message: 'Failed to connect to J&T API endpoint: '.$endpoint,
+            message: 'Failed to connect to J&T API endpoint: ' . $endpoint,
             endpoint: $endpoint,
             previous: $previous
         );
@@ -77,7 +77,7 @@ class JntNetworkException extends JntException
     public static function dnsResolutionFailed(string $host): self
     {
         return new self(
-            message: 'Failed to resolve DNS for J&T API host: '.$host,
+            message: 'Failed to resolve DNS for J&T API host: ' . $host,
             endpoint: $host
         );
     }

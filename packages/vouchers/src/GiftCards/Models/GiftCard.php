@@ -45,7 +45,8 @@ use RuntimeException;
  */
 class GiftCard extends Model
 {
-    use HasUuids, SoftDeletes;
+    use HasUuids;
+    use SoftDeletes;
 
     protected $fillable = [
         'code',
@@ -86,7 +87,7 @@ class GiftCard extends Model
             $segments[] = mb_strtoupper(Str::random(4));
         }
 
-        return $prefix.'-'.implode('-', $segments);
+        return $prefix . '-' . implode('-', $segments);
     }
 
     /**

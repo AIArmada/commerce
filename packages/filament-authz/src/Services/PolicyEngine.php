@@ -110,7 +110,7 @@ class PolicyEngine
      */
     public function getApplicablePolicies(string $action, string $resource): Collection
     {
-        $cacheKey = self::CACHE_KEY_PREFIX."applicable:{$action}:{$resource}";
+        $cacheKey = self::CACHE_KEY_PREFIX . "applicable:{$action}:{$resource}";
         $ttl = config('filament-authz.cache_ttl', 3600);
 
         return Cache::remember($cacheKey, $ttl, function () use ($action, $resource): Collection {
@@ -221,7 +221,7 @@ class PolicyEngine
         $policies = AccessPolicy::all();
 
         foreach ($policies as $policy) {
-            Cache::forget(self::CACHE_KEY_PREFIX."applicable:{$policy->target_action}:{$policy->target_resource}");
+            Cache::forget(self::CACHE_KEY_PREFIX . "applicable:{$policy->target_action}:{$policy->target_resource}");
         }
     }
 }

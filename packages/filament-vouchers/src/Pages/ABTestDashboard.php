@@ -27,7 +27,7 @@ final class ABTestDashboard extends Page
 {
     public ?string $campaignId = null;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedBeaker;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBeaker;
 
     protected static ?int $navigationSort = 15;
 
@@ -43,7 +43,7 @@ final class ABTestDashboard extends Page
         return config('filament-vouchers.navigation_group');
     }
 
-    public function getTitle(): string|Htmlable
+    public function getTitle(): string | Htmlable
     {
         return 'A/B Test Dashboard';
     }
@@ -166,11 +166,12 @@ final class ABTestDashboard extends Page
                 ->form([
                     Select::make('winner_variant')
                         ->label('Winning Variant')
-                        ->options(fn (): array => $this->variants
-                            ->mapWithKeys(fn (CampaignVariant $v): array => [
-                                $v->variant_code => "{$v->variant_code} - {$v->name} ({$v->conversion_rate}% conversion)",
-                            ])
-                            ->toArray()
+                        ->options(
+                            fn (): array => $this->variants
+                                ->mapWithKeys(fn (CampaignVariant $v): array => [
+                                    $v->variant_code => "{$v->variant_code} - {$v->name} ({$v->conversion_rate}% conversion)",
+                                ])
+                                ->toArray()
                         )
                         ->required(),
                 ])

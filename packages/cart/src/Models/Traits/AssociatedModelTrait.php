@@ -24,7 +24,7 @@ trait AssociatedModelTrait
     /**
      * Get associated model instance
      */
-    public function getAssociatedModel(): object|string|null
+    public function getAssociatedModel(): object | string | null
     {
         return $this->associatedModel;
     }
@@ -34,7 +34,7 @@ trait AssociatedModelTrait
      *
      * @return array<string, mixed>|string|null
      */
-    private function getAssociatedModelArray(): array|string|null
+    private function getAssociatedModelArray(): array | string | null
     {
         if (is_string($this->associatedModel)) {
             return $this->associatedModel;

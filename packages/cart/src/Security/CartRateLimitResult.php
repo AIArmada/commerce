@@ -63,8 +63,8 @@ final readonly class CartRateLimitResult
         }
 
         return "Rate limit exceeded for '{$this->operation}'. "
-            ."Limit: {$this->limit} per {$this->window}. "
-            ."Retry after {$this->retryAfter} seconds.";
+            . "Limit: {$this->limit} per {$this->window}. "
+            . "Retry after {$this->retryAfter} seconds.";
     }
 
     /**

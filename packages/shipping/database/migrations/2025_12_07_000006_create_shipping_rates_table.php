@@ -39,7 +39,7 @@ return new class extends Migration
 
             $table->timestamps();
 
-            $table->index(['zone_id', 'carrier_code', 'active'], $tableName.'_zone_carrier_active');
+            $table->index(['zone_id', 'carrier_code', 'active'], $tableName . '_zone_carrier_active');
         });
     }
 

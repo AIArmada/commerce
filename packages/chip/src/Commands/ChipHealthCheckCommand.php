@@ -114,7 +114,7 @@ final class ChipHealthCheckCommand extends Command
             $this->info('   ✅ API reachable');
             if ($this->option('verbose')) {
                 $availableMethods = $methods['available_payment_methods'] ?? [];
-                $this->line('      Available payment methods: '.count($availableMethods));
+                $this->line('      Available payment methods: ' . count($availableMethods));
             }
         } catch (Throwable $e) {
             // API call failed - log as warning but don't fail the check
@@ -153,7 +153,7 @@ final class ChipHealthCheckCommand extends Command
             $accounts = $service->listAccounts();
             $this->info('   ✅ API reachable');
             if ($this->option('verbose')) {
-                $this->line('      Accounts retrieved: '.count($accounts));
+                $this->line('      Accounts retrieved: ' . count($accounts));
             }
         } catch (Throwable $e) {
             // API call failed - log as warning but don't fail the check

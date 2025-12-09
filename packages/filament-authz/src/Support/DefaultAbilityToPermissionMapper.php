@@ -10,6 +10,6 @@ class DefaultAbilityToPermissionMapper
     {
         $base = class_basename($modelClass);
 
-        return mb_strtolower($base).'.'.$ability; // e.g. user.viewAny
+        return mb_strtolower($base) . '.' . $ability; // e.g. user.viewAny
     }
 }

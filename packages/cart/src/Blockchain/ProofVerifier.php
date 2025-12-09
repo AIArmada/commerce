@@ -89,9 +89,9 @@ final class ProofVerifier
 
         foreach ($itemProof['proof_path'] as $step) {
             if ($step['position'] === 'left') {
-                $currentHash = hash('sha256', $step['hash'].$currentHash);
+                $currentHash = hash('sha256', $step['hash'] . $currentHash);
             } else {
-                $currentHash = hash('sha256', $currentHash.$step['hash']);
+                $currentHash = hash('sha256', $currentHash . $step['hash']);
             }
         }
 
@@ -230,7 +230,7 @@ final class ProofVerifier
     private function verifySignature(array $proof): bool
     {
         $key = config('cart.blockchain.signing_key', config('app.key'));
-        $data = $proof['root_hash'].json_encode($proof['metadata'], JSON_THROW_ON_ERROR);
+        $data = $proof['root_hash'] . json_encode($proof['metadata'], JSON_THROW_ON_ERROR);
         $expectedSignature = hash_hmac('sha256', $data, $key);
 
         return hash_equals($expectedSignature, $proof['signature']);
@@ -265,7 +265,7 @@ final class ProofVerifier
             for ($i = 0; $i < count($current); $i += 2) {
                 $left = $current[$i];
                 $right = $current[$i + 1] ?? $left;
-                $next[] = hash('sha256', $left.$right);
+                $next[] = hash('sha256', $left . $right);
             }
 
             $current = $next;

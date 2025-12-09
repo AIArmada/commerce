@@ -222,7 +222,7 @@ final class NormalizedCartSynchronizer
         return mb_strtoupper(config('cart.money.default_currency', 'USD'));
     }
 
-    private function resolveAssociatedModel(string|object|null $associatedModel): ?string
+    private function resolveAssociatedModel(string | object | null $associatedModel): ?string
     {
         if (is_string($associatedModel)) {
             return $associatedModel;

@@ -65,27 +65,30 @@ final class CampaignForm
                             Select::make('type')
                                 ->label('Campaign Type')
                                 ->required()
-                                ->options(static fn (): array => collect(CampaignType::cases())
-                                    ->mapWithKeys(static fn (CampaignType $type): array => [$type->value => $type->label()])
-                                    ->toArray()
+                                ->options(
+                                    static fn (): array => collect(CampaignType::cases())
+                                        ->mapWithKeys(static fn (CampaignType $type): array => [$type->value => $type->label()])
+                                        ->toArray()
                                 )
                                 ->helperText('The category of this campaign'),
 
                             Select::make('objective')
                                 ->label('Campaign Objective')
                                 ->required()
-                                ->options(static fn (): array => collect(CampaignObjective::cases())
-                                    ->mapWithKeys(static fn (CampaignObjective $obj): array => [$obj->value => $obj->label()])
-                                    ->toArray()
+                                ->options(
+                                    static fn (): array => collect(CampaignObjective::cases())
+                                        ->mapWithKeys(static fn (CampaignObjective $obj): array => [$obj->value => $obj->label()])
+                                        ->toArray()
                                 )
                                 ->helperText('Primary goal of this campaign'),
                         ]),
 
                         Select::make('status')
                             ->label('Status')
-                            ->options(static fn (): array => collect(CampaignStatus::cases())
-                                ->mapWithKeys(static fn (CampaignStatus $status): array => [$status->value => $status->label()])
-                                ->toArray()
+                            ->options(
+                                static fn (): array => collect(CampaignStatus::cases())
+                                    ->mapWithKeys(static fn (CampaignStatus $status): array => [$status->value => $status->label()])
+                                    ->toArray()
                             )
                             ->default(CampaignStatus::Draft->value)
                             ->required()
@@ -109,9 +112,10 @@ final class CampaignForm
 
                             Select::make('timezone')
                                 ->label('Timezone')
-                                ->options(static fn (): array => collect(timezone_identifiers_list())
-                                    ->mapWithKeys(fn (string $tz): array => [$tz => $tz])
-                                    ->toArray()
+                                ->options(
+                                    static fn (): array => collect(timezone_identifiers_list())
+                                        ->mapWithKeys(fn (string $tz): array => [$tz => $tz])
+                                        ->toArray()
                                 )
                                 ->default('Asia/Kuala_Lumpur')
                                 ->searchable()
@@ -128,11 +132,13 @@ final class CampaignForm
                                 ->numeric()
                                 ->suffix($defaultCurrency)
                                 ->helperText('Maximum total spend for this campaign (leave empty for unlimited)')
-                                ->formatStateUsing(fn (?int $state): ?string => $state !== null
+                                ->formatStateUsing(
+                                    fn (?int $state): ?string => $state !== null
                                     ? number_format($state / 100, 2, '.', '')
                                     : null
                                 )
-                                ->dehydrateStateUsing(fn (?string $state): ?int => $state !== null && $state !== ''
+                                ->dehydrateStateUsing(
+                                    fn (?string $state): ?int => $state !== null && $state !== ''
                                     ? (int) round((float) $state * 100)
                                     : null
                                 ),
@@ -151,7 +157,8 @@ final class CampaignForm
                                         ->label('Amount Spent')
                                         ->suffix($defaultCurrency)
                                         ->disabled()
-                                        ->formatStateUsing(fn (?int $state): string => $state !== null
+                                        ->formatStateUsing(
+                                            fn (?int $state): string => $state !== null
                                             ? number_format($state / 100, 2, '.', '')
                                             : '0.00'
                                         )
@@ -240,7 +247,8 @@ final class CampaignForm
                                     ->placeholder('Global campaign (no owner)')
                                     ->live()
                                     ->helperText('Assign to a specific vendor or store')
-                                    ->dehydrateStateUsing(static fn (?string $state): ?string => $state !== null && $state !== ''
+                                    ->dehydrateStateUsing(
+                                        static fn (?string $state): ?string => $state !== null && $state !== ''
                                         ? Relation::getMorphAlias($state)
                                         : null
                                     )

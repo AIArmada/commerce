@@ -327,7 +327,7 @@ final class ProductRecommender
      */
     private function getProductAssociations(array $productIds): Collection
     {
-        $cacheKey = 'product:associations:'.md5(implode(',', $productIds));
+        $cacheKey = 'product:associations:' . md5(implode(',', $productIds));
 
         return Cache::remember($cacheKey, 3600, function () {
             return collect();

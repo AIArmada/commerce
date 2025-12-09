@@ -13,14 +13,14 @@ class InsufficientInventoryException extends Exception
 {
     public function __construct(
         string $message,
-        private readonly string|int $itemId,
+        private readonly string | int $itemId,
         private readonly int $requestedQuantity,
         private readonly int $availableQuantity,
     ) {
         parent::__construct($message);
     }
 
-    public function getItemId(): string|int
+    public function getItemId(): string | int
     {
         return $this->itemId;
     }

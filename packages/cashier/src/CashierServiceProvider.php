@@ -22,7 +22,7 @@ class CashierServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        $this->mergeConfigFrom(__DIR__.'/../config/cashier.php', 'cashier');
+        $this->mergeConfigFrom(__DIR__ . '/../config/cashier.php', 'cashier');
 
         $this->app->singleton(GatewayManager::class, function ($app) {
             return new GatewayManager($app);
@@ -67,7 +67,7 @@ class CashierServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__.'/../config/cashier.php' => $this->app->configPath('cashier.php'),
+                __DIR__ . '/../config/cashier.php' => $this->app->configPath('cashier.php'),
             ], 'cashier-config');
         }
     }
@@ -78,7 +78,7 @@ class CashierServiceProvider extends ServiceProvider
     protected function registerRoutes(): void
     {
         if (Cashier::$registersRoutes) {
-            $this->loadRoutesFrom(__DIR__.'/../routes/web.php');
+            $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
         }
     }
 }

@@ -29,7 +29,7 @@ class OrderTrackCommand extends Command
         try {
             $tracking = spin(
                 fn () => $jnt->trackParcel($orderId),
-                'Tracking order: '.$orderId
+                'Tracking order: ' . $orderId
             );
 
             if ($tracking->details->count() === 0) {
@@ -57,15 +57,15 @@ class OrderTrackCommand extends Command
 
             return self::SUCCESS;
         } catch (JntNetworkException $e) {
-            error('Network Error: '.$e->getMessage());
+            error('Network Error: ' . $e->getMessage());
 
             return self::FAILURE;
         } catch (JntApiException $e) {
-            error('API Error: '.$e->getMessage());
+            error('API Error: ' . $e->getMessage());
 
             return self::FAILURE;
         } catch (Exception $e) {
-            error('Error: '.$e->getMessage());
+            error('Error: ' . $e->getMessage());
 
             return self::FAILURE;
         }

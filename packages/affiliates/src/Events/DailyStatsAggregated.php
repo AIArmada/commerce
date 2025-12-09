@@ -10,7 +10,8 @@ use Illuminate\Support\Carbon;
 
 final class DailyStatsAggregated
 {
-    use Dispatchable, SerializesModels;
+    use Dispatchable;
+    use SerializesModels;
 
     public function __construct(
         public readonly Carbon $date,

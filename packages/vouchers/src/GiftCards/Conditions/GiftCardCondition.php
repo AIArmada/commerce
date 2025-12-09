@@ -301,7 +301,7 @@ class GiftCardCondition implements Arrayable, CartConditionConvertible
     /**
      * Get the condition value.
      */
-    public function getValue(): string|float
+    public function getValue(): string | float
     {
         return $this->value;
     }

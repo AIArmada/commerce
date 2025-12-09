@@ -91,7 +91,7 @@ class Cashier
     /**
      * Get the CHIP Collect service client.
      */
-    public static function chip(): ChipCollectService|FakeChipCollectService
+    public static function chip(): ChipCollectService | FakeChipCollectService
     {
         if (static::$isFake && static::$fakeChip) {
             return static::$fakeChip;

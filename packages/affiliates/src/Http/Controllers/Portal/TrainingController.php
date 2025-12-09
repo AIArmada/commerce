@@ -188,7 +188,7 @@ final class TrainingController extends Controller
             $progress->update([
                 'certificate_url' => route('affiliate.training.certificate.download', [
                     'moduleId' => $moduleId,
-                    'token' => hash('sha256', $affiliate->id.$moduleId.config('app.key')),
+                    'token' => hash('sha256', $affiliate->id . $moduleId . config('app.key')),
                 ]),
             ]);
         }

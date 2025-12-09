@@ -94,7 +94,7 @@ final class CartChannel
      *
      * @return array<string, mixed>|false
      */
-    public function join(mixed $user, string $cartId): array|false
+    public function join(mixed $user, string $cartId): array | false
     {
         $cartData = $this->getCartData($cartId);
 

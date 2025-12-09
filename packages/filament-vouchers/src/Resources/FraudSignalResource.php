@@ -21,7 +21,7 @@ final class FraudSignalResource extends Resource
 {
     protected static ?string $model = VoucherFraudSignal::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedShieldExclamation;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedShieldExclamation;
 
     protected static ?string $recordTitleAttribute = 'message';
 
@@ -63,7 +63,7 @@ final class FraudSignalResource extends Resource
         return 'danger';
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-vouchers.navigation_group');
     }

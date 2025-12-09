@@ -24,7 +24,7 @@ return new class extends Migration
             $table->timestamp('generated_at');
             $table->timestamps();
 
-            $table->index(['shipment_id', 'format'], $tableName.'_shipment_format');
+            $table->index(['shipment_id', 'format'], $tableName . '_shipment_format');
         });
     }
 

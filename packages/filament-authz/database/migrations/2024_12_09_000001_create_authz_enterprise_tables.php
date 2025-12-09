@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $tablePrefix = config('filament-authz.database.table_prefix', '');
 
-        Schema::create($tablePrefix.'authz_permission_snapshots', function (Blueprint $table): void {
+        Schema::create($tablePrefix . 'authz_permission_snapshots', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name');
             $table->text('description')->nullable();
@@ -25,7 +25,7 @@ return new class extends Migration
             $table->index('created_at');
         });
 
-        Schema::create($tablePrefix.'authz_permission_requests', function (Blueprint $table): void {
+        Schema::create($tablePrefix . 'authz_permission_requests', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('requester_id');
             $table->foreignUuid('approver_id')->nullable();
@@ -46,7 +46,7 @@ return new class extends Migration
             $table->index('created_at');
         });
 
-        Schema::create($tablePrefix.'authz_delegations', function (Blueprint $table): void {
+        Schema::create($tablePrefix . 'authz_delegations', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('delegator_id');
             $table->foreignUuid('delegatee_id');
@@ -67,8 +67,8 @@ return new class extends Migration
     {
         $tablePrefix = config('filament-authz.database.table_prefix', '');
 
-        Schema::dropIfExists($tablePrefix.'authz_delegations');
-        Schema::dropIfExists($tablePrefix.'authz_permission_requests');
-        Schema::dropIfExists($tablePrefix.'authz_permission_snapshots');
+        Schema::dropIfExists($tablePrefix . 'authz_delegations');
+        Schema::dropIfExists($tablePrefix . 'authz_permission_requests');
+        Schema::dropIfExists($tablePrefix . 'authz_permission_snapshots');
     }
 };

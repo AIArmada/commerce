@@ -24,7 +24,7 @@ final class AccountApi extends CollectApi
     public function turnover(array $filters = []): array
     {
         $queryString = http_build_query($filters);
-        $endpoint = 'account/turnover/'.($queryString ? '?'.$queryString : '');
+        $endpoint = 'account/turnover/' . ($queryString ? '?' . $queryString : '');
 
         return $this->attempt(
             fn () => $this->client->get($endpoint),
@@ -40,7 +40,7 @@ final class AccountApi extends CollectApi
     public function companyStatements(array $filters = []): array
     {
         $queryString = http_build_query($filters);
-        $endpoint = 'company_statements/'.($queryString ? '?'.$queryString : '');
+        $endpoint = 'company_statements/' . ($queryString ? '?' . $queryString : '');
 
         return $this->attempt(
             fn () => $this->client->get($endpoint),

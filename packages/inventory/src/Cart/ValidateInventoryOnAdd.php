@@ -89,7 +89,7 @@ final class ValidateInventoryOnAdd
 
             // Mark item as allocated in metadata
             $metadataKey = config('inventory.cart.allocation_metadata_key', 'inventory_allocated');
-            $cart->setMetadata($metadataKey.'.'.$item->id, [
+            $cart->setMetadata($metadataKey . '.' . $item->id, [
                 'allocated' => true,
                 'quantity' => $item->quantity,
                 'allocated_at' => now()->toISOString(),
@@ -124,7 +124,7 @@ final class ValidateInventoryOnAdd
 
         // Mark item as partial backorder in metadata
         $metadataKey = config('inventory.cart.backorder_metadata_key', 'is_backorder');
-        $cart->setMetadata($metadataKey.'.'.$item->id, [
+        $cart->setMetadata($metadataKey . '.' . $item->id, [
             'is_backorder' => true,
             'available_quantity' => $availableQuantity,
             'backorder_quantity' => $backorderQuantity,

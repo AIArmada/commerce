@@ -124,7 +124,7 @@ final class VariantsRelationManager extends RelationManager
 
                 TextColumn::make('conversion_rate')
                     ->label('Conv. Rate')
-                    ->state(fn (CampaignVariant $record): string => number_format($record->conversion_rate, 2).'%')
+                    ->state(fn (CampaignVariant $record): string => number_format($record->conversion_rate, 2) . '%')
                     ->alignCenter()
                     ->badge()
                     ->color(fn (CampaignVariant $record): string => match (true) {

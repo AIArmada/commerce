@@ -11,7 +11,7 @@ class ShippingServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->mergeConfigFrom(
-            __DIR__.'/../config/shipping.php',
+            __DIR__ . '/../config/shipping.php',
             'shipping'
         );
 
@@ -26,14 +26,14 @@ class ShippingServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->publishes([
-                __DIR__.'/../config/shipping.php' => config_path('shipping.php'),
+                __DIR__ . '/../config/shipping.php' => config_path('shipping.php'),
             ], 'shipping-config');
 
             $this->publishes([
-                __DIR__.'/../database/migrations' => database_path('migrations'),
+                __DIR__ . '/../database/migrations' => database_path('migrations'),
             ], 'shipping-migrations');
 
-            $this->loadMigrationsFrom(__DIR__.'/../database/migrations');
+            $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
         }
 
         $this->registerEventListeners();

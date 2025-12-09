@@ -45,7 +45,7 @@ final class TopUpGiftCardAction extends Action
 
             Notification::make()
                 ->title('Gift card topped up')
-                ->body('Added '.number_format((float) $data['amount'], 2).' '.$record->currency.' to the balance.')
+                ->body('Added ' . number_format((float) $data['amount'], 2) . ' ' . $record->currency . ' to the balance.')
                 ->success()
                 ->send();
         });

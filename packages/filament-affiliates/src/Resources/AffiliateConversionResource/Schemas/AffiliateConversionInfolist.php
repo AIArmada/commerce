@@ -55,17 +55,17 @@ final class AffiliateConversionInfolist
                     Grid::make(4)->schema([
                         TextEntry::make('subtotal_minor')
                             ->label('Subtotal')
-                            ->formatStateUsing(fn ($state): string => number_format($state / 100, 2).' '.config('affiliates.currency.default', 'MYR'))
+                            ->formatStateUsing(fn ($state): string => number_format($state / 100, 2) . ' ' . config('affiliates.currency.default', 'MYR'))
                             ->weight(FontWeight::SemiBold),
 
                         TextEntry::make('total_minor')
                             ->label('Total')
-                            ->formatStateUsing(fn ($state): string => number_format($state / 100, 2).' '.config('affiliates.currency.default', 'MYR'))
+                            ->formatStateUsing(fn ($state): string => number_format($state / 100, 2) . ' ' . config('affiliates.currency.default', 'MYR'))
                             ->weight(FontWeight::SemiBold),
 
                         TextEntry::make('commission_minor')
                             ->label('Commission')
-                            ->formatStateUsing(fn ($state): string => number_format($state / 100, 2).' '.config('affiliates.currency.default', 'MYR'))
+                            ->formatStateUsing(fn ($state): string => number_format($state / 100, 2) . ' ' . config('affiliates.currency.default', 'MYR'))
                             ->badge()
                             ->color('success')
                             ->weight(FontWeight::Bold),
