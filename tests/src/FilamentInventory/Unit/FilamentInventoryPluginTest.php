@@ -13,7 +13,6 @@ use AIArmada\FilamentInventory\Resources\InventorySerialResource;
 use AIArmada\FilamentInventory\Widgets\InventoryStatsWidget;
 use AIArmada\FilamentInventory\Widgets\LowInventoryAlertsWidget;
 use Filament\Panel;
-use Mockery;
 
 uses(InventoryTestCase::class);
 

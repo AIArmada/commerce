@@ -8,7 +8,6 @@ use AIArmada\FilamentJnt\Resources\JntTrackingEventResource;
 use AIArmada\FilamentJnt\Resources\JntWebhookLogResource;
 use AIArmada\FilamentJnt\Widgets\JntStatsWidget;
 use Filament\Panel;
-use Mockery;
 
 it('exposes a stable plugin id', function (): void {
     expect((new FilamentJntPlugin)->getId())->toBe('filament-jnt');
