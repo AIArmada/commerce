@@ -112,7 +112,7 @@ final readonly class UnifiedSubscription
     public function billingCycle(): string
     {
         // Try to infer from plan ID naming conventions
-        $planLower = strtolower($this->planId);
+        $planLower = mb_strtolower($this->planId);
 
         if (str_contains($planLower, 'annual') || str_contains($planLower, 'yearly')) {
             return __('filament-cashier::subscriptions.cycle.yearly');

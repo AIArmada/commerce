@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
+use Exception;
 use Filament\Forms\Components\Radio;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -16,6 +17,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Schema;
+use RuntimeException;
 
 final class CreateSubscription extends CreateRecord
 {
@@ -195,7 +197,7 @@ final class CreateSubscription extends CreateRecord
                     ])
                     ->toArray();
             }
-        } catch (\Exception) {
+        } catch (Exception) {
             // Silently fail if gateway API is not configured
         }
 
@@ -247,7 +249,7 @@ final class CreateSubscription extends CreateRecord
             return $builder->create();
         }
 
-        throw new \RuntimeException("Unable to create subscription on gateway: {$gateway}");
+        throw new RuntimeException("Unable to create subscription on gateway: {$gateway}");
     }
 
     protected function getCreatedNotification(): ?Notification

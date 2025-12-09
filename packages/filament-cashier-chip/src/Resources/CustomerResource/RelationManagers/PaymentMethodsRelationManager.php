@@ -4,16 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\RelationManagers;
 
-use AIArmada\CashierChip\PaymentMethod;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Collection;
-use Livewire\Attributes\Computed;
 
 final class PaymentMethodsRelationManager extends RelationManager
 {

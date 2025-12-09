@@ -102,7 +102,7 @@ final class ActiveSubscribersWidget extends BaseWidget
             $endOfMonth = $date->copy()->endOfMonth();
 
             $count = $subscriptionModel::where('created_at', '<=', $endOfMonth)
-                ->where(function ($query) use ($endOfMonth) {
+                ->where(function ($query) use ($endOfMonth): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>=', $endOfMonth);
                 })

@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashier\CustomerPortal\Pages;
 
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use BackedEnum;
+use Exception;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
@@ -57,7 +58,7 @@ final class ManagePaymentMethods extends Page
                         'is_default' => $defaultMethod !== null && $pm->id === $defaultMethod->id,
                     ]);
                 }
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Silently fail if API is not configured
             }
         }
@@ -75,7 +76,7 @@ final class ManagePaymentMethods extends Page
                         'is_default' => $pm->is_default ?? false,
                     ]);
                 }
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Silently fail if API is not configured
             }
         }
@@ -109,7 +110,7 @@ final class ManagePaymentMethods extends Page
                     ->success()
                     ->send();
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title(__('filament-cashier::portal.payment_methods.error'))
                 ->body($e->getMessage())
@@ -145,7 +146,7 @@ final class ManagePaymentMethods extends Page
                     ->success()
                     ->send();
             }
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title(__('filament-cashier::portal.payment_methods.error'))
                 ->body($e->getMessage())

@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashier\CustomerPortal\Pages;
 
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use BackedEnum;
+use Exception;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
@@ -58,7 +59,7 @@ final class ViewInvoices extends Page
                         'download_url' => $invoice->invoicePdf(),
                     ]);
                 }
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Silently fail if API is not configured
             }
         }
@@ -79,7 +80,7 @@ final class ViewInvoices extends Page
                         'download_url' => $invoice->pdf_url ?? null,
                     ]);
                 }
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Silently fail if API is not configured
             }
         }

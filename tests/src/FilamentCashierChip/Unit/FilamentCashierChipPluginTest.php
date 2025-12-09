@@ -127,5 +127,5 @@ it('returns fluent instance from billingDashboard method', function (): void {
 it('implements filament plugin interface', function (): void {
     $plugin = new FilamentCashierChipPlugin();
 
-    expect($plugin)->toBeInstanceOf(\Filament\Contracts\Plugin::class);
+    expect($plugin)->toBeInstanceOf(Filament\Contracts\Plugin::class);
 });

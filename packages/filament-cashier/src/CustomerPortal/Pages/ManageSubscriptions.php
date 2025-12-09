@@ -70,20 +70,6 @@ final class ManageSubscriptions extends Page
         return $subscriptions->sortByDesc('createdAt')->values();
     }
 
-    /**
-     * @return array<Action>
-     */
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('new_subscription')
-                ->label(__('filament-cashier::portal.subscriptions.new'))
-                ->icon('heroicon-o-plus')
-                ->url(fn () => route('filament.billing.pages.new-subscription'))
-                ->visible(fn () => config('filament-cashier.billing_portal.features.subscriptions', true)),
-        ];
-    }
-
     public function cancelSubscription(string $gateway, string $id): void
     {
         $subscription = $this->findSubscription($gateway, $id);
@@ -128,6 +114,20 @@ final class ManageSubscriptions extends Page
                 ->success()
                 ->send();
         }
+    }
+
+    /**
+     * @return array<Action>
+     */
+    protected function getHeaderActions(): array
+    {
+        return [
+            Action::make('new_subscription')
+                ->label(__('filament-cashier::portal.subscriptions.new'))
+                ->icon('heroicon-o-plus')
+                ->url(fn () => route('filament.billing.pages.new-subscription'))
+                ->visible(fn () => config('filament-cashier.billing_portal.features.subscriptions', true)),
+        ];
     }
 
     protected function findSubscription(string $gateway, string $id): ?UnifiedSubscription

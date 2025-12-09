@@ -140,7 +140,7 @@ final class MRRWidget extends BaseWidget
 
             $monthMrr = $subscriptionModel::where('chip_status', Subscription::STATUS_ACTIVE)
                 ->where('created_at', '<=', $endOfMonth)
-                ->where(function ($query) use ($startOfMonth) {
+                ->where(function ($query) use ($startOfMonth): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>=', $startOfMonth);
                 })

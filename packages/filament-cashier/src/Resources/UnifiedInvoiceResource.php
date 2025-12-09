@@ -124,7 +124,7 @@ final class UnifiedInvoiceResource extends Resource
                         ->label(__('filament-cashier::subscriptions.bulk.export'))
                         ->icon('heroicon-o-arrow-down-tray')
                         ->action(function (\Illuminate\Support\Collection $records): \Symfony\Component\HttpFoundation\StreamedResponse {
-                            return response()->streamDownload(function () use ($records) {
+                            return response()->streamDownload(function () use ($records): void {
                                 $output = fopen('php://output', 'w');
                                 fputcsv($output, ['Invoice #', 'Gateway', 'Amount', 'Status', 'Date', 'Paid At']);
 
@@ -158,9 +158,6 @@ final class UnifiedInvoiceResource extends Resource
         ];
     }
 
-    /**
-     * @param  Closure|null  $modifyQuery
-     */
     public static function resolveRecordRouteBinding(int|string $key, ?Closure $modifyQuery = null): ?Model
     {
         return null;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\Widgets;
 
 use AIArmada\FilamentCashier\Support\GatewayDetector;
+use DateTimeInterface;
 use Filament\Widgets\ChartWidget;
 
 final class GatewayComparisonWidget extends ChartWidget
@@ -99,14 +100,14 @@ final class GatewayComparisonWidget extends ChartWidget
         return $data;
     }
 
-    protected function getRevenueForPeriod(string $gateway, \DateTimeInterface $start, \DateTimeInterface $end): int
+    protected function getRevenueForPeriod(string $gateway, DateTimeInterface $start, DateTimeInterface $end): int
     {
         $detector = app(GatewayDetector::class);
 
         if ($gateway === 'stripe' && $detector->isAvailable('stripe') && class_exists(\Laravel\Cashier\Subscription::class)) {
             return \Laravel\Cashier\Subscription::query()
                 ->whereBetween('created_at', [$start, $end])
-                ->where(function ($query) use ($end) {
+                ->where(function ($query) use ($end): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', $end);
                 })
@@ -116,7 +117,7 @@ final class GatewayComparisonWidget extends ChartWidget
         if ($gateway === 'chip' && $detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
             return \AIArmada\CashierChip\Models\Subscription::query()
                 ->whereBetween('created_at', [$start, $end])
-                ->where(function ($query) use ($end) {
+                ->where(function ($query) use ($end): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', $end);
                 })

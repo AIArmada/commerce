@@ -28,13 +28,6 @@ final class ListSubscriptions extends ListRecords
      */
     protected ?Collection $allSubscriptions = null;
 
-    protected function getHeaderActions(): array
-    {
-        return [
-            \Filament\Actions\CreateAction::make(),
-        ];
-    }
-
     public function getTabs(): array
     {
         $detector = app(GatewayDetector::class);
@@ -62,6 +55,40 @@ final class ListSubscriptions extends ListRecords
             ->icon('heroicon-o-exclamation-triangle');
 
         return $tabs;
+    }
+
+    /**
+     * Override to use collection-based records instead of Eloquent.
+     *
+     * @return Collection<int, UnifiedSubscription>|Paginator|CursorPaginator
+     */
+    public function getTableRecords(): Collection|Paginator|CursorPaginator
+    {
+        return $this->getFilteredSubscriptions();
+    }
+
+    /**
+     * Get table record key.
+     */
+    public function getTableRecordKey(Model|array $record): string
+    {
+        // @phpstan-ignore instanceof.alwaysFalse
+        if ($record instanceof UnifiedSubscription) {
+            return $record->gateway.'-'.$record->id;
+        }
+
+        if (is_array($record)) {
+            return ($record['gateway'] ?? 'unknown').'-'.($record['id'] ?? 'unknown');
+        }
+
+        return (string) $record->getKey();
+    }
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            \Filament\Actions\CreateAction::make(),
+        ];
     }
 
     /**
@@ -138,32 +165,5 @@ final class ListSubscriptions extends ListRecords
         }
 
         return $subscriptions->values();
-    }
-
-    /**
-     * Override to use collection-based records instead of Eloquent.
-     *
-     * @return Collection<int, UnifiedSubscription>|Paginator|CursorPaginator
-     */
-    public function getTableRecords(): Collection|Paginator|CursorPaginator
-    {
-        return $this->getFilteredSubscriptions();
-    }
-
-    /**
-     * Get table record key.
-     */
-    public function getTableRecordKey(Model|array $record): string
-    {
-        // @phpstan-ignore instanceof.alwaysFalse
-        if ($record instanceof UnifiedSubscription) {
-            return $record->gateway.'-'.$record->id;
-        }
-
-        if (is_array($record)) {
-            return ($record['gateway'] ?? 'unknown').'-'.($record['id'] ?? 'unknown');
-        }
-
-        return (string) $record->getKey();
     }
 }

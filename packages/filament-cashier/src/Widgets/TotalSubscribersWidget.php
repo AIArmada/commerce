@@ -22,7 +22,7 @@ final class TotalSubscribersWidget extends StatsOverviewWidget
         // Count Stripe subscribers
         if ($detector->isAvailable('stripe') && class_exists(\Laravel\Cashier\Subscription::class)) {
             $totals['stripe'] = \Laravel\Cashier\Subscription::query()
-                ->where(function ($query) {
+                ->where(function ($query): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', now());
                 })
@@ -32,7 +32,7 @@ final class TotalSubscribersWidget extends StatsOverviewWidget
         // Count CHIP subscribers
         if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
             $totals['chip'] = \AIArmada\CashierChip\Models\Subscription::query()
-                ->where(function ($query) {
+                ->where(function ($query): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', now());
                 })

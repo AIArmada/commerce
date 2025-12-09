@@ -86,7 +86,7 @@ it('gateway detector returns available gateways as collection', function (): voi
     $detector = new GatewayDetector();
     $gateways = $detector->availableGateways();
 
-    expect($gateways)->toBeInstanceOf(\Illuminate\Support\Collection::class);
+    expect($gateways)->toBeInstanceOf(Illuminate\Support\Collection::class);
 });
 
 it('gateway detector provides gateway options', function (): void {

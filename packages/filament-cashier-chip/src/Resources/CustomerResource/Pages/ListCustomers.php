@@ -6,10 +6,10 @@ namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\Pages;
 
 use AIArmada\CashierChip\Cashier;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource;
+use Exception;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
-use Illuminate\Database\Eloquent\Model;
 use Override;
 
 final class ListCustomers extends ListRecords
@@ -51,7 +51,7 @@ final class ListCustomers extends ListRecords
                                 $customer->createAsChipCustomer();
                                 $synced++;
                             }
-                        } catch (\Exception $e) {
+                        } catch (Exception $e) {
                             $failed++;
                         }
                     }

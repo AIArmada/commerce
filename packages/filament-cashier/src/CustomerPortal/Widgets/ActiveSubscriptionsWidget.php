@@ -34,7 +34,7 @@ final class ActiveSubscriptionsWidget extends Widget
         if ($detector->isAvailable('stripe') && class_exists(\Laravel\Cashier\Subscription::class)) {
             $stripeSubscriptions = \Laravel\Cashier\Subscription::query()
                 ->where('user_id', $user->getAuthIdentifier())
-                ->where(function ($query) {
+                ->where(function ($query): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', now());
                 })
@@ -47,7 +47,7 @@ final class ActiveSubscriptionsWidget extends Widget
         if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
             $chipSubscriptions = \AIArmada\CashierChip\Models\Subscription::query()
                 ->where('user_id', $user->getAuthIdentifier())
-                ->where(function ($query) {
+                ->where(function ($query): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', now());
                 })

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCashier\Pages;
 use AIArmada\FilamentCashier\FilamentCashierPlugin;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use BackedEnum;
+use Exception;
 use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Notifications\Notification;
@@ -23,11 +24,6 @@ final class GatewayManagement extends Page
 
     protected string $view = 'filament-cashier::pages.gateway-management';
 
-    public function getTitle(): string
-    {
-        return __('filament-cashier::gateway.management.title');
-    }
-
     public static function getNavigationLabel(): string
     {
         return __('filament-cashier::gateway.management.navigation');
@@ -36,6 +32,11 @@ final class GatewayManagement extends Page
     public static function getNavigationGroup(): ?string
     {
         return FilamentCashierPlugin::get()->getNavigationGroup();
+    }
+
+    public function getTitle(): string
+    {
+        return __('filament-cashier::gateway.management.title');
     }
 
     public function getMaxContentWidth(): Width|string|null
@@ -72,119 +73,6 @@ final class GatewayManagement extends Page
                 'message' => $health['message'],
             ];
         });
-    }
-
-    /**
-     * Check health of a specific gateway.
-     *
-     * @return array{status: string, color: string, message: string|null}
-     */
-    protected function checkGatewayHealth(string $gateway): array
-    {
-        try {
-            if ($gateway === 'stripe') {
-                return $this->checkStripeHealth();
-            }
-
-            if ($gateway === 'chip') {
-                return $this->checkChipHealth();
-            }
-
-            return [
-                'status' => 'unknown',
-                'color' => 'gray',
-                'message' => __('filament-cashier::gateway.health.unknown'),
-            ];
-        } catch (\Exception $e) {
-            return [
-                'status' => 'error',
-                'color' => 'danger',
-                'message' => $e->getMessage(),
-            ];
-        }
-    }
-
-    /**
-     * Check Stripe API health.
-     *
-     * @return array{status: string, color: string, message: string|null}
-     */
-    protected function checkStripeHealth(): array
-    {
-        if (! config('services.stripe.key') || ! config('services.stripe.secret')) {
-            return [
-                'status' => 'not_configured',
-                'color' => 'warning',
-                'message' => __('filament-cashier::gateway.health.not_configured'),
-            ];
-        }
-
-        try {
-            if (class_exists(\Stripe\Stripe::class)) {
-                \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
-                \Stripe\Account::retrieve();
-
-                return [
-                    'status' => 'healthy',
-                    'color' => 'success',
-                    'message' => null,
-                ];
-            }
-        } catch (\Exception $e) {
-            return [
-                'status' => 'error',
-                'color' => 'danger',
-                'message' => $e->getMessage(),
-            ];
-        }
-
-        return [
-            'status' => 'unknown',
-            'color' => 'gray',
-            'message' => __('filament-cashier::gateway.health.sdk_missing'),
-        ];
-    }
-
-    /**
-     * Check CHIP API health.
-     *
-     * @return array{status: string, color: string, message: string|null}
-     */
-    protected function checkChipHealth(): array
-    {
-        if (! config('chip.brand_id') || ! config('chip.api_key')) {
-            return [
-                'status' => 'not_configured',
-                'color' => 'warning',
-                'message' => __('filament-cashier::gateway.health.not_configured'),
-            ];
-        }
-
-        try {
-            if (class_exists(\AIArmada\Chip\Chip::class)) {
-                $chip = app(\AIArmada\Chip\Chip::class);
-                // Simple health check - get brands
-                $chip->brands()->first();
-
-                return [
-                    'status' => 'healthy',
-                    'color' => 'success',
-                    'message' => null,
-                ];
-            }
-        } catch (\Exception $e) {
-            return [
-                'status' => 'error',
-                'color' => 'danger',
-                'message' => $e->getMessage(),
-            ];
-        }
-
-        return [
-            'status' => 'unknown',
-            'color' => 'gray',
-            'message' => __('filament-cashier::gateway.health.sdk_missing'),
-        ];
     }
 
     /**
@@ -254,6 +142,119 @@ final class GatewayManagement extends Page
                     ]))
                     ->send();
             });
+    }
+
+    /**
+     * Check health of a specific gateway.
+     *
+     * @return array{status: string, color: string, message: string|null}
+     */
+    protected function checkGatewayHealth(string $gateway): array
+    {
+        try {
+            if ($gateway === 'stripe') {
+                return $this->checkStripeHealth();
+            }
+
+            if ($gateway === 'chip') {
+                return $this->checkChipHealth();
+            }
+
+            return [
+                'status' => 'unknown',
+                'color' => 'gray',
+                'message' => __('filament-cashier::gateway.health.unknown'),
+            ];
+        } catch (Exception $e) {
+            return [
+                'status' => 'error',
+                'color' => 'danger',
+                'message' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * Check Stripe API health.
+     *
+     * @return array{status: string, color: string, message: string|null}
+     */
+    protected function checkStripeHealth(): array
+    {
+        if (! config('services.stripe.key') || ! config('services.stripe.secret')) {
+            return [
+                'status' => 'not_configured',
+                'color' => 'warning',
+                'message' => __('filament-cashier::gateway.health.not_configured'),
+            ];
+        }
+
+        try {
+            if (class_exists(\Stripe\Stripe::class)) {
+                \Stripe\Stripe::setApiKey(config('services.stripe.secret'));
+                \Stripe\Account::retrieve();
+
+                return [
+                    'status' => 'healthy',
+                    'color' => 'success',
+                    'message' => null,
+                ];
+            }
+        } catch (Exception $e) {
+            return [
+                'status' => 'error',
+                'color' => 'danger',
+                'message' => $e->getMessage(),
+            ];
+        }
+
+        return [
+            'status' => 'unknown',
+            'color' => 'gray',
+            'message' => __('filament-cashier::gateway.health.sdk_missing'),
+        ];
+    }
+
+    /**
+     * Check CHIP API health.
+     *
+     * @return array{status: string, color: string, message: string|null}
+     */
+    protected function checkChipHealth(): array
+    {
+        if (! config('chip.brand_id') || ! config('chip.api_key')) {
+            return [
+                'status' => 'not_configured',
+                'color' => 'warning',
+                'message' => __('filament-cashier::gateway.health.not_configured'),
+            ];
+        }
+
+        try {
+            if (class_exists(\AIArmada\Chip\Chip::class)) {
+                $chip = app(\AIArmada\Chip\Chip::class);
+                // Simple health check - get brands
+                $chip->brands()->first();
+
+                return [
+                    'status' => 'healthy',
+                    'color' => 'success',
+                    'message' => null,
+                ];
+            }
+        } catch (Exception $e) {
+            return [
+                'status' => 'error',
+                'color' => 'danger',
+                'message' => $e->getMessage(),
+            ];
+        }
+
+        return [
+            'status' => 'unknown',
+            'color' => 'gray',
+            'message' => __('filament-cashier::gateway.health.sdk_missing'),
+        ];
     }
 
     protected function getHeaderActions(): array

@@ -6,13 +6,13 @@ namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\RelationManage
 
 use AIArmada\CashierChip\Subscription;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
-use Filament\Notifications\Notification;
 
 final class SubscriptionsRelationManager extends RelationManager
 {
