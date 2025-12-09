@@ -67,6 +67,7 @@ abstract class TestCase extends Orchestra
             \AIArmada\FilamentAffiliates\FilamentAffiliatesServiceProvider::class,
             \AIArmada\Shipping\ShippingServiceProvider::class,
             \AIArmada\FilamentShipping\FilamentShippingServiceProvider::class,
+            \AIArmada\FilamentCashier\FilamentCashierServiceProvider::class,
             TestPanelProvider::class,
         ];
     }

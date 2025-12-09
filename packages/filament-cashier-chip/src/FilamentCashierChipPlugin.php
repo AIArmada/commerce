@@ -1,0 +1,138 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentCashierChip;
+
+use AIArmada\FilamentCashierChip\Pages\BillingDashboard;
+use AIArmada\FilamentCashierChip\Resources\CustomerResource;
+use AIArmada\FilamentCashierChip\Resources\InvoiceResource;
+use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
+use AIArmada\FilamentCashierChip\Widgets\ActiveSubscribersWidget;
+use AIArmada\FilamentCashierChip\Widgets\ChurnRateWidget;
+use AIArmada\FilamentCashierChip\Widgets\MRRWidget;
+use AIArmada\FilamentCashierChip\Widgets\RevenueChartWidget;
+use AIArmada\FilamentCashierChip\Widgets\SubscriptionDistributionWidget;
+use AIArmada\FilamentCashierChip\Widgets\TrialConversionsWidget;
+use Filament\Contracts\Plugin;
+use Filament\Panel;
+
+final class FilamentCashierChipPlugin implements Plugin
+{
+    protected bool $hasSubscriptions = true;
+
+    protected bool $hasCustomers = true;
+
+    protected bool $hasInvoices = true;
+
+    protected bool $hasDashboardWidgets = true;
+
+    protected bool $hasBillingDashboard = true;
+
+    public static function make(): static
+    {
+        return app(self::class);
+    }
+
+    public static function get(): static
+    {
+        /** @var static $plugin */
+        $plugin = filament(app(self::class)->getId());
+
+        return $plugin;
+    }
+
+    public function getId(): string
+    {
+        return 'filament-cashier-chip';
+    }
+
+    public function subscriptions(bool $enabled = true): static
+    {
+        $this->hasSubscriptions = $enabled;
+
+        return $this;
+    }
+
+    public function customers(bool $enabled = true): static
+    {
+        $this->hasCustomers = $enabled;
+
+        return $this;
+    }
+
+    public function invoices(bool $enabled = true): static
+    {
+        $this->hasInvoices = $enabled;
+
+        return $this;
+    }
+
+    public function dashboardWidgets(bool $enabled = true): static
+    {
+        $this->hasDashboardWidgets = $enabled;
+
+        return $this;
+    }
+
+    public function billingDashboard(bool $enabled = true): static
+    {
+        $this->hasBillingDashboard = $enabled;
+
+        return $this;
+    }
+
+    public function register(Panel $panel): void
+    {
+        $resources = [];
+        $widgets = [];
+        $pages = [];
+
+        if ($this->hasSubscriptions && config('filament-cashier-chip.features.subscriptions', true)) {
+            $resources[] = SubscriptionResource::class;
+        }
+
+        if ($this->hasCustomers && config('filament-cashier-chip.features.customers', true)) {
+            $resources[] = CustomerResource::class;
+        }
+
+        if ($this->hasInvoices && config('filament-cashier-chip.features.invoices', true)) {
+            $resources[] = InvoiceResource::class;
+        }
+
+        if ($this->hasDashboardWidgets && config('filament-cashier-chip.features.dashboard_widgets', true)) {
+            if (config('filament-cashier-chip.dashboard.widgets.mrr', true)) {
+                $widgets[] = MRRWidget::class;
+            }
+            if (config('filament-cashier-chip.dashboard.widgets.active_subscribers', true)) {
+                $widgets[] = ActiveSubscribersWidget::class;
+            }
+            if (config('filament-cashier-chip.dashboard.widgets.churn_rate', true)) {
+                $widgets[] = ChurnRateWidget::class;
+            }
+            if (config('filament-cashier-chip.dashboard.widgets.revenue_chart', true)) {
+                $widgets[] = RevenueChartWidget::class;
+            }
+            if (config('filament-cashier-chip.dashboard.widgets.subscription_distribution', true)) {
+                $widgets[] = SubscriptionDistributionWidget::class;
+            }
+            if (config('filament-cashier-chip.dashboard.widgets.trial_conversions', true)) {
+                $widgets[] = TrialConversionsWidget::class;
+            }
+        }
+
+        if ($this->hasBillingDashboard) {
+            $pages[] = BillingDashboard::class;
+        }
+
+        $panel
+            ->resources($resources)
+            ->widgets($widgets)
+            ->pages($pages);
+    }
+
+    public function boot(Panel $panel): void
+    {
+        //
+    }
+}
