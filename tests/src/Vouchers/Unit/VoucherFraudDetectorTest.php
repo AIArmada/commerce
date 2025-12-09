@@ -9,10 +9,11 @@ use AIArmada\Vouchers\Fraud\Detectors\VelocityDetector;
 use AIArmada\Vouchers\Fraud\Enums\FraudRiskLevel;
 use AIArmada\Vouchers\Fraud\FraudAnalysis;
 use AIArmada\Vouchers\Fraud\VoucherFraudDetector;
+use Illuminate\Database\Eloquent\Model;
 
 describe('VoucherFraudDetector', function (): void {
     it('can be instantiated', function (): void {
-        $detector = new VoucherFraudDetector();
+        $detector = new VoucherFraudDetector;
 
         expect($detector)->toBeInstanceOf(VoucherFraudDetector::class);
     });
@@ -24,7 +25,7 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('registers default detectors', function (): void {
-        $detector = new VoucherFraudDetector();
+        $detector = new VoucherFraudDetector;
         $detectors = $detector->getDetectors();
 
         expect($detectors)->toHaveKeys(['velocity', 'pattern', 'behavioral', 'code_abuse'])
@@ -35,15 +36,15 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('can get individual detector', function (): void {
-        $detector = new VoucherFraudDetector();
+        $detector = new VoucherFraudDetector;
 
         expect($detector->getDetector('velocity'))->toBeInstanceOf(VelocityDetector::class)
             ->and($detector->getDetector('nonexistent'))->toBeNull();
     });
 
     it('can register custom detector', function (): void {
-        $detector = new VoucherFraudDetector();
-        $customDetector = new VelocityDetector();
+        $detector = new VoucherFraudDetector;
+        $customDetector = new VelocityDetector;
 
         $detector->registerDetector('custom', $customDetector);
 
@@ -51,7 +52,7 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('can remove detector', function (): void {
-        $detector = new VoucherFraudDetector();
+        $detector = new VoucherFraudDetector;
 
         $detector->removeDetector('velocity');
 
@@ -60,7 +61,7 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('can enable and disable detectors', function (): void {
-        $detector = new VoucherFraudDetector();
+        $detector = new VoucherFraudDetector;
 
         $detector->disableDetector('velocity');
         expect($detector->getDetector('velocity')->isEnabled())->toBeFalse();
@@ -70,7 +71,7 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('can set block threshold', function (): void {
-        $detector = new VoucherFraudDetector();
+        $detector = new VoucherFraudDetector;
 
         $detector->setBlockThreshold(0.5);
         expect($detector->getBlockThreshold())->toBe(0.5);
@@ -84,8 +85,8 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('can analyze redemption', function (): void {
-        $detector = new VoucherFraudDetector();
-        $cart = new stdClass();
+        $detector = new VoucherFraudDetector;
+        $cart = new stdClass;
 
         $analysis = $detector->analyze('TEST-CODE', $cart);
 
@@ -93,8 +94,8 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('can check if should block', function (): void {
-        $detector = new VoucherFraudDetector();
-        $cart = new stdClass();
+        $detector = new VoucherFraudDetector;
+        $cart = new stdClass;
 
         $shouldBlock = $detector->shouldBlock('TEST-CODE', $cart);
 
@@ -102,8 +103,8 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('can get risk level', function (): void {
-        $detector = new VoucherFraudDetector();
-        $cart = new stdClass();
+        $detector = new VoucherFraudDetector;
+        $cart = new stdClass;
 
         $riskLevel = $detector->getRiskLevel('TEST-CODE', $cart);
 
@@ -111,7 +112,7 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('aggregates signals from all detectors', function (): void {
-        $detector = new VoucherFraudDetector();
+        $detector = new VoucherFraudDetector;
         $cart = new class
         {
             public function getTotal(): float
@@ -120,7 +121,7 @@ describe('VoucherFraudDetector', function (): void {
             }
         };
 
-        $user = Mockery::mock(Illuminate\Database\Eloquent\Model::class);
+        $user = Mockery::mock(Model::class);
         $user->shouldReceive('getKey')->andReturn('user-123');
 
         $context = [
@@ -142,7 +143,7 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('blocks high-risk redemptions', function (): void {
-        $detector = new VoucherFraudDetector();
+        $detector = new VoucherFraudDetector;
         $detector->setBlockThreshold(0.5);
 
         $cart = new class
@@ -162,7 +163,7 @@ describe('VoucherFraudDetector', function (): void {
             'user_refunded_orders' => 8,
         ];
 
-        $user = Mockery::mock(Illuminate\Database\Eloquent\Model::class);
+        $user = Mockery::mock(Model::class);
         $user->shouldReceive('getKey')->andReturn('user-123');
 
         $analysis = $detector->analyze('TEST-CODE', $cart, $user, $context);
@@ -172,12 +173,12 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('skips disabled detectors', function (): void {
-        $detector = new VoucherFraudDetector();
+        $detector = new VoucherFraudDetector;
         $detector->disableDetector('velocity')
             ->disableDetector('pattern')
             ->disableDetector('behavioral');
 
-        $cart = new stdClass();
+        $cart = new stdClass;
         $context = [
             // Only code abuse should be checked
             'recent_invalid_attempts' => 10,
@@ -193,7 +194,7 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('can configure velocity detector', function (): void {
-        $detector = new VoucherFraudDetector();
+        $detector = new VoucherFraudDetector;
         $detector->configureVelocityDetector([
             'redemptions_per_minute' => 10,
             'redemptions_per_hour' => 100,
@@ -204,7 +205,7 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('can configure pattern detector', function (): void {
-        $detector = new VoucherFraudDetector();
+        $detector = new VoucherFraudDetector;
         $detector->configurePatternDetector(
             unusualHours: [0, 1, 2],
             suspiciousIpPatterns: ['10.0.0.', '192.168.'],
@@ -215,7 +216,7 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('can configure behavioral detector', function (): void {
-        $detector = new VoucherFraudDetector();
+        $detector = new VoucherFraudDetector;
         $detector->configureBehavioralDetector([
             'min_orders_for_analysis' => 3,
             'discount_only_threshold' => 0.8,
@@ -226,7 +227,7 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('can configure code abuse detector', function (): void {
-        $detector = new VoucherFraudDetector();
+        $detector = new VoucherFraudDetector;
         $detector->configureCodeAbuseDetector([
             'max_unique_ips_per_code' => 10,
             'max_sequential_invalid_attempts' => 10,
@@ -237,7 +238,7 @@ describe('VoucherFraudDetector', function (): void {
     });
 
     it('can configure from array', function (): void {
-        $detector = new VoucherFraudDetector();
+        $detector = new VoucherFraudDetector;
         $detector->configure([
             'block_threshold' => 0.6,
             'velocity' => [
@@ -279,7 +280,7 @@ describe('VoucherFraudDetector Integration', function (): void {
 
     it('handles minimal context gracefully', function (): void {
         $detector = VoucherFraudDetector::make();
-        $cart = new stdClass();
+        $cart = new stdClass;
 
         // No context at all
         $analysis = $detector->analyze('CODE', $cart);
@@ -289,7 +290,7 @@ describe('VoucherFraudDetector Integration', function (): void {
 
     it('handles null user gracefully', function (): void {
         $detector = VoucherFraudDetector::make();
-        $cart = new stdClass();
+        $cart = new stdClass;
 
         $analysis = $detector->analyze('CODE', $cart, null, [
             'ip_address' => '192.168.1.1',
@@ -308,7 +309,7 @@ describe('VoucherFraudDetector Integration', function (): void {
             }
         };
 
-        $user = Mockery::mock(Illuminate\Database\Eloquent\Model::class);
+        $user = Mockery::mock(Model::class);
         $user->shouldReceive('getKey')->andReturn('user-123');
 
         $context = [

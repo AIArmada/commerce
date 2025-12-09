@@ -21,7 +21,7 @@ beforeEach(function (): void {
 // ============================================
 
 it('allows operations within rate limits', function (): void {
-    $limiter = new CartRateLimiter();
+    $limiter = new CartRateLimiter;
 
     $result = $limiter->check('test-user', 'add_item');
 
@@ -130,7 +130,7 @@ it('can clear rate limits for specific operation', function (): void {
 });
 
 it('uses default limits for unknown operations', function (): void {
-    $limiter = new CartRateLimiter();
+    $limiter = new CartRateLimiter;
 
     $result = $limiter->check('test-user', 'unknown_operation');
 

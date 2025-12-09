@@ -14,7 +14,7 @@ use AIArmada\Shipping\Strategies\PreferredCarrierStrategy;
 
 describe('CheapestRateStrategy', function (): void {
     it('selects the cheapest rate from collection', function (): void {
-        $strategy = new CheapestRateStrategy();
+        $strategy = new CheapestRateStrategy;
 
         $rates = collect([
             new RateQuoteData(carrier: 'carrier_a', service: 'express', rate: 1500, currency: 'MYR', estimatedDays: 1),
@@ -29,7 +29,7 @@ describe('CheapestRateStrategy', function (): void {
     });
 
     it('returns null for empty collection', function (): void {
-        $strategy = new CheapestRateStrategy();
+        $strategy = new CheapestRateStrategy;
 
         $selected = $strategy->select(collect());
 
@@ -37,7 +37,7 @@ describe('CheapestRateStrategy', function (): void {
     });
 
     it('returns correct strategy name', function (): void {
-        $strategy = new CheapestRateStrategy();
+        $strategy = new CheapestRateStrategy;
 
         expect($strategy->getStrategyName())->toBe('cheapest');
     });
@@ -49,7 +49,7 @@ describe('CheapestRateStrategy', function (): void {
 
 describe('FastestRateStrategy', function (): void {
     it('selects the fastest rate from collection', function (): void {
-        $strategy = new FastestRateStrategy();
+        $strategy = new FastestRateStrategy;
 
         $rates = collect([
             new RateQuoteData(carrier: 'carrier_a', service: 'express', rate: 1500, currency: 'MYR', estimatedDays: 1),
@@ -64,7 +64,7 @@ describe('FastestRateStrategy', function (): void {
     });
 
     it('returns null for empty collection', function (): void {
-        $strategy = new FastestRateStrategy();
+        $strategy = new FastestRateStrategy;
 
         $selected = $strategy->select(collect());
 
@@ -72,7 +72,7 @@ describe('FastestRateStrategy', function (): void {
     });
 
     it('returns correct strategy name', function (): void {
-        $strategy = new FastestRateStrategy();
+        $strategy = new FastestRateStrategy;
 
         expect($strategy->getStrategyName())->toBe('fastest');
     });
@@ -202,7 +202,7 @@ describe('BalancedRateStrategy', function (): void {
     });
 
     it('returns null for empty collection', function (): void {
-        $strategy = new BalancedRateStrategy();
+        $strategy = new BalancedRateStrategy;
 
         $selected = $strategy->select(collect());
 
@@ -210,7 +210,7 @@ describe('BalancedRateStrategy', function (): void {
     });
 
     it('returns correct strategy name', function (): void {
-        $strategy = new BalancedRateStrategy();
+        $strategy = new BalancedRateStrategy;
 
         expect($strategy->getStrategyName())->toBe('balanced');
     });

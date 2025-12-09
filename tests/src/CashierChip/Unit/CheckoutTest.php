@@ -7,6 +7,8 @@ use AIArmada\CashierChip\CheckoutBuilder;
 use AIArmada\CashierChip\Payment;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
+use Illuminate\Http\RedirectResponse;
+use Symfony\Component\HttpFoundation\Response;
 
 uses(CashierChipTestCase::class);
 
@@ -97,7 +99,7 @@ it('can create redirect response', function (): void {
 
     $response = $checkout->redirect();
 
-    expect($response)->toBeInstanceOf(Illuminate\Http\RedirectResponse::class);
+    expect($response)->toBeInstanceOf(RedirectResponse::class);
     expect($response->getTargetUrl())->toBe('https://chip.com/checkout/test-purchase-id');
 });
 
@@ -127,7 +129,7 @@ it('can be used as a response', function (): void {
     $request = request();
     $response = $checkout->toResponse($request);
 
-    expect($response)->toBeInstanceOf(Symfony\Component\HttpFoundation\Response::class);
+    expect($response)->toBeInstanceOf(Response::class);
 });
 
 it('can create checkout without owner', function (): void {

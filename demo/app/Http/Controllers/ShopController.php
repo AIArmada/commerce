@@ -7,7 +7,9 @@ namespace App\Http\Controllers;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Chip\Facades\Chip;
+use AIArmada\Chip\Testing\WebhookSimulator;
 use AIArmada\Vouchers\Enums\VoucherStatus;
+use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher;
 use App\Models\Category;
 use App\Models\Order;
@@ -242,7 +244,7 @@ final class ShopController extends Controller
             session(['applied_voucher' => mb_strtoupper($request->voucher_code)]);
 
             return back()->with('success', 'Voucher ' . mb_strtoupper($request->voucher_code) . ' applied!');
-        } catch (\AIArmada\Vouchers\Exceptions\InvalidVoucherException $e) {
+        } catch (InvalidVoucherException $e) {
             return back()->with('error', $e->getMessage());
         }
     }
@@ -606,7 +608,7 @@ final class ShopController extends Controller
         $address = $order->shipping_address ?? [];
         $streetAddress = $address['address_line_1'] ?? $address['address'] ?? '';
 
-        \AIArmada\Chip\Testing\WebhookSimulator::paid()
+        WebhookSimulator::paid()
             ->purchaseId($order->metadata['chip_purchase_id'])
             ->reference($order->order_number)
             ->amount($order->grand_total)

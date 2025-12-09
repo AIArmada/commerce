@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cashier\Events\PaymentSucceeded;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Stock\Cart\CartManagerWithStock;
 use AIArmada\Stock\Services\StockReservationService;
@@ -74,7 +75,7 @@ test('registers payment integration when enabled', function (): void {
     $this->app->boot(StockServiceProvider::class);
 
     $events = [
-        AIArmada\Cashier\Events\PaymentSucceeded::class,
+        PaymentSucceeded::class,
         AIArmada\CashierChip\Events\PaymentSucceeded::class,
     ];
 

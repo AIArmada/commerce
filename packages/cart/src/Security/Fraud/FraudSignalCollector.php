@@ -8,6 +8,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -323,7 +324,7 @@ final class FraudSignalCollector
         foreach ($signals as $signal) {
             try {
                 DB::table($table)->insert([
-                    'id' => (string) \Illuminate\Support\Str::uuid(),
+                    'id' => (string) Str::uuid(),
                     'cart_id' => $context->getCartId(),
                     'user_id' => $context->userId,
                     'ip_address' => $context->ipAddress,

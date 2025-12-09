@@ -31,7 +31,7 @@ class CodeManipulator
         $this->path = $path;
         $this->originalContent = File::get($path);
         $this->parser = (new ParserFactory)->createForHostVersion();
-        $this->printer = new PrettyPrinter();
+        $this->printer = new PrettyPrinter;
     }
 
     /**

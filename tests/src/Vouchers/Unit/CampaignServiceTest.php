@@ -10,6 +10,8 @@ use AIArmada\Vouchers\Campaigns\Models\Campaign;
 use AIArmada\Vouchers\Campaigns\Models\CampaignEvent;
 use AIArmada\Vouchers\Campaigns\Models\CampaignVariant;
 use AIArmada\Vouchers\Campaigns\Services\CampaignService;
+use AIArmada\Vouchers\Enums\VoucherStatus;
+use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -428,9 +430,9 @@ describe('CampaignService Voucher Integration', function (): void {
         $voucher = Voucher::create([
             'code' => 'SUMMER10',
             'name' => 'Summer Discount',
-            'type' => AIArmada\Vouchers\Enums\VoucherType::Percentage,
+            'type' => VoucherType::Percentage,
             'value' => 1000,
-            'status' => AIArmada\Vouchers\Enums\VoucherStatus::Active,
+            'status' => VoucherStatus::Active,
         ]);
 
         $this->service->attachVoucher($campaign, $voucher);
@@ -451,9 +453,9 @@ describe('CampaignService Voucher Integration', function (): void {
         $voucher = Voucher::create([
             'code' => 'SUMMER10',
             'name' => 'Summer Discount',
-            'type' => AIArmada\Vouchers\Enums\VoucherType::Percentage,
+            'type' => VoucherType::Percentage,
             'value' => 1000,
-            'status' => AIArmada\Vouchers\Enums\VoucherStatus::Active,
+            'status' => VoucherStatus::Active,
         ]);
 
         $this->service->attachVoucher($campaign, $voucher, $variant);
@@ -473,9 +475,9 @@ describe('CampaignService Voucher Integration', function (): void {
         $voucher = Voucher::create([
             'code' => 'SUMMER10',
             'name' => 'Summer Discount',
-            'type' => AIArmada\Vouchers\Enums\VoucherType::Percentage,
+            'type' => VoucherType::Percentage,
             'value' => 1000,
-            'status' => AIArmada\Vouchers\Enums\VoucherStatus::Active,
+            'status' => VoucherStatus::Active,
         ]);
 
         $this->service->attachVoucher($campaign, $voucher);

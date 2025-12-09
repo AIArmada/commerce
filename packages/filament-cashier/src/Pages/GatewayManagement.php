@@ -172,9 +172,7 @@ final class GatewayManagement extends Page
             return [
                 'status' => 'error',
                 'color' => 'danger',
-                'message' => app()->isProduction()
-                    ? __('filament-cashier::gateway.health.connection_error')
-                    : $e->getMessage(),
+                'message' => $e->getMessage(),
             ];
         }
     }

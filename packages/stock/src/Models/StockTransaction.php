@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Foundation\Auth\User;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -23,9 +25,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $type
  * @property string|null $reason
  * @property string|null $note
- * @property \Illuminate\Support\Carbon $transaction_date
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
+ * @property Carbon $transaction_date
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  * @property-read string|null $owner_display_name
  */
 final class StockTransaction extends Model
@@ -82,11 +84,11 @@ final class StockTransaction extends Model
     /**
      * Get the user who performed the transaction.
      *
-     * @return BelongsTo<\Illuminate\Foundation\Auth\User, $this>
+     * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
     {
-        /** @var class-string<\Illuminate\Foundation\Auth\User> $userModel */
+        /** @var class-string<User> $userModel */
         $userModel = config('auth.providers.users.model');
 
         return $this->belongsTo($userModel);

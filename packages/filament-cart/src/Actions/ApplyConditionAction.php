@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Actions;
 
+use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Models\Condition;
 use AIArmada\FilamentCart\Models\Cart as CartModel;
@@ -298,7 +299,7 @@ final class ApplyConditionAction extends Action
                     );
 
                     // Create condition manually
-                    $condition = new \AIArmada\Cart\Conditions\CartCondition(
+                    $condition = new CartCondition(
                         name: $data['name'],
                         type: $data['type'],
                         target: $data['target'],

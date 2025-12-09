@@ -9,8 +9,10 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\Vouchers\Models\Voucher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 use function class_exists;
 
@@ -43,25 +46,25 @@ use function class_exists;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $activated_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $activated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read string|null $email Alias for contact_email
  * @property-read int $commission_rate_basis_points Alias for commission_rate
  * @property-read Affiliate|null $parent
  * @property-read AffiliateRank|null $rank
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Affiliate> $children
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateAttribution> $attributions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateConversion> $conversions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateFraudSignal> $fraudSignals
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateDailyStat> $dailyStats
+ * @property-read Collection<int, Affiliate> $children
+ * @property-read Collection<int, AffiliateAttribution> $attributions
+ * @property-read Collection<int, AffiliateConversion> $conversions
+ * @property-read Collection<int, AffiliateFraudSignal> $fraudSignals
+ * @property-read Collection<int, AffiliateDailyStat> $dailyStats
  * @property-read AffiliateBalance|null $balance
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutMethod> $payoutMethods
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutHold> $payoutHolds
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayout> $payouts
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateLink> $links
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateProgram> $programs
- * @property-read \Illuminate\Database\Eloquent\Collection<int, \AIArmada\Vouchers\Models\Voucher> $vouchers
+ * @property-read Collection<int, AffiliatePayoutMethod> $payoutMethods
+ * @property-read Collection<int, AffiliatePayoutHold> $payoutHolds
+ * @property-read Collection<int, AffiliatePayout> $payouts
+ * @property-read Collection<int, AffiliateLink> $links
+ * @property-read Collection<int, AffiliateProgram> $programs
+ * @property-read Collection<int, Voucher> $vouchers
  * @property-read Model|null $owner
  */
 final class Affiliate extends Model
@@ -209,12 +212,12 @@ final class Affiliate extends Model
     /**
      * Get all vouchers linked to this affiliate (when aiarmada/vouchers is installed).
      *
-     * @return HasMany<\AIArmada\Vouchers\Models\Voucher, self>|HasMany<Model, self>
+     * @return HasMany<Voucher, self>|HasMany<Model, self>
      */
     public function vouchers(): HasMany
     {
-        if (class_exists(\AIArmada\Vouchers\Models\Voucher::class)) {
-            return $this->hasMany(\AIArmada\Vouchers\Models\Voucher::class, 'affiliate_id');
+        if (class_exists(Voucher::class)) {
+            return $this->hasMany(Voucher::class, 'affiliate_id');
         }
 
         // Fallback to prevent errors when vouchers package not installed

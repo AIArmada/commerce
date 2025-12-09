@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
@@ -152,4 +153,4 @@ it('guards against incomplete subscription updates', function (): void {
     ]);
 
     $this->item->updateQuantity(5);
-})->throws(AIArmada\CashierChip\Exceptions\SubscriptionUpdateFailure::class);
+})->throws(SubscriptionUpdateFailure::class);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip;
 
 use AIArmada\CashierChip\Concerns\AllowsCoupons;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Traits\Conditionable;
 
 /**
@@ -18,7 +19,7 @@ class CheckoutBuilder
     /**
      * The model that is checking out.
      *
-     * @var Billable|\Illuminate\Database\Eloquent\Model|null
+     * @var Billable|Model|null
      */
     protected $owner;
 
@@ -60,7 +61,7 @@ class CheckoutBuilder
     /**
      * Create a new checkout builder instance.
      *
-     * @param  \Illuminate\Database\Eloquent\Model|null  $owner
+     * @param  Model|null  $owner
      * @return void
      */
     public function __construct($owner = null)

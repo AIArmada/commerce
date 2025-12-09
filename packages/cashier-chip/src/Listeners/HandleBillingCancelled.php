@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Listeners;
 
+use AIArmada\CashierChip\Billable;
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Events\SubscriptionCanceled;
+use AIArmada\CashierChip\Subscription;
 use AIArmada\Chip\Events\BillingCancelled;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Listens to chip package BillingCancelled events and handles cashier-chip subscription logic.
@@ -23,7 +26,7 @@ class HandleBillingCancelled
             return;
         }
 
-        /** @var (\Illuminate\Database\Eloquent\Model&\AIArmada\CashierChip\Billable)|null $billable */
+        /** @var (Model&Billable)|null $billable */
         $billable = Cashier::findBillable($clientId);
 
         if ($billable === null) {
@@ -31,7 +34,7 @@ class HandleBillingCancelled
         }
 
         // Find subscription by billing template ID or recurring token
-        /** @var \AIArmada\CashierChip\Subscription|null $subscription */
+        /** @var Subscription|null $subscription */
         $subscription = $billable->subscriptions()
             ->where('chip_billing_template_id', $billingTemplateClient->billing_template_id)
             ->orWhere('recurring_token', $billingTemplateClient->recurring_token)

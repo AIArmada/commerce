@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Support;
 
+use AIArmada\Affiliates\Events\AffiliateActivated;
+use AIArmada\Affiliates\Events\AffiliateCreated;
+use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Services\VoucherService;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -25,7 +28,7 @@ final class AffiliateIntegrationRegistrar
 
     public function register(): void
     {
-        if (! class_exists(\AIArmada\Affiliates\Events\AffiliateCreated::class)) {
+        if (! class_exists(AffiliateCreated::class)) {
             return;
         }
 
@@ -47,7 +50,7 @@ final class AffiliateIntegrationRegistrar
         }
 
         $this->events->listen(
-            \AIArmada\Affiliates\Events\AffiliateCreated::class,
+            AffiliateCreated::class,
             function (object $event): void {
                 $this->createVoucherForAffiliate($event->affiliate);
             }
@@ -64,7 +67,7 @@ final class AffiliateIntegrationRegistrar
         }
 
         $this->events->listen(
-            \AIArmada\Affiliates\Events\AffiliateActivated::class,
+            AffiliateActivated::class,
             function (object $event): void {
                 $affiliate = $event->affiliate;
 
@@ -81,7 +84,7 @@ final class AffiliateIntegrationRegistrar
     /**
      * Create a voucher code for an affiliate.
      *
-     * @param  \AIArmada\Affiliates\Models\Affiliate  $affiliate
+     * @param  Affiliate  $affiliate
      */
     private function createVoucherForAffiliate(object $affiliate): void
     {

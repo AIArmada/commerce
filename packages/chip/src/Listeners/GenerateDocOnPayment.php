@@ -8,6 +8,7 @@ use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Enums\DocStatus;
+use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Arr;
@@ -151,11 +152,11 @@ final class GenerateDocOnPayment implements ShouldQueue
 
     private function docExistsForPurchase(Purchase $purchase): bool
     {
-        if (! class_exists(\AIArmada\Docs\Models\Doc::class)) {
+        if (! class_exists(Doc::class)) {
             return false;
         }
 
-        return \AIArmada\Docs\Models\Doc::query()
+        return Doc::query()
             ->where('docable_type', Purchase::class)
             ->where('docable_id', $purchase->id)
             ->where('doc_type', config('chip.integrations.docs.paid_doc_type', 'invoice'))

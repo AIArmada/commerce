@@ -30,7 +30,7 @@ class AuthorizePanelRoles
         /** @var Authenticatable|null $user */
         $user = $request->user();
         if ($user === null) {
-            throw new AccessDeniedHttpException();
+            throw new AccessDeniedHttpException;
         }
 
         // Super Admin bypass (universal access)
@@ -60,6 +60,6 @@ class AuthorizePanelRoles
             }
         }
 
-        throw new AccessDeniedHttpException();
+        throw new AccessDeniedHttpException;
     }
 }

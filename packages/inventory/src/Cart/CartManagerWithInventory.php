@@ -8,6 +8,7 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Inventory\Models\InventoryAllocation;
+use AIArmada\Inventory\Models\InventoryMovement;
 use AIArmada\Inventory\Services\InventoryAllocationService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -204,7 +205,7 @@ final class CartManagerWithInventory implements CartManagerInterface
      * Commit all allocations (convert to shipments after payment).
      *
      * @param  string|null  $orderId  Optional order reference
-     * @return array<\AIArmada\Inventory\Models\InventoryMovement>
+     * @return array<InventoryMovement>
      */
     public function commitInventory(?string $orderId = null): array
     {

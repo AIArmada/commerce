@@ -9,6 +9,7 @@ use AIArmada\Chip\Data\PurchaseData;
 use Carbon\Carbon;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
+use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use JsonSerializable;
@@ -320,7 +321,7 @@ class Invoice implements Arrayable, Jsonable, JsonSerializable
      *
      * @param  array<string, mixed>  $data
      */
-    public function view(array $data = []): \Illuminate\Contracts\View\View
+    public function view(array $data = []): View
     {
         return \Illuminate\Support\Facades\View::make('cashier-chip::invoice', array_merge($data, [
             'invoice' => $this,

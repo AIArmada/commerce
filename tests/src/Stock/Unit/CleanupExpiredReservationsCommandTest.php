@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\Product;
 use AIArmada\Stock\Console\CleanupExpiredReservationsCommand;
 use AIArmada\Stock\Models\StockReservation;
 use AIArmada\Stock\Services\StockService;
+use Illuminate\Console\Command;
 
 describe('CleanupExpiredReservationsCommand', function (): void {
     beforeEach(function (): void {
@@ -96,8 +97,8 @@ describe('CleanupExpiredReservationsCommand', function (): void {
 
     it('can be scheduled', function (): void {
         // Verify the command is schedulable
-        $command = new CleanupExpiredReservationsCommand();
+        $command = new CleanupExpiredReservationsCommand;
 
-        expect($command)->toBeInstanceOf(Illuminate\Console\Command::class);
+        expect($command)->toBeInstanceOf(Command::class);
     });
 });

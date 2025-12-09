@@ -8,6 +8,9 @@ use AIArmada\Cart\Events\CartConditionRemoved;
 use AIArmada\Cart\Events\CartCreated;
 use AIArmada\Cart\Events\ItemAdded;
 use AIArmada\Cart\Storage\SessionStorage;
+use Illuminate\Events\Dispatcher;
+use Illuminate\Session\ArraySessionHandler;
+use Illuminate\Session\Store;
 
 /**
  * Comprehensive tests for cart event system
@@ -17,8 +20,8 @@ use AIArmada\Cart\Storage\SessionStorage;
  */
 describe('Cart Events', function (): void {
     beforeEach(function (): void {
-        $sessionStore = new Illuminate\Session\Store('testing', new Illuminate\Session\ArraySessionHandler(120));
-        $this->events = new Illuminate\Events\Dispatcher;
+        $sessionStore = new Store('testing', new ArraySessionHandler(120));
+        $this->events = new Dispatcher;
         $this->dispatchedEvents = [];
 
         // Set up event listeners to capture all dispatched events
@@ -126,8 +129,8 @@ describe('Cart Events', function (): void {
     it('does not dispatch condition events when events are disabled', function (): void {
         $cartWithoutEvents = new Cart(
             identifier: 'no_events_cart',
-            storage: new SessionStorage(new Illuminate\Session\Store('testing', new Illuminate\Session\ArraySessionHandler(120))),
-            events: new Illuminate\Events\Dispatcher,
+            storage: new SessionStorage(new Store('testing', new ArraySessionHandler(120))),
+            events: new Dispatcher,
             instanceName: 'no_events_cart',
             eventsEnabled: false
         );
@@ -145,8 +148,8 @@ describe('Cart Events', function (): void {
 
 // Additional standalone tests
 beforeEach(function (): void {
-    $sessionStore = new Illuminate\Session\Store('testing', new Illuminate\Session\ArraySessionHandler(120));
-    $this->events = new Illuminate\Events\Dispatcher;
+    $sessionStore = new Store('testing', new ArraySessionHandler(120));
+    $this->events = new Dispatcher;
     $this->dispatchedEvents = [];
 
     // Set up event listeners to capture all dispatched events

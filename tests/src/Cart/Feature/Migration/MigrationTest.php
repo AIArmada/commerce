@@ -25,9 +25,11 @@ use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Storage\DatabaseStorage;
 use Illuminate\Auth\Events\Login;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Session;
 
@@ -70,7 +72,7 @@ it('can migrate guest cart to user cart', function (): void {
         $table->unique(['identifier', 'instance']);
     });
 
-    $storage = new AIArmada\Cart\Storage\DatabaseStorage($connection, 'carts');
+    $storage = new DatabaseStorage($connection, 'carts');
     $guestSessionId = session()->getId();
     $cart = new AIArmada\Cart\Cart($storage, $guestSessionId);
 
@@ -254,7 +256,7 @@ it('dispatches cart merged event on successful migration', function (): void {
 it('handles user login event automatically when configured', function (): void {
     // Initialize cart with database storage
     $connection = app('db')->connection();
-    $storage = new AIArmada\Cart\Storage\DatabaseStorage($connection, 'carts');
+    $storage = new DatabaseStorage($connection, 'carts');
     $cart = new AIArmada\Cart\Cart($storage, 'migration_test');
 
     // Configure auto migration
@@ -282,7 +284,7 @@ it('handles user login event automatically when configured', function (): void {
     ]);
 
     // Set the cache key for migration (matches getUserIdentifier logic)
-    Illuminate\Support\Facades\Cache::put('cart_migration_testuser@example.com', 'guest_session_login_123');
+    Cache::put('cart_migration_testuser@example.com', 'guest_session_login_123');
 
     $listener = new HandleUserLogin($this->cartMigration);
     $event = new Login('web', $this->user, false);

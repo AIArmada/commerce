@@ -9,6 +9,7 @@ use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 use Exception;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 
@@ -127,7 +128,7 @@ final class RemoveConditionAction extends Action
             ->modalHeading('Clear Conditions by Type')
             ->modalDescription('Select the type of conditions to remove from this cart.')
             ->schema([
-                \Filament\Forms\Components\Select::make('type')
+                Select::make('type')
                     ->label('Condition Type')
                     ->options([
                         'discount' => 'Discounts',

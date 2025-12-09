@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\CartResource\Pages;
 
+use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 use Filament\Actions;
@@ -29,7 +30,7 @@ final class EditCart extends EditRecord
                 ->color('danger')
                 ->requiresConfirmation()
                 ->action(function (): void {
-                    /** @var \AIArmada\FilamentCart\Models\Cart $record */
+                    /** @var Cart $record */
                     $record = $this->record;
                     app(CartInstanceManager::class)
                         ->resolve($record->instance, $record->identifier)

@@ -6,6 +6,7 @@ use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredPage;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredWidget;
+use Illuminate\Support\Collection;
 
 test('discovered resource generates permission keys', function (): void {
     $resource = new DiscoveredResource(
@@ -101,7 +102,7 @@ test('entity discovery service can get discovered permissions', function (): voi
 
     $permissions = $service->getDiscoveredPermissions();
 
-    expect($permissions)->toBeInstanceOf(Illuminate\Support\Collection::class);
+    expect($permissions)->toBeInstanceOf(Collection::class);
 });
 
 test('entity discovery service cache can be cleared', function (): void {

@@ -2,7 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Collections\CartCollection;
+use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Cart\Models\CartItem;
+use Akaunting\Money\Money;
 
 describe('Cart Operations', function (): void {
     beforeEach(function (): void {
@@ -113,7 +117,7 @@ describe('Cart Operations', function (): void {
             'attributes' => ['color' => 'blue'],
         ]);
 
-        expect($item)->toBeInstanceOf(AIArmada\Cart\Models\CartItem::class);
+        expect($item)->toBeInstanceOf(CartItem::class);
         expect(Cart::getItems())->toHaveCount(1);
         expect(Cart::get('item-1')->name)->toBe('Single Item');
         expect(Cart::get('item-1')->price)->toBe(10000);
@@ -143,7 +147,7 @@ describe('Cart Operations', function (): void {
             ],
         ]);
 
-        expect($items)->toBeInstanceOf(AIArmada\Cart\Collections\CartCollection::class);
+        expect($items)->toBeInstanceOf(CartCollection::class);
         expect($items)->toHaveCount(3);
         expect(Cart::getItems())->toHaveCount(3);
         expect(Cart::getTotalQuantity())->toBe(6);
@@ -159,7 +163,7 @@ describe('Cart Conditions', function (): void {
     it('can add and apply cart conditions', function (): void {
         Cart::add('taxable-item', 'Taxable Item', 100.00, 1);
 
-        $taxCondition = new AIArmada\Cart\Conditions\CartCondition(
+        $taxCondition = new CartCondition(
             name: 'VAT',
             type: 'tax',
             target: 'cart@cart_subtotal/aggregate',
@@ -175,7 +179,7 @@ describe('Cart Conditions', function (): void {
     it('can remove cart conditions', function (): void {
         Cart::add('taxable-item', 'Taxable Item', 100.00, 1);
 
-        $taxCondition = new AIArmada\Cart\Conditions\CartCondition(
+        $taxCondition = new CartCondition(
             name: 'VAT',
             type: 'tax',
             target: 'cart@cart_subtotal/aggregate',
@@ -251,8 +255,8 @@ describe('Enhanced API', function (): void {
     it('provides intuitive method aliases', function (): void {
         Cart::add('item', 'Item', 50.00, 1);
 
-        expect(Cart::subtotal())->toBeInstanceOf(Akaunting\Money\Money::class);
-        expect(Cart::total())->toBeInstanceOf(Akaunting\Money\Money::class);
+        expect(Cart::subtotal())->toBeInstanceOf(Money::class);
+        expect(Cart::total())->toBeInstanceOf(Money::class);
         expect(Cart::subtotal()->getAmount())->toBe(5000);
     });
 

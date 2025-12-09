@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Cart\Examples\ExampleRulesFactory;
 
 beforeEach(function (): void {
-    $this->factory = new ExampleRulesFactory();
+    $this->factory = new ExampleRulesFactory;
 });
 
 it('can create rules for min order discount', function (): void {

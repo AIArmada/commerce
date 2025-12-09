@@ -18,7 +18,7 @@ use Mockery;
 uses(InventoryTestCase::class);
 
 it('exposes a stable plugin id', function (): void {
-    expect((new FilamentInventoryPlugin())->getId())->toBe('filament-inventory');
+    expect((new FilamentInventoryPlugin)->getId())->toBe('filament-inventory');
 });
 
 it('registers resources and widgets based on feature toggles', function (): void {
@@ -56,7 +56,7 @@ it('registers resources and widgets based on feature toggles', function (): void
         ->andReturnSelf();
 
     // @phpstan-ignore argument.type
-    (new FilamentInventoryPlugin())->register($panel);
+    (new FilamentInventoryPlugin)->register($panel);
 });
 
 it('includes optional resources when toggles are enabled', function (): void {
@@ -79,5 +79,5 @@ it('includes optional resources when toggles are enabled', function (): void {
     $panel->shouldReceive('widgets')->andReturnSelf();
 
     // @phpstan-ignore argument.type
-    (new FilamentInventoryPlugin())->register($panel);
+    (new FilamentInventoryPlugin)->register($panel);
 });

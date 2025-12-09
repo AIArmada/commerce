@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\Inventory\Database\Factories\InventoryLocationFactory;
 use AIArmada\Inventory\Enums\TemperatureZone;
 use AIArmada\Inventory\Traits\HasLocationHierarchy;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -35,16 +38,16 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $owner_type
  * @property int|string|null $owner_id
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryLevel> $inventoryLevels
- * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryMovement> $movementsFrom
- * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryMovement> $movementsTo
- * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryAllocation> $allocations
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Collection<int, InventoryLevel> $inventoryLevels
+ * @property-read Collection<int, InventoryMovement> $movementsFrom
+ * @property-read Collection<int, InventoryMovement> $movementsTo
+ * @property-read Collection<int, InventoryAllocation> $allocations
  * @property-read InventoryLocation|null $parent
- * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryLocation> $children
- * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryLocation> $descendants
- * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryLocation> $ancestors
+ * @property-read Collection<int, InventoryLocation> $children
+ * @property-read Collection<int, InventoryLocation> $descendants
+ * @property-read Collection<int, InventoryLocation> $ancestors
  * @property-read string|null $owner_display_name
  */
 final class InventoryLocation extends Model
@@ -436,9 +439,9 @@ final class InventoryLocation extends Model
     /**
      * Create a new factory instance for the model.
      */
-    protected static function newFactory(): \AIArmada\Inventory\Database\Factories\InventoryLocationFactory
+    protected static function newFactory(): InventoryLocationFactory
     {
-        return \AIArmada\Inventory\Database\Factories\InventoryLocationFactory::new();
+        return InventoryLocationFactory::new();
     }
 
     /**

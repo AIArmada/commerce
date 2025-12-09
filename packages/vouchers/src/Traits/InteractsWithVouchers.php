@@ -13,6 +13,7 @@ use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Exceptions\VoucherStackingException;
 use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\Stacking\Contracts\StackingPolicyInterface;
+use AIArmada\Vouchers\Stacking\Enums\StackingMode;
 use AIArmada\Vouchers\Stacking\StackingEngine;
 use AIArmada\Vouchers\Stacking\StackingPolicy;
 use AIArmada\Vouchers\Support\CartWithVouchers;
@@ -69,7 +70,7 @@ trait InteractsWithVouchers
         }
 
         return new StackingPolicy(
-            mode: \AIArmada\Vouchers\Stacking\Enums\StackingMode::Sequential,
+            mode: StackingMode::Sequential,
             rules: $rules,
             autoOptimize: false,
             autoReplace: (bool) config('vouchers.cart.replace_when_max_reached', true),

@@ -47,7 +47,7 @@ final class VoucherFraudDetector
      */
     public static function make(): self
     {
-        return new self();
+        return new self;
     }
 
     /**
@@ -315,10 +315,10 @@ final class VoucherFraudDetector
     private function registerDefaultDetectors(): void
     {
         $this->detectors = [
-            'velocity' => new VelocityDetector(),
-            'pattern' => new PatternDetector(),
-            'behavioral' => new BehavioralDetector(),
-            'code_abuse' => new CodeAbuseDetector(),
+            'velocity' => new VelocityDetector,
+            'pattern' => new PatternDetector,
+            'behavioral' => new BehavioralDetector,
+            'code_abuse' => new CodeAbuseDetector,
         ];
     }
 }

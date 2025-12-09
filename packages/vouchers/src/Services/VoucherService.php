@@ -257,7 +257,7 @@ class VoucherService
             ->first();
 
         if (! $voucher) {
-            return new EloquentCollection();
+            return new EloquentCollection;
         }
 
         /** @var EloquentCollection<int, VoucherUsage> $result */

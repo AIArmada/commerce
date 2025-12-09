@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAuthz\Services\Discovery;
 
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use Filament\Resources\Resource;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use ReflectionClass;
@@ -215,7 +216,7 @@ class ResourceTransformer
             $model = $resource::getModel();
             if (class_exists($model)) {
                 $metadata['hasSoftDeletes'] = in_array(
-                    \Illuminate\Database\Eloquent\SoftDeletes::class,
+                    SoftDeletes::class,
                     class_uses_recursive($model)
                 );
             }

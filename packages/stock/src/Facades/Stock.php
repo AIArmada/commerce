@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Stock\Facades;
 
+use AIArmada\Stock\Services\StockService;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -15,12 +16,12 @@ use Illuminate\Support\Facades\Facade;
  * @method static bool hasStock(\Illuminate\Database\Eloquent\Model $model, int $quantity = 1)
  * @method static bool isLowStock(\Illuminate\Database\Eloquent\Model $model, ?int $threshold = null)
  *
- * @see \AIArmada\Stock\Services\StockService
+ * @see StockService
  */
 final class Stock extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return \AIArmada\Stock\Services\StockService::class;
+        return StockService::class;
     }
 }

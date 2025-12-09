@@ -50,7 +50,7 @@ final class LazyConditionPipeline
         private ConditionPipelineContext $context,
         ?ConditionPipeline $pipeline = null,
     ) {
-        $this->pipeline = $pipeline ?? new ConditionPipeline();
+        $this->pipeline = $pipeline ?? new ConditionPipeline;
     }
 
     /**
@@ -62,7 +62,7 @@ final class LazyConditionPipeline
         ConditionPipelineContext $context,
         ?callable $configure = null
     ): self {
-        $pipeline = new ConditionPipeline();
+        $pipeline = new ConditionPipeline;
 
         if ($configure !== null) {
             $configure($pipeline);

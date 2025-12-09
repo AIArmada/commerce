@@ -6,13 +6,13 @@ use AIArmada\FilamentAuthz\Services\ComplianceReportGenerator;
 use AIArmada\FilamentAuthz\Services\IdentityProviderSync;
 
 test('compliance report generator can be instantiated', function (): void {
-    $generator = new ComplianceReportGenerator();
+    $generator = new ComplianceReportGenerator;
 
     expect($generator)->toBeInstanceOf(ComplianceReportGenerator::class);
 });
 
 test('compliance report generator generates soc2 report structure', function (): void {
-    $generator = new ComplianceReportGenerator();
+    $generator = new ComplianceReportGenerator;
     $report = $generator->generateSoc2Report();
 
     expect($report)
@@ -30,7 +30,7 @@ test('compliance report generator generates soc2 report structure', function ():
 });
 
 test('compliance report generator generates segregation of duties report', function (): void {
-    $generator = new ComplianceReportGenerator();
+    $generator = new ComplianceReportGenerator;
     $report = $generator->generateSegregationOfDutiesReport();
 
     expect($report)
@@ -43,7 +43,7 @@ test('compliance report generator generates segregation of duties report', funct
 });
 
 test('compliance report generator generates gdpr report', function (): void {
-    $generator = new ComplianceReportGenerator();
+    $generator = new ComplianceReportGenerator;
     $report = $generator->generateGdprReport();
 
     expect($report)
@@ -55,7 +55,7 @@ test('compliance report generator generates gdpr report', function (): void {
 });
 
 test('compliance report generator calculates score', function (): void {
-    $generator = new ComplianceReportGenerator();
+    $generator = new ComplianceReportGenerator;
     $score = $generator->calculateComplianceScore();
 
     expect($score)
@@ -70,7 +70,7 @@ test('compliance report generator calculates score', function (): void {
 });
 
 test('compliance report generator exports to json', function (): void {
-    $generator = new ComplianceReportGenerator();
+    $generator = new ComplianceReportGenerator;
 
     $json = $generator->exportToJson('soc2');
     expect($json)->toBeJson();
@@ -86,27 +86,27 @@ test('compliance report generator exports to json', function (): void {
 });
 
 test('identity provider sync can be instantiated', function (): void {
-    $sync = new IdentityProviderSync();
+    $sync = new IdentityProviderSync;
 
     expect($sync)->toBeInstanceOf(IdentityProviderSync::class);
 });
 
 test('identity provider sync can set provider type', function (): void {
-    $sync = new IdentityProviderSync();
+    $sync = new IdentityProviderSync;
     $result = $sync->setProviderType('saml');
 
     expect($result)->toBeInstanceOf(IdentityProviderSync::class);
 });
 
 test('identity provider sync can set provider name', function (): void {
-    $sync = new IdentityProviderSync();
+    $sync = new IdentityProviderSync;
     $result = $sync->setProviderName('company-ad');
 
     expect($result)->toBeInstanceOf(IdentityProviderSync::class);
 });
 
 test('identity provider sync can set mapping', function (): void {
-    $sync = new IdentityProviderSync();
+    $sync = new IdentityProviderSync;
     $result = $sync->setMapping([
         'Administrators' => 'admin',
         'Users' => 'user',
@@ -116,7 +116,7 @@ test('identity provider sync can set mapping', function (): void {
 });
 
 test('identity provider sync parses ldap groups', function (): void {
-    $sync = new IdentityProviderSync();
+    $sync = new IdentityProviderSync;
 
     $groups = $sync->parseLdapGroups([
         'memberOf' => [
@@ -132,7 +132,7 @@ test('identity provider sync parses ldap groups', function (): void {
 });
 
 test('identity provider sync parses saml groups', function (): void {
-    $sync = new IdentityProviderSync();
+    $sync = new IdentityProviderSync;
 
     $groups = $sync->parseSamlGroups([
         'groups' => ['Admin', 'Editor', 'Viewer'],
@@ -146,7 +146,7 @@ test('identity provider sync parses saml groups', function (): void {
 });
 
 test('identity provider sync handles empty ldap groups', function (): void {
-    $sync = new IdentityProviderSync();
+    $sync = new IdentityProviderSync;
 
     $groups = $sync->parseLdapGroups([]);
 
@@ -154,7 +154,7 @@ test('identity provider sync handles empty ldap groups', function (): void {
 });
 
 test('identity provider sync handles string memberof', function (): void {
-    $sync = new IdentityProviderSync();
+    $sync = new IdentityProviderSync;
 
     $groups = $sync->parseLdapGroups([
         'memberOf' => 'CN=SingleGroup,OU=Groups,DC=example,DC=com',

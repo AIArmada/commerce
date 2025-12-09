@@ -66,7 +66,7 @@ final class ShippingCalculator
      */
     public static function create(): self
     {
-        return new self();
+        return new self;
     }
 
     /**
@@ -76,7 +76,7 @@ final class ShippingCalculator
      */
     public static function forWeight(int $totalWeight): self
     {
-        $calculator = new self();
+        $calculator = new self;
         $calculator->weightRate = 0;
 
         return $calculator;

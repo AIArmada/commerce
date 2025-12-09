@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Concerns;
 
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\Models\AffiliatePayout;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
@@ -54,7 +56,7 @@ trait InteractsWithAffiliate
     /**
      * Get conversions for the affiliate.
      *
-     * @return Collection<int, \AIArmada\Affiliates\Models\AffiliateConversion>
+     * @return Collection<int, AffiliateConversion>
      */
     public function getConversions(int $limit = 10): Collection
     {
@@ -73,7 +75,7 @@ trait InteractsWithAffiliate
     /**
      * Get payouts for the affiliate.
      *
-     * @return Collection<int, \AIArmada\Affiliates\Models\AffiliatePayout>
+     * @return Collection<int, AffiliatePayout>
      */
     public function getPayouts(int $limit = 10): Collection
     {

@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\Inventory\Database\Factories\InventoryAllocationFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -18,9 +21,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $level_id
  * @property string $cart_id
  * @property int $quantity
- * @property \Illuminate\Support\Carbon $expires_at
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
+ * @property Carbon $expires_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  * @property-read InventoryLocation $location
  * @property-read InventoryLevel $level
  * @property-read Model $inventoryable
@@ -114,10 +117,10 @@ final class InventoryAllocation extends Model
     /**
      * Scope to filter by cart ID.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeForCart(\Illuminate\Database\Eloquent\Builder $query, string $cartId): \Illuminate\Database\Eloquent\Builder
+    public function scopeForCart(Builder $query, string $cartId): Builder
     {
         return $query->where('cart_id', $cartId);
     }
@@ -125,10 +128,10 @@ final class InventoryAllocation extends Model
     /**
      * Scope to filter active (non-expired) allocations.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('expires_at', '>', now());
     }
@@ -136,10 +139,10 @@ final class InventoryAllocation extends Model
     /**
      * Scope to filter expired allocations.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeExpired(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeExpired(Builder $query): Builder
     {
         return $query->where('expires_at', '<=', now());
     }
@@ -147,10 +150,10 @@ final class InventoryAllocation extends Model
     /**
      * Scope to filter by location.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeAtLocation(\Illuminate\Database\Eloquent\Builder $query, string $locationId): \Illuminate\Database\Eloquent\Builder
+    public function scopeAtLocation(Builder $query, string $locationId): Builder
     {
         return $query->where('location_id', $locationId);
     }
@@ -158,9 +161,9 @@ final class InventoryAllocation extends Model
     /**
      * Create a new factory instance for the model.
      */
-    protected static function newFactory(): \AIArmada\Inventory\Database\Factories\InventoryAllocationFactory
+    protected static function newFactory(): InventoryAllocationFactory
     {
-        return \AIArmada\Inventory\Database\Factories\InventoryAllocationFactory::new();
+        return InventoryAllocationFactory::new();
     }
 
     /**

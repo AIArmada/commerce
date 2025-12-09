@@ -3,11 +3,18 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Collections\CartCollection;
+use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Exceptions\InvalidCartConditionException;
 use AIArmada\Cart\Exceptions\InvalidCartItemException;
+use AIArmada\Cart\Exceptions\UnknownModelException;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Cart\Storage\SessionStorage;
+use Illuminate\Events\Dispatcher;
+use Illuminate\Session\ArraySessionHandler;
+use Illuminate\Session\Store;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
@@ -15,13 +22,13 @@ beforeEach(function (): void {
     // Ensure events dispatcher is available
     if (! app()->bound('events')) {
         app()->singleton('events', function ($app) {
-            return new Illuminate\Events\Dispatcher($app);
+            return new Dispatcher($app);
         });
     }
 
     // Initialize session and database storage with proper connections
     // Use array session store for testing
-    $sessionStore = new Illuminate\Session\Store('testing', new Illuminate\Session\ArraySessionHandler(120));
+    $sessionStore = new Store('testing', new ArraySessionHandler(120));
     $this->sessionStorage = new SessionStorage($sessionStore);
 
     // Only initialize database storage if db is available (some tests don't need it)
@@ -42,7 +49,7 @@ beforeEach(function (): void {
     $this->cart = new Cart(
         $this->sessionStorage,
         'bulletproof_test',
-        new Illuminate\Events\Dispatcher,
+        new Dispatcher,
         'bulletproof_test',
         true
     );
@@ -65,8 +72,8 @@ describe('Cart instantiation', function (): void {
     it('has empty collections by default', function (): void {
         expect($this->cart->getItems())->toHaveCount(0);
         expect($this->cart->getConditions())->toHaveCount(0);
-        expect($this->cart->getItems())->toBeInstanceOf(AIArmada\Cart\Collections\CartCollection::class);
-        expect($this->cart->getConditions())->toBeInstanceOf(AIArmada\Cart\Collections\CartConditionCollection::class);
+        expect($this->cart->getItems())->toBeInstanceOf(CartCollection::class);
+        expect($this->cart->getConditions())->toBeInstanceOf(CartConditionCollection::class);
     });
 
     it('enforces strict type declarations at runtime', function (): void {
@@ -835,7 +842,7 @@ describe('Multiple items and array operations', function (): void {
 
         $result = $this->cart->add($items);
 
-        expect($result)->toBeInstanceOf(AIArmada\Cart\Collections\CartCollection::class);
+        expect($result)->toBeInstanceOf(CartCollection::class);
         expect($result)->toHaveCount(3);
         expect($this->cart->getItems())->toHaveCount(3);
         expect($this->cart->getTotalQuantity())->toBe(6);
@@ -1093,7 +1100,7 @@ describe('Associated model validation', function (): void {
             [],
             null,
             'NonExistentModel'
-        ))->toThrow(AIArmada\Cart\Exceptions\UnknownModelException::class);
+        ))->toThrow(UnknownModelException::class);
     });
 
     it('accepts object associated models', function (): void {
@@ -1132,7 +1139,7 @@ describe('Edge cases for 100% coverage', function (): void {
     it('handles condition validation properly', function (): void {
         // Test invalid condition type (line 396)
         expect(fn () => $this->cart->addCondition(['invalid_condition']))
-            ->toThrow(AIArmada\Cart\Exceptions\InvalidCartConditionException::class);
+            ->toThrow(InvalidCartConditionException::class);
     });
 
     it('handles item condition removal for non-existent condition', function (): void {

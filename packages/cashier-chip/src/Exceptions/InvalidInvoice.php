@@ -6,13 +6,14 @@ namespace AIArmada\CashierChip\Exceptions;
 
 use AIArmada\CashierChip\Invoice;
 use Exception;
+use Illuminate\Database\Eloquent\Model;
 
 class InvalidInvoice extends Exception
 {
     /**
      * Create a new InvalidInvoice instance for invalid owner.
      *
-     * @param  \Illuminate\Database\Eloquent\Model  $owner
+     * @param  Model  $owner
      */
     public static function invalidOwner(Invoice $invoice, $owner): self
     {

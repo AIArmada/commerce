@@ -210,9 +210,9 @@ class RateShoppingEngine
         $strategyName = $this->config['strategy'] ?? 'cheapest';
 
         return match ($strategyName) {
-            'fastest' => new FastestRateStrategy(),
+            'fastest' => new FastestRateStrategy,
             'preferred' => new PreferredCarrierStrategy($this->config['carrier_priority'] ?? []),
-            default => new CheapestRateStrategy(),
+            default => new CheapestRateStrategy,
         };
     }
 }

@@ -13,7 +13,7 @@ final class PayoutExportService
 {
     public function download(AffiliatePayout $payout): StreamedResponse
     {
-        $csv = Writer::createFromFileObject(new SplTempFileObject());
+        $csv = Writer::createFromFileObject(new SplTempFileObject);
         $csv->insertOne(['affiliate_code', 'order_reference', 'commission_minor', 'currency', 'status']);
 
         foreach ($payout->conversions as $conversion) {

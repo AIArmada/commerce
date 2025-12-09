@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAuthz\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -16,13 +17,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property array<string>|null $requested_roles
  * @property string|null $justification
  * @property string $status
- * @property \Illuminate\Support\Carbon|null $approved_at
- * @property \Illuminate\Support\Carbon|null $denied_at
- * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property Carbon|null $approved_at
+ * @property Carbon|null $denied_at
+ * @property Carbon|null $expires_at
  * @property string|null $approver_note
  * @property string|null $denial_reason
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Model $requester
  * @property-read Model|null $approver
  */

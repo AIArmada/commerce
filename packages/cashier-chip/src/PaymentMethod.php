@@ -6,6 +6,7 @@ namespace AIArmada\CashierChip;
 
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
+use Illuminate\Database\Eloquent\Model;
 use JsonSerializable;
 use ReturnTypeWillChange;
 
@@ -20,7 +21,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
     /**
      * The owner of the payment method.
      *
-     * @var Billable|\Illuminate\Database\Eloquent\Model
+     * @var Billable|Model
      */
     protected $owner;
 
@@ -32,7 +33,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
     /**
      * Create a new PaymentMethod instance.
      *
-     * @param  \Illuminate\Database\Eloquent\Model  $owner
+     * @param  Model  $owner
      * @param  array  $recurringToken  The CHIP recurring token data
      * @return void
      */
@@ -161,7 +162,7 @@ class PaymentMethod implements Arrayable, Jsonable, JsonSerializable
     /**
      * Get the Eloquent model instance.
      *
-     * @return \Illuminate\Database\Eloquent\Model
+     * @return Model
      */
     public function owner()
     {

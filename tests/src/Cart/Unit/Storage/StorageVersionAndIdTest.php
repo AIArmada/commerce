@@ -5,10 +5,12 @@ declare(strict_types=1);
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Storage\CacheStorage;
 use AIArmada\Cart\Storage\SessionStorage;
+use Illuminate\Session\ArraySessionHandler;
+use Illuminate\Session\Store;
 use Illuminate\Support\Facades\Cache;
 
 it('returns null for version and id in non-persistent storages', function (): void {
-    $sessionStore = new Illuminate\Session\Store('testing', new Illuminate\Session\ArraySessionHandler(120));
+    $sessionStore = new Store('testing', new ArraySessionHandler(120));
     $sessionStorage = new SessionStorage($sessionStore);
 
     expect($sessionStorage->getVersion('id', 'default'))->toBeNull();

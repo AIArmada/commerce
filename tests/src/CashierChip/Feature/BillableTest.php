@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
+use AIArmada\CashierChip\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 uses(CashierChipTestCase::class);
 
@@ -93,7 +95,7 @@ it('can update default payment method', function (): void {
 it('can start a new subscription', function (): void {
     $builder = $this->user->newSubscription('standard', 'price_monthly');
 
-    expect($builder)->toBeInstanceOf(AIArmada\CashierChip\SubscriptionBuilder::class);
+    expect($builder)->toBeInstanceOf(SubscriptionBuilder::class);
 });
 
 it('can check if subscribed', function (): void {
@@ -190,7 +192,7 @@ it('can check generic trial on model', function (): void {
 // Subscription Scopes
 
 it('has subscriptions relationship', function (): void {
-    expect($this->user->subscriptions())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($this->user->subscriptions())->toBeInstanceOf(HasMany::class);
 });
 
 it('can get only active subscriptions', function (): void {

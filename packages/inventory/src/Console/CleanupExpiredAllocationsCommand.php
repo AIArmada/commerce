@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Console;
 
+use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Services\InventoryAllocationService;
 use Illuminate\Console\Command;
 
@@ -31,7 +32,7 @@ final class CleanupExpiredAllocationsCommand extends Command
         $this->info('Cleaning up expired inventory allocations...');
 
         if ($isDryRun) {
-            $count = \AIArmada\Inventory\Models\InventoryAllocation::query()
+            $count = InventoryAllocation::query()
                 ->expired()
                 ->count();
 

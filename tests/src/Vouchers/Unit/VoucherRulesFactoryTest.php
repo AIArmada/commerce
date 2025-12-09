@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 
 test('voucher rules factory creates rules for voucher key', function (): void {
-    $factory = new VoucherRulesFactory();
+    $factory = new VoucherRulesFactory;
 
     $rules = $factory->createRules('voucher', ['voucher_code' => 'TEST']);
 
@@ -14,20 +15,20 @@ test('voucher rules factory creates rules for voucher key', function (): void {
 });
 
 test('voucher rules factory throws for invalid voucher code', function (): void {
-    $factory = new VoucherRulesFactory();
+    $factory = new VoucherRulesFactory;
 
     expect(fn () => $factory->createRules('voucher', []))->toThrow(InvalidArgumentException::class);
 });
 
 test('voucher rules factory can create rules for voucher key', function (): void {
-    $factory = new VoucherRulesFactory();
+    $factory = new VoucherRulesFactory;
 
     expect($factory->canCreateRules('voucher'))->toBeTrue()
         ->and($factory->canCreateRules('other'))->toBeFalse();
 });
 
 test('voucher rules factory get available keys', function (): void {
-    $factory = new VoucherRulesFactory();
+    $factory = new VoucherRulesFactory;
 
     $keys = $factory->getAvailableKeys();
 
@@ -35,13 +36,13 @@ test('voucher rules factory get available keys', function (): void {
 });
 
 test('voucher rules factory get fallback', function (): void {
-    $factory = new VoucherRulesFactory();
+    $factory = new VoucherRulesFactory;
 
     expect($factory->getFallback())->toBeNull();
 });
 
 test('voucher rules factory with fallback', function (): void {
-    $fallback = new class implements AIArmada\Cart\Contracts\RulesFactoryInterface
+    $fallback = new class implements RulesFactoryInterface
     {
         public function createRules(string $key, array $metadata = []): array
         {

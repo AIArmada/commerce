@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Resources\DelegationResource\Pages;
 
 use AIArmada\FilamentAuthz\Resources\DelegationResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 class ListDelegations extends ListRecords
@@ -14,7 +15,7 @@ class ListDelegations extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 }

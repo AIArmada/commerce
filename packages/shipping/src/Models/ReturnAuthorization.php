@@ -7,12 +7,14 @@ namespace AIArmada\Shipping\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Shipping\Enums\ReturnReason;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -25,17 +27,17 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property string $reason
  * @property string|null $reason_details
  * @property string|null $approved_by
- * @property \Illuminate\Support\Carbon|null $approved_at
- * @property \Illuminate\Support\Carbon|null $received_at
- * @property \Illuminate\Support\Carbon|null $completed_at
- * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property Carbon|null $approved_at
+ * @property Carbon|null $received_at
+ * @property Carbon|null $completed_at
+ * @property Carbon|null $expires_at
  * @property array|null $metadata
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property Carbon|null $deleted_at
  * @property-read Shipment|null $originalShipment
  * @property-read Shipment|null $returnShipment
- * @property-read \Illuminate\Database\Eloquent\Collection<int, ReturnAuthorizationItem> $items
+ * @property-read Collection<int, ReturnAuthorizationItem> $items
  */
 class ReturnAuthorization extends Model
 {

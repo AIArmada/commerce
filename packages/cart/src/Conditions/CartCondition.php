@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Conditions;
 
+use AIArmada\Cart\Cart;
 use AIArmada\Cart\Exceptions\InvalidCartConditionException;
+use AIArmada\Cart\Models\CartItem;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use JsonException;
@@ -258,7 +260,7 @@ final class CartCondition implements Arrayable, Jsonable, JsonSerializable
     /**
      * Evaluate if the condition should apply based on its rules
      */
-    public function shouldApply(\AIArmada\Cart\Cart $cart, ?\AIArmada\Cart\Models\CartItem $item = null): bool
+    public function shouldApply(Cart $cart, ?CartItem $item = null): bool
     {
         if (! $this->isDynamic()) {
             return true;

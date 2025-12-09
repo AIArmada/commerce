@@ -7,7 +7,10 @@ namespace AIArmada\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Storage\StorageInterface;
+use Illuminate\Contracts\Auth\Factory;
 use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Session\SessionManager;
 use RuntimeException;
 use Throwable;
 
@@ -149,9 +152,9 @@ class CartManager implements CartManagerInterface
      * Use this for admin operations that need to operate on a specific owner's carts.
      * The returned manager has isolated storage that only accesses the specified owner's data.
      *
-     * @param  \Illuminate\Database\Eloquent\Model  $owner  The owner model to scope operations to
+     * @param  Model  $owner  The owner model to scope operations to
      */
-    public function forOwner(\Illuminate\Database\Eloquent\Model $owner): static
+    public function forOwner(Model $owner): static
     {
         $scopedStorage = $this->storage->withOwner($owner);
 
@@ -195,7 +198,7 @@ class CartManager implements CartManagerInterface
             throw new RuntimeException('Session service is not available');
         }
 
-        $session = app(\Illuminate\Session\SessionManager::class)->driver();
+        $session = app(SessionManager::class)->driver();
 
         return new Storage\SessionStorage($session, $sessionKey ?? config('cart.session.key', 'cart'));
     }
@@ -279,7 +282,7 @@ class CartManager implements CartManagerInterface
                 return null;
             }
 
-            $auth = app(\Illuminate\Contracts\Auth\Factory::class);
+            $auth = app(Factory::class);
             $guard = $auth->guard();
 
             return $guard->check() ? (string) $guard->id() : null;
@@ -298,7 +301,7 @@ class CartManager implements CartManagerInterface
                 return null;
             }
 
-            $session = app(\Illuminate\Session\SessionManager::class);
+            $session = app(SessionManager::class);
 
             return $session->getId();
         } catch (Throwable $e) {

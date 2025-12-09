@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Models;
 
 use Akaunting\Money\Money;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -216,7 +217,7 @@ final class CartCondition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function instance(Builder $query, string $instance): void
     {
         $query->whereHas('cart', function ($q) use ($instance): void {
@@ -229,7 +230,7 @@ final class CartCondition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function byIdentifier(Builder $query, string $identifier): void
     {
         $query->whereHas('cart', function ($q) use ($identifier): void {
@@ -242,7 +243,7 @@ final class CartCondition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function byType(Builder $query, string $type): void
     {
         $query->where('type', $type);
@@ -253,7 +254,7 @@ final class CartCondition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function byTarget(Builder $query, string $target): void
     {
         $query->where('target', $target);
@@ -264,7 +265,7 @@ final class CartCondition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function cartLevel(Builder $query): void
     {
         $query->whereNull('cart_item_id')->whereNull('item_id');
@@ -275,7 +276,7 @@ final class CartCondition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function itemLevel(Builder $query): void
     {
         $query->where(function ($q): void {
@@ -288,7 +289,7 @@ final class CartCondition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function discounts(Builder $query): void
     {
         $query->where('type', 'discount');
@@ -299,7 +300,7 @@ final class CartCondition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function taxes(Builder $query): void
     {
         $query->where('type', 'tax');
@@ -310,7 +311,7 @@ final class CartCondition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function fees(Builder $query): void
     {
         $query->where('type', 'fee');
@@ -321,7 +322,7 @@ final class CartCondition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function shipping(Builder $query): void
     {
         $query->where('type', 'shipping');

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentStock\Support;
 
+use Illuminate\Database\Eloquent\Model;
+
 /**
  * Registry for stockable model types that can be filtered in resources.
  */
@@ -74,7 +76,7 @@ final class StockableTypeRegistry
             return [];
         }
 
-        /** @var class-string<\Illuminate\Database\Eloquent\Model> $model */
+        /** @var class-string<Model> $model */
         $model = $definition['model'];
         $titleAttribute = $definition['title_attribute'];
         $searchAttributes = $definition['search_attributes'] ?? [$titleAttribute];
@@ -107,7 +109,7 @@ final class StockableTypeRegistry
             return null;
         }
 
-        /** @var class-string<\Illuminate\Database\Eloquent\Model> $model */
+        /** @var class-string<Model> $model */
         $model = $definition['model'];
         $titleAttribute = $definition['title_attribute'];
 

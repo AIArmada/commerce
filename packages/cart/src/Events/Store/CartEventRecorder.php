@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Events\Store;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Models\CartEvent;
 use AIArmada\CommerceSupport\Contracts\Events\CartEventInterface;
 
 /**
@@ -83,7 +84,7 @@ final class CartEventRecorder
      *
      * @param  Cart  $cart  The cart instance
      * @param  int  $fromPosition  Start from this stream position (exclusive)
-     * @return array<\AIArmada\Cart\Models\CartEvent>
+     * @return array<CartEvent>
      */
     public function getHistory(Cart $cart, int $fromPosition = 0): array
     {
@@ -101,7 +102,7 @@ final class CartEventRecorder
      *
      * @param  Cart  $cart  The cart instance
      * @param  string  $eventType  Event type to filter
-     * @return array<\AIArmada\Cart\Models\CartEvent>
+     * @return array<CartEvent>
      */
     public function getEventsByType(Cart $cart, string $eventType): array
     {

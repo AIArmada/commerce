@@ -58,7 +58,7 @@ beforeEach(function (): void {
 
 describe('dynamic condition lifecycle', function (): void {
     it('persists metadata context across registrations and restores dynamic conditions', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
 
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
@@ -95,7 +95,7 @@ describe('dynamic condition lifecycle', function (): void {
         expect($cart->getConditions()->has('vip_discount'))->toBeTrue();
 
         // Spin up a new cart instance to ensure rules are restored with metadata.
-        $restoredFactory = new RecordingRulesFactory();
+        $restoredFactory = new RecordingRulesFactory;
         $restoredCart = new Cart($this->storage, $this->identifier, events: null);
         $restoredCart->withRulesFactory($restoredFactory);
 
@@ -112,7 +112,7 @@ describe('dynamic condition lifecycle', function (): void {
     });
 
     it('invokes the failure handler when rule execution throws an exception', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 
@@ -141,7 +141,7 @@ describe('dynamic condition lifecycle', function (): void {
     });
 
     it('handles item dynamic condition failure', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 
@@ -175,7 +175,7 @@ describe('dynamic condition lifecycle', function (): void {
     });
 
     it('applies item dynamic conditions when rules pass', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 
@@ -202,7 +202,7 @@ describe('dynamic condition lifecycle', function (): void {
     });
 
     it('removes item dynamic conditions when rules fail', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 
@@ -233,7 +233,7 @@ describe('dynamic condition lifecycle', function (): void {
     });
 
     it('handles mixed rules array with strings and callables', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 
@@ -255,7 +255,7 @@ describe('dynamic condition lifecycle', function (): void {
     });
 
     it('handles array of factory keys', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 
@@ -297,7 +297,7 @@ describe('dynamic condition lifecycle', function (): void {
     });
 
     it('throws for unknown factory key', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 
@@ -376,7 +376,7 @@ describe('ManagesDynamicConditions edge cases', function (): void {
     });
 
     it('throws when mixed rules contain invalid types', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 
@@ -454,7 +454,7 @@ describe('ManagesDynamicConditions edge cases', function (): void {
     });
 
     it('can remove dynamic condition and its metadata', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 
@@ -481,7 +481,7 @@ describe('ManagesDynamicConditions edge cases', function (): void {
     });
 
     it('can clear all dynamic conditions', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 
@@ -522,7 +522,7 @@ describe('ManagesDynamicConditions edge cases', function (): void {
     });
 
     it('handles restore with invalid factory key in metadata', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 
@@ -556,7 +556,7 @@ describe('ManagesDynamicConditions edge cases', function (): void {
     });
 
     it('skips restore for conditions without rule_factory_key', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 
@@ -582,7 +582,7 @@ describe('ManagesDynamicConditions edge cases', function (): void {
     });
 
     it('restores dynamic conditions with array of factory keys', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 
@@ -605,14 +605,14 @@ describe('ManagesDynamicConditions edge cases', function (): void {
 
         // Restore in new cart
         $newCart = new Cart($this->storage, $this->identifier, events: null);
-        $newCart->withRulesFactory(new RecordingRulesFactory());
+        $newCart->withRulesFactory(new RecordingRulesFactory);
         $newCart->add('item1', 'Item 1', 100, 1);
 
         expect($newCart->getConditions()->has('multi_key'))->toBeTrue();
     });
 
     it('does not fail when no failure handler is set', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 
@@ -653,7 +653,7 @@ describe('ManagesDynamicConditions edge cases', function (): void {
     })->throws(InvalidArgumentException::class, 'Cannot use factory keys without setting a RulesFactory');
 
     it('throws exception when using unknown factory key in mixed rules', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 
@@ -692,7 +692,7 @@ describe('ManagesDynamicConditions edge cases', function (): void {
     })->throws(InvalidArgumentException::class, 'Cannot use factory keys without setting a RulesFactory');
 
     it('throws exception when using unknown factory key in array', function (): void {
-        $factory = new RecordingRulesFactory();
+        $factory = new RecordingRulesFactory;
         $cart = new Cart($this->storage, $this->identifier, events: null);
         $cart->withRulesFactory($factory);
 

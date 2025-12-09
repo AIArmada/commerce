@@ -8,11 +8,13 @@ use AIArmada\Vouchers\GiftCards\Enums\GiftCardStatus;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardTransactionType;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardType;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 use RuntimeException;
@@ -26,9 +28,9 @@ use RuntimeException;
  * @property int $initial_balance Balance in cents
  * @property int $current_balance Balance in cents
  * @property GiftCardStatus $status
- * @property \Illuminate\Support\Carbon|null $activated_at
- * @property \Illuminate\Support\Carbon|null $expires_at
- * @property \Illuminate\Support\Carbon|null $last_used_at
+ * @property Carbon|null $activated_at
+ * @property Carbon|null $expires_at
+ * @property Carbon|null $last_used_at
  * @property string|null $purchaser_type
  * @property string|null $purchaser_id
  * @property string|null $recipient_type
@@ -36,10 +38,10 @@ use RuntimeException;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, GiftCardTransaction> $transactions
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
+ * @property-read Collection<int, GiftCardTransaction> $transactions
  * @property-read int|null $used_balance
  * @property-read float $balance_utilization
  */

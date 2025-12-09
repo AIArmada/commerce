@@ -6,6 +6,8 @@ namespace AIArmada\CashierChip\Testing;
 
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\ClientDetailsData;
+use AIArmada\Chip\Data\CompanyStatementData;
+use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
 
 /**
@@ -27,7 +29,7 @@ class FakeChipCollectService
      */
     public function __construct(?FakeChipClient $fakeClient = null)
     {
-        $this->fakeClient = $fakeClient ?? new FakeChipClient();
+        $this->fakeClient = $fakeClient ?? new FakeChipClient;
     }
 
     /**
@@ -254,7 +256,7 @@ class FakeChipCollectService
     /**
      * Create a checkout purchase.
      *
-     * @param  array<int, \AIArmada\Chip\Data\ProductData>  $products
+     * @param  array<int, ProductData>  $products
      * @param  array<string, mixed>  $options
      */
     public function createCheckoutPurchase(array $products, ClientDetailsData $clientDetails, array $options = []): PurchaseData
@@ -323,7 +325,7 @@ class FakeChipCollectService
     /**
      * Get a company statement.
      *
-     * @return \AIArmada\Chip\Data\CompanyStatementData
+     * @return CompanyStatementData
      */
     public function getCompanyStatement(string $statementId): mixed
     {
@@ -333,7 +335,7 @@ class FakeChipCollectService
     /**
      * Cancel a company statement.
      *
-     * @return \AIArmada\Chip\Data\CompanyStatementData
+     * @return CompanyStatementData
      */
     public function cancelCompanyStatement(string $statementId): mixed
     {

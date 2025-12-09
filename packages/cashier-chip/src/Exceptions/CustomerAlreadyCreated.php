@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\CashierChip\Exceptions;
 
 use Exception;
+use Illuminate\Database\Eloquent\Model;
 
 class CustomerAlreadyCreated extends Exception
 {
     /**
      * Create a new CustomerAlreadyCreated exception.
      *
-     * @param  \Illuminate\Database\Eloquent\Model  $owner
+     * @param  Model  $owner
      * @return static
      */
     public static function exists($owner)

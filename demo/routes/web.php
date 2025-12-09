@@ -2,7 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Events\PurchasePaid;
+use App\Http\Controllers\BillingController;
 use App\Http\Controllers\ShopController;
+use App\Models\Order;
+use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
 // ==========================================
@@ -64,17 +69,17 @@ Route::middleware('auth')->group(function (): void {
 // LEGACY/BILLING ROUTES
 // ==========================================
 
-Route::get('/checkout/single/{slug}', [App\Http\Controllers\BillingController::class, 'singleChipCheckout'])->name('checkout.single');
-Route::post('/checkout/single', [App\Http\Controllers\BillingController::class, 'processSingleChip'])->name('checkout.single.process');
+Route::get('/checkout/single/{slug}', [BillingController::class, 'singleChipCheckout'])->name('checkout.single');
+Route::post('/checkout/single', [BillingController::class, 'processSingleChip'])->name('checkout.single.process');
 
 Route::middleware('auth')->group(function () {
-    Route::get('/subscribe/chip/{plan}', [App\Http\Controllers\BillingController::class, 'subscribeChip'])->name('subscribe.chip');
-    Route::post('/subscribe/chip', [App\Http\Controllers\BillingController::class, 'processSubscribeChip'])->name('subscribe.chip.process');
+    Route::get('/subscribe/chip/{plan}', [BillingController::class, 'subscribeChip'])->name('subscribe.chip');
+    Route::post('/subscribe/chip', [BillingController::class, 'processSubscribeChip'])->name('subscribe.chip.process');
 
-    Route::get('/subscribe/stripe/{plan}', [App\Http\Controllers\BillingController::class, 'subscribeStripe'])->name('subscribe.stripe');
-    Route::post('/subscribe/stripe', [App\Http\Controllers\BillingController::class, 'processSubscribeStripe'])->name('subscribe.stripe.process');
+    Route::get('/subscribe/stripe/{plan}', [BillingController::class, 'subscribeStripe'])->name('subscribe.stripe');
+    Route::post('/subscribe/stripe', [BillingController::class, 'processSubscribeStripe'])->name('subscribe.stripe.process');
 
-    Route::get('/billing/portal', [App\Http\Controllers\BillingController::class, 'portal'])->name('billing.portal');
+    Route::get('/billing/portal', [BillingController::class, 'portal'])->name('billing.portal');
 });
 
 Route::get('/checkout/success/{id}', function (string $id) {
@@ -86,7 +91,7 @@ Route::get('/checkout/success/{id}', function (string $id) {
 // ==========================================
 // This route simulates receiving a webhook from CHIP for demo purposes.
 // In production, CHIP sends webhooks to a public URL with signature verification.
-Route::post('/demo/simulate-payment/{order}', function (App\Models\Order $order) {
+Route::post('/demo/simulate-payment/{order}', function (Order $order) {
     // Dispatch the PurchasePaid event directly for demo
     $purchaseData = [
         'id' => $order->metadata['chip_purchase_id'] ?? 'demo-purchase-id',
@@ -125,15 +130,15 @@ Route::post('/demo/simulate-payment/{order}', function (App\Models\Order $order)
         'status_history' => [],
     ];
 
-    $purchase = AIArmada\Chip\Data\PurchaseData::from($purchaseData);
+    $purchase = PurchaseData::from($purchaseData);
 
     // Dispatch the event
-    AIArmada\Chip\Events\PurchasePaid::dispatch($purchase, $purchaseData);
+    PurchasePaid::dispatch($purchase, $purchaseData);
 
     return response()->json([
         'status' => 'ok',
         'message' => 'Payment simulated successfully',
         'order_number' => $order->order_number,
     ]);
-})->withoutMiddleware([Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class])
+})->withoutMiddleware([VerifyCsrfToken::class])
     ->name('demo.simulate-payment');

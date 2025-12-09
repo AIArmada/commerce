@@ -6,6 +6,7 @@ namespace AIArmada\Cart\Models;
 
 use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Exceptions\InvalidCartItemException;
 use AIArmada\CommerceSupport\Contracts\Payment\LineItemInterface;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
@@ -40,7 +41,6 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
         int | float | string $price,
         public int $quantity,
         array $attributes = [],
-        /** @var array|Collection<string, CartCondition> */
         array | Collection $conditions = [],
         public string | object | null $associatedModel = null
     ) {
@@ -62,7 +62,7 @@ final readonly class CartItem implements Arrayable, Jsonable, JsonSerializable, 
     public function setQuantity(int $quantity): static
     {
         if ($quantity < 1) {
-            throw new \AIArmada\Cart\Exceptions\InvalidCartItemException('Quantity must be at least 1');
+            throw new InvalidCartItemException('Quantity must be at least 1');
         }
 
         return new self(

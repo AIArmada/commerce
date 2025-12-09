@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Stock\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Represents temporary stock reservations for cart items.
@@ -19,9 +21,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $stockable_id
  * @property string $cart_id
  * @property int $quantity
- * @property \Illuminate\Support\Carbon $expires_at
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
+ * @property Carbon $expires_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  */
 final class StockReservation extends Model
 {
@@ -88,8 +90,8 @@ final class StockReservation extends Model
     /**
      * Scope: Only active (non-expired) reservations.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @param  Builder<static>  $query
+     * @return Builder<static>
      */
     public function scopeActive($query)
     {
@@ -99,8 +101,8 @@ final class StockReservation extends Model
     /**
      * Scope: Only expired reservations.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @param  Builder<static>  $query
+     * @return Builder<static>
      */
     public function scopeExpired($query)
     {
@@ -110,8 +112,8 @@ final class StockReservation extends Model
     /**
      * Scope: By cart ID.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @param  Builder<static>  $query
+     * @return Builder<static>
      */
     public function scopeForCart($query, string $cartId)
     {
@@ -121,8 +123,8 @@ final class StockReservation extends Model
     /**
      * Scope: For a specific stockable.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @param  Builder<static>  $query
+     * @return Builder<static>
      */
     public function scopeForStockable($query, Model $model)
     {

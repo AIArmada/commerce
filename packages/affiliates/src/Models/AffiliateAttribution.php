@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -31,15 +33,15 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $first_seen_at
- * @property \Illuminate\Support\Carbon|null $last_seen_at
- * @property \Illuminate\Support\Carbon|null $last_cookie_seen_at
- * @property \Illuminate\Support\Carbon|null $expires_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $first_seen_at
+ * @property Carbon|null $last_seen_at
+ * @property Carbon|null $last_cookie_seen_at
+ * @property Carbon|null $expires_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Affiliate $affiliate
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateConversion> $conversions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateTouchpoint> $touchpoints
+ * @property-read Collection<int, AffiliateConversion> $conversions
+ * @property-read Collection<int, AffiliateTouchpoint> $touchpoints
  */
 class AffiliateAttribution extends Model
 {

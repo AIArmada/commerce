@@ -9,12 +9,14 @@ use AIArmada\Cart\CartManager;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
+use Illuminate\Mail\Mailable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Notification;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -142,7 +144,7 @@ final class ExecuteRecoveryIntervention implements ShouldQueue
             'prediction' => $this->prediction,
         ];
 
-        if (class_exists(\Illuminate\Mail\Mailable::class)) {
+        if (class_exists(Mailable::class)) {
             $mailableClass = config("cart.recovery.mailables.{$template}");
 
             if ($mailableClass && class_exists($mailableClass)) {
@@ -220,7 +222,7 @@ final class ExecuteRecoveryIntervention implements ShouldQueue
     private function recordPopupIntervention(object $cartRecord): array
     {
         DB::table('cart_popup_interventions')->insert([
-            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'id' => (string) Str::uuid(),
             'cart_id' => $this->cartId,
             'strategy_id' => $this->strategyId,
             'show_discount' => $this->strategy['parameters']['show_discount'] ?? false,

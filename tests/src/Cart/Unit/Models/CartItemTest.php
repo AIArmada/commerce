@@ -2,8 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Exceptions\InvalidCartItemException;
+use AIArmada\Cart\Exceptions\UnknownModelException;
 use AIArmada\Cart\Models\CartItem;
+use Akaunting\Money\Money;
+use Illuminate\Support\Collection;
 
 beforeEach(function (): void {
     $this->condition1 = new CartCondition(
@@ -32,9 +37,9 @@ it('can create cart item with basic data', function (): void {
         ->and($item->name)->toBe('Test Product')
         ->and($item->price)->toBe(9999)
         ->and($item->quantity)->toBe(2)
-        ->and($item->attributes)->toBeInstanceOf(Illuminate\Support\Collection::class)
+        ->and($item->attributes)->toBeInstanceOf(Collection::class)
         ->and($item->attributes->toArray())->toBe([])
-        ->and($item->conditions)->toBeInstanceOf(AIArmada\Cart\Collections\CartConditionCollection::class)
+        ->and($item->conditions)->toBeInstanceOf(CartConditionCollection::class)
         ->and($item->conditions->isEmpty())->toBeTrue()
         ->and($item->associatedModel)->toBeNull();
 });
@@ -71,7 +76,7 @@ it('can calculate price sum', function (): void {
     );
 
     expect($item->getSubtotal())
-        ->toBeInstanceOf(Akaunting\Money\Money::class)
+        ->toBeInstanceOf(Money::class)
         ->and($item->getRawSubtotal())->toBe(15000);
 });
 
@@ -377,28 +382,28 @@ it('validates required fields on creation', function (): void {
         name: 'Test Product',
         price: 9999,
         quantity: 1
-    ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class);
+    ))->toThrow(InvalidCartItemException::class);
 
     expect(fn () => new CartItem(
         id: 'product-1',
         name: '',
         price: 9999,
         quantity: 1
-    ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class);
+    ))->toThrow(InvalidCartItemException::class);
 
     expect(fn () => new CartItem(
         id: 'product-1',
         name: 'Test Product',
         price: -10.0,
         quantity: 1
-    ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class);
+    ))->toThrow(InvalidCartItemException::class);
 
     expect(fn () => new CartItem(
         id: 'product-1',
         name: 'Test Product',
         price: 9999,
         quantity: -1
-    ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class);
+    ))->toThrow(InvalidCartItemException::class);
 });
 
 it('can convert to JSON', function (): void {
@@ -507,8 +512,8 @@ it('validates name when setting', function (): void {
         quantity: 2
     );
 
-    expect(fn () => $item->setName(''))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class)
-        ->and(fn () => $item->setName('   '))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class);
+    expect(fn () => $item->setName(''))->toThrow(InvalidCartItemException::class)
+        ->and(fn () => $item->setName('   '))->toThrow(InvalidCartItemException::class);
 });
 
 it('can set item price', function (): void {
@@ -536,7 +541,7 @@ it('validates price when setting', function (): void {
         quantity: 2
     );
 
-    expect(fn () => $item->setPrice(-10.0))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class);
+    expect(fn () => $item->setPrice(-10.0))->toThrow(InvalidCartItemException::class);
 });
 
 it('validates quantity when setting', function (): void {
@@ -547,7 +552,7 @@ it('validates quantity when setting', function (): void {
         quantity: 2
     );
 
-    expect(fn () => $item->setQuantity(-1))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class);
+    expect(fn () => $item->setQuantity(-1))->toThrow(InvalidCartItemException::class);
 });
 
 it('can set item attributes', function (): void {
@@ -685,7 +690,7 @@ it('throws exception when creating item with non-existent model class', function
         price: 100.0,
         quantity: 2,
         associatedModel: 'NonExistentClass'
-    ))->toThrow(AIArmada\Cart\Exceptions\UnknownModelException::class);
+    ))->toThrow(UnknownModelException::class);
 });
 
 it('throws exception when attributes exceed max data size', function (): void {
@@ -702,7 +707,7 @@ it('throws exception when attributes exceed max data size', function (): void {
         price: 100.0,
         quantity: 2,
         attributes: $largeAttributes
-    ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class, 'data size');
+    ))->toThrow(InvalidCartItemException::class, 'data size');
 });
 
 describe('CartItem Condition Normalization', function (): void {
@@ -764,7 +769,7 @@ describe('CartItem Condition Normalization', function (): void {
             value: '-15%'
         );
 
-        $collection = new Illuminate\Support\Collection([
+        $collection = new Collection([
             'discount' => $condition,
         ]);
 
@@ -776,7 +781,7 @@ describe('CartItem Condition Normalization', function (): void {
             conditions: $collection
         );
 
-        expect($item->getConditions())->toBeInstanceOf(AIArmada\Cart\Collections\CartConditionCollection::class);
+        expect($item->getConditions())->toBeInstanceOf(CartConditionCollection::class);
         expect($item->getConditions()->count())->toBe(1);
         expect($item->hasCondition('discount'))->toBeTrue();
     });
@@ -789,7 +794,7 @@ describe('CartItem Condition Normalization', function (): void {
             value: 10.0
         );
 
-        $conditionCollection = new AIArmada\Cart\Collections\CartConditionCollection;
+        $conditionCollection = new CartConditionCollection;
         $conditionCollection->put('shipping', $condition);
 
         $item = new CartItem(
@@ -880,7 +885,7 @@ describe('CartItem Condition Normalization', function (): void {
             value: '-25%'
         );
 
-        $conditionCollection = new AIArmada\Cart\Collections\CartConditionCollection;
+        $conditionCollection = new CartConditionCollection;
         $conditionCollection->put('premium-discount', $condition);
 
         $item = new CartItem(
@@ -924,7 +929,7 @@ describe('CartItem Condition Normalization', function (): void {
             value: '-20%'
         );
 
-        $collection = new Illuminate\Support\Collection([
+        $collection = new Collection([
             'some-key' => $condition,
         ]);
 
@@ -1043,7 +1048,7 @@ describe('CartItem Condition Normalization', function (): void {
             value: '-5%'
         );
 
-        $collection = new Illuminate\Support\Collection([
+        $collection = new Collection([
             'first' => $condition1,
             'second' => $condition2,
         ]);
@@ -1076,7 +1081,7 @@ describe('CartItem Money Methods', function (): void {
         $getSubtotal = $item->getSubtotal();
 
         expect($subtotal)->toEqual($getSubtotal);
-        expect($subtotal)->toBeInstanceOf(Akaunting\Money\Money::class);
+        expect($subtotal)->toBeInstanceOf(Money::class);
     });
 
     it('provides total() as alias for getSubtotal()', function (): void {
@@ -1125,7 +1130,7 @@ describe('CartItem Money Methods', function (): void {
             name: 'Test Product',
             price: 100.0,
             quantity: $maxQuantity + 1
-        ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class, 'quantity cannot exceed');
+        ))->toThrow(InvalidCartItemException::class, 'quantity cannot exceed');
     });
 
     it('validates string length limits for id and name', function (): void {
@@ -1137,14 +1142,14 @@ describe('CartItem Money Methods', function (): void {
             name: 'Test Product',
             price: 100.0,
             quantity: 1
-        ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class, 'ID cannot exceed');
+        ))->toThrow(InvalidCartItemException::class, 'ID cannot exceed');
 
         expect(fn () => new CartItem(
             id: 'product-1',
             name: $longString,
             price: 100.0,
             quantity: 1
-        ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class, 'name cannot exceed');
+        ))->toThrow(InvalidCartItemException::class, 'name cannot exceed');
     });
 
     it('handles JSON encoding errors in data size validation', function (): void {
@@ -1157,6 +1162,6 @@ describe('CartItem Money Methods', function (): void {
             price: 100.0,
             quantity: 1,
             attributes: ['bad' => $invalidUtf8]
-        ))->toThrow(AIArmada\Cart\Exceptions\InvalidCartItemException::class, 'Cannot validate');
+        ))->toThrow(InvalidCartItemException::class, 'Cannot validate');
     });
 });

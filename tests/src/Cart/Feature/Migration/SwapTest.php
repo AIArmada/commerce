@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Storage\DatabaseStorage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 /**
@@ -33,7 +35,7 @@ beforeEach(function (): void {
         $table->unique(['identifier', 'instance']);
     });
 
-    $this->storage = new AIArmada\Cart\Storage\DatabaseStorage($connection, 'carts_swap_test');
+    $this->storage = new DatabaseStorage($connection, 'carts_swap_test');
     $this->cartMigration = new CartMigrationService([], $this->storage);
 });
 
@@ -212,7 +214,7 @@ it('returns false when swapping non-existent cart', function (): void {
         $table->unique(['identifier', 'instance']);
     });
 
-    $storage = new AIArmada\Cart\Storage\DatabaseStorage($connection, 'carts_swap_test_3');
+    $storage = new DatabaseStorage($connection, 'carts_swap_test_3');
     $migration = new CartMigrationService;
 
     // Try to swap a non-existent cart
@@ -276,7 +278,7 @@ it('can swap through cart facade', function (): void {
     $storage->putBoth('guest_session_facade', 'default', $guestItems, []);
 
     // Create a cart manager with our test storage
-    $cartManager = new AIArmada\Cart\CartManager($storage);
+    $cartManager = new CartManager($storage);
 
     // Verify guest cart exists
     expect($storage->getItems('guest_session_facade', 'default'))->toHaveCount(1);

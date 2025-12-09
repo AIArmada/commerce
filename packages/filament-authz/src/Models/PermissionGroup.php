@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Permission;
 
 /**
@@ -21,8 +22,8 @@ use Spatie\Permission\Models\Permission;
  * @property array<string>|null $implicit_abilities
  * @property int $sort_order
  * @property bool $is_system
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read PermissionGroup|null $parent
  * @property-read Collection<int, PermissionGroup> $children
  * @property-read Collection<int, Permission> $permissions
@@ -104,7 +105,7 @@ class PermissionGroup extends Model
      */
     public function getAncestors(): Collection
     {
-        $ancestors = new Collection();
+        $ancestors = new Collection;
         $current = $this->parent;
 
         while ($current !== null) {
@@ -122,7 +123,7 @@ class PermissionGroup extends Model
      */
     public function getDescendants(): Collection
     {
-        $descendants = new Collection();
+        $descendants = new Collection;
 
         foreach ($this->children as $child) {
             $descendants->push($child);

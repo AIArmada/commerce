@@ -9,9 +9,14 @@ use AIArmada\CashierChip\CashierChipServiceProvider;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\CashierChip\Testing\FakeChipCollectService;
+use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
+use Illuminate\Cache\CacheServiceProvider;
+use Illuminate\Database\DatabaseServiceProvider;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Events\EventServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Session\SessionServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -47,11 +52,11 @@ abstract class CashierChipTestCase extends Orchestra
     protected function getPackageProviders($app): array
     {
         return [
-            \Illuminate\Events\EventServiceProvider::class,
-            \Illuminate\Session\SessionServiceProvider::class,
-            \Illuminate\Cache\CacheServiceProvider::class,
-            \Illuminate\Database\DatabaseServiceProvider::class,
-            \AIArmada\Chip\ChipServiceProvider::class,
+            EventServiceProvider::class,
+            SessionServiceProvider::class,
+            CacheServiceProvider::class,
+            DatabaseServiceProvider::class,
+            ChipServiceProvider::class,
             CashierChipServiceProvider::class,
         ];
     }

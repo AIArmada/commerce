@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Jnt\Data\AddressData;
+use AIArmada\Jnt\Data\ItemData;
+use AIArmada\Jnt\Data\PackageInfoData;
 use AIArmada\Jnt\Exceptions\JntException;
 use AIArmada\Jnt\Exceptions\JntNetworkException;
 use AIArmada\Jnt\Services\JntExpressService;
@@ -181,7 +184,7 @@ test('creates order with data objects', function (): void {
         ], 200),
     ]);
 
-    $sender = new AIArmada\Jnt\Data\AddressData(
+    $sender = new AddressData(
         name: 'John Doe',
         phone: '60123456789',
         address: '123 Test Street',
@@ -192,7 +195,7 @@ test('creates order with data objects', function (): void {
         area: 'SS2'
     );
 
-    $receiver = new AIArmada\Jnt\Data\AddressData(
+    $receiver = new AddressData(
         name: 'Jane Doe',
         phone: '60987654321',
         address: '456 Test Avenue',
@@ -203,14 +206,14 @@ test('creates order with data objects', function (): void {
         area: 'Bukit Bintang'
     );
 
-    $item = new AIArmada\Jnt\Data\ItemData(
+    $item = new ItemData(
         name: 'Test Product',
         quantity: '1',
         weight: '1.5',
         price: '100.00'
     );
 
-    $packageInfo = new AIArmada\Jnt\Data\PackageInfoData(
+    $packageInfo = new PackageInfoData(
         quantity: '1',
         weight: '1.5',
         value: '100.00',
@@ -246,7 +249,7 @@ test('uses builder pattern', function (): void {
         ], 200),
     ]);
 
-    $sender = new AIArmada\Jnt\Data\AddressData(
+    $sender = new AddressData(
         name: 'Builder Sender',
         phone: '60111111111',
         address: 'Builder Address',
@@ -257,7 +260,7 @@ test('uses builder pattern', function (): void {
         area: 'Sec 13'
     );
 
-    $receiver = new AIArmada\Jnt\Data\AddressData(
+    $receiver = new AddressData(
         name: 'Builder Receiver',
         phone: '60222222222',
         address: 'Receiver Address',
@@ -268,14 +271,14 @@ test('uses builder pattern', function (): void {
         area: 'JB City'
     );
 
-    $item = new AIArmada\Jnt\Data\ItemData(
+    $item = new ItemData(
         name: 'Builder Item',
         quantity: '5',
         weight: '2.5',
         price: '250.00'
     );
 
-    $packageInfo = new AIArmada\Jnt\Data\PackageInfoData(
+    $packageInfo = new PackageInfoData(
         quantity: '1',
         weight: '2.5',
         value: '250.00',

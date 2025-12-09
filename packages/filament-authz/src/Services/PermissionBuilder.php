@@ -29,7 +29,7 @@ class PermissionBuilder
      */
     public static function for(string $resource): self
     {
-        $builder = new self();
+        $builder = new self;
         $builder->resource = $resource;
 
         return $builder;

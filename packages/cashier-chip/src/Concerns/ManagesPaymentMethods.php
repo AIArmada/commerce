@@ -6,6 +6,7 @@ namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\PaymentMethod;
+use AIArmada\Chip\Data\PurchaseData;
 use Exception;
 use Illuminate\Support\Collection;
 
@@ -159,7 +160,7 @@ trait ManagesPaymentMethods
      *
      * @param  array<string, mixed>  $options
      */
-    public function createSetupPurchase(array $options = []): \AIArmada\Chip\Data\PurchaseData
+    public function createSetupPurchase(array $options = []): PurchaseData
     {
         // Ensure customer exists on CHIP - create if not already exists
         if (! $this->hasChipId()) {

@@ -245,7 +245,7 @@ class PermissionGroupService
             ->first();
 
         if ($permission === null) {
-            return new Collection();
+            return new Collection;
         }
 
         return PermissionGroup::query()

@@ -10,7 +10,7 @@ use Filament\Panel;
 use Mockery;
 
 it('exposes a stable plugin id', function (): void {
-    expect((new FilamentStockPlugin())->getId())->toBe('filament-stock');
+    expect((new FilamentStockPlugin)->getId())->toBe('filament-stock');
 });
 
 it('registers stock resources and widgets', function (): void {
@@ -33,5 +33,5 @@ it('registers stock resources and widgets', function (): void {
         ->andReturnSelf();
 
     // @phpstan-ignore argument.type
-    (new FilamentStockPlugin())->register($panel);
+    (new FilamentStockPlugin)->register($panel);
 });

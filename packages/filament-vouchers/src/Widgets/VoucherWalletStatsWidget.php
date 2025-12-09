@@ -8,6 +8,7 @@ use AIArmada\Vouchers\Models\VoucherWallet;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Database\Connection;
 
 final class VoucherWalletStatsWidget extends BaseWidget
 {
@@ -22,7 +23,7 @@ final class VoucherWalletStatsWidget extends BaseWidget
         $uniqueVouchers = VoucherWallet::distinct('voucher_id')->count('voucher_id');
 
         // Calculate unique owners (users/stores/teams) who have vouchers in their wallets
-        /** @var \Illuminate\Database\Connection $connection */
+        /** @var Connection $connection */
         $connection = VoucherWallet::query()->getConnection();
         $driver = $connection->getDriverName();
         $concat = $driver === 'pgsql'

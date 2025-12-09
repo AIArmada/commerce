@@ -23,6 +23,7 @@ use AIArmada\Cashier\Gateways\Stripe\StripeSubscriptionBuilder;
 use Exception;
 use Illuminate\Support\Collection;
 use Laravel\Cashier\Cashier;
+use Laravel\Cashier\Payment;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 
@@ -132,7 +133,7 @@ class StripeGateway extends AbstractGateway
         // Retrieve the updated payment
         $payment = $this->client()->paymentIntents->retrieve($paymentId);
 
-        return new StripePayment(new \Laravel\Cashier\Payment($payment));
+        return new StripePayment(new Payment($payment));
     }
 
     /**
@@ -187,7 +188,7 @@ class StripeGateway extends AbstractGateway
         try {
             $paymentIntent = $this->client()->paymentIntents->retrieve($paymentId);
 
-            return new StripePayment(new \Laravel\Cashier\Payment($paymentIntent));
+            return new StripePayment(new Payment($paymentIntent));
         } catch (Exception) {
             return null;
         }

@@ -164,7 +164,7 @@ test('affiliate cookies honor owner scoping', function (): void {
         'affiliates.tracking.block_self_referral' => false,
     ]);
 
-    app()->singleton(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new StaticOwnerResolver());
+    app()->singleton(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new StaticOwnerResolver);
 
     $ownerOne = AffiliateTestOwner::create(['id' => (string) Str::uuid(), 'name' => 'Owner One']);
     $ownerTwo = AffiliateTestOwner::create(['id' => (string) Str::uuid(), 'name' => 'Owner Two']);
@@ -216,7 +216,7 @@ test('self referral is blocked when owner matches current owner', function (): v
         'affiliates.tracking.block_self_referral' => true,
     ]);
 
-    app()->singleton(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new StaticOwnerResolver());
+    app()->singleton(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new StaticOwnerResolver);
 
     $owner = AffiliateTestOwner::create(['id' => (string) Str::uuid(), 'name' => 'Owner Self']);
     StaticOwnerResolver::$owner = $owner;
@@ -287,7 +287,7 @@ test('webhook dispatcher is invoked for attribution and conversion', function ()
         'affiliates.commissions.auto_approve' => true,
     ]);
 
-    $fakeDispatcher = new FakeWebhookDispatcher();
+    $fakeDispatcher = new FakeWebhookDispatcher;
     app()->instance(WebhookDispatcher::class, $fakeDispatcher);
     app()->forgetInstance(AffiliateService::class);
 

@@ -11,6 +11,7 @@ use AIArmada\Inventory\Events\OutOfInventory;
 use AIArmada\Inventory\Events\SafetyStockBreached;
 use AIArmada\Inventory\Events\StockRestored;
 use AIArmada\Inventory\Models\InventoryLevel;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Event;
 
@@ -81,9 +82,9 @@ final class StockThresholdService
     /**
      * Get all levels that need reordering.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, InventoryLevel>
+     * @return Collection<int, InventoryLevel>
      */
-    public function getLevelsNeedingReorder(): \Illuminate\Database\Eloquent\Collection
+    public function getLevelsNeedingReorder(): Collection
     {
         return InventoryLevel::query()
             ->whereIn('alert_status', [

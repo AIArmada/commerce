@@ -6,6 +6,8 @@ namespace AIArmada\CashierChip\Concerns;
 
 use AIArmada\CashierChip\Coupon;
 use AIArmada\CashierChip\Exceptions\InvalidCoupon;
+use AIArmada\Vouchers\Services\VoucherService;
+use Akaunting\Money\Money;
 
 trait AllowsCoupons
 {
@@ -135,12 +137,12 @@ trait AllowsCoupons
      */
     protected function retrieveCoupon(string $couponId): ?Coupon
     {
-        if (! class_exists(\AIArmada\Vouchers\Services\VoucherService::class)) {
+        if (! class_exists(VoucherService::class)) {
             return null;
         }
 
-        /** @var \AIArmada\Vouchers\Services\VoucherService $service */
-        $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
+        /** @var VoucherService $service */
+        $service = app(VoucherService::class);
 
         $voucherData = $service->find($couponId);
 
@@ -180,18 +182,18 @@ trait AllowsCoupons
      */
     protected function recordCouponUsage(string $couponId, int $discountAmount, mixed $redeemedBy = null): void
     {
-        if (! class_exists(\AIArmada\Vouchers\Services\VoucherService::class)) {
+        if (! class_exists(VoucherService::class)) {
             return;
         }
 
-        /** @var \AIArmada\Vouchers\Services\VoucherService $service */
-        $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
+        /** @var VoucherService $service */
+        $service = app(VoucherService::class);
 
         $currency = config('cashier-chip.currency', 'MYR');
 
         $service->recordUsage(
             code: $couponId,
-            discountAmount: \Akaunting\Money\Money::$currency($discountAmount),
+            discountAmount: Money::$currency($discountAmount),
             channel: 'subscription',
             metadata: null,
             redeemedBy: $redeemedBy,

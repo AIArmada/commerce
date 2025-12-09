@@ -6,6 +6,7 @@ namespace AIArmada\Vouchers\Data;
 
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Models\Voucher;
 use Carbon\CarbonImmutable;
 use DateTimeInterface;
 use Spatie\LaravelData\Attributes\MapInputName;
@@ -59,7 +60,7 @@ class VoucherData extends Data
     /**
      * Create from a Voucher model.
      */
-    public static function fromModel(\AIArmada\Vouchers\Models\Voucher $voucher): self
+    public static function fromModel(Voucher $voucher): self
     {
         $type = $voucher->type;
 

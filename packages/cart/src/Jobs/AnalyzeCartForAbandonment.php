@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Jobs;
 
+use AIArmada\Cart\AI\AbandonmentPrediction;
 use AIArmada\Cart\AI\AbandonmentPredictor;
 use AIArmada\Cart\AI\RecoveryOptimizer;
+use AIArmada\Cart\AI\RecoveryStrategy;
 use AIArmada\Cart\CartManager;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -168,8 +170,8 @@ final class AnalyzeCartForAbandonment implements ShouldQueue
      */
     private function queueIntervention(
         string $cartId,
-        \AIArmada\Cart\AI\RecoveryStrategy $strategy,
-        \AIArmada\Cart\AI\AbandonmentPrediction $prediction
+        RecoveryStrategy $strategy,
+        AbandonmentPrediction $prediction
     ): void {
         $delay = now()->addMinutes($strategy->delayMinutes);
 

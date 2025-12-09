@@ -7,11 +7,13 @@ namespace AIArmada\Affiliates\Models;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
@@ -20,8 +22,8 @@ use Illuminate\Support\Str;
  * @property string $slug
  * @property string|null $description
  * @property ProgramStatus $status
- * @property \Illuminate\Support\Carbon|null $starts_at
- * @property \Illuminate\Support\Carbon|null $ends_at
+ * @property Carbon|null $starts_at
+ * @property Carbon|null $ends_at
  * @property bool $requires_approval
  * @property bool $is_public
  * @property int $default_commission_rate_basis_points
@@ -30,12 +32,12 @@ use Illuminate\Support\Str;
  * @property string|null $terms_url
  * @property array<string, mixed>|null $eligibility_rules
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateProgramTier> $tiers
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Affiliate> $affiliates
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateProgramCreative> $creatives
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property Carbon|null $deleted_at
+ * @property-read Collection<int, AffiliateProgramTier> $tiers
+ * @property-read Collection<int, Affiliate> $affiliates
+ * @property-read Collection<int, AffiliateProgramCreative> $creatives
  */
 class AffiliateProgram extends Model
 {

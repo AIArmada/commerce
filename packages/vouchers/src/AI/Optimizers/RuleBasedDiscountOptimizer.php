@@ -36,7 +36,7 @@ final class RuleBasedDiscountOptimizer implements DiscountOptimizerInterface
     private const MIN_ROI_THRESHOLD = 1.0;
 
     public function __construct(
-        private readonly CartFeatureExtractorInterface $featureExtractor = new CartFeatureExtractor(),
+        private readonly CartFeatureExtractorInterface $featureExtractor = new CartFeatureExtractor,
     ) {}
 
     public function findOptimalDiscount(

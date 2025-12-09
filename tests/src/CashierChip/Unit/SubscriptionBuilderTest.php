@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;
@@ -142,7 +143,7 @@ it('can create subscription without payment using add', function (): void {
 
     $subscription = $builder->add();
 
-    expect($subscription)->toBeInstanceOf(AIArmada\CashierChip\Subscription::class);
+    expect($subscription)->toBeInstanceOf(Subscription::class);
     expect($subscription->type)->toBe('standard');
     expect($subscription->chip_price)->toBe('price_monthly');
 });
@@ -153,7 +154,7 @@ it('can create subscription with recurring token', function (): void {
     // Create subscription with a recurring token
     $subscription = $builder->create('test-recurring-token');
 
-    expect($subscription)->toBeInstanceOf(AIArmada\CashierChip\Subscription::class);
+    expect($subscription)->toBeInstanceOf(Subscription::class);
     expect($subscription->recurring_token)->toBe('test-recurring-token');
 });
 

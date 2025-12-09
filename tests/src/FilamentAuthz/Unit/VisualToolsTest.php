@@ -14,7 +14,7 @@ test('authz dashboard page class exists', function (): void {
 });
 
 test('policy designer page has required properties', function (): void {
-    $page = new PolicyDesignerPage();
+    $page = new PolicyDesignerPage;
 
     expect($page->policyName)->toBeNull();
     expect($page->effect)->toBe('allow');
@@ -24,7 +24,7 @@ test('policy designer page has required properties', function (): void {
 });
 
 test('policy designer can get condition templates', function (): void {
-    $page = new PolicyDesignerPage();
+    $page = new PolicyDesignerPage;
     $page->mount();
 
     $templates = $page->getConditionTemplates();
@@ -40,7 +40,7 @@ test('policy designer can get condition templates', function (): void {
 });
 
 test('policy designer can get operator options', function (): void {
-    $page = new PolicyDesignerPage();
+    $page = new PolicyDesignerPage;
 
     $operators = $page->getOperatorOptions();
 
@@ -57,7 +57,7 @@ test('policy designer can get operator options', function (): void {
 });
 
 test('policy designer can add condition', function (): void {
-    $page = new PolicyDesignerPage();
+    $page = new PolicyDesignerPage;
     $page->mount(); // This already adds one condition
 
     $initialCount = count($page->conditions);
@@ -67,7 +67,7 @@ test('policy designer can add condition', function (): void {
 });
 
 test('policy designer can remove condition', function (): void {
-    $page = new PolicyDesignerPage();
+    $page = new PolicyDesignerPage;
     $page->mount();
     $page->addCondition();
 
@@ -78,7 +78,7 @@ test('policy designer can remove condition', function (): void {
 });
 
 test('policy designer generates preview json', function (): void {
-    $page = new PolicyDesignerPage();
+    $page = new PolicyDesignerPage;
     $page->policyName = 'Test Policy';
     $page->effect = 'allow';
     $page->mount();
@@ -95,7 +95,7 @@ test('policy designer generates preview json', function (): void {
 });
 
 test('policy designer generates preview code', function (): void {
-    $page = new PolicyDesignerPage();
+    $page = new PolicyDesignerPage;
     $page->policyName = 'Test Policy';
     $page->mount();
 
@@ -108,7 +108,7 @@ test('policy designer generates preview code', function (): void {
 });
 
 test('authz dashboard can get stats', function (): void {
-    $page = new AuthzDashboardPage();
+    $page = new AuthzDashboardPage;
 
     $stats = $page->getStats();
 
@@ -121,7 +121,7 @@ test('authz dashboard can get stats', function (): void {
 });
 
 test('authz dashboard can get recent activity', function (): void {
-    $page = new AuthzDashboardPage();
+    $page = new AuthzDashboardPage;
 
     $activity = $page->getRecentActivity();
 
@@ -129,7 +129,7 @@ test('authz dashboard can get recent activity', function (): void {
 });
 
 test('authz dashboard can get hourly breakdown', function (): void {
-    $page = new AuthzDashboardPage();
+    $page = new AuthzDashboardPage;
 
     $breakdown = $page->getHourlyBreakdown();
 
@@ -137,7 +137,7 @@ test('authz dashboard can get hourly breakdown', function (): void {
 });
 
 test('authz dashboard can get permission usage heatmap', function (): void {
-    $page = new AuthzDashboardPage();
+    $page = new AuthzDashboardPage;
 
     $heatmap = $page->getPermissionUsageHeatmap();
 
@@ -145,7 +145,7 @@ test('authz dashboard can get permission usage heatmap', function (): void {
 });
 
 test('authz dashboard can get anomalies', function (): void {
-    $page = new AuthzDashboardPage();
+    $page = new AuthzDashboardPage;
 
     $anomalies = $page->getAnomalies();
 
@@ -153,7 +153,7 @@ test('authz dashboard can get anomalies', function (): void {
 });
 
 test('authz dashboard can set filter mode', function (): void {
-    $page = new AuthzDashboardPage();
+    $page = new AuthzDashboardPage;
 
     $page->setFilterMode('denials');
     expect($page->filterMode)->toBe('denials');
@@ -163,7 +163,7 @@ test('authz dashboard can set filter mode', function (): void {
 });
 
 test('authz dashboard can set time range', function (): void {
-    $page = new AuthzDashboardPage();
+    $page = new AuthzDashboardPage;
 
     $page->setTimeRange('7d');
     expect($page->timeRange)->toBe('7d');

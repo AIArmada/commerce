@@ -8,6 +8,7 @@ use AIArmada\Stock\Models\StockReservation;
 use AIArmada\Stock\Models\StockTransaction;
 use AIArmada\Stock\Services\StockReservationService;
 use AIArmada\Stock\Services\StockService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 trait HasStock
@@ -132,9 +133,9 @@ trait HasStock
     /**
      * Get stock history with optional limit.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, StockTransaction>
+     * @return Collection<int, StockTransaction>
      */
-    public function getStockHistory(int $limit = 50): \Illuminate\Database\Eloquent\Collection
+    public function getStockHistory(int $limit = 50): Collection
     {
         return $this->getStockService()->getStockHistory($this, $limit);
     }

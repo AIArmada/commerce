@@ -191,6 +191,6 @@ trait HasInventoryEventData
     protected function initializeEventData(): void
     {
         $this->eventId = (string) Str::uuid();
-        $this->occurredAt = new DateTimeImmutable();
+        $this->occurredAt = new DateTimeImmutable;
     }
 }

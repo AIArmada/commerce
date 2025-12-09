@@ -10,6 +10,8 @@ use AIArmada\Jnt\Data\ItemData;
 use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\PackageInfoData;
 use AIArmada\Jnt\Data\TrackingData;
+use AIArmada\Jnt\Enums\CancellationReason;
+use AIArmada\Jnt\Exceptions\JntApiException;
 use AIArmada\Jnt\Exceptions\JntConfigurationException;
 use AIArmada\Jnt\Exceptions\JntValidationException;
 use AIArmada\Jnt\Http\JntClient;
@@ -105,11 +107,11 @@ class JntExpressService
      * business logic helpers (requiresCustomerContact, isMerchantResponsibility, etc.).
      *
      * @param  string  $orderId  The merchant's order ID (txlogisticId)
-     * @param  \AIArmada\Jnt\Enums\CancellationReason|string  $reason  Cancellation reason (enum recommended)
+     * @param  CancellationReason|string  $reason  Cancellation reason (enum recommended)
      * @param  string|null  $trackingNumber  Optional J&T tracking number (billCode)
      * @return array<string, mixed> Response data from API
      *
-     * @throws \AIArmada\Jnt\Exceptions\JntApiException If API returns error
+     * @throws JntApiException If API returns error
      *
      * @example
      * ```php
@@ -128,13 +130,13 @@ class JntExpressService
     /**
      * @return array<string, mixed>
      */
-    public function cancelOrder(string $orderId, \AIArmada\Jnt\Enums\CancellationReason | string $reason, ?string $trackingNumber = null): array
+    public function cancelOrder(string $orderId, CancellationReason | string $reason, ?string $trackingNumber = null): array
     {
         $payload = [
             'customerCode' => $this->customerCode,
             'password' => $this->password,
             'txlogisticId' => $orderId,
-            'reason' => $reason instanceof \AIArmada\Jnt\Enums\CancellationReason ? $reason->value : $reason,
+            'reason' => $reason instanceof CancellationReason ? $reason->value : $reason,
         ];
 
         if ($trackingNumber !== null) {
@@ -359,7 +361,7 @@ class JntExpressService
      * cancellation reason. For different reasons per order, call cancelOrder individually.
      *
      * @param  array<string>  $orderIds  Array of order IDs to cancel
-     * @param  \AIArmada\Jnt\Enums\CancellationReason|string  $reason  Cancellation reason
+     * @param  CancellationReason|string  $reason  Cancellation reason
      * @return array{successful: array<array{orderId: string, data: array<string, mixed>}>, failed: array<array{orderId: string, error: string, exception: Throwable}>}
      *
      * @example
@@ -375,7 +377,7 @@ class JntExpressService
      * echo "Failed: " . count($result['failed']) . "\n";
      * ```
      */
-    public function batchCancelOrders(array $orderIds, \AIArmada\Jnt\Enums\CancellationReason | string $reason): array
+    public function batchCancelOrders(array $orderIds, CancellationReason | string $reason): array
     {
         $successful = [];
         $failed = [];

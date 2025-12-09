@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentInventory\Widgets;
 
 use AIArmada\Inventory\Reports\MovementAnalysisReport;
+use Carbon\Carbon;
 use Filament\Widgets\ChartWidget;
 
 final class MovementTrendsChart extends ChartWidget
@@ -57,7 +58,7 @@ final class MovementTrendsChart extends ChartWidget
                 ],
             ],
             'labels' => $trends->pluck('date')->map(
-                fn ($date) => \Carbon\Carbon::parse($date)->format('M d')
+                fn ($date) => Carbon::parse($date)->format('M d')
             )->toArray(),
         ];
     }

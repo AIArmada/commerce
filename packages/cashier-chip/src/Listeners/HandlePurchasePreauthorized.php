@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Listeners;
 
+use AIArmada\CashierChip\Billable;
 use AIArmada\CashierChip\Cashier;
 use AIArmada\Chip\Events\PurchasePreauthorized;
 use Illuminate\Database\Eloquent\Model;
@@ -24,7 +25,7 @@ class HandlePurchasePreauthorized
             return;
         }
 
-        /** @var (Model&\AIArmada\CashierChip\Billable)|null $billable */
+        /** @var (Model&Billable)|null $billable */
         $billable = Cashier::findBillable($clientId);
 
         if ($billable === null) {

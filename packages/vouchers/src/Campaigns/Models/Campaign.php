@@ -10,6 +10,7 @@ use AIArmada\Vouchers\Campaigns\Enums\CampaignType;
 use AIArmada\Vouchers\Models\Voucher;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -42,9 +43,9 @@ use Illuminate\Support\Str;
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, CampaignVariant> $variants
- * @property-read \Illuminate\Database\Eloquent\Collection<int, CampaignEvent> $events
- * @property-read \Illuminate\Database\Eloquent\Collection<int, Voucher> $vouchers
+ * @property-read Collection<int, CampaignVariant> $variants
+ * @property-read Collection<int, CampaignEvent> $events
+ * @property-read Collection<int, Voucher> $vouchers
  * @property-read int|null $remaining_budget
  * @property-read float|null $budget_utilization
  * @property-read int|null $remaining_redemptions

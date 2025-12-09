@@ -50,9 +50,9 @@ class EntityDiscoveryService
         ?PageTransformer $pageTransformer = null,
         ?WidgetTransformer $widgetTransformer = null,
     ) {
-        $this->resourceTransformer = $resourceTransformer ?? new ResourceTransformer();
-        $this->pageTransformer = $pageTransformer ?? new PageTransformer();
-        $this->widgetTransformer = $widgetTransformer ?? new WidgetTransformer();
+        $this->resourceTransformer = $resourceTransformer ?? new ResourceTransformer;
+        $this->pageTransformer = $pageTransformer ?? new PageTransformer;
+        $this->widgetTransformer = $widgetTransformer ?? new WidgetTransformer;
     }
 
     /**

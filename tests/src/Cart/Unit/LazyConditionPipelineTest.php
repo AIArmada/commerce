@@ -9,7 +9,7 @@ use AIArmada\Cart\Conditions\Pipeline\LazyConditionPipeline;
 use AIArmada\Cart\Testing\InMemoryStorage;
 
 it('returns correct subtotal with lazy evaluation', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-lazy-pipeline', events: null);
     $cart->add('item1', 'Product 1', 1000, 2);
 
@@ -20,7 +20,7 @@ it('returns correct subtotal with lazy evaluation', function (): void {
 });
 
 it('returns correct total with lazy evaluation', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-lazy-pipeline', events: null);
     $cart->add('item1', 'Product 1', 1000, 2);
 
@@ -31,7 +31,7 @@ it('returns correct total with lazy evaluation', function (): void {
 });
 
 it('memoizes subtotal results', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-lazy-pipeline', events: null);
     $cart->add('item1', 'Product 1', 1000, 2);
 
@@ -50,7 +50,7 @@ it('memoizes subtotal results', function (): void {
 });
 
 it('invalidates cache when called', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-lazy-pipeline', events: null);
     $cart->add('item1', 'Product 1', 1000, 2);
 
@@ -67,7 +67,7 @@ it('invalidates cache when called', function (): void {
 });
 
 it('provides cache statistics', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-lazy-pipeline', events: null);
     $cart->add('item1', 'Product 1', 1000, 2);
 
@@ -88,7 +88,7 @@ it('provides cache statistics', function (): void {
 });
 
 it('can get phase result for specific phase', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-lazy-pipeline', events: null);
     $cart->add('item1', 'Product 1', 1000, 2);
 
@@ -102,7 +102,7 @@ it('can get phase result for specific phase', function (): void {
 });
 
 it('can get full pipeline result', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-lazy-pipeline', events: null);
     $cart->add('item1', 'Product 1', 1000, 2);
 
@@ -116,7 +116,7 @@ it('can get full pipeline result', function (): void {
 });
 
 it('reuses memoized phases when getting total after subtotal', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-lazy-pipeline', events: null);
     $cart->add('item1', 'Product 1', 1000, 2);
 
@@ -135,7 +135,7 @@ it('reuses memoized phases when getting total after subtotal', function (): void
 });
 
 it('can be created from context with configuration', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-lazy-pipeline', events: null);
     $cart->add('item1', 'Product 1', 1000, 2);
 
@@ -148,7 +148,7 @@ it('can be created from context with configuration', function (): void {
 });
 
 it('handles empty cart', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-lazy-empty', events: null);
 
     $context = ConditionPipelineContext::fromCart($cart);

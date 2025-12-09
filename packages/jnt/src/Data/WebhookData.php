@@ -7,6 +7,7 @@ namespace AIArmada\Jnt\Data;
 use AIArmada\Jnt\Exceptions\JntValidationException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Spatie\LaravelData\Attributes\DataCollectionOf;
 use Spatie\LaravelData\Data;
 use Spatie\LaravelData\DataCollection;
@@ -51,7 +52,7 @@ class WebhookData extends Data
     /**
      * Parse webhook payload from incoming request.
      *
-     * @throws \Illuminate\Validation\ValidationException
+     * @throws ValidationException
      */
     public static function fromRequest(Request $request): self
     {

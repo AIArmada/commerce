@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Notifications\OrderShippedNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Notification;
 
@@ -20,7 +21,7 @@ test('OrderShippedNotification → it uses mail and database channels', function
 
     $notification = new OrderShippedNotification($tracking);
 
-    expect($notification->via(new stdClass()))->toBe(['mail', 'database']);
+    expect($notification->via(new stdClass))->toBe(['mail', 'database']);
 });
 
 test('OrderShippedNotification → it generates correct mail message', function (): void {
@@ -41,7 +42,7 @@ test('OrderShippedNotification → it generates correct mail message', function 
     );
 
     $notification = new OrderShippedNotification($tracking, '2025-01-05');
-    $mail = $notification->toMail(new stdClass());
+    $mail = $notification->toMail(new stdClass);
 
     expect($mail)->toBeInstanceOf(MailMessage::class)
         ->and($mail->subject)->toBe('Your Order Has Been Shipped')
@@ -61,7 +62,7 @@ test('OrderShippedNotification → it handles tracking without order ID', functi
     );
 
     $notification = new OrderShippedNotification($tracking);
-    $mail = $notification->toMail(new stdClass());
+    $mail = $notification->toMail(new stdClass);
 
     expect($mail->introLines)->toContain('Tracking Number: TRACK123')
         ->and($mail->introLines)->not->toContain('Order ID:');
@@ -74,7 +75,7 @@ test('OrderShippedNotification → it handles tracking without estimated deliver
     );
 
     $notification = new OrderShippedNotification($tracking);
-    $mail = $notification->toMail(new stdClass());
+    $mail = $notification->toMail(new stdClass);
 
     expect($mail->introLines)->not->toContain('Estimated Delivery:');
 });
@@ -97,7 +98,7 @@ test('OrderShippedNotification → it generates correct array representation', f
     );
 
     $notification = new OrderShippedNotification($tracking, '2025-01-05');
-    $array = $notification->toArray(new stdClass());
+    $array = $notification->toArray(new stdClass);
 
     expect($array)->toBe([
         'type' => 'order_shipped',
@@ -117,5 +118,5 @@ test('OrderShippedNotification → it implements ShouldQueue', function (): void
 
     $notification = new OrderShippedNotification($tracking);
 
-    expect($notification)->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldQueue::class);
+    expect($notification)->toBeInstanceOf(ShouldQueue::class);
 });

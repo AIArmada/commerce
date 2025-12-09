@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Events\CartMerged;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Cart\Services\CartMigrationService;
 use AIArmada\FilamentCart\Listeners\CleanupSnapshotOnCartMerged;
 use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
 use AIArmada\FilamentCart\Models\CartCondition;
@@ -265,7 +266,7 @@ describe('Integration with Cart Migration', function (): void {
         expect(CartSnapshot::where('identifier', $guestIdentifier)->exists())->toBeTrue();
 
         // Perform cart migration (swap)
-        $migrationService = app(AIArmada\Cart\Services\CartMigrationService::class);
+        $migrationService = app(CartMigrationService::class);
 
         $result = $migrationService->swap($guestIdentifier, '50', 'default');
         expect($result)->toBeTrue();
@@ -371,7 +372,7 @@ describe('Integration with Cart Migration', function (): void {
         expect(CartItem::where('cart_id', $userSnapshot->id)->count())->toBe(1);
 
         // User logs in and cart is migrated
-        $migrationService = app(AIArmada\Cart\Services\CartMigrationService::class);
+        $migrationService = app(CartMigrationService::class);
 
         // Do the swap
         $result = $migrationService->swap($guestIdentifier, '75', 'default');

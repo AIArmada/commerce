@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Http\Controllers;
 
+use AIArmada\CashierChip\Billable;
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
@@ -204,7 +205,7 @@ class WebhookController extends Controller
     /**
      * Get the billable instance by CHIP ID.
      *
-     * @return (Model&\AIArmada\CashierChip\Billable)|null
+     * @return (Model&Billable)|null
      */
     protected function getBillableByChipId(?string $chipId): ?Model
     {

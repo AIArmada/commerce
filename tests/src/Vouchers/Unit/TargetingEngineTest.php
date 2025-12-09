@@ -17,7 +17,7 @@ use Mockery;
 
 function createTargetingTestCart(array $items = []): Cart
 {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-targeting', events: null);
 
     foreach ($items as $item) {
@@ -229,7 +229,7 @@ describe('TargetingContext', function (): void {
 
 describe('TargetingEngine', function (): void {
     it('returns true for empty targeting', function (): void {
-        $engine = new TargetingEngine();
+        $engine = new TargetingEngine;
         $context = createTargetingContext();
 
         expect($engine->evaluate([], $context))->toBeTrue();
@@ -237,7 +237,7 @@ describe('TargetingEngine', function (): void {
 
     describe('All mode (AND logic)', function (): void {
         it('passes when all rules match', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $cart = createTargetingTestCart([
                 ['id' => 'ITEM-1', 'price' => 10000, 'quantity' => 1],
             ]);
@@ -255,7 +255,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('fails when any rule fails', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $cart = createTargetingTestCart([
                 ['id' => 'ITEM-1', 'price' => 3000, 'quantity' => 1],
             ]);
@@ -275,7 +275,7 @@ describe('TargetingEngine', function (): void {
 
     describe('Any mode (OR logic)', function (): void {
         it('passes when any rule matches', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $cart = createTargetingTestCart([
                 ['id' => 'ITEM-1', 'price' => 3000, 'quantity' => 5],
             ]);
@@ -293,7 +293,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('fails when no rules match', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $cart = createTargetingTestCart([
                 ['id' => 'ITEM-1', 'price' => 3000, 'quantity' => 1],
             ]);
@@ -313,7 +313,7 @@ describe('TargetingEngine', function (): void {
 
     describe('Custom mode (Boolean expressions)', function (): void {
         it('evaluates AND expressions', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $cart = createTargetingTestCart([
                 ['id' => 'ITEM-1', 'price' => 10000, 'quantity' => 2],
             ]);
@@ -333,7 +333,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('evaluates OR expressions', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $cart = createTargetingTestCart([
                 ['id' => 'ITEM-1', 'price' => 2000, 'quantity' => 1],
             ]);
@@ -353,7 +353,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('evaluates NOT expressions', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $cart = createTargetingTestCart([
                 ['id' => 'ITEM-1', 'price' => 3000, 'quantity' => 1],
             ]);
@@ -370,7 +370,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('evaluates nested expressions', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $cart = createTargetingTestCart([
                 ['id' => 'ITEM-1', 'price' => 10000, 'quantity' => 3],
             ]);

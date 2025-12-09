@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Exceptions\WebhookVerificationException;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\WebhookService;
@@ -98,14 +99,14 @@ describe('WebhookService', function (): void {
         // Clear the company_public_key to force API fetch
         config(['chip.webhooks.company_public_key' => null]);
 
-        $originalClient = app(AIArmada\Chip\Clients\ChipCollectClient::class);
-        $collectClient = Mockery::mock(AIArmada\Chip\Clients\ChipCollectClient::class);
+        $originalClient = app(ChipCollectClient::class);
+        $collectClient = Mockery::mock(ChipCollectClient::class);
         $collectClient->shouldReceive('get')
             ->once()
             ->with('public_key/')
             ->andReturn('-----BEGIN PUBLIC KEY-----\ntest-cached-public-key\n-----END PUBLIC KEY-----');
 
-        app()->instance(AIArmada\Chip\Clients\ChipCollectClient::class, $collectClient);
+        app()->instance(ChipCollectClient::class, $collectClient);
 
         try {
             // Create a new WebhookService instance after installing the mock
@@ -113,7 +114,7 @@ describe('WebhookService', function (): void {
             expect($webhookService->getPublicKey())->toBe('-----BEGIN PUBLIC KEY-----\ntest-cached-public-key\n-----END PUBLIC KEY-----');
             expect($webhookService->getPublicKey())->toBe('-----BEGIN PUBLIC KEY-----\ntest-cached-public-key\n-----END PUBLIC KEY-----'); // Second call uses cache
         } finally {
-            app()->instance(AIArmada\Chip\Clients\ChipCollectClient::class, $originalClient);
+            app()->instance(ChipCollectClient::class, $originalClient);
         }
     });
 

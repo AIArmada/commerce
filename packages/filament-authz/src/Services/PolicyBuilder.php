@@ -42,7 +42,7 @@ class PolicyBuilder
      */
     public static function create(string $name): self
     {
-        $builder = new self();
+        $builder = new self;
         $builder->name = $name;
 
         return $builder;

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Facades;
 
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
+use AIArmada\Shipping\ShippingManager;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -15,7 +16,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static array getAvailableDrivers()
  * @method static bool hasDriver(string $driver)
  *
- * @see \AIArmada\Shipping\ShippingManager
+ * @see ShippingManager
  */
 class Shipping extends Facade
 {

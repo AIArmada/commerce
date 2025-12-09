@@ -262,7 +262,7 @@ final class LocationTreeService
      */
     private function buildTree(Collection $locations, ?string $parentId = null): Collection
     {
-        $tree = new Collection();
+        $tree = new Collection;
 
         $roots = $locations->filter(fn (InventoryLocation $loc): bool => $loc->parent_id === $parentId);
 

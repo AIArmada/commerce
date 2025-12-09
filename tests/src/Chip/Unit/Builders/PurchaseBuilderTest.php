@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Builders\PurchaseBuilder;
+use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Services\ChipCollectService;
 
 describe('PurchaseBuilder', function (): void {
@@ -254,7 +255,7 @@ describe('PurchaseBuilder', function (): void {
     });
 
     it('can create purchase using create method', function (): void {
-        $mockPurchase = Mockery::mock(AIArmada\Chip\Data\PurchaseData::class);
+        $mockPurchase = Mockery::mock(PurchaseData::class);
 
         $this->service->shouldReceive('createPurchase')
             ->once()
@@ -266,11 +267,11 @@ describe('PurchaseBuilder', function (): void {
             ->email('test@example.com')
             ->create();
 
-        expect($result)->toBeInstanceOf(AIArmada\Chip\Data\PurchaseData::class);
+        expect($result)->toBeInstanceOf(PurchaseData::class);
     });
 
     it('can create purchase using save method alias', function (): void {
-        $mockPurchase = Mockery::mock(AIArmada\Chip\Data\PurchaseData::class);
+        $mockPurchase = Mockery::mock(PurchaseData::class);
 
         $this->service->shouldReceive('createPurchase')
             ->once()
@@ -282,6 +283,6 @@ describe('PurchaseBuilder', function (): void {
             ->email('test@example.com')
             ->save();
 
-        expect($result)->toBeInstanceOf(AIArmada\Chip\Data\PurchaseData::class);
+        expect($result)->toBeInstanceOf(PurchaseData::class);
     });
 });

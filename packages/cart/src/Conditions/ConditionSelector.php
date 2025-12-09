@@ -26,7 +26,7 @@ final class ConditionSelector implements Arrayable, JsonSerializable
 
     public static function none(): self
     {
-        return new self();
+        return new self;
     }
 
     /**

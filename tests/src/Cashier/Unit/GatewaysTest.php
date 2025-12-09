@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\Contracts\GatewayContract;
 use AIArmada\Cashier\Gateways\AbstractGateway;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 
@@ -13,7 +14,7 @@ describe('Gateways', function (): void {
             $reflection = new ReflectionClass(AbstractGateway::class);
 
             expect($reflection->isAbstract())->toBeTrue()
-                ->and($reflection->implementsInterface(AIArmada\Cashier\Contracts\GatewayContract::class))->toBeTrue();
+                ->and($reflection->implementsInterface(GatewayContract::class))->toBeTrue();
         });
 
         it('defines name as abstract method', function (): void {
@@ -46,7 +47,7 @@ describe('Gateways', function (): void {
         it('implements GatewayContract', function (): void {
             $gateway = $this->gatewayManager->gateway('stripe');
 
-            expect($gateway)->toBeInstanceOf(AIArmada\Cashier\Contracts\GatewayContract::class);
+            expect($gateway)->toBeInstanceOf(GatewayContract::class);
         });
 
         it('returns correct currency', function (): void {
@@ -72,7 +73,7 @@ describe('Gateways', function (): void {
         it('implements GatewayContract', function (): void {
             $gateway = $this->gatewayManager->gateway('chip');
 
-            expect($gateway)->toBeInstanceOf(AIArmada\Cashier\Contracts\GatewayContract::class);
+            expect($gateway)->toBeInstanceOf(GatewayContract::class);
         });
 
         it('returns correct currency', function (): void {

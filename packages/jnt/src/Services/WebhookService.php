@@ -7,6 +7,7 @@ namespace AIArmada\Jnt\Services;
 use AIArmada\Jnt\Data\WebhookData;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 
 /**
@@ -75,7 +76,7 @@ class WebhookService
      * @param  Request  $request  The incoming webhook request
      * @return WebhookData The parsed and validated webhook data
      *
-     * @throws \Illuminate\Validation\ValidationException If request validation fails
+     * @throws ValidationException If request validation fails
      */
     public function parseWebhook(Request $request): WebhookData
     {
@@ -141,7 +142,7 @@ class WebhookService
      * @param  Request  $request  The incoming webhook request
      * @return WebhookData|null The parsed webhook data, or null if signature invalid
      *
-     * @throws \Illuminate\Validation\ValidationException If request validation fails
+     * @throws ValidationException If request validation fails
      * @throws InvalidArgumentException If bizContent is invalid JSON or missing required fields
      */
     public function verifyAndParse(Request $request): ?WebhookData

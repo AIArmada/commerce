@@ -8,6 +8,7 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Target;
 use AIArmada\Cart\Contracts\CartConditionConvertible;
+use AIArmada\Cart\Models\CartItem;
 use AIArmada\Stock\Services\StockReservationService;
 use Illuminate\Database\Eloquent\Model;
 
@@ -34,7 +35,7 @@ final class StockCondition implements CartConditionConvertible
     /**
      * Create from cart items.
      *
-     * @param  iterable<\AIArmada\Cart\Models\CartItem>  $items
+     * @param  iterable<CartItem>  $items
      */
     public static function fromCartItems(
         string $cartId,

@@ -2,8 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Vouchers\Data\VoucherData;
+use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Services\VoucherService;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Config;
 
 test('voucher service can find voucher', function (): void {
     $voucher = Voucher::create([
@@ -19,7 +25,7 @@ test('voucher service can find voucher', function (): void {
 
     $found = $service->find('findme'); // normalized
 
-    expect($found)->toBeInstanceOf(AIArmada\Vouchers\Data\VoucherData::class)
+    expect($found)->toBeInstanceOf(VoucherData::class)
         ->and($found->code)->toBe('FINDME');
 });
 
@@ -34,7 +40,7 @@ test('voucher service find returns null for non-existent', function (): void {
 test('voucher service find or fail throws for non-existent', function (): void {
     $service = app(VoucherService::class);
 
-    expect(fn () => $service->findOrFail('nonexistent'))->toThrow(AIArmada\Vouchers\Exceptions\VoucherNotFoundException::class);
+    expect(fn () => $service->findOrFail('nonexistent'))->toThrow(VoucherNotFoundException::class);
 });
 
 test('voucher service find or fail returns voucher', function (): void {
@@ -51,7 +57,7 @@ test('voucher service find or fail returns voucher', function (): void {
 
     $found = $service->findOrFail('findfail');
 
-    expect($found)->toBeInstanceOf(AIArmada\Vouchers\Data\VoucherData::class)
+    expect($found)->toBeInstanceOf(VoucherData::class)
         ->and($found->code)->toBe('FINDFAIL');
 });
 
@@ -68,7 +74,7 @@ test('voucher service can create voucher', function (): void {
 
     $created = $service->create($data);
 
-    expect($created)->toBeInstanceOf(AIArmada\Vouchers\Data\VoucherData::class)
+    expect($created)->toBeInstanceOf(VoucherData::class)
         ->and($created->code)->toBe('CREATE')
         ->and($created->name)->toBe('Create Test');
 });
@@ -87,7 +93,7 @@ test('voucher service can update voucher', function (): void {
 
     $updated = $service->update('update', ['name' => 'Updated Name', 'code' => 'UPDATED']);
 
-    expect($updated)->toBeInstanceOf(AIArmada\Vouchers\Data\VoucherData::class)
+    expect($updated)->toBeInstanceOf(VoucherData::class)
         ->and($updated->name)->toBe('Updated Name')
         ->and($updated->code)->toBe('UPDATED');
 });
@@ -150,7 +156,7 @@ test('voucher service can be used by user', function (): void {
         'usage_limit_per_user' => 2,
     ]);
 
-    $user = new class extends Illuminate\Database\Eloquent\Model
+    $user = new class extends Model
     {
         protected $table = 'users';
 
@@ -181,7 +187,7 @@ test('voucher service can be used by returns false when limit reached', function
         'usage_limit_per_user' => 1,
     ]);
 
-    $user = new class extends Illuminate\Database\Eloquent\Model
+    $user = new class extends Model
     {
         protected $table = 'users';
 
@@ -197,7 +203,7 @@ test('voucher service can be used by returns false when limit reached', function
     };
 
     // Add usage
-    AIArmada\Vouchers\Models\VoucherUsage::create([
+    VoucherUsage::create([
         'voucher_id' => $voucher->id,
         'discount_amount' => 10,
         'currency' => 'MYR',
@@ -212,7 +218,7 @@ test('voucher service can be used by returns false when limit reached', function
 });
 
 test('voucher service can be used by returns false for non-existent', function (): void {
-    $user = new class extends Illuminate\Database\Eloquent\Model
+    $user = new class extends Model
     {
         protected $table = 'users';
 
@@ -268,7 +274,7 @@ test('voucher service get usage history', function (): void {
 
     $history = $service->getUsageHistory('history');
 
-    expect($history)->toBeInstanceOf(Illuminate\Database\Eloquent\Collection::class);
+    expect($history)->toBeInstanceOf(Collection::class);
 });
 
 test('voucher service get usage history returns empty for non-existent', function (): void {
@@ -276,12 +282,12 @@ test('voucher service get usage history returns empty for non-existent', functio
 
     $history = $service->getUsageHistory('nonexistent');
 
-    expect($history)->toBeInstanceOf(Illuminate\Database\Eloquent\Collection::class)
+    expect($history)->toBeInstanceOf(Collection::class)
         ->and($history->isEmpty())->toBeTrue();
 });
 
 test('voucher service normalize code with uppercase', function (): void {
-    Illuminate\Support\Facades\Config::set('vouchers.code.auto_uppercase', true);
+    Config::set('vouchers.code.auto_uppercase', true);
 
     $service = app(VoucherService::class);
 
@@ -294,7 +300,7 @@ test('voucher service normalize code with uppercase', function (): void {
 });
 
 test('voucher service normalize code without uppercase', function (): void {
-    Illuminate\Support\Facades\Config::set('vouchers.code.auto_uppercase', false);
+    Config::set('vouchers.code.auto_uppercase', false);
 
     $service = app(VoucherService::class);
 

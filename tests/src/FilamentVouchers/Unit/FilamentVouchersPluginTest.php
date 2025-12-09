@@ -23,7 +23,7 @@ use Filament\Panel;
 use Mockery;
 
 it('exposes a stable plugin id', function (): void {
-    expect((new FilamentVouchersPlugin())->getId())->toBe('filament-vouchers');
+    expect((new FilamentVouchersPlugin)->getId())->toBe('filament-vouchers');
 });
 
 it('registers voucher resources, pages, and widgets', function (): void {
@@ -68,5 +68,5 @@ it('registers voucher resources, pages, and widgets', function (): void {
         ->andReturnSelf();
 
     // @phpstan-ignore argument.type
-    (new FilamentVouchersPlugin())->register($panel);
+    (new FilamentVouchersPlugin)->register($panel);
 });

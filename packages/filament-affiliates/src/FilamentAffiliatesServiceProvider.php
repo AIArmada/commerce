@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates;
 
+use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\FilamentAffiliates\Services\AffiliateStatsAggregator;
 use AIArmada\FilamentAffiliates\Services\PayoutExportService;
 use AIArmada\FilamentAffiliates\Support\Integrations\CartBridge;
@@ -44,6 +45,6 @@ final class FilamentAffiliatesServiceProvider extends PackageServiceProvider
             }
         });
 
-        Gate::policy(\AIArmada\Affiliates\Models\AffiliatePayout::class, Policies\AffiliatePayoutPolicy::class);
+        Gate::policy(AffiliatePayout::class, Policies\AffiliatePayoutPolicy::class);
     }
 }

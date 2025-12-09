@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAuthz\Concerns;
 
 use AIArmada\FilamentAuthz\Enums\PermissionScope;
 use AIArmada\FilamentAuthz\Services\ContextualAuthorizationService;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Trait for checking owner-based permissions on Eloquent models.
@@ -59,9 +60,9 @@ trait HasOwnerPermissions
     /**
      * Scope query to only include models owned by a user.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @param  Builder<static>  $query
      * @param  object  $user
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @return Builder<static>
      */
     public function scopeOwnedBy($query, $user)
     {
@@ -71,9 +72,9 @@ trait HasOwnerPermissions
     /**
      * Scope query to only include models the user can view.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @param  Builder<static>  $query
      * @param  object  $user
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @return Builder<static>
      */
     public function scopeViewableBy($query, $user)
     {

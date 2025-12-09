@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -22,8 +23,8 @@ use Spatie\Permission\Models\Role;
  * @property array<string, mixed>|null $metadata
  * @property bool $is_system
  * @property bool $is_active
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read RoleTemplate|null $parent
  * @property-read Collection<int, RoleTemplate> $children
  * @property-read Collection<int, Role> $roles
@@ -105,7 +106,7 @@ class RoleTemplate extends Model
      */
     public function getAncestors(): Collection
     {
-        $ancestors = new Collection();
+        $ancestors = new Collection;
         $current = $this->parent;
 
         while ($current !== null) {
@@ -123,7 +124,7 @@ class RoleTemplate extends Model
      */
     public function getDescendants(): Collection
     {
-        $descendants = new Collection();
+        $descendants = new Collection;
 
         foreach ($this->children as $child) {
             $descendants->push($child);

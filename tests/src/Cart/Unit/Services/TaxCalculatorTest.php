@@ -9,7 +9,7 @@ use Akaunting\Money\Money;
 describe('TaxCalculator', function (): void {
     describe('construction and configuration', function (): void {
         it('can be instantiated with default values', function (): void {
-            $calculator = new TaxCalculator();
+            $calculator = new TaxCalculator;
 
             expect($calculator)->toBeInstanceOf(TaxCalculator::class);
             expect($calculator->getDefaultRate())->toEqual(0);  // May return 0.0
@@ -30,7 +30,7 @@ describe('TaxCalculator', function (): void {
         });
 
         it('can set and get region rates', function (): void {
-            $calculator = new TaxCalculator();
+            $calculator = new TaxCalculator;
 
             $calculator->setRegionRate('MY', 0.08);
             $calculator->setRegionRate('SG', 0.09);
@@ -48,7 +48,7 @@ describe('TaxCalculator', function (): void {
         });
 
         it('supports fluent rate configuration', function (): void {
-            $calculator = (new TaxCalculator())
+            $calculator = (new TaxCalculator)
                 ->setRegionRate('MY', 0.08)
                 ->setRegionRate('SG', 0.09);
 
@@ -145,14 +145,14 @@ describe('TaxCalculator', function (): void {
 
     describe('registerRate method', function (): void {
         it('registers rate with name and description', function (): void {
-            $calculator = (new TaxCalculator())
+            $calculator = (new TaxCalculator)
                 ->registerRate('MY-SST', 8.0, 'Sales & Service Tax');
 
             expect($calculator->getRegionRate('MY-SST'))->toBe(0.08);
         });
 
         it('stores rate info', function (): void {
-            $calculator = (new TaxCalculator())
+            $calculator = (new TaxCalculator)
                 ->registerRate('UK-VAT', 20.0, 'VAT', inclusive: true);
 
             $rateInfo = $calculator->getRate('UK-VAT');
@@ -177,7 +177,7 @@ describe('TaxCalculator', function (): void {
 
     describe('createTaxCondition', function (): void {
         it('creates a cart condition for tax', function (): void {
-            $calculator = new TaxCalculator();
+            $calculator = new TaxCalculator;
 
             $condition = $calculator->createTaxCondition('Test Tax', 8.0);
 
@@ -188,7 +188,7 @@ describe('TaxCalculator', function (): void {
         });
 
         it('creates zero-value condition for inclusive pricing', function (): void {
-            $calculator = new TaxCalculator();
+            $calculator = new TaxCalculator;
 
             $condition = $calculator->createTaxCondition('VAT', 20.0, inclusive: true);
 
@@ -197,7 +197,7 @@ describe('TaxCalculator', function (): void {
         });
 
         it('includes rate and inclusive flag in attributes', function (): void {
-            $calculator = new TaxCalculator();
+            $calculator = new TaxCalculator;
 
             $condition = $calculator->createTaxCondition('GST', 10.0, inclusive: false);
 

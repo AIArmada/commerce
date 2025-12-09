@@ -9,6 +9,7 @@ use AIArmada\Vouchers\AI\CartFeatureExtractor;
 use AIArmada\Vouchers\AI\Contracts\CartFeatureExtractorInterface;
 use AIArmada\Vouchers\AI\Contracts\VoucherMatcherInterface;
 use AIArmada\Vouchers\AI\VoucherMatch;
+use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -22,7 +23,7 @@ use Illuminate\Support\Collection;
 final class RuleBasedVoucherMatcher implements VoucherMatcherInterface
 {
     public function __construct(
-        private readonly CartFeatureExtractorInterface $featureExtractor = new CartFeatureExtractor(),
+        private readonly CartFeatureExtractorInterface $featureExtractor = new CartFeatureExtractor,
     ) {}
 
     public function findBestVoucher(
@@ -183,7 +184,7 @@ final class RuleBasedVoucherMatcher implements VoucherMatcherInterface
     private function scoreValueMatch(Voucher $voucher, int $cartValue): array
     {
         $voucherValue = $voucher->value ?? 0;
-        $type = $voucher->type instanceof \AIArmada\Vouchers\Enums\VoucherType ? $voucher->type->value : 'percentage';
+        $type = $voucher->type instanceof VoucherType ? $voucher->type->value : 'percentage';
 
         if ($cartValue === 0) {
             return ['score' => 0.0, 'reason' => 'Empty cart'];
@@ -296,7 +297,7 @@ final class RuleBasedVoucherMatcher implements VoucherMatcherInterface
     private function scoreAttractiveness(Voucher $voucher, int $cartValue, array $features): array
     {
         $voucherValue = $voucher->value ?? 0;
-        $type = $voucher->type instanceof \AIArmada\Vouchers\Enums\VoucherType ? $voucher->type->value : 'percentage';
+        $type = $voucher->type instanceof VoucherType ? $voucher->type->value : 'percentage';
         $bucket = $features['cart_value_bucket'] ?? 'medium';
 
         // Psychological pricing effects

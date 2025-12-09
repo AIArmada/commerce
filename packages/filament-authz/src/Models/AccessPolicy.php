@@ -10,6 +10,7 @@ use AIArmada\FilamentAuthz\Enums\PolicyEffect;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -22,11 +23,11 @@ use Illuminate\Database\Eloquent\Model;
  * @property array<array{attribute: string, operator: string, value: mixed, source?: string}> $conditions
  * @property int $priority
  * @property bool $is_active
- * @property \Illuminate\Support\Carbon|null $valid_from
- * @property \Illuminate\Support\Carbon|null $valid_until
+ * @property Carbon|null $valid_from
+ * @property Carbon|null $valid_until
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class AccessPolicy extends Model
 {

@@ -9,10 +9,12 @@ use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Database\Factories\ConditionFactory;
 use Akaunting\Money\Money;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
 
@@ -41,8 +43,8 @@ use InvalidArgumentException;
  * @property array{factory_keys?: array<int, string>, context?: array<string, mixed>}|null $rules
  * @property bool $is_active
  * @property bool $is_global
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class Condition extends Model
 {
@@ -419,7 +421,7 @@ class Condition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function active(Builder $query): void
     {
         $query->where('is_active', true);
@@ -430,7 +432,7 @@ class Condition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function ofType(Builder $query, string $type): void
     {
         $query->where('type', $type);
@@ -441,7 +443,7 @@ class Condition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function forItems(Builder $query): void
     {
         $query->where('target', 'item');
@@ -452,7 +454,7 @@ class Condition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function discounts(Builder $query): void
     {
         $query->where('is_discount', true);
@@ -463,7 +465,7 @@ class Condition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function charges(Builder $query): void
     {
         $query->where('is_charge', true);
@@ -474,7 +476,7 @@ class Condition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function dynamic(Builder $query): void
     {
         $query->where('is_dynamic', true);
@@ -485,7 +487,7 @@ class Condition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function global(Builder $query): void
     {
         $query->where('is_global', true)
@@ -497,7 +499,7 @@ class Condition extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function percentageBased(Builder $query): void
     {
         $query->where('is_percentage', true);

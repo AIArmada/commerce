@@ -7,6 +7,7 @@ namespace AIArmada\Stock\Services;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Stock\Models\StockTransaction;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
@@ -107,9 +108,9 @@ final class StockService
     /**
      * Get stock history for a model.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, StockTransaction>
+     * @return Collection<int, StockTransaction>
      */
-    public function getStockHistory(Model $model, int $limit = 50): \Illuminate\Database\Eloquent\Collection
+    public function getStockHistory(Model $model, int $limit = 50): Collection
     {
         return $this->query()
             ->where('stockable_type', $model->getMorphClass())

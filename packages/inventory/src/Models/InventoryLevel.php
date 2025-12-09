@@ -4,14 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\Inventory\Database\Factories\InventoryLevelFactory;
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Enums\AllocationStrategy;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -26,20 +30,20 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int|null $safety_stock
  * @property int|null $max_stock
  * @property string|null $alert_status
- * @property \Illuminate\Support\Carbon|null $last_alert_at
- * @property \Illuminate\Support\Carbon|null $last_stock_check_at
+ * @property Carbon|null $last_alert_at
+ * @property Carbon|null $last_stock_check_at
  * @property string $unit_of_measure
  * @property float $unit_conversion_factor
  * @property int|null $lead_time_days
  * @property string|null $preferred_supplier_id
  * @property string|null $allocation_strategy
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  * @property-read int $available
  * @property-read InventoryLocation $location
  * @property-read Model $inventoryable
- * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryAllocation> $allocations
+ * @property-read Collection<int, InventoryAllocation> $allocations
  */
 final class InventoryLevel extends Model
 {
@@ -238,10 +242,10 @@ final class InventoryLevel extends Model
     /**
      * Scope to filter by location.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeAtLocation(\Illuminate\Database\Eloquent\Builder $query, string $locationId): \Illuminate\Database\Eloquent\Builder
+    public function scopeAtLocation(Builder $query, string $locationId): Builder
     {
         return $query->where('location_id', $locationId);
     }
@@ -249,10 +253,10 @@ final class InventoryLevel extends Model
     /**
      * Scope to filter low stock items.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeLowStock(\Illuminate\Database\Eloquent\Builder $query, ?int $threshold = null): \Illuminate\Database\Eloquent\Builder
+    public function scopeLowStock(Builder $query, ?int $threshold = null): Builder
     {
         $threshold ??= config('inventory.default_reorder_point', 10);
 
@@ -262,10 +266,10 @@ final class InventoryLevel extends Model
     /**
      * Scope to filter items with available stock.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeWithAvailable(\Illuminate\Database\Eloquent\Builder $query, int $minQuantity = 1): \Illuminate\Database\Eloquent\Builder
+    public function scopeWithAvailable(Builder $query, int $minQuantity = 1): Builder
     {
         return $query->whereRaw('(quantity_on_hand - quantity_reserved) >= ?', [$minQuantity]);
     }
@@ -273,10 +277,10 @@ final class InventoryLevel extends Model
     /**
      * Scope to filter by alert status.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeWithAlertStatus(\Illuminate\Database\Eloquent\Builder $query, AlertStatus $status): \Illuminate\Database\Eloquent\Builder
+    public function scopeWithAlertStatus(Builder $query, AlertStatus $status): Builder
     {
         return $query->where('alert_status', $status->value);
     }
@@ -284,10 +288,10 @@ final class InventoryLevel extends Model
     /**
      * Scope to filter items needing reorder.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeNeedsReorder(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeNeedsReorder(Builder $query): Builder
     {
         return $query->whereIn('alert_status', [
             AlertStatus::LowStock->value,
@@ -299,10 +303,10 @@ final class InventoryLevel extends Model
     /**
      * Scope to filter safety stock breached items.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeSafetyStockBreached(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeSafetyStockBreached(Builder $query): Builder
     {
         return $query->whereNotNull('safety_stock')
             ->whereRaw('(quantity_on_hand - quantity_reserved) <= safety_stock');
@@ -311,10 +315,10 @@ final class InventoryLevel extends Model
     /**
      * Scope to filter over-stocked items.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeOverStocked(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeOverStocked(Builder $query): Builder
     {
         return $query->whereNotNull('max_stock')
             ->whereRaw('quantity_on_hand > max_stock');
@@ -333,9 +337,9 @@ final class InventoryLevel extends Model
     /**
      * Create a new factory instance for the model.
      */
-    protected static function newFactory(): \AIArmada\Inventory\Database\Factories\InventoryLevelFactory
+    protected static function newFactory(): InventoryLevelFactory
     {
-        return \AIArmada\Inventory\Database\Factories\InventoryLevelFactory::new();
+        return InventoryLevelFactory::new();
     }
 
     /**

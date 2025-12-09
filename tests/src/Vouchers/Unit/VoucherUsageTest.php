@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 test('voucher usage has relations', function (): void {
     $voucher = Voucher::create([
@@ -22,7 +23,7 @@ test('voucher usage has relations', function (): void {
         'used_at' => now(),
     ]);
 
-    expect($usage->voucher())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+    expect($usage->voucher())->toBeInstanceOf(BelongsTo::class);
 });
 
 test('voucher usage is manual', function (): void {

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Services\CartMigrationService;
+use Illuminate\Support\Collection;
 
 it('returns detailed result object when migrating for user succeeds', function (): void {
     $user = new class
@@ -27,7 +28,7 @@ it('returns detailed result object when migrating for user succeeds', function (
     expect($service->called)->toBeTrue();
     expect($result->success)->toBeTrue();
     expect($result->itemsMerged)->toBe(1);
-    expect($result->conflicts)->toBeInstanceOf(Illuminate\Support\Collection::class);
+    expect($result->conflicts)->toBeInstanceOf(Collection::class);
     expect($result->message)->toBe('Cart migration completed successfully');
 });
 
@@ -54,6 +55,6 @@ it('returns failure result object when no items to migrate', function (): void {
     expect($service->called)->toBeTrue();
     expect($result->success)->toBeFalse();
     expect($result->itemsMerged)->toBe(0);
-    expect($result->conflicts)->toBeInstanceOf(Illuminate\Support\Collection::class);
+    expect($result->conflicts)->toBeInstanceOf(Collection::class);
     expect($result->message)->toBe('No items to migrate');
 });

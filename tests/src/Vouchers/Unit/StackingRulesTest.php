@@ -16,7 +16,7 @@ use AIArmada\Vouchers\Stacking\Rules\TypeRestrictionRule;
 
 function createStackingTestCart(): Cart
 {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
 
     return new Cart($storage, 'test-stacking-rules', events: null);
 }
@@ -54,7 +54,7 @@ function createVoucherCondition(
 
 describe('MaxVouchersRule', function (): void {
     it('allows adding voucher when under limit', function (): void {
-        $rule = new MaxVouchersRule();
+        $rule = new MaxVouchersRule;
         $newVoucher = createVoucherCondition('NEW');
         $existing = collect([createVoucherCondition('EXISTING')]);
         $cart = createStackingTestCart();
@@ -65,7 +65,7 @@ describe('MaxVouchersRule', function (): void {
     });
 
     it('denies adding voucher when at limit', function (): void {
-        $rule = new MaxVouchersRule();
+        $rule = new MaxVouchersRule;
         $newVoucher = createVoucherCondition('NEW');
         $existing = collect([
             createVoucherCondition('A'),
@@ -81,7 +81,7 @@ describe('MaxVouchersRule', function (): void {
     });
 
     it('allows unlimited vouchers with negative value', function (): void {
-        $rule = new MaxVouchersRule();
+        $rule = new MaxVouchersRule;
         $newVoucher = createVoucherCondition('NEW');
         $existing = collect(array_map(
             fn ($i) => createVoucherCondition("V{$i}"),
@@ -95,7 +95,7 @@ describe('MaxVouchersRule', function (): void {
     });
 
     it('has correct type and priority', function (): void {
-        $rule = new MaxVouchersRule();
+        $rule = new MaxVouchersRule;
 
         expect($rule->getType())->toBe('max_vouchers');
         expect($rule->getPriority())->toBe(10);
@@ -104,7 +104,7 @@ describe('MaxVouchersRule', function (): void {
 
 describe('MutualExclusionRule', function (): void {
     it('allows vouchers from different exclusion groups', function (): void {
-        $rule = new MutualExclusionRule();
+        $rule = new MutualExclusionRule;
         $newVoucher = createVoucherCondition('NEW', metadata: ['exclusion_groups' => ['group_a']]);
         $existing = collect([createVoucherCondition('EXISTING', metadata: ['exclusion_groups' => ['group_b']])]);
         $cart = createStackingTestCart();
@@ -115,7 +115,7 @@ describe('MutualExclusionRule', function (): void {
     });
 
     it('denies vouchers from same exclusion group', function (): void {
-        $rule = new MutualExclusionRule();
+        $rule = new MutualExclusionRule;
         $newVoucher = createVoucherCondition('NEW', metadata: ['exclusion_groups' => ['flash_sale']]);
         $existing = collect([createVoucherCondition('EXISTING', metadata: ['exclusion_groups' => ['flash_sale']])]);
         $cart = createStackingTestCart();
@@ -128,7 +128,7 @@ describe('MutualExclusionRule', function (): void {
     });
 
     it('allows voucher without exclusion groups', function (): void {
-        $rule = new MutualExclusionRule();
+        $rule = new MutualExclusionRule;
         $newVoucher = createVoucherCondition('NEW');
         $existing = collect([createVoucherCondition('EXISTING', metadata: ['exclusion_groups' => ['flash_sale']])]);
         $cart = createStackingTestCart();
@@ -139,7 +139,7 @@ describe('MutualExclusionRule', function (): void {
     });
 
     it('has correct type and priority', function (): void {
-        $rule = new MutualExclusionRule();
+        $rule = new MutualExclusionRule;
 
         expect($rule->getType())->toBe('mutual_exclusion');
         expect($rule->getPriority())->toBe(30);
@@ -148,7 +148,7 @@ describe('MutualExclusionRule', function (): void {
 
 describe('TypeRestrictionRule', function (): void {
     it('allows adding voucher type within limit', function (): void {
-        $rule = new TypeRestrictionRule();
+        $rule = new TypeRestrictionRule;
         $newVoucher = createVoucherCondition('NEW', VoucherType::Fixed, 1000);
         $existing = collect();
         $cart = createStackingTestCart();
@@ -161,7 +161,7 @@ describe('TypeRestrictionRule', function (): void {
     });
 
     it('denies adding voucher type at limit', function (): void {
-        $rule = new TypeRestrictionRule();
+        $rule = new TypeRestrictionRule;
         $newVoucher = createVoucherCondition('NEW', VoucherType::Percentage, 1000);
         $existing = collect([createVoucherCondition('EXISTING', VoucherType::Percentage, 500)]);
         $cart = createStackingTestCart();
@@ -176,7 +176,7 @@ describe('TypeRestrictionRule', function (): void {
     });
 
     it('has correct type and priority', function (): void {
-        $rule = new TypeRestrictionRule();
+        $rule = new TypeRestrictionRule;
 
         expect($rule->getType())->toBe('type_restriction');
         expect($rule->getPriority())->toBe(40);

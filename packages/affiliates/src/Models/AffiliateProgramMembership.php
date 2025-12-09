@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Enums\MembershipStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -15,13 +16,13 @@ use Illuminate\Database\Eloquent\Relations\Pivot;
  * @property string $program_id
  * @property string|null $tier_id
  * @property MembershipStatus $status
- * @property \Illuminate\Support\Carbon $applied_at
- * @property \Illuminate\Support\Carbon|null $approved_at
- * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property Carbon $applied_at
+ * @property Carbon|null $approved_at
+ * @property Carbon|null $expires_at
  * @property string|null $approved_by
  * @property array<string, mixed>|null $custom_terms
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Affiliate $affiliate
  * @property-read AffiliateProgram $program
  * @property-read AffiliateProgramTier|null $tier

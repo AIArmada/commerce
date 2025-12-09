@@ -17,7 +17,7 @@ use AIArmada\Vouchers\Enums\VoucherType;
  */
 function createBogoTestCart(array $itemsData): Cart
 {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-bogo', events: null);
 
     foreach ($itemsData as $data) {

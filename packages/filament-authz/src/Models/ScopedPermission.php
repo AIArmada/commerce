@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 use Spatie\Permission\Models\Permission;
 
 /**
@@ -22,11 +23,11 @@ use Spatie\Permission\Models\Permission;
  * @property string|null $scope_value
  * @property string|null $scope_model
  * @property array<string, mixed>|null $conditions
- * @property \Illuminate\Support\Carbon $granted_at
- * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property Carbon $granted_at
+ * @property Carbon|null $expires_at
  * @property string|null $granted_by
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Permission $permission
  * @property-read Model $permissionable
  * @property-read Model|null $granter

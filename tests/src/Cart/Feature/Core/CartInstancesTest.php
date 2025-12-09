@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Cart\Models\CartItem;
 
 describe('Cart Instance Management', function (): void {
     beforeEach(function (): void {
@@ -143,7 +144,7 @@ describe('Cart Identifier Management', function (): void {
 
         expect(Cart::getIdentifier())->toBe('test-id');
         expect(Cart::count())->toBe(1);
-        expect($result)->toBeInstanceOf(AIArmada\Cart\Models\CartItem::class);
+        expect($result)->toBeInstanceOf(CartItem::class);
     });
 
     it('can get current identifier', function (): void {
@@ -188,7 +189,7 @@ describe('Cart Identifier Management', function (): void {
         Cart::setIdentifier('custom-id');
         $result = Cart::forgetIdentifier()->add('item-1', 'Item 1', 10.00, 1);
 
-        expect($result)->toBeInstanceOf(AIArmada\Cart\Models\CartItem::class);
+        expect($result)->toBeInstanceOf(CartItem::class);
         expect(Cart::count())->toBe(1);
     });
 

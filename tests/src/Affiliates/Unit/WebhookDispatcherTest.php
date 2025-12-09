@@ -13,7 +13,7 @@ beforeEach(function (): void {
 test('webhook dispatcher does nothing when webhooks disabled', function (): void {
     Config::set('affiliates.events.dispatch_webhooks', false);
 
-    $dispatcher = new WebhookDispatcher();
+    $dispatcher = new WebhookDispatcher;
     $dispatcher->dispatch('test', ['key' => 'value']);
 
     Http::assertNothingSent();
@@ -24,7 +24,7 @@ test('webhook dispatcher sends requests to endpoints', function (): void {
     Config::set('affiliates.webhooks.endpoints.test', ['https://example.com/webhook']);
     Config::set('affiliates.webhooks.headers', ['Authorization' => 'Bearer token']);
 
-    $dispatcher = new WebhookDispatcher();
+    $dispatcher = new WebhookDispatcher;
     $dispatcher->dispatch('test', ['key' => 'value']);
 
     Http::assertSent(function ($request) {
@@ -40,7 +40,7 @@ test('webhook dispatcher handles multiple endpoints', function (): void {
     Config::set('affiliates.events.dispatch_webhooks', true);
     Config::set('affiliates.webhooks.endpoints.test', ['https://example.com/1', 'https://example.com/2']);
 
-    $dispatcher = new WebhookDispatcher();
+    $dispatcher = new WebhookDispatcher;
     $dispatcher->dispatch('test', ['key' => 'value']);
 
     Http::assertSentCount(2);
@@ -50,7 +50,7 @@ test('webhook dispatcher skips empty endpoints', function (): void {
     Config::set('affiliates.events.dispatch_webhooks', true);
     Config::set('affiliates.webhooks.endpoints.test', ['https://example.com', '', '  ']);
 
-    $dispatcher = new WebhookDispatcher();
+    $dispatcher = new WebhookDispatcher;
     $dispatcher->dispatch('test', ['key' => 'value']);
 
     Http::assertSentCount(1);

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -15,12 +16,12 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $owner_type
  * @property string $owner_id
  * @property bool $is_claimed
- * @property \Illuminate\Support\Carbon|null $claimed_at
+ * @property Carbon|null $claimed_at
  * @property bool $is_redeemed
- * @property \Illuminate\Support\Carbon|null $redeemed_at
+ * @property Carbon|null $redeemed_at
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  * @property-read Voucher $voucher
  * @property-read Model|null $owner
  */

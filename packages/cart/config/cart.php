@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 
 return [
     /*
@@ -61,7 +62,7 @@ return [
     */
     'owner' => [
         'enabled' => env('CART_OWNER_ENABLED', false),
-        'resolver' => env('CART_OWNER_RESOLVER', AIArmada\CommerceSupport\Contracts\NullOwnerResolver::class),
+        'resolver' => env('CART_OWNER_RESOLVER', NullOwnerResolver::class),
         'include_global' => env('CART_OWNER_INCLUDE_GLOBAL', true),
     ],
 

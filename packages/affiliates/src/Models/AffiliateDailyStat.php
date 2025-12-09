@@ -8,11 +8,12 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
  * @property string $affiliate_id
- * @property \Illuminate\Support\Carbon $date
+ * @property Carbon $date
  * @property int $clicks
  * @property int $unique_clicks
  * @property int $attributions
@@ -24,8 +25,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property float $conversion_rate
  * @property float $epc_cents
  * @property array<string, mixed>|null $breakdown
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read int $revenue_minor Alias for revenue_cents
  * @property-read int $commission_minor Alias for commission_cents
  * @property-read Affiliate $affiliate

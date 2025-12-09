@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Data\SendWebhookData;
 use AIArmada\Chip\Facades\ChipSend;
 
 beforeEach(function (): void {
@@ -19,7 +20,7 @@ it('proxies send service helpers through the ChipSend facade', function (): void
 });
 
 it('allows mocking of webhook helpers through the ChipSend facade', function (): void {
-    $webhook = new AIArmada\Chip\Data\SendWebhookData(
+    $webhook = new SendWebhookData(
         id: 123,
         name: 'test-webhook',
         public_key: 'test-key',

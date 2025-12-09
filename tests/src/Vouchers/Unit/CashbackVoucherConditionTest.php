@@ -17,7 +17,7 @@ use AIArmada\Vouchers\Enums\VoucherType;
  */
 function createCashbackTestCart(int $totalValue, int $quantity = 1): Cart
 {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-cashback', events: null);
 
     $pricePerItem = (int) ($totalValue / $quantity);

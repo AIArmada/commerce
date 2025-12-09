@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentInventory\Actions;
 
+use AIArmada\Inventory\Exceptions\InsufficientStockException;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
 use Filament\Actions\Action;
@@ -100,7 +101,7 @@ final class ShipStockAction
                         ->body("Shipped {$data['quantity']} units successfully.")
                         ->success()
                         ->send();
-                } catch (\AIArmada\Inventory\Exceptions\InsufficientStockException $e) {
+                } catch (InsufficientStockException $e) {
                     Notification::make()
                         ->title('Shipment Failed')
                         ->body('Insufficient stock at this location.')

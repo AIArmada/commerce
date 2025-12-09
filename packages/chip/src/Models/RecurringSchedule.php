@@ -6,6 +6,8 @@ namespace AIArmada\Chip\Models;
 
 use AIArmada\Chip\Enums\RecurringInterval;
 use AIArmada\Chip\Enums\RecurringStatus;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
@@ -31,14 +33,14 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, RecurringCharge> $charges
+ * @property-read Collection<int, RecurringCharge> $charges
  */
 class RecurringSchedule extends ChipModel
 {
     public $timestamps = true;
 
     /**
-     * @return MorphTo<\Illuminate\Database\Eloquent\Model, $this>
+     * @return MorphTo<Model, $this>
      */
     public function subscriber(): MorphTo
     {

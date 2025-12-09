@@ -11,6 +11,7 @@ use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Widget showing carts ready for AI-powered recovery.
@@ -204,7 +205,7 @@ final class RecoveryOptimizerWidget extends BaseWidget
 
         $record->update(['metadata' => $metadata]);
 
-        \Illuminate\Support\Facades\Log::info('Recovery action executed', [
+        Log::info('Recovery action executed', [
             'cart_id' => $record->id,
             'identifier' => $record->identifier,
             'strategy' => $strategy,

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Support\Integrations;
 
 use AIArmada\Affiliates\Listeners\AttachAffiliateFromVoucher;
+use AIArmada\Vouchers\Events\VoucherApplied;
 use Illuminate\Contracts\Events\Dispatcher;
 
 final class VoucherIntegrationRegistrar
@@ -13,7 +14,7 @@ final class VoucherIntegrationRegistrar
 
     public function register(): void
     {
-        if (! class_exists(\AIArmada\Vouchers\Events\VoucherApplied::class)) {
+        if (! class_exists(VoucherApplied::class)) {
             return;
         }
 
@@ -22,7 +23,7 @@ final class VoucherIntegrationRegistrar
         }
 
         $this->events->listen(
-            \AIArmada\Vouchers\Events\VoucherApplied::class,
+            VoucherApplied::class,
             AttachAffiliateFromVoucher::class
         );
     }

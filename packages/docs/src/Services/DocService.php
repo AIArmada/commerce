@@ -10,6 +10,7 @@ use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Numbering\NumberStrategyRegistry;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use Spatie\LaravelPdf\Facades\Pdf;
@@ -330,9 +331,9 @@ class DocService
     /**
      * Get template query builder with owner scoping applied.
      *
-     * @return \Illuminate\Database\Eloquent\Builder<DocTemplate>
+     * @return Builder<DocTemplate>
      */
-    protected function getTemplateQuery(): \Illuminate\Database\Eloquent\Builder
+    protected function getTemplateQuery(): Builder
     {
         $query = DocTemplate::query();
 

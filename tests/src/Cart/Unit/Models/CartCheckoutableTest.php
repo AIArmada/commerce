@@ -10,7 +10,7 @@ use Akaunting\Money\Money;
 
 describe('Cart CheckoutableInterface implementation', function (): void {
     beforeEach(function (): void {
-        $this->storage = new InMemoryStorage();
+        $this->storage = new InMemoryStorage;
         $this->cart = new Cart($this->storage, 'test-user');
     });
 

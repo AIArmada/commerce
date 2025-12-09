@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Stock\Facades;
 
+use AIArmada\Stock\Services\StockReservationService;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -19,12 +20,12 @@ use Illuminate\Support\Facades\Facade;
  * @method static int cleanupExpired()
  * @method static \AIArmada\Stock\Models\StockReservation|null extend(\Illuminate\Database\Eloquent\Model $stockable, string $cartId, int $minutes = 30)
  *
- * @see \AIArmada\Stock\Services\StockReservationService
+ * @see StockReservationService
  */
 final class StockReservations extends Facade
 {
     protected static function getFacadeAccessor(): string
     {
-        return \AIArmada\Stock\Services\StockReservationService::class;
+        return StockReservationService::class;
     }
 }

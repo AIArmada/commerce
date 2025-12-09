@@ -276,7 +276,7 @@ class PermissionVersioningService
             'assignments' => $this->serializeAssignments(),
         ];
 
-        $snapshot = new PermissionSnapshot();
+        $snapshot = new PermissionSnapshot;
         $snapshot->state = $state;
         $snapshot->hash = $this->calculateStateHash($state);
 

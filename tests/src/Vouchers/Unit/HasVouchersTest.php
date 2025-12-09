@@ -3,16 +3,20 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
+use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Support\CartWithVouchers;
+use Illuminate\Support\Facades\Config;
 
 it('retrieves applied vouchers from cart conditions', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
 
     $cart = new Cart(
         storage: $storage,
@@ -20,7 +24,7 @@ it('retrieves applied vouchers from cart conditions', function (): void {
         events: null,
         instanceName: 'default',
         eventsEnabled: false,
-        conditionResolver: new CartConditionResolver()
+        conditionResolver: new CartConditionResolver
     );
 
     $voucherData = VoucherData::fromArray([
@@ -55,7 +59,7 @@ it('retrieves applied vouchers from cart conditions', function (): void {
 });
 
 it('collects voucher conditions from cart conditions', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
 
     $cart = new Cart(
         storage: $storage,
@@ -63,7 +67,7 @@ it('collects voucher conditions from cart conditions', function (): void {
         events: null,
         instanceName: 'default',
         eventsEnabled: false,
-        conditionResolver: new CartConditionResolver()
+        conditionResolver: new CartConditionResolver
     );
 
     $voucherData = VoucherData::fromArray([
@@ -77,7 +81,7 @@ it('collects voucher conditions from cart conditions', function (): void {
     ]);
 
     // Add a CartCondition with type 'voucher'
-    $cartCondition = new AIArmada\Cart\Conditions\CartCondition(
+    $cartCondition = new CartCondition(
         name: 'voucher_cartcond',
         type: 'voucher',
         target: 'cart@cart_subtotal/aggregate',
@@ -105,7 +109,7 @@ it('collects voucher conditions from cart conditions', function (): void {
 });
 
 it('applies voucher successfully', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
 
     $cart = new Cart(
         storage: $storage,
@@ -113,13 +117,13 @@ it('applies voucher successfully', function (): void {
         events: null,
         instanceName: 'default',
         eventsEnabled: false,
-        conditionResolver: new CartConditionResolver()
+        conditionResolver: new CartConditionResolver
     );
 
     $wrapper = new CartWithVouchers($cart);
 
     // Create a voucher
-    $voucher = AIArmada\Vouchers\Models\Voucher::create([
+    $voucher = Voucher::create([
         'code' => 'APPLYTEST',
         'name' => 'Apply Test',
         'type' => 'percentage',
@@ -135,7 +139,7 @@ it('applies voucher successfully', function (): void {
 });
 
 it('fails to apply invalid voucher code', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
 
     $cart = new Cart(
         storage: $storage,
@@ -143,16 +147,16 @@ it('fails to apply invalid voucher code', function (): void {
         events: null,
         instanceName: 'default',
         eventsEnabled: false,
-        conditionResolver: new CartConditionResolver()
+        conditionResolver: new CartConditionResolver
     );
 
     $wrapper = new CartWithVouchers($cart);
 
-    expect(fn () => $wrapper->applyVoucher('INVALID'))->toThrow(AIArmada\Vouchers\Exceptions\InvalidVoucherException::class);
+    expect(fn () => $wrapper->applyVoucher('INVALID'))->toThrow(InvalidVoucherException::class);
 });
 
 it('removes voucher successfully', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
 
     $cart = new Cart(
         storage: $storage,
@@ -160,13 +164,13 @@ it('removes voucher successfully', function (): void {
         events: null,
         instanceName: 'default',
         eventsEnabled: false,
-        conditionResolver: new CartConditionResolver()
+        conditionResolver: new CartConditionResolver
     );
 
     $wrapper = new CartWithVouchers($cart);
 
     // Add a voucher first
-    $voucher = AIArmada\Vouchers\Models\Voucher::create([
+    $voucher = Voucher::create([
         'code' => 'REMOVETEST',
         'name' => 'Remove Test',
         'type' => 'percentage',
@@ -186,7 +190,7 @@ it('removes voucher successfully', function (): void {
 });
 
 it('removes non-existent voucher gracefully', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
 
     $cart = new Cart(
         storage: $storage,
@@ -194,7 +198,7 @@ it('removes non-existent voucher gracefully', function (): void {
         events: null,
         instanceName: 'default',
         eventsEnabled: false,
-        conditionResolver: new CartConditionResolver()
+        conditionResolver: new CartConditionResolver
     );
 
     $wrapper = new CartWithVouchers($cart);
@@ -205,7 +209,7 @@ it('removes non-existent voucher gracefully', function (): void {
 });
 
 it('calculates voucher discount', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
 
     $cart = new Cart(
         storage: $storage,
@@ -213,13 +217,13 @@ it('calculates voucher discount', function (): void {
         events: null,
         instanceName: 'default',
         eventsEnabled: false,
-        conditionResolver: new CartConditionResolver()
+        conditionResolver: new CartConditionResolver
     );
 
     $wrapper = new CartWithVouchers($cart);
 
     // Add a voucher
-    $voucher = AIArmada\Vouchers\Models\Voucher::create([
+    $voucher = Voucher::create([
         'code' => 'DISCOUNTTEST',
         'name' => 'Discount Test',
         'type' => 'fixed',
@@ -245,7 +249,7 @@ it('calculates voucher discount', function (): void {
 });
 
 it('checks if can add voucher', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
 
     $cart = new Cart(
         storage: $storage,
@@ -253,7 +257,7 @@ it('checks if can add voucher', function (): void {
         events: null,
         instanceName: 'default',
         eventsEnabled: false,
-        conditionResolver: new CartConditionResolver()
+        conditionResolver: new CartConditionResolver
     );
 
     $wrapper = new CartWithVouchers($cart);
@@ -261,13 +265,13 @@ it('checks if can add voucher', function (): void {
     expect($wrapper->canAddVoucher())->toBeTrue();
 
     // Test with max vouchers disabled
-    Illuminate\Support\Facades\Config::set('vouchers.cart.max_vouchers_per_cart', 0);
+    Config::set('vouchers.cart.max_vouchers_per_cart', 0);
     expect($wrapper->canAddVoucher())->toBeFalse();
-    Illuminate\Support\Facades\Config::set('vouchers.cart.max_vouchers_per_cart', 1);
+    Config::set('vouchers.cart.max_vouchers_per_cart', 1);
 });
 
 it('validates applied vouchers', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
 
     $cart = new Cart(
         storage: $storage,
@@ -275,13 +279,13 @@ it('validates applied vouchers', function (): void {
         events: null,
         instanceName: 'default',
         eventsEnabled: false,
-        conditionResolver: new CartConditionResolver()
+        conditionResolver: new CartConditionResolver
     );
 
     $wrapper = new CartWithVouchers($cart);
 
     // Add a voucher
-    $voucher = AIArmada\Vouchers\Models\Voucher::create([
+    $voucher = Voucher::create([
         'code' => 'INVALIDATE',
         'name' => 'Invalidate Test',
         'type' => 'percentage',
@@ -305,10 +309,10 @@ it('validates applied vouchers', function (): void {
 });
 
 it('calculates voucher discount with stacking', function (): void {
-    Illuminate\Support\Facades\Config::set('vouchers.cart.allow_stacking', true);
-    Illuminate\Support\Facades\Config::set('vouchers.cart.max_vouchers_per_cart', 2);
+    Config::set('vouchers.cart.allow_stacking', true);
+    Config::set('vouchers.cart.max_vouchers_per_cart', 2);
 
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
 
     $cart = new Cart(
         storage: $storage,
@@ -316,7 +320,7 @@ it('calculates voucher discount with stacking', function (): void {
         events: null,
         instanceName: 'default',
         eventsEnabled: false,
-        conditionResolver: new CartConditionResolver()
+        conditionResolver: new CartConditionResolver
     );
 
     $wrapper = new CartWithVouchers($cart);
@@ -331,7 +335,7 @@ it('calculates voucher discount with stacking', function (): void {
     ]);
 
     // Add two vouchers
-    $voucher1 = AIArmada\Vouchers\Models\Voucher::create([
+    $voucher1 = Voucher::create([
         'code' => 'STACK1',
         'name' => 'Stack 1',
         'type' => 'fixed',
@@ -340,7 +344,7 @@ it('calculates voucher discount with stacking', function (): void {
         'status' => 'active',
     ]);
 
-    $voucher2 = AIArmada\Vouchers\Models\Voucher::create([
+    $voucher2 = Voucher::create([
         'code' => 'STACK2',
         'name' => 'Stack 2',
         'type' => 'fixed',
@@ -358,7 +362,7 @@ it('calculates voucher discount with stacking', function (): void {
 });
 
 it('tests cart with vouchers get underlying cart', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
 
     $cart = new Cart(
         storage: $storage,
@@ -366,7 +370,7 @@ it('tests cart with vouchers get underlying cart', function (): void {
         events: null,
         instanceName: 'default',
         eventsEnabled: false,
-        conditionResolver: new CartConditionResolver()
+        conditionResolver: new CartConditionResolver
     );
 
     $wrapper = new CartWithVouchers($cart);
@@ -375,7 +379,7 @@ it('tests cart with vouchers get underlying cart', function (): void {
 });
 
 it('removes static voucher condition', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
 
     $cart = new Cart(
         storage: $storage,
@@ -383,7 +387,7 @@ it('removes static voucher condition', function (): void {
         events: null,
         instanceName: 'default',
         eventsEnabled: false,
-        conditionResolver: new CartConditionResolver()
+        conditionResolver: new CartConditionResolver
     );
 
     $voucherData = VoucherData::fromArray([

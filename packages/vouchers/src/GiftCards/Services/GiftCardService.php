@@ -78,7 +78,7 @@ class GiftCardService
      */
     public function createBulk(int $count, int $amount, array $options = []): Collection
     {
-        $giftCards = new Collection();
+        $giftCards = new Collection;
 
         for ($i = 0; $i < $count; $i++) {
             $data = array_merge($options, [

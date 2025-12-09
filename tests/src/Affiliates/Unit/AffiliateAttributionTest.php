@@ -5,23 +5,25 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 test('AffiliateAttribution has affiliate relationship', function (): void {
-    $attribution = new AffiliateAttribution();
+    $attribution = new AffiliateAttribution;
 
-    expect($attribution->affiliate())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+    expect($attribution->affiliate())->toBeInstanceOf(BelongsTo::class);
 });
 
 test('AffiliateAttribution has conversions relationship', function (): void {
-    $attribution = new AffiliateAttribution();
+    $attribution = new AffiliateAttribution;
 
-    expect($attribution->conversions())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($attribution->conversions())->toBeInstanceOf(HasMany::class);
 });
 
 test('AffiliateAttribution has touchpoints relationship', function (): void {
-    $attribution = new AffiliateAttribution();
+    $attribution = new AffiliateAttribution;
 
-    expect($attribution->touchpoints())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
+    expect($attribution->touchpoints())->toBeInstanceOf(HasMany::class);
 });
 
 test('AffiliateAttribution scopeActive filters expired attributions', function (): void {

@@ -6,10 +6,12 @@ namespace AIArmada\Jnt\Models;
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -34,12 +36,12 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $offer_value
  * @property string|null $cod_value
  * @property string|null $insurance_value
- * @property \Illuminate\Support\Carbon|null $pickup_start_at
- * @property \Illuminate\Support\Carbon|null $pickup_end_at
- * @property \Illuminate\Support\Carbon|null $ordered_at
- * @property \Illuminate\Support\Carbon|null $last_synced_at
- * @property \Illuminate\Support\Carbon|null $last_tracked_at
- * @property \Illuminate\Support\Carbon|null $delivered_at
+ * @property Carbon|null $pickup_start_at
+ * @property Carbon|null $pickup_end_at
+ * @property Carbon|null $ordered_at
+ * @property Carbon|null $last_synced_at
+ * @property Carbon|null $last_tracked_at
+ * @property Carbon|null $delivered_at
  * @property string|null $last_status_code
  * @property string|null $last_status
  * @property bool $has_problem
@@ -54,12 +56,12 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property array<string, mixed>|null $metadata
  * @property string|null $owner_type
  * @property string|null $owner_id
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, JntOrderItem> $items
- * @property-read \Illuminate\Database\Eloquent\Collection<int, JntOrderParcel> $parcels
- * @property-read \Illuminate\Database\Eloquent\Collection<int, JntTrackingEvent> $trackingEvents
- * @property-read \Illuminate\Database\Eloquent\Collection<int, JntWebhookLog> $webhookLogs
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
+ * @property-read Collection<int, JntOrderItem> $items
+ * @property-read Collection<int, JntOrderParcel> $parcels
+ * @property-read Collection<int, JntTrackingEvent> $trackingEvents
+ * @property-read Collection<int, JntWebhookLog> $webhookLogs
  *
  * @method static Builder<static> forOwner(?Model $owner = null, bool $includeGlobal = true)
  */

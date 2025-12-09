@@ -36,7 +36,7 @@ trait HasCartEventData
      */
     public function getOccurredAt(): DateTimeImmutable
     {
-        return $this->occurredAt ?? new DateTimeImmutable();
+        return $this->occurredAt ?? new DateTimeImmutable;
     }
 
     /**
@@ -115,6 +115,6 @@ trait HasCartEventData
     protected function initializeEventData(): void
     {
         $this->eventId = (string) Str::uuid();
-        $this->occurredAt = new DateTimeImmutable();
+        $this->occurredAt = new DateTimeImmutable;
     }
 }

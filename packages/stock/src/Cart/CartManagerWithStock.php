@@ -7,6 +7,7 @@ namespace AIArmada\Stock\Cart;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\Stock\Models\StockTransaction;
 use AIArmada\Stock\Services\StockReservationService;
 use Illuminate\Database\Eloquent\Model;
 
@@ -193,7 +194,7 @@ final class CartManagerWithStock implements CartManagerInterface
      * Commit all reservations (deduct stock after payment).
      *
      * @param  string|null  $orderId  Optional order reference
-     * @return array<\AIArmada\Stock\Models\StockTransaction>
+     * @return array<StockTransaction>
      */
     public function commitStock(?string $orderId = null): array
     {

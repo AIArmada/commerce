@@ -6,8 +6,10 @@ namespace AIArmada\Vouchers\AI;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Vouchers\AI\Contracts\CartFeatureExtractorInterface;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 
 /**
  * Extracts ML-ready features from cart, user, and request context.
@@ -178,7 +180,7 @@ final class CartFeatureExtractor implements CartFeatureExtractorInterface
     /**
      * Get max item price from collection.
      *
-     * @param  \Illuminate\Support\Collection  $items
+     * @param  Collection  $items
      */
     private function getMaxItemPrice($items): int
     {
@@ -192,7 +194,7 @@ final class CartFeatureExtractor implements CartFeatureExtractorInterface
     /**
      * Get min item price from collection.
      *
-     * @param  \Illuminate\Support\Collection  $items
+     * @param  Collection  $items
      */
     private function getMinItemPrice($items): int
     {
@@ -206,7 +208,7 @@ final class CartFeatureExtractor implements CartFeatureExtractorInterface
     /**
      * Calculate price variance coefficient.
      *
-     * @param  \Illuminate\Support\Collection  $items
+     * @param  Collection  $items
      */
     private function getPriceVariance($items): float
     {
@@ -229,7 +231,7 @@ final class CartFeatureExtractor implements CartFeatureExtractorInterface
     /**
      * Check if cart has high-value items (> $100).
      *
-     * @param  \Illuminate\Support\Collection  $items
+     * @param  Collection  $items
      */
     private function hasHighValueItems($items): bool
     {
@@ -267,7 +269,7 @@ final class CartFeatureExtractor implements CartFeatureExtractorInterface
         }
 
         if (is_string($createdAt)) {
-            $createdAt = \Carbon\Carbon::parse($createdAt);
+            $createdAt = Carbon::parse($createdAt);
         }
 
         return (int) $createdAt->diffInMinutes(now());
@@ -293,7 +295,7 @@ final class CartFeatureExtractor implements CartFeatureExtractorInterface
         }
 
         if (is_string($lastOrderAt)) {
-            $lastOrderAt = \Carbon\Carbon::parse($lastOrderAt);
+            $lastOrderAt = Carbon::parse($lastOrderAt);
         }
 
         return (int) $lastOrderAt->diffInDays(now());

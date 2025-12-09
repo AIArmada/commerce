@@ -6,11 +6,13 @@ namespace AIArmada\Inventory\Models;
 
 use AIArmada\Inventory\Enums\BackorderPriority;
 use AIArmada\Inventory\Enums\BackorderStatus;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -24,14 +26,14 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int $quantity_cancelled
  * @property BackorderStatus $status
  * @property BackorderPriority $priority
- * @property \Illuminate\Support\Carbon $requested_at
- * @property \Illuminate\Support\Carbon|null $promised_at
- * @property \Illuminate\Support\Carbon|null $fulfilled_at
- * @property \Illuminate\Support\Carbon|null $cancelled_at
+ * @property Carbon $requested_at
+ * @property Carbon|null $promised_at
+ * @property Carbon|null $fulfilled_at
+ * @property Carbon|null $cancelled_at
  * @property string|null $notes
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Model $inventoryable
  * @property-read InventoryLocation|null $location
  */
@@ -81,9 +83,9 @@ class InventoryBackorder extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @return Builder<static>
      */
-    public function scopeOpen(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeOpen(Builder $query): Builder
     {
         return $query->whereIn('status', [
             BackorderStatus::Pending->value,
@@ -92,34 +94,34 @@ class InventoryBackorder extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @return Builder<static>
      */
-    public function scopePending(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopePending(Builder $query): Builder
     {
         return $query->where('status', BackorderStatus::Pending->value);
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @return Builder<static>
      */
-    public function scopeByPriority(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeByPriority(Builder $query): Builder
     {
         return $query->orderByRaw("FIELD(priority, 'urgent', 'high', 'normal', 'low')");
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @return Builder<static>
      */
-    public function scopeForModel(\Illuminate\Database\Eloquent\Builder $query, Model $model): \Illuminate\Database\Eloquent\Builder
+    public function scopeForModel(Builder $query, Model $model): Builder
     {
         return $query->where('inventoryable_type', $model->getMorphClass())
             ->where('inventoryable_id', $model->getKey());
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @return Builder<static>
      */
-    public function scopeOverdue(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
+    public function scopeOverdue(Builder $query): Builder
     {
         return $query->open()
             ->whereNotNull('promised_at')
@@ -127,9 +129,9 @@ class InventoryBackorder extends Model
     }
 
     /**
-     * @return \Illuminate\Database\Eloquent\Builder<static>
+     * @return Builder<static>
      */
-    public function scopeDueWithin(\Illuminate\Database\Eloquent\Builder $query, int $days): \Illuminate\Database\Eloquent\Builder
+    public function scopeDueWithin(Builder $query, int $days): Builder
     {
         return $query->open()
             ->whereNotNull('promised_at')

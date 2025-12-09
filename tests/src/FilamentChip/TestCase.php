@@ -28,6 +28,24 @@ class TestCase extends Orchestra
         parent::setUp();
     }
 
+    protected function defineEnvironment($app): void
+    {
+        // Setup the test environment
+        $app['config']->set('app.key', 'base64:' . base64_encode(random_bytes(32)));
+        $app['config']->set('app.env', 'testing');
+        $app['config']->set('database.default', 'testing');
+
+        // Use in-memory SQLite for testing
+        $app['config']->set('database.connections.testing', [
+            'driver' => 'sqlite',
+            'database' => ':memory:',
+            'prefix' => '',
+        ]);
+
+        // Configure session
+        $app['config']->set('session.driver', 'array');
+    }
+
     protected function getPackageProviders($app): array
     {
         return [

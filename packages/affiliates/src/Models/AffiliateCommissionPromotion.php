@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Time-limited promotional commission.
@@ -19,13 +20,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $bonus_type
  * @property int $bonus_value
  * @property array<string, mixed>|null $conditions
- * @property \Illuminate\Support\Carbon $starts_at
- * @property \Illuminate\Support\Carbon $ends_at
+ * @property Carbon $starts_at
+ * @property Carbon $ends_at
  * @property int|null $max_uses
  * @property int $current_uses
  * @property array<string>|null $affiliate_ids
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read AffiliateProgram|null $program
  */
 class AffiliateCommissionPromotion extends Model

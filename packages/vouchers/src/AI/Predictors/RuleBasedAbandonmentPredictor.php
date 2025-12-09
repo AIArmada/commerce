@@ -11,6 +11,7 @@ use AIArmada\Vouchers\AI\Contracts\AbandonmentPredictorInterface;
 use AIArmada\Vouchers\AI\Contracts\CartFeatureExtractorInterface;
 use AIArmada\Vouchers\AI\Enums\AbandonmentRiskLevel;
 use AIArmada\Vouchers\AI\Enums\InterventionType;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -22,7 +23,7 @@ use Illuminate\Database\Eloquent\Model;
 final class RuleBasedAbandonmentPredictor implements AbandonmentPredictorInterface
 {
     public function __construct(
-        private readonly CartFeatureExtractorInterface $featureExtractor = new CartFeatureExtractor(),
+        private readonly CartFeatureExtractorInterface $featureExtractor = new CartFeatureExtractor,
     ) {}
 
     public function predictAbandonment(
@@ -324,7 +325,7 @@ final class RuleBasedAbandonmentPredictor implements AbandonmentPredictorInterfa
     /**
      * Predict when abandonment will occur.
      */
-    private function predictAbandonmentTime(float $riskScore, array $features): ?\Carbon\Carbon
+    private function predictAbandonmentTime(float $riskScore, array $features): ?Carbon
     {
         // Only predict for medium+ risk
         if ($riskScore < 0.3) {

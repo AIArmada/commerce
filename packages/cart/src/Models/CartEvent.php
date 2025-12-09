@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Models;
 
 use DateTimeInterface;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Carbon;
 
 /**
  * CartEvent model for event sourcing and audit trails.
@@ -22,9 +24,9 @@ use Illuminate\Database\Eloquent\Model;
  * @property array<string, mixed>|null $metadata
  * @property int $aggregate_version
  * @property int $stream_position
- * @property \Illuminate\Support\Carbon $occurred_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon $occurred_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  */
 class CartEvent extends Model
 {
@@ -129,7 +131,7 @@ class CartEvent extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function forCart(Builder $query, string $cartId): void
     {
         $query->where('cart_id', $cartId);
@@ -140,7 +142,7 @@ class CartEvent extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function ofType(Builder $query, string $eventType): void
     {
         $query->where('event_type', $eventType);
@@ -151,7 +153,7 @@ class CartEvent extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function afterPosition(Builder $query, int $position): void
     {
         $query->where('stream_position', '>', $position);
@@ -162,7 +164,7 @@ class CartEvent extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function occurredBetween(Builder $query, DateTimeInterface $start, DateTimeInterface $end): void
     {
         $query->whereBetween('occurred_at', [$start, $end]);
@@ -173,7 +175,7 @@ class CartEvent extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function orderedForReplay(Builder $query): void
     {
         $query->orderBy('stream_position', 'asc');

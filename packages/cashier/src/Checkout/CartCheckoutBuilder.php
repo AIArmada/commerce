@@ -5,10 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Checkout;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\CartItem;
 use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CheckoutContract;
 use AIArmada\Cashier\Contracts\GatewayContract;
+use AIArmada\Cashier\Exceptions\CheckoutException;
+use AIArmada\Cashier\Exceptions\InsufficientStockException;
+use AIArmada\Inventory\InventoryServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use InvalidArgumentException;
 
@@ -154,7 +158,7 @@ final class CartCheckoutBuilder
     /**
      * Process the checkout: validate, allocate inventory, create payment.
      *
-     * @throws \AIArmada\Cashier\Exceptions\CheckoutException
+     * @throws CheckoutException
      */
     public function process(): CheckoutContract
     {
@@ -185,11 +189,11 @@ final class CartCheckoutBuilder
     /**
      * Validate stock availability for all cart items.
      *
-     * @throws \AIArmada\Cashier\Exceptions\InsufficientStockException
+     * @throws InsufficientStockException
      */
     private function performStockValidation(): void
     {
-        if (! class_exists(\AIArmada\Inventory\InventoryServiceProvider::class)) {
+        if (! class_exists(InventoryServiceProvider::class)) {
             return;
         }
 
@@ -200,7 +204,7 @@ final class CartCheckoutBuilder
             $result = $cartManager->validateInventory($this->cart->getId());
 
             if (! $result['valid']) {
-                throw new \AIArmada\Cashier\Exceptions\InsufficientStockException(
+                throw new InsufficientStockException(
                     'Insufficient stock for some items',
                     $result['insufficient_items'] ?? []
                 );
@@ -213,7 +217,7 @@ final class CartCheckoutBuilder
      */
     private function performInventoryAllocation(): void
     {
-        if (! class_exists(\AIArmada\Inventory\InventoryServiceProvider::class)) {
+        if (! class_exists(InventoryServiceProvider::class)) {
             return;
         }
 
@@ -275,7 +279,7 @@ final class CartCheckoutBuilder
     /**
      * Add a cart item to the checkout builder.
      *
-     * @param  \AIArmada\Cart\CartItem  $item
+     * @param  CartItem  $item
      */
     private function addItemToCheckout(CheckoutBuilderContract $builder, object $item): void
     {

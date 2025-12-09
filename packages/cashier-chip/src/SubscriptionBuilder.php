@@ -12,6 +12,7 @@ use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use Exception;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -29,7 +30,7 @@ class SubscriptionBuilder
     /**
      * The model that is subscribing.
      *
-     * @var Billable|\Illuminate\Database\Eloquent\Model
+     * @var Billable|Model
      */
     protected $owner;
 

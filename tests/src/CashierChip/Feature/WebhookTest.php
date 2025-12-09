@@ -6,6 +6,7 @@ use AIArmada\CashierChip\Events\PaymentFailed;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\CashierChip\Events\WebhookHandled;
 use AIArmada\CashierChip\Events\WebhookReceived;
+use AIArmada\CashierChip\Http\Controllers\WebhookController;
 use AIArmada\CashierChip\Subscription;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Illuminate\Support\Facades\Event;
@@ -21,7 +22,7 @@ beforeEach(function (): void {
     ]);
 
     // Manually register the webhook route for testing
-    Route::post('/chip/webhook', AIArmada\CashierChip\Http\Controllers\WebhookController::class)
+    Route::post('/chip/webhook', WebhookController::class)
         ->name('cashier-chip.webhook');
 });
 

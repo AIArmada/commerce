@@ -11,6 +11,7 @@ use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Models\CartItem;
 use Illuminate\Support\Arr;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 use function assert;
@@ -80,9 +81,9 @@ final class NormalizedCartSynchronizer
     /**
      * @return array<string, CartItem>
      */
-    /** @param \Illuminate\Support\Collection<int, BaseCartItem> $items */
+    /** @param Collection<int, BaseCartItem> $items */
     /** @phpstan-ignore missingType.iterableValue, missingType.generics */
-    private function syncItems(Cart $cartModel, \Illuminate\Support\Collection $items): array
+    private function syncItems(Cart $cartModel, Collection $items): array
     {
         $persisted = [];
         $storedItemIds = [];
@@ -125,7 +126,7 @@ final class NormalizedCartSynchronizer
     }
 
     /** @phpstan-ignore-next-line */
-    private function syncConditions(Cart $cartModel, \Illuminate\Support\Collection $conditions, array $itemModels, array $originalItems): void
+    private function syncConditions(Cart $cartModel, Collection $conditions, array $itemModels, array $originalItems): void
     {
         $persistedKeys = [];
 

@@ -4,6 +4,22 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Targeting\Enums;
 
+use AIArmada\Vouchers\Targeting\Evaluators\CartQuantityEvaluator;
+use AIArmada\Vouchers\Targeting\Evaluators\CartValueEvaluator;
+use AIArmada\Vouchers\Targeting\Evaluators\CategoryInCartEvaluator;
+use AIArmada\Vouchers\Targeting\Evaluators\ChannelEvaluator;
+use AIArmada\Vouchers\Targeting\Evaluators\CustomerLifetimeValueEvaluator;
+use AIArmada\Vouchers\Targeting\Evaluators\DateRangeEvaluator;
+use AIArmada\Vouchers\Targeting\Evaluators\DayOfWeekEvaluator;
+use AIArmada\Vouchers\Targeting\Evaluators\DeviceEvaluator;
+use AIArmada\Vouchers\Targeting\Evaluators\FirstPurchaseEvaluator;
+use AIArmada\Vouchers\Targeting\Evaluators\GeographicEvaluator;
+use AIArmada\Vouchers\Targeting\Evaluators\ProductInCartEvaluator;
+use AIArmada\Vouchers\Targeting\Evaluators\ReferrerEvaluator;
+use AIArmada\Vouchers\Targeting\Evaluators\TimeWindowEvaluator;
+use AIArmada\Vouchers\Targeting\Evaluators\UserAttributeEvaluator;
+use AIArmada\Vouchers\Targeting\Evaluators\UserSegmentEvaluator;
+
 /**
  * Types of targeting rules for voucher eligibility.
  */
@@ -108,21 +124,21 @@ enum TargetingRuleType: string
     public function getEvaluatorClass(): string
     {
         return match ($this) {
-            self::UserSegment => \AIArmada\Vouchers\Targeting\Evaluators\UserSegmentEvaluator::class,
-            self::UserAttribute => \AIArmada\Vouchers\Targeting\Evaluators\UserAttributeEvaluator::class,
-            self::FirstPurchase => \AIArmada\Vouchers\Targeting\Evaluators\FirstPurchaseEvaluator::class,
-            self::CustomerLifetimeValue => \AIArmada\Vouchers\Targeting\Evaluators\CustomerLifetimeValueEvaluator::class,
-            self::CartValue => \AIArmada\Vouchers\Targeting\Evaluators\CartValueEvaluator::class,
-            self::CartQuantity => \AIArmada\Vouchers\Targeting\Evaluators\CartQuantityEvaluator::class,
-            self::ProductInCart => \AIArmada\Vouchers\Targeting\Evaluators\ProductInCartEvaluator::class,
-            self::CategoryInCart => \AIArmada\Vouchers\Targeting\Evaluators\CategoryInCartEvaluator::class,
-            self::TimeWindow => \AIArmada\Vouchers\Targeting\Evaluators\TimeWindowEvaluator::class,
-            self::DayOfWeek => \AIArmada\Vouchers\Targeting\Evaluators\DayOfWeekEvaluator::class,
-            self::DateRange => \AIArmada\Vouchers\Targeting\Evaluators\DateRangeEvaluator::class,
-            self::Channel => \AIArmada\Vouchers\Targeting\Evaluators\ChannelEvaluator::class,
-            self::Device => \AIArmada\Vouchers\Targeting\Evaluators\DeviceEvaluator::class,
-            self::Geographic => \AIArmada\Vouchers\Targeting\Evaluators\GeographicEvaluator::class,
-            self::Referrer => \AIArmada\Vouchers\Targeting\Evaluators\ReferrerEvaluator::class,
+            self::UserSegment => UserSegmentEvaluator::class,
+            self::UserAttribute => UserAttributeEvaluator::class,
+            self::FirstPurchase => FirstPurchaseEvaluator::class,
+            self::CustomerLifetimeValue => CustomerLifetimeValueEvaluator::class,
+            self::CartValue => CartValueEvaluator::class,
+            self::CartQuantity => CartQuantityEvaluator::class,
+            self::ProductInCart => ProductInCartEvaluator::class,
+            self::CategoryInCart => CategoryInCartEvaluator::class,
+            self::TimeWindow => TimeWindowEvaluator::class,
+            self::DayOfWeek => DayOfWeekEvaluator::class,
+            self::DateRange => DateRangeEvaluator::class,
+            self::Channel => ChannelEvaluator::class,
+            self::Device => DeviceEvaluator::class,
+            self::Geographic => GeographicEvaluator::class,
+            self::Referrer => ReferrerEvaluator::class,
         };
     }
 

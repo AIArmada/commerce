@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Facades;
 
+use AIArmada\Vouchers\Services\VoucherService;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -22,7 +23,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static \AIArmada\Vouchers\Models\VoucherWallet addToWallet(string $code, \Illuminate\Database\Eloquent\Model $owner, ?array<string, mixed> $metadata = null)
  * @method static bool removeFromWallet(string $code, \Illuminate\Database\Eloquent\Model $owner)
  *
- * @see \AIArmada\Vouchers\Services\VoucherService
+ * @see VoucherService
  */
 class Voucher extends Facade
 {

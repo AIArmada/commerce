@@ -4,17 +4,57 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests;
 
+use AIArmada\Affiliates\AffiliatesServiceProvider;
+use AIArmada\Cart\CartServiceProvider;
+use AIArmada\Cart\Facades\Cart;
+use AIArmada\Chip\ChipServiceProvider;
+use AIArmada\CommerceSupport\SupportServiceProvider;
+use AIArmada\Docs\DocsServiceProvider;
+use AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy;
+use AIArmada\FilamentAffiliates\FilamentAffiliatesServiceProvider;
+use AIArmada\FilamentAuthz\FilamentAuthzServiceProvider;
+use AIArmada\FilamentCart\FilamentCartServiceProvider;
+use AIArmada\FilamentCashier\FilamentCashierServiceProvider;
+use AIArmada\FilamentChip\FilamentChipServiceProvider;
+use AIArmada\FilamentShipping\FilamentShippingServiceProvider;
+use AIArmada\FilamentVouchers\FilamentVouchersServiceProvider;
+use AIArmada\Jnt\JntServiceProvider;
+use AIArmada\Shipping\Facades\Shipping;
+use AIArmada\Shipping\ShippingServiceProvider;
+use AIArmada\Stock\StockServiceProvider;
+use AIArmada\Vouchers\Facades\Voucher;
+use AIArmada\Vouchers\VoucherServiceProvider;
 use BackedEnum;
 use DateInterval;
 use DateTimeInterface;
+use Filament\FilamentServiceProvider;
+use Illuminate\Cache\CacheServiceProvider;
+use Illuminate\Contracts\Support\Arrayable;
+use Illuminate\Database\DatabaseServiceProvider;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Events\EventServiceProvider;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Hashing\HashServiceProvider;
+use Illuminate\Session\SessionServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\MessageBag;
 use Illuminate\Support\Str;
 use Illuminate\Support\ViewErrorBag;
+use Illuminate\Translation\TranslationServiceProvider;
+use Illuminate\Validation\ValidationServiceProvider;
+use Illuminate\View\ViewServiceProvider;
+use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
+use Spatie\LaravelData\Casts\DateTimeInterfaceCast;
+use Spatie\LaravelData\Casts\EnumCast;
+use Spatie\LaravelData\LaravelDataServiceProvider;
+use Spatie\LaravelData\Transformers\ArrayableTransformer;
+use Spatie\LaravelData\Transformers\DateTimeInterfaceTransformer;
+use Spatie\LaravelData\Transformers\EnumTransformer;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionServiceProvider;
 
 abstract class TestCase extends Orchestra
 {
@@ -32,8 +72,8 @@ abstract class TestCase extends Orchestra
         $this->app['session']->start();
 
         // Share an empty error bag so Blade always receives the expected variable
-        $this->app['view']->share('errors', tap(new ViewErrorBag(), static function (ViewErrorBag $bag): void {
-            $bag->put('default', new MessageBag());
+        $this->app['view']->share('errors', tap(new ViewErrorBag, static function (ViewErrorBag $bag): void {
+            $bag->put('default', new MessageBag);
         }));
 
         $this->setUpDatabase();
@@ -42,35 +82,35 @@ abstract class TestCase extends Orchestra
     protected function getPackageProviders($app): array
     {
         return [
-            \Spatie\LaravelData\LaravelDataServiceProvider::class,
-            \AIArmada\CommerceSupport\SupportServiceProvider::class,
-            \Illuminate\Events\EventServiceProvider::class,
-            \Illuminate\Session\SessionServiceProvider::class,
-            \Illuminate\View\ViewServiceProvider::class,
-            \Illuminate\Hashing\HashServiceProvider::class,
-            \Illuminate\Cache\CacheServiceProvider::class,
-            \Illuminate\Database\DatabaseServiceProvider::class,
-            \Illuminate\Translation\TranslationServiceProvider::class,
-            \Illuminate\Validation\ValidationServiceProvider::class,
-            \Livewire\LivewireServiceProvider::class,
+            LaravelDataServiceProvider::class,
+            SupportServiceProvider::class,
+            EventServiceProvider::class,
+            SessionServiceProvider::class,
+            ViewServiceProvider::class,
+            HashServiceProvider::class,
+            CacheServiceProvider::class,
+            DatabaseServiceProvider::class,
+            TranslationServiceProvider::class,
+            ValidationServiceProvider::class,
+            LivewireServiceProvider::class,
             \Filament\Support\SupportServiceProvider::class,
-            \Filament\FilamentServiceProvider::class,
-            \AIArmada\Cart\CartServiceProvider::class,
-            \AIArmada\Chip\ChipServiceProvider::class,
-            \AIArmada\Jnt\JntServiceProvider::class,
-            \AIArmada\Docs\DocsServiceProvider::class,
-            \AIArmada\Stock\StockServiceProvider::class,
-            \AIArmada\Vouchers\VoucherServiceProvider::class,
-            \AIArmada\FilamentCart\FilamentCartServiceProvider::class,
-            \AIArmada\FilamentChip\FilamentChipServiceProvider::class,
-            \Spatie\Permission\PermissionServiceProvider::class,
-            \AIArmada\FilamentAuthz\FilamentAuthzServiceProvider::class,
-            \AIArmada\FilamentVouchers\FilamentVouchersServiceProvider::class,
-            \AIArmada\Affiliates\AffiliatesServiceProvider::class,
-            \AIArmada\FilamentAffiliates\FilamentAffiliatesServiceProvider::class,
-            \AIArmada\Shipping\ShippingServiceProvider::class,
-            \AIArmada\FilamentShipping\FilamentShippingServiceProvider::class,
-            \AIArmada\FilamentCashier\FilamentCashierServiceProvider::class,
+            FilamentServiceProvider::class,
+            CartServiceProvider::class,
+            ChipServiceProvider::class,
+            JntServiceProvider::class,
+            DocsServiceProvider::class,
+            StockServiceProvider::class,
+            VoucherServiceProvider::class,
+            FilamentCartServiceProvider::class,
+            FilamentChipServiceProvider::class,
+            PermissionServiceProvider::class,
+            FilamentAuthzServiceProvider::class,
+            FilamentVouchersServiceProvider::class,
+            AffiliatesServiceProvider::class,
+            FilamentAffiliatesServiceProvider::class,
+            ShippingServiceProvider::class,
+            FilamentShippingServiceProvider::class,
+            FilamentCashierServiceProvider::class,
             TestPanelProvider::class,
         ];
     }
@@ -78,9 +118,9 @@ abstract class TestCase extends Orchestra
     protected function getPackageAliases($app): array
     {
         return [
-            'Cart' => \AIArmada\Cart\Facades\Cart::class,
-            'Voucher' => \AIArmada\Vouchers\Facades\Voucher::class,
-            'Shipping' => \AIArmada\Shipping\Facades\Shipping::class,
+            'Cart' => Cart::class,
+            'Voucher' => Voucher::class,
+            'Shipping' => Shipping::class,
         ];
     }
 
@@ -132,13 +172,13 @@ abstract class TestCase extends Orchestra
         $app['config']->set('data.throw_when_max_transformation_depth_reached', true);
         $app['config']->set('data.features.cast_and_transform_iterables', true);
         $app['config']->set('data.transformers', [
-            DateTimeInterface::class => \Spatie\LaravelData\Transformers\DateTimeInterfaceTransformer::class,
-            \Illuminate\Contracts\Support\Arrayable::class => \Spatie\LaravelData\Transformers\ArrayableTransformer::class,
-            BackedEnum::class => \Spatie\LaravelData\Transformers\EnumTransformer::class,
+            DateTimeInterface::class => DateTimeInterfaceTransformer::class,
+            Arrayable::class => ArrayableTransformer::class,
+            BackedEnum::class => EnumTransformer::class,
         ]);
         $app['config']->set('data.casts', [
-            DateTimeInterface::class => \Spatie\LaravelData\Casts\DateTimeInterfaceCast::class,
-            BackedEnum::class => \Spatie\LaravelData\Casts\EnumCast::class,
+            DateTimeInterface::class => DateTimeInterfaceCast::class,
+            BackedEnum::class => EnumCast::class,
         ]);
 
         // Configure cart settings for testing
@@ -148,25 +188,26 @@ abstract class TestCase extends Orchestra
         $app['config']->set('cart.events', true);
 
         // Configure docs settings for testing
+        $app['config']->set('docs.database.table_prefix', '');
         $app['config']->set('docs.types', [
             'invoice' => [
                 'default_template' => 'doc-default',
                 'numbering' => [
-                    'strategy' => \AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy::class,
+                    'strategy' => DefaultNumberStrategy::class,
                     'prefix' => 'INV',
                 ],
             ],
             'receipt' => [
                 'default_template' => 'doc-default',
                 'numbering' => [
-                    'strategy' => \AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy::class,
+                    'strategy' => DefaultNumberStrategy::class,
                     'prefix' => 'RCP',
                 ],
             ],
             'credit_note' => [
                 'default_template' => 'doc-default',
                 'numbering' => [
-                    'strategy' => \AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy::class,
+                    'strategy' => DefaultNumberStrategy::class,
                     'prefix' => 'CN',
                 ],
             ],
@@ -206,8 +247,8 @@ abstract class TestCase extends Orchestra
         ]);
 
         // Configure Spatie Permission settings for testing
-        $app['config']->set('permission.models.permission', \Spatie\Permission\Models\Permission::class);
-        $app['config']->set('permission.models.role', \Spatie\Permission\Models\Role::class);
+        $app['config']->set('permission.models.permission', Permission::class);
+        $app['config']->set('permission.models.role', Role::class);
         $app['config']->set('permission.table_names', [
             'roles' => 'roles',
             'permissions' => 'permissions',
@@ -241,6 +282,7 @@ abstract class TestCase extends Orchestra
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/vouchers/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../vendor/spatie/laravel-permission/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/affiliates/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/docs/database/migrations');
     }
 
     protected function setUpDatabase(): void
@@ -349,59 +391,6 @@ abstract class TestCase extends Orchestra
             $table->timestamps();
 
             $table->unique(['identifier', 'instance']);
-        });
-
-        // Docs tables
-        Schema::dropIfExists('docs');
-        Schema::dropIfExists('doc_histories');
-        Schema::dropIfExists('doc_templates');
-
-        Schema::create('doc_templates', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-            $table->string('name');
-            $table->string('slug')->unique();
-            $table->text('description')->nullable();
-            $table->string('view_name');
-            $table->string('doc_type')->default('invoice');
-            $table->boolean('is_default')->default(false);
-            $table->json('settings')->nullable();
-            $table->timestamps();
-        });
-
-        Schema::create('docs', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-            $table->string('doc_number')->unique();
-            $table->string('doc_type')->default('invoice');
-            $table->foreignUuid('doc_template_id')->nullable()->constrained('doc_templates')->nullOnDelete();
-            $table->nullableUuidMorphs('docable');
-            $table->string('status')->default('draft');
-            $table->date('issue_date');
-            $table->date('due_date')->nullable();
-            $table->timestamp('paid_at')->nullable();
-            $table->bigInteger('subtotal')->default(0);
-            $table->bigInteger('tax_amount')->default(0);
-            $table->bigInteger('discount_amount')->default(0);
-            $table->bigInteger('total')->default(0);
-            $table->string('currency', 3)->default('MYR');
-            $table->text('notes')->nullable();
-            $table->text('terms')->nullable();
-            $table->json('customer_data')->nullable();
-            $table->json('company_data')->nullable();
-            $table->json('items')->nullable();
-            $table->json('metadata')->nullable();
-            $table->string('pdf_path')->nullable();
-            $table->timestamps();
-        });
-
-        Schema::create('doc_histories', function (Blueprint $table): void {
-            $table->uuid('id')->primary();
-            $table->foreignUuid('doc_id')->constrained('docs')->cascadeOnDelete();
-            $table->string('action');
-            $table->string('old_status')->nullable();
-            $table->string('new_status')->nullable();
-            $table->text('notes')->nullable();
-            $table->json('metadata')->nullable();
-            $table->timestamps();
         });
 
         // Stock tables

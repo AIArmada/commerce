@@ -10,6 +10,7 @@ use AIArmada\Vouchers\GiftCards\Conditions\GiftCardCondition;
 use AIArmada\Vouchers\GiftCards\Exceptions\InvalidGiftCardException;
 use AIArmada\Vouchers\GiftCards\Exceptions\InvalidGiftCardPinException;
 use AIArmada\Vouchers\GiftCards\Models\GiftCard;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 /**
@@ -215,10 +216,10 @@ trait InteractsWithGiftCards
     /**
      * Commit gift card deductions (call after order is confirmed).
      *
-     * @param  \Illuminate\Database\Eloquent\Model  $order  The order reference
+     * @param  Model  $order  The order reference
      * @return array<string, int> Map of gift card codes to deducted amounts
      */
-    public function commitGiftCards(\Illuminate\Database\Eloquent\Model $order): array
+    public function commitGiftCards(Model $order): array
     {
         $deductions = [];
         $breakdown = $this->getGiftCardBreakdown();
