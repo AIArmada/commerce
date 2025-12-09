@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentAuthz\Pages\PolicyDesignerPage;
 use AIArmada\FilamentAuthz\Pages\AuthzDashboardPage;
+use AIArmada\FilamentAuthz\Pages\PolicyDesignerPage;
 
 test('policy designer page class exists', function (): void {
     expect(class_exists(PolicyDesignerPage::class))->toBeTrue();

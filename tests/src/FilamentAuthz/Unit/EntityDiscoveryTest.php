@@ -3,11 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
-use AIArmada\FilamentAuthz\Services\Discovery\ResourceTransformer;
-use AIArmada\FilamentAuthz\Services\Discovery\PageTransformer;
-use AIArmada\FilamentAuthz\Services\Discovery\WidgetTransformer;
-use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredPage;
+use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredWidget;
 
 test('discovered resource generates permission keys', function (): void {
@@ -104,7 +101,7 @@ test('entity discovery service can get discovered permissions', function (): voi
 
     $permissions = $service->getDiscoveredPermissions();
 
-    expect($permissions)->toBeInstanceOf(\Illuminate\Support\Collection::class);
+    expect($permissions)->toBeInstanceOf(Illuminate\Support\Collection::class);
 });
 
 test('entity discovery service cache can be cleared', function (): void {
