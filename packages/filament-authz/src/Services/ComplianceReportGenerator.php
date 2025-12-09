@@ -116,7 +116,7 @@ class ComplianceReportGenerator
 
         foreach ($conflictingPermissions as $conflict) {
             // Find roles that have both conflicting permissions
-            $rolesWithConflict = Role::whereHas('permissions', function ($q) use ($conflict) {
+            $rolesWithConflict = Role::whereHas('permissions', function ($q) use ($conflict): void {
                 $q->whereIn('name', $conflict);
             }, '=', count($conflict))->get();
 
@@ -156,7 +156,7 @@ class ComplianceReportGenerator
             ->orWhere('name', 'like', '%address%')
             ->get();
 
-        $rolesWithPiiAccess = Role::whereHas('permissions', function ($q) use ($piiPermissions) {
+        $rolesWithPiiAccess = Role::whereHas('permissions', function ($q) use ($piiPermissions): void {
             $q->whereIn('id', $piiPermissions->pluck('id'));
         })->get();
 

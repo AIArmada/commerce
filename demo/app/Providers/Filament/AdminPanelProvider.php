@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Providers\Filament;
 
 use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
+use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
 use AIArmada\FilamentCart\FilamentCartPlugin;
 use AIArmada\FilamentChip\FilamentChipPlugin;
 use AIArmada\FilamentInventory\FilamentInventoryPlugin;
 use AIArmada\FilamentJnt\FilamentJntPlugin;
-use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
 use AIArmada\FilamentStock\FilamentStockPlugin;
 use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 use Filament\Http\Middleware\Authenticate;

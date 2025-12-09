@@ -73,7 +73,7 @@ test('super admin bypasses all gates when configured', function (): void {
     $superRole = Role::create(['name' => 'Super Admin', 'guard_name' => 'web']);
     $user->assignRole($superRole);
 
-    Gate::define('some-random-ability', fn() => false);
+    Gate::define('some-random-ability', fn () => false);
 
     $this->actingAs($user);
 

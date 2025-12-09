@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\Concerns\HasPageAuthz;
-use AIArmada\FilamentAuthz\Concerns\HasWidgetAuthz;
-use AIArmada\FilamentAuthz\Concerns\HasResourceAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasPanelAuthz;
+use AIArmada\FilamentAuthz\Concerns\HasResourceAuthz;
+use AIArmada\FilamentAuthz\Concerns\HasWidgetAuthz;
 
 test('HasPageAuthz trait exists', function (): void {
     expect(trait_exists(HasPageAuthz::class))->toBeTrue();
@@ -24,7 +24,8 @@ test('HasPanelAuthz trait exists', function (): void {
 });
 
 test('HasPageAuthz has required methods', function (): void {
-    $methods = get_class_methods(new class {
+    $methods = get_class_methods(new class
+    {
         use HasPageAuthz;
     });
 
@@ -35,7 +36,8 @@ test('HasPageAuthz has required methods', function (): void {
 });
 
 test('HasWidgetAuthz has required methods', function (): void {
-    $methods = get_class_methods(new class {
+    $methods = get_class_methods(new class
+    {
         use HasWidgetAuthz;
     });
 
@@ -45,7 +47,8 @@ test('HasWidgetAuthz has required methods', function (): void {
 });
 
 test('HasResourceAuthz has required methods', function (): void {
-    $methods = get_class_methods(new class {
+    $methods = get_class_methods(new class
+    {
         use HasResourceAuthz;
 
         public static function getModel(): string
@@ -61,7 +64,8 @@ test('HasResourceAuthz has required methods', function (): void {
 });
 
 test('HasPanelAuthz has required methods', function (): void {
-    $methods = get_class_methods(new class {
+    $methods = get_class_methods(new class
+    {
         use HasPanelAuthz;
     });
 
@@ -73,7 +77,8 @@ test('HasPanelAuthz has required methods', function (): void {
 });
 
 test('HasResourceAuthz generates permission key correctly', function (): void {
-    $class = new class {
+    $class = new class
+    {
         use HasResourceAuthz;
 
         public static function getModel(): string
