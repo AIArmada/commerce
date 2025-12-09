@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources;
 
+use AIArmada\Chip\Models\Purchase;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource\Pages\ListInvoices;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource\Pages\ViewInvoice;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource\Schemas\InvoiceInfolist;
@@ -12,7 +13,6 @@ use BackedEnum;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
-use AIArmada\Chip\Models\Purchase;
 use Override;
 
 final class InvoiceResource extends BaseCashierChipResource

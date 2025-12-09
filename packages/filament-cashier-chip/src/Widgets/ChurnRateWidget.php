@@ -42,7 +42,7 @@ final class ChurnRateWidget extends BaseWidget
 
         // Subscribers at start of month
         $startCount = $subscriptionModel::where('created_at', '<', $startOfMonth)
-            ->where(function ($query) use ($startOfMonth) {
+            ->where(function ($query) use ($startOfMonth): void {
                 $query->whereNull('ends_at')
                     ->orWhere('ends_at', '>=', $startOfMonth);
             })
@@ -69,7 +69,7 @@ final class ChurnRateWidget extends BaseWidget
         $endOfMonth = now()->subMonth()->endOfMonth();
 
         $startCount = $subscriptionModel::where('created_at', '<', $startOfMonth)
-            ->where(function ($query) use ($startOfMonth) {
+            ->where(function ($query) use ($startOfMonth): void {
                 $query->whereNull('ends_at')
                     ->orWhere('ends_at', '>=', $startOfMonth);
             })
@@ -139,7 +139,7 @@ final class ChurnRateWidget extends BaseWidget
             $endOfMonth = now()->subMonths($i)->endOfMonth();
 
             $startCount = $subscriptionModel::where('created_at', '<', $startOfMonth)
-                ->where(function ($query) use ($startOfMonth) {
+                ->where(function ($query) use ($startOfMonth): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>=', $startOfMonth);
                 })

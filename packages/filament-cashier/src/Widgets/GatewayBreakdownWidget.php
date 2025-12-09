@@ -7,7 +7,6 @@ namespace AIArmada\FilamentCashier\Widgets;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Support\Collection;
 
 final class GatewayBreakdownWidget extends ChartWidget
 {
@@ -80,7 +79,7 @@ final class GatewayBreakdownWidget extends ChartWidget
 
         if ($detector->isAvailable('stripe') && class_exists(\Laravel\Cashier\Subscription::class)) {
             $stripeRevenue = \Laravel\Cashier\Subscription::query()
-                ->where(function ($query) {
+                ->where(function ($query): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', now());
                 })
@@ -96,7 +95,7 @@ final class GatewayBreakdownWidget extends ChartWidget
 
         if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
             $chipRevenue = \AIArmada\CashierChip\Models\Subscription::query()
-                ->where(function ($query) {
+                ->where(function ($query): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', now());
                 })
