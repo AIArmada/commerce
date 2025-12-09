@@ -20,19 +20,19 @@ use Filament\Panel;
 
 final class FilamentCashierPlugin implements Plugin
 {
-    protected bool $enableDashboard = true;
+    private bool $enableDashboard = true;
 
-    protected bool $enableSubscriptions = true;
+    private bool $enableSubscriptions = true;
 
-    protected bool $enableInvoices = true;
+    private bool $enableInvoices = true;
 
-    protected bool $enableGatewayManagement = false;
+    private bool $enableGatewayManagement = false;
 
-    protected bool $customerPortalMode = false;
+    private bool $customerPortalMode = false;
 
-    protected ?string $navigationGroup = null;
+    private ?string $navigationGroup = null;
 
-    protected ?int $navigationSort = null;
+    private ?int $navigationSort = null;
 
     public static function make(): static
     {

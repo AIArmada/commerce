@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\CustomerPortal\Widgets;
 
 use AIArmada\FilamentCashier\Support\GatewayDetector;
+use Exception;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Collection;
 
@@ -44,7 +45,7 @@ final class RecentInvoicesWidget extends Widget
                         'status' => $invoice->paid ? 'paid' : 'open',
                     ]);
                 }
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Silently fail
             }
         }
@@ -63,7 +64,7 @@ final class RecentInvoicesWidget extends Widget
                         'status' => $invoice->status ?? 'unknown',
                     ]);
                 }
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Silently fail
             }
         }

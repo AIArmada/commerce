@@ -205,8 +205,6 @@ final class UnifiedSubscriptionResource extends Resource
 
     /**
      * Disable Eloquent binding - we use DTOs.
-     *
-     * @param  Closure|null  $modifyQuery
      */
     public static function resolveRecordRouteBinding(int|string $key, ?Closure $modifyQuery = null): ?Model
     {

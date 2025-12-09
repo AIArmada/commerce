@@ -19,15 +19,15 @@ use Filament\Panel;
 
 final class FilamentCashierChipPlugin implements Plugin
 {
-    protected bool $hasSubscriptions = true;
+    private bool $hasSubscriptions = true;
 
-    protected bool $hasCustomers = true;
+    private bool $hasCustomers = true;
 
-    protected bool $hasInvoices = true;
+    private bool $hasInvoices = true;
 
-    protected bool $hasDashboardWidgets = true;
+    private bool $hasDashboardWidgets = true;
 
-    protected bool $hasBillingDashboard = true;
+    private bool $hasBillingDashboard = true;
 
     public static function make(): static
     {
