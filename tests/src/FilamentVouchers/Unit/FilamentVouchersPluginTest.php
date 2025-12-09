@@ -20,7 +20,6 @@ use AIArmada\FilamentVouchers\Widgets\GiftCardStatsWidget;
 use AIArmada\FilamentVouchers\Widgets\RedemptionTrendChart;
 use AIArmada\FilamentVouchers\Widgets\VoucherStatsWidget;
 use Filament\Panel;
-use Mockery;
 
 it('exposes a stable plugin id', function (): void {
     expect((new FilamentVouchersPlugin)->getId())->toBe('filament-vouchers');

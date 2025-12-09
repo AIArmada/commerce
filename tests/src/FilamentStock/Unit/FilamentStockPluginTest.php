@@ -7,7 +7,6 @@ use AIArmada\FilamentStock\Resources\StockReservationResource;
 use AIArmada\FilamentStock\Resources\StockTransactionResource;
 use AIArmada\FilamentStock\Widgets\StockStatsWidget;
 use Filament\Panel;
-use Mockery;
 
 it('exposes a stable plugin id', function (): void {
     expect((new FilamentStockPlugin)->getId())->toBe('filament-stock');

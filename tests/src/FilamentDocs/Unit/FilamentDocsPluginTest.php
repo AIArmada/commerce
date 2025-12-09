@@ -7,7 +7,6 @@ use AIArmada\FilamentDocs\Resources\DocResource;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource;
 use AIArmada\FilamentDocs\Widgets\DocStatsWidget;
 use Filament\Panel;
-use Mockery;
 
 it('exposes a stable plugin id', function (): void {
     $plugin = new FilamentDocsPlugin;
