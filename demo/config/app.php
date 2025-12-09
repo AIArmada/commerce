@@ -1,6 +1,10 @@
 <?php
 
 declare(strict_types=1);
+use App\Providers\AppServiceProvider;
+use App\Providers\Filament\AdminPanelProvider;
+use Illuminate\Support\Facades\Facade;
+use Illuminate\Support\ServiceProvider;
 
 return [
     'name' => env('APP_NAME', 'Commerce Demo'),
@@ -22,11 +26,11 @@ return [
         'driver' => env('APP_MAINTENANCE_DRIVER', 'file'),
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
-    'providers' => Illuminate\Support\ServiceProvider::defaultProviders()->merge([
-        App\Providers\AppServiceProvider::class,
-        App\Providers\Filament\AdminPanelProvider::class,
+    'providers' => ServiceProvider::defaultProviders()->merge([
+        AppServiceProvider::class,
+        AdminPanelProvider::class,
     ])->toArray(),
-    'aliases' => Illuminate\Support\Facades\Facade::defaultAliases()->merge([
+    'aliases' => Facade::defaultAliases()->merge([
         // Custom aliases...
     ])->toArray(),
 ];

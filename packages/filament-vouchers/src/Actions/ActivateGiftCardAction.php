@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
+use AIArmada\Vouchers\GiftCards\Enums\GiftCardStatus;
 use AIArmada\Vouchers\GiftCards\Models\GiftCard;
 use AIArmada\Vouchers\GiftCards\Services\GiftCardService;
 use Filament\Actions\Action;
@@ -23,7 +24,7 @@ final class ActivateGiftCardAction extends Action
         $this->modalHeading('Activate Gift Card');
         $this->modalDescription('Are you sure you want to activate this gift card? It will become available for use.');
 
-        $this->visible(fn (GiftCard $record): bool => $record->status->canTransitionTo(\AIArmada\Vouchers\GiftCards\Enums\GiftCardStatus::Active));
+        $this->visible(fn (GiftCard $record): bool => $record->status->canTransitionTo(GiftCardStatus::Active));
 
         $this->action(function (GiftCard $record): void {
             /** @var GiftCardService $service */

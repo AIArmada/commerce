@@ -7,6 +7,8 @@ use AIArmada\CashierChip\Subscription;
 use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
+use Akaunting\Money\Currency;
+use Akaunting\Money\Money;
 
 uses(CashierChipTestCase::class);
 
@@ -38,7 +40,7 @@ it('can use custom currency formatter', function (): void {
 
     // Reset formatter - use a no-op function instead of null
     Cashier::formatCurrencyUsing(function ($amount, $currency, $locale, $options) {
-        return (new Akaunting\Money\Money($amount, new Akaunting\Money\Currency($currency ?? 'MYR'), true))->format($locale ?? 'en_US');
+        return (new Money($amount, new Currency($currency ?? 'MYR'), true))->format($locale ?? 'en_US');
     });
 });
 

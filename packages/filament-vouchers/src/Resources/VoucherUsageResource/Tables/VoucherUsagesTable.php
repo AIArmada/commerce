@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\VoucherUsageResource\Tables;
 
+use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use Akaunting\Money\Money;
 use Filament\Support\Icons\Heroicon;
@@ -29,7 +30,7 @@ final class VoucherUsagesTable
                 TextColumn::make('voucher.code')
                     ->label('Voucher')
                     ->searchable()
-                    ->url(fn (VoucherUsage $record): string => $record->voucher ? \AIArmada\FilamentVouchers\Resources\VoucherResource::getUrl('view', ['record' => $record->voucher]) : null)
+                    ->url(fn (VoucherUsage $record): string => $record->voucher ? VoucherResource::getUrl('view', ['record' => $record->voucher]) : null)
                     ->placeholder('N/A'),
 
                 TextColumn::make('channel')

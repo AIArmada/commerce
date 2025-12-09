@@ -30,7 +30,7 @@ final class ExportAffiliatePayoutCommand extends Command
             return self::FAILURE;
         }
 
-        $csv = Writer::createFromFileObject(new SplTempFileObject());
+        $csv = Writer::createFromFileObject(new SplTempFileObject);
         $csv->insertOne(['affiliate_code', 'order_reference', 'commission_minor', 'currency', 'status']);
 
         foreach ($payout->conversions as $conversion) {

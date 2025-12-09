@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -20,17 +22,17 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $scheduled_at
- * @property \Illuminate\Support\Carbon|null $paid_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $scheduled_at
+ * @property Carbon|null $paid_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read int $amount_minor Alias for total_minor
  * @property-read string|null $external_reference From metadata
  * @property-read string|null $notes From metadata
  * @property-read Affiliate|null $affiliate Alias for owner when owner is an Affiliate
  * @property-read Model|null $owner
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateConversion> $conversions
- * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutEvent> $events
+ * @property-read Collection<int, AffiliateConversion> $conversions
+ * @property-read Collection<int, AffiliatePayoutEvent> $events
  */
 class AffiliatePayout extends Model
 {

@@ -7,6 +7,7 @@ namespace AIArmada\Jnt\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -18,8 +19,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $width
  * @property string|null $height
  * @property array<string, mixed>|null $metadata
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read JntOrder $order
  */
 final class JntOrderParcel extends Model

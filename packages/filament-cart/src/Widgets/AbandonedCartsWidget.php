@@ -11,6 +11,7 @@ use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Log;
 
 /**
  * Widget showing abandoned carts ready for recovery.
@@ -148,7 +149,7 @@ final class AbandonedCartsWidget extends BaseWidget
         $record->increment('recovery_attempts');
 
         // Log the recovery attempt
-        \Illuminate\Support\Facades\Log::info('Recovery email sent for cart', [
+        Log::info('Recovery email sent for cart', [
             'cart_id' => $record->id,
             'identifier' => $record->identifier,
             'attempt' => $record->recovery_attempts,

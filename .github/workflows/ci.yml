@@ -40,7 +40,7 @@ jobs:
         run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run tests (Pest)
-        run: vendor/bin/pest --colors=always
+        run: vendor/bin/pest --colors=always --parallel
 
   phpstan:
     name: PHPStan

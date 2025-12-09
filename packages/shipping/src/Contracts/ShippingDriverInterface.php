@@ -6,9 +6,11 @@ namespace AIArmada\Shipping\Contracts;
 
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\LabelData;
+use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShipmentResultData;
+use AIArmada\Shipping\Data\ShippingMethodData;
 use AIArmada\Shipping\Data\TrackingData;
 use AIArmada\Shipping\Enums\DriverCapability;
 use Illuminate\Support\Collection;
@@ -39,14 +41,14 @@ interface ShippingDriverInterface
     /**
      * Get available shipping methods for this carrier.
      *
-     * @return Collection<int, \AIArmada\Shipping\Data\ShippingMethodData>
+     * @return Collection<int, ShippingMethodData>
      */
     public function getAvailableMethods(): Collection;
 
     /**
      * Get rate quotes for a shipment.
      *
-     * @param  array<\AIArmada\Shipping\Data\PackageData>  $packages
+     * @param  array<PackageData>  $packages
      * @param  array<string, mixed>  $options
      * @return Collection<int, RateQuoteData>
      */

@@ -7,6 +7,7 @@ namespace AIArmada\Cart\AI;
 use AIArmada\Cart\Cart;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Throwable;
 
 /**
@@ -416,7 +417,7 @@ final class RecoveryOptimizer
     ): void {
         try {
             DB::table('cart_recovery_outcomes')->insert([
-                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'id' => (string) Str::uuid(),
                 'cart_id' => $cartId,
                 'strategy_id' => $strategyId,
                 'recovered' => $recovered,

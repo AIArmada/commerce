@@ -8,16 +8,21 @@ use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Database\Factories\SubscriptionFactory;
+use AIArmada\Vouchers\Services\VoucherService;
+use Akaunting\Money\Money;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use DateTimeZone;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LogicException;
@@ -169,7 +174,7 @@ class Subscription extends Model
      * Get the subscription item for the given price.
      *
      *
-     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
+     * @throws ModelNotFoundException
      */
     public function findItemOrFail(string $price): SubscriptionItem
     {
@@ -754,9 +759,9 @@ class Subscription extends Model
     /**
      * Get all discounts that apply to the subscription.
      *
-     * @return \Illuminate\Support\Collection<int, Discount>
+     * @return Collection<int, Discount>
      */
-    public function discounts(): \Illuminate\Support\Collection
+    public function discounts(): Collection
     {
         $discount = $this->discount();
 
@@ -933,9 +938,9 @@ class Subscription extends Model
     /**
      * Get a collection of the subscription's invoices.
      *
-     * @return \Illuminate\Support\Collection<int, Invoice>
+     * @return Collection<int, Invoice>
      */
-    public function invoices(): \Illuminate\Support\Collection
+    public function invoices(): Collection
     {
         // For CHIP, invoices would need to be tracked separately
         return collect();
@@ -1026,7 +1031,7 @@ class Subscription extends Model
     /**
      * Create a new factory instance for the model.
      *
-     * @return \Illuminate\Database\Eloquent\Factories\Factory
+     * @return Factory
      */
     protected static function newFactory()
     {
@@ -1075,12 +1080,12 @@ class Subscription extends Model
      */
     protected function retrieveCoupon(string $couponId): ?Coupon
     {
-        if (! class_exists(\AIArmada\Vouchers\Services\VoucherService::class)) {
+        if (! class_exists(VoucherService::class)) {
             return null;
         }
 
-        /** @var \AIArmada\Vouchers\Services\VoucherService $service */
-        $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
+        /** @var VoucherService $service */
+        $service = app(VoucherService::class);
 
         $voucherData = $service->find($couponId);
 
@@ -1096,18 +1101,18 @@ class Subscription extends Model
      */
     protected function recordCouponUsage(string $couponId, int $discountAmount): void
     {
-        if (! class_exists(\AIArmada\Vouchers\Services\VoucherService::class)) {
+        if (! class_exists(VoucherService::class)) {
             return;
         }
 
-        /** @var \AIArmada\Vouchers\Services\VoucherService $service */
-        $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
+        /** @var VoucherService $service */
+        $service = app(VoucherService::class);
 
         $currency = $this->owner->preferredCurrency();
 
         $service->recordUsage(
             code: $couponId,
-            discountAmount: \Akaunting\Money\Money::$currency($discountAmount),
+            discountAmount: Money::$currency($discountAmount),
             channel: 'subscription',
             metadata: ['subscription_id' => $this->id],
             redeemedBy: $this->owner,

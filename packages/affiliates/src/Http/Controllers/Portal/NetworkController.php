@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Services\NetworkService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Support\Collection;
 
 final class NetworkController extends Controller
 {
@@ -60,14 +61,14 @@ final class NetworkController extends Controller
         $collection = $this->networkService->getDownline($affiliate);
 
         if ($level !== null) {
-            /** @var \Illuminate\Support\Collection<int, Affiliate> $collection */
+            /** @var Collection<int, Affiliate> $collection */
             $collection = $collection->filter(fn (Affiliate $a) => ($a->pivot?->depth ?? 0) === (int) $level);
         }
 
         $total = $collection->count();
         $lastPage = (int) max(1, ceil($total / $perPage));
         $offset = ($page - 1) * $perPage;
-        /** @var \Illuminate\Support\Collection<int, Affiliate> $paginated */
+        /** @var Collection<int, Affiliate> $paginated */
         $paginated = $collection->slice($offset, $perPage)->values();
 
         return response()->json([

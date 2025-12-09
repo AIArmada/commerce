@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use App\Models\User;
 
 return [
     'key' => env('STRIPE_KEY'),
@@ -10,5 +11,5 @@ return [
         'secret' => env('STRIPE_WEBHOOK_SECRET'),
         'tolerance' => 300,
     ],
-    'model' => App\Models\User::class,
+    'model' => User::class,
 ];

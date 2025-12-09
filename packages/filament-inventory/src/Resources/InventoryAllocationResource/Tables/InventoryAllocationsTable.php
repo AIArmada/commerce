@@ -10,6 +10,7 @@ use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -17,6 +18,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 final class InventoryAllocationsTable
 {
@@ -118,7 +120,7 @@ final class InventoryAllocationsTable
                         $quantity = $record->quantity;
                         InventoryAllocationFacade::releaseAllocation($record);
 
-                        \Filament\Notifications\Notification::make()
+                        Notification::make()
                             ->title('Allocation Released')
                             ->body("Released {$quantity} units back to inventory.")
                             ->success()
@@ -138,14 +140,14 @@ final class InventoryAllocationsTable
                             $totalReleased = 0;
                             $count = $records->count();
 
-                            \Illuminate\Support\Facades\DB::transaction(function () use ($records, &$totalReleased): void {
+                            DB::transaction(function () use ($records, &$totalReleased): void {
                                 /** @var InventoryAllocation $record */
                                 foreach ($records as $record) {
                                     $totalReleased += InventoryAllocationFacade::releaseAllocation($record);
                                 }
                             });
 
-                            \Filament\Notifications\Notification::make()
+                            Notification::make()
                                 ->title('Allocations Released')
                                 ->body("Released {$totalReleased} units from {$count} allocations.")
                                 ->success()

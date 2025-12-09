@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 use AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy;
 
 $tablePrefix = env('DOCS_TABLE_PREFIX', 'docs_');
@@ -33,7 +34,7 @@ return [
     */
     'owner' => [
         'enabled' => env('DOCS_OWNER_ENABLED', false),
-        'resolver' => env('DOCS_OWNER_RESOLVER', AIArmada\CommerceSupport\Contracts\NullOwnerResolver::class),
+        'resolver' => env('DOCS_OWNER_RESOLVER', NullOwnerResolver::class),
         'include_global' => env('DOCS_OWNER_INCLUDE_GLOBAL', true),
     ],
 

@@ -49,10 +49,10 @@ final class CheckoutSaga
     public function __construct(Cart $cart)
     {
         $this->cart = $cart;
-        $this->validationStage = new ValidationStage();
-        $this->reservationStage = new ReservationStage();
-        $this->paymentStage = new PaymentStage();
-        $this->fulfillmentStage = new FulfillmentStage();
+        $this->validationStage = new ValidationStage;
+        $this->reservationStage = new ReservationStage;
+        $this->paymentStage = new PaymentStage;
+        $this->fulfillmentStage = new FulfillmentStage;
     }
 
     /**

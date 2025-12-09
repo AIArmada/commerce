@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Blockchain;
 
 use AIArmada\Cart\Cart;
+use Carbon\Carbon;
 use Throwable;
 
 /**
@@ -302,7 +303,7 @@ final class ProofVerifier
     private function verifyTimestamp(string $timestamp): bool
     {
         try {
-            $proofTime = \Carbon\Carbon::parse($timestamp);
+            $proofTime = Carbon::parse($timestamp);
 
             return $proofTime->lte(now());
         } catch (Throwable) {

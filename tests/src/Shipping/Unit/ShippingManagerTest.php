@@ -6,6 +6,7 @@ use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Drivers\ManualShippingDriver;
 use AIArmada\Shipping\Drivers\NullShippingDriver;
 use AIArmada\Shipping\ShippingManager;
+use Illuminate\Contracts\Config\Repository;
 use Illuminate\Contracts\Foundation\Application;
 
 // ============================================
@@ -16,17 +17,17 @@ beforeEach(function (): void {
     $this->app = Mockery::mock(Application::class);
     $this->app->shouldReceive('make')->andReturnUsing(function ($class) {
         if ($class === NullShippingDriver::class) {
-            return new NullShippingDriver();
+            return new NullShippingDriver;
         }
         if ($class === ManualShippingDriver::class) {
-            return new ManualShippingDriver();
+            return new ManualShippingDriver;
         }
 
         return null;
     });
 
     // Mock config repository
-    $config = Mockery::mock(Illuminate\Contracts\Config\Repository::class);
+    $config = Mockery::mock(Repository::class);
     $config->shouldReceive('get')->with('shipping.drivers', [])->andReturn([
         'null' => ['driver' => 'null'],
         'manual' => ['driver' => 'manual'],

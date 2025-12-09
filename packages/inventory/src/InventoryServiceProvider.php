@@ -4,6 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory;
 
+use AIArmada\Cart\CartManager;
+use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Events\CartCleared;
+use AIArmada\Cart\Events\CartDestroyed;
+use AIArmada\Cart\Events\ItemAdded;
+use AIArmada\Cart\Facades\Cart;
+use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Inventory\Cart\CartManagerWithInventory;
@@ -28,6 +35,7 @@ use AIArmada\Inventory\Services\SerialService;
 use AIArmada\Inventory\Services\StandardCostService;
 use AIArmada\Inventory\Services\ValuationService;
 use AIArmada\Inventory\Services\WeightedAverageCostService;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
@@ -98,7 +106,7 @@ final class InventoryServiceProvider extends PackageServiceProvider
      */
     private function registerOwnerResolver(): void
     {
-        $this->app->singleton(OwnerResolverInterface::class, function (\Illuminate\Contracts\Foundation\Application $app): OwnerResolverInterface {
+        $this->app->singleton(OwnerResolverInterface::class, function (Application $app): OwnerResolverInterface {
             /** @var class-string<OwnerResolverInterface> $resolverClass */
             $resolverClass = config('inventory.owner.resolver', NullOwnerResolver::class);
 
@@ -185,29 +193,29 @@ final class InventoryServiceProvider extends PackageServiceProvider
         }
 
         // Check if cart package is installed
-        if (! class_exists(\AIArmada\Cart\CartManager::class)) {
+        if (! class_exists(CartManager::class)) {
             return;
         }
 
         // Register cart event listeners for inventory release
-        if (class_exists(\AIArmada\Cart\Events\CartCleared::class)) {
+        if (class_exists(CartCleared::class)) {
             Event::listen(
-                \AIArmada\Cart\Events\CartCleared::class,
+                CartCleared::class,
                 [ReleaseInventoryOnCartClear::class, 'handleCleared']
             );
         }
 
-        if (class_exists(\AIArmada\Cart\Events\CartDestroyed::class)) {
+        if (class_exists(CartDestroyed::class)) {
             Event::listen(
-                \AIArmada\Cart\Events\CartDestroyed::class,
+                CartDestroyed::class,
                 [ReleaseInventoryOnCartClear::class, 'handleDestroyed']
             );
         }
 
         // Register ItemAdded listener for validation/auto-allocation
-        if (class_exists(\AIArmada\Cart\Events\ItemAdded::class)) {
+        if (class_exists(ItemAdded::class)) {
             Event::listen(
-                \AIArmada\Cart\Events\ItemAdded::class,
+                ItemAdded::class,
                 ValidateInventoryOnAdd::class
             );
         }
@@ -222,12 +230,12 @@ final class InventoryServiceProvider extends PackageServiceProvider
             $proxy->setAllocationService($app->make(InventoryAllocationService::class));
 
             // Update container bindings
-            $app->instance(\AIArmada\Cart\CartManager::class, $proxy);
-            $app->instance(\AIArmada\Cart\Contracts\CartManagerInterface::class, $proxy);
+            $app->instance(CartManager::class, $proxy);
+            $app->instance(CartManagerInterface::class, $proxy);
 
             // Clear cached facade instance
-            if (class_exists(\AIArmada\Cart\Facades\Cart::class)) {
-                \AIArmada\Cart\Facades\Cart::clearResolvedInstance('cart');
+            if (class_exists(Cart::class)) {
+                Cart::clearResolvedInstance('cart');
             }
 
             return $proxy;
@@ -244,9 +252,9 @@ final class InventoryServiceProvider extends PackageServiceProvider
         }
 
         // CashierChip integration
-        if (class_exists(\AIArmada\CashierChip\Events\PaymentSucceeded::class)) {
+        if (class_exists(PaymentSucceeded::class)) {
             Event::listen(
-                \AIArmada\CashierChip\Events\PaymentSucceeded::class,
+                PaymentSucceeded::class,
                 CommitInventoryOnPayment::class
             );
         }

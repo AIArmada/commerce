@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use AIArmada\Cart\Services\BuiltInRulesFactory;
 
 return [
     /*
@@ -54,7 +55,7 @@ return [
         'ai_recovery' => true,
     ],
 
-    'dynamic_rules_factory' => AIArmada\Cart\Services\BuiltInRulesFactory::class,
+    'dynamic_rules_factory' => BuiltInRulesFactory::class,
 
     /*
     |--------------------------------------------------------------------------

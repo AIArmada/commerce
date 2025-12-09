@@ -10,6 +10,7 @@ use AIArmada\Stock\Events\StockReleased;
 use AIArmada\Stock\Events\StockReserved;
 use AIArmada\Stock\Models\StockReservation;
 use AIArmada\Stock\Models\StockTransaction;
+use Illuminate\Foundation\Events\Dispatchable;
 
 describe('StockReserved Event', function (): void {
     it('can be instantiated with all required arguments', function (): void {
@@ -54,7 +55,7 @@ describe('StockReserved Event', function (): void {
             reservation: $reservation
         );
 
-        expect(class_uses_recursive($event))->toContain(Illuminate\Foundation\Events\Dispatchable::class);
+        expect(class_uses_recursive($event))->toContain(Dispatchable::class);
     });
 });
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources\CartConditionResource\Schemas;
 
+use Filament\Forms\Components\Checkbox;
 use Filament\Forms\Components\TextInput;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -62,27 +63,27 @@ final class CartConditionForm
 
                         Grid::make(5)
                             ->schema([
-                                \Filament\Forms\Components\Checkbox::make('is_charge')
+                                Checkbox::make('is_charge')
                                     ->label('Is Charge')
                                     ->disabled()
                                     ->dehydrated(false),
 
-                                \Filament\Forms\Components\Checkbox::make('is_discount')
+                                Checkbox::make('is_discount')
                                     ->label('Is Discount')
                                     ->disabled()
                                     ->dehydrated(false),
 
-                                \Filament\Forms\Components\Checkbox::make('is_percentage')
+                                Checkbox::make('is_percentage')
                                     ->label('Is Percentage')
                                     ->disabled()
                                     ->dehydrated(false),
 
-                                \Filament\Forms\Components\Checkbox::make('is_dynamic')
+                                Checkbox::make('is_dynamic')
                                     ->label('Is Dynamic')
                                     ->disabled()
                                     ->dehydrated(false),
 
-                                \Filament\Forms\Components\Checkbox::make('is_global')
+                                Checkbox::make('is_global')
                                     ->label('Is Global')
                                     ->disabled()
                                     ->dehydrated(false),

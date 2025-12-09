@@ -140,14 +140,14 @@ class StackingEngine
 
     private function registerDefaultRules(): void
     {
-        $this->registerRule(new MaxVouchersRule());
-        $this->registerRule(new MaxDiscountRule());
-        $this->registerRule(new MaxDiscountPercentageRule());
-        $this->registerRule(new MutualExclusionRule());
-        $this->registerRule(new TypeRestrictionRule());
-        $this->registerRule(new CategoryExclusionRule());
-        $this->registerRule(new CampaignExclusionRule());
-        $this->registerRule(new ValueThresholdRule());
+        $this->registerRule(new MaxVouchersRule);
+        $this->registerRule(new MaxDiscountRule);
+        $this->registerRule(new MaxDiscountPercentageRule);
+        $this->registerRule(new MutualExclusionRule);
+        $this->registerRule(new TypeRestrictionRule);
+        $this->registerRule(new CategoryExclusionRule);
+        $this->registerRule(new CampaignExclusionRule);
+        $this->registerRule(new ValueThresholdRule);
     }
 
     /**

@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Cache;
 beforeEach(function (): void {
     $this->storage = new CacheStorage(Cache::store('array'));
     $this->cart = new Cart($this->storage, 'test-identifier');
-    $this->rulesFactory = new ExampleRulesFactory();
+    $this->rulesFactory = new ExampleRulesFactory;
 });
 
 it('can set and get rules factory', function (): void {

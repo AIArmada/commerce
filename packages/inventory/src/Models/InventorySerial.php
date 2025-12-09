@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\Inventory\Database\Factories\InventorySerialFactory;
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Enums\SerialStatus;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -49,7 +51,7 @@ use InvalidArgumentException;
  * @property-read InventoryBatch|null $batch
  * @property-read Model $inventoryable
  * @property-read Model|null $assignedTo
- * @property-read \Illuminate\Database\Eloquent\Collection<int, InventorySerialHistory> $history
+ * @property-read Collection<int, InventorySerialHistory> $history
  */
 final class InventorySerial extends Model
 {
@@ -348,9 +350,9 @@ final class InventorySerial extends Model
     /**
      * Create a new factory instance for the model.
      */
-    protected static function newFactory(): \AIArmada\Inventory\Database\Factories\InventorySerialFactory
+    protected static function newFactory(): InventorySerialFactory
     {
-        return \AIArmada\Inventory\Database\Factories\InventorySerialFactory::new();
+        return InventorySerialFactory::new();
     }
 
     /**

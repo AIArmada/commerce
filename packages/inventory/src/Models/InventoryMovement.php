@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\Inventory\Database\Factories\InventoryMovementFactory;
 use AIArmada\Inventory\Enums\MovementType;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Foundation\Auth\User;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -23,13 +27,13 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $reference
  * @property string|null $user_id
  * @property string|null $note
- * @property \Illuminate\Support\Carbon $occurred_at
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
+ * @property Carbon $occurred_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  * @property-read InventoryLocation|null $fromLocation
  * @property-read InventoryLocation|null $toLocation
  * @property-read Model $inventoryable
- * @property-read \Illuminate\Foundation\Auth\User|null $user
+ * @property-read User|null $user
  */
 final class InventoryMovement extends Model
 {
@@ -96,11 +100,11 @@ final class InventoryMovement extends Model
     /**
      * Get the user who performed the movement.
      *
-     * @return BelongsTo<\Illuminate\Foundation\Auth\User, $this>
+     * @return BelongsTo<User, $this>
      */
     public function user(): BelongsTo
     {
-        /** @var class-string<\Illuminate\Foundation\Auth\User> $userModel */
+        /** @var class-string<User> $userModel */
         $userModel = config('auth.providers.users.model');
 
         return $this->belongsTo($userModel);
@@ -149,10 +153,10 @@ final class InventoryMovement extends Model
     /**
      * Scope to filter by movement type.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeOfType(\Illuminate\Database\Eloquent\Builder $query, MovementType $type): \Illuminate\Database\Eloquent\Builder
+    public function scopeOfType(Builder $query, MovementType $type): Builder
     {
         return $query->where('type', $type->value);
     }
@@ -160,10 +164,10 @@ final class InventoryMovement extends Model
     /**
      * Scope to filter by reference.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeForReference(\Illuminate\Database\Eloquent\Builder $query, string $reference): \Illuminate\Database\Eloquent\Builder
+    public function scopeForReference(Builder $query, string $reference): Builder
     {
         return $query->where('reference', $reference);
     }
@@ -171,10 +175,10 @@ final class InventoryMovement extends Model
     /**
      * Scope to filter by location (from or to).
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<self>
+     * @param  Builder<self>  $query
+     * @return Builder<self>
      */
-    public function scopeAtLocation(\Illuminate\Database\Eloquent\Builder $query, string $locationId): \Illuminate\Database\Eloquent\Builder
+    public function scopeAtLocation(Builder $query, string $locationId): Builder
     {
         return $query->where(function ($q) use ($locationId): void {
             $q->where('from_location_id', $locationId)
@@ -185,9 +189,9 @@ final class InventoryMovement extends Model
     /**
      * Create a new factory instance for the model.
      */
-    protected static function newFactory(): \AIArmada\Inventory\Database\Factories\InventoryMovementFactory
+    protected static function newFactory(): InventoryMovementFactory
     {
-        return \AIArmada\Inventory\Database\Factories\InventoryMovementFactory::new();
+        return InventoryMovementFactory::new();
     }
 
     /**

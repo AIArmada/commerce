@@ -20,7 +20,7 @@ final class SupportValidationHook extends SupportValidation
             $this->component->setErrorBag($bag);
         }
 
-        $errors = (new ViewErrorBag())->put('default', $bag);
+        $errors = (new ViewErrorBag)->put('default', $bag);
 
         $revert = Utils::shareWithViews('errors', $errors);
 

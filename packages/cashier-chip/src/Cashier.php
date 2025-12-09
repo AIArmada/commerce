@@ -9,6 +9,7 @@ use AIArmada\CashierChip\Testing\FakeChipCollectService;
 use AIArmada\Chip\Services\ChipCollectService;
 use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
@@ -71,7 +72,7 @@ class Cashier
     /**
      * Get the customer instance by its CHIP ID.
      *
-     * @return (\Illuminate\Database\Eloquent\Model&Billable)|null
+     * @return (Model&Billable)|null
      */
     public static function findBillable(?string $chipId): ?object
     {
@@ -207,7 +208,7 @@ class Cashier
     /**
      * Set the customer model class name.
      *
-     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $customerModel
+     * @param  class-string<Model>  $customerModel
      */
     public static function useCustomerModel(string $customerModel): void
     {
@@ -217,7 +218,7 @@ class Cashier
     /**
      * Set the subscription model class name.
      *
-     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $subscriptionModel
+     * @param  class-string<Model>  $subscriptionModel
      */
     public static function useSubscriptionModel(string $subscriptionModel): void
     {
@@ -227,7 +228,7 @@ class Cashier
     /**
      * Set the subscription item model class name.
      *
-     * @param  class-string<\Illuminate\Database\Eloquent\Model>  $subscriptionItemModel
+     * @param  class-string<Model>  $subscriptionItemModel
      */
     public static function useSubscriptionItemModel(string $subscriptionItemModel): void
     {

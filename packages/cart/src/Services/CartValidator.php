@@ -7,6 +7,7 @@ namespace AIArmada\Cart\Services;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\BuyableInterface;
 use AIArmada\Cart\Models\CartItem;
+use Akaunting\Money\Money;
 use Closure;
 
 /**
@@ -49,7 +50,7 @@ final class CartValidator
      */
     public static function create(): self
     {
-        return new self();
+        return new self;
     }
 
     /**
@@ -123,8 +124,8 @@ final class CartValidator
             $total = (int) $cart->getRawTotal();
             if ($total < $minimum) {
                 $currency = config('cart.money.default_currency', 'USD');
-                $formattedMin = (string) \Akaunting\Money\Money::{$currency}($minimum);
-                $formattedCurrent = (string) \Akaunting\Money\Money::{$currency}($total);
+                $formattedMin = (string) Money::{$currency}($minimum);
+                $formattedCurrent = (string) Money::{$currency}($total);
 
                 return ValidationError::cart(
                     'minimum_total',
@@ -149,8 +150,8 @@ final class CartValidator
             $total = (int) $cart->getRawTotal();
             if ($total > $maximum) {
                 $currency = config('cart.money.default_currency', 'USD');
-                $formattedMax = (string) \Akaunting\Money\Money::{$currency}($maximum);
-                $formattedCurrent = (string) \Akaunting\Money\Money::{$currency}($total);
+                $formattedMax = (string) Money::{$currency}($maximum);
+                $formattedCurrent = (string) Money::{$currency}($total);
 
                 return ValidationError::cart(
                     'maximum_total',

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Services;
 
 use AIArmada\FilamentAuthz\Enums\ImpactLevel;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -204,9 +205,9 @@ class PermissionImpactAnalyzer
     /**
      * Get all roles affected by a change to a role (including descendants).
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, Role>
+     * @return Collection<int, Role>
      */
-    protected function getAffectedRoles(Role $role): \Illuminate\Database\Eloquent\Collection
+    protected function getAffectedRoles(Role $role): Collection
     {
         $descendants = $this->roleInheritance->getDescendants($role);
 
@@ -216,9 +217,9 @@ class PermissionImpactAnalyzer
     /**
      * Count users assigned to any of the given roles.
      *
-     * @param  \Illuminate\Database\Eloquent\Collection<int, Role>  $roles
+     * @param  Collection<int, Role>  $roles
      */
-    protected function countAffectedUsers(\Illuminate\Database\Eloquent\Collection $roles): int
+    protected function countAffectedUsers(Collection $roles): int
     {
         $roleIds = $roles->pluck('id');
 
@@ -231,9 +232,9 @@ class PermissionImpactAnalyzer
     /**
      * Count users who would lose access to a permission.
      *
-     * @param  \Illuminate\Database\Eloquent\Collection<int, Role>  $affectedRoles
+     * @param  Collection<int, Role>  $affectedRoles
      */
-    protected function countUsersLosingAccess(string $permissionName, \Illuminate\Database\Eloquent\Collection $affectedRoles): int
+    protected function countUsersLosingAccess(string $permissionName, Collection $affectedRoles): int
     {
         // Find other roles that grant this permission
         $permission = Permission::where('name', $permissionName)->first();

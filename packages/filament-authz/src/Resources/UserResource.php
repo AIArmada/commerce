@@ -6,6 +6,8 @@ namespace AIArmada\FilamentAuthz\Resources;
 
 use AIArmada\FilamentAuthz\Resources\UserResource\Pages;
 use AIArmada\FilamentAuthz\Resources\UserResource\RelationManagers;
+use App\Models\User;
+use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
@@ -13,6 +15,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Hash;
 
 class UserResource extends Resource
 {
@@ -20,7 +23,7 @@ class UserResource extends Resource
 
     public static function getModel(): string
     {
-        return (string) config('filament-authz.user_model', \App\Models\User::class);
+        return (string) config('filament-authz.user_model', User::class);
     }
 
     public static function getNavigationGroup(): ?string
@@ -67,7 +70,7 @@ class UserResource extends Resource
                     ->revealable()
                     ->rule('min:8')
                     ->required(fn (string $operation): bool => $operation === 'create')
-                    ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? \Illuminate\Support\Facades\Hash::make($state) : null)
+                    ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? Hash::make($state) : null)
                     ->dehydrated(fn (?string $state): bool => filled($state));
             }
 
@@ -83,7 +86,7 @@ class UserResource extends Resource
                     ->revealable()
                     ->rule('min:8')
                     ->required(fn (string $operation): bool => $operation === 'create')
-                    ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? \Illuminate\Support\Facades\Hash::make($state) : null)
+                    ->dehydrateStateUsing(fn (?string $state): ?string => filled($state) ? Hash::make($state) : null)
                     ->dehydrated(fn (?string $state): bool => filled($state)),
             ])->columns(2),
         ]);
@@ -122,7 +125,7 @@ class UserResource extends Resource
                 ->separator(','),
             TextColumn::make('updated_at')->since()->sortable()->toggleable(isToggledHiddenByDefault: true),
         ])->actions([
-            \Filament\Actions\EditAction::make()->authorize(fn (Model $record) => auth()->user()?->can('user.update')),
+            EditAction::make()->authorize(fn (Model $record) => auth()->user()?->can('user.update')),
         ]);
     }
 

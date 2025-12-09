@@ -7,6 +7,7 @@ namespace AIArmada\Cashier\Concerns;
 use AIArmada\Cashier\Contracts\CheckoutBuilderContract;
 use AIArmada\Cashier\Contracts\CustomerContract;
 use AIArmada\Cashier\Contracts\GatewayContract;
+use AIArmada\Cashier\Contracts\InvoiceContract;
 use AIArmada\Cashier\Contracts\PaymentContract;
 use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
@@ -231,7 +232,7 @@ trait ManagesGateway
      * Get all invoices across all gateways.
      *
      * @param  array<string, mixed>  $parameters
-     * @return Collection<int, \AIArmada\Cashier\Contracts\InvoiceContract>
+     * @return Collection<int, InvoiceContract>
      */
     public function allGatewayInvoices(array $parameters = []): Collection
     {
@@ -250,7 +251,7 @@ trait ManagesGateway
      * Get invoices for a specific gateway.
      *
      * @param  array<string, mixed>  $parameters
-     * @return Collection<int, \AIArmada\Cashier\Contracts\InvoiceContract>
+     * @return Collection<int, InvoiceContract>
      */
     public function gatewayInvoices(?string $gateway = null, array $parameters = []): Collection
     {

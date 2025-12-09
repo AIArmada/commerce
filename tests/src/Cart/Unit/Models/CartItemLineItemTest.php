@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\CommerceSupport\Contracts\Payment\LineItemInterface;
 use Akaunting\Money\Money;
@@ -66,7 +67,7 @@ describe('CartItem LineItemInterface implementation', function (): void {
     });
 
     it('returns line item discount as Money', function (): void {
-        $discount = new AIArmada\Cart\Conditions\CartCondition(
+        $discount = new CartCondition(
             name: 'item-discount',
             type: 'discount',
             target: 'items@item_discount/per-item',
@@ -102,7 +103,7 @@ describe('CartItem LineItemInterface implementation', function (): void {
     });
 
     it('returns line item tax percent from condition', function (): void {
-        $tax = new AIArmada\Cart\Conditions\CartCondition(
+        $tax = new CartCondition(
             name: 'sst',
             type: 'tax',
             target: 'items@item_discount/per-item',
@@ -158,7 +159,7 @@ describe('CartItem LineItemInterface implementation', function (): void {
     });
 
     it('returns line item subtotal with discount applied', function (): void {
-        $discount = new AIArmada\Cart\Conditions\CartCondition(
+        $discount = new CartCondition(
             name: 'item-discount',
             type: 'discount',
             target: 'items@item_discount/per-item',

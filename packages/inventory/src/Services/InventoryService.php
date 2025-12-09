@@ -15,6 +15,7 @@ use AIArmada\Inventory\Exceptions\InsufficientStockException;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
@@ -288,9 +289,9 @@ final class InventoryService
     /**
      * Get movement history for a model.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, InventoryMovement>
+     * @return Collection<int, InventoryMovement>
      */
-    public function getMovementHistory(Model $model, int $limit = 50): \Illuminate\Database\Eloquent\Collection
+    public function getMovementHistory(Model $model, int $limit = 50): Collection
     {
         return InventoryMovement::query()
             ->where('inventoryable_type', $model->getMorphClass())

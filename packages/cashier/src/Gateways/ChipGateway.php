@@ -20,9 +20,11 @@ use AIArmada\Cashier\Gateways\Chip\ChipPaymentMethod;
 use AIArmada\Cashier\Gateways\Chip\ChipSubscription;
 use AIArmada\Cashier\Gateways\Chip\ChipSubscriptionBuilder;
 use AIArmada\CashierChip\Cashier as CashierChip;
+use AIArmada\CashierChip\Payment;
 use AIArmada\Chip\Services\ChipCollectService;
 use Exception;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Route;
 
 /**
  * CHIP payment gateway implementation.
@@ -122,7 +124,7 @@ class ChipGateway extends AbstractGateway
     {
         $purchase = $this->client()->refundPurchase($paymentId, $amount);
 
-        return new ChipPayment(new \AIArmada\CashierChip\Payment($purchase));
+        return new ChipPayment(new Payment($purchase));
     }
 
     /**
@@ -182,7 +184,7 @@ class ChipGateway extends AbstractGateway
         try {
             $purchase = $this->client()->getPurchase($paymentId);
 
-            return new ChipPayment(new \AIArmada\CashierChip\Payment($purchase));
+            return new ChipPayment(new Payment($purchase));
         } catch (Exception) {
             return null;
         }
@@ -375,7 +377,7 @@ class ChipGateway extends AbstractGateway
         $panelId = $options['panel'] ?? 'billing';
         $routeName = "filament.{$panelId}.pages.dashboard";
 
-        if (! \Illuminate\Support\Facades\Route::has($routeName)) {
+        if (! Route::has($routeName)) {
             return $returnUrl;
         }
 

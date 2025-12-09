@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Stock;
 
+use AIArmada\Cart\CartManager;
+use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Events\CartCleared;
+use AIArmada\Cart\Events\CartDestroyed;
+use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Stock\Console\CleanupExpiredReservationsCommand;
@@ -11,6 +16,7 @@ use AIArmada\Stock\Listeners\DeductStockOnPaymentSuccess;
 use AIArmada\Stock\Listeners\ReleaseStockOnCartClear;
 use AIArmada\Stock\Services\StockReservationService;
 use AIArmada\Stock\Services\StockService;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
@@ -66,7 +72,7 @@ final class StockServiceProvider extends PackageServiceProvider
      */
     private function registerOwnerResolver(): void
     {
-        $this->app->singleton(OwnerResolverInterface::class, function (\Illuminate\Contracts\Foundation\Application $app): OwnerResolverInterface {
+        $this->app->singleton(OwnerResolverInterface::class, function (Application $app): OwnerResolverInterface {
             /** @var class-string<OwnerResolverInterface> $resolverClass */
             $resolverClass = config('stock.owner.resolver', NullOwnerResolver::class);
 
@@ -92,21 +98,21 @@ final class StockServiceProvider extends PackageServiceProvider
         }
 
         // Check if cart package is installed
-        if (! class_exists(\AIArmada\Cart\CartManager::class)) {
+        if (! class_exists(CartManager::class)) {
             return;
         }
 
         // Register cart event listeners for stock release
-        if (class_exists(\AIArmada\Cart\Events\CartCleared::class)) {
+        if (class_exists(CartCleared::class)) {
             Event::listen(
-                \AIArmada\Cart\Events\CartCleared::class,
+                CartCleared::class,
                 [ReleaseStockOnCartClear::class, 'handleCleared']
             );
         }
 
-        if (class_exists(\AIArmada\Cart\Events\CartDestroyed::class)) {
+        if (class_exists(CartDestroyed::class)) {
             Event::listen(
-                \AIArmada\Cart\Events\CartDestroyed::class,
+                CartDestroyed::class,
                 [ReleaseStockOnCartClear::class, 'handleDestroyed']
             );
         }
@@ -121,8 +127,8 @@ final class StockServiceProvider extends PackageServiceProvider
             $proxy->setReservationService($app->make(StockReservationService::class));
 
             // Update container bindings
-            $app->instance(\AIArmada\Cart\CartManager::class, $proxy);
-            $app->instance(\AIArmada\Cart\Contracts\CartManagerInterface::class, $proxy);
+            $app->instance(CartManager::class, $proxy);
+            $app->instance(CartManagerInterface::class, $proxy);
 
             // Clear cached facade instance
             if (class_exists(\AIArmada\Cart\Facades\Cart::class)) {
@@ -143,9 +149,9 @@ final class StockServiceProvider extends PackageServiceProvider
         }
 
         // CashierChip integration
-        if (class_exists(\AIArmada\CashierChip\Events\PaymentSucceeded::class)) {
+        if (class_exists(PaymentSucceeded::class)) {
             Event::listen(
-                \AIArmada\CashierChip\Events\PaymentSucceeded::class,
+                PaymentSucceeded::class,
                 DeductStockOnPaymentSuccess::class
             );
         }

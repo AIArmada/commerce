@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Testing;
 
 use AIArmada\Chip\Enums\WebhookEventType;
+use Illuminate\Testing\TestResponse;
 
 /**
  * Trait for simulating CHIP webhooks in PHPUnit/Pest tests.
@@ -127,7 +128,7 @@ trait SimulatesWebhooks
      *
      * @param  array<string, mixed>  $payload
      * @param  array<string, string>  $headers
-     * @return \Illuminate\Testing\TestResponse
+     * @return TestResponse
      */
     protected function postWebhook(string $url, array $payload, array $headers = [])
     {

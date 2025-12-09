@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use App\Models\User;
 
 $tablePrefix = env('AUTHZ_TABLE_PREFIX', env('COMMERCE_TABLE_PREFIX', ''));
 
@@ -69,7 +70,7 @@ return [
     |--------------------------------------------------------------------------
     */
     'enable_user_resource' => false,
-    'user_model' => App\Models\User::class,
+    'user_model' => User::class,
     'panel_guard_map' => [],
     'features' => [
         'permission_explorer' => false,

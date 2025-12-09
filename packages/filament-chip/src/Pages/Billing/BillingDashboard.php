@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Pages\Billing;
 
+use AIArmada\CashierChip\Cashier;
 use AIArmada\FilamentChip\Concerns\InteractsWithBillable;
 use BackedEnum;
 use Filament\Pages\Page;
@@ -50,7 +51,7 @@ class BillingDashboard extends Page
     public function formatAmount(int $amount): string
     {
         if (class_exists('\AIArmada\CashierChip\Cashier')) {
-            return \AIArmada\CashierChip\Cashier::formatAmount($amount);
+            return Cashier::formatAmount($amount);
         }
 
         // Fallback formatting

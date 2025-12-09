@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Route;
 uses(CashierChipTestCase::class);
 
 beforeEach(function (): void {
-    $this->gateway = new ChipGateway();
+    $this->gateway = new ChipGateway;
 
     // Create a mock billable for testing
     $this->billable = Mockery::mock(BillableContract::class);

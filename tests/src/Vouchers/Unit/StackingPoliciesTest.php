@@ -6,6 +6,8 @@ namespace Tests\Unit\Vouchers;
 
 use AIArmada\Vouchers\Stacking\Enums\StackingMode;
 use AIArmada\Vouchers\Stacking\Enums\StackingRuleType;
+use AIArmada\Vouchers\Stacking\Rules\MaxVouchersRule;
+use AIArmada\Vouchers\Stacking\Rules\MutualExclusionRule;
 use AIArmada\Vouchers\Stacking\StackingDecision;
 use AIArmada\Vouchers\Stacking\StackingPolicy;
 
@@ -46,9 +48,9 @@ describe('StackingRuleType Enum', function (): void {
 
     it('returns rule class names', function (): void {
         expect(StackingRuleType::MaxVouchers->getRuleClass())
-            ->toBe(\AIArmada\Vouchers\Stacking\Rules\MaxVouchersRule::class);
+            ->toBe(MaxVouchersRule::class);
         expect(StackingRuleType::MutualExclusion->getRuleClass())
-            ->toBe(\AIArmada\Vouchers\Stacking\Rules\MutualExclusionRule::class);
+            ->toBe(MutualExclusionRule::class);
     });
 });
 
@@ -131,14 +133,14 @@ describe('StackingPolicy', function (): void {
     });
 
     it('can add rules fluently', function (): void {
-        $policy = new StackingPolicy();
+        $policy = new StackingPolicy;
         $policy->addRule(['type' => 'max_vouchers', 'value' => 2]);
 
         expect($policy->getRules())->toHaveCount(1);
     });
 
     it('can change mode fluently', function (): void {
-        $policy = new StackingPolicy();
+        $policy = new StackingPolicy;
         $policy->withMode(StackingMode::BestDeal);
 
         expect($policy->getMode())->toBe(StackingMode::BestDeal);

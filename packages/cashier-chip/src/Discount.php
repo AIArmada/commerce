@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip;
 
+use AIArmada\Vouchers\Services\VoucherService;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Contracts\Support\Arrayable;
@@ -188,12 +189,12 @@ class Discount implements Arrayable, Jsonable, JsonSerializable
      */
     protected function retrieveCoupon(string $couponId): ?Coupon
     {
-        if (! class_exists(\AIArmada\Vouchers\Services\VoucherService::class)) {
+        if (! class_exists(VoucherService::class)) {
             return null;
         }
 
-        /** @var \AIArmada\Vouchers\Services\VoucherService $service */
-        $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
+        /** @var VoucherService $service */
+        $service = app(VoucherService::class);
 
         $voucherData = $service->find($couponId);
 

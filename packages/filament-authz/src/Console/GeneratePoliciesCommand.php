@@ -7,7 +7,9 @@ namespace AIArmada\FilamentAuthz\Console;
 use AIArmada\FilamentAuthz\Enums\PolicyType;
 use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
 use AIArmada\FilamentAuthz\Services\PolicyGeneratorService;
+use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use Illuminate\Console\Command;
+use Illuminate\Support\Collection;
 
 use function Laravel\Prompts\select;
 
@@ -119,9 +121,9 @@ class GeneratePoliciesCommand extends Command
     }
 
     /**
-     * @return \Illuminate\Support\Collection<int, \AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource>
+     * @return Collection<int, DiscoveredResource>
      */
-    protected function getResources(EntityDiscoveryService $discovery): \Illuminate\Support\Collection
+    protected function getResources(EntityDiscoveryService $discovery): Collection
     {
         $options = [];
 

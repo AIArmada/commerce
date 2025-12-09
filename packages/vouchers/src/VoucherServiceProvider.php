@@ -31,6 +31,7 @@ use AIArmada\Vouchers\Services\VoucherValidator;
 use AIArmada\Vouchers\Support\AffiliateIntegrationRegistrar;
 use AIArmada\Vouchers\Support\CartManagerWithVouchers;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
+use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Event;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
@@ -52,7 +53,7 @@ final class VoucherServiceProvider extends PackageServiceProvider
         // Register services as singletons
         $this->app->singleton(VoucherService::class);
         $this->app->singleton(VoucherValidator::class);
-        $this->app->singleton(VoucherRulesFactory::class, static fn () => new VoucherRulesFactory());
+        $this->app->singleton(VoucherRulesFactory::class, static fn () => new VoucherRulesFactory);
 
         // Register AI/ML services
         $this->registerAIServices();
@@ -60,7 +61,7 @@ final class VoucherServiceProvider extends PackageServiceProvider
         // Register affiliate integration
         $this->app->singleton(AffiliateIntegrationRegistrar::class);
 
-        $this->app->singleton(OwnerResolverInterface::class, function (\Illuminate\Contracts\Foundation\Application $app): OwnerResolverInterface {
+        $this->app->singleton(OwnerResolverInterface::class, function (Application $app): OwnerResolverInterface {
             /** @var string $resolverClass */
             $resolverClass = config('vouchers.owner.resolver', NullOwnerResolver::class);
 
@@ -137,7 +138,7 @@ final class VoucherServiceProvider extends PackageServiceProvider
             $proxy = CartManagerWithVouchers::fromCartManager($manager);
 
             // Ensure type-hinting resolution returns the proxied manager
-            /** @var \Illuminate\Contracts\Foundation\Application $app */
+            /** @var Application $app */
             $app->instance(CartManager::class, $proxy);
             $app->instance(CartManagerInterface::class, $proxy);
 

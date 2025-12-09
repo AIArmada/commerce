@@ -1,6 +1,7 @@
 <?php
 
 declare(strict_types=1);
+use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 
 $tablePrefix = env('VOUCHERS_TABLE_PREFIX', env('COMMERCE_TABLE_PREFIX', ''));
 
@@ -113,7 +114,7 @@ return [
     */
     'owner' => [
         'enabled' => env('VOUCHERS_OWNER_ENABLED', false),
-        'resolver' => AIArmada\CommerceSupport\Contracts\NullOwnerResolver::class,
+        'resolver' => NullOwnerResolver::class,
         'include_global' => env('VOUCHERS_OWNER_INCLUDE_GLOBAL', true),
         'auto_assign_on_create' => env('VOUCHERS_OWNER_AUTO_ASSIGN', true),
     ],

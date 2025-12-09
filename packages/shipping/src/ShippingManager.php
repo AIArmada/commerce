@@ -190,7 +190,7 @@ class ShippingManager
      */
     protected function createNullDriver(): ShippingDriverInterface
     {
-        return new NullShippingDriver();
+        return new NullShippingDriver;
     }
 
     /**

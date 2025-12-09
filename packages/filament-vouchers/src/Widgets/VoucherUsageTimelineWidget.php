@@ -7,6 +7,7 @@ namespace AIArmada\FilamentVouchers\Widgets;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use Akaunting\Money\Money;
+use Carbon\Carbon;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -34,7 +35,7 @@ final class VoucherUsageTimelineWidget extends Widget
      *     type: string,
      *     title: string,
      *     description: string,
-     *     timestamp: \Carbon\Carbon,
+     *     timestamp: Carbon,
      *     timestamp_human: string,
      *     icon: string,
      *     color: string,
@@ -100,7 +101,7 @@ final class VoucherUsageTimelineWidget extends Widget
      *     type: string,
      *     title: string,
      *     description: string,
-     *     timestamp: \Carbon\Carbon,
+     *     timestamp: Carbon,
      *     timestamp_human: string,
      *     icon: string,
      *     color: string,

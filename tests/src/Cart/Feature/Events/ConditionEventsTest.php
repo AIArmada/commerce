@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Events\CartConditionAdded;
 use AIArmada\Cart\Events\CartConditionRemoved;
 use AIArmada\Cart\Events\ItemConditionAdded;
@@ -105,7 +106,7 @@ describe('Item Condition Events', function (): void {
 
     it('dispatches events for item-level condition additions', function (): void {
         Cart::add('item', 'Item', 100.00, 1);
-        Cart::addItemCondition('item', new AIArmada\Cart\Conditions\CartCondition(
+        Cart::addItemCondition('item', new CartCondition(
             name: 'Item Discount',
             type: 'discount',
             target: 'cart@cart_subtotal/aggregate',
@@ -119,7 +120,7 @@ describe('Item Condition Events', function (): void {
 
     it('dispatches events for item-level condition removals', function (): void {
         Cart::add('item', 'Item', 100.00, 1);
-        Cart::addItemCondition('item', new AIArmada\Cart\Conditions\CartCondition(
+        Cart::addItemCondition('item', new CartCondition(
             name: 'Item Discount',
             type: 'discount',
             target: 'cart@cart_subtotal/aggregate',

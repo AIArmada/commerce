@@ -6,6 +6,7 @@ namespace AIArmada\Cart\Events\Store;
 
 use AIArmada\Cart\Models\CartEvent;
 use AIArmada\CommerceSupport\Contracts\Events\CartEventInterface;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Eloquent implementation of cart event repository.
@@ -56,7 +57,7 @@ final class EloquentCartEventRepository implements CartEventRepositoryInterface
         $eventIds = [];
 
         // Use transaction for atomic recording
-        \Illuminate\Support\Facades\DB::transaction(function () use ($events, $cartId, &$streamPosition, &$eventIds): void {
+        DB::transaction(function () use ($events, $cartId, &$streamPosition, &$eventIds): void {
             foreach ($events as $event) {
                 if (! $event instanceof CartEventInterface) {
                     continue;

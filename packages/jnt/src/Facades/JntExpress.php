@@ -9,6 +9,11 @@ use AIArmada\Jnt\Data\AddressData;
 use AIArmada\Jnt\Data\OrderData;
 use AIArmada\Jnt\Data\PackageInfoData;
 use AIArmada\Jnt\Data\TrackingData;
+use AIArmada\Jnt\Exceptions\JntApiException;
+use AIArmada\Jnt\Exceptions\JntConfigurationException;
+use AIArmada\Jnt\Exceptions\JntNetworkException;
+use AIArmada\Jnt\Exceptions\JntValidationException;
+use AIArmada\Jnt\Services\JntExpressService;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -27,12 +32,12 @@ use Illuminate\Support\Facades\Facade;
  * @method static bool verifyWebhookSignature(string $bizContent, string $digest) Verify webhook signature from J&T Express
  * @method static array<TrackingData> parseWebhookPayload(array<string, mixed> $webhookData) Parse webhook payload into TrackingData objects
  *
- * @throws \AIArmada\Jnt\Exceptions\JntValidationException When input validation fails (missing required fields, invalid formats, out of range values)
- * @throws \AIArmada\Jnt\Exceptions\JntApiException When J&T Express API returns an error (authentication failure, order not found, cancellation failure, etc.)
- * @throws \AIArmada\Jnt\Exceptions\JntNetworkException When network communication fails (timeout, connection error, DNS failure, SSL error)
- * @throws \AIArmada\Jnt\Exceptions\JntConfigurationException When package configuration is invalid or incomplete (missing API key, invalid environment, etc.)
+ * @throws JntValidationException When input validation fails (missing required fields, invalid formats, out of range values)
+ * @throws JntApiException When J&T Express API returns an error (authentication failure, order not found, cancellation failure, etc.)
+ * @throws JntNetworkException When network communication fails (timeout, connection error, DNS failure, SSL error)
+ * @throws JntConfigurationException When package configuration is invalid or incomplete (missing API key, invalid environment, etc.)
  *
- * @see \AIArmada\Jnt\Services\JntExpressService
+ * @see JntExpressService
  * @see OrderBuilder For fluent order creation
  * @see OrderData For order response structure
  * @see TrackingData For tracking response structure

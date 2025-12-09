@@ -7,6 +7,7 @@ namespace AIArmada\CashierChip;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
+use Carbon\Carbon;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use JsonSerializable;
@@ -152,12 +153,12 @@ class Coupon implements Arrayable, Jsonable, JsonSerializable
         }
 
         // Check if started
-        if ($this->voucher->startsAt && \Carbon\Carbon::instance($this->voucher->startsAt)->isFuture()) {
+        if ($this->voucher->startsAt && Carbon::instance($this->voucher->startsAt)->isFuture()) {
             return false;
         }
 
         // Check if expired
-        if ($this->voucher->expiresAt && \Carbon\Carbon::instance($this->voucher->expiresAt)->isPast()) {
+        if ($this->voucher->expiresAt && Carbon::instance($this->voucher->expiresAt)->isPast()) {
             return false;
         }
 
@@ -177,7 +178,7 @@ class Coupon implements Arrayable, Jsonable, JsonSerializable
      */
     public function isExpired(): bool
     {
-        return $this->voucher->expiresAt && \Carbon\Carbon::instance($this->voucher->expiresAt)->isPast();
+        return $this->voucher->expiresAt && Carbon::instance($this->voucher->expiresAt)->isPast();
     }
 
     /**

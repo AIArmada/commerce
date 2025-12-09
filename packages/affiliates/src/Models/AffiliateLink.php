@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Tracking links created by affiliates for campaigns.
@@ -25,8 +26,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int $clicks
  * @property int $conversions
  * @property bool $is_active
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Affiliate $affiliate
  * @property-read AffiliateProgram|null $program
  */

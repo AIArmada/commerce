@@ -7,7 +7,7 @@ use AIArmada\FilamentCashier\Support\UnifiedInvoice;
 use Carbon\Carbon;
 
 it('can format amount in USD correctly', function (): void {
-    $original = new stdClass();
+    $original = new stdClass;
     $original->id = 'inv_123';
 
     $invoice = new UnifiedInvoice(
@@ -31,7 +31,7 @@ it('can format amount in USD correctly', function (): void {
 });
 
 it('can format amount in MYR correctly', function (): void {
-    $original = new stdClass();
+    $original = new stdClass;
     $original->id = 'inv_456';
 
     $invoice = new UnifiedInvoice(
@@ -55,7 +55,7 @@ it('can format amount in MYR correctly', function (): void {
 });
 
 it('returns gateway config', function (): void {
-    $original = new stdClass();
+    $original = new stdClass;
     $original->id = 'inv_123';
 
     $invoice = new UnifiedInvoice(
@@ -80,7 +80,7 @@ it('returns gateway config', function (): void {
 });
 
 it('can have a pdf url', function (): void {
-    $original = new stdClass();
+    $original = new stdClass;
     $original->id = 'inv_123';
 
     $invoice = new UnifiedInvoice(
@@ -102,7 +102,7 @@ it('can have a pdf url', function (): void {
 });
 
 it('can have null pdf url', function (): void {
-    $original = new stdClass();
+    $original = new stdClass;
     $original->id = 'inv_123';
 
     $invoice = new UnifiedInvoice(
@@ -124,7 +124,7 @@ it('can have null pdf url', function (): void {
 });
 
 it('can be open without paid date', function (): void {
-    $original = new stdClass();
+    $original = new stdClass;
     $original->id = 'inv_123';
 
     $invoice = new UnifiedInvoice(
@@ -148,7 +148,7 @@ it('can be open without paid date', function (): void {
 });
 
 it('can be void', function (): void {
-    $original = new stdClass();
+    $original = new stdClass;
     $original->id = 'inv_123';
 
     $invoice = new UnifiedInvoice(

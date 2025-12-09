@@ -8,6 +8,7 @@ use AIArmada\FilamentShipping\Resources\ShipmentResource\Pages;
 use AIArmada\FilamentShipping\Resources\ShipmentResource\RelationManagers;
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\ShippingManager;
 use BackedEnum;
 use Filament\Forms;
 use Filament\Resources\Resource;
@@ -184,7 +185,7 @@ class ShipmentResource extends Resource
      */
     protected static function getCarrierOptions(): array
     {
-        $shipping = app(\AIArmada\Shipping\ShippingManager::class);
+        $shipping = app(ShippingManager::class);
 
         return collect($shipping->getAvailableDrivers())
             ->mapWithKeys(fn ($driver) => [$driver => ucfirst($driver)])

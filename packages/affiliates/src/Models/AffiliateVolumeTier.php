@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * Volume-based tier for progressive commission rates.
@@ -18,8 +19,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $max_volume_minor
  * @property int $commission_rate_basis_points
  * @property string $period
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read AffiliateProgram|null $program
  */
 class AffiliateVolumeTier extends Model

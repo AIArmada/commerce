@@ -8,33 +8,35 @@ use AIArmada\Vouchers\Fraud\Detectors\PatternDetector;
 use AIArmada\Vouchers\Fraud\Detectors\VelocityDetector;
 use AIArmada\Vouchers\Fraud\Enums\FraudSignalType;
 use AIArmada\Vouchers\Fraud\FraudDetectorResult;
+use AIArmada\Vouchers\Fraud\FraudSignal;
+use Illuminate\Database\Eloquent\Model;
 
 describe('VelocityDetector', function (): void {
     it('has correct name and category', function (): void {
-        $detector = new VelocityDetector();
+        $detector = new VelocityDetector;
 
         expect($detector->getName())->toBe('velocity')
             ->and($detector->getCategory())->toBe('velocity');
     });
 
     it('is enabled by default', function (): void {
-        $detector = new VelocityDetector();
+        $detector = new VelocityDetector;
 
         expect($detector->isEnabled())->toBeTrue();
     });
 
     it('can be disabled', function (): void {
-        $detector = new VelocityDetector();
+        $detector = new VelocityDetector;
         $detector->setEnabled(false);
 
         expect($detector->isEnabled())->toBeFalse();
     });
 
     it('returns clean result when disabled', function (): void {
-        $detector = new VelocityDetector();
+        $detector = new VelocityDetector;
         $detector->setEnabled(false);
 
-        $cart = new stdClass();
+        $cart = new stdClass;
         $result = $detector->detect('TEST-CODE', $cart);
 
         expect($result)->toBeInstanceOf(FraudDetectorResult::class)
@@ -43,8 +45,8 @@ describe('VelocityDetector', function (): void {
     });
 
     it('returns result with execution time', function (): void {
-        $detector = new VelocityDetector();
-        $cart = new stdClass();
+        $detector = new VelocityDetector;
+        $cart = new stdClass;
 
         $result = $detector->detect('TEST-CODE', $cart);
 
@@ -52,7 +54,7 @@ describe('VelocityDetector', function (): void {
     });
 
     it('can configure thresholds', function (): void {
-        $detector = new VelocityDetector();
+        $detector = new VelocityDetector;
         $detector->setThresholds([
             'redemptions_per_minute' => 10,
             'redemptions_per_hour' => 50,
@@ -66,15 +68,15 @@ describe('VelocityDetector', function (): void {
 
 describe('PatternDetector', function (): void {
     it('has correct name and category', function (): void {
-        $detector = new PatternDetector();
+        $detector = new PatternDetector;
 
         expect($detector->getName())->toBe('pattern')
             ->and($detector->getCategory())->toBe('pattern');
     });
 
     it('detects unusual time patterns', function (): void {
-        $detector = new PatternDetector();
-        $cart = new stdClass();
+        $detector = new PatternDetector;
+        $cart = new stdClass;
         $currentHour = (int) date('G');
 
         // Force the detector to treat the current hour as unusual so the assertion always runs
@@ -88,8 +90,8 @@ describe('PatternDetector', function (): void {
     });
 
     it('detects geo anomalies for impossible travel', function (): void {
-        $detector = new PatternDetector();
-        $cart = new stdClass();
+        $detector = new PatternDetector;
+        $cart = new stdClass;
 
         // Simulate impossible travel: NY to Tokyo in 1 hour
         $context = [
@@ -110,8 +112,8 @@ describe('PatternDetector', function (): void {
     });
 
     it('detects device fingerprint mismatch', function (): void {
-        $detector = new PatternDetector();
-        $cart = new stdClass();
+        $detector = new PatternDetector;
+        $cart = new stdClass;
 
         $context = [
             'device_fingerprint' => 'unknown-fingerprint-123',
@@ -129,8 +131,8 @@ describe('PatternDetector', function (): void {
     });
 
     it('detects IP proxy/VPN usage', function (): void {
-        $detector = new PatternDetector();
-        $cart = new stdClass();
+        $detector = new PatternDetector;
+        $cart = new stdClass;
 
         $context = [
             'ip_address' => '192.168.1.1',
@@ -149,8 +151,8 @@ describe('PatternDetector', function (): void {
     });
 
     it('detects session anomaly', function (): void {
-        $detector = new PatternDetector();
-        $cart = new stdClass();
+        $detector = new PatternDetector;
+        $cart = new stdClass;
 
         $context = [
             'session_id' => 'new-session-123',
@@ -171,16 +173,16 @@ describe('PatternDetector', function (): void {
 
 describe('BehavioralDetector', function (): void {
     it('has correct name and category', function (): void {
-        $detector = new BehavioralDetector();
+        $detector = new BehavioralDetector;
 
         expect($detector->getName())->toBe('behavioral')
             ->and($detector->getCategory())->toBe('behavioral');
     });
 
     it('detects discount-only purchase pattern', function (): void {
-        $detector = new BehavioralDetector();
-        $cart = new stdClass();
-        $user = Mockery::mock(Illuminate\Database\Eloquent\Model::class);
+        $detector = new BehavioralDetector;
+        $cart = new stdClass;
+        $user = Mockery::mock(Model::class);
         $user->shouldReceive('getKey')->andReturn('user-123');
 
         $context = [
@@ -199,9 +201,9 @@ describe('BehavioralDetector', function (): void {
     });
 
     it('detects high refund rate', function (): void {
-        $detector = new BehavioralDetector();
-        $cart = new stdClass();
-        $user = Mockery::mock(Illuminate\Database\Eloquent\Model::class);
+        $detector = new BehavioralDetector;
+        $cart = new stdClass;
+        $user = Mockery::mock(Model::class);
         $user->shouldReceive('getKey')->andReturn('user-123');
 
         $context = [
@@ -220,8 +222,8 @@ describe('BehavioralDetector', function (): void {
     });
 
     it('detects cart manipulation', function (): void {
-        $detector = new BehavioralDetector();
-        $cart = new stdClass();
+        $detector = new BehavioralDetector;
+        $cart = new stdClass;
 
         $context = [
             'cart_modification_count' => 15, // Excessive modifications
@@ -239,8 +241,8 @@ describe('BehavioralDetector', function (): void {
     });
 
     it('detects suspicious checkout pattern', function (): void {
-        $detector = new BehavioralDetector();
-        $cart = new stdClass();
+        $detector = new BehavioralDetector;
+        $cart = new stdClass;
 
         $context = [
             'checkout_attempt_count' => 10,
@@ -258,7 +260,7 @@ describe('BehavioralDetector', function (): void {
     });
 
     it('detects abnormally high cart value', function (): void {
-        $detector = new BehavioralDetector();
+        $detector = new BehavioralDetector;
         $cart = new class
         {
             public function getTotal(): float
@@ -279,7 +281,7 @@ describe('BehavioralDetector', function (): void {
     });
 
     it('detects near-zero cart after discount', function (): void {
-        $detector = new BehavioralDetector();
+        $detector = new BehavioralDetector;
         $cart = new class
         {
             public function getTotal(): float
@@ -306,15 +308,15 @@ describe('BehavioralDetector', function (): void {
 
 describe('CodeAbuseDetector', function (): void {
     it('has correct name and category', function (): void {
-        $detector = new CodeAbuseDetector();
+        $detector = new CodeAbuseDetector;
 
         expect($detector->getName())->toBe('code_abuse')
             ->and($detector->getCategory())->toBe('code_abuse');
     });
 
     it('detects known leaked code usage', function (): void {
-        $detector = new CodeAbuseDetector();
-        $cart = new stdClass();
+        $detector = new CodeAbuseDetector;
+        $cart = new stdClass;
 
         $context = [
             'is_known_leaked_code' => true,
@@ -333,8 +335,8 @@ describe('CodeAbuseDetector', function (): void {
     });
 
     it('detects sequential code attempts', function (): void {
-        $detector = new CodeAbuseDetector();
-        $cart = new stdClass();
+        $detector = new CodeAbuseDetector;
+        $cart = new stdClass;
 
         $context = [
             'recent_code_attempts' => ['CODE1', 'CODE2', 'CODE3', 'CODE4', 'CODE5'],
@@ -351,8 +353,8 @@ describe('CodeAbuseDetector', function (): void {
     });
 
     it('detects brute force attempts', function (): void {
-        $detector = new CodeAbuseDetector();
-        $cart = new stdClass();
+        $detector = new CodeAbuseDetector;
+        $cart = new stdClass;
 
         $context = [
             'recent_invalid_attempts' => 10,
@@ -370,8 +372,8 @@ describe('CodeAbuseDetector', function (): void {
     });
 
     it('detects expired code abuse', function (): void {
-        $detector = new CodeAbuseDetector();
-        $cart = new stdClass();
+        $detector = new CodeAbuseDetector;
+        $cart = new stdClass;
 
         $context = [
             'expired_code_attempts' => 5,
@@ -388,7 +390,7 @@ describe('CodeAbuseDetector', function (): void {
     });
 
     it('can configure detector', function (): void {
-        $detector = new CodeAbuseDetector();
+        $detector = new CodeAbuseDetector;
         $detector->configure([
             'max_unique_ips_per_code' => 10,
             'max_sequential_invalid_attempts' => 10,
@@ -413,11 +415,11 @@ describe('FraudDetectorResult', function (): void {
 
     it('can create result with signals', function (): void {
         $signals = [
-            AIArmada\Vouchers\Fraud\FraudSignal::create(
+            FraudSignal::create(
                 FraudSignalType::HighRedemptionVelocity,
                 'High velocity'
             ),
-            AIArmada\Vouchers\Fraud\FraudSignal::withScore(
+            FraudSignal::withScore(
                 FraudSignalType::RapidCodeAttempts,
                 50.0,
                 'Rapid attempts'
@@ -434,12 +436,12 @@ describe('FraudDetectorResult', function (): void {
 
     it('can get total score', function (): void {
         $signals = [
-            AIArmada\Vouchers\Fraud\FraudSignal::withScore(
+            FraudSignal::withScore(
                 FraudSignalType::HighRedemptionVelocity,
                 40.0,
                 'Signal 1'
             ),
-            AIArmada\Vouchers\Fraud\FraudSignal::withScore(
+            FraudSignal::withScore(
                 FraudSignalType::RapidCodeAttempts,
                 30.0,
                 'Signal 2'
@@ -453,17 +455,17 @@ describe('FraudDetectorResult', function (): void {
 
     it('can get highest severity signal', function (): void {
         $signals = [
-            AIArmada\Vouchers\Fraud\FraudSignal::withScore(
+            FraudSignal::withScore(
                 FraudSignalType::UnusualTimePattern,
                 30.0,
                 'Low'
             ),
-            AIArmada\Vouchers\Fraud\FraudSignal::withScore(
+            FraudSignal::withScore(
                 FraudSignalType::HighRedemptionVelocity,
                 80.0,
                 'High'
             ),
-            AIArmada\Vouchers\Fraud\FraudSignal::withScore(
+            FraudSignal::withScore(
                 FraudSignalType::RapidCodeAttempts,
                 50.0,
                 'Medium'
@@ -486,7 +488,7 @@ describe('FraudDetectorResult', function (): void {
 
     it('can convert to array', function (): void {
         $signals = [
-            AIArmada\Vouchers\Fraud\FraudSignal::withScore(
+            FraudSignal::withScore(
                 FraudSignalType::HighRedemptionVelocity,
                 60.0,
                 'Test signal'

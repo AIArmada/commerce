@@ -7,9 +7,11 @@ namespace AIArmada\Vouchers\Fraud\Models;
 use AIArmada\Vouchers\Fraud\Enums\FraudRiskLevel;
 use AIArmada\Vouchers\Fraud\Enums\FraudSignalType;
 use AIArmada\Vouchers\Models\Voucher;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -28,10 +30,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property bool $was_blocked
  * @property bool $reviewed
  * @property string|null $reviewed_by
- * @property \Illuminate\Support\Carbon|null $reviewed_at
+ * @property Carbon|null $reviewed_at
  * @property string|null $review_notes
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Voucher|null $voucher
  */
 class VoucherFraudSignal extends Model
@@ -90,8 +92,8 @@ class VoucherFraudSignal extends Model
     /**
      * Scope to get unreviewed signals.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>
+     * @param  Builder<VoucherFraudSignal>  $query
+     * @return Builder<VoucherFraudSignal>
      */
     public function scopeUnreviewed($query)
     {
@@ -101,8 +103,8 @@ class VoucherFraudSignal extends Model
     /**
      * Scope to get blocked signals.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>
+     * @param  Builder<VoucherFraudSignal>  $query
+     * @return Builder<VoucherFraudSignal>
      */
     public function scopeBlocked($query)
     {
@@ -112,8 +114,8 @@ class VoucherFraudSignal extends Model
     /**
      * Scope to get signals by risk level.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>
+     * @param  Builder<VoucherFraudSignal>  $query
+     * @return Builder<VoucherFraudSignal>
      */
     public function scopeByRiskLevel($query, FraudRiskLevel $level)
     {
@@ -123,8 +125,8 @@ class VoucherFraudSignal extends Model
     /**
      * Scope to get high-risk signals (High or Critical).
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>
+     * @param  Builder<VoucherFraudSignal>  $query
+     * @return Builder<VoucherFraudSignal>
      */
     public function scopeHighRisk($query)
     {
@@ -137,8 +139,8 @@ class VoucherFraudSignal extends Model
     /**
      * Scope to get signals by detector.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>
+     * @param  Builder<VoucherFraudSignal>  $query
+     * @return Builder<VoucherFraudSignal>
      */
     public function scopeByDetector($query, string $detector)
     {
@@ -148,8 +150,8 @@ class VoucherFraudSignal extends Model
     /**
      * Scope to get signals by signal type.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>
+     * @param  Builder<VoucherFraudSignal>  $query
+     * @return Builder<VoucherFraudSignal>
      */
     public function scopeBySignalType($query, FraudSignalType $type)
     {
@@ -159,8 +161,8 @@ class VoucherFraudSignal extends Model
     /**
      * Scope to get signals for a user.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>
+     * @param  Builder<VoucherFraudSignal>  $query
+     * @return Builder<VoucherFraudSignal>
      */
     public function scopeForUser($query, string $userId)
     {
@@ -170,8 +172,8 @@ class VoucherFraudSignal extends Model
     /**
      * Scope to get signals from an IP address.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<VoucherFraudSignal>
+     * @param  Builder<VoucherFraudSignal>  $query
+     * @return Builder<VoucherFraudSignal>
      */
     public function scopeFromIp($query, string $ipAddress)
     {

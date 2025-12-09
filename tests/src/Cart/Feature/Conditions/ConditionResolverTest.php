@@ -57,7 +57,7 @@ it('resolves conditions using registered resolver callbacks', function (): void 
         );
     });
 
-    $this->cart->addCondition(new stdClass());
+    $this->cart->addCondition(new stdClass);
 
     expect($this->cart->getConditions()->has('resolved_discount'))->toBeTrue();
 });

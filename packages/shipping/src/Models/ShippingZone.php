@@ -7,9 +7,11 @@ namespace AIArmada\Shipping\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Shipping\Data\AddressData;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -25,9 +27,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $priority
  * @property bool $is_default
  * @property bool $active
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, ShippingRate> $rates
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Collection<int, ShippingRate> $rates
  */
 class ShippingZone extends Model
 {

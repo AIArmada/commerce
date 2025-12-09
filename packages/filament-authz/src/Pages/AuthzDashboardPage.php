@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Pages;
 
 use BackedEnum;
+use Carbon\Carbon;
 use Exception;
 use Filament\Actions\Action;
+use Filament\Forms\Components\Select;
 use Filament\Pages\Page;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -252,7 +254,7 @@ class AuthzDashboardPage extends Page
         return $breakdown;
     }
 
-    protected function getTimeRangeStart(): \Carbon\Carbon
+    protected function getTimeRangeStart(): Carbon
     {
         return match ($this->timeRange) {
             '1h' => now()->subHour(),
@@ -276,7 +278,7 @@ class AuthzDashboardPage extends Page
                 ->label('Time Range')
                 ->icon('heroicon-o-clock')
                 ->form([
-                    \Filament\Forms\Components\Select::make('range')
+                    Select::make('range')
                         ->label('Select Time Range')
                         ->options([
                             '1h' => 'Last Hour',

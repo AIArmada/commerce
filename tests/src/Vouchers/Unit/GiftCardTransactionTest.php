@@ -6,6 +6,7 @@ use AIArmada\Vouchers\GiftCards\Enums\GiftCardStatus;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardTransactionType;
 use AIArmada\Vouchers\GiftCards\Models\GiftCard;
 use AIArmada\Vouchers\GiftCards\Models\GiftCardTransaction;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -166,7 +167,7 @@ describe('GiftCardTransaction Factory Methods', function (): void {
             'status' => GiftCardStatus::Active,
         ]);
 
-        $order = new class extends Illuminate\Database\Eloquent\Model
+        $order = new class extends Model
         {
             public $id = 'order-123';
 
@@ -213,7 +214,7 @@ describe('GiftCardTransaction Factory Methods', function (): void {
             'status' => GiftCardStatus::Active,
         ]);
 
-        $order = new class extends Illuminate\Database\Eloquent\Model
+        $order = new class extends Model
         {
             public $id = 'order-123';
 

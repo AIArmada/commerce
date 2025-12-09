@@ -7,7 +7,7 @@ use AIArmada\Stock\Models\StockTransaction;
 use Illuminate\Support\Carbon;
 
 it('has correct fillable attributes', function (): void {
-    $transaction = new StockTransaction();
+    $transaction = new StockTransaction;
     expect($transaction->getFillable())->each->toBeIn([
         'stockable_type',
         'stockable_id',
@@ -23,7 +23,7 @@ it('has correct fillable attributes', function (): void {
 });
 
 it('getTable uses config', function (): void {
-    $transaction = new StockTransaction();
+    $transaction = new StockTransaction;
     expect($transaction->getTable())->toBe(config('stock.table_name', 'stock_transactions'));
 });
 

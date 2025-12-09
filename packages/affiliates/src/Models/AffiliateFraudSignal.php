@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -22,11 +23,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $description
  * @property array<string, mixed>|null $evidence
  * @property FraudSignalStatus $status
- * @property \Illuminate\Support\Carbon $detected_at
- * @property \Illuminate\Support\Carbon|null $reviewed_at
+ * @property Carbon $detected_at
+ * @property Carbon|null $reviewed_at
  * @property string|null $reviewed_by
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Affiliate $affiliate
  * @property-read AffiliateConversion|null $conversion
  * @property-read AffiliateTouchpoint|null $touchpoint

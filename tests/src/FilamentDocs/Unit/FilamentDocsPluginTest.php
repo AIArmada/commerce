@@ -10,7 +10,7 @@ use Filament\Panel;
 use Mockery;
 
 it('exposes a stable plugin id', function (): void {
-    $plugin = new FilamentDocsPlugin();
+    $plugin = new FilamentDocsPlugin;
 
     expect($plugin->getId())->toBe('filament-docs');
 });
@@ -32,5 +32,5 @@ it('registers docs resources and widgets on the panel', function (): void {
         ->andReturnSelf();
 
     // @phpstan-ignore argument.type
-    (new FilamentDocsPlugin())->register($panel);
+    (new FilamentDocsPlugin)->register($panel);
 });

@@ -6,11 +6,13 @@ namespace AIArmada\Shipping\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Shipping\Enums\ShipmentStatus;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 /**
@@ -33,17 +35,17 @@ use Illuminate\Support\Str;
  * @property int|null $cod_amount
  * @property string|null $label_url
  * @property string|null $label_format
- * @property \Illuminate\Support\Carbon|null $shipped_at
- * @property \Illuminate\Support\Carbon|null $estimated_delivery_at
- * @property \Illuminate\Support\Carbon|null $delivered_at
- * @property \Illuminate\Support\Carbon|null $last_tracking_sync
+ * @property Carbon|null $shipped_at
+ * @property Carbon|null $estimated_delivery_at
+ * @property Carbon|null $delivered_at
+ * @property Carbon|null $last_tracking_sync
  * @property array|null $metadata
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
- * @property-read \Illuminate\Database\Eloquent\Collection<int, ShipmentItem> $items
- * @property-read \Illuminate\Database\Eloquent\Collection<int, ShipmentEvent> $events
- * @property-read \Illuminate\Database\Eloquent\Collection<int, ShipmentLabel> $labels
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property Carbon|null $deleted_at
+ * @property-read Collection<int, ShipmentItem> $items
+ * @property-read Collection<int, ShipmentEvent> $events
+ * @property-read Collection<int, ShipmentLabel> $labels
  */
 class Shipment extends Model
 {

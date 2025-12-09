@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Resources\GiftCardResource\Pages;
 
+use AIArmada\FilamentVouchers\Actions\BulkIssueGiftCardsAction;
 use AIArmada\FilamentVouchers\Resources\GiftCardResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 final class ListGiftCards extends ListRecords
@@ -14,8 +16,8 @@ final class ListGiftCards extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\CreateAction::make(),
-            \AIArmada\FilamentVouchers\Actions\BulkIssueGiftCardsAction::make(),
+            CreateAction::make(),
+            BulkIssueGiftCardsAction::make(),
         ];
     }
 }

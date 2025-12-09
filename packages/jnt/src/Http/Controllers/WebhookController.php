@@ -10,6 +10,7 @@ use AIArmada\Jnt\Services\WebhookService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Throwable;
 
 /**
@@ -60,7 +61,7 @@ class WebhookController
             $response = $this->webhookService->successResponse();
 
             return response()->json($response);
-        } catch (\Illuminate\Validation\ValidationException $e) {
+        } catch (ValidationException $e) {
             // Invalid request structure
             Log::warning('J&T webhook validation failed', [
                 'errors' => $e->errors(),

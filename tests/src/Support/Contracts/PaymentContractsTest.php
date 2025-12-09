@@ -265,7 +265,7 @@ describe('Payment Contracts', function (): void {
                 status: PaymentStatus::PAID,
                 reference: 'ORDER-001',
                 gatewayName: 'chip',
-                occurredAt: new DateTimeImmutable(),
+                occurredAt: new DateTimeImmutable,
             );
 
             expect($payload->isPaymentSuccess())->toBeTrue()
@@ -279,7 +279,7 @@ describe('Payment Contracts', function (): void {
                 status: PaymentStatus::FAILED,
                 reference: 'ORDER-001',
                 gatewayName: 'chip',
-                occurredAt: new DateTimeImmutable(),
+                occurredAt: new DateTimeImmutable,
             );
 
             expect($payload->isPaymentFailed())->toBeTrue()
@@ -293,7 +293,7 @@ describe('Payment Contracts', function (): void {
                 status: PaymentStatus::REFUNDED,
                 reference: 'ORDER-001',
                 gatewayName: 'chip',
-                occurredAt: new DateTimeImmutable(),
+                occurredAt: new DateTimeImmutable,
             );
 
             expect($payload->isRefund())->toBeTrue();

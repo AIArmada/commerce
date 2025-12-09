@@ -15,7 +15,7 @@ use AIArmada\Shipping\Enums\DriverCapability;
 // ============================================
 
 beforeEach(function (): void {
-    $this->driver = new ManualShippingDriver();
+    $this->driver = new ManualShippingDriver;
 });
 
 it('returns correct carrier code', function (): void {
@@ -27,7 +27,7 @@ it('returns correct carrier name', function (): void {
 });
 
 it('reports no supported capabilities', function (): void {
-    $driver = new ManualShippingDriver();
+    $driver = new ManualShippingDriver;
 
     // Manual driver doesn't support any automated capabilities
     expect($driver->supports(DriverCapability::RateQuotes))->toBeFalse();

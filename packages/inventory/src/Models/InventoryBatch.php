@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\Inventory\Database\Factories\InventoryBatchFactory;
 use AIArmada\Inventory\Enums\BatchStatus;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -48,8 +50,8 @@ use Illuminate\Support\Carbon;
  * @property-read int|null $days_until_expiry
  * @property-read InventoryLocation $location
  * @property-read Model $inventoryable
- * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryMovement> $movements
- * @property-read \Illuminate\Database\Eloquent\Collection<int, InventoryAllocation> $allocations
+ * @property-read Collection<int, InventoryMovement> $movements
+ * @property-read Collection<int, InventoryAllocation> $allocations
  */
 final class InventoryBatch extends Model
 {
@@ -426,9 +428,9 @@ final class InventoryBatch extends Model
     /**
      * Create a new factory instance for the model.
      */
-    protected static function newFactory(): \AIArmada\Inventory\Database\Factories\InventoryBatchFactory
+    protected static function newFactory(): InventoryBatchFactory
     {
-        return \AIArmada\Inventory\Database\Factories\InventoryBatchFactory::new();
+        return InventoryBatchFactory::new();
     }
 
     /**

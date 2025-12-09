@@ -10,6 +10,7 @@ use AIArmada\Jnt\Services\JntStatusMapper;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -19,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $scan_type_code
  * @property string|null $scan_type_name
  * @property string|null $scan_type
- * @property \Illuminate\Support\Carbon|null $scan_time
+ * @property Carbon|null $scan_time
  * @property string|null $description
  * @property string|null $scan_network_type_name
  * @property string|null $scan_network_name
@@ -51,8 +52,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $sign_url
  * @property string|null $electronic_signature_pic_url
  * @property array<string, mixed>|null $payload
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read JntOrder|null $order
  */
 final class JntTrackingEvent extends Model

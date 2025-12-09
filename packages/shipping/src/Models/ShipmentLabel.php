@@ -7,6 +7,7 @@ namespace AIArmada\Shipping\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -15,9 +16,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $size
  * @property string|null $url
  * @property string|null $content
- * @property \Illuminate\Support\Carbon $generated_at
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
+ * @property Carbon $generated_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  * @property-read Shipment $shipment
  */
 class ShipmentLabel extends Model

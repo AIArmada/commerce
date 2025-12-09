@@ -8,6 +8,7 @@ use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
 
 final class InventoryStatsAggregator
@@ -118,9 +119,9 @@ final class InventoryStatsAggregator
     /**
      * Get low stock query for the widget table.
      *
-     * @return \Illuminate\Database\Eloquent\Builder<InventoryLevel>
+     * @return Builder<InventoryLevel>
      */
-    public function getLowStockQuery(): \Illuminate\Database\Eloquent\Builder
+    public function getLowStockQuery(): Builder
     {
         return InventoryLevel::query()
             ->with('location')

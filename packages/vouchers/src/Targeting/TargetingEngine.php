@@ -352,7 +352,7 @@ class TargetingEngine
 
         foreach ($evaluatorClasses as $class) {
             if (class_exists($class)) {
-                $this->registerEvaluator(new $class());
+                $this->registerEvaluator(new $class);
             }
         }
     }

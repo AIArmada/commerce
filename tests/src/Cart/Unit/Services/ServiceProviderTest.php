@@ -2,10 +2,25 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Cart;
+use AIArmada\Cart\CartManager;
 use AIArmada\Cart\CartServiceProvider;
+use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Listeners\HandleUserLogin;
+use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Services\CartMigrationService;
+use AIArmada\Cart\Storage\CacheStorage;
+use AIArmada\Cart\Storage\DatabaseStorage;
+use AIArmada\Cart\Storage\SessionStorage;
+use AIArmada\Cart\Storage\StorageInterface;
+use Illuminate\Auth\Events\Attempting;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 describe('CartServiceProvider', function (): void {
     afterEach(function (): void {
@@ -19,8 +34,8 @@ describe('CartServiceProvider', function (): void {
 
         expect($provides)->toBeArray();
         expect($provides)->toContain('cart');
-        expect($provides)->toContain(AIArmada\Cart\Cart::class);
-        expect($provides)->toContain(AIArmada\Cart\Storage\StorageInterface::class);
+        expect($provides)->toContain(Cart::class);
+        expect($provides)->toContain(StorageInterface::class);
         expect($provides)->toContain(CartMigrationService::class);
         expect($provides)->toContain('cart.storage.session');
         expect($provides)->toContain('cart.storage.cache');
@@ -61,8 +76,8 @@ describe('CartServiceProvider', function (): void {
     it('registers cart manager correctly', function (): void {
         $app = mock(Application::class);
         $app->shouldReceive('singleton')->withArgs(['cart', Mockery::type('callable')])->once();
-        $app->shouldReceive('alias')->withArgs(['cart', AIArmada\Cart\CartManager::class])->once();
-        $app->shouldReceive('alias')->withArgs(['cart', AIArmada\Cart\Contracts\CartManagerInterface::class])->once();
+        $app->shouldReceive('alias')->withArgs(['cart', CartManager::class])->once();
+        $app->shouldReceive('alias')->withArgs(['cart', CartManagerInterface::class])->once();
 
         $provider = new CartServiceProvider($app);
 
@@ -79,7 +94,7 @@ describe('CartServiceProvider', function (): void {
         $provider = new CartServiceProvider($app);
 
         // Test that the provider has been properly converted to use Spatie Package Tools
-        expect($provider)->toBeInstanceOf(Spatie\LaravelPackageTools\PackageServiceProvider::class);
+        expect($provider)->toBeInstanceOf(PackageServiceProvider::class);
     });
 
     it('registers migration service correctly', function (): void {
@@ -151,11 +166,6 @@ describe('CartServiceProvider', function (): void {
 });
 
 // --- Integration-style tests for real container/config/event logic ---
-use AIArmada\Cart\Storage\CacheStorage;
-use AIArmada\Cart\Storage\DatabaseStorage;
-use AIArmada\Cart\Storage\SessionStorage;
-use Illuminate\Support\Facades\Config;
-use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
     Config::set('cart.storage', 'session');
@@ -182,7 +192,7 @@ it('integration: fails fast when cache storage is selected but disabled', functi
     $provider = new CartServiceProvider($app);
     $provider->register();
 
-    expect(fn () => $app->make(AIArmada\Cart\Storage\StorageInterface::class))
+    expect(fn () => $app->make(StorageInterface::class))
         ->toThrow(RuntimeException::class, 'Cache storage selected but cart.cache.enabled is false. Enable cache or choose another driver.');
 });
 
@@ -191,8 +201,8 @@ it('integration: registers cart manager and aliases', function (): void {
     $provider = new CartServiceProvider($app);
     $provider->register();
 
-    expect($app->make('cart'))->toBeInstanceOf(AIArmada\Cart\Contracts\CartManagerInterface::class);
-    expect($app->make(AIArmada\Cart\Contracts\CartManagerInterface::class))->toBeInstanceOf(AIArmada\Cart\Contracts\CartManagerInterface::class);
+    expect($app->make('cart'))->toBeInstanceOf(CartManagerInterface::class);
+    expect($app->make(CartManagerInterface::class))->toBeInstanceOf(CartManagerInterface::class);
 });
 
 it('integration: registers migration service', function (): void {
@@ -205,7 +215,7 @@ it('integration: registers migration service', function (): void {
 
 it('integration: publishes config, migrations, and views', function (): void {
     $provider = new CartServiceProvider(app());
-    $package = new Spatie\LaravelPackageTools\Package;
+    $package = new Package;
     $provider->configurePackage($package);
 
     expect($package->name)->toBe('cart');
@@ -241,6 +251,6 @@ it('integration: registers event listeners based on config', function (): void {
     $method = $reflection->getMethod('registerEventListeners');
     $method->setAccessible(true);
     $method->invoke($provider);
-    Event::assertListening(Illuminate\Auth\Events\Attempting::class, AIArmada\Cart\Listeners\HandleUserLoginAttempt::class);
-    Event::assertListening(Illuminate\Auth\Events\Login::class, AIArmada\Cart\Listeners\HandleUserLogin::class);
+    Event::assertListening(Attempting::class, HandleUserLoginAttempt::class);
+    Event::assertListening(Login::class, HandleUserLogin::class);
 });

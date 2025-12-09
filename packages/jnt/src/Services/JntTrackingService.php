@@ -11,6 +11,7 @@ use AIArmada\Jnt\Events\JntOrderStatusChanged;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Collection;
 use Throwable;
 
 class JntTrackingService
@@ -207,9 +208,9 @@ class JntTrackingService
     /**
      * Get orders that need tracking updates
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, JntOrder>
+     * @return Collection<int, JntOrder>
      */
-    public function getOrdersNeedingTrackingUpdate(int $limit = 100): \Illuminate\Database\Eloquent\Collection
+    public function getOrdersNeedingTrackingUpdate(int $limit = 100): Collection
     {
         return JntOrder::query()
             ->whereNotNull('tracking_number')

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource\Pages;
 
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource;
+use Filament\Actions\CreateAction;
 use Filament\Resources\Pages\ListRecords;
 
 final class ListAffiliatePrograms extends ListRecords
@@ -14,7 +15,7 @@ final class ListAffiliatePrograms extends ListRecords
     protected function getHeaderActions(): array
     {
         return [
-            \Filament\Actions\CreateAction::make(),
+            CreateAction::make(),
         ];
     }
 }

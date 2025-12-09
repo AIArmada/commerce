@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Model;
 final class RuleBasedConversionPredictor implements ConversionPredictorInterface
 {
     public function __construct(
-        private readonly CartFeatureExtractorInterface $featureExtractor = new CartFeatureExtractor(),
+        private readonly CartFeatureExtractorInterface $featureExtractor = new CartFeatureExtractor,
     ) {}
 
     public function predictConversion(

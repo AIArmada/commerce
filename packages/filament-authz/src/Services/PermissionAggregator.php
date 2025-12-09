@@ -29,7 +29,7 @@ class PermissionAggregator
     public function getEffectivePermissions($user): Collection
     {
         if (! method_exists($user, 'getRoleNames')) {
-            return new Collection();
+            return new Collection;
         }
 
         $cacheKey = self::CACHE_KEY_PREFIX . "user:{$user->getKey()}";
@@ -167,7 +167,7 @@ class PermissionAggregator
     public function getEffectiveRoles($user): Collection
     {
         if (! method_exists($user, 'roles')) {
-            return new Collection();
+            return new Collection;
         }
 
         $directRoles = $user->roles;

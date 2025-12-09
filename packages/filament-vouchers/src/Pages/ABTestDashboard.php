@@ -70,7 +70,7 @@ final class ABTestDashboard extends Page
      */
     public function getVariantsProperty(): Collection
     {
-        return $this->campaign !== null ? $this->campaign->variants : new Collection();
+        return $this->campaign !== null ? $this->campaign->variants : new Collection;
     }
 
     public function getControlVariantProperty(): ?CampaignVariant

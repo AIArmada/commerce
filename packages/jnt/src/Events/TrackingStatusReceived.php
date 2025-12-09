@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Events;
 
+use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Data\WebhookData;
 use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
@@ -79,7 +80,7 @@ class TrackingStatusReceived
     {
         $detail = $this->webhookData->getLatestDetail();
 
-        if (! $detail instanceof \AIArmada\Jnt\Data\TrackingDetailData) {
+        if (! $detail instanceof TrackingDetailData) {
             return null;
         }
 

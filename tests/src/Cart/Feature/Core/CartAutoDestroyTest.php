@@ -6,6 +6,7 @@ use AIArmada\Cart\Events\CartCleared;
 use AIArmada\Cart\Events\CartDestroyed;
 use AIArmada\Cart\Facades\Cart;
 use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
@@ -193,7 +194,7 @@ describe('Auto-Destroy with Database Storage', function (): void {
         Cart::setIdentifier($identifier)->add('item1', 'Product 1', 100, 1);
 
         expect(
-            Illuminate\Support\Facades\DB::table('carts')
+            DB::table('carts')
                 ->where('identifier', $identifier)
                 ->where('instance', 'default')
                 ->exists()
@@ -202,7 +203,7 @@ describe('Auto-Destroy with Database Storage', function (): void {
         Cart::setIdentifier($identifier)->remove('item1');
 
         expect(
-            Illuminate\Support\Facades\DB::table('carts')
+            DB::table('carts')
                 ->where('identifier', $identifier)
                 ->where('instance', 'default')
                 ->exists()
@@ -218,7 +219,7 @@ describe('Auto-Destroy with Database Storage', function (): void {
         Cart::setIdentifier($identifier)->setMetadata('voucher', 'SAVE10');
 
         expect(
-            Illuminate\Support\Facades\DB::table('carts')
+            DB::table('carts')
                 ->where('identifier', $identifier)
                 ->where('instance', 'default')
                 ->exists()
@@ -226,7 +227,7 @@ describe('Auto-Destroy with Database Storage', function (): void {
 
         Cart::setIdentifier($identifier)->remove('item1');
 
-        $cart = Illuminate\Support\Facades\DB::table('carts')
+        $cart = DB::table('carts')
             ->where('identifier', $identifier)
             ->where('instance', 'default')
             ->first();
@@ -251,7 +252,7 @@ describe('Auto-Destroy with Database Storage', function (): void {
 
         Cart::setIdentifier($identifier)->remove('item1');
 
-        $cart = Illuminate\Support\Facades\DB::table('carts')
+        $cart = DB::table('carts')
             ->where('identifier', $identifier)
             ->where('instance', 'default')
             ->first();

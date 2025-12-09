@@ -14,7 +14,7 @@ beforeEach(function (): void {
 });
 
 it('can create checkout builder without owner', function (): void {
-    $builder = new CheckoutBuilder();
+    $builder = new CheckoutBuilder;
 
     expect($builder)->toBeInstanceOf(CheckoutBuilder::class);
 });

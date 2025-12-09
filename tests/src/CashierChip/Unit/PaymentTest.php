@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment;
 use AIArmada\Chip\Data\PurchaseData;
 
@@ -132,7 +133,7 @@ it('throws exception when validating pending payment', function (): void {
     $payment = new Payment(PurchaseData::from(createPurchaseData()));
 
     $payment->validate();
-})->throws(AIArmada\CashierChip\Exceptions\IncompletePayment::class);
+})->throws(IncompletePayment::class);
 
 it('does not throw exception when validating successful payment', function (): void {
     $payment = new Payment(PurchaseData::from(createPurchaseData(['status' => 'success'])));

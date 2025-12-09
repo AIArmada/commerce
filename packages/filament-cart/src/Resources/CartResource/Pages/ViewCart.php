@@ -7,6 +7,10 @@ namespace AIArmada\FilamentCart\Resources\CartResource\Pages;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Resources\CartResource;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
+use AIArmada\FilamentVouchers\Extensions\CartVoucherActions;
+use AIArmada\FilamentVouchers\Widgets\AppliedVoucherBadgesWidget;
+use AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget;
+use AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
@@ -63,9 +67,9 @@ final class ViewCart extends ViewRecord
         ];
 
         // Add voucher management actions if filament-vouchers is available
-        if (class_exists(\AIArmada\FilamentVouchers\Extensions\CartVoucherActions::class)) {
-            $actions[] = \AIArmada\FilamentVouchers\Extensions\CartVoucherActions::applyVoucher();
-            $actions[] = \AIArmada\FilamentVouchers\Extensions\CartVoucherActions::showAppliedVouchers();
+        if (class_exists(CartVoucherActions::class)) {
+            $actions[] = CartVoucherActions::applyVoucher();
+            $actions[] = CartVoucherActions::showAppliedVouchers();
         }
 
         $actions[] = Actions\Action::make('clear_cart')
@@ -134,8 +138,8 @@ final class ViewCart extends ViewRecord
         $widgets = [];
 
         // Add voucher widgets if filament-vouchers is available
-        if (class_exists(\AIArmada\FilamentVouchers\Widgets\AppliedVoucherBadgesWidget::class)) {
-            $widgets[] = \AIArmada\FilamentVouchers\Widgets\AppliedVoucherBadgesWidget::class;
+        if (class_exists(AppliedVoucherBadgesWidget::class)) {
+            $widgets[] = AppliedVoucherBadgesWidget::class;
         }
 
         return $widgets;
@@ -146,12 +150,12 @@ final class ViewCart extends ViewRecord
         $widgets = [];
 
         // Add voucher management widgets if filament-vouchers is available
-        if (class_exists(\AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget::class)) {
-            $widgets[] = \AIArmada\FilamentVouchers\Widgets\QuickApplyVoucherWidget::class;
+        if (class_exists(QuickApplyVoucherWidget::class)) {
+            $widgets[] = QuickApplyVoucherWidget::class;
         }
 
-        if (class_exists(\AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget::class)) {
-            $widgets[] = \AIArmada\FilamentVouchers\Widgets\VoucherSuggestionsWidget::class;
+        if (class_exists(VoucherSuggestionsWidget::class)) {
+            $widgets[] = VoucherSuggestionsWidget::class;
         }
 
         return $widgets;

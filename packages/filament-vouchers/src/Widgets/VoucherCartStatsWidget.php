@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Widgets;
 
+use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\Vouchers\Models\Voucher;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Model;
 use Livewire\Attributes\Lazy;
 use Throwable;
@@ -29,7 +31,7 @@ final class VoucherCartStatsWidget extends BaseWidget
         $stats = [];
 
         // Active carts count (if filament-cart is available)
-        if (class_exists(\AIArmada\FilamentCart\Models\Cart::class)) {
+        if (class_exists(Cart::class)) {
             $activeCarts = $this->getActiveCartsCount();
 
             $stats[] = Stat::make('Active Carts', $activeCarts)
@@ -70,14 +72,14 @@ final class VoucherCartStatsWidget extends BaseWidget
             /** @var Voucher $voucher */
             $voucher = $this->record;
 
-            /** @var class-string<\AIArmada\FilamentCart\Models\Cart> $cartModel */
-            $cartModel = \AIArmada\FilamentCart\Models\Cart::class;
+            /** @var class-string<Cart> $cartModel */
+            $cartModel = Cart::class;
 
             // Search for this voucher code in cart conditions metadata
             // Vouchers are stored as conditions with the voucher code in metadata
             // Escape special LIKE characters in voucher code
             $escapedCode = str_replace(['%', '_', '\\'], ['\\%', '\\_', '\\\\'], $voucher->code);
-            /** @var \Illuminate\Database\Connection $connection */
+            /** @var Connection $connection */
             $connection = $cartModel::query()->getConnection();
             $driver = $connection->getDriverName();
 

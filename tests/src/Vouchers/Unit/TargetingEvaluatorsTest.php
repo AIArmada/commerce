@@ -25,7 +25,7 @@ use Illuminate\Http\Request;
 
 function createEvaluatorTestCart(array $items = []): Cart
 {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-evaluators', events: null);
 
     foreach ($items as $item) {
@@ -57,13 +57,13 @@ class EvaluatorTestUser extends Model
 
 describe('CartValueEvaluator', function (): void {
     it('supports cart_value type', function (): void {
-        $evaluator = new CartValueEvaluator();
+        $evaluator = new CartValueEvaluator;
         expect($evaluator->supports('cart_value'))->toBeTrue();
         expect($evaluator->supports('user_segment'))->toBeFalse();
     });
 
     it('evaluates greater than or equal', function (): void {
-        $evaluator = new CartValueEvaluator();
+        $evaluator = new CartValueEvaluator;
         $cart = createEvaluatorTestCart([
             ['id' => 'ITEM-1', 'price' => 5000, 'quantity' => 2], // Total: 10000
         ]);
@@ -75,7 +75,7 @@ describe('CartValueEvaluator', function (): void {
     });
 
     it('evaluates between operator', function (): void {
-        $evaluator = new CartValueEvaluator();
+        $evaluator = new CartValueEvaluator;
         $cart = createEvaluatorTestCart([
             ['id' => 'ITEM-1', 'price' => 5000, 'quantity' => 1],
         ]);
@@ -97,7 +97,7 @@ describe('CartValueEvaluator', function (): void {
 
 describe('CartQuantityEvaluator', function (): void {
     it('evaluates total quantity in cart', function (): void {
-        $evaluator = new CartQuantityEvaluator();
+        $evaluator = new CartQuantityEvaluator;
         $cart = createEvaluatorTestCart([
             ['id' => 'ITEM-1', 'price' => 1000, 'quantity' => 3],
             ['id' => 'ITEM-2', 'price' => 2000, 'quantity' => 2],
@@ -112,7 +112,7 @@ describe('CartQuantityEvaluator', function (): void {
 
 describe('UserSegmentEvaluator', function (): void {
     it('checks if user is in segment', function (): void {
-        $evaluator = new UserSegmentEvaluator();
+        $evaluator = new UserSegmentEvaluator;
         $user = new EvaluatorTestUser(['segments' => ['vip', 'premium']]);
         $cart = createEvaluatorTestCart();
         $context = new TargetingContext($cart, $user);
@@ -129,7 +129,7 @@ describe('UserSegmentEvaluator', function (): void {
     });
 
     it('checks if user is not in segment', function (): void {
-        $evaluator = new UserSegmentEvaluator();
+        $evaluator = new UserSegmentEvaluator;
         $user = new EvaluatorTestUser(['segments' => ['standard']]);
         $cart = createEvaluatorTestCart();
         $context = new TargetingContext($cart, $user);
@@ -141,7 +141,7 @@ describe('UserSegmentEvaluator', function (): void {
     });
 
     it('checks contains_any for partial match', function (): void {
-        $evaluator = new UserSegmentEvaluator();
+        $evaluator = new UserSegmentEvaluator;
         $user = new EvaluatorTestUser(['segments' => ['vip', 'beta_tester']]);
         $cart = createEvaluatorTestCart();
         $context = new TargetingContext($cart, $user);
@@ -153,7 +153,7 @@ describe('UserSegmentEvaluator', function (): void {
     });
 
     it('checks contains_all for complete match', function (): void {
-        $evaluator = new UserSegmentEvaluator();
+        $evaluator = new UserSegmentEvaluator;
         $user = new EvaluatorTestUser(['segments' => ['vip', 'premium', 'beta']]);
         $cart = createEvaluatorTestCart();
         $context = new TargetingContext($cart, $user);
@@ -172,7 +172,7 @@ describe('UserSegmentEvaluator', function (): void {
 
 describe('ProductInCartEvaluator', function (): void {
     it('checks if product is in cart', function (): void {
-        $evaluator = new ProductInCartEvaluator();
+        $evaluator = new ProductInCartEvaluator;
         $cart = createEvaluatorTestCart([
             ['id' => 'PROD-A', 'sku' => 'SKU-A'],
             ['id' => 'PROD-B', 'sku' => 'SKU-B'],
@@ -192,7 +192,7 @@ describe('ProductInCartEvaluator', function (): void {
     });
 
     it('checks if product is not in cart', function (): void {
-        $evaluator = new ProductInCartEvaluator();
+        $evaluator = new ProductInCartEvaluator;
         $cart = createEvaluatorTestCart([
             ['id' => 'PROD-A', 'sku' => 'SKU-A'],
         ]);
@@ -207,7 +207,7 @@ describe('ProductInCartEvaluator', function (): void {
 
 describe('FirstPurchaseEvaluator', function (): void {
     it('detects first purchase customer', function (): void {
-        $evaluator = new FirstPurchaseEvaluator();
+        $evaluator = new FirstPurchaseEvaluator;
         $user = new EvaluatorTestUser(['is_first_purchase' => true]);
         $cart = createEvaluatorTestCart();
         $context = new TargetingContext($cart, $user);
@@ -217,7 +217,7 @@ describe('FirstPurchaseEvaluator', function (): void {
     });
 
     it('treats guest as first purchase', function (): void {
-        $evaluator = new FirstPurchaseEvaluator();
+        $evaluator = new FirstPurchaseEvaluator;
         $cart = createEvaluatorTestCart();
         $context = new TargetingContext($cart, null);
 
@@ -227,7 +227,7 @@ describe('FirstPurchaseEvaluator', function (): void {
 
 describe('CustomerLifetimeValueEvaluator', function (): void {
     it('compares customer lifetime value', function (): void {
-        $evaluator = new CustomerLifetimeValueEvaluator();
+        $evaluator = new CustomerLifetimeValueEvaluator;
         $user = new EvaluatorTestUser(['customer_lifetime_value' => 50000]);
         $cart = createEvaluatorTestCart();
         $context = new TargetingContext($cart, $user);
@@ -239,7 +239,7 @@ describe('CustomerLifetimeValueEvaluator', function (): void {
 
 describe('TimeWindowEvaluator', function (): void {
     it('checks if current time is within window', function (): void {
-        $evaluator = new TimeWindowEvaluator();
+        $evaluator = new TimeWindowEvaluator;
         $cart = createEvaluatorTestCart();
 
         Carbon::setTestNow(Carbon::parse('2024-01-15 14:30:00'));
@@ -261,7 +261,7 @@ describe('TimeWindowEvaluator', function (): void {
     });
 
     it('handles overnight time windows', function (): void {
-        $evaluator = new TimeWindowEvaluator();
+        $evaluator = new TimeWindowEvaluator;
         $cart = createEvaluatorTestCart();
 
         Carbon::setTestNow(Carbon::parse('2024-01-15 23:30:00'));
@@ -279,7 +279,7 @@ describe('TimeWindowEvaluator', function (): void {
 
 describe('DayOfWeekEvaluator', function (): void {
     it('checks day of week by number', function (): void {
-        $evaluator = new DayOfWeekEvaluator();
+        $evaluator = new DayOfWeekEvaluator;
         $cart = createEvaluatorTestCart();
 
         Carbon::setTestNow(Carbon::parse('2024-01-15')); // Monday = 1
@@ -299,7 +299,7 @@ describe('DayOfWeekEvaluator', function (): void {
     });
 
     it('checks day of week by name', function (): void {
-        $evaluator = new DayOfWeekEvaluator();
+        $evaluator = new DayOfWeekEvaluator;
         $cart = createEvaluatorTestCart();
 
         Carbon::setTestNow(Carbon::parse('2024-01-15')); // Monday
@@ -316,7 +316,7 @@ describe('DayOfWeekEvaluator', function (): void {
 
 describe('DateRangeEvaluator', function (): void {
     it('checks if date is within range', function (): void {
-        $evaluator = new DateRangeEvaluator();
+        $evaluator = new DateRangeEvaluator;
         $cart = createEvaluatorTestCart();
 
         Carbon::setTestNow(Carbon::parse('2024-06-15'));
@@ -340,7 +340,7 @@ describe('DateRangeEvaluator', function (): void {
 
 describe('ChannelEvaluator', function (): void {
     it('checks request channel', function (): void {
-        $evaluator = new ChannelEvaluator();
+        $evaluator = new ChannelEvaluator;
         $cart = createEvaluatorTestCart();
         $request = Request::create('/', 'GET', [], [], [], ['HTTP_X-Channel' => 'mobile']);
         $context = new TargetingContext($cart, null, $request);
@@ -359,7 +359,7 @@ describe('ChannelEvaluator', function (): void {
 
 describe('DeviceEvaluator', function (): void {
     it('detects mobile device', function (): void {
-        $evaluator = new DeviceEvaluator();
+        $evaluator = new DeviceEvaluator;
         $cart = createEvaluatorTestCart();
         $request = Request::create('/', 'GET', [], [], [], [
             'HTTP_USER_AGENT' => 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X)',
@@ -373,7 +373,7 @@ describe('DeviceEvaluator', function (): void {
     });
 
     it('detects desktop device', function (): void {
-        $evaluator = new DeviceEvaluator();
+        $evaluator = new DeviceEvaluator;
         $cart = createEvaluatorTestCart();
         $request = Request::create('/', 'GET', [], [], [], [
             'HTTP_USER_AGENT' => 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
@@ -389,7 +389,7 @@ describe('DeviceEvaluator', function (): void {
 
 describe('GeographicEvaluator', function (): void {
     it('checks country from metadata', function (): void {
-        $evaluator = new GeographicEvaluator();
+        $evaluator = new GeographicEvaluator;
         $cart = createEvaluatorTestCart();
         $context = new TargetingContext($cart, null, null, ['country' => 'MY']);
 

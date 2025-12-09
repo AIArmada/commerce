@@ -9,6 +9,9 @@ use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Jnt\Cart\CartManagerWithJntShipping;
 use AIArmada\Jnt\Cart\JntShippingCalculator;
 use AIArmada\Jnt\Data\AddressData;
+use AIArmada\Jnt\Services\JntExpressService;
+use Illuminate\Contracts\Events\Dispatcher;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 describe('CartManagerWithJntShipping', function (): void {
@@ -27,7 +30,7 @@ describe('CartManagerWithJntShipping', function (): void {
         ]);
 
         $this->storage = new DatabaseStorage(DB::connection('testing'), 'carts');
-        $this->events = app(Illuminate\Contracts\Events\Dispatcher::class);
+        $this->events = app(Dispatcher::class);
         $this->baseManager = new CartManager(
             storage: $this->storage,
             events: $this->events,
@@ -185,7 +188,7 @@ describe('CartManagerWithJntShipping', function (): void {
 
     it('can set custom calculator', function (): void {
         $wrapped = new CartManagerWithJntShipping($this->baseManager);
-        $jntService = new AIArmada\Jnt\Services\JntExpressService(
+        $jntService = new JntExpressService(
             customerCode: 'TEST',
             password: 'test',
             config: [
@@ -216,7 +219,7 @@ describe('CartManagerWithJntShipping', function (): void {
         $wrapped = new CartManagerWithJntShipping($this->baseManager);
 
         // Create an anonymous model for testing
-        $owner = new class extends Illuminate\Database\Eloquent\Model
+        $owner = new class extends Model
         {
             protected $table = 'users';
 

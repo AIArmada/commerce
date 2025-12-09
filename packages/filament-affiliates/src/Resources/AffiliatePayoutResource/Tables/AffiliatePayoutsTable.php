@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource\Tables;
 
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\Services\AffiliatePayoutService;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Services\PayoutExportService;
 use Filament\Actions\Action;
@@ -76,7 +77,7 @@ final class AffiliatePayoutsTable
                     ->authorize(fn (): bool => Filament::auth()->user()?->can('affiliates.payout.update') ?? true)
                     ->visible(fn (AffiliatePayout $record): bool => $record->status !== 'paid')
                     ->action(function (AffiliatePayout $record): void {
-                        app(\AIArmada\Affiliates\Services\AffiliatePayoutService::class)->updateStatus($record, 'paid');
+                        app(AffiliatePayoutService::class)->updateStatus($record, 'paid');
                     }),
                 Action::make('queue')
                     ->label('Queue')
@@ -86,7 +87,7 @@ final class AffiliatePayoutsTable
                     ->authorize(fn (): bool => Filament::auth()->user()?->can('affiliates.payout.update') ?? true)
                     ->visible(fn (AffiliatePayout $record): bool => $record->status !== 'queued')
                     ->action(function (AffiliatePayout $record): void {
-                        app(\AIArmada\Affiliates\Services\AffiliatePayoutService::class)->updateStatus($record, 'queued');
+                        app(AffiliatePayoutService::class)->updateStatus($record, 'queued');
                     }),
                 Action::make('fail')
                     ->label('Mark Failed')
@@ -96,7 +97,7 @@ final class AffiliatePayoutsTable
                     ->authorize(fn (): bool => Filament::auth()->user()?->can('affiliates.payout.update') ?? true)
                     ->visible(fn (AffiliatePayout $record): bool => $record->status !== 'failed')
                     ->action(function (AffiliatePayout $record): void {
-                        app(\AIArmada\Affiliates\Services\AffiliatePayoutService::class)->updateStatus($record, 'failed');
+                        app(AffiliatePayoutService::class)->updateStatus($record, 'failed');
                     }),
                 Action::make('export')
                     ->label('Export CSV')

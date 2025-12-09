@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 
 test('affiliate links are signed and verified', function (): void {
-    $generator = new AffiliateLinkGenerator();
+    $generator = new AffiliateLinkGenerator;
 
     $url = $generator->generate(
         affiliateCode: 'LINK123',

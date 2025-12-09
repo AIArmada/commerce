@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Listeners;
 
+use AIArmada\CashierChip\Billable;
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Events\PaymentSucceeded;
 use AIArmada\Chip\Events\PurchasePaid;
@@ -25,7 +26,7 @@ class HandlePurchasePaid
             return;
         }
 
-        /** @var (Model&\AIArmada\CashierChip\Billable)|null $billable */
+        /** @var (Model&Billable)|null $billable */
         $billable = Cashier::findBillable($clientId);
 
         if ($billable === null) {

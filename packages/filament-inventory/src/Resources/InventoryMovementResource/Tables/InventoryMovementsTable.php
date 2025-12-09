@@ -6,6 +6,7 @@ namespace AIArmada\FilamentInventory\Resources\InventoryMovementResource\Tables;
 
 use AIArmada\Inventory\Enums\MovementType;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -106,9 +107,9 @@ final class InventoryMovementsTable
 
                 Filter::make('date_range')
                     ->form([
-                        \Filament\Forms\Components\DatePicker::make('from')
+                        DatePicker::make('from')
                             ->label('From Date'),
-                        \Filament\Forms\Components\DatePicker::make('until')
+                        DatePicker::make('until')
                             ->label('Until Date'),
                     ])
                     ->query(function (Builder $query, array $data): Builder {

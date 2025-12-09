@@ -20,6 +20,7 @@ use AIArmada\Shipping\Data\LabelData;
 use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\Data\ShipmentData;
+use AIArmada\Shipping\Data\ShipmentItemData;
 use AIArmada\Shipping\Data\ShipmentResultData;
 use AIArmada\Shipping\Data\ShippingMethodData;
 use AIArmada\Shipping\Data\TrackingData;
@@ -278,7 +279,7 @@ class JntShippingDriver implements ShippingDriverInterface
     /**
      * Convert shipment items to JNT format.
      *
-     * @param  array<\AIArmada\Shipping\Data\ShipmentItemData>  $items
+     * @param  array<ShipmentItemData>  $items
      * @return array<ItemData>
      */
     protected function convertToJntItems(array $items): array

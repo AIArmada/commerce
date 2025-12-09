@@ -6,12 +6,14 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Docs\Enums\DocStatus;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -23,9 +25,9 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property DocStatus $status
- * @property \Illuminate\Support\Carbon $issue_date
- * @property \Illuminate\Support\Carbon|null $due_date
- * @property \Illuminate\Support\Carbon|null $paid_at
+ * @property Carbon $issue_date
+ * @property Carbon|null $due_date
+ * @property Carbon|null $paid_at
  * @property string $subtotal
  * @property string $tax_amount
  * @property string $discount_amount
@@ -38,10 +40,10 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property array<int, array<string, mixed>>|null $items
  * @property array<string, mixed>|null $metadata
  * @property string|null $pdf_path
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  * @property-read DocTemplate|null $template
- * @property-read \Illuminate\Database\Eloquent\Collection<int, DocStatusHistory> $statusHistories
+ * @property-read Collection<int, DocStatusHistory> $statusHistories
  * @property-read Model|null $docable
  */
 final class Doc extends Model

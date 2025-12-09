@@ -8,7 +8,11 @@ use AIArmada\Cashier\Cashier;
 use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\Cashier\GatewayManager;
 use AIArmada\Commerce\Tests\Cashier\Fixtures\User;
+use Illuminate\Cache\CacheServiceProvider;
+use Illuminate\Database\DatabaseServiceProvider;
 use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Events\EventServiceProvider;
+use Illuminate\Session\SessionServiceProvider;
 use Illuminate\Support\Facades\Schema;
 use Orchestra\Testbench\TestCase as Orchestra;
 
@@ -39,10 +43,10 @@ abstract class CashierTestCase extends Orchestra
     protected function getPackageProviders($app): array
     {
         return [
-            \Illuminate\Events\EventServiceProvider::class,
-            \Illuminate\Session\SessionServiceProvider::class,
-            \Illuminate\Cache\CacheServiceProvider::class,
-            \Illuminate\Database\DatabaseServiceProvider::class,
+            EventServiceProvider::class,
+            SessionServiceProvider::class,
+            CacheServiceProvider::class,
+            DatabaseServiceProvider::class,
             CashierServiceProvider::class,
         ];
     }

@@ -47,7 +47,7 @@ final class TaxCalculator
      */
     public static function withDefaults(): self
     {
-        return (new self())
+        return (new self)
             ->registerRate('MY-SST', 8.0, 'Sales & Service Tax (SST)')
             ->registerRate('MY-SST-6', 6.0, 'Service Tax')
             ->registerRate('SG-GST', 9.0, 'Goods & Services Tax (GST)')

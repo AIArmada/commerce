@@ -7,6 +7,8 @@ namespace AIArmada\FilamentAuthz\Console;
 use AIArmada\FilamentAuthz\Models\RoleTemplate;
 use AIArmada\FilamentAuthz\Services\RoleTemplateService;
 use Illuminate\Console\Command;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
@@ -157,8 +159,8 @@ class RoleTemplateCommand extends Command
             required: true
         );
 
-        /** @var \Spatie\Permission\Models\Role $role */
-        $role = \Spatie\Permission\Models\Role::findByName($roleName);
+        /** @var Role $role */
+        $role = Role::findByName($roleName);
 
         $synced = $service->syncRoleWithTemplate($role);
 
@@ -254,7 +256,7 @@ class RoleTemplateCommand extends Command
      */
     protected function getPermissionOptions(): array
     {
-        return \Spatie\Permission\Models\Permission::query()
+        return Permission::query()
             ->pluck('name', 'name')
             ->toArray();
     }

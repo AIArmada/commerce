@@ -9,7 +9,7 @@ use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
 
 beforeEach(function (): void {
-    $container = new Container();
+    $container = new Container;
     Container::setInstance($container);
 
     $container->instance('config', new Repository([
@@ -82,7 +82,7 @@ it('normalizes rule definitions from user input', function (): void {
 });
 
 it('builds dynamic cart conditions using built-in rule factories', function (): void {
-    $condition = new Condition();
+    $condition = new Condition;
 
     $condition->forceFill([
         'name' => 'bulk_discount',

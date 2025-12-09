@@ -81,7 +81,7 @@ trait HasLocationHierarchy
     public function getDescendantsAttribute(): Collection
     {
         if ($this->path === null) {
-            return new Collection();
+            return new Collection;
         }
 
         return InventoryLocation::query()
@@ -99,14 +99,14 @@ trait HasLocationHierarchy
     public function getAncestorsAttribute(): Collection
     {
         if ($this->path === null || $this->depth === 0) {
-            return new Collection();
+            return new Collection;
         }
 
         $ancestorIds = explode('/', $this->path);
         array_pop($ancestorIds); // Remove self
 
         if (empty($ancestorIds)) {
-            return new Collection();
+            return new Collection;
         }
 
         return InventoryLocation::query()

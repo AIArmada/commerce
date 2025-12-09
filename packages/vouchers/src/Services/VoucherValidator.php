@@ -13,6 +13,7 @@ use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Targeting\TargetingConfiguration;
 use AIArmada\Vouchers\Targeting\TargetingContext;
 use AIArmada\Vouchers\Targeting\TargetingEngine;
+use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -100,7 +101,7 @@ class VoucherValidator
 
             if ($cartTotal < $voucher->min_cart_value) {
                 $currency = mb_strtoupper($voucher->currency ?? config('vouchers.default_currency', 'MYR'));
-                $formattedMinValue = (string) \Akaunting\Money\Money::{$currency}($voucher->min_cart_value);
+                $formattedMinValue = (string) Money::{$currency}($voucher->min_cart_value);
 
                 return VoucherValidationResult::invalid(
                     "Minimum cart value of {$formattedMinValue} required.",
@@ -210,7 +211,7 @@ class VoucherValidator
         $context = TargetingContext::fromCart($cart);
 
         // Evaluate targeting rules using the configuration data
-        $engine = new TargetingEngine();
+        $engine = new TargetingEngine;
         $targetingData = [
             'mode' => $configuration->mode->value,
             'rules' => $configuration->rules,

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Models\Traits;
 
+use AIArmada\Cart\Exceptions\InvalidCartItemException;
+
 trait AttributeTrait
 {
     /**
@@ -69,7 +71,7 @@ trait AttributeTrait
     {
         $name = mb_trim($name);
         if (empty($name)) {
-            throw new \AIArmada\Cart\Exceptions\InvalidCartItemException('Cart item name cannot be empty');
+            throw new InvalidCartItemException('Cart item name cannot be empty');
         }
 
         return new static(
@@ -92,7 +94,7 @@ trait AttributeTrait
         $normalizedPrice = $this->normalizeToInt($price);
 
         if ($normalizedPrice < 0) {
-            throw new \AIArmada\Cart\Exceptions\InvalidCartItemException('Price cannot be negative');
+            throw new InvalidCartItemException('Price cannot be negative');
         }
 
         return new static(

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Facades;
 
+use AIArmada\Cart\CartManager;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -71,7 +72,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static int|null getVersion()
  * @method static string|null getId()
  *
- * @see \AIArmada\Cart\CartManager
+ * @see CartManager
  */
 final class Cart extends Facade
 {

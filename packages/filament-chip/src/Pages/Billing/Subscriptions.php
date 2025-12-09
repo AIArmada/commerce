@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Pages\Billing;
 
+use AIArmada\CashierChip\Cashier;
+use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentChip\Concerns\InteractsWithBillable;
 use BackedEnum;
 use Exception;
@@ -129,7 +131,7 @@ class Subscriptions extends Page
     public function formatAmount(int $amount): string
     {
         if (class_exists('\AIArmada\CashierChip\Cashier')) {
-            return \AIArmada\CashierChip\Cashier::formatAmount($amount);
+            return Cashier::formatAmount($amount);
         }
 
         $currency = config('cashier-chip.currency', 'MYR');
@@ -180,9 +182,9 @@ class Subscriptions extends Page
     {
         if (class_exists('\AIArmada\CashierChip\Subscription')) {
             return [
-                \AIArmada\CashierChip\Subscription::STATUS_ACTIVE,
-                \AIArmada\CashierChip\Subscription::STATUS_TRIALING,
-                \AIArmada\CashierChip\Subscription::STATUS_PAST_DUE,
+                Subscription::STATUS_ACTIVE,
+                Subscription::STATUS_TRIALING,
+                Subscription::STATUS_PAST_DUE,
             ];
         }
 

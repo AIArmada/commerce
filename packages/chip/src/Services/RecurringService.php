@@ -16,6 +16,7 @@ use AIArmada\Chip\Exceptions\ChipApiException;
 use AIArmada\Chip\Exceptions\NoRecurringTokenException;
 use AIArmada\Chip\Models\RecurringCharge;
 use AIArmada\Chip\Models\RecurringSchedule;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Throwable;
@@ -216,9 +217,9 @@ class RecurringService
     /**
      * Get all due schedules ready for processing.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, RecurringSchedule>
+     * @return Collection<int, RecurringSchedule>
      */
-    public function getDueSchedules(): \Illuminate\Database\Eloquent\Collection
+    public function getDueSchedules(): Collection
     {
         return RecurringSchedule::query()
             ->where('status', RecurringStatus::Active)

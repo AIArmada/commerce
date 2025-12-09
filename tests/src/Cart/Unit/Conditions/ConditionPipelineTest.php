@@ -10,7 +10,7 @@ use AIArmada\Cart\Conditions\Target;
 use AIArmada\Cart\Testing\InMemoryStorage;
 
 it('applies shipping conditions using shipment resolver data', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'pipeline-test', events: null);
 
     $cart->add('sku-1', 'Sample Item', 5000, 2); // subtotal 10000 cents ($100)
@@ -40,7 +40,7 @@ it('applies shipping conditions using shipment resolver data', function (): void
 });
 
 it('applies payment surcharges per payment source', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'payments-test', events: null);
 
     $cart->add('sku-1', 'Sample Item', 10000, 1);  // $100 in cents

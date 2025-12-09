@@ -6,6 +6,7 @@ namespace AIArmada\Docs\Facades;
 
 use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Enums\DocStatus;
+use AIArmada\Docs\Services\DocService;
 use Illuminate\Support\Facades\Facade;
 
 /**
@@ -16,7 +17,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static void emailDoc(\AIArmada\Docs\Models\Doc $doc, string $email)
  * @method static void updateDocStatus(\AIArmada\Docs\Models\Doc $doc, DocStatus $status, ?string $notes = null)
  *
- * @see \AIArmada\Docs\Services\DocService
+ * @see DocService
  */
 class Doc extends Facade
 {

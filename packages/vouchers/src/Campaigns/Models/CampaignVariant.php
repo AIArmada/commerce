@@ -6,10 +6,12 @@ namespace AIArmada\Vouchers\Campaigns\Models;
 
 use AIArmada\Vouchers\Models\Voucher;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -24,11 +26,11 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $revenue_cents
  * @property int $discount_cents
  * @property bool $is_control
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Campaign $campaign
  * @property-read Voucher|null $voucher
- * @property-read \Illuminate\Database\Eloquent\Collection<int, CampaignEvent> $events
+ * @property-read Collection<int, CampaignEvent> $events
  * @property-read float $conversion_rate
  * @property-read float $application_rate
  * @property-read float|null $average_order_value

@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Models;
 
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -21,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string|null $notes
  * @property array<string, mixed>|null $metadata
  * @property array<string, mixed>|null $cart_snapshot
- * @property \Illuminate\Support\Carbon $used_at
+ * @property Carbon $used_at
  * @property-read Voucher $voucher
  * @property-read Model|null $redeemedBy
  * @property-read string $user_identifier
@@ -81,9 +83,9 @@ final class VoucherUsage extends Model
         return $this->getAttribute('channel') === self::CHANNEL_MANUAL;
     }
 
-    protected function userIdentifier(): \Illuminate\Database\Eloquent\Casts\Attribute
+    protected function userIdentifier(): Attribute
     {
-        return \Illuminate\Database\Eloquent\Casts\Attribute::make(
+        return Attribute::make(
             get: function (): string {
                 $redeemedBy = $this->redeemedBy;
 

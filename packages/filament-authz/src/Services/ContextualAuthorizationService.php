@@ -11,6 +11,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
+use Spatie\Permission\Models\Permission;
 
 class ContextualAuthorizationService
 {
@@ -118,7 +119,7 @@ class ContextualAuthorizationService
         array $conditions = [],
         ?DateTimeInterface $expiresAt = null
     ): ScopedPermission {
-        $permissionModel = \Spatie\Permission\Models\Permission::findOrCreate($permission);
+        $permissionModel = Permission::findOrCreate($permission);
 
         return ScopedPermission::create([
             'permissionable_type' => $user::class,

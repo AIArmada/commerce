@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Http\Middleware;
 
 use AIArmada\Cart\Security\CartRateLimiter;
+use AIArmada\Cart\Security\CartRateLimitResult;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -116,7 +117,7 @@ final class ThrottleCartOperations
     /**
      * Add rate limit headers to response.
      */
-    private function addRateLimitHeaders(Response $response, \AIArmada\Cart\Security\CartRateLimitResult $result): Response
+    private function addRateLimitHeaders(Response $response, CartRateLimitResult $result): Response
     {
         if ($result->remainingMinute >= 0) {
             $response->headers->set('X-RateLimit-Remaining', (string) $result->remainingMinute);

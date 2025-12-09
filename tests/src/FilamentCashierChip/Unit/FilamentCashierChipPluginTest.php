@@ -3,9 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentCashierChip\FilamentCashierChipPlugin;
+use Filament\Contracts\Plugin;
 
 it('exposes a stable plugin id', function (): void {
-    expect((new FilamentCashierChipPlugin())->getId())->toBe('filament-cashier-chip');
+    expect((new FilamentCashierChipPlugin)->getId())->toBe('filament-cashier-chip');
 });
 
 it('can be created using make method', function (): void {
@@ -15,7 +16,7 @@ it('can be created using make method', function (): void {
 });
 
 it('enables subscriptions by default', function (): void {
-    $plugin = new FilamentCashierChipPlugin();
+    $plugin = new FilamentCashierChipPlugin;
     $reflection = new ReflectionClass($plugin);
     $property = $reflection->getProperty('hasSubscriptions');
 
@@ -23,7 +24,7 @@ it('enables subscriptions by default', function (): void {
 });
 
 it('can disable subscriptions', function (): void {
-    $plugin = (new FilamentCashierChipPlugin())->subscriptions(false);
+    $plugin = (new FilamentCashierChipPlugin)->subscriptions(false);
     $reflection = new ReflectionClass($plugin);
     $property = $reflection->getProperty('hasSubscriptions');
 
@@ -31,7 +32,7 @@ it('can disable subscriptions', function (): void {
 });
 
 it('enables customers by default', function (): void {
-    $plugin = new FilamentCashierChipPlugin();
+    $plugin = new FilamentCashierChipPlugin;
     $reflection = new ReflectionClass($plugin);
     $property = $reflection->getProperty('hasCustomers');
 
@@ -39,7 +40,7 @@ it('enables customers by default', function (): void {
 });
 
 it('can disable customers', function (): void {
-    $plugin = (new FilamentCashierChipPlugin())->customers(false);
+    $plugin = (new FilamentCashierChipPlugin)->customers(false);
     $reflection = new ReflectionClass($plugin);
     $property = $reflection->getProperty('hasCustomers');
 
@@ -47,7 +48,7 @@ it('can disable customers', function (): void {
 });
 
 it('enables invoices by default', function (): void {
-    $plugin = new FilamentCashierChipPlugin();
+    $plugin = new FilamentCashierChipPlugin;
     $reflection = new ReflectionClass($plugin);
     $property = $reflection->getProperty('hasInvoices');
 
@@ -55,7 +56,7 @@ it('enables invoices by default', function (): void {
 });
 
 it('can disable invoices', function (): void {
-    $plugin = (new FilamentCashierChipPlugin())->invoices(false);
+    $plugin = (new FilamentCashierChipPlugin)->invoices(false);
     $reflection = new ReflectionClass($plugin);
     $property = $reflection->getProperty('hasInvoices');
 
@@ -63,7 +64,7 @@ it('can disable invoices', function (): void {
 });
 
 it('enables dashboard widgets by default', function (): void {
-    $plugin = new FilamentCashierChipPlugin();
+    $plugin = new FilamentCashierChipPlugin;
     $reflection = new ReflectionClass($plugin);
     $property = $reflection->getProperty('hasDashboardWidgets');
 
@@ -71,7 +72,7 @@ it('enables dashboard widgets by default', function (): void {
 });
 
 it('can disable dashboard widgets', function (): void {
-    $plugin = (new FilamentCashierChipPlugin())->dashboardWidgets(false);
+    $plugin = (new FilamentCashierChipPlugin)->dashboardWidgets(false);
     $reflection = new ReflectionClass($plugin);
     $property = $reflection->getProperty('hasDashboardWidgets');
 
@@ -79,7 +80,7 @@ it('can disable dashboard widgets', function (): void {
 });
 
 it('enables billing dashboard by default', function (): void {
-    $plugin = new FilamentCashierChipPlugin();
+    $plugin = new FilamentCashierChipPlugin;
     $reflection = new ReflectionClass($plugin);
     $property = $reflection->getProperty('hasBillingDashboard');
 
@@ -87,7 +88,7 @@ it('enables billing dashboard by default', function (): void {
 });
 
 it('can disable billing dashboard', function (): void {
-    $plugin = (new FilamentCashierChipPlugin())->billingDashboard(false);
+    $plugin = (new FilamentCashierChipPlugin)->billingDashboard(false);
     $reflection = new ReflectionClass($plugin);
     $property = $reflection->getProperty('hasBillingDashboard');
 
@@ -95,37 +96,37 @@ it('can disable billing dashboard', function (): void {
 });
 
 it('returns fluent instance from subscriptions method', function (): void {
-    $plugin = new FilamentCashierChipPlugin();
+    $plugin = new FilamentCashierChipPlugin;
 
     expect($plugin->subscriptions())->toBe($plugin);
 });
 
 it('returns fluent instance from customers method', function (): void {
-    $plugin = new FilamentCashierChipPlugin();
+    $plugin = new FilamentCashierChipPlugin;
 
     expect($plugin->customers())->toBe($plugin);
 });
 
 it('returns fluent instance from invoices method', function (): void {
-    $plugin = new FilamentCashierChipPlugin();
+    $plugin = new FilamentCashierChipPlugin;
 
     expect($plugin->invoices())->toBe($plugin);
 });
 
 it('returns fluent instance from dashboardWidgets method', function (): void {
-    $plugin = new FilamentCashierChipPlugin();
+    $plugin = new FilamentCashierChipPlugin;
 
     expect($plugin->dashboardWidgets())->toBe($plugin);
 });
 
 it('returns fluent instance from billingDashboard method', function (): void {
-    $plugin = new FilamentCashierChipPlugin();
+    $plugin = new FilamentCashierChipPlugin;
 
     expect($plugin->billingDashboard())->toBe($plugin);
 });
 
 it('implements filament plugin interface', function (): void {
-    $plugin = new FilamentCashierChipPlugin();
+    $plugin = new FilamentCashierChipPlugin;
 
-    expect($plugin)->toBeInstanceOf(Filament\Contracts\Plugin::class);
+    expect($plugin)->toBeInstanceOf(Plugin::class);
 });

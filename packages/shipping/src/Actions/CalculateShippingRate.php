@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Actions;
 
 use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Data\PackageData;
 use AIArmada\Shipping\Data\RateQuoteData;
 use AIArmada\Shipping\ShippingManager;
 use Illuminate\Support\Collection;
@@ -25,7 +26,7 @@ final class CalculateShippingRate
     /**
      * Calculate shipping rates for packages.
      *
-     * @param  array<\AIArmada\Shipping\Data\PackageData>  $packages
+     * @param  array<PackageData>  $packages
      * @param  array<string, mixed>  $options
      * @return Collection<int, RateQuoteData>
      */

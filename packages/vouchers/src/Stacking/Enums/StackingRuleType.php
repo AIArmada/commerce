@@ -4,6 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Stacking\Enums;
 
+use AIArmada\Vouchers\Stacking\Rules\CampaignExclusionRule;
+use AIArmada\Vouchers\Stacking\Rules\CategoryExclusionRule;
+use AIArmada\Vouchers\Stacking\Rules\MaxDiscountPercentageRule;
+use AIArmada\Vouchers\Stacking\Rules\MaxDiscountRule;
+use AIArmada\Vouchers\Stacking\Rules\MaxVouchersRule;
+use AIArmada\Vouchers\Stacking\Rules\MutualExclusionRule;
+use AIArmada\Vouchers\Stacking\Rules\TypeRestrictionRule;
+use AIArmada\Vouchers\Stacking\Rules\ValueThresholdRule;
+
 /**
  * Types of stacking rules that can be applied to voucher combinations.
  */
@@ -97,14 +106,14 @@ enum StackingRuleType: string
     public function getRuleClass(): string
     {
         return match ($this) {
-            self::MaxVouchers => \AIArmada\Vouchers\Stacking\Rules\MaxVouchersRule::class,
-            self::MaxDiscount => \AIArmada\Vouchers\Stacking\Rules\MaxDiscountRule::class,
-            self::MaxDiscountPercentage => \AIArmada\Vouchers\Stacking\Rules\MaxDiscountPercentageRule::class,
-            self::MutualExclusion => \AIArmada\Vouchers\Stacking\Rules\MutualExclusionRule::class,
-            self::TypeRestriction => \AIArmada\Vouchers\Stacking\Rules\TypeRestrictionRule::class,
-            self::CategoryExclusion => \AIArmada\Vouchers\Stacking\Rules\CategoryExclusionRule::class,
-            self::CampaignExclusion => \AIArmada\Vouchers\Stacking\Rules\CampaignExclusionRule::class,
-            self::ValueThreshold => \AIArmada\Vouchers\Stacking\Rules\ValueThresholdRule::class,
+            self::MaxVouchers => MaxVouchersRule::class,
+            self::MaxDiscount => MaxDiscountRule::class,
+            self::MaxDiscountPercentage => MaxDiscountPercentageRule::class,
+            self::MutualExclusion => MutualExclusionRule::class,
+            self::TypeRestriction => TypeRestrictionRule::class,
+            self::CategoryExclusion => CategoryExclusionRule::class,
+            self::CampaignExclusion => CampaignExclusionRule::class,
+            self::ValueThreshold => ValueThresholdRule::class,
         };
     }
 }

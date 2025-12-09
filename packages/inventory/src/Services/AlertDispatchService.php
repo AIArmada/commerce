@@ -6,6 +6,7 @@ namespace AIArmada\Inventory\Services;
 
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Models\InventoryLevel;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Notification;
 
 final class AlertDispatchService
@@ -110,9 +111,9 @@ final class AlertDispatchService
     /**
      * Get all critical alerts.
      *
-     * @return \Illuminate\Database\Eloquent\Collection<int, InventoryLevel>
+     * @return Collection<int, InventoryLevel>
      */
-    public function getCriticalAlerts(): \Illuminate\Database\Eloquent\Collection
+    public function getCriticalAlerts(): Collection
     {
         return InventoryLevel::query()
             ->whereIn('alert_status', array_map(

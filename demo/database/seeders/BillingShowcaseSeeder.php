@@ -9,6 +9,7 @@ use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
+use Laravel\Cashier\Database\Factories\SubscriptionFactory;
 
 /**
  * Seeds billing demo data for the self-service billing portal showcase.
@@ -72,7 +73,7 @@ final class BillingShowcaseSeeder extends Seeder
         ]);
 
         // Create Stripe subscriptions (mock for demo)
-        \Laravel\Cashier\Database\Factories\SubscriptionFactory::new()->create([
+        SubscriptionFactory::new()->create([
             'user_id' => $admin->id,
             'stripe_status' => 'active',
             'stripe_id' => 'sub_stripe_' . Str::random(20),

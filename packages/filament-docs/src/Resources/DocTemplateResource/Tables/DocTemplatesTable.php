@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Resources\DocTemplateResource\Tables;
 
 use AIArmada\Docs\Models\DocTemplate;
+use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
@@ -90,7 +91,7 @@ final class DocTemplatesTable
                     ->icon(Heroicon::OutlinedPencil),
 
                 ActionGroup::make([
-                    \Filament\Actions\Action::make('set_default')
+                    Action::make('set_default')
                         ->label('Set as Default')
                         ->icon(Heroicon::OutlinedStar)
                         ->color('warning')

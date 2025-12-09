@@ -14,6 +14,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Collection;
 
 final class WalletEntriesTable
 {
@@ -190,7 +191,7 @@ final class WalletEntriesTable
                     ->icon(Heroicon::OutlinedCheckBadge)
                     ->color('success')
                     ->requiresConfirmation()
-                    ->action(function (\Illuminate\Database\Eloquent\Collection $records): void {
+                    ->action(function (Collection $records): void {
                         $records->each->markAsRedeemed();
                     }),
 

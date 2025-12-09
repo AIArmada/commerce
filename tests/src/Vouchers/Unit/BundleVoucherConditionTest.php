@@ -16,7 +16,7 @@ use AIArmada\Vouchers\Enums\VoucherType;
  */
 function createBundleTestCart(array $itemsData): Cart
 {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-bundle', events: null);
 
     foreach ($itemsData as $data) {

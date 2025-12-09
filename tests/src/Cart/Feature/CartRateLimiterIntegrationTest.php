@@ -9,7 +9,7 @@ use AIArmada\Cart\Testing\InMemoryStorage;
 
 it('blocks cart add operation when rate limit exceeded via integrated cart', function (): void {
     // Create cart with rate limiter injected
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $identifier = uniqid('session-', true);
     $limiter = new CartRateLimiter([
         'add_item' => ['perMinute' => 3, 'perHour' => 100],
@@ -37,7 +37,7 @@ it('blocks cart add operation when rate limit exceeded via integrated cart', fun
 });
 
 it('allows different users to add items independently', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $limiter = new CartRateLimiter([
         'add_item' => ['perMinute' => 2, 'perHour' => 100],
     ]);
@@ -90,7 +90,7 @@ it('rate limits checkout operations more strictly via standalone limiter', funct
 });
 
 it('protects against cart manipulation attacks', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $identifier = uniqid('attacker-', true);
     $limiter = new CartRateLimiter([
         'add_item' => ['perMinute' => 10, 'perHour' => 50],
@@ -134,7 +134,7 @@ it('provides rate limit info for UI feedback', function (): void {
 });
 
 it('can disable rate limiting for specific cart instance', function (): void {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $identifier = uniqid('disabled-', true);
     $limiter = new CartRateLimiter([
         'add_item' => ['perMinute' => 2, 'perHour' => 100],

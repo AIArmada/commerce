@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Support\Integrations;
 use AIArmada\Affiliates\Support\CartManagerWithAffiliates;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Facades\Cart;
 use Illuminate\Contracts\Foundation\Application;
 
 final class CartIntegrationRegistrar
@@ -29,8 +30,8 @@ final class CartIntegrationRegistrar
             $app->instance(CartManager::class, $proxy);
             $app->instance(CartManagerInterface::class, $proxy);
 
-            if (class_exists(\AIArmada\Cart\Facades\Cart::class)) {
-                \AIArmada\Cart\Facades\Cart::clearResolvedInstance('cart');
+            if (class_exists(Cart::class)) {
+                Cart::clearResolvedInstance('cart');
             }
 
             return $proxy;

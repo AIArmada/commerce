@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -17,10 +18,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property int|null $quiz_score
  * @property int $quiz_attempts
  * @property string|null $certificate_url
- * @property \Illuminate\Support\Carbon|null $completed_at
- * @property \Illuminate\Support\Carbon|null $quiz_passed_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $completed_at
+ * @property Carbon|null $quiz_passed_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Affiliate $affiliate
  * @property-read AffiliateTrainingModule $module
  */

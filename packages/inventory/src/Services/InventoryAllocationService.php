@@ -49,7 +49,7 @@ final class InventoryAllocationService
 
             $levels = $this->getLevelsForAllocation($model, $strategy);
             /** @var Collection<int, InventoryAllocation> $allocations */
-            $allocations = new Collection();
+            $allocations = new Collection;
             $remaining = $quantity;
             $expiresAt = now()->addMinutes($ttlMinutes);
 

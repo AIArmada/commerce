@@ -2,9 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Exceptions\InvalidCartConditionException;
+use AIArmada\Cart\Models\CartItem;
+use AIArmada\Cart\Storage\StorageInterface;
+use Illuminate\Database\Eloquent\Model;
 
 it('parses valid and invalid percent values', function (): void {
     // Valid percent (charge/fee)
@@ -527,8 +531,8 @@ it('shouldApply returns true for static and evaluates rules for dynamic', functi
         target: 'cart@grand_total/aggregate',
         value: '+5'
     );
-    $cart = new AIArmada\Cart\Cart(
-        storage: new class implements AIArmada\Cart\Storage\StorageInterface
+    $cart = new Cart(
+        storage: new class implements StorageInterface
         {
             public function get(string $identifier, string $instance): ?string
             {
@@ -622,7 +626,7 @@ it('shouldApply returns true for static and evaluates rules for dynamic', functi
                 return null;
             }
 
-            public function withOwner(?Illuminate\Database\Eloquent\Model $owner): static
+            public function withOwner(?Model $owner): static
             {
                 return $this;
             }
@@ -709,7 +713,7 @@ it('shouldApply returns true for static and evaluates rules for dynamic', functi
         },
         identifier: 'test-user'
     );
-    $item = new AIArmada\Cart\Models\CartItem(
+    $item = new CartItem(
         id: 'test',
         name: 'Test',
         price: 1.0,

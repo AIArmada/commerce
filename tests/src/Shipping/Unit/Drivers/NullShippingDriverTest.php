@@ -19,7 +19,7 @@ use AIArmada\Shipping\Enums\TrackingStatus;
 // ============================================
 
 beforeEach(function (): void {
-    $this->driver = new NullShippingDriver();
+    $this->driver = new NullShippingDriver;
 });
 
 it('returns correct carrier code', function (): void {

@@ -8,6 +8,7 @@ use AIArmada\Shipping\Enums\TrackingStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -20,10 +21,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $state
  * @property string|null $country
  * @property string|null $postal_code
- * @property \Illuminate\Support\Carbon $occurred_at
+ * @property Carbon $occurred_at
  * @property array|null $raw_data
- * @property \Illuminate\Support\Carbon $created_at
- * @property \Illuminate\Support\Carbon $updated_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
  * @property-read Shipment $shipment
  */
 class ShipmentEvent extends Model

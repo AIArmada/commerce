@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAuthz\Services;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 class IdentityProviderSync
@@ -191,7 +192,7 @@ class IdentityProviderSync
                 'external_group' => $externalGroup,
             ],
             [
-                'id' => (string) \Illuminate\Support\Str::uuid(),
+                'id' => (string) Str::uuid(),
                 'local_role' => $localRole,
                 'is_active' => true,
                 'updated_at' => now(),

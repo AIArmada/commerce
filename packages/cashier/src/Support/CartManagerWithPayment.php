@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Support;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Collections\CartCollection;
+use AIArmada\Cart\Collections\CartConditionCollection;
 use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\Cashier\Checkout\CartCheckoutBuilder;
 use AIArmada\Cashier\GatewayManager;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Cart manager decorator that adds payment/checkout capabilities.
@@ -123,7 +127,7 @@ final class CartManagerWithPayment implements CartManagerInterface
         $this->cart->destroy($identifier);
     }
 
-    public function items(?string $identifier = null): \AIArmada\Cart\Collections\CartCollection
+    public function items(?string $identifier = null): CartCollection
     {
         return $this->cart->items($identifier);
     }
@@ -178,7 +182,7 @@ final class CartManagerWithPayment implements CartManagerInterface
         return $this->cart->removeCondition($name, $identifier);
     }
 
-    public function conditions(?string $identifier = null): \AIArmada\Cart\Collections\CartConditionCollection
+    public function conditions(?string $identifier = null): CartConditionCollection
     {
         return $this->cart->conditions($identifier);
     }
@@ -249,7 +253,7 @@ final class CartManagerWithPayment implements CartManagerInterface
         return $this;
     }
 
-    public function forOwner(\Illuminate\Database\Eloquent\Model $owner): static
+    public function forOwner(Model $owner): static
     {
         return new self($this->cart->forOwner($owner));
     }
@@ -264,7 +268,7 @@ final class CartManagerWithPayment implements CartManagerInterface
         return $this->cart->getOwnerId();
     }
 
-    public function session(?string $sessionKey = null): \AIArmada\Cart\Storage\StorageInterface
+    public function session(?string $sessionKey = null): StorageInterface
     {
         return $this->cart->session($sessionKey);
     }

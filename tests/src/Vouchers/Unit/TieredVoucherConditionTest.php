@@ -16,7 +16,7 @@ use AIArmada\Vouchers\Enums\VoucherType;
  */
 function createTieredTestCart(int $totalValue): Cart
 {
-    $storage = new InMemoryStorage();
+    $storage = new InMemoryStorage;
     $cart = new Cart($storage, 'test-tiered', events: null);
 
     $cart->add(

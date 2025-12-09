@@ -8,10 +8,13 @@ use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Contracts\Support\Arrayable;
 use Illuminate\Contracts\Support\Jsonable;
 use Illuminate\Contracts\Support\Responsable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Redirect;
 use JsonSerializable;
 use ReturnTypeWillChange;
+use Symfony\Component\HttpFoundation\Response;
 
 /**
  * CHIP Checkout wrapper class.
@@ -23,7 +26,7 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     /**
      * The owner of the checkout session.
      *
-     * @var Billable|\Illuminate\Database\Eloquent\Model|null
+     * @var Billable|Model|null
      */
     protected $owner;
 
@@ -35,7 +38,7 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     /**
      * Create a new checkout instance.
      *
-     * @param  \Illuminate\Database\Eloquent\Model|null  $owner
+     * @param  Model|null  $owner
      */
     public function __construct($owner, PurchaseData $purchase)
     {
@@ -58,13 +61,13 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
      */
     public static function guest(): CheckoutBuilder
     {
-        return new CheckoutBuilder();
+        return new CheckoutBuilder;
     }
 
     /**
      * Begin a new customer checkout session.
      *
-     * @param  \Illuminate\Database\Eloquent\Model  $owner
+     * @param  Model  $owner
      */
     public static function customer($owner): CheckoutBuilder
     {
@@ -74,7 +77,7 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     /**
      * Create a new checkout session.
      *
-     * @param  \Illuminate\Database\Eloquent\Model|null  $owner
+     * @param  Model|null  $owner
      * @param  int  $amount  Amount in cents
      * @param  array<string, mixed>  $options
      */
@@ -177,8 +180,8 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     /**
      * Create an HTTP response that represents the object.
      *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Symfony\Component\HttpFoundation\Response
+     * @param  Request  $request
+     * @return Response
      */
     public function toResponse($request)
     {
@@ -188,7 +191,7 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
     /**
      * Get the owner of the checkout session.
      *
-     * @return \Illuminate\Database\Eloquent\Model|null
+     * @return Model|null
      */
     public function owner()
     {

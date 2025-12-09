@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Listeners;
 
+use AIArmada\CashierChip\Billable;
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
+use AIArmada\CashierChip\Subscription;
 use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Listens to chip package PurchaseSubscriptionChargeFailure events.
@@ -24,7 +27,7 @@ class HandleSubscriptionChargeFailure
             return;
         }
 
-        /** @var (\Illuminate\Database\Eloquent\Model&\AIArmada\CashierChip\Billable)|null $billable */
+        /** @var (Model&Billable)|null $billable */
         $billable = Cashier::findBillable($clientId);
 
         if ($billable === null) {
@@ -37,7 +40,7 @@ class HandleSubscriptionChargeFailure
             return;
         }
 
-        /** @var \AIArmada\CashierChip\Subscription|null $subscription */
+        /** @var Subscription|null $subscription */
         $subscription = $billable->subscription($subscriptionType);
 
         if ($subscription) {

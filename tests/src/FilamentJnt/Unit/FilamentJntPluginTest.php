@@ -11,7 +11,7 @@ use Filament\Panel;
 use Mockery;
 
 it('exposes a stable plugin id', function (): void {
-    expect((new FilamentJntPlugin())->getId())->toBe('filament-jnt');
+    expect((new FilamentJntPlugin)->getId())->toBe('filament-jnt');
 });
 
 it('registers JNT resources and widgets', function (): void {
@@ -35,5 +35,5 @@ it('registers JNT resources and widgets', function (): void {
         ->andReturnSelf();
 
     // @phpstan-ignore argument.type
-    (new FilamentJntPlugin())->register($panel);
+    (new FilamentJntPlugin)->register($panel);
 });

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Exceptions\CartConflictException;
 
 describe('CartConflictException', function (): void {
@@ -50,7 +51,7 @@ describe('CartConflictException', function (): void {
     });
 
     it('stores conflicted cart', function (): void {
-        $manager = app(AIArmada\Cart\CartManager::class);
+        $manager = app(CartManager::class);
         $cart = $manager->getCartInstance('test-cart');
 
         $exception = new CartConflictException(
@@ -102,7 +103,7 @@ describe('CartConflictException', function (): void {
     });
 
     it('includes cart comparison suggestion when cart is present', function (): void {
-        $manager = app(AIArmada\Cart\CartManager::class);
+        $manager = app(CartManager::class);
         $cart = $manager->getCartInstance('test-cart');
 
         $exception = new CartConflictException(

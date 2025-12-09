@@ -7,6 +7,7 @@ namespace AIArmada\FilamentInventory\Resources\InventoryAllocationResource\Pages
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource;
 use AIArmada\Inventory\Facades\InventoryAllocation;
 use Filament\Actions\Action;
+use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
 
 final class ListInventoryAllocations extends ListRecords
@@ -37,7 +38,7 @@ final class ListInventoryAllocations extends ListRecords
 
     protected function sendSuccessNotification(string $message): void
     {
-        \Filament\Notifications\Notification::make()
+        Notification::make()
             ->title('Success')
             ->body($message)
             ->success()
@@ -46,7 +47,7 @@ final class ListInventoryAllocations extends ListRecords
 
     protected function sendWarningNotification(string $message): void
     {
-        \Filament\Notifications\Notification::make()
+        Notification::make()
             ->title('Info')
             ->body($message)
             ->warning()

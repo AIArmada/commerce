@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Models;
 
 use Akaunting\Money\Money;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -153,7 +154,7 @@ final class CartItem extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function instance(Builder $query, string $instance): void
     {
         $query->whereHas('cart', function ($q) use ($instance): void {
@@ -166,7 +167,7 @@ final class CartItem extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function byIdentifier(Builder $query, string $identifier): void
     {
         $query->whereHas('cart', function ($q) use ($identifier): void {
@@ -179,7 +180,7 @@ final class CartItem extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function byName(Builder $query, string $name): void
     {
         $query->where('name', 'like', "%{$name}%");
@@ -190,7 +191,7 @@ final class CartItem extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function priceBetween(Builder $query, float $min, float $max): void
     {
         // Convert dollars to cents for comparison
@@ -202,7 +203,7 @@ final class CartItem extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function quantityBetween(Builder $query, int $min, int $max): void
     {
         $query->whereBetween('quantity', [$min, $max]);
@@ -213,7 +214,7 @@ final class CartItem extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function withConditions(Builder $query): void
     {
         $query->whereNotNull('conditions')
@@ -225,7 +226,7 @@ final class CartItem extends Model
      *
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function withoutConditions(Builder $query): void
     {
         $query->whereNull('conditions')

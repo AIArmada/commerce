@@ -21,7 +21,7 @@ if (! function_exists('makeRulesFactoryCart')) {
 
 describe('BuiltInRulesFactory', function (): void {
     it('lists all supported keys', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
 
         expect($factory->getAvailableKeys())
             ->toBeArray()
@@ -31,7 +31,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('evaluates minimum item threshold', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('min-items');
 
         $rules = $factory->createRules('min-items', ['context' => ['min' => 2]]);
@@ -47,7 +47,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('uses metadata equality without explicit context wrapper', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('metadata');
         $cart->setMetadata('tier', 'vip');
 
@@ -58,7 +58,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('matches item attribute values for cart and individual item scopes', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('attributes');
 
         $cart->add('book-1', 'Book One', 30, 1, ['category' => 'books']);
@@ -75,7 +75,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('honours configured time windows including overnight ranges', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('time-window');
 
         CarbonImmutable::setTestNow(CarbonImmutable::create(2025, 1, 1, 15, 0));
@@ -90,7 +90,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('accepts day names for the day-of-week rule', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('day-of-week');
 
         CarbonImmutable::setTestNow(CarbonImmutable::create(2025, 1, 6, 9, 0)); // Monday
@@ -101,7 +101,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('detects customer tags stored in metadata', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('customer-tag');
         $cart->setMetadata('customer_tags', ['vip', 'wholesale']);
 
@@ -111,7 +111,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('recognises cart condition type presence', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('condition-type');
 
         $cart->addCondition(new CartCondition(
@@ -130,7 +130,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('limits item quantity using item-level scope when provided', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('quantity');
 
         $cart->add('sku-qty', 'Limited Item', 12, 3);
@@ -143,7 +143,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('always-true rule always returns true', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('always-true');
 
         $rules = $factory->createRules('always-true', []);
@@ -154,7 +154,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('always-false rule always returns false', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('always-false');
 
         $rules = $factory->createRules('always-false', []);
@@ -165,7 +165,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('has-any-item rule checks if cart has items', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('has-any-item');
 
         $rules = $factory->createRules('has-any-item', []);
@@ -179,7 +179,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('subtotal-at-least rule checks subtotal threshold', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('subtotal-at-least');
 
         $rules = $factory->createRules('subtotal-at-least', ['context' => ['amount' => 50]]);
@@ -194,7 +194,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('has-item rule checks for specific item', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('has-item');
 
         $rules = $factory->createRules('has-item', ['context' => ['id' => 'item1']]);
@@ -208,7 +208,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('missing-item rule checks for absence of specific item', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('missing-item');
 
         $rules = $factory->createRules('missing-item', ['context' => ['id' => 'item1']]);
@@ -222,7 +222,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('max-items rule checks maximum item count', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('max-items');
 
         $rules = $factory->createRules('max-items', ['context' => ['max' => 2]]);
@@ -238,7 +238,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('min-quantity rule checks minimum total quantity', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('min-quantity');
 
         $rules = $factory->createRules('min-quantity', ['context' => ['min' => 5]]);
@@ -253,7 +253,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('max-quantity rule checks maximum total quantity', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('max-quantity');
 
         $rules = $factory->createRules('max-quantity', ['context' => ['max' => 5]]);
@@ -268,7 +268,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('subtotal-below rule checks subtotal threshold', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('subtotal-below');
 
         $rules = $factory->createRules('subtotal-below', ['context' => ['amount' => 50]]);
@@ -283,7 +283,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('total-at-least rule checks total threshold', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('total-at-least');
 
         $rules = $factory->createRules('total-at-least', ['context' => ['amount' => 50]]);
@@ -299,7 +299,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('has-metadata rule checks for metadata presence', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('has-metadata');
 
         $rules = $factory->createRules('has-metadata', ['context' => ['key' => 'promo']]);
@@ -313,7 +313,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('metadata-equals rule checks metadata value', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('metadata-equals');
 
         $rules = $factory->createRules('metadata-equals', ['context' => ['key' => 'tier', 'value' => 'vip']]);
@@ -327,7 +327,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('item-list-includes-any and all rules behave correctly', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('item-list');
 
         $cart->add('item-1', 'Item 1', 10, 1);
@@ -341,7 +341,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('item quantity and price rules consider item scope', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('item-scope');
 
         $cart->add('sku', 'Scoped Item', 20, 3);
@@ -364,7 +364,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('item-has-condition and id-prefix rules behave correctly', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
         $cart = makeRulesFactoryCart('item-condition');
 
         $cart->add('promo-1', 'Promo Item', 10, 1, [], [
@@ -386,7 +386,7 @@ describe('BuiltInRulesFactory', function (): void {
     });
 
     it('throws for unsupported key and invalid context', function (): void {
-        $factory = new BuiltInRulesFactory();
+        $factory = new BuiltInRulesFactory;
 
         expect(fn () => $factory->createRules('unsupported-key', []))
             ->toThrow(InvalidArgumentException::class);

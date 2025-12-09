@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Jnt\Data\TrackingData;
 use AIArmada\Jnt\Data\TrackingDetailData;
 use AIArmada\Jnt\Notifications\OrderProblemNotification;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Facades\Notification;
 
@@ -20,7 +21,7 @@ test('OrderProblemNotification → it uses mail and database channels', function
 
     $notification = new OrderProblemNotification($tracking);
 
-    expect($notification->via(new stdClass()))->toBe(['mail', 'database']);
+    expect($notification->via(new stdClass))->toBe(['mail', 'database']);
 });
 
 test('OrderProblemNotification → it generates correct mail message', function (): void {
@@ -41,7 +42,7 @@ test('OrderProblemNotification → it generates correct mail message', function 
     );
 
     $notification = new OrderProblemNotification($tracking, 'support@example.com');
-    $mail = $notification->toMail(new stdClass());
+    $mail = $notification->toMail(new stdClass);
 
     expect($mail)->toBeInstanceOf(MailMessage::class)
         ->and($mail->subject)->toBe('Issue with Your Order')
@@ -64,7 +65,7 @@ test('OrderProblemNotification → it handles tracking without order ID', functi
     );
 
     $notification = new OrderProblemNotification($tracking);
-    $mail = $notification->toMail(new stdClass());
+    $mail = $notification->toMail(new stdClass);
 
     expect($mail->introLines)->toContain('Tracking Number: TRACK123')
         ->and($mail->introLines)->not->toContain('Order ID:');
@@ -77,7 +78,7 @@ test('OrderProblemNotification → it handles tracking without support contact',
     );
 
     $notification = new OrderProblemNotification($tracking);
-    $mail = $notification->toMail(new stdClass());
+    $mail = $notification->toMail(new stdClass);
 
     expect($mail->introLines)->not->toContain('For assistance, please contact:');
 });
@@ -89,7 +90,7 @@ test('OrderProblemNotification → it handles tracking without problem details',
     );
 
     $notification = new OrderProblemNotification($tracking);
-    $mail = $notification->toMail(new stdClass());
+    $mail = $notification->toMail(new stdClass);
 
     expect($mail->introLines)->not->toContain('Issue:')
         ->and($mail->introLines)->not->toContain('Problem Type:')
@@ -115,7 +116,7 @@ test('OrderProblemNotification → it generates correct array representation', f
     );
 
     $notification = new OrderProblemNotification($tracking, 'support@example.com');
-    $array = $notification->toArray(new stdClass());
+    $array = $notification->toArray(new stdClass);
 
     expect($array)->toBe([
         'type' => 'order_problem',
@@ -138,5 +139,5 @@ test('OrderProblemNotification → it implements ShouldQueue', function (): void
 
     $notification = new OrderProblemNotification($tracking);
 
-    expect($notification)->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldQueue::class);
+    expect($notification)->toBeInstanceOf(ShouldQueue::class);
 });

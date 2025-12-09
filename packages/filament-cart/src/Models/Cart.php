@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCart\Models;
 use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 use Akaunting\Money\Money;
+use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -14,6 +15,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Foundation\Auth\User;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 use Throwable;
 
@@ -29,11 +32,11 @@ use Throwable;
  * @property int $total
  * @property int $savings
  * @property string $currency
- * @property \Illuminate\Support\Carbon|null $last_activity_at
- * @property \Illuminate\Support\Carbon|null $checkout_started_at
- * @property \Illuminate\Support\Carbon|null $checkout_abandoned_at
+ * @property Carbon|null $last_activity_at
+ * @property Carbon|null $checkout_started_at
+ * @property Carbon|null $checkout_abandoned_at
  * @property int $recovery_attempts
- * @property \Illuminate\Support\Carbon|null $recovered_at
+ * @property Carbon|null $recovered_at
  * @property bool $is_collaborative
  * @property int $collaborator_count
  * @property string|null $fraud_risk_level
@@ -189,7 +192,7 @@ class Cart extends Model
     public function user(): BelongsTo
     {
         /** @var class-string<Model> $userModel */
-        $userModel = config('auth.providers.users.model', \Illuminate\Foundation\Auth\User::class);
+        $userModel = config('auth.providers.users.model', User::class);
 
         return $this->belongsTo($userModel, 'identifier', 'id');
     }
@@ -254,7 +257,7 @@ class Cart extends Model
     /**
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function instance(Builder $query, string $instance): void
     {
         $query->where('instance', $instance);
@@ -263,7 +266,7 @@ class Cart extends Model
     /**
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function byIdentifier(Builder $query, string $identifier): void
     {
         $query->where('identifier', $identifier);
@@ -272,7 +275,7 @@ class Cart extends Model
     /**
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function notEmpty(Builder $query): void
     {
         $query->where('items_count', '>', 0);
@@ -281,7 +284,7 @@ class Cart extends Model
     /**
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function recent(Builder $query, int $days = 7): void
     {
         $query->where('updated_at', '>=', now()->subDays($days));
@@ -290,7 +293,7 @@ class Cart extends Model
     /**
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function withSavings(Builder $query): void
     {
         $query->where('savings', '>', 0);
@@ -299,7 +302,7 @@ class Cart extends Model
     /**
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function abandoned(Builder $query): void
     {
         $query->whereNotNull('checkout_abandoned_at')
@@ -309,7 +312,7 @@ class Cart extends Model
     /**
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function recovered(Builder $query): void
     {
         $query->whereNotNull('recovered_at');
@@ -318,7 +321,7 @@ class Cart extends Model
     /**
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function inCheckout(Builder $query): void
     {
         $query->whereNotNull('checkout_started_at')
@@ -328,7 +331,7 @@ class Cart extends Model
     /**
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function collaborative(Builder $query): void
     {
         $query->where('is_collaborative', true);
@@ -337,7 +340,7 @@ class Cart extends Model
     /**
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function highFraudRisk(Builder $query): void
     {
         $query->whereIn('fraud_risk_level', ['high', 'medium']);
@@ -346,7 +349,7 @@ class Cart extends Model
     /**
      * @param  Builder<self>  $query
      */
-    #[\Illuminate\Database\Eloquent\Attributes\Scope]
+    #[Scope]
     protected function needsRecovery(Builder $query): void
     {
         $query->whereNotNull('checkout_abandoned_at')

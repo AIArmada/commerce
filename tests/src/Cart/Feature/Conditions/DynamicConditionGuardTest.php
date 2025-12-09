@@ -6,9 +6,11 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Exceptions\InvalidCartConditionException;
 use AIArmada\Cart\Storage\SessionStorage;
+use Illuminate\Session\ArraySessionHandler;
+use Illuminate\Session\Store;
 
 beforeEach(function (): void {
-    $sessionStore = new Illuminate\Session\Store('testing', new Illuminate\Session\ArraySessionHandler(120));
+    $sessionStore = new Store('testing', new ArraySessionHandler(120));
     $this->storage = new SessionStorage($sessionStore);
     $this->cart = new Cart($this->storage, 'dynamic_guard_test');
 });

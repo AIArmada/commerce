@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Infrastructure\Caching\CachedCartRepository;
 use AIArmada\Cart\Storage\StorageInterface;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 
 beforeEach(function (): void {
@@ -369,7 +370,7 @@ describe('CachedCartRepository', function (): void {
 
     describe('owner delegation', function (): void {
         it('delegates withOwner to storage', function (): void {
-            $owner = Mockery::mock(Illuminate\Database\Eloquent\Model::class);
+            $owner = Mockery::mock(Model::class);
             $newStorage = Mockery::mock(StorageInterface::class);
 
             $this->storage->shouldReceive('withOwner')

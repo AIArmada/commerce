@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentStock\Widgets;
 
 use AIArmada\Stock\Models\StockTransaction;
+use Carbon\Carbon;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
@@ -32,7 +33,7 @@ final class StockTransactionTimelineWidget extends Widget
      *     type: string,
      *     title: string,
      *     description: string,
-     *     timestamp: \Carbon\Carbon,
+     *     timestamp: Carbon,
      *     timestamp_human: string,
      *     icon: string,
      *     color: string,
@@ -92,7 +93,7 @@ final class StockTransactionTimelineWidget extends Widget
      *     type: string,
      *     title: string,
      *     description: string,
-     *     timestamp: \Carbon\Carbon,
+     *     timestamp: Carbon,
      *     timestamp_human: string,
      *     icon: string,
      *     color: string,

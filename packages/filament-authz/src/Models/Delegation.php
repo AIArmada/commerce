@@ -7,17 +7,18 @@ namespace AIArmada\FilamentAuthz\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
  * @property string $delegator_id
  * @property string $delegatee_id
  * @property string $permission
- * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property Carbon|null $expires_at
  * @property bool $can_redelegate
- * @property \Illuminate\Support\Carbon|null $revoked_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $revoked_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Model $delegator
  * @property-read Model $delegatee
  */

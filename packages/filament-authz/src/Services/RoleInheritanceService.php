@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 /**
@@ -193,7 +194,7 @@ class RoleInheritanceService
     /**
      * Get inherited permissions from ancestors.
      *
-     * @return Collection<int, \Spatie\Permission\Models\Permission>
+     * @return Collection<int, Permission>
      */
     public function getInheritedPermissions(Role $role): Collection
     {
@@ -236,7 +237,7 @@ class RoleInheritanceService
         }
 
         // Fallback to iterative approach
-        $ancestors = new Collection();
+        $ancestors = new Collection;
         $current = $this->getParent($role);
 
         while ($current !== null) {
@@ -287,7 +288,7 @@ class RoleInheritanceService
             return $this->fetchDescendantsWithCTE($role);
         }
 
-        $descendants = new Collection();
+        $descendants = new Collection;
 
         $children = $this->getChildren($role);
         foreach ($children as $child) {

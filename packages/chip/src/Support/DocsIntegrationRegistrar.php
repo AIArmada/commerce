@@ -8,6 +8,7 @@ use AIArmada\Chip\Events\PaymentRefunded;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Listeners\GenerateDocOnPayment;
 use AIArmada\Chip\Listeners\GenerateDocOnRefund;
+use AIArmada\Docs\DocsServiceProvider;
 use Illuminate\Support\Facades\Event;
 
 /**
@@ -45,6 +46,6 @@ final class DocsIntegrationRegistrar
 
     private function isDocsPackageInstalled(): bool
     {
-        return class_exists(\AIArmada\Docs\DocsServiceProvider::class);
+        return class_exists(DocsServiceProvider::class);
     }
 }

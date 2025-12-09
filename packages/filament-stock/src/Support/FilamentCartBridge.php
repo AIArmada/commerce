@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentStock\Support;
 
+use AIArmada\FilamentCart\FilamentCartPlugin;
+use AIArmada\FilamentCart\Resources\CartResource;
+
 /**
  * Bridge for integrating with Filament Cart package when available.
  */
@@ -16,7 +19,7 @@ final class FilamentCartBridge
      */
     public function isAvailable(): bool
     {
-        return class_exists(\AIArmada\FilamentCart\FilamentCartPlugin::class);
+        return class_exists(FilamentCartPlugin::class);
     }
 
     /**
@@ -30,8 +33,8 @@ final class FilamentCartBridge
             return null;
         }
 
-        if (class_exists(\AIArmada\FilamentCart\Resources\CartResource::class)) {
-            return \AIArmada\FilamentCart\Resources\CartResource::class;
+        if (class_exists(CartResource::class)) {
+            return CartResource::class;
         }
 
         return null;

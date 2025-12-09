@@ -12,6 +12,7 @@ use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Lazy;
 use Throwable;
@@ -49,7 +50,7 @@ final class AppliedVoucherBadgesWidget extends Widget
             /** @phpstan-ignore-next-line - getAppliedVouchers method added via proxy */
             $vouchers = $cartInstance->getAppliedVouchers();
 
-            /** @var \Illuminate\Support\Collection<int, mixed> $voucherCollection */
+            /** @var Collection<int, mixed> $voucherCollection */
             $voucherCollection = collect($vouchers);
 
             return $voucherCollection->map(function ($voucher) {

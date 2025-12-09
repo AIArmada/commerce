@@ -28,10 +28,10 @@ final class ConditionPipeline
 
     public function __construct()
     {
-        $this->registerScopeResolver(ConditionScope::CART, new CartScopeResolver());
-        $this->registerScopeResolver(ConditionScope::SHIPMENTS, new ShipmentScopeResolver());
-        $this->registerScopeResolver(ConditionScope::PAYMENTS, new PaymentScopeResolver());
-        $this->registerScopeResolver(ConditionScope::FULFILLMENTS, new FulfillmentScopeResolver());
+        $this->registerScopeResolver(ConditionScope::CART, new CartScopeResolver);
+        $this->registerScopeResolver(ConditionScope::SHIPMENTS, new ShipmentScopeResolver);
+        $this->registerScopeResolver(ConditionScope::PAYMENTS, new PaymentScopeResolver);
+        $this->registerScopeResolver(ConditionScope::FULFILLMENTS, new FulfillmentScopeResolver);
     }
 
     public function registerPhaseProcessor(ConditionPhase $phase, callable $processor): static

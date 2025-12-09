@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\GraphQL\Mutations;
 
+use AIArmada\Cart\Cart;
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Checkout\CheckoutSaga;
 use AIArmada\Cart\Commands\AddItemCommand;
@@ -414,7 +415,7 @@ GRAPHQL;
      *
      * @return array<string, mixed>
      */
-    private function transformCart(\AIArmada\Cart\Cart $cart): array
+    private function transformCart(Cart $cart): array
     {
         $currency = config('cart.money.default_currency', 'MYR');
 

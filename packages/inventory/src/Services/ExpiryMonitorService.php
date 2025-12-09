@@ -46,7 +46,7 @@ final class ExpiryMonitorService
                 $summary[$date] = [
                     'count' => 0,
                     'total_quantity' => 0,
-                    'batches' => new Collection(),
+                    'batches' => new Collection,
                 ];
             }
 

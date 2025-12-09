@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Events\Store;
 
+use AIArmada\Cart\Models\CartEvent;
 use AIArmada\CommerceSupport\Contracts\Events\CartEventInterface;
 
 /**
@@ -37,7 +38,7 @@ interface CartEventRepositoryInterface
      *
      * @param  string  $cartId  The cart UUID
      * @param  int  $fromPosition  Start from this stream position (exclusive)
-     * @return array<\AIArmada\Cart\Models\CartEvent>
+     * @return array<CartEvent>
      */
     public function getEventsForCart(string $cartId, int $fromPosition = 0): array;
 
@@ -46,7 +47,7 @@ interface CartEventRepositoryInterface
      *
      * @param  string  $cartId  The cart UUID
      * @param  string  $eventType  Event type to filter
-     * @return array<\AIArmada\Cart\Models\CartEvent>
+     * @return array<CartEvent>
      */
     public function getEventsByType(string $cartId, string $eventType): array;
 

@@ -11,6 +11,8 @@ use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionServiceProvider;
+use Spatie\Permission\Traits\HasRoles;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\multiselect;
@@ -92,7 +94,7 @@ class SetupCommand extends Command
         $this->newLine();
 
         // Detect Spatie Permission
-        $spatieInstalled = class_exists(\Spatie\Permission\PermissionServiceProvider::class);
+        $spatieInstalled = class_exists(PermissionServiceProvider::class);
         $this->displayDetection('Spatie Permission', $spatieInstalled, 'Required');
 
         if (! $spatieInstalled) {
@@ -111,7 +113,7 @@ class SetupCommand extends Command
 
         // Detect User model
         $userModel = config('auth.providers.users.model', 'App\\Models\\User');
-        $hasRoles = class_exists($userModel) && in_array(\Spatie\Permission\Traits\HasRoles::class, class_uses_recursive($userModel));
+        $hasRoles = class_exists($userModel) && in_array(HasRoles::class, class_uses_recursive($userModel));
         $this->displayDetection('User Model HasRoles', $hasRoles, $userModel);
         $this->state['userModel'] = $userModel;
         $this->state['hasRoles'] = $hasRoles;

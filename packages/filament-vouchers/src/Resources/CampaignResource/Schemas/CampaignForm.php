@@ -22,6 +22,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Str;
 
 final class CampaignForm
 {
@@ -44,7 +45,7 @@ final class CampaignForm
                                 ->live(onBlur: true)
                                 ->afterStateUpdated(static function (?string $state, Set $set, Get $get): void {
                                     if ($state !== null && $get('slug') === null) {
-                                        $set('slug', \Illuminate\Support\Str::slug($state));
+                                        $set('slug', Str::slug($state));
                                     }
                                 }),
 

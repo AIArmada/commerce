@@ -7,17 +7,18 @@ namespace AIArmada\Affiliates\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
  * @property string $affiliate_id
  * @property string $reason
  * @property string|null $notes
- * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property Carbon|null $expires_at
  * @property string|null $placed_by
- * @property \Illuminate\Support\Carbon|null $released_at
- * @property \Illuminate\Support\Carbon|null $created_at
- * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property Carbon|null $released_at
+ * @property Carbon|null $created_at
+ * @property Carbon|null $updated_at
  * @property-read Affiliate $affiliate
  */
 class AffiliatePayoutHold extends Model

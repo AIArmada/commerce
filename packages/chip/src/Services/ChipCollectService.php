@@ -9,6 +9,7 @@ use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\ClientDetailsData;
 use AIArmada\Chip\Data\CompanyStatementData;
+use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Services\Collect\AccountApi;
 use AIArmada\Chip\Services\Collect\ClientsApi;
@@ -181,7 +182,7 @@ class ChipCollectService
     }
 
     /**
-     * @param  array<int, \AIArmada\Chip\Data\ProductData>  $products
+     * @param  array<int, ProductData>  $products
      * @param  array<string, mixed>  $options
      */
     public function createCheckoutPurchase(array $products, ClientDetailsData $clientDetails, array $options = []): PurchaseData

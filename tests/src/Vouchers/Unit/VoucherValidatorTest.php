@@ -7,6 +7,7 @@ use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Services\VoucherValidator;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
 
@@ -129,7 +130,7 @@ test('validates voucher with usage limit reached', function (): void {
 test('validates voucher with per-user limit reached', function (): void {
     Config::set('vouchers.validation.check_user_limit', true);
 
-    $user = new class extends Illuminate\Database\Eloquent\Model
+    $user = new class extends Model
     {
         protected $table = 'users';
 
