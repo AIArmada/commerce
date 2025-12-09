@@ -140,7 +140,7 @@ final class MRRWidget extends BaseWidget
 
             $monthMrr = $subscriptionModel::where('chip_status', Subscription::STATUS_ACTIVE)
                 ->where('created_at', '<=', $endOfMonth)
-                ->where(function ($query) use ($startOfMonth) {
+                ->where(function ($query) use ($startOfMonth): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>=', $startOfMonth);
                 })
@@ -164,6 +164,6 @@ final class MRRWidget extends BaseWidget
     {
         $currency = config('filament-cashier-chip.currency', 'MYR');
 
-        return mb_strtoupper($currency).' '.number_format($amount / 100, 2);
+        return mb_strtoupper($currency) . ' ' . number_format($amount / 100, 2);
     }
 }

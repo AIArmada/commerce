@@ -21,13 +21,19 @@ final class CustomerResource extends BaseCashierChipResource
 {
     protected static ?string $model = null;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedUsers;
-
-    protected static ?string $modelLabel = 'Customer';
-
-    protected static ?string $pluralModelLabel = 'Customers';
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedUsers;
 
     protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getModelLabel(): string
+    {
+        return __('filament-cashier-chip::filament-cashier-chip.customer.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament-cashier-chip::filament-cashier-chip.customer.plural');
+    }
 
     public static function getModel(): string
     {

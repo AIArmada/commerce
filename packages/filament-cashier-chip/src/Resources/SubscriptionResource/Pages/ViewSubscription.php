@@ -59,7 +59,7 @@ final class ViewSubscription extends ViewRecord
 
                         Notification::make()
                             ->title('Subscription Canceled')
-                            ->body('The subscription will end at '.$subscription->ends_at->format('Y-m-d H:i'))
+                            ->body('The subscription will end at ' . $subscription->ends_at->format('Y-m-d H:i'))
                             ->success()
                             ->send();
 
@@ -195,7 +195,7 @@ final class ViewSubscription extends ViewRecord
 
                     Notification::make()
                         ->title('Trial Extended')
-                        ->body('The trial has been extended to '.$subscription->trial_ends_at->format('Y-m-d H:i'))
+                        ->body('The trial has been extended to ' . $subscription->trial_ends_at->format('Y-m-d H:i'))
                         ->success()
                         ->send();
 
@@ -226,7 +226,7 @@ final class ViewSubscription extends ViewRecord
 
                     Notification::make()
                         ->title('Quantity Updated')
-                        ->body('The subscription quantity has been updated to '.$data['quantity'])
+                        ->body('The subscription quantity has been updated to ' . $data['quantity'])
                         ->success()
                         ->send();
 

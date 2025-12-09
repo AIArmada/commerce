@@ -10,7 +10,6 @@ use Filament\Actions\ActionGroup;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
-use Illuminate\Database\Eloquent\Model;
 use Override;
 
 final class ViewCustomer extends ViewRecord
@@ -51,7 +50,7 @@ final class ViewCustomer extends ViewRecord
 
                             Notification::make()
                                 ->title('Customer Created in Chip')
-                                ->body('Chip ID: '.$record->chip_id)
+                                ->body('Chip ID: ' . $record->chip_id)
                                 ->success()
                                 ->send();
 
@@ -117,7 +116,7 @@ final class ViewCustomer extends ViewRecord
                         if ($url) {
                             Notification::make()
                                 ->title('Payment Method Setup URL')
-                                ->body('Redirect the customer to: '.$url)
+                                ->body('Redirect the customer to: ' . $url)
                                 ->info()
                                 ->persistent()
                                 ->send();
@@ -130,7 +129,7 @@ final class ViewCustomer extends ViewRecord
                 ->icon('heroicon-o-arrow-top-right-on-square')
                 ->color('gray')
                 ->visible(fn (): bool => ! empty($this->getRecord()->chip_id))
-                ->url(fn (): string => 'https://app.chip-in.asia/clients/'.$this->getRecord()->chip_id)
+                ->url(fn (): string => 'https://app.chip-in.asia/clients/' . $this->getRecord()->chip_id)
                 ->openUrlInNewTab(),
         ];
     }

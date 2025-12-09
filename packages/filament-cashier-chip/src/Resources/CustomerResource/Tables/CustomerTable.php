@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\Tables;
 
-use AIArmada\CashierChip\Cashier;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
 use Filament\Tables\Columns\IconColumn;
@@ -56,8 +55,9 @@ final class CustomerTable
                     ->badge()
                     ->color('primary')
                     ->placeholder('None')
-                    ->formatStateUsing(fn (?string $state, Model $record): ?string => $state !== null
-                        ? ucfirst($state).' •••• '.($record->pm_last_four ?? '****')
+                    ->formatStateUsing(
+                        fn (?string $state, Model $record): ?string => $state !== null
+                        ? ucfirst($state) . ' •••• ' . ($record->pm_last_four ?? '****')
                         : null
                     ),
 

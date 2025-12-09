@@ -13,7 +13,7 @@ use Filament\Support\Icons\Heroicon;
 
 final class BillingOverview extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedHome;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedHome;
 
     protected static ?int $navigationSort = 0;
 
@@ -29,21 +29,21 @@ final class BillingOverview extends Page
         return __('filament-cashier::portal.overview.title');
     }
 
+    public function getHeaderWidgetsColumns(): int | array
+    {
+        return [
+            'sm' => 1,
+            'md' => 2,
+            'lg' => 3,
+        ];
+    }
+
     protected function getHeaderWidgets(): array
     {
         return [
             ActiveSubscriptionsWidget::class,
             PaymentMethodsPreviewWidget::class,
             RecentInvoicesWidget::class,
-        ];
-    }
-
-    public function getHeaderWidgetsColumns(): int|array
-    {
-        return [
-            'sm' => 1,
-            'md' => 2,
-            'lg' => 3,
         ];
     }
 }

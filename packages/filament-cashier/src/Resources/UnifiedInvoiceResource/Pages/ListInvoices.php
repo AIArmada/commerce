@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages;
 
+use AIArmada\CashierChip\Models\Purchase;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedInvoice;
+use Exception;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\Paginator;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 
 final class ListInvoices extends ListRecords
@@ -41,6 +43,31 @@ final class ListInvoices extends ListRecords
         }
 
         return $tabs;
+    }
+
+    /**
+     * Override to use collection-based records instead of Eloquent.
+     */
+    public function getTableRecords(): Collection | Paginator | CursorPaginator
+    {
+        return $this->getFilteredInvoices();
+    }
+
+    /**
+     * Get table record key.
+     */
+    public function getTableRecordKey(Model | array $record): string
+    {
+        // @phpstan-ignore instanceof.alwaysFalse
+        if ($record instanceof UnifiedInvoice) {
+            return $record->gateway . '-' . $record->id;
+        }
+
+        if ($record instanceof Model) {
+            return (string) $record->getKey();
+        }
+
+        return (string) ($record['id'] ?? '');
     }
 
     /**
@@ -77,7 +104,7 @@ final class ListInvoices extends ListRecords
                             // @phpstan-ignore method.nonObject
                             $invoices->push(UnifiedInvoice::fromStripe($invoice, (string) $user->getKey()));
                         }
-                    } catch (\Exception) {
+                    } catch (Exception) {
                         // Silently fail if API is not configured
                     }
                 }
@@ -85,8 +112,8 @@ final class ListInvoices extends ListRecords
         }
 
         // Collect CHIP invoices/purchases
-        if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Purchase::class)) {
-            $chipPurchases = \AIArmada\CashierChip\Models\Purchase::query()
+        if ($detector->isAvailable('chip') && class_exists(Purchase::class)) {
+            $chipPurchases = Purchase::query()
                 ->orderByDesc('created_at')
                 ->limit(100)
                 ->get();
@@ -129,30 +156,5 @@ final class ListInvoices extends ListRecords
         }
 
         return $invoices->values();
-    }
-
-    /**
-     * Override to use collection-based records instead of Eloquent.
-     */
-    public function getTableRecords(): Collection|Paginator|CursorPaginator
-    {
-        return $this->getFilteredInvoices();
-    }
-
-    /**
-     * Get table record key.
-     */
-    public function getTableRecordKey(Model|array $record): string
-    {
-        // @phpstan-ignore instanceof.alwaysFalse
-        if ($record instanceof UnifiedInvoice) {
-            return $record->gateway.'-'.$record->id;
-        }
-
-        if ($record instanceof Model) {
-            return (string) $record->getKey();
-        }
-
-        return (string) ($record['id'] ?? '');
     }
 }

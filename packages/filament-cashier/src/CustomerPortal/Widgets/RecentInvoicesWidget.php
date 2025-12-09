@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\CustomerPortal\Widgets;
 
 use AIArmada\FilamentCashier\Support\GatewayDetector;
+use Exception;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Collection;
 
@@ -12,7 +13,7 @@ final class RecentInvoicesWidget extends Widget
 {
     protected string $view = 'filament-cashier::customer-portal.widgets.recent-invoices';
 
-    protected int|string|array $columnSpan = 1;
+    protected int | string | array $columnSpan = 1;
 
     protected static ?int $sort = 3;
 
@@ -44,7 +45,7 @@ final class RecentInvoicesWidget extends Widget
                         'status' => $invoice->paid ? 'paid' : 'open',
                     ]);
                 }
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Silently fail
             }
         }
@@ -58,12 +59,12 @@ final class RecentInvoicesWidget extends Widget
                     $invoices->push([
                         'id' => $invoice->id,
                         'gateway' => 'chip',
-                        'amount' => 'RM '.number_format(($invoice->amount ?? 0) / 100, 2),
+                        'amount' => 'RM ' . number_format(($invoice->amount ?? 0) / 100, 2),
                         'date' => $invoice->created_at?->format('M d, Y') ?? 'N/A',
                         'status' => $invoice->status ?? 'unknown',
                     ]);
                 }
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Silently fail
             }
         }

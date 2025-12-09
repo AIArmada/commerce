@@ -123,4 +123,15 @@ return [
         'title' => 'Billing Dashboard',
         'subtitle' => 'Monitor your recurring revenue, subscriber growth, and billing metrics.',
     ],
+
+    'intervals' => [
+        'daily' => 'Daily',
+        'weekly' => 'Weekly',
+        'monthly' => 'Monthly',
+        'yearly' => 'Yearly',
+        'every_days' => 'Every :count days',
+        'every_weeks' => 'Every :count weeks',
+        'every_months' => 'Every :count months',
+        'every_years' => 'Every :count years',
+    ],
 ];

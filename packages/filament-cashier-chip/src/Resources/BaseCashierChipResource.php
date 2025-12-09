@@ -13,14 +13,14 @@ abstract class BaseCashierChipResource extends Resource
 
     abstract protected static function navigationSortKey(): string;
 
-    final public static function getNavigationGroup(): string|UnitEnum|null
+    final public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-cashier-chip.navigation_group');
     }
 
     final public static function getNavigationSort(): ?int
     {
-        return config('filament-cashier-chip.resources.navigation_sort.'.static::navigationSortKey());
+        return config('filament-cashier-chip.resources.navigation_sort.' . static::navigationSortKey());
     }
 
     final public static function getNavigationBadge(): ?string
@@ -46,6 +46,6 @@ abstract class BaseCashierChipResource extends Resource
         $precision = (int) config('filament-cashier-chip.tables.amount_precision', 2);
         $value = $amount / 100;
 
-        return mb_strtoupper($currency).' '.number_format($value, $precision, '.', ',');
+        return mb_strtoupper($currency) . ' ' . number_format($value, $precision, '.', ',');
     }
 }

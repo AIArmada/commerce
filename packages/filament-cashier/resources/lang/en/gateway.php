@@ -59,6 +59,7 @@ return [
         'unknown' => 'Unknown',
         'not_configured' => 'Not Configured',
         'sdk_missing' => 'SDK not installed',
+        'connection_error' => 'Connection failed. Please check your configuration.',
         'last_checked' => 'Last checked',
     ],
 

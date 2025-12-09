@@ -37,7 +37,7 @@ final readonly class UnifiedInvoice
             userId: $userId,
             number: $invoice->number ?? $invoice->id,
             amount: (int) $invoice->rawTotal(),
-            currency: strtoupper($invoice->currency ?? 'USD'),
+            currency: mb_strtoupper($invoice->currency ?? 'USD'),
             status: self::normalizeStripeStatus($invoice),
             date: $invoice->date(),
             dueDate: $invoice->dueDate(),
@@ -80,10 +80,10 @@ final readonly class UnifiedInvoice
             'USD' => '$',
             'EUR' => '€',
             'GBP' => '£',
-            default => $this->currency.' ',
+            default => $this->currency . ' ',
         };
 
-        return $symbol.number_format($this->amount / 100, 2);
+        return $symbol . number_format($this->amount / 100, 2);
     }
 
     /**

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCashier\Widgets;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Laravel\Cashier\Subscription;
 
 final class UnifiedChurnWidget extends StatsOverviewWidget
 {
@@ -25,13 +26,13 @@ final class UnifiedChurnWidget extends StatsOverviewWidget
         $endOfLastMonth = now()->subMonth()->endOfMonth();
 
         // Count Stripe cancellations
-        if ($detector->isAvailable('stripe') && class_exists(\Laravel\Cashier\Subscription::class)) {
-            $canceledThisMonth += \Laravel\Cashier\Subscription::query()
+        if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
+            $canceledThisMonth += Subscription::query()
                 ->whereNotNull('ends_at')
                 ->where('ends_at', '>=', $startOfMonth)
                 ->count();
 
-            $canceledLastMonth += \Laravel\Cashier\Subscription::query()
+            $canceledLastMonth += Subscription::query()
                 ->whereNotNull('ends_at')
                 ->whereBetween('ends_at', [$startOfLastMonth, $endOfLastMonth])
                 ->count();
@@ -58,8 +59,8 @@ final class UnifiedChurnWidget extends StatsOverviewWidget
         $trendIcon = $trend <= 0 ? 'heroicon-m-arrow-trending-down' : 'heroicon-m-arrow-trending-up';
         $trendColor = $trend <= 0 ? 'success' : 'danger';
         $trendDescription = $trend <= 0
-            ? abs($trend).'% less than last month'
-            : $trend.'% more than last month';
+            ? abs($trend) . '% less than last month'
+            : $trend . '% more than last month';
 
         return [
             Stat::make(__('filament-cashier::dashboard.widgets.churn.label'), (string) $canceledThisMonth)

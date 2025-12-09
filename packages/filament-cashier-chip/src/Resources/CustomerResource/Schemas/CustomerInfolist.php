@@ -60,7 +60,7 @@ final class CustomerInfolist
                             TextEntry::make('pm_last_four')
                                 ->label('Card Last Four')
                                 ->placeholder('—')
-                                ->formatStateUsing(fn (?string $state): ?string => $state !== null ? '•••• '.$state : null),
+                                ->formatStateUsing(fn (?string $state): ?string => $state !== null ? '•••• ' . $state : null),
                         ]),
                 ]),
 

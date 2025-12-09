@@ -72,7 +72,7 @@ final class ViewInvoice extends ViewRecord
                     // Email sending would be handled here
                     Notification::make()
                         ->title('Invoice Sent')
-                        ->body('Invoice has been sent to '.$record->client['email'])
+                        ->body('Invoice has been sent to ' . $record->client['email'])
                         ->success()
                         ->send();
                 }),

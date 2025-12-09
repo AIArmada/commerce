@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Widgets;
 
+use AIArmada\CashierChip\Cashier;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Collection;
+use Laravel\Cashier\Subscription;
 
 final class TotalMrrWidget extends StatsOverviewWidget
 {
@@ -61,9 +63,10 @@ final class TotalMrrWidget extends StatsOverviewWidget
         $subscriptions = collect();
         $detector = app(GatewayDetector::class);
 
-        if ($detector->isAvailable('stripe') && class_exists(\Laravel\Cashier\Subscription::class)) {
-            $stripeSubscriptions = \Laravel\Cashier\Subscription::query()
-                ->where(function ($query) {
+        if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
+            $stripeSubscriptions = Subscription::query()
+                ->with('items')
+                ->where(function ($query): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', now());
                 })
@@ -73,9 +76,10 @@ final class TotalMrrWidget extends StatsOverviewWidget
             $subscriptions = $subscriptions->merge($stripeSubscriptions);
         }
 
-        if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
-            $chipSubscriptions = \AIArmada\CashierChip\Models\Subscription::query()
-                ->where(function ($query) {
+        if ($detector->isAvailable('chip') && class_exists(Cashier::class)) {
+            $chipSubscriptions = Cashier::$subscriptionModel::query()
+                ->with('items')
+                ->where(function ($query): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>', now());
                 })
@@ -95,9 +99,9 @@ final class TotalMrrWidget extends StatsOverviewWidget
             'USD' => '$',
             'EUR' => '€',
             'GBP' => '£',
-            default => $currency.' ',
+            default => $currency . ' ',
         };
 
-        return $symbol.number_format($amountInCents / 100, 2);
+        return $symbol . number_format($amountInCents / 100, 2);
     }
 }

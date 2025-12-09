@@ -15,7 +15,7 @@ final class RevenueChartWidget extends ChartWidget
 
     protected static ?int $sort = 4;
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     protected ?string $pollingInterval = '120s';
 
@@ -91,7 +91,7 @@ final class RevenueChartWidget extends ChartWidget
             // Calculate MRR for the month
             $monthMrr = $subscriptionModel::where('chip_status', Subscription::STATUS_ACTIVE)
                 ->where('created_at', '<=', $endOfMonth)
-                ->where(function ($query) use ($startOfMonth) {
+                ->where(function ($query) use ($startOfMonth): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>=', $startOfMonth);
                 })

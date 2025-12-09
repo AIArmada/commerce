@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Schemas;
 
 use AIArmada\CashierChip\Subscription;
+use AIArmada\FilamentCashierChip\Support\FormatsSubscriptionStatus;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -14,6 +15,8 @@ use Filament\Support\Icons\Heroicon;
 
 final class SubscriptionInfolist
 {
+    use FormatsSubscriptionStatus;
+
     public static function configure(Schema $schema): Schema
     {
         return $schema->components([
@@ -165,59 +168,5 @@ final class SubscriptionInfolist
                 ->collapsible()
                 ->collapsed(),
         ]);
-    }
-
-    private static function getStatusColor(string $status): string
-    {
-        return match ($status) {
-            Subscription::STATUS_ACTIVE => 'success',
-            Subscription::STATUS_TRIALING => 'warning',
-            Subscription::STATUS_CANCELED => 'danger',
-            Subscription::STATUS_PAST_DUE => 'danger',
-            Subscription::STATUS_PAUSED => 'gray',
-            Subscription::STATUS_INCOMPLETE => 'warning',
-            Subscription::STATUS_UNPAID => 'danger',
-            default => 'gray',
-        };
-    }
-
-    private static function formatStatus(string $status): string
-    {
-        return match ($status) {
-            Subscription::STATUS_ACTIVE => 'Active',
-            Subscription::STATUS_TRIALING => 'Trialing',
-            Subscription::STATUS_CANCELED => 'Canceled',
-            Subscription::STATUS_PAST_DUE => 'Past Due',
-            Subscription::STATUS_PAUSED => 'Paused',
-            Subscription::STATUS_INCOMPLETE => 'Incomplete',
-            Subscription::STATUS_INCOMPLETE_EXPIRED => 'Incomplete Expired',
-            Subscription::STATUS_UNPAID => 'Unpaid',
-            default => ucfirst($status),
-        };
-    }
-
-    private static function formatInterval(?string $interval, ?int $count): string
-    {
-        if ($interval === null) {
-            return '—';
-        }
-
-        $count = $count ?? 1;
-
-        return match ($interval) {
-            'day' => $count === 1 ? 'Daily' : "Every {$count} days",
-            'week' => $count === 1 ? 'Weekly' : "Every {$count} weeks",
-            'month' => $count === 1 ? 'Monthly' : "Every {$count} months",
-            'year' => $count === 1 ? 'Yearly' : "Every {$count} years",
-            default => "{$count} {$interval}",
-        };
-    }
-
-    private static function formatAmount(int $amount): string
-    {
-        $currency = config('filament-cashier-chip.currency', 'MYR');
-        $value = $amount / 100;
-
-        return mb_strtoupper($currency).' '.number_format($value, 2, '.', ',');
     }
 }

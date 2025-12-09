@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources;
 
 use AIArmada\CashierChip\Cashier;
-use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Pages\ListSubscriptions;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Pages\ViewSubscription;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource\RelationManagers\SubscriptionItemsRelationManager;
@@ -21,13 +20,19 @@ final class SubscriptionResource extends BaseCashierChipResource
 {
     protected static ?string $model = null;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCreditCard;
-
-    protected static ?string $modelLabel = 'Subscription';
-
-    protected static ?string $pluralModelLabel = 'Subscriptions';
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCreditCard;
 
     protected static ?string $recordTitleAttribute = 'type';
+
+    public static function getModelLabel(): string
+    {
+        return __('filament-cashier-chip::filament-cashier-chip.subscription.label');
+    }
+
+    public static function getPluralModelLabel(): string
+    {
+        return __('filament-cashier-chip::filament-cashier-chip.subscription.plural');
+    }
 
     public static function getModel(): string
     {

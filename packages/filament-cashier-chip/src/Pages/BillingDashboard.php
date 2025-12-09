@@ -17,21 +17,27 @@ use UnitEnum;
 
 final class BillingDashboard extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedChartBarSquare;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedChartBarSquare;
 
     protected string $view = 'filament-cashier-chip::pages.billing-dashboard';
-
-    protected static ?string $navigationLabel = 'Billing Dashboard';
-
-    protected static ?string $title = 'Billing Dashboard';
 
     protected static ?string $slug = 'billing-dashboard';
 
     protected static ?int $navigationSort = 0;
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationLabel(): string
+    {
+        return __('filament-cashier-chip::filament-cashier-chip.dashboard.title');
+    }
+
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-cashier-chip.navigation_group');
+    }
+
+    public function getTitle(): string
+    {
+        return __('filament-cashier-chip::filament-cashier-chip.dashboard.title');
     }
 
     public function getHeaderWidgets(): array
@@ -52,12 +58,12 @@ final class BillingDashboard extends Page
         ];
     }
 
-    public function getHeaderWidgetsColumns(): int|array
+    public function getHeaderWidgetsColumns(): int | array
     {
         return 3;
     }
 
-    public function getFooterWidgetsColumns(): int|array
+    public function getFooterWidgetsColumns(): int | array
     {
         return [
             'default' => 1,

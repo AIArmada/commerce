@@ -20,19 +20,19 @@ use Filament\Panel;
 
 final class FilamentCashierPlugin implements Plugin
 {
-    protected bool $enableDashboard = true;
+    private bool $enableDashboard = true;
 
-    protected bool $enableSubscriptions = true;
+    private bool $enableSubscriptions = true;
 
-    protected bool $enableInvoices = true;
+    private bool $enableInvoices = true;
 
-    protected bool $enableGatewayManagement = false;
+    private bool $enableGatewayManagement = false;
 
-    protected bool $customerPortalMode = false;
+    private bool $customerPortalMode = false;
 
-    protected ?string $navigationGroup = null;
+    private ?string $navigationGroup = null;
 
-    protected ?int $navigationSort = null;
+    private ?int $navigationSort = null;
 
     public static function make(): static
     {
@@ -66,39 +66,80 @@ final class FilamentCashierPlugin implements Plugin
         return $this;
     }
 
+    /**
+     * Enable or disable the billing dashboard.
+     */
+    public function dashboard(bool $enabled = true): static
+    {
+        $this->enableDashboard = $enabled;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable the subscriptions resource.
+     */
+    public function subscriptions(bool $enabled = true): static
+    {
+        $this->enableSubscriptions = $enabled;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable the invoices resource.
+     */
+    public function invoices(bool $enabled = true): static
+    {
+        $this->enableInvoices = $enabled;
+
+        return $this;
+    }
+
+    /**
+     * Enable or disable gateway management.
+     */
+    public function gatewayManagement(bool $enabled = true): static
+    {
+        $this->enableGatewayManagement = $enabled;
+
+        return $this;
+    }
+
+    /**
+     * Enable customer portal mode (hides admin-only features).
+     */
+    public function customerPortalMode(bool $enabled = true): static
+    {
+        $this->customerPortalMode = $enabled;
+
+        return $this;
+    }
+
+    // Legacy method aliases for backward compatibility
+
+    /** @deprecated Use dashboard() instead */
     public function enableDashboard(bool $enable = true): static
     {
-        $this->enableDashboard = $enable;
-
-        return $this;
+        return $this->dashboard($enable);
     }
 
+    /** @deprecated Use subscriptions() instead */
     public function enableSubscriptions(bool $enable = true): static
     {
-        $this->enableSubscriptions = $enable;
-
-        return $this;
+        return $this->subscriptions($enable);
     }
 
+    /** @deprecated Use invoices() instead */
     public function enableInvoices(bool $enable = true): static
     {
-        $this->enableInvoices = $enable;
-
-        return $this;
+        return $this->invoices($enable);
     }
 
+    /** @deprecated Use gatewayManagement() instead */
     public function enableGatewayManagement(bool $enable = true): static
     {
-        $this->enableGatewayManagement = $enable;
-
-        return $this;
-    }
-
-    public function customerPortalMode(bool $enable = true): static
-    {
-        $this->customerPortalMode = $enable;
-
-        return $this;
+        return $this->gatewayManagement($enable);
     }
 
     public function getNavigationGroup(): ?string

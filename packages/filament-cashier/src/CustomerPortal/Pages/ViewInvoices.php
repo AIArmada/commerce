@@ -6,13 +6,14 @@ namespace AIArmada\FilamentCashier\CustomerPortal\Pages;
 
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use BackedEnum;
+use Exception;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
 
 final class ViewInvoices extends Page
 {
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedDocumentText;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedDocumentText;
 
     protected static ?int $navigationSort = 3;
 
@@ -58,7 +59,7 @@ final class ViewInvoices extends Page
                         'download_url' => $invoice->invoicePdf(),
                     ]);
                 }
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Silently fail if API is not configured
             }
         }
@@ -73,13 +74,13 @@ final class ViewInvoices extends Page
                         'id' => $invoice->id,
                         'gateway' => 'chip',
                         'number' => $invoice->number ?? $invoice->id,
-                        'amount' => 'RM '.number_format(($invoice->amount ?? 0) / 100, 2),
+                        'amount' => 'RM ' . number_format(($invoice->amount ?? 0) / 100, 2),
                         'date' => $invoice->created_at?->format('M d, Y') ?? 'N/A',
                         'status' => $invoice->status ?? 'unknown',
                         'download_url' => $invoice->pdf_url ?? null,
                     ]);
                 }
-            } catch (\Exception) {
+            } catch (Exception) {
                 // Silently fail if API is not configured
             }
         }

@@ -214,3 +214,30 @@ Payment Gateway APIs (Stripe, CHIP)
 - Multi-gateway architecture documented
 - 6-phase implementation roadmap established
 - Vision documents pending creation
+
+### December 9, 2025 (Audit - Part 1)
+- **PHPStan Level 6**: ✅ Passing
+- **Pint Code Style**: ✅ Passing
+- **Fixes Applied**:
+  - Added eager loading to prevent N+1 queries in widgets
+  - Fixed hardcoded model paths to use Cashier model bindings
+  - Created shared `CurrencyFormatter` utility class
+  - Secured exception messages in production mode
+  - Added missing `connection_error` translation key
+  - Removed unused `customers` config key
+
+### December 9, 2025 (Audit - Part 2)
+- **New Features**:
+  - Standardized plugin API: Added `dashboard()`, `subscriptions()`, `invoices()`, `gatewayManagement()` methods
+  - Legacy `enableX()` methods kept as aliases for backward compatibility
+  - Created `SubscriptionPolicy` for customer portal authorization
+  - Created `PaymentMethodPolicy` for customer portal authorization
+  - Added policy authorization checks to `ManageSubscriptions` page
+- **New Files Created**:
+  - `src/Policies/SubscriptionPolicy.php`
+  - `src/Policies/PaymentMethodPolicy.php`
+  - `src/Support/CurrencyFormatter.php`
+- **All Tests Located**: Tests exist in `tests/src/FilamentCashier/`
+- **Tests**: ✅ 100% Passing (103 tests, 176 assertions)
+- **Pint Code Style**: ✅ Fixed 43 issues (types, spaces, concatenation)
+- **Rector**: ✅ Fixed 10 files (rules applied: AddClosureVoidReturnTypeWhereNoReturnRector)
