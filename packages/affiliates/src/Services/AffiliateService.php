@@ -20,7 +20,6 @@ use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Cache\Repository as CacheRepository;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Database\Connection;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
@@ -56,7 +55,7 @@ final class AffiliateService
     {
         $normalized = $this->normalizeCode($code);
         $query = $this->query();
-        /** @var Connection $connection */
+        /** @var \Illuminate\Database\Connection $connection */
         $connection = $query->getConnection();
         $driver = $connection->getDriverName();
 
@@ -74,7 +73,7 @@ final class AffiliateService
     {
         $normalized = $this->normalizeCode($voucherCode);
         $query = $this->query();
-        /** @var Connection $connection */
+        /** @var \Illuminate\Database\Connection $connection */
         $connection = $query->getConnection();
         $driver = $connection->getDriverName();
 
@@ -690,7 +689,7 @@ final class AffiliateService
             return null;
         }
 
-        return hash('sha256', ($ua ?? '') . '|' . ($ip ?? ''));
+        return hash('sha256', ($ua ?? '').'|'.($ip ?? ''));
     }
 
     /**

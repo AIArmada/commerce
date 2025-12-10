@@ -29,7 +29,7 @@ Installation comes in two flavors, depending on whether you want to bootstrap th
         Individual packages
 
         <span slot="description">
-            Pull in only the packages you need. Compose your own commerce stack by mixing and matching carts, payments, vouchers, shipping, stock, and Filament plugins.
+            Pull in only the packages you need. Compose your own commerce stack by mixing and matching carts, payments, vouchers, shipping, inventory, and Filament plugins.
         </span>
     </RadioGroupOption>
 </RadioGroup>
@@ -79,7 +79,7 @@ composer require \
     aiarmada/chip \
     aiarmada/vouchers \
     aiarmada/jnt \
-    aiarmada/stock
+    aiarmada/inventory
 ```
 
 Add Filament admin panels when you are ready for back-office tooling:
@@ -88,7 +88,8 @@ Add Filament admin panels when you are ready for back-office tooling:
 composer require \
     aiarmada/filament-cart \
     aiarmada/filament-chip \
-    aiarmada/filament-vouchers
+    aiarmada/filament-vouchers \
+    aiarmada/filament-inventory
 ```
 
 The shared support utilities are included automatically when you install any package.
@@ -102,7 +103,6 @@ php artisan vendor:publish --tag=cart-config
 php artisan vendor:publish --tag=chip-config
 php artisan vendor:publish --tag=vouchers-config
 php artisan vendor:publish --tag=jnt-config
-php artisan vendor:publish --tag=stock-config
 ```
 
 ### Registering Filament plugins
@@ -112,6 +112,7 @@ If you added Filament packages, register them inside your panel provider:
 ```php
 use AIArmada\FilamentCart\FilamentCartPlugin;
 use AIArmada\FilamentChip\FilamentChipPlugin;
+use AIArmada\FilamentInventory\FilamentInventoryPlugin;
 use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 
 public function panel(Panel $panel): Panel
@@ -123,6 +124,7 @@ public function panel(Panel $panel): Panel
         ->plugins([
             FilamentCartPlugin::make(),
             FilamentChipPlugin::make(),
+            FilamentInventoryPlugin::make(),
             FilamentVouchersPlugin::make(),
         ]);
 }

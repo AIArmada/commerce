@@ -44,8 +44,8 @@ composer require aiarmada/docs aiarmada/filament-docs
 # Shipping
 composer require aiarmada/jnt aiarmada/filament-jnt
 
-# Stock management
-composer require aiarmada/stock aiarmada/filament-stock
+# Inventory management
+composer require aiarmada/inventory aiarmada/filament-inventory
 ```
 
 ## Post-Installation Steps
@@ -105,7 +105,7 @@ use AIArmada\FilamentCart\FilamentCartPlugin;
 use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use AIArmada\FilamentChip\FilamentChipPlugin;
-use AIArmada\FilamentStock\FilamentStockPlugin;
+use AIArmada\FilamentInventory\FilamentInventoryPlugin;
 use AIArmada\FilamentPermissions\FilamentPermissionsPlugin;
 
 public function panel(Panel $panel): Panel
@@ -119,7 +119,7 @@ public function panel(Panel $panel): Panel
             FilamentVouchersPlugin::make(),
             FilamentDocsPlugin::make(),
             FilamentChipPlugin::make(),
-            FilamentStockPlugin::make(),
+            FilamentInventoryPlugin::make(),
             FilamentPermissionsPlugin::make(),
         ]);
 }

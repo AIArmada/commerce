@@ -246,7 +246,7 @@ We follow [Conventional Commits](https://www.conventionalcommits.org/).
 - `cart` - Cart package
 - `chip` - CHIP package
 - `jnt` - J&T package
-- `stock` - Stock package
+- `inventory` - Inventory package
 - `vouchers` - Vouchers package
 - `filament-cart` - Filament Cart package
 - `filament-chip` - Filament CHIP package
@@ -359,7 +359,7 @@ packages/
 ├── chip/              # CHIP payment gateway
 ├── docs/              # Document generation
 ├── jnt/               # J&T Express API
-├── stock/             # Stock management
+├── inventory/         # Inventory management
 ├── vouchers/          # Voucher system
 ├── filament-cart/     # Filament cart admin
 └── filament-chip/     # Filament CHIP admin
@@ -469,7 +469,7 @@ When packages depend on each other:
 {
   "require": {
     "aiarmada/cart": "^2.0",
-    "aiarmada/stock": "^2.0"
+    "aiarmada/inventory": "^2.0"
   }
 }
 ```

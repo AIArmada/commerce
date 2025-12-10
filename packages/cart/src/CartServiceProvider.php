@@ -23,11 +23,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Auth\Events\Attempting;
 use Illuminate\Auth\Events\Login;
-use Illuminate\Cache\CacheManager;
 use Illuminate\Contracts\Events\Dispatcher;
-use Illuminate\Contracts\Foundation\Application;
-use Illuminate\Contracts\Session\Session;
-use Illuminate\Database\ConnectionResolverInterface;
 use RuntimeException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -115,7 +111,7 @@ final class CartServiceProvider extends PackageServiceProvider
 
         if (empty($resolverClass)) {
             throw new RuntimeException(
-                'Cart owner is enabled but no resolver is configured. ' .
+                'Cart owner is enabled but no resolver is configured. '.
                 'Set CART_OWNER_RESOLVER or cart.owner.resolver to a class implementing OwnerResolverInterface.'
             );
         }
@@ -128,7 +124,7 @@ final class CartServiceProvider extends PackageServiceProvider
 
         if (! is_subclass_of($resolverClass, OwnerResolverInterface::class) && $resolverClass !== NullOwnerResolver::class) {
             throw new RuntimeException(
-                "Cart owner resolver '{$resolverClass}' must implement " . OwnerResolverInterface::class
+                "Cart owner resolver '{$resolverClass}' must implement ".OwnerResolverInterface::class
             );
         }
 
@@ -143,18 +139,18 @@ final class CartServiceProvider extends PackageServiceProvider
      */
     protected function registerStorageDrivers(): void
     {
-        $this->app->bind('cart.storage.session', function (Application $app) {
+        $this->app->bind('cart.storage.session', function (\Illuminate\Contracts\Foundation\Application $app) {
             $storage = new SessionStorage(
-                $app->make(Session::class),
+                $app->make(\Illuminate\Contracts\Session\Session::class),
                 config('cart.session.key', 'cart')
             );
 
             return $this->applyOwnerScope($app, $storage);
         });
 
-        $this->app->bind('cart.storage.cache', function (Application $app) {
+        $this->app->bind('cart.storage.cache', function (\Illuminate\Contracts\Foundation\Application $app) {
             $cacheStore = config('cart.cache.store', 'redis');
-            $cacheRepository = $app->make(CacheManager::class)->store($cacheStore);
+            $cacheRepository = $app->make(\Illuminate\Cache\CacheManager::class)->store($cacheStore);
 
             $storage = new CacheStorage(
                 $cacheRepository, // @phpstan-ignore argument.type
@@ -165,8 +161,8 @@ final class CartServiceProvider extends PackageServiceProvider
             return $this->applyOwnerScope($app, $storage);
         });
 
-        $this->app->bind('cart.storage.database', function (Application $app) {
-            $connection = $app->make(ConnectionResolverInterface::class)->connection();
+        $this->app->bind('cart.storage.database', function (\Illuminate\Contracts\Foundation\Application $app) {
+            $connection = $app->make(\Illuminate\Database\ConnectionResolverInterface::class)->connection();
 
             $storage = new DatabaseStorage(
                 $connection,
@@ -178,7 +174,7 @@ final class CartServiceProvider extends PackageServiceProvider
         });
 
         // Bind StorageInterface to the configured storage driver
-        $this->app->bind(StorageInterface::class, function (Application $app): StorageInterface {
+        $this->app->bind(StorageInterface::class, function (\Illuminate\Contracts\Foundation\Application $app): StorageInterface {
             $driver = config('cart.storage', 'session');
 
             if ($driver === 'cache' && ! config('cart.cache.enabled', false)) {
@@ -192,7 +188,7 @@ final class CartServiceProvider extends PackageServiceProvider
     /**
      * Apply owner scope to storage driver if owner is enabled
      */
-    protected function applyOwnerScope(Application $app, StorageInterface $storage): StorageInterface
+    protected function applyOwnerScope(\Illuminate\Contracts\Foundation\Application $app, StorageInterface $storage): StorageInterface
     {
         if (! config('cart.owner.enabled', false)) {
             return $storage;
@@ -217,7 +213,7 @@ final class CartServiceProvider extends PackageServiceProvider
      */
     protected function registerCartManager(): void
     {
-        $this->app->singleton('cart', function (Application $app) {
+        $this->app->singleton('cart', function (\Illuminate\Contracts\Foundation\Application $app) {
             $driver = config('cart.storage', 'session');
             $storage = $app->make(sprintf('cart.storage.%s', $driver));
 
@@ -238,7 +234,7 @@ final class CartServiceProvider extends PackageServiceProvider
      */
     protected function registerMigrationService(): void
     {
-        $this->app->singleton(CartMigrationService::class, function (Application $app): CartMigrationService {
+        $this->app->singleton(CartMigrationService::class, function (\Illuminate\Contracts\Foundation\Application $app): CartMigrationService {
             return new CartMigrationService;
         });
     }
@@ -266,7 +262,7 @@ final class CartServiceProvider extends PackageServiceProvider
      */
     protected function registerTaxCalculator(): void
     {
-        $this->app->singleton(TaxCalculator::class, function (Application $app) {
+        $this->app->singleton(TaxCalculator::class, function (\Illuminate\Contracts\Foundation\Application $app) {
             return new TaxCalculator(
                 defaultRate: config('cart.tax.default_rate', 0.0),
                 defaultRegion: config('cart.tax.default_region'),
@@ -282,7 +278,7 @@ final class CartServiceProvider extends PackageServiceProvider
      */
     protected function registerRateLimiter(): void
     {
-        $this->app->singleton(CartRateLimiter::class, function (Application $app) {
+        $this->app->singleton(CartRateLimiter::class, function (\Illuminate\Contracts\Foundation\Application $app) {
             $limits = config('cart.rate_limiting.limits');
             $enabled = config('cart.rate_limiting.enabled', true);
 
@@ -292,7 +288,7 @@ final class CartServiceProvider extends PackageServiceProvider
         $this->app->alias(CartRateLimiter::class, 'cart.rate_limiter');
 
         // Register middleware
-        $this->app->singleton(ThrottleCartOperations::class, function (Application $app) {
+        $this->app->singleton(ThrottleCartOperations::class, function (\Illuminate\Contracts\Foundation\Application $app) {
             return new ThrottleCartOperations(
                 $app->make(CartRateLimiter::class)
             );
@@ -308,7 +304,7 @@ final class CartServiceProvider extends PackageServiceProvider
         $this->app->singleton(CartEventRepositoryInterface::class, EloquentCartEventRepository::class);
 
         // Register event recorder
-        $this->app->singleton(CartEventRecorder::class, function (Application $app) {
+        $this->app->singleton(CartEventRecorder::class, function (\Illuminate\Contracts\Foundation\Application $app) {
             $recorder = new CartEventRecorder(
                 $app->make(CartEventRepositoryInterface::class)
             );

@@ -10,8 +10,8 @@ use BackedEnum;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\TextInput;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -22,9 +22,9 @@ final class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
 
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-folder';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-folder';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Commerce';
+    protected static string|UnitEnum|null $navigationGroup = 'Commerce';
 
     protected static ?int $navigationSort = 1;
 
@@ -64,15 +64,15 @@ final class CategoryResource extends Resource
                     ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
-            ->recordActions([
+            ->actions([
                 ViewAction::make(),
                 EditAction::make(),
             ])
-            ->toolbarActions([
+            ->bulkActions([
                 BulkAction::make('delete')
                     ->label('Delete Selected')
                     ->requiresConfirmation()
-                    ->action(fn (Collection $records) => $records->each->delete())
+                    ->action(fn(Collection $records) => $records->each->delete())
                     ->deselectRecordsAfterCompletion(),
             ]);
     }

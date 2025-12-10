@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Gateways\Chip;
 
 use AIArmada\Cashier\Contracts\PaymentContract;
-use AIArmada\CashierChip\Exceptions\IncompletePayment;
 use AIArmada\CashierChip\Payment;
 use AIArmada\Chip\Data\PurchaseData;
 use Illuminate\Http\RedirectResponse;
@@ -18,12 +17,12 @@ class ChipPayment implements PaymentContract
     /**
      * The payment instance.
      */
-    protected Payment | PurchaseData $payment;
+    protected Payment|PurchaseData $payment;
 
     /**
      * Create a new CHIP payment wrapper.
      */
-    public function __construct(Payment | PurchaseData $payment)
+    public function __construct(Payment|PurchaseData $payment)
     {
         $this->payment = $payment;
     }
@@ -240,7 +239,7 @@ class ChipPayment implements PaymentContract
             return $this->payment->amount();
         }
 
-        return number_format($this->rawAmount() / 100, 2) . ' ' . $this->currency();
+        return number_format($this->rawAmount() / 100, 2).' '.$this->currency();
     }
 
     /**
@@ -273,7 +272,7 @@ class ChipPayment implements PaymentContract
     /**
      * Validate the payment and throw exception if failed.
      *
-     * @throws IncompletePayment
+     * @throws \AIArmada\CashierChip\Exceptions\IncompletePayment
      */
     public function validate(): static
     {
@@ -299,7 +298,7 @@ class ChipPayment implements PaymentContract
     /**
      * Get the underlying payment.
      */
-    public function asGatewayPayment(): Payment | PurchaseData
+    public function asGatewayPayment(): Payment|PurchaseData
     {
         return $this->payment;
     }

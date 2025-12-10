@@ -23,7 +23,6 @@ use AIArmada\Cashier\Gateways\Stripe\StripeSubscriptionBuilder;
 use Exception;
 use Illuminate\Support\Collection;
 use Laravel\Cashier\Cashier;
-use Laravel\Cashier\Payment;
 use Stripe\StripeClient;
 use Stripe\Webhook;
 
@@ -133,13 +132,13 @@ class StripeGateway extends AbstractGateway
         // Retrieve the updated payment
         $payment = $this->client()->paymentIntents->retrieve($paymentId);
 
-        return new StripePayment(new Payment($payment));
+        return new StripePayment(new \Laravel\Cashier\Payment($payment));
     }
 
     /**
      * Create a new subscription builder.
      */
-    public function subscription(BillableContract $billable, string $type, string | array $prices = []): SubscriptionBuilderContract
+    public function subscription(BillableContract $billable, string $type, string|array $prices = []): SubscriptionBuilderContract
     {
         return new StripeSubscriptionBuilder($billable, $type, $prices);
     }
@@ -188,7 +187,7 @@ class StripeGateway extends AbstractGateway
         try {
             $paymentIntent = $this->client()->paymentIntents->retrieve($paymentId);
 
-            return new StripePayment(new Payment($paymentIntent));
+            return new StripePayment(new \Laravel\Cashier\Payment($paymentIntent));
         } catch (Exception) {
             return null;
         }
@@ -226,7 +225,7 @@ class StripeGateway extends AbstractGateway
      * @param  bool|array<string, mixed>  $parameters  Either includePending bool or parameters array
      * @return Collection<int, InvoiceContract>
      */
-    public function invoices(BillableContract $billable, bool | array $parameters = false): Collection
+    public function invoices(BillableContract $billable, bool|array $parameters = false): Collection
     {
         $includePending = is_bool($parameters) ? $parameters : ($parameters['include_pending'] ?? false);
 

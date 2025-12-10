@@ -10,7 +10,6 @@ use AIArmada\FilamentCart\FilamentCartPlugin;
 use AIArmada\FilamentChip\FilamentChipPlugin;
 use AIArmada\FilamentInventory\FilamentInventoryPlugin;
 use AIArmada\FilamentJnt\FilamentJntPlugin;
-use AIArmada\FilamentStock\FilamentStockPlugin;
 use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -76,7 +75,6 @@ final class AdminPanelProvider extends PanelProvider
             ->plugins([
                 FilamentCartPlugin::make(),
                 FilamentVouchersPlugin::make(),
-                FilamentStockPlugin::make(),
                 FilamentInventoryPlugin::make(),
                 FilamentAffiliatesPlugin::make(),
                 FilamentChipPlugin::make(),

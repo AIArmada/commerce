@@ -32,7 +32,6 @@ Fixes #
 - [ ] aiarmada/chip
 - [ ] aiarmada/vouchers
 - [ ] aiarmada/jnt
-- [ ] aiarmada/stock
 - [ ] aiarmada/docs
 - [ ] aiarmada/filament-cart
 - [ ] aiarmada/filament-chip

@@ -38,9 +38,10 @@ final class StatsOverview extends BaseWidget
         $activeAffiliates = Affiliate::where('status', AffiliateStatus::Active)->count();
         $pendingCommissions = AffiliateConversion::where('status', ConversionStatus::Pending)->sum('commission_minor');
 
-        // Stock stats
+        // Inventory stats
         $lowStockProducts = Product::where('track_stock', true)
-            ->whereRaw('stock_quantity <= low_stock_threshold')
+            ->get()
+            ->filter(fn (Product $product): bool => $product->getTotalAvailable() <= $product->low_stock_threshold)
             ->count();
 
         return [
@@ -56,7 +57,7 @@ final class StatsOverview extends BaseWidget
                 ->color($pendingOrders > 0 ? 'warning' : 'success'),
 
             Stat::make('Products', Product::count())
-                ->description($lowStockProducts > 0 ? $lowStockProducts . ' low stock' : 'All stocked')
+                ->description($lowStockProducts > 0 ? $lowStockProducts . ' low inventory' : 'Inventory healthy')
                 ->descriptionIcon($lowStockProducts > 0 ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-cube')
                 ->color($lowStockProducts > 0 ? 'warning' : 'info'),
 

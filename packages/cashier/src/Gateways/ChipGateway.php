@@ -20,11 +20,9 @@ use AIArmada\Cashier\Gateways\Chip\ChipPaymentMethod;
 use AIArmada\Cashier\Gateways\Chip\ChipSubscription;
 use AIArmada\Cashier\Gateways\Chip\ChipSubscriptionBuilder;
 use AIArmada\CashierChip\Cashier as CashierChip;
-use AIArmada\CashierChip\Payment;
 use AIArmada\Chip\Services\ChipCollectService;
 use Exception;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Route;
 
 /**
  * CHIP payment gateway implementation.
@@ -124,13 +122,13 @@ class ChipGateway extends AbstractGateway
     {
         $purchase = $this->client()->refundPurchase($paymentId, $amount);
 
-        return new ChipPayment(new Payment($purchase));
+        return new ChipPayment(new \AIArmada\CashierChip\Payment($purchase));
     }
 
     /**
      * Create a new subscription builder.
      */
-    public function subscription(BillableContract $billable, string $type, string | array $prices = []): SubscriptionBuilderContract
+    public function subscription(BillableContract $billable, string $type, string|array $prices = []): SubscriptionBuilderContract
     {
         return new ChipSubscriptionBuilder($billable, $type, $prices);
     }
@@ -184,7 +182,7 @@ class ChipGateway extends AbstractGateway
         try {
             $purchase = $this->client()->getPurchase($paymentId);
 
-            return new ChipPayment(new Payment($purchase));
+            return new ChipPayment(new \AIArmada\CashierChip\Payment($purchase));
         } catch (Exception) {
             return null;
         }
@@ -224,7 +222,7 @@ class ChipGateway extends AbstractGateway
      * @param  bool|array<string, mixed>  $parameters  Either includePending bool or parameters array
      * @return Collection<int, InvoiceContract>
      */
-    public function invoices(BillableContract $billable, bool | array $parameters = false): Collection
+    public function invoices(BillableContract $billable, bool|array $parameters = false): Collection
     {
         $includePending = is_bool($parameters) ? $parameters : ($parameters['include_pending'] ?? false);
 
@@ -377,7 +375,7 @@ class ChipGateway extends AbstractGateway
         $panelId = $options['panel'] ?? 'billing';
         $routeName = "filament.{$panelId}.pages.dashboard";
 
-        if (! Route::has($routeName)) {
+        if (! \Illuminate\Support\Facades\Route::has($routeName)) {
             return $returnUrl;
         }
 

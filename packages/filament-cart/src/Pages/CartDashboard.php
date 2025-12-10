@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Pages;
 
-use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Widgets\AbandonedCartsWidget;
 use AIArmada\FilamentCart\Widgets\CartStatsOverviewWidget;
 use AIArmada\FilamentCart\Widgets\CollaborativeCartsWidget;
@@ -22,9 +21,9 @@ use UnitEnum;
  */
 class CartDashboard extends Page
 {
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-chart-bar';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-chart-bar';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Commerce';
+    protected static string|UnitEnum|null $navigationGroup = 'Commerce';
 
     protected static ?int $navigationSort = 1;
 
@@ -102,11 +101,11 @@ class CartDashboard extends Page
 
     private static function getAbandonedCartCount(): int
     {
-        if (! class_exists(Cart::class)) {
+        if (! class_exists(\AIArmada\FilamentCart\Models\Cart::class)) {
             return 0;
         }
 
-        return Cart::query()
+        return \AIArmada\FilamentCart\Models\Cart::query()
             ->whereNotNull('checkout_abandoned_at')
             ->whereNull('recovered_at')
             ->where('checkout_abandoned_at', '>=', now()->subDay())
@@ -115,11 +114,11 @@ class CartDashboard extends Page
 
     private static function getFraudAlertCount(): int
     {
-        if (! class_exists(Cart::class)) {
+        if (! class_exists(\AIArmada\FilamentCart\Models\Cart::class)) {
             return 0;
         }
 
-        return Cart::query()
+        return \AIArmada\FilamentCart\Models\Cart::query()
             ->whereIn('fraud_risk_level', ['high', 'medium'])
             ->where('updated_at', '>=', now()->subDay())
             ->count();

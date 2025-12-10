@@ -8,8 +8,11 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Testing\WebhookSimulator;
+use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
+use AIArmada\Vouchers\GiftCards\Models\GiftCard;
 use AIArmada\Vouchers\Models\Voucher;
 use App\Models\Category;
 use App\Models\Order;
@@ -18,6 +21,7 @@ use App\Models\Product;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
@@ -89,7 +93,18 @@ final class ShopController extends Controller
 
         // In stock filter
         if ($request->boolean('in_stock')) {
-            $query->where('stock_quantity', '>', 0);
+            $inventoryLevelTable = (new InventoryLevel())->getTable();
+
+            $query->where(function ($q) use ($inventoryLevelTable): void {
+                $q->where('track_stock', false)
+                    ->orWhereExists(function ($sub) use ($inventoryLevelTable): void {
+                        $sub->selectRaw('1')
+                            ->from($inventoryLevelTable)
+                            ->whereColumn($inventoryLevelTable . '.inventoryable_id', 'products.id')
+                            ->where($inventoryLevelTable . '.inventoryable_type', Product::class)
+                            ->whereRaw($inventoryLevelTable . '.quantity_on_hand - ' . $inventoryLevelTable . '.quantity_reserved > 0');
+                    });
+            });
         }
 
         // Sorting
@@ -176,7 +191,7 @@ final class ShopController extends Controller
             return back()->with('error', 'Sorry, this product is out of stock.');
         }
 
-        if ($request->quantity > $product->stock_quantity) {
+        if ($request->quantity > $product->getCurrentStock()) {
             return back()->with('error', 'Requested quantity exceeds available stock.');
         }
 
@@ -319,7 +334,7 @@ final class ShopController extends Controller
         // Create order with pending_payment status
         $order = Order::create([
             'order_number' => 'ORD-' . mb_strtoupper(Str::random(8)),
-            'user_id' => auth()->id(),
+            'user_id' => Auth::id(),
             'status' => 'pending_payment',
             'payment_status' => 'pending',
             'subtotal' => $subtotalWithConditions,
@@ -569,8 +584,8 @@ final class ShopController extends Controller
     public function orders(): View
     {
         // For demo purposes, show all recent orders if not authenticated
-        if (auth()->check()) {
-            $orders = Order::where('user_id', auth()->id())
+        if (Auth::check()) {
+            $orders = Order::where('user_id', Auth::id())
                 ->with('items')
                 ->orderBy('created_at', 'desc')
                 ->paginate(10);
@@ -587,9 +602,13 @@ final class ShopController extends Controller
     /**
      * Account page.
      */
-    public function account(): View
+    public function account(): View | RedirectResponse
     {
-        $user = auth()->user();
+        if (! Auth::check()) {
+            return redirect()->route('shop.home')->with('error', 'Please sign in to view your account.');
+        }
+
+        $user = Auth::user();
         $recentOrders = Order::with('items')
             ->where('user_id', $user->id)
             ->orderBy('created_at', 'desc')
@@ -597,6 +616,76 @@ final class ShopController extends Controller
             ->get();
 
         return view('shop.account', compact('user', 'recentOrders'));
+    }
+
+    /**
+     * Gift Cards page.
+     */
+    public function giftCards(Request $request): View
+    {
+        $giftCard = null;
+        $availableCards = null;
+
+        // Check balance if code provided
+        if ($request->filled('code')) {
+            $giftCard = GiftCard::where('code', mb_strtoupper($request->code))->first();
+        }
+
+        // Get demo gift cards for display
+        $availableCards = GiftCard::where('status', 'active')
+            ->where('current_balance', '>', 0)
+            ->orderBy('initial_balance', 'asc')
+            ->take(6)
+            ->get();
+
+        return view('shop.gift-cards', compact('giftCard', 'availableCards'));
+    }
+
+    /**
+     * Check gift card balance (redirect).
+     */
+    public function checkGiftCard(Request $request): RedirectResponse
+    {
+        $code = $request->get('code', '');
+
+        return redirect()->route('shop.gift-cards', ['code' => $code]);
+    }
+
+    /**
+     * Order tracking page.
+     */
+    public function tracking(Request $request): View
+    {
+        $shipment = null;
+        $recentShipments = null;
+
+        // Search for shipment if query provided
+        if ($request->filled('q')) {
+            $query = mb_strtoupper($request->q);
+
+            // Search by tracking number or order number
+            $shipment = JntOrder::where('tracking_number', $query)
+                ->orWhere('order_number', $query)
+                ->first();
+        }
+
+        // Get recent shipments for display
+        $recentShipments = JntOrder::whereNotNull('tracking_number')
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+
+        return view('shop.tracking', compact('shipment', 'recentShipments'));
+    }
+
+    /**
+     * Track shipment search (redirect).
+     */
+    public function trackingSearch(Request $request): RedirectResponse
+    {
+        $q = $request->get('tracking_number', '');
+
+        return redirect()->route('shop.tracking', ['q' => $q]);
     }
 
     /**

@@ -1,3 +1,6 @@
+includes:
+    - phpstan-baseline.neon
+
 parameters:
     paths:
         - packages
@@ -18,8 +21,6 @@ parameters:
         - identifier: 'missingType.generics'
         - identifier: 'larastan.noEnvCallsOutsideOfConfig'
         - identifier: 'return.unusedType'
-        - message: '#Trait AIArmada\\Stock\\Traits\\HasStock is used zero times and is not analysed\.#'
-          identifier: 'trait.unused'
         - message: '#Call to static method view\(\) on an unknown class Spatie\\LaravelPdf\\Facades\\Pdf\.#'
           identifier: 'class.notFound'
         - identifier: 'typeCoverage.paramTypeCoverage'

@@ -26,10 +26,8 @@ jobs:
           - filament-docs
           - filament-jnt
           - filament-permissions
-          - filament-stock
           - filament-vouchers
           - jnt
-          - stock
           - vouchers
 
     steps:
