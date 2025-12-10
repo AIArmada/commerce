@@ -130,12 +130,11 @@
 | Document | Status |
 |----------|--------|
 | [01-executive-summary.md](01-executive-summary.md) | ✅ Complete |
-| 02-customer-profiles.md | ⏳ Pending |
-| 03-address-management.md | ⏳ Pending |
-| 04-segments-groups.md | ⏳ Pending |
-| 05-wishlists.md | ⏳ Pending |
-| 06-gdpr.md | ⏳ Pending |
-| 07-implementation-roadmap.md | ⏳ Pending |
+| [02-customer-profiles.md](02-customer-profiles.md) | ✅ Complete |
+| [03-address-management.md](03-address-management.md) | ✅ Complete |
+| [04-segments-groups.md](04-segments-groups.md) | ✅ Complete |
+| [05-database-schema.md](05-database-schema.md) | ✅ Complete |
+| [06-implementation-roadmap.md](06-implementation-roadmap.md) | ✅ Complete |
 
 ---
 

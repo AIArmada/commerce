@@ -1,0 +1,56 @@
+{
+    "name": "aiarmada/filament-tax",
+    "description": "Filament admin panel for tax configuration",
+    "license": "MIT",
+    "type": "library",
+    "keywords": [
+        "laravel",
+        "filament",
+        "tax",
+        "vat",
+        "admin",
+        "commerce"
+    ],
+    "authors": [
+        {
+            "name": "AIArmada",
+            "email": "dev@aiarmada.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "aiarmada/tax": "^1.0",
+        "filament/filament": "^3.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.0",
+        "orchestra/testbench": "^9.0|^10.0",
+        "pestphp/pest": "^3.0",
+        "phpstan/phpstan": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\FilamentTax\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AIArmada\\FilamentTax\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\FilamentTax\\FilamentTaxServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}
