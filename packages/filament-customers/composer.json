@@ -1,0 +1,56 @@
+{
+    "name": "aiarmada/filament-customers",
+    "description": "Filament admin panel for customer management",
+    "license": "MIT",
+    "type": "library",
+    "keywords": [
+        "laravel",
+        "filament",
+        "customers",
+        "crm",
+        "admin",
+        "commerce"
+    ],
+    "authors": [
+        {
+            "name": "AIArmada",
+            "email": "dev@aiarmada.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "aiarmada/customers": "^1.0",
+        "filament/filament": "^3.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.0",
+        "orchestra/testbench": "^9.0|^10.0",
+        "pestphp/pest": "^3.0",
+        "phpstan/phpstan": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\FilamentCustomers\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AIArmada\\FilamentCustomers\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\FilamentCustomers\\FilamentCustomersServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

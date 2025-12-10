@@ -135,12 +135,11 @@
 | Document | Status |
 |----------|--------|
 | [01-executive-summary.md](01-executive-summary.md) | ✅ Complete |
-| 02-price-lists.md | ⏳ Pending |
-| 03-tiered-pricing.md | ⏳ Pending |
-| 04-price-rules.md | ⏳ Pending |
-| 05-multi-currency.md | ⏳ Pending |
-| 06-database-schema.md | ⏳ Pending |
-| 07-implementation-roadmap.md | ⏳ Pending |
+| [02-price-lists.md](02-price-lists.md) | ✅ Complete |
+| [03-tiered-pricing.md](03-tiered-pricing.md) | ✅ Complete |
+| [04-price-rules.md](04-price-rules.md) | ✅ Complete |
+| [05-database-schema.md](05-database-schema.md) | ✅ Complete |
+| [06-implementation-roadmap.md](06-implementation-roadmap.md) | ✅ Complete |
 
 ---
 

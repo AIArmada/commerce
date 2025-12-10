@@ -1,0 +1,56 @@
+{
+    "name": "aiarmada/filament-pricing",
+    "description": "Filament admin panel for pricing rules management",
+    "license": "MIT",
+    "type": "library",
+    "keywords": [
+        "laravel",
+        "filament",
+        "pricing",
+        "promotions",
+        "admin",
+        "commerce"
+    ],
+    "authors": [
+        {
+            "name": "AIArmada",
+            "email": "dev@aiarmada.com"
+        }
+    ],
+    "require": {
+        "php": "^8.2",
+        "aiarmada/pricing": "^1.0",
+        "filament/filament": "^3.0"
+    },
+    "require-dev": {
+        "laravel/pint": "^1.0",
+        "orchestra/testbench": "^9.0|^10.0",
+        "pestphp/pest": "^3.0",
+        "phpstan/phpstan": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\FilamentPricing\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "AIArmada\\FilamentPricing\\Tests\\": "tests/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\FilamentPricing\\FilamentPricingServiceProvider"
+            ]
+        }
+    },
+    "config": {
+        "sort-packages": true,
+        "allow-plugins": {
+            "pestphp/pest-plugin": true
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

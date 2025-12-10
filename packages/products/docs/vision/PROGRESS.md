@@ -145,10 +145,10 @@
 | [02-product-architecture.md](02-product-architecture.md) | ✅ Complete |
 | [03-variant-system.md](03-variant-system.md) | ✅ Complete |
 | [04-categories-collections.md](04-categories-collections.md) | ✅ Complete |
-| 05-attributes.md | ⏳ Pending |
+| [05-attributes.md](05-attributes.md) | ✅ Complete |
 | [06-integration.md](06-integration.md) | ✅ Complete |
-| 07-database-schema.md | ⏳ Pending |
-| 08-implementation-roadmap.md | ⏳ Pending |
+| [07-database-schema.md](07-database-schema.md) | ✅ Complete |
+| [08-implementation-roadmap.md](08-implementation-roadmap.md) | ✅ Complete |
 
 ---
 

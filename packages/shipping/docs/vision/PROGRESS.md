@@ -1,8 +1,8 @@
 # Shipping Vision Progress
 
 > **Package:** `aiarmada/shipping` + `aiarmada/filament-shipping`  
-> **Last Updated:** December 10, 2025  
-> **Status:** Implementation Complete
+> **Last Updated:** December 11, 2025  
+> **Status:** Implementation In Progress
 
 ---
 
@@ -19,6 +19,7 @@
 | Phase 6: Returns Management | 🟢 Completed | 100% |
 | Phase 7: JNT Driver Integration | 🟢 Completed | 100% |
 | Phase 8: Filament Admin | 🟢 Completed | 100% |
+| Phase 9: State Machine (Spatie) | 🔴 Not Started | 0% |
 
 ---
 
@@ -234,6 +235,30 @@
 
 ---
 
+## Phase 9: State Machine (Spatie) ⏳
+
+**Vision Document:** [12-state-machine.md](12-state-machine.md)
+
+### Shipment State Machine
+- [ ] Add `spatie/laravel-model-states` dependency
+- [ ] Create `ShipmentStatus` state classes
+- [ ] Create transition classes with side effects
+- [ ] Migrate from enum to state machine
+- [ ] Update Filament actions to use transitions
+
+### Return Authorization State Machine
+- [ ] Create `ReturnStatus` state classes
+- [ ] Create transition classes with side effects
+- [ ] Migrate from enum to state machine
+- [ ] Update Filament actions to use transitions
+
+### Integration
+- [ ] Webhook handlers use state transitions
+- [ ] Event dispatching on state changes
+- [ ] Orders package integration
+
+---
+
 ## Created Files Summary
 
 ### `packages/shipping/` (Core Package)
@@ -263,6 +288,7 @@ shipping/
 │   ├── 09-database-schema.md
 │   ├── 10-filament-enhancements.md
 │   ├── 11-implementation-roadmap.md
+│   ├── 12-state-machine.md
 │   └── PROGRESS.md
 └── src/
     ├── Cart/
@@ -410,6 +436,11 @@ filament-shipping/
 ---
 
 ## Notes
+
+### December 11, 2025
+- Added `12-state-machine.md` vision document for future Spatie Model States integration
+- State machine covers Shipment and Return Authorization lifecycles
+- This is a future enhancement - current implementation uses enum-based status
 
 ### December 10, 2025
 - Phase 7 (JNT Driver Integration) completed

@@ -55,7 +55,7 @@ Establish the **Orders Package** as the definitive transaction lifecycle manager
 Order records are append-only. Changes create new records (adjustments, refunds) rather than modifying the original order. This ensures complete audit trails and historical accuracy.
 
 ### 2. **State Machine Driven**
-Orders progress through well-defined states with explicit transitions, guards, and hooks. No order can skip states or enter invalid conditions.
+Orders progress through well-defined states using **[spatie/laravel-model-states](https://spatie.be/docs/laravel-model-states/v2/introduction)**. Each state is a PHP class with explicit transitions, guards, and side-effect handlers. No order can skip states or enter invalid conditions.
 
 ### 3. **Payment Agnostic**
 Orders are not coupled to any specific payment gateway. Payment information is stored as normalized references, allowing orders to exist without payment (COD, invoice, free orders).
@@ -194,7 +194,7 @@ $order->createShipment([
 | # | Document | Focus |
 |---|----------|-------|
 | 01 | Executive Summary | This document |
-| 02 | [Order Lifecycle](02-order-lifecycle.md) | States, transitions, hooks |
+| 02 | [State Machine](02-state-machine.md) | Spatie Model States implementation |
 | 03 | [Order Structure](03-order-structure.md) | Items, addresses, totals |
 | 04 | [Payment Integration](04-payment-integration.md) | Multi-gateway, refunds |
 | 05 | [Fulfillment Flow](05-fulfillment-flow.md) | Shipping integration |
@@ -223,6 +223,7 @@ $order->createShipment([
 | Package | Purpose |
 |---------|---------|
 | `aiarmada/commerce-support` | Shared interfaces |
+| `spatie/laravel-model-states` | State machine implementation |
 | `spatie/laravel-pdf` | Invoice generation |
 | `akaunting/laravel-money` | Amount handling |
 
@@ -242,4 +243,4 @@ $order->createShipment([
 
 ## Navigation
 
-**Next:** [02-order-lifecycle.md](02-order-lifecycle.md)
+**Next:** [02-state-machine.md](02-state-machine.md)
