@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Listeners;
 
-use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
@@ -47,7 +46,7 @@ final class ApplyGlobalConditions
     /**
      * Handle item changed events (added, updated, removed).
      */
-    public function handleItemChanged(ItemAdded | ItemUpdated | ItemRemoved $event): void
+    public function handleItemChanged(ItemAdded|ItemUpdated|ItemRemoved $event): void
     {
         if (! config('filament-cart.features.global_conditions', true)) {
             return;
@@ -63,7 +62,7 @@ final class ApplyGlobalConditions
     /**
      * Apply all global conditions to the cart.
      */
-    private function applyGlobalConditions(Cart $cart): void
+    private function applyGlobalConditions(\AIArmada\Cart\Cart $cart): void
     {
         self::$applying = true;
 
@@ -135,7 +134,7 @@ final class ApplyGlobalConditions
      * Remove global conditions that have been deactivated.
      * This ensures time-limited promotions are removed from active carts when they expire.
      */
-    private function removeDeactivatedGlobalConditions(Cart $cart): void
+    private function removeDeactivatedGlobalConditions(\AIArmada\Cart\Cart $cart): void
     {
         // Get all condition names that are currently marked as global in the cart
         $globalConditionNames = [];

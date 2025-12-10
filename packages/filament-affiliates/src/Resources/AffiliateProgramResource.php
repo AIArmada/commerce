@@ -8,8 +8,13 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use BackedEnum;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -19,16 +24,16 @@ final class AffiliateProgramResource extends Resource
 {
     protected static ?string $model = AffiliateProgram::class;
 
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Affiliates';
+    protected static string|UnitEnum|null $navigationGroup = 'Affiliates';
 
     protected static ?int $navigationSort = 2;
 
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-            Forms\Components\Section::make('Program Details')
+            Section::make('Program Details')
                 ->schema([
                     Forms\Components\TextInput::make('name')
                         ->required()
@@ -49,7 +54,7 @@ final class AffiliateProgramResource extends Resource
                 ])
                 ->columns(2),
 
-            Forms\Components\Section::make('Schedule')
+            Section::make('Schedule')
                 ->schema([
                     Forms\Components\DateTimePicker::make('starts_at')
                         ->label('Start Date'),
@@ -60,7 +65,7 @@ final class AffiliateProgramResource extends Resource
                 ])
                 ->columns(2),
 
-            Forms\Components\Section::make('Commission Settings')
+            Section::make('Commission Settings')
                 ->schema([
                     Forms\Components\Select::make('commission_type')
                         ->options(CommissionType::class)
@@ -82,7 +87,7 @@ final class AffiliateProgramResource extends Resource
                 ])
                 ->columns(3),
 
-            Forms\Components\Section::make('Settings')
+            Section::make('Settings')
                 ->schema([
                     Forms\Components\Toggle::make('is_public')
                         ->label('Public Program')
@@ -100,7 +105,7 @@ final class AffiliateProgramResource extends Resource
                 ])
                 ->columns(3),
 
-            Forms\Components\Section::make('Eligibility Rules')
+            Section::make('Eligibility Rules')
                 ->schema([
                     Forms\Components\KeyValue::make('eligibility_rules')
                         ->keyLabel('Requirement')
@@ -137,7 +142,7 @@ final class AffiliateProgramResource extends Resource
 
                 Tables\Columns\TextColumn::make('default_commission_rate_basis_points')
                     ->label('Commission')
-                    ->formatStateUsing(fn ($state) => ($state / 100) . '%'),
+                    ->formatStateUsing(fn($state) => ($state / 100) . '%'),
 
                 Tables\Columns\TextColumn::make('affiliates_count')
                     ->counts('affiliates')
@@ -166,12 +171,12 @@ final class AffiliateProgramResource extends Resource
                     ->label('Public'),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                ViewAction::make(),
+                EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }

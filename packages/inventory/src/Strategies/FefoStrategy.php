@@ -7,7 +7,6 @@ namespace AIArmada\Inventory\Strategies;
 use AIArmada\Inventory\Models\InventoryBatch;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 
 /**
  * FEFO (First Expired, First Out) allocation strategy.
@@ -31,7 +30,7 @@ final class FefoStrategy implements AllocationStrategyInterface
     }
 
     /**
-     * @return array<int, array{batch_id: string, location_id: string|null, quantity: int, expires_at: Carbon|null}>
+     * @return array<int, array{batch_id: string, location_id: string|null, quantity: int, expires_at: \Illuminate\Support\Carbon|null}>
      */
     public function allocate(Model $model, int $quantity, ?AllocationContext $context = null): array
     {
@@ -105,7 +104,7 @@ final class FefoStrategy implements AllocationStrategyInterface
 
     /**
      * @param  Collection<int, InventoryBatch>  $batches
-     * @return array<int, array{batch_id: string, location_id: string|null, quantity: int, expires_at: Carbon|null}>
+     * @return array<int, array{batch_id: string, location_id: string|null, quantity: int, expires_at: \Illuminate\Support\Carbon|null}>
      */
     private function buildAllocations(Collection $batches, int $quantity): array
     {

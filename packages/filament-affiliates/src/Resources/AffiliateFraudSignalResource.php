@@ -8,8 +8,12 @@ use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -19,9 +23,9 @@ final class AffiliateFraudSignalResource extends Resource
 {
     protected static ?string $model = AffiliateFraudSignal::class;
 
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-shield-exclamation';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shield-exclamation';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Affiliates';
+    protected static string|UnitEnum|null $navigationGroup = 'Affiliates';
 
     protected static ?string $navigationLabel = 'Fraud Signals';
 
@@ -30,7 +34,7 @@ final class AffiliateFraudSignalResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema->schema([
-            Forms\Components\Section::make('Signal Details')
+            Section::make('Signal Details')
                 ->schema([
                     Forms\Components\Select::make('affiliate_id')
                         ->relationship('affiliate', 'name')
@@ -49,7 +53,7 @@ final class AffiliateFraudSignalResource extends Resource
                 ])
                 ->columns(2),
 
-            Forms\Components\Section::make('Detection')
+            Section::make('Detection')
                 ->schema([
                     Forms\Components\TextInput::make('score')
                         ->disabled(),
@@ -63,7 +67,7 @@ final class AffiliateFraudSignalResource extends Resource
                 ])
                 ->columns(2),
 
-            Forms\Components\Section::make('Review Notes')
+            Section::make('Review Notes')
                 ->schema([
                     Forms\Components\Textarea::make('review_notes')
                         ->rows(3)
@@ -92,18 +96,18 @@ final class AffiliateFraudSignalResource extends Resource
 
                 Tables\Columns\TextColumn::make('signal_type')
                     ->badge()
-                    ->formatStateUsing(fn (string $state) => str_replace('_', ' ', ucfirst($state))),
+                    ->formatStateUsing(fn(string $state) => str_replace('_', ' ', ucfirst($state))),
 
                 Tables\Columns\BadgeColumn::make('severity')
                     ->colors([
                         'gray' => FraudSeverity::Low->value,
                         'warning' => FraudSeverity::Medium->value,
-                        'danger' => fn ($state) => in_array($state, [FraudSeverity::High->value, FraudSeverity::Critical->value]),
+                        'danger' => fn($state) => in_array($state, [FraudSeverity::High->value, FraudSeverity::Critical->value]),
                     ]),
 
                 Tables\Columns\TextColumn::make('score')
                     ->label('Score')
-                    ->formatStateUsing(fn ($state) => $state . '%')
+                    ->formatStateUsing(fn($state) => $state . '%')
                     ->sortable(),
 
                 Tables\Columns\BadgeColumn::make('status')
@@ -116,7 +120,7 @@ final class AffiliateFraudSignalResource extends Resource
 
                 Tables\Columns\TextColumn::make('description')
                     ->limit(40)
-                    ->tooltip(fn ($record) => $record->description),
+                    ->tooltip(fn($record) => $record->description),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
@@ -135,32 +139,32 @@ final class AffiliateFraudSignalResource extends Resource
                     ]),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\Action::make('dismiss')
+                ViewAction::make(),
+                Action::make('dismiss')
                     ->icon('heroicon-o-x-mark')
                     ->color('gray')
                     ->requiresConfirmation()
-                    ->visible(fn ($record) => $record->status === FraudSignalStatus::Detected)
-                    ->action(fn ($record) => $record->update([
+                    ->visible(fn($record) => $record->status === FraudSignalStatus::Detected)
+                    ->action(fn($record) => $record->update([
                         'status' => FraudSignalStatus::Dismissed,
                         'reviewed_at' => now(),
                     ])),
-                Tables\Actions\Action::make('confirm')
+                Action::make('confirm')
                     ->icon('heroicon-o-check')
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->visible(fn ($record) => $record->status === FraudSignalStatus::Detected)
-                    ->action(fn ($record) => $record->update([
+                    ->visible(fn($record) => $record->status === FraudSignalStatus::Detected)
+                    ->action(fn($record) => $record->update([
                         'status' => FraudSignalStatus::Confirmed,
                         'reviewed_at' => now(),
                     ])),
             ])
             ->bulkActions([
-                Tables\Actions\BulkAction::make('dismiss_selected')
+                BulkAction::make('dismiss_selected')
                     ->label('Dismiss Selected')
                     ->icon('heroicon-o-x-mark')
                     ->requiresConfirmation()
-                    ->action(fn ($records) => $records->each->update([
+                    ->action(fn($records) => $records->each->update([
                         'status' => FraudSignalStatus::Dismissed,
                         'reviewed_at' => now(),
                     ])),

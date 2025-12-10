@@ -28,7 +28,7 @@ final class InventoryMovementsTable
                 TextColumn::make('type')
                     ->label('Type')
                     ->badge()
-                    ->color(fn (MovementType $state): string => match ($state) {
+                    ->color(fn (string $state): string => match (MovementType::from($state)) {
                         MovementType::Receipt => 'success',
                         MovementType::Shipment => 'info',
                         MovementType::Transfer => 'warning',

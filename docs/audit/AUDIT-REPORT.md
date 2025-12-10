@@ -114,7 +114,6 @@
 |---------|-------|
 | affiliates | Excessive env() wrappers on table_names |
 | inventory | Uses `table_names` inconsistently (should be `database.tables`) |
-| stock | Uses `table_name` at root level (inconsistent) |
 | filament-affiliates | Navigation group inconsistency ('E-commerce' vs 'E-Commerce') |
 | filament-jnt | Config keys don't match resource navigation_sort keys |
 | filament-authz | Missing feature flags referenced in Plugin |
@@ -125,7 +124,6 @@
 |---------|------|-------|
 | commerce-support | ServiceProvider | Empty `packageRegistered()` and `packageBooted()` methods |
 | filament-inventory | ServiceProvider | Empty render hook callback |
-| filament-stock | ServiceProvider | Empty render hook callback |
 | filament-vouchers | ServiceProvider | Missing widget Livewire registrations |
 
 ### Filament Resources
@@ -189,12 +187,11 @@
 9. `packages/filament-authz/src/Widgets/PermissionStatsWidget.php`
 
 ### Medium Priority Files
-1. `packages/stock/config/stock.php`
-2. `packages/docs/src/Models/*.php`
-3. `packages/affiliates/src/Models/*.php`
-4. `packages/filament-cart/src/Models/*.php`
-5. `packages/filament-authz/config/filament-authz.php`
-6. `packages/filament-jnt/config/filament-jnt.php`
+1. `packages/docs/src/Models/*.php`
+2. `packages/affiliates/src/Models/*.php`
+3. `packages/filament-cart/src/Models/*.php`
+4. `packages/filament-authz/config/filament-authz.php`
+5. `packages/filament-jnt/config/filament-jnt.php`
 
 ---
 

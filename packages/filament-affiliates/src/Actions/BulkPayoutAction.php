@@ -7,7 +7,7 @@ namespace AIArmada\FilamentAffiliates\Actions;
 use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
 use Exception;
-use Filament\Tables\Actions\BulkAction;
+use Filament\Actions\BulkAction;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -42,7 +42,7 @@ final class BulkPayoutAction extends BulkAction
                             ->where('is_default', true)
                             ->first();
 
-                        if (! $payoutMethod) {
+                        if (!$payoutMethod) {
                             $payout->update(['status' => PayoutStatus::Failed->value]);
                             $payout->events()->create([
                                 'status' => PayoutStatus::Failed->value,

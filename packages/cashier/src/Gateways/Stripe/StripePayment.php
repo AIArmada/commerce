@@ -6,10 +6,7 @@ namespace AIArmada\Cashier\Gateways\Stripe;
 
 use AIArmada\Cashier\Contracts\PaymentContract;
 use Illuminate\Http\RedirectResponse;
-use Laravel\Cashier\Exceptions\PaymentActionRequired;
-use Laravel\Cashier\Exceptions\PaymentFailure;
 use Laravel\Cashier\Payment;
-use Stripe\StripeClient;
 
 /**
  * Wrapper for Stripe payment.
@@ -145,7 +142,7 @@ class StripePayment implements PaymentContract
         $latestCharge = $paymentIntent->latest_charge;
 
         if ($latestCharge && is_string($latestCharge)) {
-            $stripe = new StripeClient(config('cashier.secret'));
+            $stripe = new \Stripe\StripeClient(config('cashier.secret'));
             $charge = $stripe->charges->retrieve($latestCharge);
 
             return $charge->receipt_url;
@@ -189,8 +186,8 @@ class StripePayment implements PaymentContract
     /**
      * Validate the payment and throw exception if failed.
      *
-     * @throws PaymentActionRequired
-     * @throws PaymentFailure
+     * @throws \Laravel\Cashier\Exceptions\PaymentActionRequired
+     * @throws \Laravel\Cashier\Exceptions\PaymentFailure
      */
     public function validate(): static
     {

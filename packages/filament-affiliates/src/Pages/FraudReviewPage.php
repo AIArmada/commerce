@@ -7,6 +7,9 @@ namespace AIArmada\FilamentAffiliates\Pages;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -22,9 +25,9 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
 
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-shield-exclamation';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shield-exclamation';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Affiliates';
+    protected static string|UnitEnum|null $navigationGroup = 'Affiliates';
 
     protected static ?string $navigationLabel = 'Fraud Review';
 
@@ -49,7 +52,7 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('signal_type')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'velocity_abuse' => 'danger',
                         'ip_duplicate' => 'warning',
                         'self_referral' => 'danger',
@@ -59,7 +62,7 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('severity')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
+                    ->color(fn(string $state): string => match ($state) {
                         'critical' => 'danger',
                         'high' => 'warning',
                         'medium' => 'info',
@@ -68,7 +71,7 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('score')
                     ->label('Risk Score')
-                    ->formatStateUsing(fn ($state): string => $state . '%'),
+                    ->formatStateUsing(fn($state): string => $state . '%'),
 
                 Tables\Columns\TextColumn::make('detected_at')
                     ->dateTime()
@@ -93,7 +96,7 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
                     ]),
             ])
             ->actions([
-                Tables\Actions\Action::make('approve')
+                Action::make('approve')
                     ->label('Approve')
                     ->icon('heroicon-o-check')
                     ->color('success')
@@ -106,7 +109,7 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
                         ]);
                     }),
 
-                Tables\Actions\Action::make('reject')
+                Action::make('reject')
                     ->label('Confirm Fraud')
                     ->icon('heroicon-o-x-mark')
                     ->color('danger')
@@ -129,10 +132,10 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
                         }
                     }),
 
-                Tables\Actions\ViewAction::make(),
+                ViewAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkAction::make('bulk_approve')
+                BulkAction::make('bulk_approve')
                     ->label('Approve Selected')
                     ->icon('heroicon-o-check')
                     ->color('success')
@@ -147,7 +150,7 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
                         });
                     }),
 
-                Tables\Actions\BulkAction::make('bulk_reject')
+                BulkAction::make('bulk_reject')
                     ->label('Confirm Fraud (Selected)')
                     ->icon('heroicon-o-x-mark')
                     ->color('danger')

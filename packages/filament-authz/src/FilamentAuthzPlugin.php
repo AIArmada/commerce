@@ -160,11 +160,11 @@ class FilamentAuthzPlugin implements Plugin
 
         // Discover from configured namespaces
         $namespaces = array_merge(
-            (array) config('filament-authz.discovery.namespaces', []),
+            (array) config('filament-authz.discovery.namespaces.include', []),
             $this->discoveryNamespaces
         );
 
-        if (! empty($namespaces)) {
+        if (!empty($namespaces)) {
             $discovery->discoverFromNamespaces($namespaces);
         }
 

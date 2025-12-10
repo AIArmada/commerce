@@ -264,17 +264,7 @@ Voucher expiration
 
 Usage limits
 
-**3. FilamentStock**
-
-Stock transactions (inbound/outbound)
-
-Stock reservations
-
-Stock stats widget
-
-Low stock alerts
-
-**4. FilamentInventory**
+**3. FilamentInventory**
 
 Inventory locations (CRUD)
 
@@ -292,7 +282,7 @@ Allocation strategies (Priority, FIFO, LeastStock, SingleLocation)
 
 Expired allocation cleanup
 
-**5. FilamentAffiliates**
+**4. FilamentAffiliates**
 
 Create affiliate
 
@@ -304,7 +294,7 @@ Commission calculations
 
 Referral tracking
 
-**6. FilamentChip**
+**5. FilamentChip**
 
 Purchase records
 
@@ -314,7 +304,7 @@ Client management
 
 Webhook processing
 
-**7. FilamentJnt**
+**6. FilamentJnt**
 
 Shipping orders
 
@@ -324,7 +314,7 @@ Webhook logs
 
 Rate calculations
 
-**8. FilamentPermissions**
+**7. FilamentPermissions**
 
 Role management
 
@@ -334,7 +324,7 @@ User role assignment
 
 Permission inheritance
 
-**9. FilamentDocs**
+**8. FilamentDocs**
 
 Documentation display
 

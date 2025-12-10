@@ -73,7 +73,7 @@ final class InventoryLevelInfolist
 
                         TextEntry::make('effective_strategy')
                             ->label('Effective Strategy')
-                            ->state(fn ($record): string => $record->getEffectiveAllocationStrategy()->getLabel())
+                            ->state(fn ($record): string => $record->getEffectiveAllocationStrategy()->label())
                             ->badge()
                             ->color('success'),
                     ]),

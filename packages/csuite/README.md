@@ -35,7 +35,7 @@ Or install individual packages as needed (see below).
 |---------|-------------|
 | [commerce-support](../commerce-support) | Core utilities, contracts, and exceptions |
 | [cart](../cart) | Shopping cart with conditions and persistence |
-| [stock](../stock) | Inventory and stock management |
+| [inventory](../inventory) | Inventory and stock management |
 | [vouchers](../vouchers) | Discount codes and promotional vouchers |
 | [docs](../docs) | Invoice and receipt generation with PDF |
 
@@ -53,7 +53,7 @@ Or install individual packages as needed (see below).
 | Package | Description |
 |---------|-------------|
 | [filament-cart](../filament-cart) | Cart management admin panel |
-| [filament-stock](../filament-stock) | Stock management admin panel |
+| [filament-inventory](../filament-inventory) | Inventory management admin panel |
 | [filament-vouchers](../filament-vouchers) | Voucher management admin panel |
 | [filament-docs](../filament-docs) | Document management admin panel |
 | [filament-chip](../filament-chip) | CHIP payment admin panel |

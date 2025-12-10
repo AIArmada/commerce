@@ -128,8 +128,8 @@
             </div>
             <div class="feature">
                 <div class="feature-icon">📦</div>
-                <h3>Stock Management</h3>
-                <p>Inventory tracking & alerts</p>
+                <h3>Inventory Management</h3>
+                <p>Multi-location inventory tracking & alerts</p>
             </div>
             <div class="feature">
                 <div class="feature-icon">🤝</div>
@@ -158,13 +158,13 @@
                 <span class="package-tag">cart</span>
                 <span class="package-tag">cashier</span>
                 <span class="package-tag">vouchers</span>
-                <span class="package-tag">stock</span>
+                <span class="package-tag">inventory</span>
                 <span class="package-tag">affiliates</span>
                 <span class="package-tag">chip</span>
                 <span class="package-tag">jnt</span>
                 <span class="package-tag">filament-cart</span>
                 <span class="package-tag">filament-vouchers</span>
-                <span class="package-tag">filament-stock</span>
+                <span class="package-tag">filament-inventory</span>
                 <span class="package-tag">filament-affiliates</span>
                 <span class="package-tag">filament-chip</span>
                 <span class="package-tag">filament-jnt</span>

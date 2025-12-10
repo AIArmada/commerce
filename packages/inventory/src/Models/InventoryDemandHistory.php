@@ -5,28 +5,26 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Models;
 
 use AIArmada\Inventory\Enums\DemandPeriodType;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
  * @property string $inventoryable_type
  * @property string $inventoryable_id
  * @property string|null $location_id
- * @property Carbon $period_date
+ * @property \Illuminate\Support\Carbon $period_date
  * @property DemandPeriodType $period_type
  * @property int $quantity_demanded
  * @property int $quantity_fulfilled
  * @property int $quantity_lost
  * @property int $order_count
  * @property array<string, mixed>|null $metadata
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Model $inventoryable
  * @property-read InventoryLocation|null $location
  */
@@ -70,50 +68,50 @@ class InventoryDemandHistory extends Model
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeForModel(Builder $query, Model $model): Builder
+    public function scopeForModel(\Illuminate\Database\Eloquent\Builder $query, Model $model): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('inventoryable_type', $model->getMorphClass())
             ->where('inventoryable_id', $model->getKey());
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeDaily(Builder $query): Builder
+    public function scopeDaily(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('period_type', DemandPeriodType::Daily->value);
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeWeekly(Builder $query): Builder
+    public function scopeWeekly(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('period_type', DemandPeriodType::Weekly->value);
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeMonthly(Builder $query): Builder
+    public function scopeMonthly(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('period_type', DemandPeriodType::Monthly->value);
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeBetweenDates(Builder $query, Carbon $from, Carbon $to): Builder
+    public function scopeBetweenDates(\Illuminate\Database\Eloquent\Builder $query, \Illuminate\Support\Carbon $from, \Illuminate\Support\Carbon $to): \Illuminate\Database\Eloquent\Builder
     {
         return $query->whereBetween('period_date', [$from, $to]);
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeLastDays(Builder $query, int $days): Builder
+    public function scopeLastDays(\Illuminate\Database\Eloquent\Builder $query, int $days): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('period_date', '>=', now()->subDays($days));
     }

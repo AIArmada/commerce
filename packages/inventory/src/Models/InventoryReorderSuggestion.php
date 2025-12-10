@@ -6,13 +6,11 @@ namespace AIArmada\Inventory\Models;
 
 use AIArmada\Inventory\Enums\ReorderSuggestionStatus;
 use AIArmada\Inventory\Enums\ReorderUrgency;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -27,17 +25,17 @@ use Illuminate\Support\Carbon;
  * @property int|null $economic_order_quantity
  * @property int|null $average_daily_demand
  * @property int|null $lead_time_days
- * @property Carbon|null $expected_stockout_date
+ * @property \Illuminate\Support\Carbon|null $expected_stockout_date
  * @property ReorderUrgency $urgency
  * @property string $trigger_reason
  * @property string|null $approved_by
- * @property Carbon|null $approved_at
+ * @property \Illuminate\Support\Carbon|null $approved_at
  * @property string|null $order_id
- * @property Carbon|null $ordered_at
+ * @property \Illuminate\Support\Carbon|null $ordered_at
  * @property array<string, mixed>|null $calculation_details
  * @property array<string, mixed>|null $metadata
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Model $inventoryable
  * @property-read InventoryLocation|null $location
  * @property-read InventorySupplierLeadtime|null $supplierLeadtime
@@ -100,26 +98,26 @@ class InventoryReorderSuggestion extends Model
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeForModel(Builder $query, Model $model): Builder
+    public function scopeForModel(\Illuminate\Database\Eloquent\Builder $query, Model $model): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('inventoryable_type', $model->getMorphClass())
             ->where('inventoryable_id', $model->getKey());
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopePending(Builder $query): Builder
+    public function scopePending(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('status', ReorderSuggestionStatus::Pending->value);
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeActionable(Builder $query): Builder
+    public function scopeActionable(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->whereIn('status', [
             ReorderSuggestionStatus::Pending->value,
@@ -128,17 +126,17 @@ class InventoryReorderSuggestion extends Model
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeByUrgency(Builder $query): Builder
+    public function scopeByUrgency(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->orderByRaw("FIELD(urgency, 'critical', 'high', 'normal', 'low')");
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeCritical(Builder $query): Builder
+    public function scopeCritical(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('urgency', ReorderUrgency::Critical->value);
     }

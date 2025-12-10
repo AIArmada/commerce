@@ -18,7 +18,7 @@
                 <a href="{{ $product->slug }}" class="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600">View</a>
                 <a href="/checkout/single/{{ $product->slug }}" class="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600">Buy Now</a>
             </div>
-            <p class="text-sm text-gray-500 mt-2">Stock: {{ $product->stock_quantity }}</p>
+            <p class="text-sm text-gray-500 mt-2">Inventory: {{ $product->available_stock }}</p>
         </div>
         @endforeach
     </div>

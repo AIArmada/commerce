@@ -7,10 +7,11 @@ providers:
   # - AIArmada\Cashier\CashierServiceProvider
   - AIArmada\Docs\DocsServiceProvider
   - AIArmada\Jnt\JntServiceProvider
-  - AIArmada\Stock\StockServiceProvider
+  - AIArmada\Inventory\InventoryServiceProvider
   - AIArmada\Vouchers\VoucherServiceProvider
   - AIArmada\FilamentCart\FilamentCartServiceProvider
   - AIArmada\FilamentChip\FilamentChipServiceProvider
+  - AIArmada\FilamentInventory\FilamentInventoryServiceProvider
   - AIArmada\FilamentVouchers\FilamentVouchersServiceProvider
 
 env:
@@ -26,7 +27,7 @@ migrations:
   - packages/chip/database/migrations
   - packages/docs/database/migrations
   - packages/jnt/database/migrations
-  - packages/stock/database/migrations
+  - packages/inventory/database/migrations
   - packages/vouchers/database/migrations
 
 workbench:

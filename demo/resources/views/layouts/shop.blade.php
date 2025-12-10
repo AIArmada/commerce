@@ -153,7 +153,7 @@
                     <div class="flex flex-wrap gap-2">
                         <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">cart</span>
                         <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">vouchers</span>
-                        <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">stock</span>
+                        <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">inventory</span>
                         <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">affiliates</span>
                         <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">chip</span>
                         <span class="bg-amber-500/20 text-amber-400 text-xs px-2 py-1 rounded">jnt</span>

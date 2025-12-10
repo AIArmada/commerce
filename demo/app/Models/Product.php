@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use AIArmada\Stock\Contracts\StockableInterface;
-use AIArmada\Stock\Traits\HasStock;
+use AIArmada\Inventory\Contracts\InventoryableInterface;
+use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\Traits\HasInventory;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -30,11 +31,12 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property-read int $available_stock
  */
-final class Product extends Model implements StockableInterface
+final class Product extends Model implements InventoryableInterface
 {
     use HasFactory;
-    use HasStock;
+    use HasInventory;
     use HasUuids;
 
     protected $fillable = [
@@ -99,6 +101,52 @@ final class Product extends Model implements StockableInterface
         }
 
         return $this->getCurrentStock() <= 0;
+    }
+
+    public function isLowInventory(?int $threshold = null): bool
+    {
+        if (! $this->track_stock) {
+            return false;
+        }
+
+        $limit = $threshold ?? $this->low_stock_threshold;
+
+        return $this->getCurrentStock() <= $limit;
+    }
+
+    public function isLowStock(?int $threshold = null): bool
+    {
+        return $this->isLowInventory($threshold);
+    }
+
+    public function getCurrentStock(): int
+    {
+        if (! $this->track_stock) {
+            return PHP_INT_MAX;
+        }
+
+        return $this->getTotalAvailable();
+    }
+
+    public function getAvailableStockAttribute(): int
+    {
+        return $this->track_stock ? $this->getTotalAvailable() : PHP_INT_MAX;
+    }
+
+    public function removeStock(int $quantity, string $reason = 'sale', ?string $reference = null): void
+    {
+        if (! $this->track_stock) {
+            return;
+        }
+
+        $location = InventoryLocation::getOrCreateDefault();
+
+        $this->ship(
+            $location->id,
+            $quantity,
+            $reason,
+            $reference,
+        );
     }
 
     /**

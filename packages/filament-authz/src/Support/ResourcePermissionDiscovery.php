@@ -153,7 +153,6 @@ final class ResourcePermissionDiscovery
             'AIArmada\\FilamentInventory\\Resources' => 'packages/filament-inventory/src/Resources',
             'AIArmada\\FilamentAffiliates\\Resources' => 'packages/filament-affiliates/src/Resources',
             'AIArmada\\FilamentChip\\Resources' => 'packages/filament-chip/src/Resources',
-            'AIArmada\\FilamentStock\\Resources' => 'packages/filament-stock/src/Resources',
             'AIArmada\\FilamentJnt\\Resources' => 'packages/filament-jnt/src/Resources',
             'AIArmada\\FilamentDocs\\Resources' => 'packages/filament-docs/src/Resources',
         ];

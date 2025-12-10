@@ -8,7 +8,6 @@ use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Enums\DocStatus;
-use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Arr;
@@ -140,11 +139,11 @@ final class GenerateDocOnPayment implements ShouldQueue
         $notes = [];
 
         if ($event->getReference()) {
-            $notes[] = 'Reference: ' . $event->getReference();
+            $notes[] = 'Reference: '.$event->getReference();
         }
 
         if ($event->getPaymentMethod()) {
-            $notes[] = 'Payment Method: ' . ucfirst((string) $event->getPaymentMethod());
+            $notes[] = 'Payment Method: '.ucfirst((string) $event->getPaymentMethod());
         }
 
         return implode("\n", $notes);
@@ -152,11 +151,11 @@ final class GenerateDocOnPayment implements ShouldQueue
 
     private function docExistsForPurchase(Purchase $purchase): bool
     {
-        if (! class_exists(Doc::class)) {
+        if (! class_exists(\AIArmada\Docs\Models\Doc::class)) {
             return false;
         }
 
-        return Doc::query()
+        return \AIArmada\Docs\Models\Doc::query()
             ->where('docable_type', Purchase::class)
             ->where('docable_id', $purchase->id)
             ->where('doc_type', config('chip.integrations.docs.paid_doc_type', 'invoice'))

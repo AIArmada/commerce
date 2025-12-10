@@ -5,18 +5,16 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Models;
 
 use AIArmada\Inventory\Enums\CostingMethod;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
  * @property string|null $location_id
  * @property CostingMethod $costing_method
- * @property Carbon $snapshot_date
+ * @property \Illuminate\Support\Carbon $snapshot_date
  * @property int $total_quantity
  * @property int $total_value_minor
  * @property int $average_unit_cost_minor
@@ -25,8 +23,8 @@ use Illuminate\Support\Carbon;
  * @property int|null $variance_from_previous_minor
  * @property array<string, mixed>|null $breakdown
  * @property array<string, mixed>|null $metadata
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read InventoryLocation|null $location
  */
 class InventoryValuationSnapshot extends Model
@@ -62,49 +60,49 @@ class InventoryValuationSnapshot extends Model
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeForLocation(Builder $query, string $locationId): Builder
+    public function scopeForLocation(\Illuminate\Database\Eloquent\Builder $query, string $locationId): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('location_id', $locationId);
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeAllLocations(Builder $query): Builder
+    public function scopeAllLocations(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->whereNull('location_id');
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeUsingMethod(Builder $query, CostingMethod $method): Builder
+    public function scopeUsingMethod(\Illuminate\Database\Eloquent\Builder $query, CostingMethod $method): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('costing_method', $method->value);
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeOnDate(Builder $query, Carbon $date): Builder
+    public function scopeOnDate(\Illuminate\Database\Eloquent\Builder $query, \Illuminate\Support\Carbon $date): \Illuminate\Database\Eloquent\Builder
     {
         return $query->whereDate('snapshot_date', $date);
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeBetweenDates(Builder $query, Carbon $from, Carbon $to): Builder
+    public function scopeBetweenDates(\Illuminate\Database\Eloquent\Builder $query, \Illuminate\Support\Carbon $from, \Illuminate\Support\Carbon $to): \Illuminate\Database\Eloquent\Builder
     {
         return $query->whereBetween('snapshot_date', [$from, $to]);
     }
 
     /**
-     * @return Builder<static>
+     * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeLatest(Builder $query): Builder
+    public function scopeLatest(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->orderBy('snapshot_date', 'desc');
     }

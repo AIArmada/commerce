@@ -9,6 +9,8 @@ use App\Listeners\HandleChipPaymentSuccess;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\User;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Filament\Support\Facades\FilamentTimezone;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Event;
@@ -33,6 +35,8 @@ final class AppServiceProvider extends ServiceProvider
             'order' => Order::class,
             'product' => Product::class,
             'user' => User::class,
+            'permission' => Permission::class,
+            'role' => Role::class,
         ]);
 
         // Register CHIP webhook listeners for order processing

@@ -9,7 +9,6 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
@@ -18,9 +17,9 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed> $details
  * @property bool $is_verified
  * @property bool $is_default
- * @property Carbon|null $verified_at
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $verified_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read string $label Computed label from type and details
  * @property-read Affiliate $affiliate
  */
@@ -88,7 +87,7 @@ class AffiliatePayoutMethod extends Model
             PayoutMethodType::BankTransfer => [
                 'bank_name' => $details['bank_name'] ?? null,
                 'account_last_4' => isset($details['account_number'])
-                    ? '****' . mb_substr((string) $details['account_number'], -4)
+                    ? '****'.mb_substr((string) $details['account_number'], -4)
                     : null,
             ],
             PayoutMethodType::PayPal => [
@@ -98,7 +97,7 @@ class AffiliatePayoutMethod extends Model
             ],
             PayoutMethodType::StripeConnect => [
                 'account_id' => isset($details['stripe_account_id'])
-                    ? mb_substr((string) $details['stripe_account_id'], 0, 8) . '...'
+                    ? mb_substr((string) $details['stripe_account_id'], 0, 8).'...'
                     : null,
             ],
             default => [],
@@ -137,9 +136,9 @@ class AffiliatePayoutMethod extends Model
         $domain = $parts[1];
 
         $maskedName = mb_strlen($name) > 2
-            ? mb_substr($name, 0, 2) . str_repeat('*', mb_strlen($name) - 2)
+            ? mb_substr($name, 0, 2).str_repeat('*', mb_strlen($name) - 2)
             : str_repeat('*', mb_strlen($name));
 
-        return $maskedName . '@' . $domain;
+        return $maskedName.'@'.$domain;
     }
 }

@@ -8,21 +8,16 @@ use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Database\Factories\SubscriptionFactory;
-use AIArmada\Vouchers\Services\VoucherService;
-use Akaunting\Money\Money;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use DateTimeZone;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 use LogicException;
@@ -101,7 +96,7 @@ class Subscription extends Model
         $tables = config('cashier-chip.database.tables', []);
         $prefix = config('cashier-chip.database.table_prefix', 'cashier_chip_');
 
-        return $tables['subscriptions'] ?? $prefix . 'subscriptions';
+        return $tables['subscriptions'] ?? $prefix.'subscriptions';
     }
 
     /**
@@ -174,7 +169,7 @@ class Subscription extends Model
      * Get the subscription item for the given price.
      *
      *
-     * @throws ModelNotFoundException
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException
      */
     public function findItemOrFail(string $price): SubscriptionItem
     {
@@ -524,7 +519,7 @@ class Subscription extends Model
      *
      * @return $this
      */
-    public function swap(string | array $prices, array $options = [])
+    public function swap(string|array $prices, array $options = [])
     {
         if (empty($prices = (array) $prices)) {
             throw new InvalidArgumentException('Please provide at least one price when swapping.');
@@ -546,7 +541,7 @@ class Subscription extends Model
                 $quantity = is_array($priceValue) ? ($priceValue['quantity'] ?? 1) : 1;
 
                 $this->items()->create([
-                    'chip_id' => 'si_' . uniqid() . '_' . time(),
+                    'chip_id' => 'si_'.uniqid().'_'.time(),
                     'chip_product' => $options['product'] ?? null,
                     'chip_price' => $price,
                     'quantity' => $quantity,
@@ -591,7 +586,7 @@ class Subscription extends Model
      *
      * @return $this
      */
-    public function cancelAt(DateTimeInterface | int $endsAt)
+    public function cancelAt(DateTimeInterface|int $endsAt)
     {
         if ($endsAt instanceof DateTimeInterface) {
             $endsAt = Carbon::instance($endsAt);
@@ -658,7 +653,7 @@ class Subscription extends Model
     /**
      * Get the current period start date for the subscription.
      */
-    public function currentPeriodStart(DateTimeZone | string | int | null $timezone = null): ?CarbonInterface
+    public function currentPeriodStart(DateTimeZone|string|int|null $timezone = null): ?CarbonInterface
     {
         if (! $this->next_billing_at) {
             return null;
@@ -674,7 +669,7 @@ class Subscription extends Model
     /**
      * Get the current period end date for the subscription.
      */
-    public function currentPeriodEnd(DateTimeZone | string | int | null $timezone = null): ?CarbonInterface
+    public function currentPeriodEnd(DateTimeZone|string|int|null $timezone = null): ?CarbonInterface
     {
         if (! $this->next_billing_at) {
             return null;
@@ -759,9 +754,9 @@ class Subscription extends Model
     /**
      * Get all discounts that apply to the subscription.
      *
-     * @return Collection<int, Discount>
+     * @return \Illuminate\Support\Collection<int, Discount>
      */
-    public function discounts(): Collection
+    public function discounts(): \Illuminate\Support\Collection
     {
         $discount = $this->discount();
 
@@ -863,7 +858,7 @@ class Subscription extends Model
         }
 
         $this->items()->create([
-            'chip_id' => 'si_' . uniqid() . '_' . time(),
+            'chip_id' => 'si_'.uniqid().'_'.time(),
             'chip_product' => $options['product'] ?? null,
             'chip_price' => $price,
             'quantity' => $quantity,
@@ -938,9 +933,9 @@ class Subscription extends Model
     /**
      * Get a collection of the subscription's invoices.
      *
-     * @return Collection<int, Invoice>
+     * @return \Illuminate\Support\Collection<int, Invoice>
      */
-    public function invoices(): Collection
+    public function invoices(): \Illuminate\Support\Collection
     {
         // For CHIP, invoices would need to be tracked separately
         return collect();
@@ -1031,7 +1026,7 @@ class Subscription extends Model
     /**
      * Create a new factory instance for the model.
      *
-     * @return Factory
+     * @return \Illuminate\Database\Eloquent\Factories\Factory
      */
     protected static function newFactory()
     {
@@ -1080,12 +1075,12 @@ class Subscription extends Model
      */
     protected function retrieveCoupon(string $couponId): ?Coupon
     {
-        if (! class_exists(VoucherService::class)) {
+        if (! class_exists(\AIArmada\Vouchers\Services\VoucherService::class)) {
             return null;
         }
 
-        /** @var VoucherService $service */
-        $service = app(VoucherService::class);
+        /** @var \AIArmada\Vouchers\Services\VoucherService $service */
+        $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
 
         $voucherData = $service->find($couponId);
 
@@ -1101,18 +1096,18 @@ class Subscription extends Model
      */
     protected function recordCouponUsage(string $couponId, int $discountAmount): void
     {
-        if (! class_exists(VoucherService::class)) {
+        if (! class_exists(\AIArmada\Vouchers\Services\VoucherService::class)) {
             return;
         }
 
-        /** @var VoucherService $service */
-        $service = app(VoucherService::class);
+        /** @var \AIArmada\Vouchers\Services\VoucherService $service */
+        $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
 
         $currency = $this->owner->preferredCurrency();
 
         $service->recordUsage(
             code: $couponId,
-            discountAmount: Money::$currency($discountAmount),
+            discountAmount: \Akaunting\Money\Money::$currency($discountAmount),
             channel: 'subscription',
             metadata: ['subscription_id' => $this->id],
             redeemedBy: $this->owner,

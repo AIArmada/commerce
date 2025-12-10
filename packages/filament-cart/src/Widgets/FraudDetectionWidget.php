@@ -11,7 +11,6 @@ use Filament\Tables\Actions\Action;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Facades\Log;
 
 /**
  * Widget showing carts with fraud risk indicators.
@@ -23,7 +22,7 @@ final class FraudDetectionWidget extends BaseWidget
 {
     protected static ?int $sort = 3;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected static ?string $heading = 'Fraud Risk Alerts';
 
@@ -138,7 +137,7 @@ final class FraudDetectionWidget extends BaseWidget
 
         $record->update(['metadata' => $metadata]);
 
-        Log::warning('Cart blocked due to fraud risk', [
+        \Illuminate\Support\Facades\Log::warning('Cart blocked due to fraud risk', [
             'cart_id' => $record->id,
             'identifier' => $record->identifier,
             'fraud_score' => $record->fraud_score,

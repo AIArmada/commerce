@@ -8,6 +8,9 @@ use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\AffiliatePayoutService;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
@@ -25,9 +28,9 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
     use InteractsWithForms;
     use InteractsWithTable;
 
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-banknotes';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-banknotes';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Affiliates';
+    protected static string|UnitEnum|null $navigationGroup = 'Affiliates';
 
     protected static ?string $navigationLabel = 'Payout Batch';
 
@@ -56,7 +59,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('amount_minor')
                     ->label('Amount')
-                    ->formatStateUsing(fn ($state, $record): string => Number::currency($state / 100, $record->currency ?? 'USD'))
+                    ->formatStateUsing(fn($state, $record): string => Number::currency($state / 100, $record->currency ?? 'USD'))
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('payoutMethod.type')
@@ -70,10 +73,10 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('currency')
-                    ->options(fn () => AffiliatePayout::distinct()->pluck('currency', 'currency')->toArray()),
+                    ->options(fn() => AffiliatePayout::distinct()->pluck('currency', 'currency')->toArray()),
             ])
             ->actions([
-                Tables\Actions\Action::make('process')
+                Action::make('process')
                     ->label('Process')
                     ->icon('heroicon-o-arrow-right-circle')
                     ->color('success')
@@ -97,7 +100,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                         }
                     }),
 
-                Tables\Actions\Action::make('reject')
+                Action::make('reject')
                     ->label('Reject')
                     ->icon('heroicon-o-x-mark')
                     ->color('danger')
@@ -120,10 +123,10 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                             ->send();
                     }),
 
-                Tables\Actions\ViewAction::make(),
+                ViewAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkAction::make('batch_process')
+                BulkAction::make('batch_process')
                     ->label('Process All Selected')
                     ->icon('heroicon-o-arrow-right-circle')
                     ->color('success')

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Models;
 
-use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Vouchers\Campaigns\Models\Campaign;
 use AIArmada\Vouchers\Campaigns\Models\CampaignVariant;
 use AIArmada\Vouchers\Enums\VoucherStatus;
@@ -18,7 +17,6 @@ use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Carbon;
 
 // Conditional import for affiliate integration
 use function class_exists;
@@ -42,8 +40,8 @@ use function class_exists;
  * @property bool $allows_manual_redemption
  * @property string|null $owner_type
  * @property int|string|null $owner_id
- * @property Carbon|null $starts_at
- * @property Carbon|null $expires_at
+ * @property \Illuminate\Support\Carbon|null $starts_at
+ * @property \Illuminate\Support\Carbon|null $expires_at
  * @property VoucherStatus $status
  * @property array<string, mixed>|null $target_definition
  * @property array<string, mixed>|null $metadata
@@ -53,8 +51,8 @@ use function class_exists;
  * @property string|null $campaign_id
  * @property string|null $campaign_variant_id
  * @property string|null $affiliate_id
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read int $times_used
  * @property-read float|null $usageProgress
  * @property-read string|null $owner_display_name
@@ -66,12 +64,11 @@ use function class_exists;
  * @property-read int $wallet_available_count
  * @property-read Campaign|null $campaign
  * @property-read CampaignVariant|null $campaignVariant
- * @property-read Affiliate|null $affiliate
+ * @property-read \AIArmada\Affiliates\Models\Affiliate|null $affiliate
  */
 class Voucher extends Model
 {
-    use HasFactory;
-    use HasUuids;
+    use HasFactory, HasUuids;
 
     protected $fillable = [
         'code',
@@ -160,12 +157,12 @@ class Voucher extends Model
     /**
      * Get the affiliate that owns this voucher (when aiarmada/affiliates is installed).
      *
-     * @return BelongsTo<Affiliate, Voucher>|BelongsTo<Model, Voucher>
+     * @return BelongsTo<\AIArmada\Affiliates\Models\Affiliate, Voucher>|BelongsTo<Model, Voucher>
      */
     public function affiliate(): BelongsTo
     {
-        if (class_exists(Affiliate::class)) {
-            return $this->belongsTo(Affiliate::class, 'affiliate_id');
+        if (class_exists(\AIArmada\Affiliates\Models\Affiliate::class)) {
+            return $this->belongsTo(\AIArmada\Affiliates\Models\Affiliate::class, 'affiliate_id');
         }
 
         // Fallback to generic model if affiliates package not installed
@@ -249,7 +246,7 @@ class Voucher extends Model
 
     public function isExpired(): bool
     {
-        /** @var Carbon|null $expiresAt */
+        /** @var \Illuminate\Support\Carbon|null $expiresAt */
         $expiresAt = $this->getAttribute('expires_at');
 
         return $expiresAt !== null && $expiresAt->isPast();
@@ -257,7 +254,7 @@ class Voucher extends Model
 
     public function hasStarted(): bool
     {
-        /** @var Carbon|null $startsAt */
+        /** @var \Illuminate\Support\Carbon|null $startsAt */
         $startsAt = $this->getAttribute('starts_at');
 
         return $startsAt === null || $startsAt->isPast();
@@ -423,13 +420,13 @@ class Voucher extends Model
             /** @var int|string $key */
             $key = $owner->getKey();
 
-            return $name ?? $displayName ?? $email ?? class_basename($owner) . ':' . (string) $key;
+            return $name ?? $displayName ?? $email ?? class_basename($owner).':'.(string) $key;
         }
 
         /** @var int|string $key */
         $key = $owner->getKey();
 
-        return class_basename($owner) . ':' . (string) $key;
+        return class_basename($owner).':'.(string) $key;
     }
 
     public function getRemainingUsesAttribute(): ?int
@@ -451,7 +448,7 @@ class Voucher extends Model
             // Value is stored in basis points (e.g., 1000 = 10.00%, 1259 = 12.59%)
             $percentage = $value / 100;
 
-            return mb_rtrim(mb_rtrim(number_format($percentage, 2), '0'), '.') . ' %';
+            return mb_rtrim(mb_rtrim(number_format($percentage, 2), '0'), '.').' %';
         }
 
         // Value is stored as cents

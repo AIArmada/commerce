@@ -47,10 +47,6 @@
 /packages/jnt/ @aiarmada/commerce-core
 /packages/filament-jnt/ @aiarmada/commerce-core
 
-# Package: Stock (Inventory)
-/packages/stock/ @aiarmada/commerce-core
-/packages/filament-stock/ @aiarmada/commerce-core
-
 # Package: Permissions
 /packages/filament-permissions/ @aiarmada/commerce-core
 

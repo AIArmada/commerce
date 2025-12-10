@@ -21,12 +21,13 @@ composer require aiarmada/commerce
 This meta-package includes:
 - `aiarmada/commerce-support` - Core utilities
 - `aiarmada/cart` - Shopping cart
-- `aiarmada/stock` - Inventory management
+- `aiarmada/inventory` - Inventory and allocation
 - `aiarmada/vouchers` - Voucher system
 - `aiarmada/chip` - CHIP payment gateway
 - `aiarmada/jnt` - J&T Express shipping
 - `aiarmada/docs` - Documentation
 - `aiarmada/filament-cart` - Filament cart admin
+- `aiarmada/filament-inventory` - Filament inventory admin
 - `aiarmada/filament-chip` - Filament payment admin
 - `aiarmada/filament-vouchers` - Filament voucher admin
 
@@ -37,7 +38,7 @@ Pick only what you need:
 ```bash
 # Core packages
 composer require aiarmada/cart
-composer require aiarmada/stock
+composer require aiarmada/inventory
 composer require aiarmada/vouchers
 
 # Payment gateway
@@ -48,6 +49,7 @@ composer require aiarmada/jnt
 
 # Filament admin interfaces
 composer require aiarmada/filament-cart
+composer require aiarmada/filament-inventory
 composer require aiarmada/filament-chip
 composer require aiarmada/filament-vouchers
 ```
@@ -78,7 +80,6 @@ If you prefer manual configuration, add to your `.env` file:
 
 ```env
 # Cart Configuration
-CART_STORAGE_DRIVER=database
 CART_DEFAULT_CURRENCY=MYR
 
 # CHIP Payment Gateway (if using)
@@ -99,8 +100,6 @@ COMMERCE_JSON_COLUMN_TYPE=jsonb
 
 ### 3. Publish Configuration Files (Optional)
 
-### 3. Publish Configuration Files (Optional)
-
 Only publish if you need to customize default behavior:
 
 ```bash
@@ -111,11 +110,9 @@ php artisan vendor:publish --tag=commerce-config
 php artisan vendor:publish --tag=cart-config
 php artisan vendor:publish --tag=chip-config
 php artisan vendor:publish --tag=jnt-config
-php artisan vendor:publish --tag=stock-config
+php artisan vendor:publish --tag=inventory-config
 php artisan vendor:publish --tag=vouchers-config
 ```
-
-### 4. Run Migrations
 
 ### 4. Run Migrations
 
@@ -195,24 +192,24 @@ $result = Jnt::createOrder([
 
 Configuration file: `config/jnt.php`
 
-### Stock Management
+### Inventory Management
 
-Track inventory:
+Track inventory and allocations:
 
 ```php
-use AIArmada\Stock\Facades\Stock;
+use AIArmada\Inventory\Facades\Inventory;
 
-// Add stock
-Stock::add($product, 100, 'restock');
+// Add on-hand quantity
+Inventory::add($product, 100, reason: 'restock');
 
-// Remove stock
-Stock::remove($product, 5, 'sale');
+// Deduct when fulfilling
+Inventory::deduct($product, 5, reason: 'sale');
 
-// Check available
-$available = Stock::available($product);
+// Check available across locations
+$available = Inventory::available($product);
 ```
 
-Configuration file: `config/stock.php`
+Configuration file: `config/inventory.php`
 
 ### Vouchers
 
@@ -241,6 +238,7 @@ public function panel(Panel $panel): Panel
 {
     return $panel
         ->plugin(\AIArmada\FilamentCart\FilamentCartPlugin::make())
+        ->plugin(\AIArmada\FilamentInventory\FilamentInventoryPlugin::make())
         ->plugin(\AIArmada\FilamentChip\FilamentChipPlugin::make())
         ->plugin(\AIArmada\FilamentVouchers\FilamentVouchersPlugin::make());
 }
