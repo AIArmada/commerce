@@ -14,7 +14,7 @@ AIArmada Commerce is a comprehensive Laravel e-commerce monorepo providing produ
 - 💳 **CHIP Payment Gateway** with webhook support
 - 🎟️ **Voucher System** with flexible conditions
 - 📦 **J&T Shipping** integration
-- 📊 **Stock Management** with reservations
+- 🏬 **Inventory Management** with multi-location allocations
 - 🎨 **Filament Admin Panels** for all packages
 - 🧪 **Comprehensive Testing** with Pest v4
 - 📚 **Extensive Documentation** with code examples
@@ -101,7 +101,7 @@ Deep dive into each package:
 | **aiarmada/chip** | CHIP payment gateway | [CHIP Docs](03-packages/02-chip.md) |
 | **aiarmada/vouchers** | Voucher/coupon system | [Vouchers Docs](03-packages/03-vouchers.md) |
 | **aiarmada/jnt** | J&T Express shipping | [JNT Docs](03-packages/04-jnt.md) |
-| **aiarmada/stock** | Inventory management | [Stock Docs](03-packages/05-stock.md) |
+| **aiarmada/inventory** | Multi-location inventory | [Inventory README](../packages/inventory/README.md) |
 | **aiarmada/docs** | Documentation package | [Docs Docs](03-packages/06-docs.md) |
 | **aiarmada/filament-cart** | Cart admin panel | [Filament Cart Docs](03-packages/07-filament-cart.md) |
 | **aiarmada/filament-chip** | Payment admin panel | [Filament CHIP Docs](03-packages/08-filament-chip.md) |
@@ -133,7 +133,7 @@ Advanced topics and maintenance:
 | **aiarmada/chip** | | ✅ | | | |
 | **aiarmada/vouchers** | | | ✅ | | |
 | **aiarmada/jnt** | | | | ✅ | |
-| **aiarmada/stock** | | | | | ✅ |
+| **aiarmada/inventory** | | | | | ✅ |
 
 ### Filament Plugins
 
@@ -187,13 +187,13 @@ Advanced topics and maintenance:
 - Webhook support
 - Multi-origin support
 
-### 📊 Stock (`aiarmada/stock`)
+### 🏬 Inventory (`aiarmada/inventory`)
 
-- Product-level inventory tracking
-- Stock reservations during checkout
-- Low stock alerts
-- Multi-location support
-- Stock movement history
+- Multi-location inventory tracking
+- Cart allocations/reservations with TTL
+- Low/out-of-inventory alerts
+- Movement history and cost layers
+- Batch/serial/backorder support
 
 ---
 

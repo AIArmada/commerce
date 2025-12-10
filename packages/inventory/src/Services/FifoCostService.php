@@ -6,7 +6,6 @@ namespace AIArmada\Inventory\Services;
 
 use AIArmada\Inventory\Enums\CostingMethod;
 use AIArmada\Inventory\Models\InventoryCostLayer;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
@@ -166,9 +165,9 @@ final class FifoCostService
     /**
      * Get all active layers for a model.
      *
-     * @return Collection<int, InventoryCostLayer>
+     * @return \Illuminate\Database\Eloquent\Collection<int, InventoryCostLayer>
      */
-    public function getActiveLayers(Model $model, ?string $locationId = null): Collection
+    public function getActiveLayers(Model $model, ?string $locationId = null): \Illuminate\Database\Eloquent\Collection
     {
         $query = InventoryCostLayer::query()
             ->forModel($model)

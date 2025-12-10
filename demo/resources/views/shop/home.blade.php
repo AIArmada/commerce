@@ -23,6 +23,26 @@
         </div>
     </section>
 
+    <!-- Quick Actions Bar -->
+    <section class="bg-gray-900 text-white py-4">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex flex-wrap items-center justify-center gap-6 text-sm">
+                <a href="{{ route('shop.tracking') }}" class="flex items-center gap-2 hover:text-amber-400 transition">
+                    <span>📦</span> Track Your Order
+                </a>
+                <a href="{{ route('shop.gift-cards') }}" class="flex items-center gap-2 hover:text-amber-400 transition">
+                    <span>🎁</span> Gift Cards
+                </a>
+                <a href="{{ route('shop.orders') }}" class="flex items-center gap-2 hover:text-amber-400 transition">
+                    <span>📋</span> Order History
+                </a>
+                <a href="/admin" class="flex items-center gap-2 hover:text-amber-400 transition">
+                    <span>⚙️</span> Admin Panel
+                </a>
+            </div>
+        </div>
+    </section>
+
     <!-- Featured Categories -->
     <section class="max-w-7xl mx-auto px-4 py-16 sm:px-6 lg:px-8">
         <h2 class="text-3xl font-bold text-gray-900 mb-8 text-center">Shop by Category</h2>
@@ -106,7 +126,7 @@
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-xs {{ $product->isInStock() ? 'text-green-600' : 'text-red-600' }}">
-                                {{ $product->isInStock() ? '✓ In Stock ('.$product->stock_quantity.')' : '✗ Out of Stock' }}
+                                {{ $product->isInStock() ? '✓ In Stock ('.$product->available_stock.')' : '✗ Out of Stock' }}
                             </span>
                         </div>
                         <form action="{{ route('shop.cart.add') }}" method="POST" class="mt-3">
@@ -143,8 +163,8 @@
                 </div>
                 <div class="bg-white/10 rounded-2xl p-6 backdrop-blur">
                     <div class="text-4xl mb-4">📦</div>
-                    <h3 class="text-xl font-semibold mb-2">Stock Management</h3>
-                    <p class="text-gray-300">Real-time inventory tracking, reservations, and low stock alerts.</p>
+                    <h3 class="text-xl font-semibold mb-2">Inventory Management</h3>
+                    <p class="text-gray-300">Multi-location inventory with reservations, allocations, and low inventory alerts.</p>
                 </div>
                 <div class="bg-white/10 rounded-2xl p-6 backdrop-blur">
                     <div class="text-4xl mb-4">🤝</div>

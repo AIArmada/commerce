@@ -11,7 +11,6 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Cart\Facades\Cart;
-use AIArmada\Stock\Models\StockTransaction;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
@@ -590,114 +589,9 @@ final class ShowcaseSeeder extends Seeder
 
     private function seedStockTransactions(): void
     {
-        $this->command->info('📦 Generating Stock History...');
-
-        $products = Product::all();
-        $users = User::all();
-
-        if ($products->isEmpty()) {
-            $this->command->warn('   ⚠ No products found - skipping stock seeding');
-
-            return;
-        }
-
-        $transactionCount = 0;
-
-        foreach ($products as $product) {
-            // Initial stock received (large purchase order)
-            $initialStock = rand(100, 500);
-            StockTransaction::create([
-                'stockable_type' => Product::class,
-                'stockable_id' => $product->id,
-                'user_id' => $users->first()?->id,
-                'type' => 'in',
-                'quantity' => $initialStock,
-                'reason' => 'purchase',
-                'note' => 'Initial inventory - PO#' . rand(10000, 99999),
-                'transaction_date' => now()->subDays(90),
-            ]);
-            $transactionCount++;
-
-            // Simulate sales over time
-            $salesCount = rand(10, 30);
-            for ($i = 0; $i < $salesCount; $i++) {
-                StockTransaction::create([
-                    'stockable_type' => Product::class,
-                    'stockable_id' => $product->id,
-                    'user_id' => $users->random()->id,
-                    'type' => 'out',
-                    'quantity' => rand(1, 5),
-                    'reason' => 'sale',
-                    'note' => 'Order ORD-' . Str::upper(Str::random(8)),
-                    'transaction_date' => now()->subDays(rand(1, 85)),
-                ]);
-                $transactionCount++;
-            }
-
-            // Restocks
-            $restockCount = rand(1, 3);
-            for ($i = 0; $i < $restockCount; $i++) {
-                StockTransaction::create([
-                    'stockable_type' => Product::class,
-                    'stockable_id' => $product->id,
-                    'user_id' => $users->first()?->id,
-                    'type' => 'in',
-                    'quantity' => rand(50, 200),
-                    'reason' => 'restock',
-                    'note' => 'Restock - PO#' . rand(10000, 99999),
-                    'transaction_date' => now()->subDays(rand(1, 60)),
-                ]);
-                $transactionCount++;
-            }
-
-            // Random adjustments (inventory audits)
-            if (rand(0, 10) > 7) {
-                $adjustType = rand(0, 1) ? 'in' : 'out';
-                StockTransaction::create([
-                    'stockable_type' => Product::class,
-                    'stockable_id' => $product->id,
-                    'user_id' => $users->random()->id,
-                    'type' => $adjustType,
-                    'quantity' => rand(1, 10),
-                    'reason' => 'adjustment',
-                    'note' => 'Inventory audit correction',
-                    'transaction_date' => now()->subDays(rand(1, 30)),
-                ]);
-                $transactionCount++;
-            }
-
-            // Customer returns
-            if (rand(0, 10) > 6) {
-                StockTransaction::create([
-                    'stockable_type' => Product::class,
-                    'stockable_id' => $product->id,
-                    'user_id' => $users->random()->id,
-                    'type' => 'in',
-                    'quantity' => rand(1, 3),
-                    'reason' => 'return',
-                    'note' => 'Customer return - RMA#' . rand(1000, 9999),
-                    'transaction_date' => now()->subDays(rand(1, 30)),
-                ]);
-                $transactionCount++;
-            }
-
-            // Damaged goods
-            if (rand(0, 10) > 8) {
-                StockTransaction::create([
-                    'stockable_type' => Product::class,
-                    'stockable_id' => $product->id,
-                    'user_id' => $users->random()->id,
-                    'type' => 'out',
-                    'quantity' => rand(1, 5),
-                    'reason' => 'damaged',
-                    'note' => 'Damaged during handling - written off',
-                    'transaction_date' => now()->subDays(rand(1, 45)),
-                ]);
-                $transactionCount++;
-            }
-        }
-
-        $this->command->info('   ✓ Created ' . $transactionCount . ' stock transactions');
+        // NOTE: Inventory is now handled by InventorySeeder with multi-location support
+        // This method is kept for backwards compatibility but delegates to the new system
+        $this->command->info('📦 Inventory handled by InventorySeeder (multi-location)');
     }
 
     private function seedCarts(): void

@@ -19,7 +19,7 @@ final class RedemptionTrendChart extends ChartWidget
 
     protected static ?int $sort = 2;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected function getFilters(): ?array
     {
@@ -86,9 +86,9 @@ final class RedemptionTrendChart extends ChartWidget
 
         /** @var Collection<string, object{date: string, count: int}> $redemptions */
         $redemptions = VoucherUsage::query()
-            ->selectRaw('DATE(created_at) as date, COUNT(*) as count')
-            ->where('created_at', '>=', $startDate)
-            ->where('created_at', '<=', $endDate)
+            ->selectRaw('DATE(used_at) as date, COUNT(*) as count')
+            ->where('used_at', '>=', $startDate)
+            ->where('used_at', '<=', $endDate)
             ->groupBy('date')
             ->orderBy('date')
             ->get()

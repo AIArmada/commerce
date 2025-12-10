@@ -34,19 +34,19 @@ Shopping cart with conditions and persistence.
 composer require aiarmada/cart
 ```
 
-### stock
+### inventory
 
-Inventory and stock management.
+Multi-location inventory and allocation management.
 
 | Feature | Description |
 |---------|-------------|
 | Stock Levels | Track quantity per location |
-| Reservations | Hold stock during checkout |
-| Movements | Track stock in/out |
-| Low Stock | Alerts and notifications |
+| Allocations | Reserve inventory by cart/order |
+| Movements | Track inbound/outbound movements |
+| Low Stock | Alerts and replenishment signals |
 
 ```bash
-composer require aiarmada/stock
+composer require aiarmada/inventory
 ```
 
 ### vouchers
@@ -149,18 +149,18 @@ Cart management admin panel.
 composer require aiarmada/filament-cart
 ```
 
-### filament-stock
+### filament-inventory
 
-Stock management admin panel.
+Inventory management admin panel.
 
 | Feature | Description |
 |---------|-------------|
-| Stock Levels | View/edit stock |
-| Movements | Stock history |
+| Stock Levels | View/edit inventory levels |
+| Movements | Inventory history |
 | Locations | Multi-location support |
 
 ```bash
-composer require aiarmada/filament-stock
+composer require aiarmada/filament-inventory
 ```
 
 ### filament-vouchers
@@ -239,8 +239,8 @@ composer require aiarmada/filament-authz
 ### E-commerce Store
 
 ```bash
-composer require aiarmada/cart aiarmada/vouchers aiarmada/stock aiarmada/chip
-composer require aiarmada/filament-cart aiarmada/filament-vouchers aiarmada/filament-stock aiarmada/filament-chip
+composer require aiarmada/cart aiarmada/vouchers aiarmada/inventory aiarmada/chip
+composer require aiarmada/filament-cart aiarmada/filament-vouchers aiarmada/filament-inventory aiarmada/filament-chip
 ```
 
 ### Invoice System

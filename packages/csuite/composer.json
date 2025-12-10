@@ -20,10 +20,10 @@
         "aiarmada/filament-docs": "self.version",
         "aiarmada/filament-jnt": "self.version",
         "aiarmada/filament-authz": "self.version",
-        "aiarmada/filament-stock": "self.version",
         "aiarmada/filament-vouchers": "self.version",
         "aiarmada/jnt": "self.version",
-        "aiarmada/stock": "self.version",
+        "aiarmada/filament-inventory": "self.version",
+        "aiarmada/inventory": "self.version",
         "aiarmada/vouchers": "self.version"
     },
     "config": {

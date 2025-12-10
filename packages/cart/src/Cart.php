@@ -57,7 +57,7 @@ final class Cart implements CheckoutableInterface
     ) {
         // Cart is now created when first item is added, not during instantiation
         $this->conditionResolver = $conditionResolver
-            ?? (function_exists('app') ? app(CartConditionResolver::class) : new CartConditionResolver);
+            ?? (function_exists('app') ? app(CartConditionResolver::class) : new CartConditionResolver());
 
         // Set rate limiter if provided or resolve from container
         if ($rateLimiter !== null) {
@@ -83,7 +83,7 @@ final class Cart implements CheckoutableInterface
      */
     public function evaluateConditionPipeline(?callable $configure = null): ConditionPipelineResult
     {
-        $pipeline = new ConditionPipeline;
+        $pipeline = new ConditionPipeline();
 
         if ($configure !== null) {
             $configure($pipeline);

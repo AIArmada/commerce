@@ -6,6 +6,7 @@ namespace AIArmada\FilamentAffiliates\Widgets;
 
 use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use Filament\Actions\Action;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -14,7 +15,7 @@ final class PayoutQueueWidget extends BaseWidget
 {
     protected static ?int $sort = 4;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected ?string $pollingInterval = '60s';
 
@@ -42,7 +43,7 @@ final class PayoutQueueWidget extends BaseWidget
 
                 Tables\Columns\TextColumn::make('amount_minor')
                     ->label('Amount')
-                    ->money(fn ($record) => $record->currency, divideBy: 100)
+                    ->money(fn($record) => $record->currency, divideBy: 100)
                     ->sortable(),
 
                 Tables\Columns\BadgeColumn::make('status')
@@ -56,16 +57,16 @@ final class PayoutQueueWidget extends BaseWidget
                     ->counts('conversions'),
             ])
             ->actions([
-                Tables\Actions\Action::make('process')
+                Action::make('process')
                     ->icon('heroicon-o-play')
                     ->color('success')
                     ->requiresConfirmation()
-                    ->visible(fn ($record) => $record->status === PayoutStatus::Pending->value)
-                    ->action(fn ($record) => $record->update(['status' => PayoutStatus::Processing->value])),
+                    ->visible(fn($record) => $record->status === PayoutStatus::Pending->value)
+                    ->action(fn($record) => $record->update(['status' => PayoutStatus::Processing->value])),
 
-                Tables\Actions\Action::make('view')
+                Action::make('view')
                     ->icon('heroicon-o-eye')
-                    ->url(fn ($record) => route('filament.admin.resources.affiliate-payouts.view', $record)),
+                    ->url(fn($record) => route('filament.admin.resources.affiliate-payouts.view', $record)),
             ])
             ->paginated(false)
             ->emptyStateHeading('No pending payouts')

@@ -78,7 +78,7 @@
                     </svg>
                     <div>
                         <p class="font-semibold text-green-800">In Stock</p>
-                        <p class="text-sm text-green-600">{{ $product->stock_quantity }} units available</p>
+                        <p class="text-sm text-green-600">{{ $product->available_stock }} units available</p>
                     </div>
                     @else
                     <svg class="h-6 w-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
@@ -136,9 +136,9 @@
                             <button type="button" onclick="decrementQty()" 
                                     class="px-4 py-2 text-gray-600 hover:bg-gray-100">−</button>
                             <input type="number" id="quantity" name="quantity" value="1" min="1" 
-                                   max="{{ $product->stock_quantity }}"
+                                   max="{{ $product->track_stock ? $product->available_stock : '' }}"
                                    class="w-16 text-center border-0 focus:ring-0">
-                            <button type="button" onclick="incrementQty({{ $product->stock_quantity }})" 
+                                <button type="button" onclick="incrementQty({{ $product->track_stock ? $product->available_stock : 'null' }})" 
                                     class="px-4 py-2 text-gray-600 hover:bg-gray-100">+</button>
                         </div>
                     </div>
@@ -221,7 +221,15 @@
         function incrementQty(max) {
             const input = document.getElementById('quantity');
             const current = parseInt(input.value);
-            if (current < max) {
+            const limit = Number(max);
+
+            if (Number.isNaN(limit) || limit <= 0) {
+                input.value = current + 1;
+
+                return;
+            }
+
+            if (current < limit) {
                 input.value = current + 1;
             }
         }

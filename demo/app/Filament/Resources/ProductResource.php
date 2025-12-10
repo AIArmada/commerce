@@ -11,12 +11,12 @@ use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
+use Filament\Forms\Components\Checkbox;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Resources\Resource;
-use Filament\Schemas\Components\Checkbox;
-use Filament\Schemas\Components\RichEditor;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Select;
-use Filament\Schemas\Components\TextInput;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\IconColumn;
@@ -31,9 +31,9 @@ final class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
-    protected static string | BackedEnum | null $navigationIcon = Heroicon::ShoppingBag;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::ShoppingBag;
 
-    protected static string | UnitEnum | null $navigationGroup = 'Commerce';
+    protected static string|UnitEnum|null $navigationGroup = 'Commerce';
 
     protected static ?int $navigationSort = 2;
 
@@ -91,9 +91,13 @@ final class ProductResource extends Resource
                         Checkbox::make('track_stock')
                             ->default(true),
 
-                        TextInput::make('stock_quantity')
+                        TextInput::make('available_stock')
+                            ->label('Available (all locations)')
                             ->numeric()
-                            ->default(0),
+                            ->default(0)
+                            ->dehydrated(false)
+                            ->disabled()
+                            ->formatStateUsing(fn (?Product $record): int => $record?->available_stock ?? 0),
 
                         TextInput::make('low_stock_threshold')
                             ->numeric()
@@ -127,10 +131,11 @@ final class ProductResource extends Resource
                 TextColumn::make('formatted_price')
                     ->label('Price'),
 
-                TextColumn::make('stock_quantity')
-                    ->label('Stock')
+                TextColumn::make('available_stock')
+                    ->label('Inventory')
                     ->sortable()
-                    ->color(fn (Product $record): string => $record->isLowStock() ? 'warning' : ($record->isOutOfStock() ? 'danger' : 'success')),
+                    ->state(fn(Product $record): int => $record->available_stock)
+                    ->color(fn(Product $record): string => $record->isLowInventory() ? 'warning' : ($record->isOutOfStock() ? 'danger' : 'success')),
 
                 IconColumn::make('is_active')
                     ->boolean(),
@@ -148,16 +153,16 @@ final class ProductResource extends Resource
 
                 TernaryFilter::make('track_stock'),
             ])
-            ->recordActions([
+            ->actions([
                 ViewAction::make(),
                 EditAction::make(),
                 DeleteAction::make(),
             ])
-            ->toolbarActions([
+            ->bulkActions([
                 BulkAction::make('delete')
                     ->label('Delete Selected')
                     ->requiresConfirmation()
-                    ->action(fn (Collection $records) => $records->each->delete())
+                    ->action(fn(Collection $records) => $records->each->delete())
                     ->deselectRecordsAfterCompletion(),
             ]);
     }

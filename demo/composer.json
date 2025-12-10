@@ -36,10 +36,6 @@
         },
         {
             "type": "path",
-            "url": "../packages/stock"
-        },
-        {
-            "type": "path",
             "url": "../packages/affiliates"
         },
         {
@@ -53,10 +49,6 @@
         {
             "type": "path",
             "url": "../packages/filament-vouchers"
-        },
-        {
-            "type": "path",
-            "url": "../packages/filament-stock"
         },
         {
             "type": "path",
@@ -94,12 +86,10 @@
         "aiarmada/chip": "*",
         "aiarmada/commerce-support": "*",
         "aiarmada/vouchers": "*",
-        "aiarmada/stock": "*",
         "aiarmada/affiliates": "*",
         "aiarmada/jnt": "*",
         "aiarmada/filament-cart": "*",
         "aiarmada/filament-vouchers": "*",
-        "aiarmada/filament-stock": "*",
         "aiarmada/filament-affiliates": "*",
         "aiarmada/filament-chip": "*",
         "aiarmada/filament-jnt": "*",
