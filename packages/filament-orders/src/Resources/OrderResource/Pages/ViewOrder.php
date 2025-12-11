@@ -7,6 +7,9 @@ namespace AIArmada\FilamentOrders\Resources\OrderResource\Pages;
 use AIArmada\FilamentOrders\Resources\OrderResource;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Services\OrderService;
+use AIArmada\Orders\States\PendingPayment;
+use AIArmada\Orders\States\Processing;
+use AIArmada\Orders\States\Shipped;
 use Filament\Actions;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
@@ -56,7 +59,7 @@ class ViewOrder extends ViewRecord
 
                     $this->refreshFormData(['status', 'paid_at']);
                 })
-                ->visible(fn (Order $record) => $record->status::$name === 'pending_payment'),
+                ->visible(fn (Order $record) => $record->status instanceof PendingPayment),
 
             Actions\Action::make('ship_order')
                 ->label('Ship Order')
@@ -87,7 +90,7 @@ class ViewOrder extends ViewRecord
 
                     $this->refreshFormData(['status', 'shipped_at']);
                 })
-                ->visible(fn (Order $record) => $record->status::$name === 'processing'),
+                ->visible(fn (Order $record) => $record->status instanceof Processing),
 
             Actions\Action::make('confirm_delivery')
                 ->label('Confirm Delivery')
@@ -105,7 +108,7 @@ class ViewOrder extends ViewRecord
 
                     $this->refreshFormData(['status', 'delivered_at']);
                 })
-                ->visible(fn (Order $record) => $record->status::$name === 'shipped'),
+                ->visible(fn (Order $record) => $record->status instanceof Shipped),
 
             Actions\Action::make('cancel_order')
                 ->label('Cancel Order')

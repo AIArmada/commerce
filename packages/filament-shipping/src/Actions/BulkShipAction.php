@@ -8,9 +8,9 @@ use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Services\BatchRateLimiter;
 use AIArmada\Shipping\Services\ShipmentService;
+use Filament\Actions\BulkAction;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Actions\BulkAction;
 use Illuminate\Database\Eloquent\Collection;
 
 class BulkShipAction extends BulkAction

@@ -6,9 +6,9 @@ namespace AIArmada\FilamentShipping\Actions;
 
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\ShippingManager;
+use Filament\Actions\BulkAction;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Actions\BulkAction;
 use Illuminate\Database\Eloquent\Collection;
 use Throwable;
 

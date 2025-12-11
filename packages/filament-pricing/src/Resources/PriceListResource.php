@@ -7,31 +7,35 @@ namespace AIArmada\FilamentPricing\Resources;
 use AIArmada\FilamentPricing\Resources\PriceListResource\Pages;
 use AIArmada\FilamentPricing\Resources\PriceListResource\RelationManagers;
 use AIArmada\Pricing\Models\PriceList;
+use BackedEnum;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class PriceListResource extends Resource
 {
     protected static ?string $model = PriceList::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-currency-dollar';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-currency-dollar';
 
-    protected static ?string $navigationGroup = 'Pricing';
+    protected static string | UnitEnum | null $navigationGroup = 'Pricing';
 
     protected static ?int $navigationSort = 1;
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Group::make()
+                Group::make()
                     ->schema([
-                        Forms\Components\Section::make('Price List Details')
+                        Section::make('Price List Details')
                             ->schema([
                                 Forms\Components\TextInput::make('name')
                                     ->label('Name')
@@ -65,7 +69,7 @@ class PriceListResource extends Resource
                             ])
                             ->columns(2),
 
-                        Forms\Components\Section::make('Scheduling')
+                        Section::make('Scheduling')
                             ->schema([
                                 Forms\Components\DateTimePicker::make('starts_at')
                                     ->label('Start Date'),
@@ -77,9 +81,9 @@ class PriceListResource extends Resource
                     ])
                     ->columnSpan(['lg' => 2]),
 
-                Forms\Components\Group::make()
+                Group::make()
                     ->schema([
-                        Forms\Components\Section::make('Settings')
+                        Section::make('Settings')
                             ->schema([
                                 Forms\Components\Toggle::make('is_active')
                                     ->label('Active')

@@ -36,10 +36,8 @@ class TopSellingProductsWidget extends BaseWidget
                     ->limit(10)
             )
             ->columns([
-                Tables\Columns\SpatieMediaLibraryImageColumn::make('media')
+                Tables\Columns\ImageColumn::make('hero_image')
                     ->label('')
-                    ->collection('hero')
-                    ->conversion('thumb')
                     ->circular()
                     ->width(50)
                     ->height(50),

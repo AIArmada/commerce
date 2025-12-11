@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\Pages;
 
+use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCustomers\Resources\CustomerResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
@@ -33,9 +34,9 @@ class ViewCustomer extends ViewRecord
                         ->label('Reason')
                         ->rows(2),
                 ])
-                ->action(function (array $data): void {
+                ->action(function (Customer $record, array $data): void {
                     $amountInCents = (int) ($data['amount'] * 100);
-                    $this->record->addCredit($amountInCents, $data['reason'] ?? null);
+                    $record->addCredit($amountInCents, $data['reason'] ?? null);
 
                     \Filament\Notifications\Notification::make()
                         ->success()
@@ -60,10 +61,10 @@ class ViewCustomer extends ViewRecord
                         ->label('Reason')
                         ->rows(2),
                 ])
-                ->action(function (array $data): void {
+                ->action(function (Customer $record, array $data): void {
                     $amountInCents = (int) ($data['amount'] * 100);
 
-                    if (! $this->record->deductCredit($amountInCents, $data['reason'] ?? null)) {
+                    if (! $record->deductCredit($amountInCents, $data['reason'] ?? null)) {
                         \Filament\Notifications\Notification::make()
                             ->danger()
                             ->title('Insufficient Balance')

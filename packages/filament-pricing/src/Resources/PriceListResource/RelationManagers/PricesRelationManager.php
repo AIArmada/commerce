@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPricing\Resources\PriceListResource\RelationManagers;
 
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -16,9 +16,9 @@ class PricesRelationManager extends RelationManager
 
     protected static ?string $title = 'Prices';
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Forms\Components\MorphToSelect::make('priceable')
                     ->label('Product/Variant')

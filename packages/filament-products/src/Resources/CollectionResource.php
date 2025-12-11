@@ -7,22 +7,35 @@ namespace AIArmada\FilamentProducts\Resources;
 use AIArmada\FilamentProducts\Resources\CollectionResource\Pages;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Collection;
-use Filament\Forms;
-use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
-use Filament\Forms\Form;
-use Filament\Infolists;
-use Filament\Infolists\Infolist;
+use BackedEnum;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Set;
+use Filament\Infolists\Components\IconEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class CollectionResource extends Resource
 {
     protected static ?string $model = Collection::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static ?string $navigationGroup = 'Catalog';
+    protected static string | UnitEnum | null $navigationGroup = 'Catalog';
 
     protected static ?int $navigationSort = 3;
 
@@ -33,38 +46,38 @@ class CollectionResource extends Resource
         return static::getModel()::where('is_visible', true)->count() ?: null;
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Group::make()
+                Group::make()
                     ->schema([
-                        Forms\Components\Section::make('Collection Information')
+                        Section::make('Collection Information')
                             ->schema([
-                                Forms\Components\TextInput::make('name')
+                                TextInput::make('name')
                                     ->label('Collection Name')
                                     ->required()
                                     ->maxLength(255)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(
-                                        fn (Forms\Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
+                                        fn (Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
                                     ),
 
-                                Forms\Components\TextInput::make('slug')
+                                TextInput::make('slug')
                                     ->label('URL Slug')
                                     ->required()
                                     ->maxLength(100)
                                     ->unique(ignoreRecord: true),
 
-                                Forms\Components\MarkdownEditor::make('description')
+                                MarkdownEditor::make('description')
                                     ->label('Description')
                                     ->columnSpanFull(),
                             ])
                             ->columns(2),
 
-                        Forms\Components\Section::make('Collection Type')
+                        Section::make('Collection Type')
                             ->schema([
-                                Forms\Components\Radio::make('type')
+                                Radio::make('type')
                                     ->label('Type')
                                     ->options([
                                         'manual' => 'Manual - Add products individually',
@@ -74,10 +87,10 @@ class CollectionResource extends Resource
                                     ->required()
                                     ->live(),
 
-                                Forms\Components\Repeater::make('conditions')
+                                Repeater::make('conditions')
                                     ->label('Conditions')
                                     ->schema([
-                                        Forms\Components\Select::make('field')
+                                        Select::make('field')
                                             ->label('Field')
                                             ->options([
                                                 'price_min' => 'Minimum Price',
@@ -90,12 +103,12 @@ class CollectionResource extends Resource
                                             ->required()
                                             ->live(),
 
-                                        Forms\Components\TextInput::make('value')
+                                        TextInput::make('value')
                                             ->label('Value')
                                             ->required()
-                                            ->visible(fn (Forms\Get $get) => in_array($get('field'), ['price_min', 'price_max', 'tag'])),
+                                            ->visible(fn (Get $get) => in_array($get('field'), ['price_min', 'price_max', 'tag'])),
 
-                                        Forms\Components\Select::make('value')
+                                        Select::make('value')
                                             ->label('Value')
                                             ->options([
                                                 'simple' => 'Simple',
@@ -104,43 +117,43 @@ class CollectionResource extends Resource
                                                 'digital' => 'Digital',
                                                 'subscription' => 'Subscription',
                                             ])
-                                            ->visible(fn (Forms\Get $get) => $get('field') === 'type'),
+                                            ->visible(fn (Get $get) => $get('field') === 'type'),
 
-                                        Forms\Components\Select::make('value')
+                                        Select::make('value')
                                             ->label('Category')
                                             ->options(fn () => Category::pluck('name', 'id'))
                                             ->searchable()
-                                            ->visible(fn (Forms\Get $get) => $get('field') === 'category'),
+                                            ->visible(fn (Get $get) => $get('field') === 'category'),
 
-                                        Forms\Components\Toggle::make('value')
+                                        Toggle::make('value')
                                             ->label('Is Featured')
-                                            ->visible(fn (Forms\Get $get) => $get('field') === 'is_featured'),
+                                            ->visible(fn (Get $get) => $get('field') === 'is_featured'),
                                     ])
                                     ->columns(2)
                                     ->addActionLabel('Add Condition')
-                                    ->visible(fn (Forms\Get $get) => $get('type') === 'automatic'),
+                                    ->visible(fn (Get $get) => $get('type') === 'automatic'),
                             ]),
 
-                        Forms\Components\Section::make('Scheduling')
+                        Section::make('Scheduling')
                             ->schema([
-                                Forms\Components\DateTimePicker::make('published_at')
+                                DateTimePicker::make('published_at')
                                     ->label('Publish At')
                                     ->helperText('Leave blank to publish immediately'),
 
-                                Forms\Components\DateTimePicker::make('unpublished_at')
+                                DateTimePicker::make('unpublished_at')
                                     ->label('Unpublish At')
                                     ->helperText('Leave blank to keep published'),
                             ])
                             ->columns(2)
                             ->collapsible(),
 
-                        Forms\Components\Section::make('SEO')
+                        Section::make('SEO')
                             ->schema([
-                                Forms\Components\TextInput::make('meta_title')
+                                TextInput::make('meta_title')
                                     ->label('Meta Title')
                                     ->maxLength(70),
 
-                                Forms\Components\Textarea::make('meta_description')
+                                Textarea::make('meta_description')
                                     ->label('Meta Description')
                                     ->rows(3)
                                     ->maxLength(160),
@@ -149,43 +162,39 @@ class CollectionResource extends Resource
                     ])
                     ->columnSpan(['lg' => 2]),
 
-                Forms\Components\Group::make()
+                Group::make()
                     ->schema([
-                        Forms\Components\Section::make('Display')
+                        Section::make('Display')
                             ->schema([
-                                Forms\Components\TextInput::make('position')
+                                TextInput::make('position')
                                     ->label('Position')
                                     ->numeric()
                                     ->default(0),
 
-                                Forms\Components\Toggle::make('is_visible')
+                                Toggle::make('is_visible')
                                     ->label('Visible')
                                     ->default(true),
 
-                                Forms\Components\Toggle::make('is_featured')
+                                Toggle::make('is_featured')
                                     ->label('Featured Collection'),
                             ]),
 
-                        Forms\Components\Section::make('Media')
+                        Section::make('Media')
                             ->schema([
-                                SpatieMediaLibraryFileUpload::make('hero')
-                                    ->collection('hero')
+                                FileUpload::make('hero_image')
                                     ->label('Hero Image')
                                     ->image()
-                                    ->imageEditor()
-                                    ->responsiveImages(),
+                                    ->imageEditor(),
 
-                                SpatieMediaLibraryFileUpload::make('banner')
-                                    ->collection('banner')
+                                FileUpload::make('banner_image')
                                     ->label('Banner Image')
                                     ->image()
-                                    ->imageEditor()
-                                    ->responsiveImages(),
+                                    ->imageEditor(),
                             ]),
 
-                        Forms\Components\Section::make('Products')
+                        Section::make('Products')
                             ->schema([
-                                Forms\Components\Select::make('products')
+                                Select::make('products')
                                     ->label('Products')
                                     ->relationship('products', 'name')
                                     ->multiple()
@@ -193,7 +202,7 @@ class CollectionResource extends Resource
                                     ->searchable()
                                     ->helperText('For manual collections only'),
                             ])
-                            ->visible(fn (Forms\Get $get) => $get('type') !== 'automatic'),
+                            ->visible(fn (Get $get) => $get('type') !== 'automatic'),
                     ])
                     ->columnSpan(['lg' => 1]),
             ])
@@ -281,34 +290,34 @@ class CollectionResource extends Resource
             ]);
     }
 
-    public static function infolist(Infolist $infolist): Infolist
+    public static function infolist(Schema $schema): Schema
     {
-        return $infolist
+        return $schema
             ->schema([
-                Infolists\Components\Section::make('Collection Details')
+                Section::make('Collection Details')
                     ->schema([
-                        Infolists\Components\TextEntry::make('name'),
-                        Infolists\Components\TextEntry::make('slug')
+                        TextEntry::make('name'),
+                        TextEntry::make('slug')
                             ->copyable(),
-                        Infolists\Components\TextEntry::make('type')
+                        TextEntry::make('type')
                             ->badge(),
-                        Infolists\Components\TextEntry::make('products_count')
+                        TextEntry::make('products_count')
                             ->label('Products')
                             ->getStateUsing(fn ($record) => $record->products()->count()),
                     ])
                     ->columns(4),
 
-                Infolists\Components\Section::make('Scheduling')
+                Section::make('Scheduling')
                     ->schema([
-                        Infolists\Components\TextEntry::make('published_at')
+                        TextEntry::make('published_at')
                             ->label('Publish At')
                             ->dateTime()
                             ->placeholder('Immediate'),
-                        Infolists\Components\TextEntry::make('unpublished_at')
+                        TextEntry::make('unpublished_at')
                             ->label('Unpublish At')
                             ->dateTime()
                             ->placeholder('Never'),
-                        Infolists\Components\IconEntry::make('is_currently_published')
+                        IconEntry::make('is_currently_published')
                             ->label('Currently Published')
                             ->getStateUsing(fn ($record) => $record->isPublished())
                             ->boolean(),

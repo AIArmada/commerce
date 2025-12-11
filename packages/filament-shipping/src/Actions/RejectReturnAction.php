@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Actions;
 
 use AIArmada\Shipping\Models\ReturnAuthorization;
+use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Actions\Action;
 
 class RejectReturnAction extends Action
 {

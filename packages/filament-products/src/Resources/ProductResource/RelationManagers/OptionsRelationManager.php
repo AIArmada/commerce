@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
-use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Forms\Components\ColorPicker;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -16,28 +20,28 @@ class OptionsRelationManager extends RelationManager
 
     protected static ?string $recordTitleAttribute = 'name';
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\TextInput::make('name')
+                TextInput::make('name')
                     ->label('Option Name')
                     ->required()
                     ->placeholder('e.g., Size, Color, Material')
                     ->maxLength(100),
 
-                Forms\Components\TextInput::make('display_name')
+                TextInput::make('display_name')
                     ->label('Display Name')
                     ->placeholder('e.g., Select your size')
                     ->maxLength(255),
 
-                Forms\Components\TextInput::make('position')
+                TextInput::make('position')
                     ->label('Position')
                     ->numeric()
                     ->default(0)
                     ->minValue(0),
 
-                Forms\Components\Toggle::make('is_visible')
+                Toggle::make('is_visible')
                     ->label('Visible to customers')
                     ->default(true),
             ]);
@@ -86,18 +90,18 @@ class OptionsRelationManager extends RelationManager
                     ->modalHeading(fn ($record) => "Manage Values for {$record->name}")
                     ->modalWidth('lg')
                     ->form([
-                        Forms\Components\Repeater::make('option_values')
+                        Repeater::make('option_values')
                             ->label('Option Values')
                             ->schema([
-                                Forms\Components\TextInput::make('name')
+                                TextInput::make('name')
                                     ->label('Value')
                                     ->required()
                                     ->placeholder('e.g., Small, Red'),
 
-                                Forms\Components\ColorPicker::make('swatch_color')
+                                ColorPicker::make('swatch_color')
                                     ->label('Swatch Color'),
 
-                                Forms\Components\TextInput::make('position')
+                                TextInput::make('position')
                                     ->label('Position')
                                     ->numeric()
                                     ->default(0),

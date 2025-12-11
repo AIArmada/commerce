@@ -8,21 +8,26 @@ use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Pages;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
+use BackedEnum;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Infolists;
-use Filament\Infolists\Infolist;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
+use Filament\Support\Enums\TextSize;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class CustomerResource extends Resource
 {
     protected static ?string $model = Customer::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-users';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-users';
 
-    protected static ?string $navigationGroup = 'CRM';
+    protected static string | UnitEnum | null $navigationGroup = 'CRM';
 
     protected static ?int $navigationSort = 1;
 
@@ -33,13 +38,13 @@ class CustomerResource extends Resource
         return static::getModel()::where('status', CustomerStatus::Active)->count() ?: null;
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Group::make()
+                Group::make()
                     ->schema([
-                        Forms\Components\Section::make('Customer Information')
+                        Section::make('Customer Information')
                             ->schema([
                                 Forms\Components\TextInput::make('first_name')
                                     ->label('First Name')
@@ -69,7 +74,7 @@ class CustomerResource extends Resource
                             ])
                             ->columns(2),
 
-                        Forms\Components\Section::make('Preferences')
+                        Section::make('Preferences')
                             ->schema([
                                 Forms\Components\Toggle::make('accepts_marketing')
                                     ->label('Accepts Marketing')
@@ -81,15 +86,15 @@ class CustomerResource extends Resource
                                 Forms\Components\Textarea::make('tax_exempt_reason')
                                     ->label('Tax Exempt Reason')
                                     ->rows(2)
-                                    ->visible(fn (Forms\Get $get) => $get('is_tax_exempt')),
+                                    ->visible(fn (Get $get) => $get('is_tax_exempt')),
                             ])
                             ->columns(2),
                     ])
                     ->columnSpan(['lg' => 2]),
 
-                Forms\Components\Group::make()
+                Group::make()
                     ->schema([
-                        Forms\Components\Section::make('Status')
+                        Section::make('Status')
                             ->schema([
                                 Forms\Components\Select::make('status')
                                     ->label('Status')
@@ -101,7 +106,7 @@ class CustomerResource extends Resource
                                     ->default('active'),
                             ]),
 
-                        Forms\Components\Section::make('Wallet')
+                        Section::make('Wallet')
                             ->schema([
                                 Forms\Components\TextInput::make('wallet_balance')
                                     ->label('Balance')
@@ -113,7 +118,7 @@ class CustomerResource extends Resource
                                     ->helperText('Use actions to add/deduct credit'),
                             ]),
 
-                        Forms\Components\Section::make('Segments')
+                        Section::make('Segments')
                             ->schema([
                                 Forms\Components\Select::make('segments')
                                     ->label('Segments')
@@ -262,21 +267,21 @@ class CustomerResource extends Resource
             ]);
     }
 
-    public static function infolist(Infolist $infolist): Infolist
+    public static function infolist(Schema $schema): Schema
     {
-        return $infolist
+        return $schema
             ->schema([
-                Infolists\Components\Section::make('Customer Overview')
+                Section::make('Customer Overview')
                     ->schema([
-                        Infolists\Components\TextEntry::make('full_name')
+                        TextEntry::make('full_name')
                             ->label('Name'),
-                        Infolists\Components\TextEntry::make('email')
+                        TextEntry::make('email')
                             ->label('Email')
                             ->copyable(),
-                        Infolists\Components\TextEntry::make('phone')
+                        TextEntry::make('phone')
                             ->label('Phone')
                             ->copyable(),
-                        Infolists\Components\TextEntry::make('status')
+                        TextEntry::make('status')
                             ->label('Status')
                             ->badge()
                             ->formatStateUsing(fn ($state) => $state->label())
@@ -284,47 +289,47 @@ class CustomerResource extends Resource
                     ])
                     ->columns(4),
 
-                Infolists\Components\Section::make('Value Metrics')
+                Section::make('Value Metrics')
                     ->schema([
-                        Infolists\Components\TextEntry::make('lifetime_value')
+                        TextEntry::make('lifetime_value')
                             ->label('Lifetime Value')
                             ->money('MYR', divideBy: 100)
-                            ->size(Infolists\Components\TextEntry\TextEntrySize::Large),
-                        Infolists\Components\TextEntry::make('total_orders')
+                            ->size(TextSize::Large),
+                        TextEntry::make('total_orders')
                             ->label('Total Orders')
                             ->numeric()
-                            ->size(Infolists\Components\TextEntry\TextEntrySize::Large),
-                        Infolists\Components\TextEntry::make('average_order_value')
+                            ->size(TextSize::Large),
+                        TextEntry::make('average_order_value')
                             ->label('AOV')
                             ->getStateUsing(fn ($record) => $record->getAverageOrderValue())
                             ->money('MYR', divideBy: 100)
-                            ->size(Infolists\Components\TextEntry\TextEntrySize::Large),
-                        Infolists\Components\TextEntry::make('wallet_balance')
+                            ->size(TextSize::Large),
+                        TextEntry::make('wallet_balance')
                             ->label('Wallet Balance')
                             ->money('MYR', divideBy: 100)
-                            ->size(Infolists\Components\TextEntry\TextEntrySize::Large),
+                            ->size(TextSize::Large),
                     ])
                     ->columns(4),
 
-                Infolists\Components\Section::make('Activity')
+                Section::make('Activity')
                     ->schema([
-                        Infolists\Components\TextEntry::make('last_order_at')
+                        TextEntry::make('last_order_at')
                             ->label('Last Order')
                             ->dateTime()
                             ->placeholder('No orders yet'),
-                        Infolists\Components\TextEntry::make('last_login_at')
+                        TextEntry::make('last_login_at')
                             ->label('Last Login')
                             ->dateTime()
                             ->placeholder('Never'),
-                        Infolists\Components\TextEntry::make('created_at')
+                        TextEntry::make('created_at')
                             ->label('Customer Since')
                             ->dateTime(),
                     ])
                     ->columns(3),
 
-                Infolists\Components\Section::make('Segments')
+                Section::make('Segments')
                     ->schema([
-                        Infolists\Components\TextEntry::make('segments.name')
+                        TextEntry::make('segments.name')
                             ->label('Assigned Segments')
                             ->badge()
                             ->placeholder('No segments'),

@@ -7,19 +7,25 @@ namespace AIArmada\FilamentCustomers\Resources;
 use AIArmada\Customers\Enums\SegmentType;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\SegmentResource\Pages;
+use BackedEnum;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class SegmentResource extends Resource
 {
     protected static ?string $model = Segment::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-user-group';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-user-group';
 
-    protected static ?string $navigationGroup = 'CRM';
+    protected static string | UnitEnum | null $navigationGroup = 'CRM';
 
     protected static ?int $navigationSort = 2;
 
@@ -30,13 +36,13 @@ class SegmentResource extends Resource
         return static::getModel()::where('is_active', true)->count() ?: null;
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Group::make()
+                Group::make()
                     ->schema([
-                        Forms\Components\Section::make('Segment Information')
+                        Section::make('Segment Information')
                             ->schema([
                                 Forms\Components\TextInput::make('name')
                                     ->label('Segment Name')
@@ -44,7 +50,7 @@ class SegmentResource extends Resource
                                     ->maxLength(255)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(
-                                        fn (Forms\Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
+                                        fn (Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
                                     ),
 
                                 Forms\Components\TextInput::make('slug')
@@ -69,7 +75,7 @@ class SegmentResource extends Resource
                             ])
                             ->columns(2),
 
-                        Forms\Components\Section::make('Assignment Rules')
+                        Section::make('Assignment Rules')
                             ->schema([
                                 Forms\Components\Toggle::make('is_automatic')
                                     ->label('Automatic Assignment')
@@ -98,22 +104,22 @@ class SegmentResource extends Resource
                                             ->label('Value')
                                             ->required()
                                             ->numeric()
-                                            ->visible(fn (Forms\Get $get) => ! in_array($get('field'), ['accepts_marketing', 'is_tax_exempt'])),
+                                            ->visible(fn (Get $get) => ! in_array($get('field'), ['accepts_marketing', 'is_tax_exempt'])),
 
                                         Forms\Components\Toggle::make('value')
                                             ->label('Value')
-                                            ->visible(fn (Forms\Get $get) => in_array($get('field'), ['accepts_marketing', 'is_tax_exempt'])),
+                                            ->visible(fn (Get $get) => in_array($get('field'), ['accepts_marketing', 'is_tax_exempt'])),
                                     ])
                                     ->columns(2)
                                     ->addActionLabel('Add Condition')
-                                    ->visible(fn (Forms\Get $get) => $get('is_automatic') === true),
+                                    ->visible(fn (Get $get) => $get('is_automatic') === true),
                             ]),
                     ])
                     ->columnSpan(['lg' => 2]),
 
-                Forms\Components\Group::make()
+                Group::make()
                     ->schema([
-                        Forms\Components\Section::make('Settings')
+                        Section::make('Settings')
                             ->schema([
                                 Forms\Components\Toggle::make('is_active')
                                     ->label('Active')
@@ -126,7 +132,7 @@ class SegmentResource extends Resource
                                     ->helperText('Higher = more important for pricing'),
                             ]),
 
-                        Forms\Components\Section::make('Manual Assignment')
+                        Section::make('Manual Assignment')
                             ->schema([
                                 Forms\Components\Select::make('customers')
                                     ->label('Customers')
@@ -136,7 +142,7 @@ class SegmentResource extends Resource
                                     ->searchable()
                                     ->helperText('For manual segments only'),
                             ])
-                            ->visible(fn (Forms\Get $get) => ! $get('is_automatic')),
+                            ->visible(fn (Get $get) => ! $get('is_automatic')),
                     ])
                     ->columnSpan(['lg' => 1]),
             ])

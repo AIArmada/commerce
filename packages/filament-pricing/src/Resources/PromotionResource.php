@@ -7,19 +7,23 @@ namespace AIArmada\FilamentPricing\Resources;
 use AIArmada\FilamentPricing\Resources\PromotionResource\Pages;
 use AIArmada\Pricing\Enums\PromotionType;
 use AIArmada\Pricing\Models\Promotion;
+use BackedEnum;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class PromotionResource extends Resource
 {
     protected static ?string $model = Promotion::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-gift';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-gift';
 
-    protected static ?string $navigationGroup = 'Pricing';
+    protected static string | UnitEnum | null $navigationGroup = 'Pricing';
 
     protected static ?int $navigationSort = 2;
 
@@ -30,13 +34,13 @@ class PromotionResource extends Resource
         return static::getModel()::where('is_active', true)->count() ?: null;
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Group::make()
+                Group::make()
                     ->schema([
-                        Forms\Components\Section::make('Promotion Details')
+                        Section::make('Promotion Details')
                             ->schema([
                                 Forms\Components\TextInput::make('name')
                                     ->label('Promotion Name')
@@ -56,7 +60,7 @@ class PromotionResource extends Resource
                             ])
                             ->columns(2),
 
-                        Forms\Components\Section::make('Discount')
+                        Section::make('Discount')
                             ->schema([
                                 Forms\Components\Select::make('type')
                                     ->label('Discount Type')
@@ -89,7 +93,7 @@ class PromotionResource extends Resource
                             ])
                             ->columns(2),
 
-                        Forms\Components\Section::make('Scheduling')
+                        Section::make('Scheduling')
                             ->schema([
                                 Forms\Components\DateTimePicker::make('starts_at')
                                     ->label('Start Date'),
@@ -101,9 +105,9 @@ class PromotionResource extends Resource
                     ])
                     ->columnSpan(['lg' => 2]),
 
-                Forms\Components\Group::make()
+                Group::make()
                     ->schema([
-                        Forms\Components\Section::make('Settings')
+                        Section::make('Settings')
                             ->schema([
                                 Forms\Components\Toggle::make('is_active')
                                     ->label('Active')
@@ -120,7 +124,7 @@ class PromotionResource extends Resource
                                     ->helperText('Higher = apply first'),
                             ]),
 
-                        Forms\Components\Section::make('Usage Limits')
+                        Section::make('Usage Limits')
                             ->schema([
                                 Forms\Components\TextInput::make('usage_limit')
                                     ->label('Total Uses')

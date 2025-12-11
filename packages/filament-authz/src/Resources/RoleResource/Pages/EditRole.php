@@ -7,8 +7,12 @@ namespace AIArmada\FilamentAuthz\Resources\RoleResource\Pages;
 use AIArmada\FilamentAuthz\Resources\RoleResource;
 use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\EditRecord;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
+/**
+ * @property Role $record
+ */
 class EditRole extends EditRecord
 {
     /**
@@ -36,6 +40,7 @@ class EditRole extends EditRecord
     protected function afterSave(): void
     {
         if ($this->permissionIds !== []) {
+            // @phpstan-ignore method.nonObject (Record is guaranteed to be Role in afterSave)
             $this->record->syncPermissions($this->permissionIds);
         }
 

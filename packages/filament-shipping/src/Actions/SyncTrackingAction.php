@@ -6,9 +6,9 @@ namespace AIArmada\FilamentShipping\Actions;
 
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Services\TrackingAggregator;
+use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Actions\Action;
 use Throwable;
 
 class SyncTrackingAction extends Action
@@ -26,20 +26,13 @@ class SyncTrackingAction extends Action
             ->action(function (Shipment $record): void {
                 try {
                     $aggregator = app(TrackingAggregator::class);
-                    $tracking = $aggregator->track($record->carrier_code, $record->tracking_number);
+                    $updatedShipment = $aggregator->syncTracking($record);
 
-                    if ($tracking !== null) {
-                        $record->update([
-                            'tracking_status' => $tracking->status->value,
-                            'last_tracking_at' => now(),
-                        ]);
-
-                        Notification::make()
-                            ->title('Tracking Updated')
-                            ->body("Status: {$tracking->status->getLabel()}")
-                            ->success()
-                            ->send();
-                    }
+                    Notification::make()
+                        ->title('Tracking Updated')
+                        ->body("Status: {$updatedShipment->status->getLabel()}")
+                        ->success()
+                        ->send();
                 } catch (Throwable $e) {
                     Notification::make()
                         ->title('Tracking Sync Failed')

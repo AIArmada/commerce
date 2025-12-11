@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPricing\Resources\PriceListResource\RelationManagers;
 
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -18,11 +21,11 @@ class TiersRelationManager extends RelationManager
 
     protected static ?string $recordTitleAttribute = 'min_quantity';
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Section::make('Tier Configuration')
+                Section::make('Tier Configuration')
                     ->schema([
                         Forms\Components\Select::make('priceable_type')
                             ->label('Apply To')
@@ -38,7 +41,7 @@ class TiersRelationManager extends RelationManager
                             ->label('Product/Variant')
                             ->searchable()
                             ->required()
-                            ->options(function (Forms\Get $get) {
+                            ->options(function (Get $get) {
                                 $type = $get('priceable_type');
 
                                 if ($type === 'AIArmada\\Products\\Models\\Product') {
@@ -56,7 +59,7 @@ class TiersRelationManager extends RelationManager
                                 return [];
                             }),
 
-                        Forms\Components\Grid::make(3)
+                        Grid::make(3)
                             ->schema([
                                 Forms\Components\TextInput::make('min_quantity')
                                     ->label('Minimum Quantity')
@@ -75,7 +78,7 @@ class TiersRelationManager extends RelationManager
 
                                 Forms\Components\Placeholder::make('range_display')
                                     ->label('Range')
-                                    ->content(function (Forms\Get $get) {
+                                    ->content(function (Get $get) {
                                         $min = $get('min_quantity') ?? 1;
                                         $max = $get('max_quantity');
 
@@ -85,7 +88,7 @@ class TiersRelationManager extends RelationManager
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Pricing')
+                Section::make('Pricing')
                     ->schema([
                         Forms\Components\Radio::make('pricing_type')
                             ->label('Pricing Type')
@@ -105,7 +108,7 @@ class TiersRelationManager extends RelationManager
                             ->numeric()
                             ->prefix('RM')
                             ->required()
-                            ->visible(fn (Forms\Get $get) => $get('pricing_type') === 'fixed_price')
+                            ->visible(fn (Get $get) => $get('pricing_type') === 'fixed_price')
                             ->helperText('Price for each unit in this tier'),
 
                         Forms\Components\TextInput::make('discount_percentage')
@@ -115,7 +118,7 @@ class TiersRelationManager extends RelationManager
                             ->required()
                             ->minValue(0)
                             ->maxValue(100)
-                            ->visible(fn (Forms\Get $get) => $get('pricing_type') === 'percentage_discount')
+                            ->visible(fn (Get $get) => $get('pricing_type') === 'percentage_discount')
                             ->helperText('Percentage off the original price'),
 
                         Forms\Components\TextInput::make('discount_amount')
@@ -124,7 +127,7 @@ class TiersRelationManager extends RelationManager
                             ->prefix('RM')
                             ->required()
                             ->minValue(0)
-                            ->visible(fn (Forms\Get $get) => $get('pricing_type') === 'fixed_discount')
+                            ->visible(fn (Get $get) => $get('pricing_type') === 'fixed_discount')
                             ->helperText('Fixed amount off per unit'),
 
                         Forms\Components\Textarea::make('description')
