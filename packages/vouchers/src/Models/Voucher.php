@@ -68,7 +68,9 @@ use function class_exists;
  */
 class Voucher extends Model
 {
-    use HasFactory, HasOwner, HasUuids;
+    use HasFactory;
+    use HasOwner;
+    use HasUuids;
 
     protected $fillable = [
         'code',
@@ -415,13 +417,13 @@ class Voucher extends Model
             /** @var int|string $key */
             $key = $owner->getKey();
 
-            return $name ?? $displayName ?? $email ?? class_basename($owner).':'.(string) $key;
+            return $name ?? $displayName ?? $email ?? class_basename($owner) . ':' . (string) $key;
         }
 
         /** @var int|string $key */
         $key = $owner->getKey();
 
-        return class_basename($owner).':'.(string) $key;
+        return class_basename($owner) . ':' . (string) $key;
     }
 
     public function getRemainingUsesAttribute(): ?int
