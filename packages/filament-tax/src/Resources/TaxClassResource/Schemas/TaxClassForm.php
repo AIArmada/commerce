@@ -25,7 +25,7 @@ final class TaxClassForm
                             ->maxLength(255)
                             ->live(onBlur: true)
                             ->afterStateUpdated(
-                                fn(SetFormState $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state ?? ''))
+                                fn (SetFormState $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state ?? ''))
                             ),
 
                         TextInput::make('slug')

@@ -18,9 +18,9 @@ final class TaxExemptionResource extends Resource
 {
     protected static ?string $model = TaxExemption::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shield-exclamation';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-shield-exclamation';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Tax';
+    protected static string | UnitEnum | null $navigationGroup = 'Tax';
 
     protected static ?int $navigationSort = 4;
 
@@ -48,7 +48,7 @@ final class TaxExemptionResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $expiring = static::getModel()::query()
+        $expiring = self::getModel()::query()
             ->whereNotNull('expires_at')
             ->where('expires_at', '>=', now())
             ->where('expires_at', '<=', now()->addDays(30))
@@ -62,4 +62,3 @@ final class TaxExemptionResource extends Resource
         return 'warning';
     }
 }
-

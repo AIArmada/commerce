@@ -29,7 +29,7 @@ final class RatesTable
 
                 TextColumn::make('rate')
                     ->label('Rate')
-                    ->formatStateUsing(fn($state) => number_format((float) $state / 100, 2) . '%')
+                    ->formatStateUsing(fn ($state) => number_format((float) $state / 100, 2) . '%')
                     ->alignEnd(),
 
                 IconColumn::make('is_compound')
@@ -57,7 +57,7 @@ final class RatesTable
                     ->icon(Heroicon::OutlinedTrash)
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn($records) => $records->each->delete())
+                    ->action(fn ($records) => $records->each->delete())
                     ->deselectRecordsAfterCompletion(),
             ]);
     }

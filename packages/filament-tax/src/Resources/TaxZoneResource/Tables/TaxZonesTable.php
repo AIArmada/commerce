@@ -25,7 +25,7 @@ final class TaxZonesTable
                     ->label('Zone')
                     ->searchable()
                     ->sortable()
-                    ->description(fn(TaxZone $record): string => $record->code),
+                    ->description(fn (TaxZone $record): string => $record->code),
 
                 TextColumn::make('type')
                     ->label('Type')
@@ -33,7 +33,7 @@ final class TaxZonesTable
 
                 TextColumn::make('countries')
                     ->label('Countries')
-                    ->formatStateUsing(fn($state) => is_array($state) ? implode(', ', $state) : $state),
+                    ->formatStateUsing(fn ($state) => is_array($state) ? implode(', ', $state) : $state),
 
                 TextColumn::make('rates_count')
                     ->label('Rates')
@@ -75,7 +75,7 @@ final class TaxZonesTable
                     ->icon(Heroicon::OutlinedTrash)
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn($records) => $records->each->delete())
+                    ->action(fn ($records) => $records->each->delete())
                     ->deselectRecordsAfterCompletion(),
             ]);
     }
