@@ -7,7 +7,6 @@ namespace AIArmada\FilamentAuthz\Services;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Spatie\Permission\Models\Role;
 
 class IdentityProviderSync
@@ -53,7 +52,7 @@ class IdentityProviderSync
     public function loadMappings(): self
     {
         $tablePrefix = config('filament-authz.database.table_prefix', 'authz_');
-        $table = $tablePrefix . 'identity_provider_mappings';
+        $table = $tablePrefix.'identity_provider_mappings';
 
         if (! DB::getSchemaBuilder()->hasTable($table)) {
             return $this;
@@ -179,7 +178,7 @@ class IdentityProviderSync
     public function saveMapping(string $externalGroup, string $localRole): bool
     {
         $tablePrefix = config('filament-authz.database.table_prefix', 'authz_');
-        $table = $tablePrefix . 'identity_provider_mappings';
+        $table = $tablePrefix.'identity_provider_mappings';
 
         if (! DB::getSchemaBuilder()->hasTable($table)) {
             return false;
@@ -192,7 +191,7 @@ class IdentityProviderSync
                 'external_group' => $externalGroup,
             ],
             [
-                'id' => (string) Str::uuid(),
+                'id' => (string) \Illuminate\Support\Str::uuid(),
                 'local_role' => $localRole,
                 'is_active' => true,
                 'updated_at' => now(),
@@ -208,7 +207,7 @@ class IdentityProviderSync
     public function deleteMapping(string $externalGroup): bool
     {
         $tablePrefix = config('filament-authz.database.table_prefix', 'authz_');
-        $table = $tablePrefix . 'identity_provider_mappings';
+        $table = $tablePrefix.'identity_provider_mappings';
 
         if (! DB::getSchemaBuilder()->hasTable($table)) {
             return false;
@@ -229,7 +228,7 @@ class IdentityProviderSync
     public function getAllMappings(): Collection
     {
         $tablePrefix = config('filament-authz.database.table_prefix', 'authz_');
-        $table = $tablePrefix . 'identity_provider_mappings';
+        $table = $tablePrefix.'identity_provider_mappings';
 
         if (! DB::getSchemaBuilder()->hasTable($table)) {
             return collect();

@@ -9,6 +9,7 @@ use AIArmada\Cart\CartServiceProvider;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\CommerceSupport\SupportServiceProvider;
+use AIArmada\Customers\CustomersServiceProvider;
 use AIArmada\Docs\DocsServiceProvider;
 use AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy;
 use AIArmada\FilamentAffiliates\FilamentAffiliatesServiceProvider;
@@ -19,7 +20,11 @@ use AIArmada\FilamentChip\FilamentChipServiceProvider;
 use AIArmada\FilamentShipping\FilamentShippingServiceProvider;
 use AIArmada\FilamentVouchers\FilamentVouchersServiceProvider;
 use AIArmada\Jnt\JntServiceProvider;
+use AIArmada\Orders\OrdersServiceProvider;
+use AIArmada\Pricing\PricingServiceProvider;
+use AIArmada\Products\ProductsServiceProvider;
 use AIArmada\Shipping\Facades\Shipping;
+use AIArmada\Tax\TaxServiceProvider;
 use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\VoucherServiceProvider;
 use BackedEnum;
@@ -139,6 +144,10 @@ abstract class TestCase extends Orchestra
             'database' => ':memory:',
             'prefix' => '',
         ]);
+
+        // Configure Spatie Activitylog
+        $app['config']->set('activitylog.default_auth_driver', null);
+        $app['config']->set('activitylog.enabled', false);
 
         // Configure session
         $app['config']->set('session.driver', 'array');
@@ -431,6 +440,505 @@ abstract class TestCase extends Orchestra
             $table->uuid('id')->primary();
             $table->string('name');
             $table->timestamps();
+        });
+
+        // =========================================================================
+        // PRODUCTS PACKAGE TABLES
+        // =========================================================================
+        Schema::dropIfExists('collection_product');
+        Schema::dropIfExists('category_product');
+        Schema::dropIfExists('product_variant_options');
+        Schema::dropIfExists('product_variants');
+        Schema::dropIfExists('product_option_values');
+        Schema::dropIfExists('product_options');
+        Schema::dropIfExists('product_collections');
+        Schema::dropIfExists('product_categories');
+        Schema::dropIfExists('products');
+
+        Schema::create('products', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->text('description')->nullable();
+            $table->text('short_description')->nullable();
+            $table->string('sku')->nullable()->index();
+            $table->string('barcode')->nullable();
+            $table->string('type')->default('physical');
+            $table->string('status')->default('draft');
+            $table->integer('price')->default(0);
+            $table->integer('cost')->nullable();
+            $table->integer('compare_price')->nullable();
+            $table->string('currency')->default('MYR');
+
+            $table->string('visibility')->default('visible');
+            $table->boolean('is_visible')->default(true);
+            $table->boolean('is_featured')->default(false);
+            $table->boolean('is_taxable')->default(true);
+            $table->boolean('is_digital')->default(false);
+            $table->boolean('requires_shipping')->default(true);
+            $table->integer('weight')->nullable();
+            $table->string('weight_unit')->nullable();
+            $table->integer('stock_quantity')->default(0);
+            $table->boolean('track_inventory')->default(false);
+            $table->string('tax_class')->nullable();
+            $table->string('vendor')->nullable();
+            $table->nullableUuidMorphs('owner');
+            $table->json('metadata')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('product_categories', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->text('description')->nullable();
+            $table->uuid('parent_id')->nullable();
+            $table->integer('position')->default(0);
+            $table->boolean('is_visible')->default(true);
+            $table->boolean('is_featured')->default(false);
+            $table->nullableUuidMorphs('owner');
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('product_collections', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->text('description')->nullable();
+            $table->string('type')->default('manual');
+            $table->json('rules')->nullable();
+            $table->boolean('is_visible')->default(true);
+            $table->timestamp('published_at')->nullable();
+            $table->timestamp('unpublished_at')->nullable();
+            $table->nullableUuidMorphs('owner');
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('product_options', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('product_id');
+            $table->string('name');
+            $table->integer('position')->default(0);
+            $table->boolean('is_visible')->default(true); // Added this
+            $table->timestamps();
+        });
+
+        Schema::create('product_option_values', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('option_id');
+            $table->string('name');
+            $table->integer('position')->default(0);
+            $table->timestamps();
+        });
+
+        Schema::create('product_variants', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('product_id');
+            $table->string('name');
+            $table->string('sku')->nullable()->index();
+            $table->string('barcode')->nullable();
+            $table->integer('price')->default(0);
+            $table->integer('cost')->nullable();
+            $table->integer('compare_price')->nullable();
+            $table->integer('stock_quantity')->default(0);
+            $table->boolean('is_enabled')->default(true);
+            $table->boolean('is_default')->default(false);
+            $table->integer('weight')->nullable();
+            $table->json('metadata')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('category_product', function (Blueprint $table): void {
+            $table->uuid('category_id');
+            $table->uuid('product_id');
+            $table->integer('position')->default(0);
+            $table->primary(['category_id', 'product_id']);
+        });
+
+        Schema::create('collection_product', function (Blueprint $table): void {
+            $table->uuid('collection_id');
+            $table->uuid('product_id');
+            $table->integer('position')->default(0);
+            $table->primary(['collection_id', 'product_id']);
+        });
+
+        // =========================================================================
+        // CUSTOMERS PACKAGE TABLES
+        // =========================================================================
+        Schema::dropIfExists('customer_segment');
+        Schema::dropIfExists('customer_customer_group');
+        Schema::dropIfExists('customer_notes');
+        Schema::dropIfExists('wishlist_items');
+        Schema::dropIfExists('wishlists');
+        Schema::dropIfExists('customer_addresses');
+        Schema::dropIfExists('customer_segments');
+        Schema::dropIfExists('customer_groups');
+        Schema::dropIfExists('customers');
+
+        Schema::create('customers', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('user_id')->nullable()->index();
+            $table->string('first_name');
+            $table->string('last_name');
+            $table->string('email')->index();
+            $table->string('phone')->nullable();
+            $table->string('company')->nullable();
+            $table->string('status')->default('active');
+            $table->boolean('accepts_marketing')->default(false);
+            $table->boolean('is_tax_exempt')->default(false);
+            $table->integer('wallet_balance')->default(0);
+            $table->integer('lifetime_value')->default(0);
+            $table->integer('total_orders')->default(0);
+            $table->timestamp('email_verified_at')->nullable();
+            $table->timestamp('last_order_at')->nullable();
+            $table->timestamp('last_login_at')->nullable();
+            $table->nullableUuidMorphs('owner');
+            $table->json('metadata')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('tags', function (Blueprint $table): void {
+            $table->id();
+            $table->json('name');
+            $table->json('slug');
+            $table->string('type')->nullable();
+            $table->integer('order_column')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('taggables', function (Blueprint $table): void {
+            $table->foreignId('tag_id')->constrained()->cascadeOnDelete();
+            $table->morphs('taggable');
+            $table->unique(['tag_id', 'taggable_id', 'taggable_type']);
+        });
+
+        Schema::create('customer_groups', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->boolean('requires_approval')->default(true);
+            $table->nullableUuidMorphs('owner');
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('customer_group_members', function (Blueprint $table): void {
+            $table->id();
+            $table->uuid('group_id');
+            $table->uuid('customer_id');
+            $table->string('role')->default('member');
+            $table->timestamp('joined_at')->useCurrent();
+            $table->timestamps();
+        });
+
+        Schema::create('customer_segments', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->text('description')->nullable();
+            $table->json('conditions')->nullable();
+            $table->boolean('is_active')->default(true);
+            $table->boolean('is_automatic')->default(true);
+            $table->integer('priority')->default(0);
+            $table->nullableUuidMorphs('owner');
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('customer_addresses', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('customer_id');
+            $table->string('type')->default('shipping');
+            $table->string('first_name')->nullable();
+            $table->string('last_name')->nullable();
+            $table->string('company')->nullable();
+            $table->string('address_line_1');
+            $table->string('address_line_2')->nullable();
+            $table->string('city');
+            $table->string('state')->nullable();
+            $table->string('postal_code')->nullable();
+            $table->string('country');
+            $table->string('phone')->nullable();
+            $table->boolean('is_default')->default(false);
+            $table->boolean('is_default_billing')->default(false);
+            $table->boolean('is_default_shipping')->default(false);
+            $table->boolean('is_verified')->default(false);
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('wishlists', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('customer_id');
+            $table->string('name')->default('My Wishlist');
+            $table->boolean('is_public')->default(false);
+            $table->timestamps();
+        });
+
+        Schema::create('wishlist_items', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('wishlist_id');
+            $table->uuidMorphs('wishlistable');
+            $table->integer('priority')->default(0);
+            $table->text('notes')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('customer_notes', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('customer_id');
+            $table->text('content');
+            $table->boolean('is_internal')->default(true);
+            $table->timestamps();
+        });
+
+        Schema::create('customer_customer_group', function (Blueprint $table): void {
+            $table->uuid('customer_id');
+            $table->uuid('customer_group_id');
+            $table->primary(['customer_id', 'customer_group_id']);
+        });
+
+        Schema::create('customer_segment_customer', function (Blueprint $table): void {
+            $table->uuid('customer_id');
+            $table->uuid('segment_id');
+            $table->primary(['customer_id', 'segment_id']);
+        });
+
+        // =========================================================================
+        // ORDERS PACKAGE TABLES
+        // =========================================================================
+        Schema::dropIfExists('order_notes');
+        Schema::dropIfExists('order_refunds');
+        Schema::dropIfExists('order_payments');
+        Schema::dropIfExists('order_addresses');
+        Schema::dropIfExists('order_items');
+        Schema::dropIfExists('orders');
+
+        Schema::create('orders', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('order_number')->unique();
+            $table->string('status')->default('pending');
+            $table->string('currency')->default('MYR');
+            $table->nullableUuidMorphs('customer');
+            $table->integer('subtotal')->default(0);
+            $table->integer('discount_total')->default(0);
+            $table->integer('shipping_total')->default(0);
+            $table->integer('tax_total')->default(0);
+            $table->integer('grand_total')->default(0);
+            $table->string('payment_status')->nullable();
+            $table->string('fulfillment_status')->nullable();
+            $table->text('notes')->nullable();
+            $table->nullableUuidMorphs('owner');
+            $table->json('metadata')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('order_items', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('order_id');
+            $table->nullableUuidMorphs('purchasable');
+            $table->string('name');
+            $table->string('sku')->nullable();
+            $table->integer('quantity')->default(1);
+            $table->integer('unit_price')->default(0);
+            $table->integer('discount_amount')->default(0);
+            $table->integer('tax_amount')->default(0);
+            $table->integer('total')->default(0);
+            $table->string('currency')->default('MYR');
+            $table->json('options')->nullable();
+            $table->json('metadata')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('order_addresses', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('order_id');
+            $table->string('type')->default('shipping');
+            $table->string('first_name')->nullable();
+            $table->string('last_name')->nullable();
+            $table->string('company')->nullable();
+            $table->string('line1');
+            $table->string('line2')->nullable();
+            $table->string('city');
+            $table->string('state')->nullable();
+            $table->string('postcode')->nullable();
+            $table->string('country_code')->default('MY');
+            $table->string('phone')->nullable();
+            $table->string('email')->nullable();
+            $table->json('metadata')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('order_payments', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('order_id');
+            $table->string('gateway', 50);
+            $table->string('transaction_id')->nullable();
+            $table->integer('amount')->default(0);
+            $table->string('currency', 3)->default('MYR');
+            $table->string('status', 20)->default('pending');
+            $table->text('failure_reason')->nullable();
+            $table->json('metadata')->nullable();
+            $table->timestamp('paid_at')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('order_refunds', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('order_id');
+            $table->uuid('payment_id')->nullable();
+            $table->string('gateway', 50);
+            $table->string('transaction_id')->nullable();
+            $table->integer('amount')->default(0);
+            $table->string('currency', 3)->default('MYR');
+            $table->string('status', 20)->default('pending');
+            $table->string('reason');
+            $table->text('notes')->nullable();
+            $table->json('metadata')->nullable();
+            $table->timestamp('refunded_at')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('order_notes', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('order_id');
+            $table->text('content');
+            $table->boolean('is_internal')->default(true);
+            $table->timestamps();
+        });
+
+        // =========================================================================
+        // PRICING PACKAGE TABLES
+        // =========================================================================
+        Schema::dropIfExists('promotions');
+        Schema::dropIfExists('price_tiers');
+        Schema::dropIfExists('prices');
+        Schema::dropIfExists('price_lists');
+
+        Schema::create('price_lists', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->text('description')->nullable();
+            $table->string('currency')->default('MYR');
+            $table->integer('priority')->default(0);
+            $table->boolean('is_default')->default(false);
+            $table->boolean('is_active')->default(true);
+            $table->timestamp('starts_at')->nullable();
+            $table->timestamp('ends_at')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('prices', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('price_list_id');
+            $table->uuidMorphs('priceable');
+            $table->integer('amount')->default(0);
+            $table->integer('compare_amount')->nullable();
+            $table->string('currency')->default('MYR');
+            $table->integer('min_quantity')->default(1);
+            $table->timestamp('starts_at')->nullable();
+            $table->timestamp('ends_at')->nullable();
+            $table->timestamps();
+        });
+
+        Schema::create('price_tiers', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('price_list_id');
+            $table->uuidMorphs('priceable');
+            $table->integer('min_quantity')->default(1);
+            $table->integer('max_quantity')->nullable();
+            $table->integer('amount')->default(0);
+            $table->string('currency')->default('MYR');
+            $table->timestamps();
+        });
+
+        Schema::create('promotions', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->string('code')->nullable()->unique();
+            $table->text('description')->nullable();
+            $table->string('type')->default('percentage');
+            $table->integer('discount_value')->default(0);
+            $table->integer('priority')->default(0);
+            $table->integer('usage_limit')->nullable();
+            $table->integer('usage_count')->default(0);
+            $table->integer('min_purchase_amount')->nullable();
+            $table->integer('min_quantity')->nullable();
+            $table->boolean('is_stackable')->default(false);
+            $table->boolean('is_active')->default(true);
+            $table->timestamp('starts_at')->nullable();
+            $table->timestamp('ends_at')->nullable();
+            $table->json('conditions')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        // =========================================================================
+        // TAX PACKAGE TABLES
+        // =========================================================================
+        Schema::dropIfExists('tax_exemptions');
+        Schema::dropIfExists('tax_rates');
+        Schema::dropIfExists('tax_classes');
+        Schema::dropIfExists('tax_zones');
+
+        Schema::create('tax_zones', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->string('code')->unique();
+            $table->text('description')->nullable();
+            $table->string('type')->default('country');
+            $table->json('countries')->nullable();
+            $table->json('states')->nullable();
+            $table->json('postcodes')->nullable();
+            $table->integer('priority')->default(0);
+            $table->boolean('is_default')->default(false);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('tax_classes', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->string('slug')->unique();
+            $table->text('description')->nullable();
+            $table->integer('position')->default(0);
+            $table->boolean('is_default')->default(false);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('tax_rates', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('zone_id');
+            $table->string('tax_class')->default('standard');
+            $table->string('name');
+            $table->integer('rate')->default(0);
+            $table->integer('priority')->default(0);
+            $table->boolean('is_compound')->default(false);
+            $table->boolean('is_active')->default(true);
+            $table->timestamps();
+            $table->softDeletes();
+        });
+
+        Schema::create('tax_exemptions', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuidMorphs('exemptable');
+            $table->string('certificate_number')->nullable();
+            $table->text('reason')->nullable();
+            $table->string('status')->default('pending');
+            $table->timestamp('expires_at')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
         });
     }
 }

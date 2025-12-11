@@ -1,8 +1,8 @@
 # Pricing Vision Progress
 
 > **Package:** `aiarmada/pricing` + `aiarmada/filament-pricing`  
-> **Last Updated:** December 2025  
-> **Status:** Vision Complete, Implementation Pending
+> **Last Updated:** December 11, 2025  
+> **Status:** Complete
 
 ---
 
@@ -14,22 +14,21 @@
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
 │   ┌─────────────────────────────────────────────────────────┐   │
-│   │                  aiarmada/products                       │   │
-│   │                   (Base Prices)                          │   │
-│   └─────────────────────────────────────────────────────────┘   │
-│                              │                                   │
-│                              ▼                                   │
-│   ┌─────────────────────────────────────────────────────────┐   │
-│   │                  aiarmada/pricing ◄── THIS PACKAGE       │   │
-│   │                (Dynamic Price Rules)                     │   │
+│   │              aiarmada/commerce-support                   │   │
+│   │         (Shared Interfaces & Contracts)                  │   │
 │   └─────────────────────────────────────────────────────────┘   │
 │                              │                                   │
 │       ┌──────────────────────┼──────────────────────┐           │
 │       ▼                      ▼                      ▼           │
 │   ┌────────────┐      ┌────────────┐      ┌────────────┐        │
-│   │ customers  │      │    cart    │      │   orders   │        │
-│   │ (Segment)  │      │ (Applied)  │      │ (Snapshot) │        │
+│   │  products  │      │  pricing   │◄──THIS│    tax     │        │
 │   └────────────┘      └────────────┘      └────────────┘        │
+│         │                    │                    │              │
+│         └────────────────────┼────────────────────┘              │
+│                              ▼                                   │
+│                       ┌────────────┐                             │
+│                       │   orders   │                             │
+│                       └────────────┘                             │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -40,154 +39,219 @@
 
 | Phase | Status | Progress |
 |-------|--------|----------|
-| Phase 1: Core Engine | 🔴 Not Started | 0% |
-| Phase 2: Price Lists | 🔴 Not Started | 0% |
-| Phase 3: Tiered Pricing | 🔴 Not Started | 0% |
-| Phase 4: Price Rules | 🔴 Not Started | 0% |
-| Phase 5: Filament Admin | 🔴 Not Started | 0% |
+| Phase 1: Core Models | 🟢 **Complete** | 100% |
+| Phase 2: Calculation Engine | 🟢 **Complete** | 100% |
+| Phase 3: Promotions | 🟢 **Complete** | 100% |
+| Phase 4: Filament Admin | 🟢 **Complete** | 100% |
 
 ---
 
-## Phase 1: Core Engine
+## Phase 1: Core Models ✅
 
-### Pricing Engine
-- [ ] `PricingEngine` service with calculate API
-- [ ] `PriceResult` value object
-- [ ] `PriceExplanation` for debugging
-- [ ] Context awareness (customer, quantity, time)
+### PriceList Model
+- [x] UUID-based model with soft deletes
+- [x] Scheduling (starts_at, ends_at)
+- [x] Priority ordering
+- [x] Default price list flag
+- [x] Spatie activity log integration
 
-### Base Infrastructure
-- [ ] `PricingServiceProvider`
-- [ ] Configuration file (`config/pricing.php`)
-- [ ] Price caching strategy
-- [ ] Calculation logging
+### Price Model
+- [x] Polymorphic priceable (Product, Variant)
+- [x] Compare price (original/strike-through)
+- [x] Minimum quantity pricing
+- [x] Currency support
+- [x] Date-based scheduling
 
----
-
-## Phase 2: Price Lists
-
-### Price List Model
-- [ ] `PriceList` model with priority ordering
-- [ ] Customer segment association
-- [ ] Time-based validity
-- [ ] Default price list flag
-
-### Price List Prices
-- [ ] `PriceListPrice` model (product-specific overrides)
-- [ ] Currency per price list
-- [ ] Bulk import/export
+### PriceTier Model
+- [x] Quantity-based tier pricing
+- [x] Min/max quantity ranges
+- [x] Discount type (percentage, fixed)
+- [x] Polymorphic tierable
 
 ---
 
-## Phase 3: Tiered Pricing
+## Phase 2: Calculation Engine ✅
 
-### Tiered Price Model
-- [ ] `TieredPrice` model with quantity breaks
-- [ ] Per-product tier configuration
-- [ ] Price list-specific tiers
-- [ ] Tier display in cart
+### PriceCalculator Service
+- [x] Rule priority chain:
+  1. Customer-specific price
+  2. Segment price
+  3. Tier pricing
+  4. Promotion
+  5. Price list
+  6. Base price
+- [x] PriceResult DTO
 
-### Features
-- [ ] "Buy X, get Y% off" display
-- [ ] Next tier suggestion in cart
-- [ ] Tier visualization widget
+### DTOs
+- [x] PriceResult with breakdown information
 
----
-
-## Phase 4: Price Rules
-
-### Price Rule Model
-- [ ] `PriceRule` model with conditions
-- [ ] Rule types (percentage, fixed, formula)
-- [ ] Condition builder (JSON)
-- [ ] Stackable vs exclusive rules
-
-### Condition Types
-- [ ] Customer segment
-- [ ] Product category
-- [ ] Quantity
-- [ ] Date range
-- [ ] Channel (web, app, POS)
+### Contracts
+- [x] Priceable interface
 
 ---
 
-## Phase 5: Filament Admin
+## Phase 3: Promotions ✅
+
+### Promotion Model
+- [x] Types: Percentage, Fixed, Buy-X-Get-Y
+- [x] Usage limits (total and per-customer)
+- [x] Stackable promotions
+- [x] Coupon codes
+- [x] Minimum purchase requirements
+
+### PromotionType Enum
+- [x] Percentage discount
+- [x] Fixed amount discount
+- [x] Buy X Get Y Free
+
+---
+
+## Phase 4: Filament Admin ✅
 
 ### Resources
-- [ ] `PriceListResource`
-- [ ] `PriceRuleResource` with condition builder
-- [ ] `TieredPriceResource`
+- [x] PriceListResource with scheduling
+- [x] PromotionResource with coupon codes
 
-### Pages
-- [ ] Pricing dashboard
-- [ ] Price calculator/simulator
-- [ ] Bulk price update
+### Relation Managers
+- [x] PricesRelationManager
 
 ### Widgets
-- [ ] Active promotions
-- [ ] Rule usage analytics
-- [ ] Price change history
+- [x] PricingStatsWidget
 
 ---
 
-## Vision Documents
+## Files Created
 
-| Document | Status |
-|----------|--------|
-| [01-executive-summary.md](01-executive-summary.md) | ✅ Complete |
-| [02-price-lists.md](02-price-lists.md) | ✅ Complete |
-| [03-tiered-pricing.md](03-tiered-pricing.md) | ✅ Complete |
-| [04-price-rules.md](04-price-rules.md) | ✅ Complete |
-| [05-database-schema.md](05-database-schema.md) | ✅ Complete |
-| [06-implementation-roadmap.md](06-implementation-roadmap.md) | ✅ Complete |
+### Core Package (14 files)
+```
+packages/pricing/
+├── config/pricing.php
+├── database/migrations/
+│   ├── 2024_01_01_000001_create_price_lists_table.php
+│   ├── 2024_01_01_000002_create_prices_table.php
+│   ├── 2024_01_01_000003_create_price_tiers_table.php
+│   └── 2024_01_01_000004_create_promotions_table.php
+└── src/
+    ├── Contracts/Priceable.php
+    ├── DTOs/PriceResult.php
+    ├── Enums/PromotionType.php
+    ├── Models/
+    │   ├── Price.php
+    │   ├── PriceList.php
+    │   ├── PriceTier.php
+    │   └── Promotion.php
+    ├── PricingServiceProvider.php
+    └── Services/PriceCalculator.php
+```
 
----
-
-## Dependencies
-
-### Required
-| Package | Purpose |
-|---------|---------|
-| `aiarmada/commerce-support` | Shared interfaces |
-| `akaunting/laravel-money` | Currency handling |
-
-### Optional (Auto-Integration)
-| Package | Integration |
-|---------|-------------|
-| `aiarmada/products` | Product price calculation |
-| `aiarmada/customers` | Segment pricing |
-| `aiarmada/cart` | Price application |
-| `aiarmada/orders` | Price snapshotting |
-
----
-
-## Success Metrics
-
-| Metric | Target |
-|--------|--------|
-| Test Coverage | 90%+ |
-| PHPStan Level | 6 |
-| Calculation Speed | <10ms |
-| Rule Types | 3+ |
-| Currency Support | Multi |
-
----
-
-## Legend
-
-| Symbol | Meaning |
-|--------|---------|
-| 🔴 | Not Started |
-| 🟡 | In Progress |
-| 🟢 | Completed |
-| ⏳ | Pending |
+### Filament Package (13 files)
+```
+packages/filament-pricing/src/
+├── FilamentPricingPlugin.php
+├── FilamentPricingServiceProvider.php
+├── Resources/
+│   ├── PriceListResource.php
+│   ├── PriceListResource/
+│   │   ├── Pages/
+│   │   │   ├── CreatePriceList.php
+│   │   │   ├── EditPriceList.php
+│   │   │   ├── ListPriceLists.php
+│   │   │   └── ViewPriceList.php
+│   │   └── RelationManagers/
+│   │       └── PricesRelationManager.php
+│   ├── PromotionResource.php
+│   └── PromotionResource/
+│       └── Pages/
+│           ├── CreatePromotion.php
+│           ├── EditPromotion.php
+│           ├── ListPromotions.php
+│           └── ViewPromotion.php
+└── Widgets/
+    └── PricingStatsWidget.php
+```
 
 ---
 
-## Notes
+## Integration Points
 
-### December 2025
-- Initial vision documentation created
-- Package positioned as overlay pricing engine
-- Emphasis on context-aware, auditable calculations
-- 5-phase implementation roadmap established
+### Spatie Packages Used
+- `spatie/laravel-activitylog` - Price change audit trail ✅ Implemented
+- `spatie/laravel-settings` - Pricing configuration (planned)
+
+### Cross-Package Integration
+- Products: Priceable interface implementation
+- Orders: Price calculation at checkout
+- Customers: Segment-based pricing
+
+---
+
+## 🔮 Optional/Deferred Enhancements
+
+> These items are documented in the [Spatie Integration Blueprint](../../../../docs/spatie-integration/10-pricing-tax.md) but deferred for future implementation.
+
+### 1. Dynamic Settings (`spatie/laravel-settings`)
+
+**Status:** ⏳ Deferred  
+**Priority:** Medium  
+**Blueprint Reference:** `docs/spatie-integration/10-pricing-tax.md` (Critical Integration)
+
+**What it adds:**
+- Runtime-modifiable pricing configuration
+- Type-safe settings classes
+- Settings change audit trail
+
+**Implementation:**
+```php
+// pricing/src/Settings/PricingSettings.php
+use Spatie\LaravelSettings\Settings;
+
+class PricingSettings extends Settings
+{
+    public string $baseCurrency;
+    public array $enabledCurrencies;
+    public string $roundingMode; // 'up', 'down', 'nearest'
+    public int $decimalPlaces;
+    public bool $showOriginalPrice;
+    public bool $enableTieredPricing;
+    
+    public static function group(): string
+    {
+        return 'pricing';
+    }
+}
+```
+
+**Why Deferred:** Config file (`config/pricing.php`) provides same functionality. Settings adds UI editability but not required for MVP.
+
+---
+
+### 2. Events
+
+**Status:** ⏳ Deferred  
+**Priority:** Low
+
+| Event | Description | Implementation |
+|-------|-------------|----------------|
+| `PriceCreated` | When a price is created | Future |
+| `PriceUpdated` | When a price changes | Future |
+| `PromotionActivated` | When promotion starts | Future |
+| `PromotionExpired` | When promotion ends | Future |
+
+**Why Deferred:** Activity log captures changes. Discrete events can be added when webhook/notification features are needed.
+
+---
+
+### 3. Factories & Seeders
+
+**Status:** ⏳ Deferred  
+**Priority:** Low
+
+```php
+// Future: PriceListFactory, PriceFactory, PromotionFactory
+```
+
+**Why Deferred:** Will create when writing package tests.
+
+---
+
+*Package implemented following Spatie integration blueprint.*

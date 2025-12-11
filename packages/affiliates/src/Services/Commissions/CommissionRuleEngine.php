@@ -13,6 +13,13 @@ use Illuminate\Support\Collection;
 final class CommissionRuleEngine
 {
     /**
+     * Parameter-keyed cache for applicable rules.
+     *
+     * @var array<string, Collection<int, AffiliateCommissionRule>>
+     */
+    private array $rulesCache = [];
+
+    /**
      * Calculate the commission for a conversion.
      *
      * @param  array<string, mixed>  $context
@@ -37,7 +44,7 @@ final class CommissionRuleEngine
         $volumeBonus = $this->calculateVolumeBonus($affiliate, $orderAmountMinor, $context);
 
         // Apply promotions
-        $promotionBonus = $this->calculatePromotionBonus($affiliate, $baseCommission, $context);
+        $promotionBonus = $this->calculatePromotionBonus($affiliate, $orderAmountMinor, $context);
 
         // Apply caps
         $finalCommission = $this->applyCaps(
@@ -62,15 +69,41 @@ final class CommissionRuleEngine
     /**
      * Get all applicable rules for the context.
      *
+     * Results are cached for the request lifetime, keyed by affiliate + context.
+     *
      * @return Collection<int, AffiliateCommissionRule>
      */
     public function getApplicableRules(Affiliate $affiliate, array $context): Collection
     {
-        return AffiliateCommissionRule::query()
+        $cacheKey = $this->buildRulesCacheKey($affiliate, $context);
+
+        if (isset($this->rulesCache[$cacheKey])) {
+            return $this->rulesCache[$cacheKey];
+        }
+
+        return $this->rulesCache[$cacheKey] = AffiliateCommissionRule::query()
             ->active()
             ->ordered()
             ->get()
-            ->filter(fn (AffiliateCommissionRule $rule) => $rule->matches($context));
+            ->filter(fn(AffiliateCommissionRule $rule) => $rule->matches($context));
+    }
+
+    /**
+     * Build cache key for rules lookup.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    private function buildRulesCacheKey(Affiliate $affiliate, array $context): string
+    {
+        return md5($affiliate->id . ':' . serialize($context));
+    }
+
+    /**
+     * Clear the rules cache.
+     */
+    public function clearCache(): void
+    {
+        $this->rulesCache = [];
     }
 
     /**
@@ -81,7 +114,7 @@ final class CommissionRuleEngine
         // Use the highest priority matching rule
         $rule = $rules->first();
 
-        if (! $rule) {
+        if (!$rule) {
             // Fall back to default config rate
             $defaultRate = config('affiliates.commissions.default_rate', 10);
 
@@ -110,7 +143,7 @@ final class CommissionRuleEngine
 
         // Find applicable volume tier
         $tier = AffiliateVolumeTier::query()
-            ->when($programId, fn ($q) => $q->where('program_id', $programId))
+            ->when($programId, fn($q) => $q->where('program_id', $programId))
             ->where('min_volume_minor', '<=', $periodVolume)
             ->where(function ($q) use ($periodVolume): void {
                 $q->whereNull('max_volume_minor')
@@ -119,7 +152,7 @@ final class CommissionRuleEngine
             ->orderBy('min_volume_minor', 'desc')
             ->first();
 
-        if (! $tier) {
+        if (!$tier) {
             return 0;
         }
 
@@ -138,9 +171,9 @@ final class CommissionRuleEngine
 
         $promotions = AffiliateCommissionPromotion::query()
             ->active()
-            ->when($programId, fn ($q) => $q->where('program_id', $programId))
+            ->when($programId, fn($q) => $q->where('program_id', $programId))
             ->get()
-            ->filter(fn (AffiliateCommissionPromotion $promo) => $promo->appliesToAffiliate($affiliate));
+            ->filter(fn(AffiliateCommissionPromotion $promo) => $promo->appliesToAffiliate($affiliate));
 
         $totalBonus = 0;
 

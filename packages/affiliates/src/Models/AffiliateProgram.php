@@ -41,6 +41,7 @@ use Illuminate\Support\Str;
  */
 class AffiliateProgram extends Model
 {
+    use \AIArmada\CommerceSupport\Traits\CachesComputedValues;
     use HasUuids;
     use SoftDeletes;
 
@@ -138,7 +139,7 @@ class AffiliateProgram extends Model
 
     public function canJoin(Affiliate $affiliate): bool
     {
-        if (! $this->isOpen() && ! $this->requires_approval) {
+        if (!$this->isOpen() && !$this->requires_approval) {
             return false;
         }
 
@@ -148,7 +149,7 @@ class AffiliateProgram extends Model
         }
 
         // Check eligibility rules
-        if (! empty($this->eligibility_rules)) {
+        if (!empty($this->eligibility_rules)) {
             return $this->evaluateEligibility($affiliate);
         }
 
@@ -157,7 +158,11 @@ class AffiliateProgram extends Model
 
     public function getDefaultTier(): ?AffiliateProgramTier
     {
-        return $this->tiers()->orderBy('level', 'desc')->first();
+        return $this->cachedComputation(
+            __METHOD__,
+            fn() =>
+            $this->tiers()->orderBy('level', 'desc')->first()
+        );
     }
 
     public function scopeActive(Builder $query): Builder

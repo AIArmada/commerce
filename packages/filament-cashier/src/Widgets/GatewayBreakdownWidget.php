@@ -17,7 +17,7 @@ final class GatewayBreakdownWidget extends ChartWidget
 
     protected static ?int $sort = 3;
 
-    protected int | string | array $columnSpan = 1;
+    protected int|string|array $columnSpan = 1;
 
     public function getHeading(): ?string
     {
@@ -71,54 +71,61 @@ final class GatewayBreakdownWidget extends ChartWidget
     }
 
     /**
+     * Get revenue by gateway.
+     *
+     * Uses once() to cache the result for the current request, avoiding
+     * redundant database queries during the widget render cycle.
+     *
      * @return array<string, int>
      */
     protected function getRevenueByGateway(): array
     {
-        $detector = app(GatewayDetector::class);
-        $revenue = [];
+        return once(function (): array {
+            $detector = app(GatewayDetector::class);
+            $revenue = [];
 
-        if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-            $stripeRevenue = Subscription::query()
-                ->with('items')
-                ->where(function ($query): void {
-                    $query->whereNull('ends_at')
-                        ->orWhere('ends_at', '>', now());
-                })
-                ->get()
-                ->map(fn ($sub) => UnifiedSubscription::fromStripe($sub))
-                ->filter(fn (UnifiedSubscription $sub) => $sub->status->isActive())
-                ->sum('amount');
+            if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
+                $stripeRevenue = Subscription::query()
+                    ->with('items')
+                    ->where(function ($query): void {
+                        $query->whereNull('ends_at')
+                            ->orWhere('ends_at', '>', now());
+                    })
+                    ->get()
+                    ->map(fn($sub) => UnifiedSubscription::fromStripe($sub))
+                    ->filter(fn(UnifiedSubscription $sub) => $sub->status->isActive())
+                    ->sum('amount');
 
-            if ($stripeRevenue > 0) {
-                $revenue['stripe'] = $stripeRevenue;
+                if ($stripeRevenue > 0) {
+                    $revenue['stripe'] = $stripeRevenue;
+                }
             }
-        }
 
-        if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
-            $chipRevenue = \AIArmada\CashierChip\Models\Subscription::query()
-                ->where(function ($query): void {
-                    $query->whereNull('ends_at')
-                        ->orWhere('ends_at', '>', now());
-                })
-                ->get()
-                ->map(fn ($sub) => UnifiedSubscription::fromChip($sub))
-                ->filter(fn (UnifiedSubscription $sub) => $sub->status->isActive())
-                ->sum('amount');
+            if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
+                $chipRevenue = \AIArmada\CashierChip\Models\Subscription::query()
+                    ->where(function ($query): void {
+                        $query->whereNull('ends_at')
+                            ->orWhere('ends_at', '>', now());
+                    })
+                    ->get()
+                    ->map(fn($sub) => UnifiedSubscription::fromChip($sub))
+                    ->filter(fn(UnifiedSubscription $sub) => $sub->status->isActive())
+                    ->sum('amount');
 
-            if ($chipRevenue > 0) {
-                $revenue['chip'] = $chipRevenue;
+                if ($chipRevenue > 0) {
+                    $revenue['chip'] = $chipRevenue;
+                }
             }
-        }
 
-        // Ensure we have at least empty data
-        if (empty($revenue)) {
-            foreach ($detector->availableGateways() as $gateway) {
-                $revenue[$gateway] = 0;
+            // Ensure we have at least empty data
+            if (empty($revenue)) {
+                foreach ($detector->availableGateways() as $gateway) {
+                    $revenue[$gateway] = 0;
+                }
             }
-        }
 
-        return $revenue;
+            return $revenue;
+        });
     }
 
     protected function getColorValue(string $color): string

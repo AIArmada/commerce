@@ -21,6 +21,7 @@ final class SupportServiceProvider extends PackageServiceProvider
             ->name('commerce-support')
             ->hasCommands([
                 Commands\SetupCommand::class,
+                Commands\BoostUpdateCommand::class,
             ]);
     }
 

@@ -24,7 +24,7 @@ final class TotalMrrWidget extends StatsOverviewWidget
         // Calculate MRR by currency
         $mrrByCurrency = $subscriptions
             ->groupBy('currency')
-            ->map(fn (Collection $subs) => $subs->sum('amount'));
+            ->map(fn(Collection $subs) => $subs->sum('amount'));
 
         // Primary MRR (use base currency from config or largest)
         $baseCurrency = config('filament-cashier.currency.base', 'USD');
@@ -55,39 +55,46 @@ final class TotalMrrWidget extends StatsOverviewWidget
     }
 
     /**
+     * Get active subscriptions across all gateways.
+     *
+     * Uses once() to cache the result for the current request, avoiding
+     * redundant database queries during the widget render cycle.
+     *
      * @return Collection<int, UnifiedSubscription>
      */
     protected function getActiveSubscriptions(): Collection
     {
-        $subscriptions = collect();
-        $detector = app(GatewayDetector::class);
+        return once(function (): Collection {
+            $subscriptions = collect();
+            $detector = app(GatewayDetector::class);
 
-        if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-            $stripeSubscriptions = Subscription::query()
-                ->with('items')
-                ->where(function ($query): void {
-                    $query->whereNull('ends_at')
-                        ->orWhere('ends_at', '>', now());
-                })
-                ->get()
-                ->map(fn ($sub) => UnifiedSubscription::fromStripe($sub));
+            if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
+                $stripeSubscriptions = Subscription::query()
+                    ->with('items')
+                    ->where(function ($query): void {
+                        $query->whereNull('ends_at')
+                            ->orWhere('ends_at', '>', now());
+                    })
+                    ->get()
+                    ->map(fn($sub) => UnifiedSubscription::fromStripe($sub));
 
-            $subscriptions = $subscriptions->merge($stripeSubscriptions);
-        }
+                $subscriptions = $subscriptions->merge($stripeSubscriptions);
+            }
 
-        if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
-            $chipSubscriptions = \AIArmada\CashierChip\Models\Subscription::query()
-                ->where(function ($query): void {
-                    $query->whereNull('ends_at')
-                        ->orWhere('ends_at', '>', now());
-                })
-                ->get()
-                ->map(fn ($sub) => UnifiedSubscription::fromChip($sub));
+            if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
+                $chipSubscriptions = \AIArmada\CashierChip\Models\Subscription::query()
+                    ->where(function ($query): void {
+                        $query->whereNull('ends_at')
+                            ->orWhere('ends_at', '>', now());
+                    })
+                    ->get()
+                    ->map(fn($sub) => UnifiedSubscription::fromChip($sub));
 
-            $subscriptions = $subscriptions->merge($chipSubscriptions);
-        }
+                $subscriptions = $subscriptions->merge($chipSubscriptions);
+            }
 
-        return $subscriptions->filter(fn (UnifiedSubscription $sub) => $sub->status->isActive());
+            return $subscriptions->filter(fn(UnifiedSubscription $sub) => $sub->status->isActive());
+        });
     }
 
     protected function formatCurrency(int $amountInCents, string $currency): string

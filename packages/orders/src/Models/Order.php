@@ -1,0 +1,373 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Orders\Models;
+
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\Orders\States\OrderStatus;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
+use Spatie\ModelStates\HasStates;
+
+/**
+ * @property string $id
+ * @property string $order_number
+ * @property OrderStatus $status
+ * @property string|null $customer_id
+ * @property string|null $customer_type
+ * @property string|null $owner_id
+ * @property string|null $owner_type
+ * @property int $subtotal
+ * @property int $discount_total
+ * @property int $shipping_total
+ * @property int $tax_total
+ * @property int $grand_total
+ * @property string $currency
+ * @property string|null $notes
+ * @property string|null $internal_notes
+ * @property array|null $metadata
+ * @property Carbon|null $paid_at
+ * @property Carbon|null $shipped_at
+ * @property Carbon|null $delivered_at
+ * @property Carbon|null $canceled_at
+ * @property string|null $cancellation_reason
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property Carbon|null $deleted_at
+ * @property-read Collection<int, OrderItem> $items
+ * @property-read OrderAddress|null $billingAddress
+ * @property-read OrderAddress|null $shippingAddress
+ * @property-read Collection<int, OrderPayment> $payments
+ * @property-read Collection<int, OrderRefund> $refunds
+ * @property-read Collection<int, OrderNote> $orderNotes
+ */
+class Order extends Model
+{
+    use HasOwner;
+    use HasStates;
+    use HasUuids;
+    use SoftDeletes;
+
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'order_number',
+        'status',
+        'customer_id',
+        'customer_type',
+        'owner_id',
+        'owner_type',
+        'subtotal',
+        'discount_total',
+        'shipping_total',
+        'tax_total',
+        'grand_total',
+        'currency',
+        'notes',
+        'internal_notes',
+        'metadata',
+        'paid_at',
+        'shipped_at',
+        'delivered_at',
+        'canceled_at',
+        'cancellation_reason',
+    ];
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'subtotal' => 0,
+        'discount_total' => 0,
+        'shipping_total' => 0,
+        'tax_total' => 0,
+        'grand_total' => 0,
+        'currency' => 'MYR',
+    ];
+
+    /**
+     * Generate a unique order number.
+     */
+    public static function generateOrderNumber(): string
+    {
+        $config = config('orders.order_number');
+        $prefix = $config['prefix'] ?? 'ORD';
+        $separator = $config['separator'] ?? '-';
+        $length = $config['length'] ?? 8;
+        $useDate = $config['use_date'] ?? true;
+        $dateFormat = $config['date_format'] ?? 'Ymd';
+
+        $parts = [$prefix];
+
+        if ($useDate) {
+            $parts[] = now()->format($dateFormat);
+        }
+
+        $parts[] = mb_strtoupper(Str::random($length));
+
+        return implode($separator, $parts);
+    }
+
+    public function getTable(): string
+    {
+        return config('orders.database.tables.orders', 'orders');
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // RELATIONSHIPS
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * @return HasMany<OrderItem, Order>
+     */
+    public function items(): HasMany
+    {
+        return $this->hasMany(OrderItem::class);
+    }
+
+    /**
+     * @return HasOne<OrderAddress, Order>
+     */
+    public function billingAddress(): HasOne
+    {
+        return $this->hasOne(OrderAddress::class)->where('type', 'billing');
+    }
+
+    /**
+     * @return HasOne<OrderAddress, Order>
+     */
+    public function shippingAddress(): HasOne
+    {
+        return $this->hasOne(OrderAddress::class)->where('type', 'shipping');
+    }
+
+    /**
+     * @return HasMany<OrderAddress, Order>
+     */
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(OrderAddress::class);
+    }
+
+    /**
+     * @return HasMany<OrderPayment, Order>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(OrderPayment::class);
+    }
+
+    /**
+     * @return HasMany<OrderRefund, Order>
+     */
+    public function refunds(): HasMany
+    {
+        return $this->hasMany(OrderRefund::class);
+    }
+
+    /**
+     * @return HasMany<OrderNote, Order>
+     */
+    public function orderNotes(): HasMany
+    {
+        return $this->hasMany(OrderNote::class)->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Polymorphic relationship to the customer (User, Customer model, etc.)
+     *
+     * @return MorphTo<Model, $this>
+     */
+    public function customer(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // STATUS HELPERS
+    // ─────────────────────────────────────────────────────────────
+
+    public function isPaid(): bool
+    {
+        return $this->paid_at !== null;
+    }
+
+    public function isShipped(): bool
+    {
+        return $this->shipped_at !== null;
+    }
+
+    public function isDelivered(): bool
+    {
+        return $this->delivered_at !== null;
+    }
+
+    public function isCanceled(): bool
+    {
+        return $this->canceled_at !== null;
+    }
+
+    public function canBeCanceled(): bool
+    {
+        return $this->status->canCancel();
+    }
+
+    public function canBeRefunded(): bool
+    {
+        return $this->status->canRefund();
+    }
+
+    public function canBeModified(): bool
+    {
+        return $this->status->canModify();
+    }
+
+    public function isFinal(): bool
+    {
+        return $this->status->isFinal();
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // MONEY ACCESSORS
+    // ─────────────────────────────────────────────────────────────
+
+    public function getFormattedSubtotal(): string
+    {
+        return $this->formatMoney($this->subtotal);
+    }
+
+    public function getFormattedDiscountTotal(): string
+    {
+        return $this->formatMoney($this->discount_total);
+    }
+
+    public function getFormattedShippingTotal(): string
+    {
+        return $this->formatMoney($this->shipping_total);
+    }
+
+    public function getFormattedTaxTotal(): string
+    {
+        return $this->formatMoney($this->tax_total);
+    }
+
+    public function getFormattedGrandTotal(): string
+    {
+        return $this->formatMoney($this->grand_total);
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // PAYMENT HELPERS
+    // ─────────────────────────────────────────────────────────────
+
+    public function getTotalPaid(): int
+    {
+        return $this->payments()
+            ->where('status', 'completed')
+            ->sum('amount');
+    }
+
+    public function getTotalRefunded(): int
+    {
+        return $this->refunds()
+            ->where('status', 'completed')
+            ->sum('amount');
+    }
+
+    public function getBalanceDue(): int
+    {
+        return max(0, $this->grand_total - $this->getTotalPaid() + $this->getTotalRefunded());
+    }
+
+    public function isFullyPaid(): bool
+    {
+        return $this->getBalanceDue() === 0;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // ITEM HELPERS
+    // ─────────────────────────────────────────────────────────────
+
+    public function getItemCount(): int
+    {
+        return $this->items()->sum('quantity');
+    }
+
+    public function recalculateTotals(): self
+    {
+        $subtotal = $this->items()->sum('total');
+        $taxTotal = $this->items()->sum('tax_amount');
+
+        $this->subtotal = $subtotal;
+        $this->tax_total = $taxTotal;
+        $this->grand_total = $subtotal + $this->shipping_total + $taxTotal - $this->discount_total;
+
+        return $this;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // BOOT
+    // ─────────────────────────────────────────────────────────────
+
+    protected static function booted(): void
+    {
+        static::creating(function (Order $order): void {
+            if (empty($order->order_number)) {
+                $order->order_number = static::generateOrderNumber();
+            }
+        });
+
+        static::deleting(function (Order $order): void {
+            $order->items()->delete();
+            $order->addresses()->delete();
+            $order->payments()->delete();
+            $order->refunds()->delete();
+            $order->orderNotes()->delete();
+        });
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // CASTS
+    // ─────────────────────────────────────────────────────────────
+
+    protected function casts(): array
+    {
+        return [
+            'status' => OrderStatus::class,
+            'subtotal' => 'integer',
+            'discount_total' => 'integer',
+            'shipping_total' => 'integer',
+            'tax_total' => 'integer',
+            'grand_total' => 'integer',
+            'metadata' => 'array',
+            'paid_at' => 'datetime',
+            'shipped_at' => 'datetime',
+            'delivered_at' => 'datetime',
+            'canceled_at' => 'datetime',
+        ];
+    }
+
+    protected function formatMoney(int $amountInCents): string
+    {
+        $decimalPlaces = config('orders.currency.decimal_places', 2);
+        $symbol = match ($this->currency) {
+            'MYR' => 'RM',
+            'USD' => '$',
+            'EUR' => '€',
+            'GBP' => '£',
+            default => $this->currency . ' ',
+        };
+
+        return $symbol . number_format($amountInCents / 100, $decimalPlaces);
+    }
+}

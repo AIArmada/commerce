@@ -153,6 +153,7 @@ final class ResourcePermissionDiscovery
             'AIArmada\\FilamentInventory\\Resources' => 'packages/filament-inventory/src/Resources',
             'AIArmada\\FilamentAffiliates\\Resources' => 'packages/filament-affiliates/src/Resources',
             'AIArmada\\FilamentChip\\Resources' => 'packages/filament-chip/src/Resources',
+            'AIArmada\\FilamentStock\\Resources' => 'packages/filament-stock/src/Resources',
             'AIArmada\\FilamentJnt\\Resources' => 'packages/filament-jnt/src/Resources',
             'AIArmada\\FilamentDocs\\Resources' => 'packages/filament-docs/src/Resources',
         ];
@@ -161,10 +162,10 @@ final class ResourcePermissionDiscovery
             $path = base_path($knownPackages[$namespace]);
 
             if (is_dir($path)) {
-                $files = glob($path . '/*Resource.php') ?: [];
+                $files = glob($path.'/*Resource.php') ?: [];
 
                 foreach ($files as $file) {
-                    $className = $namespace . '\\' . basename((string) $file, '.php');
+                    $className = $namespace.'\\'.basename((string) $file, '.php');
 
                     if (class_exists($className) && is_subclass_of($className, Resource::class)) {
                         /** @var class-string<resource> $className */

@@ -1,0 +1,232 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentPricing\Resources;
+
+use AIArmada\FilamentPricing\Resources\PromotionResource\Pages;
+use AIArmada\Pricing\Enums\PromotionType;
+use AIArmada\Pricing\Models\Promotion;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+
+class PromotionResource extends Resource
+{
+    protected static ?string $model = Promotion::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-gift';
+
+    protected static ?string $navigationGroup = 'Pricing';
+
+    protected static ?int $navigationSort = 2;
+
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::where('is_active', true)->count() ?: null;
+    }
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Group::make()
+                    ->schema([
+                        Forms\Components\Section::make('Promotion Details')
+                            ->schema([
+                                Forms\Components\TextInput::make('name')
+                                    ->label('Promotion Name')
+                                    ->required()
+                                    ->maxLength(255),
+
+                                Forms\Components\TextInput::make('code')
+                                    ->label('Coupon Code')
+                                    ->helperText('Optional code for coupon-based promotions')
+                                    ->maxLength(50)
+                                    ->unique(ignoreRecord: true),
+
+                                Forms\Components\Textarea::make('description')
+                                    ->label('Description')
+                                    ->rows(3)
+                                    ->columnSpanFull(),
+                            ])
+                            ->columns(2),
+
+                        Forms\Components\Section::make('Discount')
+                            ->schema([
+                                Forms\Components\Select::make('type')
+                                    ->label('Discount Type')
+                                    ->options(
+                                        collect(PromotionType::cases())
+                                            ->mapWithKeys(fn ($type) => [$type->value => $type->label()])
+                                    )
+                                    ->required()
+                                    ->default('percentage')
+                                    ->live(),
+
+                                Forms\Components\TextInput::make('discount_value')
+                                    ->label(fn (Forms\Get $get) => match ($get('type')) {
+                                        'percentage' => 'Discount Percentage (%)',
+                                        'fixed' => 'Discount Amount (cents)',
+                                        default => 'Value',
+                                    })
+                                    ->numeric()
+                                    ->required(),
+
+                                Forms\Components\TextInput::make('min_purchase_amount')
+                                    ->label('Minimum Purchase (cents)')
+                                    ->numeric()
+                                    ->helperText('Minimum order value to apply'),
+
+                                Forms\Components\TextInput::make('min_quantity')
+                                    ->label('Minimum Quantity')
+                                    ->numeric()
+                                    ->helperText('Minimum items in cart'),
+                            ])
+                            ->columns(2),
+
+                        Forms\Components\Section::make('Scheduling')
+                            ->schema([
+                                Forms\Components\DateTimePicker::make('starts_at')
+                                    ->label('Start Date'),
+
+                                Forms\Components\DateTimePicker::make('ends_at')
+                                    ->label('End Date'),
+                            ])
+                            ->columns(2),
+                    ])
+                    ->columnSpan(['lg' => 2]),
+
+                Forms\Components\Group::make()
+                    ->schema([
+                        Forms\Components\Section::make('Settings')
+                            ->schema([
+                                Forms\Components\Toggle::make('is_active')
+                                    ->label('Active')
+                                    ->default(true),
+
+                                Forms\Components\Toggle::make('is_stackable')
+                                    ->label('Stackable')
+                                    ->helperText('Can combine with other promotions'),
+
+                                Forms\Components\TextInput::make('priority')
+                                    ->label('Priority')
+                                    ->numeric()
+                                    ->default(0)
+                                    ->helperText('Higher = apply first'),
+                            ]),
+
+                        Forms\Components\Section::make('Usage Limits')
+                            ->schema([
+                                Forms\Components\TextInput::make('usage_limit')
+                                    ->label('Total Uses')
+                                    ->numeric()
+                                    ->helperText('Leave empty for unlimited'),
+
+                                Forms\Components\TextInput::make('per_customer_limit')
+                                    ->label('Uses Per Customer')
+                                    ->numeric()
+                                    ->helperText('Leave empty for unlimited'),
+
+                                Forms\Components\Placeholder::make('usage_count')
+                                    ->label('Times Used')
+                                    ->content(fn ($record) => $record?->usage_count ?? 0),
+                            ]),
+                    ])
+                    ->columnSpan(['lg' => 1]),
+            ])
+            ->columns(3);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('name')
+                    ->label('Promotion')
+                    ->searchable()
+                    ->sortable()
+                    ->description(fn ($record) => $record->code),
+
+                Tables\Columns\TextColumn::make('type')
+                    ->label('Type')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => $state->label())
+                    ->color(fn ($state) => $state->color()),
+
+                Tables\Columns\TextColumn::make('discount_value')
+                    ->label('Discount')
+                    ->formatStateUsing(fn ($state, $record) => $record->type->formatValue($state)),
+
+                Tables\Columns\TextColumn::make('usage_count')
+                    ->label('Uses')
+                    ->numeric()
+                    ->alignEnd()
+                    ->formatStateUsing(
+                        fn ($state, $record) => $record->usage_limit
+                        ? "{$state}/{$record->usage_limit}"
+                        : $state
+                    ),
+
+                Tables\Columns\IconColumn::make('is_active')
+                    ->label('Active')
+                    ->boolean(),
+
+                Tables\Columns\TextColumn::make('starts_at')
+                    ->label('Starts')
+                    ->dateTime('d M Y')
+                    ->placeholder('Always'),
+
+                Tables\Columns\TextColumn::make('ends_at')
+                    ->label('Ends')
+                    ->dateTime('d M Y')
+                    ->placeholder('Never'),
+            ])
+            ->defaultSort('priority', 'desc')
+            ->filters([
+                Tables\Filters\SelectFilter::make('type')
+                    ->options(
+                        collect(PromotionType::cases())
+                            ->mapWithKeys(fn ($type) => [$type->value => $type->label()])
+                    ),
+
+                Tables\Filters\TernaryFilter::make('is_active')
+                    ->label('Active'),
+            ])
+            ->actions([
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('duplicate')
+                    ->label('Duplicate')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->action(function ($record) {
+                        $new = $record->replicate();
+                        $new->name = $record->name . ' (Copy)';
+                        $new->code = null;
+                        $new->usage_count = 0;
+                        $new->save();
+
+                        return redirect()->route('filament.admin.resources.promotions.edit', $new);
+                    }),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListPromotions::route('/'),
+            'create' => Pages\CreatePromotion::route('/create'),
+            'view' => Pages\ViewPromotion::route('/{record}'),
+            'edit' => Pages\EditPromotion::route('/{record}/edit'),
+        ];
+    }
+}

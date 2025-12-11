@@ -1,5 +1,6 @@
 providers:
   - Laravel\Boost\BoostServiceProvider
+  - AIArmada\CommerceSupport\SupportServiceProvider
   - AIArmada\Cart\CartServiceProvider
   - AIArmada\Chip\ChipServiceProvider
   - AIArmada\CashierChip\CashierChipServiceProvider

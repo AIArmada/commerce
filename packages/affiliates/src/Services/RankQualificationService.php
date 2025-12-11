@@ -14,10 +14,18 @@ use Illuminate\Support\Carbon;
 
 final class RankQualificationService
 {
+    /**
+     * Parameter-keyed cache for calculated metrics.
+     *
+     * @var array<string, array{personal_sales: int, team_sales: int, active_downlines: int, lifetime_value: int}>
+     */
+    private array $metricsCache = [];
+
     public function __construct(
         private readonly NetworkService $networkService,
         private readonly Dispatcher $events
-    ) {}
+    ) {
+    }
 
     /**
      * Evaluate and determine the highest qualifying rank for an affiliate.
@@ -29,7 +37,7 @@ final class RankQualificationService
         return AffiliateRank::query()
             ->orderBy('level', 'asc')
             ->get()
-            ->first(fn (AffiliateRank $rank) => $rank->meetsQualification(
+            ->first(fn(AffiliateRank $rank) => $rank->meetsQualification(
                 $affiliate,
                 $metrics['personal_sales'],
                 $metrics['team_sales'],
@@ -61,20 +69,27 @@ final class RankQualificationService
     }
 
     /**
-     * Process rank changes for a single affiliate.
+     * Evaluate and promote/demote affiliate to appropriate rank.
      */
-    public function processRankChange(Affiliate $affiliate): bool
+    public function processRankChange(Affiliate $affiliate): void
     {
         $newRank = $this->evaluate($affiliate);
 
-        if (! $this->shouldChangeRank($affiliate, $newRank)) {
-            return false;
+        if ($this->shouldChangeRank($affiliate, $newRank)) {
+            $this->changeRank($affiliate, $newRank, RankQualificationReason::Qualified);
         }
+    }
 
-        $reason = $this->determineReason($affiliate, $newRank);
-        $this->changeRank($affiliate, $newRank, $reason);
-
-        return true;
+    /**
+     * Process rank changes for a batch of affiliates.
+     *
+     * @param  iterable<Affiliate>  $affiliates
+     */
+    public function processBatch(iterable $affiliates): void
+    {
+        foreach ($affiliates as $affiliate) {
+            $this->processRankChange($affiliate);
+        }
     }
 
     /**
@@ -88,11 +103,18 @@ final class RankQualificationService
     /**
      * Calculate qualification metrics for an affiliate.
      *
+     * Results are cached for the request lifetime, keyed by affiliate ID + period.
+     *
      * @return array{personal_sales: int, team_sales: int, active_downlines: int, lifetime_value: int}
      */
     public function calculateMetrics(Affiliate $affiliate, ?Carbon $from = null): array
     {
         $from ??= now()->subDays(30);
+        $cacheKey = $this->buildMetricsCacheKey($affiliate, $from);
+
+        if (isset($this->metricsCache[$cacheKey])) {
+            return $this->metricsCache[$cacheKey];
+        }
 
         $personalSales = $affiliate->conversions()
             ->where('occurred_at', '>=', $from)
@@ -104,12 +126,28 @@ final class RankQualificationService
 
         $lifetimeValue = $affiliate->conversions()->sum('total_minor');
 
-        return [
+        return $this->metricsCache[$cacheKey] = [
             'personal_sales' => (int) $personalSales,
             'team_sales' => (int) $teamSales,
             'active_downlines' => $activeDownlines,
             'lifetime_value' => (int) $lifetimeValue,
         ];
+    }
+
+    /**
+     * Build cache key for metrics lookup.
+     */
+    private function buildMetricsCacheKey(Affiliate $affiliate, Carbon $from): string
+    {
+        return $affiliate->id . ':' . $from->toDateString();
+    }
+
+    /**
+     * Clear the metrics cache.
+     */
+    public function clearCache(): void
+    {
+        $this->metricsCache = [];
     }
 
     private function shouldChangeRank(Affiliate $affiliate, ?AffiliateRank $newRank): bool

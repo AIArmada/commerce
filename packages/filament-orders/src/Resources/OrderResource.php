@@ -1,0 +1,361 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentOrders\Resources;
+
+use AIArmada\FilamentOrders\Resources\OrderResource\Pages;
+use AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers;
+use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\States\PendingPayment;
+use AIArmada\Orders\States\Processing;
+use Filament\Forms;
+use Filament\Forms\Form;
+use Filament\Infolists;
+use Filament\Infolists\Infolist;
+use Filament\Resources\Resource;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+
+class OrderResource extends Resource
+{
+    protected static ?string $model = Order::class;
+
+    protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
+
+    protected static ?string $navigationGroup = 'Commerce';
+
+    protected static ?int $navigationSort = 1;
+
+    protected static ?string $recordTitleAttribute = 'order_number';
+
+    public static function getNavigationBadge(): ?string
+    {
+        return static::getModel()::whereState('status', [PendingPayment::class, Processing::class])->count() ?: null;
+    }
+
+    public static function getNavigationBadgeColor(): ?string
+    {
+        return 'warning';
+    }
+
+    public static function form(Form $form): Form
+    {
+        return $form
+            ->schema([
+                Forms\Components\Section::make('Order Information')
+                    ->schema([
+                        Forms\Components\TextInput::make('order_number')
+                            ->label('Order Number')
+                            ->disabled()
+                            ->columnSpan(1),
+
+                        Forms\Components\Select::make('status')
+                            ->label('Status')
+                            ->options([
+                                'pending_payment' => 'Pending Payment',
+                                'processing' => 'Processing',
+                                'on_hold' => 'On Hold',
+                                'shipped' => 'Shipped',
+                                'delivered' => 'Delivered',
+                                'completed' => 'Completed',
+                                'canceled' => 'Canceled',
+                                'returned' => 'Returned',
+                                'refunded' => 'Refunded',
+                            ])
+                            ->disabled()
+                            ->columnSpan(1),
+
+                        Forms\Components\Textarea::make('notes')
+                            ->label('Customer Notes')
+                            ->rows(3)
+                            ->columnSpanFull(),
+
+                        Forms\Components\Textarea::make('internal_notes')
+                            ->label('Internal Notes')
+                            ->rows(3)
+                            ->columnSpanFull(),
+                    ])
+                    ->columns(2),
+
+                Forms\Components\Section::make('Totals')
+                    ->schema([
+                        Forms\Components\TextInput::make('subtotal')
+                            ->label('Subtotal')
+                            ->prefix('RM')
+                            ->numeric()
+                            ->disabled(),
+
+                        Forms\Components\TextInput::make('discount_total')
+                            ->label('Discount')
+                            ->prefix('RM')
+                            ->numeric()
+                            ->disabled(),
+
+                        Forms\Components\TextInput::make('shipping_total')
+                            ->label('Shipping')
+                            ->prefix('RM')
+                            ->numeric()
+                            ->disabled(),
+
+                        Forms\Components\TextInput::make('tax_total')
+                            ->label('Tax')
+                            ->prefix('RM')
+                            ->numeric()
+                            ->disabled(),
+
+                        Forms\Components\TextInput::make('grand_total')
+                            ->label('Grand Total')
+                            ->prefix('RM')
+                            ->numeric()
+                            ->disabled(),
+                    ])
+                    ->columns(5),
+            ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('order_number')
+                    ->label('Order #')
+                    ->searchable()
+                    ->sortable()
+                    ->copyable()
+                    ->weight('bold'),
+
+                Tables\Columns\TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => $state?->label() ?? 'Unknown')
+                    ->color(fn ($state) => match ($state?->color() ?? 'gray') {
+                        'success' => 'success',
+                        'warning' => 'warning',
+                        'danger' => 'danger',
+                        'info' => 'info',
+                        'primary' => 'primary',
+                        default => 'gray',
+                    })
+                    ->icon(fn ($state) => $state?->icon() ?? 'heroicon-o-question-mark-circle'),
+
+                Tables\Columns\TextColumn::make('customer.name')
+                    ->label('Customer')
+                    ->placeholder('Guest')
+                    ->searchable(),
+
+                Tables\Columns\TextColumn::make('items_count')
+                    ->label('Items')
+                    ->counts('items')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('grand_total')
+                    ->label('Total')
+                    ->money('MYR', divideBy: 100)
+                    ->sortable()
+                    ->alignEnd(),
+
+                Tables\Columns\TextColumn::make('paid_at')
+                    ->label('Paid')
+                    ->dateTime('d M Y H:i')
+                    ->placeholder('Not paid')
+                    ->sortable(),
+
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Created')
+                    ->dateTime('d M Y H:i')
+                    ->sortable()
+                    ->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->defaultSort('created_at', 'desc')
+            ->filters([
+                Tables\Filters\SelectFilter::make('status')
+                    ->options([
+                        'pending_payment' => 'Pending Payment',
+                        'processing' => 'Processing',
+                        'on_hold' => 'On Hold',
+                        'fraud' => 'Fraud',
+                        'shipped' => 'Shipped',
+                        'delivered' => 'Delivered',
+                        'completed' => 'Completed',
+                        'canceled' => 'Canceled',
+                        'returned' => 'Returned',
+                        'refunded' => 'Refunded',
+                        'payment_failed' => 'Payment Failed',
+                    ])
+                    ->multiple(),
+
+                Tables\Filters\Filter::make('paid')
+                    ->label('Paid Orders')
+                    ->query(fn (Builder $query) => $query->whereNotNull('paid_at')),
+
+                Tables\Filters\Filter::make('unpaid')
+                    ->label('Unpaid Orders')
+                    ->query(fn (Builder $query) => $query->whereNull('paid_at')),
+
+                Tables\Filters\Filter::make('created_at')
+                    ->form([
+                        Forms\Components\DatePicker::make('from')
+                            ->label('From'),
+                        Forms\Components\DatePicker::make('until')
+                            ->label('Until'),
+                    ])
+                    ->query(function (Builder $query, array $data): Builder {
+                        return $query
+                            ->when(
+                                $data['from'],
+                                fn (Builder $query, $date) => $query->whereDate('created_at', '>=', $date)
+                            )
+                            ->when(
+                                $data['until'],
+                                fn (Builder $query, $date) => $query->whereDate('created_at', '<=', $date)
+                            );
+                    }),
+            ])
+            ->actions([
+                Tables\Actions\ViewAction::make(),
+                Tables\Actions\EditAction::make(),
+                Tables\Actions\Action::make('download_invoice')
+                    ->label('Invoice')
+                    ->icon('heroicon-o-document-arrow-down')
+                    ->url(fn (Order $record) => route('filament-orders.invoice.download', $record))
+                    ->openUrlInNewTab()
+                    ->visible(fn (Order $record) => $record->isPaid()),
+            ])
+            ->bulkActions([
+                Tables\Actions\BulkActionGroup::make([
+                    Tables\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function infolist(Infolist $infolist): Infolist
+    {
+        return $infolist
+            ->schema([
+                Infolists\Components\Section::make('Order Details')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('order_number')
+                            ->label('Order Number')
+                            ->copyable()
+                            ->weight('bold'),
+
+                        Infolists\Components\TextEntry::make('status')
+                            ->label('Status')
+                            ->badge()
+                            ->formatStateUsing(fn ($state) => $state?->label() ?? 'Unknown')
+                            ->color(fn ($state) => match ($state?->color() ?? 'gray') {
+                                'success' => 'success',
+                                'warning' => 'warning',
+                                'danger' => 'danger',
+                                'info' => 'info',
+                                'primary' => 'primary',
+                                default => 'gray',
+                            }),
+
+                        Infolists\Components\TextEntry::make('created_at')
+                            ->label('Order Date')
+                            ->dateTime('d M Y H:i'),
+
+                        Infolists\Components\TextEntry::make('paid_at')
+                            ->label('Paid At')
+                            ->dateTime('d M Y H:i')
+                            ->placeholder('Not paid'),
+                    ])
+                    ->columns(4),
+
+                Infolists\Components\Section::make('Customer')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('customer.name')
+                            ->label('Name')
+                            ->placeholder('Guest'),
+
+                        Infolists\Components\TextEntry::make('customer.email')
+                            ->label('Email')
+                            ->placeholder('-'),
+                    ])
+                    ->columns(2),
+
+                Infolists\Components\Section::make('Addresses')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('billingAddress.formatted')
+                            ->label('Billing Address')
+                            ->getStateUsing(fn ($record) => $record->billingAddress?->getFormatted())
+                            ->placeholder('Not provided')
+                            ->html(),
+
+                        Infolists\Components\TextEntry::make('shippingAddress.formatted')
+                            ->label('Shipping Address')
+                            ->getStateUsing(fn ($record) => $record->shippingAddress?->getFormatted())
+                            ->placeholder('Not provided')
+                            ->html(),
+                    ])
+                    ->columns(2),
+
+                Infolists\Components\Section::make('Order Totals')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('subtotal')
+                            ->label('Subtotal')
+                            ->money('MYR', divideBy: 100),
+
+                        Infolists\Components\TextEntry::make('discount_total')
+                            ->label('Discount')
+                            ->money('MYR', divideBy: 100)
+                            ->visible(fn ($record) => $record->discount_total > 0),
+
+                        Infolists\Components\TextEntry::make('shipping_total')
+                            ->label('Shipping')
+                            ->money('MYR', divideBy: 100),
+
+                        Infolists\Components\TextEntry::make('tax_total')
+                            ->label('Tax')
+                            ->money('MYR', divideBy: 100),
+
+                        Infolists\Components\TextEntry::make('grand_total')
+                            ->label('Grand Total')
+                            ->money('MYR', divideBy: 100)
+                            ->weight('bold')
+                            ->size('lg'),
+                    ])
+                    ->columns(5),
+
+                Infolists\Components\Section::make('Notes')
+                    ->schema([
+                        Infolists\Components\TextEntry::make('notes')
+                            ->label('Customer Notes')
+                            ->placeholder('No notes'),
+
+                        Infolists\Components\TextEntry::make('internal_notes')
+                            ->label('Internal Notes')
+                            ->placeholder('No internal notes'),
+                    ])
+                    ->columns(2)
+                    ->collapsible(),
+            ]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            RelationManagers\ItemsRelationManager::class,
+            RelationManagers\PaymentsRelationManager::class,
+            RelationManagers\NotesRelationManager::class,
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListOrders::route('/'),
+            'create' => Pages\CreateOrder::route('/create'),
+            'view' => Pages\ViewOrder::route('/{record}'),
+            'edit' => Pages\EditOrder::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['order_number'];
+    }
+}
