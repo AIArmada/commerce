@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Services\Discovery;
 
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredPage;
-use Filament\Pages\BasePage;
 use Filament\Pages\Dashboard;
 use Filament\Pages\Page;
 use InvalidArgumentException;
@@ -43,7 +42,7 @@ class PageTransformer
             title: $title,
             slug: $slug,
             cluster: $cluster,
-            permissions: ['view' . class_basename($pageClass)],
+            permissions: ['view'.class_basename($pageClass)],
             metadata: $this->extractMetadata($pageClass),
             panel: $panel,
         );
@@ -69,7 +68,7 @@ class PageTransformer
 
             $metadata['hasForm'] = $reflection->hasMethod('form');
             $metadata['hasTable'] = $reflection->hasMethod('table');
-            $metadata['isWizard'] = is_subclass_of($pageClass, BasePage::class)
+            $metadata['isWizard'] = is_subclass_of($pageClass, \Filament\Pages\BasePage::class)
                 && $reflection->hasMethod('getSteps');
             $metadata['isDashboard'] = is_subclass_of($pageClass, Dashboard::class);
 

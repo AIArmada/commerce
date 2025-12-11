@@ -209,32 +209,64 @@ final class InventoryService
     }
 
     /**
+     * Cached availability data keyed by model identity.
+     *
+     * @var array<string, array<string, int>>
+     */
+    private array $availabilityCache = [];
+
+    /**
+     * Cached total available quantities keyed by model identity.
+     *
+     * @var array<string, int>
+     */
+    private array $totalAvailableCache = [];
+
+    /**
      * Get availability across all locations.
+     *
+     * Uses parameter-keyed caching to avoid redundant queries when the same
+     * model is checked multiple times within a single request (e.g., during checkout).
      *
      * @return array<string, int> Location ID => available quantity
      */
     public function getAvailability(Model $model): array
     {
-        return InventoryLevel::query()
-            ->where('inventoryable_type', $model->getMorphClass())
-            ->where('inventoryable_id', $model->getKey())
-            ->whereHas('location', fn ($q) => $q->where('is_active', true))
-            ->get()
-            ->mapWithKeys(fn (InventoryLevel $level): array => [$level->location_id => $level->available])
-            ->toArray();
+        $cacheKey = $model->getMorphClass() . ':' . $model->getKey();
+
+        if (!isset($this->availabilityCache[$cacheKey])) {
+            $this->availabilityCache[$cacheKey] = InventoryLevel::query()
+                ->where('inventoryable_type', $model->getMorphClass())
+                ->where('inventoryable_id', $model->getKey())
+                ->whereHas('location', fn($q) => $q->where('is_active', true))
+                ->get()
+                ->mapWithKeys(fn(InventoryLevel $level): array => [$level->location_id => $level->available])
+                ->toArray();
+        }
+
+        return $this->availabilityCache[$cacheKey];
     }
 
     /**
      * Get total available quantity across all locations.
+     *
+     * Uses parameter-keyed caching to avoid redundant queries when the same
+     * model is checked multiple times within a single request.
      */
     public function getTotalAvailable(Model $model): int
     {
-        return InventoryLevel::query()
-            ->where('inventoryable_type', $model->getMorphClass())
-            ->where('inventoryable_id', $model->getKey())
-            ->whereHas('location', fn ($q) => $q->where('is_active', true))
-            ->get()
-            ->sum(fn (InventoryLevel $level): int => $level->available);
+        $cacheKey = $model->getMorphClass() . ':' . $model->getKey();
+
+        if (!isset($this->totalAvailableCache[$cacheKey])) {
+            $this->totalAvailableCache[$cacheKey] = InventoryLevel::query()
+                ->where('inventoryable_type', $model->getMorphClass())
+                ->where('inventoryable_id', $model->getKey())
+                ->whereHas('location', fn($q) => $q->where('is_active', true))
+                ->get()
+                ->sum(fn(InventoryLevel $level): int => $level->available);
+        }
+
+        return $this->totalAvailableCache[$cacheKey];
     }
 
     /**
@@ -250,10 +282,29 @@ final class InventoryService
 
     /**
      * Check if sufficient inventory exists.
+     *
+     * Uses the cached getTotalAvailable() to avoid redundant queries.
      */
     public function hasInventory(Model $model, int $quantity): bool
     {
         return $this->getTotalAvailable($model) >= $quantity;
+    }
+
+    /**
+     * Clear the availability cache for a specific model.
+     *
+     * Call this after inventory mutations (receive, ship, transfer, adjust)
+     * if you need fresh data within the same request.
+     */
+    public function clearCache(?Model $model = null): void
+    {
+        if ($model === null) {
+            $this->availabilityCache = [];
+            $this->totalAvailableCache = [];
+        } else {
+            $cacheKey = $model->getMorphClass() . ':' . $model->getKey();
+            unset($this->availabilityCache[$cacheKey], $this->totalAvailableCache[$cacheKey]);
+        }
     }
 
     /**
@@ -337,7 +388,7 @@ final class InventoryService
      */
     private function checkLowInventory(Model $model, InventoryLevel $level): void
     {
-        if (! config('inventory.events.low_inventory', true)) {
+        if (!config('inventory.events.low_inventory', true)) {
             return;
         }
 

@@ -33,12 +33,15 @@
         "pragmarx/google2fa": "^8.0",
         "pragmarx/google2fa-qrcode": "^3.0",
         "rector/rector": "^2.0",
+        "spatie/laravel-activitylog": "^4.10",
         "spatie/laravel-medialibrary": "^11.0",
+        "spatie/laravel-model-states": "^2.8",
         "spatie/laravel-package-tools": "^1.92",
         "spatie/laravel-pdf": "^1.5",
         "spatie/laravel-permission": "^6.23",
         "spatie/laravel-ray": "^1.29",
         "spatie/laravel-settings": "^3.0",
+        "spatie/laravel-sluggable": "^3.7",
         "spatie/laravel-tags": "^4.2",
         "staudenmeir/belongs-to-through": "^2.5",
         "staudenmeir/eloquent-has-many-deep": "^1.7",
@@ -114,6 +117,31 @@
             "AIArmada\\Shipping\\Tests\\": "packages/shipping/tests/",
             "AIArmada\\FilamentShipping\\": "packages/filament-shipping/src",
             "AIArmada\\FilamentShipping\\Tests\\": "packages/filament-shipping/tests/",
+            "AIArmada\\Products\\": "packages/products/src",
+            "AIArmada\\Products\\Database\\Factories\\": "packages/products/database/factories",
+            "AIArmada\\Products\\Tests\\": "packages/products/tests/",
+            "AIArmada\\Customers\\": "packages/customers/src",
+            "AIArmada\\Customers\\Database\\Factories\\": "packages/customers/database/factories",
+            "AIArmada\\Customers\\Tests\\": "packages/customers/tests/",
+            "AIArmada\\Orders\\": "packages/orders/src",
+            "AIArmada\\Orders\\Database\\Factories\\": "packages/orders/database/factories",
+            "AIArmada\\Orders\\Tests\\": "packages/orders/tests/",
+            "AIArmada\\Pricing\\": "packages/pricing/src",
+            "AIArmada\\Pricing\\Database\\Factories\\": "packages/pricing/database/factories",
+            "AIArmada\\Pricing\\Tests\\": "packages/pricing/tests/",
+            "AIArmada\\Tax\\": "packages/tax/src",
+            "AIArmada\\Tax\\Database\\Factories\\": "packages/tax/database/factories",
+            "AIArmada\\Tax\\Tests\\": "packages/tax/tests/",
+            "AIArmada\\FilamentProducts\\": "packages/filament-products/src",
+            "AIArmada\\FilamentProducts\\Tests\\": "packages/filament-products/tests/",
+            "AIArmada\\FilamentCustomers\\": "packages/filament-customers/src",
+            "AIArmada\\FilamentCustomers\\Tests\\": "packages/filament-customers/tests/",
+            "AIArmada\\FilamentOrders\\": "packages/filament-orders/src",
+            "AIArmada\\FilamentOrders\\Tests\\": "packages/filament-orders/tests/",
+            "AIArmada\\FilamentPricing\\": "packages/filament-pricing/src",
+            "AIArmada\\FilamentPricing\\Tests\\": "packages/filament-pricing/tests/",
+            "AIArmada\\FilamentTax\\": "packages/filament-tax/src",
+            "AIArmada\\FilamentTax\\Tests\\": "packages/filament-tax/tests/",
             "Tests\\": "tests/"
         }
     },
@@ -128,8 +156,11 @@
     "minimum-stability": "dev",
     "prefer-stable": true,
     "scripts": {
+        "post-install-cmd": [
+            "@php artisan commerce:boost-update --ansi"
+        ],
         "post-update-cmd": [
-            "@php artisan boost:update --ansi"
+            "@php artisan commerce:boost-update --ansi"
         ],
         "cs": [
             "rector",

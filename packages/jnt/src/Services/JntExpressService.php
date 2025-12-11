@@ -65,7 +65,7 @@ class JntExpressService
             'password' => $this->password,
             'sender' => $sender->toApiArray(),
             'receiver' => $receiver->toApiArray(),
-            'items' => array_map(fn (ItemData $item): array => $item->toApiArray(), $items),
+            'items' => array_map(fn(ItemData $item): array => $item->toApiArray(), $items),
             'packageInfo' => $packageInfo->toApiArray(),
             ...$additionalData,
         ];
@@ -130,7 +130,7 @@ class JntExpressService
     /**
      * @return array<string, mixed>
      */
-    public function cancelOrder(string $orderId, CancellationReason | string $reason, ?string $trackingNumber = null): array
+    public function cancelOrder(string $orderId, CancellationReason|string $reason, ?string $trackingNumber = null): array
     {
         $payload = [
             'customerCode' => $this->customerCode,
@@ -198,7 +198,7 @@ class JntExpressService
 
     public function verifyWebhookSignature(string $bizContent, string $digest): bool
     {
-        if (! ($this->config['webhook']['verify_signature'] ?? true)) {
+        if (!($this->config['webhook']['verify_signature'] ?? true)) {
             return true;
         }
 
@@ -211,7 +211,7 @@ class JntExpressService
      */
     public function parseWebhookPayload(array $webhookData): array
     {
-        if (! isset($webhookData['bizContent'])) {
+        if (!isset($webhookData['bizContent'])) {
             throw JntValidationException::requiredFieldMissing('bizContent');
         }
 
@@ -219,12 +219,12 @@ class JntExpressService
             ? json_decode($webhookData['bizContent'], true)
             : $webhookData['bizContent'];
 
-        if (! is_array($bizContent)) {
+        if (!is_array($bizContent)) {
             throw JntValidationException::invalidFormat('bizContent', 'valid JSON array', gettype($bizContent));
         }
 
         return array_map(
-            fn (array $item): TrackingData => TrackingData::fromApiArray($item),
+            fn(array $item): TrackingData => TrackingData::fromApiArray($item),
             $bizContent
         );
     }
@@ -289,24 +289,27 @@ class JntExpressService
     }
 
     /**
-     * Batch track multiple parcels.
+     * Batch track multiple parcels using parallel execution.
      *
-     * Retrieves tracking information for multiple orders/parcels in a single operation.
-     * Returns both successful tracking data and failed attempts.
+     * Retrieves tracking information for multiple orders/parcels concurrently.
+     * Uses Laravel's Concurrency facade to run API calls in parallel, significantly
+     * improving performance when tracking many parcels.
+     *
+     * Performance: 10 parcels × 300ms = 3s sequential → ~300ms concurrent
      *
      * @param  array<string>  $orderIds  Array of order IDs to track
      * @param  array<string>  $trackingNumbers  Array of tracking numbers to track
-     * @return array{successful: array<TrackingData>, failed: array<array{identifier: string, type: string, error: string, exception: Throwable}>}
+     * @return array{successful: array<TrackingData>, failed: array<array{identifier: string, type: string, error: string}>}
      *
      * @example
      * ```php
-     * // Track by order IDs
+     * // Track by order IDs (runs in parallel)
      * $result = $service->batchTrackParcels(orderIds: ['ORDER1', 'ORDER2', 'ORDER3']);
      *
-     * // Track by tracking numbers
+     * // Track by tracking numbers (runs in parallel)
      * $result = $service->batchTrackParcels(trackingNumbers: ['TN001', 'TN002']);
      *
-     * // Mixed
+     * // Mixed (all run in parallel)
      * $result = $service->batchTrackParcels(
      *     orderIds: ['ORDER1'],
      *     trackingNumbers: ['TN002']
@@ -318,32 +321,44 @@ class JntExpressService
         $successful = [];
         $failed = [];
 
-        // Track by order IDs
+        // Build concurrent tasks - pass primitives only to avoid serialization issues
+        // Each closure will resolve a fresh service instance in its child process
+        $tasks = [];
+
+        // Tasks for order IDs
         foreach ($orderIds as $orderId) {
-            try {
-                $tracking = $this->trackParcel(orderId: $orderId);
-                $successful[] = $tracking;
-            } catch (Throwable $e) {
-                $failed[] = [
-                    'identifier' => $orderId,
-                    'type' => 'orderId',
-                    'error' => $e->getMessage(),
-                    'exception' => $e,
-                ];
-            }
+            $tasks["order:{$orderId}"] = static fn(): array => self::executeTrackingTask(
+                orderId: $orderId,
+                trackingNumber: null,
+            );
         }
 
-        // Track by tracking numbers
+        // Tasks for tracking numbers
         foreach ($trackingNumbers as $trackingNumber) {
-            try {
-                $tracking = $this->trackParcel(trackingNumber: $trackingNumber);
-                $successful[] = $tracking;
-            } catch (Throwable $e) {
+            $tasks["tracking:{$trackingNumber}"] = static fn(): array => self::executeTrackingTask(
+                orderId: null,
+                trackingNumber: $trackingNumber,
+            );
+        }
+
+        // If no tasks, return early
+        if (empty($tasks)) {
+            return ['successful' => [], 'failed' => []];
+        }
+
+        // Execute all tracking requests in parallel
+        /** @var array<string, array{success: bool, data?: TrackingData, error?: string, identifier: string, type: string}> $results */
+        $results = \Illuminate\Support\Facades\Concurrency::run($tasks);
+
+        // Process results
+        foreach ($results as $result) {
+            if ($result['success']) {
+                $successful[] = $result['data'];
+            } else {
                 $failed[] = [
-                    'identifier' => $trackingNumber,
-                    'type' => 'trackingNumber',
-                    'error' => $e->getMessage(),
-                    'exception' => $e,
+                    'identifier' => $result['identifier'],
+                    'type' => $result['type'],
+                    'error' => $result['error'],
                 ];
             }
         }
@@ -352,6 +367,41 @@ class JntExpressService
             'successful' => $successful,
             'failed' => $failed,
         ];
+    }
+
+    /**
+     * Execute a single tracking task in a child process.
+     *
+     * This static method is called in child processes during concurrent execution.
+     * It resolves a fresh JntExpressService instance to ensure proper initialization.
+     *
+     * @return array{success: bool, data?: TrackingData, error?: string, identifier: string, type: string}
+     */
+    private static function executeTrackingTask(?string $orderId, ?string $trackingNumber): array
+    {
+        $identifier = $orderId ?? $trackingNumber ?? '';
+        $type = $orderId !== null ? 'orderId' : 'trackingNumber';
+
+        try {
+            // Resolve a fresh service instance in the child process
+            /** @var JntExpressService $service */
+            $service = app(JntExpressService::class);
+            $tracking = $service->trackParcel(orderId: $orderId, trackingNumber: $trackingNumber);
+
+            return [
+                'success' => true,
+                'data' => $tracking,
+                'identifier' => $identifier,
+                'type' => $type,
+            ];
+        } catch (Throwable $e) {
+            return [
+                'success' => false,
+                'error' => $e->getMessage(),
+                'identifier' => $identifier,
+                'type' => $type,
+            ];
+        }
     }
 
     /**
@@ -377,7 +427,7 @@ class JntExpressService
      * echo "Failed: " . count($result['failed']) . "\n";
      * ```
      */
-    public function batchCancelOrders(array $orderIds, CancellationReason | string $reason): array
+    public function batchCancelOrders(array $orderIds, CancellationReason|string $reason): array
     {
         $successful = [];
         $failed = [];
@@ -405,14 +455,16 @@ class JntExpressService
     }
 
     /**
-     * Batch print waybills for multiple orders.
+     * Batch print waybills for multiple orders using parallel execution.
      *
-     * Prints waybills for multiple orders in a single operation. All waybills
-     * will use the same template if specified.
+     * Prints waybills for multiple orders concurrently. All waybills will use
+     * the same template if specified.
+     *
+     * Performance: 10 waybills × 500ms = 5s sequential → ~500ms concurrent
      *
      * @param  array<string>  $orderIds  Array of order IDs to print
      * @param  string|null  $templateName  Optional template name for all waybills
-     * @return array{successful: array<array{orderId: string, data: array<string, mixed>}>, failed: array<array{orderId: string, error: string, exception: Throwable}>}
+     * @return array{successful: array<array{orderId: string, data: array<string, mixed>}>, failed: array<array{orderId: string, error: string}>}
      *
      * @example
      * ```php
@@ -432,21 +484,33 @@ class JntExpressService
      */
     public function batchPrintWaybills(array $orderIds, ?string $templateName = null): array
     {
+        if (empty($orderIds)) {
+            return ['successful' => [], 'failed' => []];
+        }
+
+        // Build concurrent tasks - pass primitives only
+        $tasks = [];
+        foreach ($orderIds as $orderId) {
+            $tasks[$orderId] = static fn(): array => self::executePrintTask($orderId, $templateName);
+        }
+
+        // Execute all print requests in parallel
+        /** @var array<string, array{success: bool, orderId: string, data?: array<string, mixed>, error?: string}> $results */
+        $results = \Illuminate\Support\Facades\Concurrency::run($tasks);
+
         $successful = [];
         $failed = [];
 
-        foreach ($orderIds as $orderId) {
-            try {
-                $data = $this->printOrder($orderId, null, $templateName);
+        foreach ($results as $result) {
+            if ($result['success']) {
                 $successful[] = [
-                    'orderId' => $orderId,
-                    'data' => $data,
+                    'orderId' => $result['orderId'],
+                    'data' => $result['data'],
                 ];
-            } catch (Throwable $e) {
+            } else {
                 $failed[] = [
-                    'orderId' => $orderId,
-                    'error' => $e->getMessage(),
-                    'exception' => $e,
+                    'orderId' => $result['orderId'],
+                    'error' => $result['error'],
                 ];
             }
         }
@@ -458,11 +522,36 @@ class JntExpressService
     }
 
     /**
+     * Execute a single print task in a child process.
+     *
+     * @return array{success: bool, orderId: string, data?: array<string, mixed>, error?: string}
+     */
+    private static function executePrintTask(string $orderId, ?string $templateName): array
+    {
+        try {
+            /** @var JntExpressService $service */
+            $service = app(JntExpressService::class);
+            $data = $service->printOrder($orderId, null, $templateName);
+
+            return [
+                'success' => true,
+                'orderId' => $orderId,
+                'data' => $data,
+            ];
+        } catch (Throwable $e) {
+            return [
+                'success' => false,
+                'orderId' => $orderId,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+    /**
      * Lazy load the HTTP client only when needed
      */
     protected function getClient(): JntClient
     {
-        if (! $this->client instanceof JntClient) {
+        if (!$this->client instanceof JntClient) {
             $baseUrl = $this->getBaseUrl();
             $apiAccount = $this->config['api_account'] ?? throw JntConfigurationException::missingApiAccount();
             $privateKey = $this->config['private_key'] ?? throw JntConfigurationException::missingPrivateKey();

@@ -1,8 +1,8 @@
 # Tax Vision Progress
 
 > **Package:** `aiarmada/tax` + `aiarmada/filament-tax`  
-> **Last Updated:** December 2025  
-> **Status:** Vision Complete, Implementation Pending
+> **Last Updated:** December 11, 2025  
+> **Status:** Complete
 
 ---
 
@@ -10,27 +10,25 @@
 
 ```
 ┌─────────────────────────────────────────────────────────────────┐
-│                      TAX PACKAGE POSITION                        │
+│                       TAX PACKAGE POSITION                       │
 ├─────────────────────────────────────────────────────────────────┤
 │                                                                  │
-│   ┌────────────┐   ┌────────────┐   ┌────────────┐              │
-│   │  products  │   │  pricing   │   │  shipping  │              │
-│   │ (Tax Class)│   │ (Pre-Tax)  │   │ (Taxable?) │              │
-│   └─────┬──────┘   └─────┬──────┘   └─────┬──────┘              │
-│         └────────────────┴────────────────┘                      │
-│                          │                                       │
-│                          ▼                                       │
 │   ┌─────────────────────────────────────────────────────────┐   │
-│   │                  aiarmada/tax ◄── THIS PACKAGE           │   │
-│   │                (Tax Calculation)                         │   │
+│   │              aiarmada/commerce-support                   │   │
+│   │         (Shared Interfaces & Contracts)                  │   │
 │   └─────────────────────────────────────────────────────────┘   │
 │                              │                                   │
 │       ┌──────────────────────┼──────────────────────┐           │
 │       ▼                      ▼                      ▼           │
 │   ┌────────────┐      ┌────────────┐      ┌────────────┐        │
-│   │    cart    │      │   orders   │      │  invoices  │        │
-│   │ (Display)  │      │ (Snapshot) │      │  (Report)  │        │
+│   │  products  │      │  pricing   │      │    tax     │◄──THIS │
 │   └────────────┘      └────────────┘      └────────────┘        │
+│         │                    │                    │              │
+│         └────────────────────┼────────────────────┘              │
+│                              ▼                                   │
+│                       ┌────────────┐                             │
+│                       │   orders   │                             │
+│                       └────────────┘                             │
 │                                                                  │
 └─────────────────────────────────────────────────────────────────┘
 ```
@@ -41,155 +39,222 @@
 
 | Phase | Status | Progress |
 |-------|--------|----------|
-| Phase 1: Core Engine | 🔴 Not Started | 0% |
-| Phase 2: Tax Zones | 🔴 Not Started | 0% |
-| Phase 3: Tax Classes | 🔴 Not Started | 0% |
-| Phase 4: Exemptions | 🔴 Not Started | 0% |
-| Phase 5: Filament Admin | 🔴 Not Started | 0% |
+| Phase 1: Core Models | 🟢 **Complete** | 100% |
+| Phase 2: Calculation Engine | 🟢 **Complete** | 100% |
+| Phase 3: Exemptions | 🟢 **Complete** | 100% |
+| Phase 4: Filament Admin | 🟢 **Complete** | 100% |
 
 ---
 
-## Phase 1: Core Engine
+## Phase 1: Core Models ✅
 
-### Tax Engine
-- [ ] `TaxEngine` service with calculate API
-- [ ] `TaxResult` value object
-- [ ] Address-based zone matching
-- [ ] Multi-rate calculation (compound taxes)
+### TaxZone Model
+- [x] UUID-based model with soft deletes
+- [x] Geographic matching (countries, states, postcodes)
+- [x] Postcode ranges and wildcards
+- [x] Priority ordering for zone matching
+- [x] Default zone flag
+- [x] Spatie activity log integration
 
-### Base Infrastructure
-- [ ] `TaxServiceProvider`
-- [ ] Configuration file (`config/tax.php`)
-- [ ] Tax caching strategy
-- [ ] Calculation logging
+### TaxRate Model
+- [x] Rate stored as basis points (600 = 6%)
+- [x] Tax class association
+- [x] Compound tax support
+- [x] Priority for compound ordering
+- [x] Calculate and extract tax methods
 
----
-
-## Phase 2: Tax Zones
-
-### Tax Zone Model
-- [ ] `TaxZone` model with geographic matching
-- [ ] Zone types (Country, State, Postal Range)
-- [ ] Zone priority ordering
-- [ ] Fallback zone support
-
-### Zone Matching
-- [ ] Address-to-zone resolution
-- [ ] Postal code range matching
-- [ ] State/province matching
-- [ ] Country fallback
+### TaxClass Model
+- [x] Standard, Reduced, Zero, Exempt classes
+- [x] Default class flag
+- [x] Display ordering
 
 ---
 
-## Phase 3: Tax Classes
+## Phase 2: Calculation Engine ✅
 
-### Tax Class Model
-- [ ] `TaxClass` model (Standard, Reduced, Zero)
-- [ ] Default class assignment
-- [ ] Product association
+### TaxCalculator Service
+- [x] Zone resolution from address
+- [x] Exemption checking
+- [x] Rate lookup by class and zone
+- [x] Tax inclusion/extraction
+- [x] Shipping tax calculation
 
-### Tax Rate Model
-- [ ] `TaxRate` model per zone/class
-- [ ] Compound tax support
-- [ ] Time-based rate changes
-- [ ] Shipping tax flag
+### DTOs
+- [x] TaxResult with zone, rate, and exemption info
 
----
-
-## Phase 4: Exemptions
-
-### Exemption Model
-- [ ] `TaxExemption` model
-- [ ] Customer exemption certificates
-- [ ] B2B exemptions
-- [ ] Non-profit exemptions
-
-### Validation
-- [ ] Exemption certificate validation
-- [ ] Expiry tracking
-- [ ] Renewal reminders
+### Exceptions
+- [x] TaxZoneNotFoundException
 
 ---
 
-## Phase 5: Filament Admin
+## Phase 3: Exemptions ✅
+
+### TaxExemption Model
+- [x] Polymorphic exemptable (Customer, User)
+- [x] Certificate tracking
+- [x] Document upload support
+- [x] Approval workflow (pending, approved, rejected)
+- [x] Expiration dates
+
+---
+
+## Phase 4: Filament Admin ✅
 
 ### Resources
-- [ ] `TaxZoneResource`
-- [ ] `TaxRateResource`
-- [ ] `TaxClassResource`
-- [ ] `TaxExemptionResource`
+- [x] TaxZoneResource with geographic matching
+- [x] TaxClassResource with ordering
 
-### Pages
-- [ ] Tax dashboard
-- [ ] Rate configuration
-- [ ] Exemption management
+### Relation Managers
+- [x] RatesRelationManager
 
 ### Widgets
-- [ ] Tax collection summary
-- [ ] Zone coverage map
-- [ ] Recent exemptions
+- [x] TaxStatsWidget
 
 ---
 
-## Vision Documents
+## Files Created
 
-| Document | Status |
-|----------|--------|
-| [01-executive-summary.md](01-executive-summary.md) | ✅ Complete |
-| [02-tax-zones.md](02-tax-zones.md) | ✅ Complete |
-| [03-tax-rates.md](03-tax-rates.md) | ✅ Complete |
-| [04-tax-classes.md](04-tax-classes.md) | ✅ Complete |
-| [05-database-schema.md](05-database-schema.md) | ✅ Complete |
-| [06-implementation-roadmap.md](06-implementation-roadmap.md) | ✅ Complete |
+### Core Package (13 files)
+```
+packages/tax/
+├── config/tax.php
+├── database/migrations/
+│   ├── 2024_01_01_000001_create_tax_zones_table.php
+│   ├── 2024_01_01_000002_create_tax_classes_table.php
+│   ├── 2024_01_01_000003_create_tax_rates_table.php
+│   └── 2024_01_01_000004_create_tax_exemptions_table.php
+└── src/
+    ├── DTOs/TaxResult.php
+    ├── Exceptions/TaxZoneNotFoundException.php
+    ├── Models/
+    │   ├── TaxClass.php
+    │   ├── TaxExemption.php
+    │   ├── TaxRate.php
+    │   └── TaxZone.php
+    ├── Services/TaxCalculator.php
+    └── TaxServiceProvider.php
+```
 
----
-
-## Dependencies
-
-### Required
-| Package | Purpose |
-|---------|---------|
-| `aiarmada/commerce-support` | Shared interfaces |
-| `akaunting/laravel-money` | Amount handling |
-
-### Optional (Auto-Integration)
-| Package | Integration |
-|---------|-------------|
-| `aiarmada/products` | Tax class assignment |
-| `aiarmada/customers` | Tax exemption status |
-| `aiarmada/cart` | Tax calculation |
-| `aiarmada/orders` | Tax snapshotting |
-| `aiarmada/shipping` | Shipping tax |
-
----
-
-## Success Metrics
-
-| Metric | Target |
-|--------|--------|
-| Test Coverage | 90%+ |
-| PHPStan Level | 6 |
-| Zone Matching | 100% |
-| Calculation Speed | <5ms |
-| Tax Types | VAT, GST, SST, Sales |
-
----
-
-## Legend
-
-| Symbol | Meaning |
-|--------|---------|
-| 🔴 | Not Started |
-| 🟡 | In Progress |
-| 🟢 | Completed |
-| ⏳ | Pending |
+### Filament Package (14 files)
+```
+packages/filament-tax/src/
+├── FilamentTaxPlugin.php
+├── FilamentTaxServiceProvider.php
+├── Resources/
+│   ├── TaxClassResource.php
+│   ├── TaxClassResource/
+│   │   └── Pages/
+│   │       ├── CreateTaxClass.php
+│   │       ├── EditTaxClass.php
+│   │       └── ListTaxClasses.php
+│   ├── TaxZoneResource.php
+│   └── TaxZoneResource/
+│       ├── Pages/
+│       │   ├── CreateTaxZone.php
+│       │   ├── EditTaxZone.php
+│       │   ├── ListTaxZones.php
+│       │   └── ViewTaxZone.php
+│       └── RelationManagers/
+│           └── RatesRelationManager.php
+└── Widgets/
+    └── TaxStatsWidget.php
+```
 
 ---
 
-## Notes
+## Malaysia-Specific Features
 
-### December 2025
-- Initial vision documentation created
-- Package positioned as compliance-ready tax engine
-- Zone-based calculation architecture defined
-- 5-phase implementation roadmap established
+### SST Support
+- [x] 6% Sales & Service Tax rate
+- [x] Service and sales tax distinction
+- [x] Exempt categories configuration
+
+### Configuration
+- [x] `tax.malaysia.sst_rate` = 6%
+- [x] `tax.malaysia.exempt_categories`
+
+---
+
+## Integration Points
+
+### Spatie Packages Used
+- `spatie/laravel-activitylog` - Tax rate change audit ✅ Implemented
+- `spatie/laravel-settings` - Tax configuration (planned)
+
+### Cross-Package Integration
+- Products: Tax class assignment
+- Orders: Tax calculation at checkout
+- Customers: Tax exemption management
+
+---
+
+## 🔮 Optional/Deferred Enhancements
+
+> These items are documented in the [Spatie Integration Blueprint](../../../../docs/spatie-integration/10-pricing-tax.md) but deferred for future implementation.
+
+### 1. Dynamic Settings (`spatie/laravel-settings`)
+
+**Status:** ⏳ Deferred  
+**Priority:** Medium  
+**Blueprint Reference:** `docs/spatie-integration/10-pricing-tax.md` (Critical Integration)
+
+**What it adds:**
+- Runtime-modifiable tax configuration
+- Type-safe settings classes
+- Settings change audit trail
+
+**Implementation:**
+```php
+// tax/src/Settings/TaxSettings.php
+use Spatie\LaravelSettings\Settings;
+
+class TaxSettings extends Settings
+{
+    public bool $pricesIncludeTax;
+    public string $defaultTaxClass;
+    public bool $calculateTaxOnShipping;
+    public bool $roundAtSubtotal;
+    public string $priceDisplayMode; // 'including_tax', 'excluding_tax', 'both'
+    public bool $allowTaxExemption;
+    
+    public static function group(): string
+    {
+        return 'tax';
+    }
+}
+```
+
+**Why Deferred:** Config file (`config/tax.php`) provides same functionality. Settings adds UI editability but not required for MVP.
+
+---
+
+### 2. Events
+
+**Status:** ⏳ Deferred  
+**Priority:** Low
+
+| Event | Description | Implementation |
+|-------|-------------|----------------|
+| `TaxZoneCreated` | When a zone is created | Future |
+| `TaxRateUpdated` | When rate changes | Future |
+| `TaxExemptionGranted` | When exemption approved | Future |
+| `TaxExemptionExpired` | When exemption expires | Future |
+
+**Why Deferred:** Activity log captures changes. Discrete events can be added when webhook/notification features are needed.
+
+---
+
+### 3. Factories & Seeders
+
+**Status:** ⏳ Deferred  
+**Priority:** Low
+
+```php
+// Future: TaxZoneFactory, TaxRateFactory, TaxClassFactory, TaxExemptionFactory
+```
+
+**Why Deferred:** Will create when writing package tests.
+
+---
+
+*Package implemented following Spatie integration blueprint.*

@@ -15,9 +15,33 @@ use Illuminate\Support\Collection;
 class ShippingZoneResolver
 {
     /**
+     * Parameter-keyed cache for zone resolution.
+     *
+     * @var array<string, ShippingZone|null>
+     */
+    private array $resolvedZones = [];
+
+    /**
      * Resolve the matching zone for an address.
+     *
+     * Results are cached for the request lifetime, keyed by address + owner.
+     * This ensures different addresses within the same request get correct zones.
      */
     public function resolve(AddressData $address, ?int $ownerId = null, ?string $ownerType = null): ?ShippingZone
+    {
+        $cacheKey = $this->buildCacheKey($address, $ownerId, $ownerType);
+
+        if (array_key_exists($cacheKey, $this->resolvedZones)) {
+            return $this->resolvedZones[$cacheKey];
+        }
+
+        return $this->resolvedZones[$cacheKey] = $this->performZoneResolution($address, $ownerId, $ownerType);
+    }
+
+    /**
+     * Perform the actual zone resolution (uncached).
+     */
+    private function performZoneResolution(AddressData $address, ?int $ownerId, ?string $ownerType): ?ShippingZone
     {
         $query = ShippingZone::query()
             ->active()
@@ -41,6 +65,31 @@ class ShippingZoneResolver
     }
 
     /**
+     * Build a cache key from address and owner parameters.
+     */
+    private function buildCacheKey(AddressData $address, ?int $ownerId, ?string $ownerType): string
+    {
+        return md5(serialize([
+            'country' => $address->countryCode,
+            'state' => $address->state,
+            'city' => $address->city,
+            'postal' => $address->postCode,
+            'owner_id' => $ownerId,
+            'owner_type' => $ownerType,
+        ]));
+    }
+
+    /**
+     * Clear the zone resolution cache.
+     *
+     * Useful for testing or when zone configuration changes mid-request.
+     */
+    public function clearCache(): void
+    {
+        $this->resolvedZones = [];
+    }
+
+    /**
      * Get all matching zones for an address (not just the first).
      *
      * @return Collection<int, ShippingZone>
@@ -57,7 +106,7 @@ class ShippingZoneResolver
         }
 
         return $query->get()
-            ->filter(fn (ShippingZone $zone) => $zone->matchesAddress($address) || $zone->is_default);
+            ->filter(fn(ShippingZone $zone) => $zone->matchesAddress($address) || $zone->is_default);
     }
 
     /**

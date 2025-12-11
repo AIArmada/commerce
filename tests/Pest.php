@@ -25,6 +25,11 @@ pest()->extend(TestCase::class)->in(
     'src/Stock',
     'src/Affiliates',
     'src/Vouchers',
+    'src/Products',
+    'src/Customers',
+    'src/Orders',
+    'src/Pricing',
+    'src/Tax',
 );
 
 pest()->extend(InventoryTestCase::class)->in('src/Inventory');

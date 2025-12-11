@@ -19,7 +19,9 @@
     "require": {
         "php": "^8.2",
         "aiarmada/products": "^1.0",
-        "filament/filament": "^3.0"
+        "filament/filament": "^3.0",
+        "filament/spatie-laravel-media-library-plugin": "^3.0",
+        "filament/spatie-laravel-tags-plugin": "^3.0"
     },
     "require-dev": {
         "laravel/pint": "^1.0",

@@ -1,0 +1,200 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Tax\Services;
+
+use AIArmada\Tax\DTOs\TaxResult;
+use AIArmada\Tax\Exceptions\TaxZoneNotFoundException;
+use AIArmada\Tax\Models\TaxExemption;
+use AIArmada\Tax\Models\TaxRate;
+use AIArmada\Tax\Models\TaxZone;
+
+class TaxCalculator
+{
+    /**
+     * Calculate tax for an amount.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    public function calculateTax(
+        int $amountInCents,
+        string $taxClass = 'standard',
+        ?string $zoneId = null,
+        array $context = []
+    ): TaxResult {
+        // Check for exemption first
+        $exemption = $this->checkExemption($context);
+        if ($exemption) {
+            return $this->createExemptResult($exemption);
+        }
+
+        // Resolve zone
+        $zone = $this->resolveZone($zoneId, $context);
+
+        // Get applicable rate
+        $rate = $this->getRate($taxClass, $zone);
+
+        // Calculate tax
+        $pricesIncludeTax = config('tax.prices_include_tax', false);
+        $taxAmount = $pricesIncludeTax
+            ? $rate->extractTax($amountInCents)
+            : $rate->calculateTax($amountInCents);
+
+        // Round if configured
+        if (config('tax.round_at_subtotal', true)) {
+            $taxAmount = (int) round($taxAmount);
+        }
+
+        return new TaxResult(
+            taxAmount: $taxAmount,
+            rate: $rate,
+            zone: $zone,
+            includedInPrice: $pricesIncludeTax,
+        );
+    }
+
+    /**
+     * Calculate tax for shipping.
+     */
+    public function calculateShippingTax(int $shippingAmountInCents, ?string $zoneId = null, array $context = []): TaxResult
+    {
+        if (! config('tax.calculate_tax_on_shipping', true)) {
+            return $this->createZeroResult($zoneId, $context);
+        }
+
+        // Use standard tax class for shipping
+        return $this->calculateTax($shippingAmountInCents, 'standard', $zoneId, $context);
+    }
+
+    /**
+     * Resolve the tax zone.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    protected function resolveZone(?string $zoneId, array $context): TaxZone
+    {
+        // If zone ID provided, use it
+        if ($zoneId) {
+            $zone = TaxZone::find($zoneId);
+            if ($zone) {
+                return $zone;
+            }
+        }
+
+        // Try to resolve from address in context
+        if (config('tax.zone_resolution.use_customer_address', true)) {
+            $addressPriority = config('tax.zone_resolution.address_priority', 'shipping');
+            $address = $context["{$addressPriority}_address"] ?? $context['address'] ?? null;
+
+            if ($address) {
+                $zone = $this->findZoneByAddress(
+                    $address['country'] ?? 'MY',
+                    $address['state'] ?? null,
+                    $address['postcode'] ?? null
+                );
+
+                if ($zone) {
+                    return $zone;
+                }
+            }
+        }
+
+        // Use default zone
+        $defaultZone = TaxZone::default()->active()->first();
+        if ($defaultZone) {
+            return $defaultZone;
+        }
+
+        // Handle unknown zone based on config
+        return match (config('tax.zone_resolution.unknown_zone_behavior', 'default')) {
+            'zero' => TaxZone::zeroRate(),
+            'error' => throw new TaxZoneNotFoundException('No tax zone could be resolved'),
+            default => TaxZone::zeroRate(),
+        };
+    }
+
+    /**
+     * Find zone by address.
+     */
+    protected function findZoneByAddress(string $country, ?string $state, ?string $postcode): ?TaxZone
+    {
+        return TaxZone::active()
+            ->orderBy('priority', 'desc')
+            ->get()
+            ->first(fn (TaxZone $zone) => $zone->matchesAddress($country, $state, $postcode));
+    }
+
+    /**
+     * Get the tax rate for a class and zone.
+     */
+    protected function getRate(string $taxClass, TaxZone $zone): TaxRate
+    {
+        $rate = TaxRate::query()
+            ->where('zone_id', $zone->id)
+            ->where('tax_class', $taxClass)
+            ->active()
+            ->orderBy('priority', 'desc')
+            ->first();
+
+        return $rate ?? TaxRate::zeroRate($taxClass, $zone);
+    }
+
+    /**
+     * Check for tax exemption.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    protected function checkExemption(array $context): ?TaxExemption
+    {
+        if (! config('tax.exemptions.enabled', true)) {
+            return null;
+        }
+
+        $customerId = $context['customer_id'] ?? null;
+        if (! $customerId) {
+            return null;
+        }
+
+        return TaxExemption::query()
+            ->where('exemptable_id', $customerId)
+            ->active()
+            ->first();
+    }
+
+    /**
+     * Create an exempt result.
+     */
+    protected function createExemptResult(TaxExemption $exemption): TaxResult
+    {
+        $zone = TaxZone::zeroRate();
+        $rate = TaxRate::zeroRate('exempt', $zone);
+
+        return new TaxResult(
+            taxAmount: 0,
+            rate: $rate,
+            zone: $zone,
+            includedInPrice: false,
+            exemptionReason: $exemption->reason,
+        );
+    }
+
+    /**
+     * Create a zero-tax result.
+     *
+     * @param  array<string, mixed>  $context
+     */
+    protected function createZeroResult(?string $zoneId, array $context): TaxResult
+    {
+        $zone = $zoneId ? TaxZone::find($zoneId) : null;
+        $zone = $zone ?? $this->resolveZone($zoneId, $context);
+        $rate = TaxRate::zeroRate('zero', $zone);
+
+        return new TaxResult(
+            taxAmount: 0,
+            rate: $rate,
+            zone: $zone,
+            includedInPrice: false,
+        );
+    }
+}

@@ -134,7 +134,15 @@ class RateShoppingEngine
     }
 
     /**
-     * Fetch rates from all available carriers.
+     * Fetch rates from all available carriers concurrently.
+     *
+     * Uses Laravel's Concurrency facade to fetch rates from multiple carriers
+     * in parallel, dramatically improving performance when multiple carriers
+     * are configured. Each carrier call is independent with no shared state.
+     *
+     * Performance improvement example:
+     * - Sequential: 5 carriers × 500ms = 2.5 seconds
+     * - Concurrent: ~500ms (slowest carrier)
      *
      * @param  array<PackageData>  $packages
      * @param  array<string, mixed>  $options
@@ -148,15 +156,40 @@ class RateShoppingEngine
     ): Collection {
         $drivers = $this->shippingManager->getDriversForDestination($destination);
 
-        $rates = collect();
+        if ($drivers->isEmpty()) {
+            return collect();
+        }
 
-        foreach ($drivers as $driver) {
-            try {
-                $carrierRates = $driver->getRates($origin, $destination, $packages, $options);
+        // Extract carrier codes (primitives are safely serializable)
+        $carrierCodes = $drivers->map(fn($driver) => $driver->getCarrierCode())->all();
+
+        // Build concurrent tasks - one per carrier
+        // We pass primitives and re-resolve the driver in each child process
+        // to avoid serialization issues with complex driver objects
+        $tasks = collect($carrierCodes)->mapWithKeys(function (string $carrierCode) use ($origin, $destination, $packages, $options) {
+            return [
+                $carrierCode => function () use ($carrierCode, $origin, $destination, $packages, $options) {
+                    try {
+                        // Resolve driver fresh in child process
+                        $driver = app(\AIArmada\Shipping\ShippingManager::class)->driver($carrierCode);
+                        return $driver->getRates($origin, $destination, $packages, $options);
+                    } catch (\Throwable $e) {
+                        // Log error but return empty - other carriers may succeed
+                        report($e);
+                        return collect();
+                    }
+                },
+            ];
+        })->all();
+
+        // Execute all carrier calls concurrently
+        $results = \Illuminate\Support\Facades\Concurrency::run($tasks);
+
+        // Merge all successful results
+        $rates = collect();
+        foreach ($results as $carrierRates) {
+            if ($carrierRates instanceof \Illuminate\Support\Collection) {
                 $rates = $rates->merge($carrierRates);
-            } catch (Throwable $e) {
-                // Log error but continue with other carriers
-                report($e);
             }
         }
 
@@ -172,7 +205,7 @@ class RateShoppingEngine
     {
         $fallbackEnabled = $this->config['fallback_to_manual'] ?? true;
 
-        if (! $fallbackEnabled) {
+        if (!$fallbackEnabled) {
             return null;
         }
 
@@ -192,7 +225,7 @@ class RateShoppingEngine
      */
     protected function buildCacheKey(AddressData $origin, AddressData $destination, array $packages): string
     {
-        $totalWeight = array_sum(array_map(fn (PackageData $p) => $p->weight, $packages));
+        $totalWeight = array_sum(array_map(fn(PackageData $p) => $p->weight, $packages));
 
         return 'shipping:rates:' . md5(serialize([
             'origin' => $origin->postCode,
@@ -204,15 +237,16 @@ class RateShoppingEngine
 
     /**
      * Resolve the rate selection strategy based on config.
+     *
+     * Cached using once() because this method is parameterless and reads
+     * only from immutable config. Safe for request-scoped caching.
      */
     protected function resolveStrategy(): RateSelectionStrategyInterface
     {
-        $strategyName = $this->config['strategy'] ?? 'cheapest';
-
-        return match ($strategyName) {
+        return once(fn() => match ($this->config['strategy'] ?? 'cheapest') {
             'fastest' => new FastestRateStrategy,
             'preferred' => new PreferredCarrierStrategy($this->config['carrier_priority'] ?? []),
             default => new CheapestRateStrategy,
-        };
+        });
     }
 }

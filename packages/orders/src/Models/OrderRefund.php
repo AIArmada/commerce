@@ -1,0 +1,152 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Orders\Models;
+
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Carbon;
+
+/**
+ * @property string $id
+ * @property string $order_id
+ * @property string|null $payment_id
+ * @property string $gateway
+ * @property string|null $transaction_id
+ * @property int $amount
+ * @property string $currency
+ * @property string $status
+ * @property string $reason
+ * @property string|null $notes
+ * @property array|null $metadata
+ * @property Carbon|null $refunded_at
+ * @property Carbon $created_at
+ * @property Carbon $updated_at
+ * @property-read Order $order
+ * @property-read OrderPayment|null $payment
+ */
+class OrderRefund extends Model
+{
+    use HasUuids;
+
+    public $incrementing = false;
+
+    protected $keyType = 'string';
+
+    protected $fillable = [
+        'order_id',
+        'payment_id',
+        'gateway',
+        'transaction_id',
+        'amount',
+        'currency',
+        'status',
+        'reason',
+        'notes',
+        'metadata',
+        'refunded_at',
+    ];
+
+    /**
+     * @var array<string, mixed>
+     */
+    protected $attributes = [
+        'status' => 'pending',
+        'currency' => 'MYR',
+    ];
+
+    public function getTable(): string
+    {
+        return config('orders.database.tables.order_refunds', 'order_refunds');
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // RELATIONSHIPS
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * @return BelongsTo<Order, OrderRefund>
+     */
+    public function order(): BelongsTo
+    {
+        return $this->belongsTo(Order::class);
+    }
+
+    /**
+     * @return BelongsTo<OrderPayment, OrderRefund>
+     */
+    public function payment(): BelongsTo
+    {
+        return $this->belongsTo(OrderPayment::class, 'payment_id');
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // STATUS HELPERS
+    // ─────────────────────────────────────────────────────────────
+
+    public function isPending(): bool
+    {
+        return $this->status === 'pending';
+    }
+
+    public function isCompleted(): bool
+    {
+        return $this->status === 'completed';
+    }
+
+    public function isFailed(): bool
+    {
+        return $this->status === 'failed';
+    }
+
+    public function markAsCompleted(?string $transactionId = null): self
+    {
+        $this->status = 'completed';
+        $this->refunded_at = now();
+
+        if ($transactionId !== null) {
+            $this->transaction_id = $transactionId;
+        }
+
+        $this->save();
+
+        return $this;
+    }
+
+    public function markAsFailed(string $reason): self
+    {
+        $this->status = 'failed';
+        $this->notes = $reason;
+        $this->save();
+
+        return $this;
+    }
+
+    // ─────────────────────────────────────────────────────────────
+    // MONEY HELPERS
+    // ─────────────────────────────────────────────────────────────
+
+    public function getFormattedAmount(): string
+    {
+        $symbol = match ($this->currency) {
+            'MYR' => 'RM',
+            'USD' => '$',
+            'EUR' => '€',
+            'GBP' => '£',
+            default => $this->currency . ' ',
+        };
+
+        return $symbol . number_format($this->amount / 100, 2);
+    }
+
+    protected function casts(): array
+    {
+        return [
+            'amount' => 'integer',
+            'metadata' => 'array',
+            'refunded_at' => 'datetime',
+        ];
+    }
+}

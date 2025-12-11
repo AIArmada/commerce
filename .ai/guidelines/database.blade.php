@@ -1,14 +1,8 @@
 # Database Guidelines
 
-## Primary Keys
-- All tables must use `uuid('id')->primary()` for primary key.
-
-## Foreign Keys
-- Use `foreignUuid('relation_id')` for foreign key columns.
-- **Do NOT** add `->constrained()`, `->cascadeOnDelete()`, or any DB-level constraints/cascading.
-- Application logic must handle referential integrity and cascades.
-
-## Example Migration
+- Primary keys: `uuid('id')->primary()` only.
+- Foreign keys: `foreignUuid('relation_id')`; never use `constrained()` or DB-level cascades—handle in application logic.
+- Sample:
 ```php
 Schema::create('orders', function (Blueprint $table) {
     $table->uuid('id')->primary();
@@ -17,7 +11,4 @@ Schema::create('orders', function (Blueprint $table) {
     $table->timestamps();
 });
 ```
-
-## Verification
-- Review migrations: no `constrained()` or cascade methods on foreign keys.
-- Ensure Eloquent relations handle cascades (e.g., `cascadeOnDelete()` in models).
+- Verify migrations contain no DB constraints; ensure cascades are implemented in models/services instead.

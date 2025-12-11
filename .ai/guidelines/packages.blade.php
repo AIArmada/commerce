@@ -1,28 +1,18 @@
 # Packages Guidelines
 
-## Independence
-- Packages must work fully standalone without requiring other commerce packages.
-- Use `suggest` or optional dependencies in `composer.json`, not `require`.
-
-## Tight Integration
-- When related packages are installed together, enable seamless integrations:
-  - Auto-setup relations, events, middleware via service provider checks.
-  - Use `class_exists()` or `config('package.enabled')` for conditional features.
-
-## Example Service Provider
+- Independence: each package must run standalone; prefer `suggest`/optional deps over `require`.
+- Integration: when co-installed, auto-enable hooks via service providers using `class_exists()`/config toggles.
+- DTOs: all DTOs must use Laravel Data for consistency.
+- Example integration pattern:
 ```php
 public function boot(): void
 {
     if (class_exists(Cashier::class)) {
         // Cart-Cashier integration
     }
-    
     if (class_exists(Chip::class)) {
         // Cart-Chip integration
     }
 }
 ```
-
-## Verification
-- Test standalone: `composer require package/cart`
-- Test integrated: Install multiple, verify auto-features.
+- Verification: test package alone via `composer require package/<pkg>` and together to confirm auto-features.
