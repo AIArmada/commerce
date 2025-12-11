@@ -110,7 +110,7 @@ final class TaxRateForm
 
                                 Placeholder::make('created_info')
                                     ->label('Created')
-                                    ->content(fn($record) => $record?->created_at?->diffForHumans() ?? 'Not created yet'),
+                                    ->content(fn ($record) => $record?->created_at?->diffForHumans() ?? 'Not created yet'),
                             ]),
 
                         Section::make('Additional Info')

@@ -59,11 +59,11 @@ class PriceSimulator extends Page
                             ->label('Product')
                             ->searchable()
                             ->required()
-                            ->visible(fn(Get $get) => $get('product_type') === 'product')
+                            ->visible(fn (Get $get) => $get('product_type') === 'product')
                             ->options(function () {
                                 return \AIArmada\Products\Models\Product::query()
                                     ->get()
-                                    ->mapWithKeys(fn($p) => [
+                                    ->mapWithKeys(fn ($p) => [
                                         $p->id => $p->name . ' (Base: RM' . number_format($p->price / 100, 2) . ')',
                                     ]);
                             }),
@@ -72,11 +72,11 @@ class PriceSimulator extends Page
                             ->label('Variant')
                             ->searchable()
                             ->required()
-                            ->visible(fn(Get $get) => $get('product_type') === 'variant')
+                            ->visible(fn (Get $get) => $get('product_type') === 'variant')
                             ->options(function () {
                                 return \AIArmada\Products\Models\Variant::with('product')
                                     ->get()
-                                    ->mapWithKeys(fn($v) => [
+                                    ->mapWithKeys(fn ($v) => [
                                         $v->id => $v->product->name . ' - ' . $v->sku . ' (RM' . number_format(($v->price ?? $v->product->price) / 100, 2) . ')',
                                     ]);
                             }),
@@ -88,7 +88,7 @@ class PriceSimulator extends Page
                             ->options(function () {
                                 return \AIArmada\Customers\Models\Customer::query()
                                     ->get()
-                                    ->mapWithKeys(fn($c) => [
+                                    ->mapWithKeys(fn ($c) => [
                                         $c->id => $c->full_name . ' (' . $c->email . ')',
                                     ]);
                             }),
@@ -123,7 +123,7 @@ class PriceSimulator extends Page
             $priceable = \AIArmada\Products\Models\Variant::find($data['variant_id']);
         }
 
-        if (!$priceable) {
+        if (! $priceable) {
             $this->result = null;
 
             return;
@@ -168,7 +168,7 @@ class PriceSimulator extends Page
 
     public function resultInfolist(Schema $schema): Schema
     {
-        if (!$this->result) {
+        if (! $this->result) {
             return $schema->schema([]);
         }
 
@@ -247,7 +247,7 @@ class PriceSimulator extends Page
                             ->columnSpanFull(),
                     ])
                     ->visible(
-                        fn() => $this->result['price_list_name'] ||
+                        fn () => $this->result['price_list_name'] ||
                         $this->result['promotion_name'] ||
                         $this->result['tier_description'] ||
                         $this->result['discount_source']
@@ -266,7 +266,7 @@ class PriceSimulator extends Page
                             ])
                             ->columns(2),
                     ])
-                    ->visible(fn() => !empty($this->result['breakdown']))
+                    ->visible(fn () => ! empty($this->result['breakdown']))
                     ->collapsible(),
             ]);
     }
@@ -284,7 +284,7 @@ class PriceSimulator extends Page
                 ->icon('heroicon-o-x-mark')
                 ->color('gray')
                 ->action('clear')
-                ->visible(fn() => $this->result !== null),
+                ->visible(fn () => $this->result !== null),
         ];
     }
 }

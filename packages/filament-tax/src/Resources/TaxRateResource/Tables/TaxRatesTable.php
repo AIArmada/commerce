@@ -32,12 +32,12 @@ final class TaxRatesTable
                     ->label('Rate Name')
                     ->searchable()
                     ->sortable()
-                    ->description(fn(TaxRate $record): ?string => $record->description),
+                    ->description(fn (TaxRate $record): ?string => $record->description),
 
                 TextColumn::make('tax_class')
                     ->label('Class')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'standard' => 'success',
                         'reduced' => 'warning',
                         'zero' => 'gray',
@@ -108,20 +108,20 @@ final class TaxRatesTable
                     ->label('Activate')
                     ->icon(Heroicon::OutlinedCheckCircle)
                     ->color('success')
-                    ->action(fn($records) => $records->each->update(['is_active' => true]))
+                    ->action(fn ($records) => $records->each->update(['is_active' => true]))
                     ->deselectRecordsAfterCompletion(),
                 BulkAction::make('deactivate')
                     ->label('Deactivate')
                     ->icon(Heroicon::OutlinedXCircle)
                     ->color('danger')
-                    ->action(fn($records) => $records->each->update(['is_active' => false]))
+                    ->action(fn ($records) => $records->each->update(['is_active' => false]))
                     ->deselectRecordsAfterCompletion(),
                 BulkAction::make('delete')
                     ->label('Delete Selected')
                     ->icon(Heroicon::OutlinedTrash)
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn($records) => $records->each->delete())
+                    ->action(fn ($records) => $records->each->delete())
                     ->deselectRecordsAfterCompletion(),
             ]);
     }

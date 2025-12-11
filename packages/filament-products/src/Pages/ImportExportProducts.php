@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentProducts\Pages;
 
 use AIArmada\Products\Models\Product;
+use BackedEnum;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms;
@@ -13,7 +14,6 @@ use Filament\Pages\Page;
 use Illuminate\Support\Facades\Storage;
 use League\Csv\Reader;
 use League\Csv\Writer;
-use BackedEnum;
 use UnitEnum;
 
 class ImportExportProducts extends Page
@@ -104,7 +104,7 @@ class ImportExportProducts extends Page
                     $imported++;
                 } catch (Exception $e) {
                     $errors[] = "Row {$offset}: {$e->getMessage()}";
-                    if (!$data['skip_errors']) {
+                    if (! $data['skip_errors']) {
                         throw $e;
                     }
                 }
@@ -119,7 +119,7 @@ class ImportExportProducts extends Page
                 ->success()
                 ->send();
 
-            if (!empty($errors)) {
+            if (! empty($errors)) {
                 Notification::make()
                     ->title('Import errors')
                     ->body(implode("\n", array_slice($errors, 0, 5)))

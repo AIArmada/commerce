@@ -68,7 +68,8 @@ use function class_exists;
  */
 class Voucher extends Model
 {
-    use HasFactory, HasUuids;
+    use HasFactory;
+    use HasUuids;
 
     protected $fillable = [
         'code',
@@ -420,13 +421,13 @@ class Voucher extends Model
             /** @var int|string $key */
             $key = $owner->getKey();
 
-            return $name ?? $displayName ?? $email ?? class_basename($owner).':'.(string) $key;
+            return $name ?? $displayName ?? $email ?? class_basename($owner) . ':' . (string) $key;
         }
 
         /** @var int|string $key */
         $key = $owner->getKey();
 
-        return class_basename($owner).':'.(string) $key;
+        return class_basename($owner) . ':' . (string) $key;
     }
 
     public function getRemainingUsesAttribute(): ?int
@@ -448,7 +449,7 @@ class Voucher extends Model
             // Value is stored in basis points (e.g., 1000 = 10.00%, 1259 = 12.59%)
             $percentage = $value / 100;
 
-            return mb_rtrim(mb_rtrim(number_format($percentage, 2), '0'), '.').' %';
+            return mb_rtrim(mb_rtrim(number_format($percentage, 2), '0'), '.') . ' %';
         }
 
         // Value is stored as cents

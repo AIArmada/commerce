@@ -21,7 +21,7 @@ class OrderTimelineWidget extends Widget implements HasForms
 
     protected string $view = 'filament-orders::widgets.order-timeline';
 
-    protected int|string|array $columnSpan = 'full';
+    protected int | string | array $columnSpan = 'full';
 
     public function mount(Order $record): void
     {
@@ -30,7 +30,7 @@ class OrderTimelineWidget extends Widget implements HasForms
 
     public function getTimelineEvents(): Collection
     {
-        if (!$this->record) {
+        if (! $this->record) {
             return collect([]);
         }
 

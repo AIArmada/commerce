@@ -27,7 +27,7 @@ final class PriceListForm
                                             ->maxLength(255)
                                             ->live(onBlur: true)
                                             ->afterStateUpdated(
-                                                fn(Forms\Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
+                                                fn (Forms\Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
                                             ),
 
                                         Forms\Components\TextInput::make('slug')

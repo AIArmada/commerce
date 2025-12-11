@@ -46,7 +46,7 @@ final class TaxExemptionForm
                                         if ($type === 'AIArmada\\Customers\\Models\\Customer') {
                                             return \AIArmada\Customers\Models\Customer::query()
                                                 ->get()
-                                                ->mapWithKeys(fn($c) => [$c->id => $c->full_name . ' (' . $c->email . ')']);
+                                                ->mapWithKeys(fn ($c) => [$c->id => $c->full_name . ' (' . $c->email . ')']);
                                         }
 
                                         if ($type === 'AIArmada\\Customers\\Models\\CustomerGroup') {
@@ -123,7 +123,7 @@ final class TaxExemptionForm
                                 Placeholder::make('status_info')
                                     ->label('Status')
                                     ->content(function ($record) {
-                                        if (!$record) {
+                                        if (! $record) {
                                             return 'New exemption';
                                         }
 

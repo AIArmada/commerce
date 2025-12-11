@@ -30,7 +30,7 @@ final class TaxExemptionsTable
                     ->label('Customer')
                     ->searchable()
                     ->sortable()
-                    ->description(fn(TaxExemption $record): ?string => $record->exemptable_type === 'AIArmada\\Customers\\Models\\CustomerGroup' ? 'Group' : null),
+                    ->description(fn (TaxExemption $record): ?string => $record->exemptable_type === 'AIArmada\\Customers\\Models\\CustomerGroup' ? 'Group' : null),
 
                 TextColumn::make('certificate_number')
                     ->label('Certificate #')
@@ -55,7 +55,7 @@ final class TaxExemptionsTable
                     ->sortable()
                     ->placeholder('Never')
                     ->color(function (TaxExemption $record): string {
-                        if (!$record->expires_at) {
+                        if (! $record->expires_at) {
                             return 'success';
                         }
 
@@ -70,7 +70,7 @@ final class TaxExemptionsTable
                         return 'success';
                     })
                     ->icon(function (TaxExemption $record): string {
-                        if (!$record->expires_at) {
+                        if (! $record->expires_at) {
                             return 'heroicon-o-infinity';
                         }
 
@@ -108,7 +108,7 @@ final class TaxExemptionsTable
                 Filter::make('expiring_soon')
                     ->label('Expiring in 30 days')
                     ->query(
-                        fn($query) => $query
+                        fn ($query) => $query
                             ->whereNotNull('expires_at')
                             ->where('expires_at', '>=', now())
                             ->where('expires_at', '<=', now()->addDays(30))
@@ -118,7 +118,7 @@ final class TaxExemptionsTable
                 Filter::make('expired')
                     ->label('Expired')
                     ->query(
-                        fn($query) => $query
+                        fn ($query) => $query
                             ->whereNotNull('expires_at')
                             ->where('expires_at', '<', now())
                     )
@@ -132,9 +132,9 @@ final class TaxExemptionsTable
                         ->label('Verify')
                         ->icon(Heroicon::OutlinedCheckBadge)
                         ->color('success')
-                        ->visible(fn(TaxExemption $record): bool => !$record->is_verified)
+                        ->visible(fn (TaxExemption $record): bool => ! $record->is_verified)
                         ->requiresConfirmation()
-                        ->action(fn(TaxExemption $record) => $record->update(['is_verified' => true]))
+                        ->action(fn (TaxExemption $record) => $record->update(['is_verified' => true]))
                         ->successNotificationTitle('Exemption verified'),
                     Action::make('renew')
                         ->label('Renew')
@@ -160,21 +160,21 @@ final class TaxExemptionsTable
                     ->icon(Heroicon::OutlinedCheckBadge)
                     ->color('success')
                     ->requiresConfirmation()
-                    ->action(fn($records) => $records->each->update(['is_verified' => true]))
+                    ->action(fn ($records) => $records->each->update(['is_verified' => true]))
                     ->deselectRecordsAfterCompletion(),
                 BulkAction::make('deactivate')
                     ->label('Deactivate')
                     ->icon(Heroicon::OutlinedXCircle)
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn($records) => $records->each->update(['is_active' => false]))
+                    ->action(fn ($records) => $records->each->update(['is_active' => false]))
                     ->deselectRecordsAfterCompletion(),
                 BulkAction::make('delete')
                     ->label('Delete Selected')
                     ->icon(Heroicon::OutlinedTrash)
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn($records) => $records->each->delete())
+                    ->action(fn ($records) => $records->each->delete())
                     ->deselectRecordsAfterCompletion(),
             ]);
     }
