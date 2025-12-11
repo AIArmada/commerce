@@ -110,12 +110,12 @@ use Filament\Schemas\Components\Fieldset;
 
 ## Files to Refactor
 
-### filament-tax (5 resources)
-- [ ] TaxExemptionResource.php
-- [ ] TaxRateResource.php
-- [ ] TaxZoneResource.php
-- [ ] TaxClassResource.php
-- [ ] RatesRelationManager.php
+### filament-tax (5 resources) ✅ COMPLETE
+- [x] TaxExemptionResource.php ✅
+- [x] TaxRateResource.php ✅
+- [x] TaxZoneResource.php ✅
+- [x] TaxClassResource.php ✅
+- [x] RatesRelationManager.php ✅
 
 ### filament-pricing (4 resources)
 - [ ] PriceListResource.php

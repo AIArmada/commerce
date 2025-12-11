@@ -7,9 +7,9 @@ namespace AIArmada\FilamentShipping\Actions;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Services\BatchRateLimiter;
 use AIArmada\Shipping\Services\TrackingAggregator;
+use Filament\Actions\BulkAction;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Actions\BulkAction;
 use Illuminate\Database\Eloquent\Collection;
 
 class BulkSyncTrackingAction extends BulkAction
@@ -52,26 +52,14 @@ class BulkSyncTrackingAction extends BulkAction
                     $results = BatchRateLimiter::forCarrier($carrierCode)
                         ->execute(
                             $shipments,
-                            function (Shipment $shipment) use ($aggregator) {
-                                $tracking = $aggregator->track($shipment->carrier_code, $shipment->tracking_number);
-
-                                if ($tracking !== null) {
-                                    $shipment->update([
-                                        'last_tracking_sync' => now(),
-                                    ]);
-
-                                    return $tracking;
-                                }
-
-                                return null;
-                            },
+                            fn (Shipment $shipment) => $aggregator->syncTracking($shipment),
                             'sync_tracking'
                         );
 
                     foreach ($results as $result) {
-                        if ($result['success'] && $result['result'] !== null) {
+                        if ($result['success']) {
                             $successCount++;
-                        } elseif (! $result['success']) {
+                        } else {
                             $failCount++;
                         }
                     }

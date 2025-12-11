@@ -101,7 +101,7 @@ class OrderTimelineWidget extends Widget implements HasForms
         }
 
         // Notes
-        foreach ($this->record->notes ?? [] as $note) {
+        foreach ($this->record->orderNotes as $note) {
             $events->push([
                 'type' => 'note',
                 'title' => 'Note Added',
@@ -138,7 +138,7 @@ class OrderTimelineWidget extends Widget implements HasForms
     {
         $data = $this->form->getState();
 
-        $this->record->notes()->create([
+        $this->record->orderNotes()->create([
             'content' => $data['content'],
             'is_visible_to_customer' => $data['is_visible_to_customer'] ?? false,
             'user_id' => auth()->id(),

@@ -13,16 +13,18 @@ use Filament\Pages\Page;
 use Illuminate\Support\Facades\Storage;
 use League\Csv\Reader;
 use League\Csv\Writer;
+use BackedEnum;
+use UnitEnum;
 
 class ImportExportProducts extends Page
 {
     public ?array $importData = [];
 
-    protected static ?string $navigationIcon = 'heroicon-o-arrow-down-tray';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-arrow-down-tray';
 
     protected string $view = 'filament-products::pages.import-export-products';
 
-    protected static ?string $navigationGroup = 'Products';
+    protected static string | UnitEnum | null $navigationGroup = 'Products';
 
     protected static ?int $navigationSort = 99;
 

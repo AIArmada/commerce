@@ -4,13 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Pages;
 
-use AIArmada\Pricing\Services\PricingService;
+use AIArmada\Pricing\Services\PriceCalculator;
+use BackedEnum;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Infolists;
-use Filament\Infolists\Infolist;
+use Filament\Infolists\Components\RepeatableEntry;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
+use Filament\Support\Enums\TextSize;
+use UnitEnum;
 
 class PriceSimulator extends Page
 {
@@ -18,11 +24,11 @@ class PriceSimulator extends Page
 
     public ?array $result = null;
 
-    protected static ?string $navigationIcon = 'heroicon-o-calculator';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-calculator';
 
     protected string $view = 'filament-pricing::pages.price-simulator';
 
-    protected static ?string $navigationGroup = 'Pricing';
+    protected static string | UnitEnum | null $navigationGroup = 'Pricing';
 
     protected static ?int $navigationSort = 99;
 
@@ -33,11 +39,11 @@ class PriceSimulator extends Page
         $this->form->fill();
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Section::make('Input Parameters')
+                Section::make('Input Parameters')
                     ->schema([
                         Forms\Components\Select::make('product_type')
                             ->label('Product Type')
@@ -53,7 +59,7 @@ class PriceSimulator extends Page
                             ->label('Product')
                             ->searchable()
                             ->required()
-                            ->visible(fn(Forms\Get $get) => $get('product_type') === 'product')
+                            ->visible(fn(Get $get) => $get('product_type') === 'product')
                             ->options(function () {
                                 return \AIArmada\Products\Models\Product::query()
                                     ->get()
@@ -66,7 +72,7 @@ class PriceSimulator extends Page
                             ->label('Variant')
                             ->searchable()
                             ->required()
-                            ->visible(fn(Forms\Get $get) => $get('product_type') === 'variant')
+                            ->visible(fn(Get $get) => $get('product_type') === 'variant')
                             ->options(function () {
                                 return \AIArmada\Products\Models\Variant::with('product')
                                     ->get()
@@ -128,12 +134,14 @@ class PriceSimulator extends Page
             ? \AIArmada\Customers\Models\Customer::find($data['customer_id'])
             : null;
 
-        // Calculate price using PricingService
-        $pricingService = app(PricingService::class);
+        // Calculate price using PriceCalculator
+        $pricingService = app(PriceCalculator::class);
+        $context = $customer ? ['customer_id' => $customer->id] : [];
+        /** @var \AIArmada\Pricing\Contracts\Priceable $priceable */
         $priceResult = $pricingService->calculate(
-            priceable: $priceable,
+            item: $priceable,
             quantity: (int) $data['quantity'],
-            customer: $customer
+            context: $context
         );
 
         $this->result = [
@@ -158,82 +166,82 @@ class PriceSimulator extends Page
         $this->form->fill();
     }
 
-    public function resultInfolist(Infolist $infolist): Infolist
+    public function resultInfolist(Schema $schema): Schema
     {
         if (!$this->result) {
-            return $infolist->schema([]);
+            return $schema->schema([]);
         }
 
-        return $infolist
+        return $schema
             ->state($this->result)
             ->schema([
-                Infolists\Components\Section::make('Price Calculation Result')
+                Section::make('Price Calculation Result')
                     ->schema([
-                        Infolists\Components\Grid::make(3)
+                        Grid::make(3)
                             ->schema([
-                                Infolists\Components\TextEntry::make('original_price')
+                                TextEntry::make('original_price')
                                     ->label('Original Price (per unit)')
                                     ->money('MYR')
                                     ->weight(FontWeight::Bold),
 
-                                Infolists\Components\TextEntry::make('final_price')
+                                TextEntry::make('final_price')
                                     ->label('Final Price (per unit)')
                                     ->money('MYR')
                                     ->weight(FontWeight::Bold)
                                     ->color('success'),
 
-                                Infolists\Components\TextEntry::make('discount_amount')
+                                TextEntry::make('discount_amount')
                                     ->label('Discount (per unit)')
                                     ->money('MYR')
                                     ->weight(FontWeight::Bold)
                                     ->color('danger'),
                             ]),
 
-                        Infolists\Components\Grid::make(2)
+                        Grid::make(2)
                             ->schema([
-                                Infolists\Components\TextEntry::make('quantity')
+                                TextEntry::make('quantity')
                                     ->label('Quantity')
                                     ->weight(FontWeight::Bold),
 
-                                Infolists\Components\TextEntry::make('total_price')
+                                TextEntry::make('total_price')
                                     ->label('Total Price')
                                     ->money('MYR')
                                     ->weight(FontWeight::Bold)
-                                    ->size(Infolists\Components\TextEntry\TextEntrySize::Large)
+                                    ->size(TextSize::Large)
                                     ->color('success'),
                             ]),
                     ]),
 
-                Infolists\Components\Section::make('Applied Pricing Rules')
+                Section::make('Applied Pricing Rules')
                     ->schema([
-                        Infolists\Components\Grid::make(2)
+                        Grid::make(2)
                             ->schema([
-                                Infolists\Components\TextEntry::make('price_list_name')
+                                TextEntry::make('price_list_name')
                                     ->label('Price List')
                                     ->placeholder('Default pricing')
                                     ->badge()
                                     ->color('info'),
 
-                                Infolists\Components\TextEntry::make('promotion_name')
+                                TextEntry::make('promotion_name')
                                     ->label('Promotion')
                                     ->placeholder('No promotion applied')
                                     ->badge()
                                     ->color('warning'),
 
-                                Infolists\Components\TextEntry::make('tier_description')
+                                TextEntry::make('tier_description')
                                     ->label('Price Tier')
                                     ->placeholder('No tier pricing')
                                     ->badge()
                                     ->color('success'),
 
-                                Infolists\Components\TextEntry::make('discount_percentage')
+                                TextEntry::make('discount_percentage')
                                     ->label('Discount Percentage')
                                     ->placeholder('0%')
                                     ->suffix('%')
                                     ->numeric(decimalPlaces: 2),
                             ]),
 
-                        Infolists\Components\TextEntry::make('discount_source')
+                        TextEntry::make('discount_source')
                             ->label('Discount Source')
                             ->placeholder('No discount applied')
                             ->columnSpanFull(),
@@ -245,14 +253,14 @@ class PriceSimulator extends Page
                         $this->result['discount_source']
                     ),
 
-                Infolists\Components\Section::make('Breakdown')
+                Section::make('Breakdown')
                     ->schema([
-                        Infolists\Components\RepeatableEntry::make('breakdown')
+                        RepeatableEntry::make('breakdown')
                             ->label('')
                             ->schema([
-                                Infolists\Components\TextEntry::make('step')
+                                TextEntry::make('step')
                                     ->label('Step'),
-                                Infolists\Components\TextEntry::make('value')
+                                TextEntry::make('value')
                                     ->label('Value')
                                     ->money('MYR'),
                             ])

@@ -14,16 +14,18 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use BackedEnum;
+use UnitEnum;
 
 class FulfillmentQueue extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static ?string $navigationIcon = 'heroicon-o-truck';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-truck';
 
     protected string $view = 'filament-orders::pages.fulfillment-queue';
 
-    protected static ?string $navigationGroup = 'Sales';
+    protected static string | UnitEnum | null $navigationGroup = 'Sales';
 
     protected static ?int $navigationSort = 2;
 

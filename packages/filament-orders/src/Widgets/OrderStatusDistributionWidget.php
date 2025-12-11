@@ -9,7 +9,7 @@ use Filament\Widgets\ChartWidget;
 
 class OrderStatusDistributionWidget extends ChartWidget
 {
-    protected static ?string $heading = 'Order Status Distribution';
+    protected ?string $heading = 'Order Status Distribution';
 
     protected static ?int $sort = 3;
 

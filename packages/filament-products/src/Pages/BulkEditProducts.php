@@ -5,26 +5,31 @@ declare(strict_types=1);
 namespace AIArmada\FilamentProducts\Pages;
 
 use AIArmada\Products\Models\Product;
-use Filament\Forms;
+use BackedEnum;
+use Filament\Forms\Components\Radio;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class BulkEditProducts extends Page implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;
 
-    protected static ?string $navigationIcon = 'heroicon-o-pencil-square';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-pencil-square';
 
     protected string $view = 'filament-products::pages.bulk-edit-products';
 
-    protected static ?string $navigationGroup = 'Products';
+    protected static string | UnitEnum | null $navigationGroup = 'Products';
 
     protected static ?int $navigationSort = 98;
 
@@ -35,10 +40,8 @@ class BulkEditProducts extends Page implements HasForms, HasTable
         return $table
             ->query(Product::query())
             ->columns([
-                Tables\Columns\SpatieMediaLibraryImageColumn::make('media')
+                Tables\Columns\ImageColumn::make('hero_image')
                     ->label('')
-                    ->collection('hero')
-                    ->conversion('thumb')
                     ->circular()
                     ->width(50)
                     ->height(50),
@@ -62,7 +65,7 @@ class BulkEditProducts extends Page implements HasForms, HasTable
                     ->numeric()
                     ->sortable()
                     ->badge()
-                    ->color(fn($state) => match (true) {
+                    ->color(fn ($state) => match (true) {
                         $state <= 0 => 'danger',
                         $state <= 10 => 'warning',
                         default => 'success',
@@ -70,7 +73,7 @@ class BulkEditProducts extends Page implements HasForms, HasTable
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn(string $state): string => match ($state) {
+                    ->color(fn (string $state): string => match ($state) {
                         'active' => 'success',
                         'draft' => 'warning',
                         'archived' => 'danger',
@@ -99,7 +102,7 @@ class BulkEditProducts extends Page implements HasForms, HasTable
                         ->icon('heroicon-o-currency-dollar')
                         ->color('success')
                         ->form([
-                            Forms\Components\Radio::make('price_action')
+                            Radio::make('price_action')
                                 ->label('Action')
                                 ->options([
                                     'set' => 'Set to specific value',
@@ -112,8 +115,8 @@ class BulkEditProducts extends Page implements HasForms, HasTable
                                 ->live()
                                 ->default('set'),
 
-                            Forms\Components\TextInput::make('value')
-                                ->label(function (Forms\Get $get) {
+                            TextInput::make('value')
+                                ->label(function (Get $get) {
                                     return match ($get('price_action')) {
                                         'set' => 'New Price (RM)',
                                         'increase_percent', 'decrease_percent' => 'Percentage (%)',
@@ -153,7 +156,7 @@ class BulkEditProducts extends Page implements HasForms, HasTable
                         ->icon('heroicon-o-cube')
                         ->color('warning')
                         ->form([
-                            Forms\Components\Radio::make('stock_action')
+                            Radio::make('stock_action')
                                 ->label('Action')
                                 ->options([
                                     'set' => 'Set to specific quantity',
@@ -164,7 +167,7 @@ class BulkEditProducts extends Page implements HasForms, HasTable
                                 ->live()
                                 ->default('set'),
 
-                            Forms\Components\TextInput::make('quantity')
+                            TextInput::make('quantity')
                                 ->label('Quantity')
                                 ->numeric()
                                 ->required()
@@ -195,7 +198,7 @@ class BulkEditProducts extends Page implements HasForms, HasTable
                         ->label('Change Status')
                         ->icon('heroicon-o-flag')
                         ->form([
-                            Forms\Components\Select::make('status')
+                            Select::make('status')
                                 ->label('New Status')
                                 ->options([
                                     'active' => 'Active',
@@ -221,14 +224,14 @@ class BulkEditProducts extends Page implements HasForms, HasTable
                         ->icon('heroicon-o-folder')
                         ->color('info')
                         ->form([
-                            Forms\Components\Select::make('categories')
+                            Select::make('categories')
                                 ->label('Categories')
                                 ->relationship('categories', 'name')
                                 ->multiple()
                                 ->searchable()
                                 ->preload(),
 
-                            Forms\Components\Radio::make('mode')
+                            Radio::make('mode')
                                 ->label('Mode')
                                 ->options([
                                     'replace' => 'Replace existing categories',

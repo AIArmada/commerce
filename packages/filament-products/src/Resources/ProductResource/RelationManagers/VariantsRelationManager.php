@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
-use Filament\Forms;
-use Filament\Forms\Form;
+use AIArmada\Products\Models\Product;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
@@ -16,60 +20,60 @@ class VariantsRelationManager extends RelationManager
 
     protected static ?string $recordTitleAttribute = 'sku';
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\TextInput::make('sku')
+                TextInput::make('sku')
                     ->label('SKU')
                     ->required()
                     ->unique(ignoreRecord: true)
                     ->maxLength(100),
 
-                Forms\Components\TextInput::make('barcode')
+                TextInput::make('barcode')
                     ->label('Barcode')
                     ->maxLength(100),
 
-                Forms\Components\Section::make('Pricing')
+                Section::make('Pricing')
                     ->schema([
-                        Forms\Components\TextInput::make('price')
+                        TextInput::make('price')
                             ->label('Price Override')
                             ->numeric()
                             ->prefix('RM')
                             ->helperText('Leave blank to use product price'),
 
-                        Forms\Components\TextInput::make('compare_price')
+                        TextInput::make('compare_price')
                             ->label('Compare Price')
                             ->numeric()
                             ->prefix('RM'),
 
-                        Forms\Components\TextInput::make('cost')
+                        TextInput::make('cost')
                             ->label('Cost')
                             ->numeric()
                             ->prefix('RM'),
                     ])
                     ->columns(3),
 
-                Forms\Components\Section::make('Physical Attributes')
+                Section::make('Physical Attributes')
                     ->schema([
-                        Forms\Components\TextInput::make('weight')
+                        TextInput::make('weight')
                             ->label('Weight')
                             ->numeric()
                             ->suffix('kg'),
 
-                        Forms\Components\Grid::make(3)
+                        Grid::make(3)
                             ->schema([
-                                Forms\Components\TextInput::make('length')
+                                TextInput::make('length')
                                     ->label('Length')
                                     ->numeric()
                                     ->suffix('cm'),
 
-                                Forms\Components\TextInput::make('width')
+                                TextInput::make('width')
                                     ->label('Width')
                                     ->numeric()
                                     ->suffix('cm'),
 
-                                Forms\Components\TextInput::make('height')
+                                TextInput::make('height')
                                     ->label('Height')
                                     ->numeric()
                                     ->suffix('cm'),
@@ -77,11 +81,11 @@ class VariantsRelationManager extends RelationManager
                     ])
                     ->collapsible(),
 
-                Forms\Components\Toggle::make('is_enabled')
+                Toggle::make('is_enabled')
                     ->label('Enabled')
                     ->default(true),
 
-                Forms\Components\Toggle::make('is_default')
+                Toggle::make('is_default')
                     ->label('Default Variant'),
             ]);
     }
@@ -143,6 +147,7 @@ class VariantsRelationManager extends RelationManager
                     ->modalHeading('Generate Product Variants')
                     ->modalDescription('This will generate all possible variant combinations from the product options. Existing variants will be removed.')
                     ->action(function (): void {
+                        /** @var Product $product */
                         $product = $this->getOwnerRecord();
                         $service = app(\AIArmada\Products\Services\VariantGeneratorService::class);
                         $variants = $service->generate($product);

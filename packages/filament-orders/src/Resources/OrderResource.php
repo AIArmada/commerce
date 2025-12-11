@@ -9,22 +9,24 @@ use AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
+use BackedEnum;
 use Filament\Forms;
-use Filament\Forms\Form;
-use Filament\Infolists;
-use Filament\Infolists\Infolist;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use UnitEnum;
 
 class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-shopping-bag';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-shopping-bag';
 
-    protected static ?string $navigationGroup = 'Commerce';
+    protected static string | UnitEnum | null $navigationGroup = 'Commerce';
 
     protected static ?int $navigationSort = 1;
 
@@ -40,11 +42,11 @@ class OrderResource extends Resource
         return 'warning';
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Section::make('Order Information')
+                Section::make('Order Information')
                     ->schema([
                         Forms\Components\TextInput::make('order_number')
                             ->label('Order Number')
@@ -79,7 +81,7 @@ class OrderResource extends Resource
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Totals')
+                Section::make('Totals')
                     ->schema([
                         Forms\Components\TextInput::make('subtotal')
                             ->label('Subtotal')
@@ -230,18 +232,18 @@ class OrderResource extends Resource
             ]);
     }
 
-    public static function infolist(Infolist $infolist): Infolist
+    public static function infolist(Schema $schema): Schema
     {
-        return $infolist
+        return $schema
             ->schema([
-                Infolists\Components\Section::make('Order Details')
+                Section::make('Order Details')
                     ->schema([
-                        Infolists\Components\TextEntry::make('order_number')
+                        TextEntry::make('order_number')
                             ->label('Order Number')
                             ->copyable()
                             ->weight('bold'),
 
-                        Infolists\Components\TextEntry::make('status')
+                        TextEntry::make('status')
                             ->label('Status')
                             ->badge()
                             ->formatStateUsing(fn ($state) => $state?->label() ?? 'Unknown')
@@ -254,38 +256,38 @@ class OrderResource extends Resource
                                 default => 'gray',
                             }),
 
-                        Infolists\Components\TextEntry::make('created_at')
+                        TextEntry::make('created_at')
                             ->label('Order Date')
                             ->dateTime('d M Y H:i'),
 
-                        Infolists\Components\TextEntry::make('paid_at')
+                        TextEntry::make('paid_at')
                             ->label('Paid At')
                             ->dateTime('d M Y H:i')
                             ->placeholder('Not paid'),
                     ])
                     ->columns(4),
 
-                Infolists\Components\Section::make('Customer')
+                Section::make('Customer')
                     ->schema([
-                        Infolists\Components\TextEntry::make('customer.name')
+                        TextEntry::make('customer.name')
                             ->label('Name')
                             ->placeholder('Guest'),
 
-                        Infolists\Components\TextEntry::make('customer.email')
+                        TextEntry::make('customer.email')
                             ->label('Email')
                             ->placeholder('-'),
                     ])
                     ->columns(2),
 
-                Infolists\Components\Section::make('Addresses')
+                Section::make('Addresses')
                     ->schema([
-                        Infolists\Components\TextEntry::make('billingAddress.formatted')
+                        TextEntry::make('billingAddress.formatted')
                             ->label('Billing Address')
                             ->getStateUsing(fn ($record) => $record->billingAddress?->getFormatted())
                             ->placeholder('Not provided')
                             ->html(),
 
-                        Infolists\Components\TextEntry::make('shippingAddress.formatted')
+                        TextEntry::make('shippingAddress.formatted')
                             ->label('Shipping Address')
                             ->getStateUsing(fn ($record) => $record->shippingAddress?->getFormatted())
                             ->placeholder('Not provided')
@@ -293,26 +295,26 @@ class OrderResource extends Resource
                     ])
                     ->columns(2),
 
-                Infolists\Components\Section::make('Order Totals')
+                Section::make('Order Totals')
                     ->schema([
-                        Infolists\Components\TextEntry::make('subtotal')
+                        TextEntry::make('subtotal')
                             ->label('Subtotal')
                             ->money('MYR', divideBy: 100),
 
-                        Infolists\Components\TextEntry::make('discount_total')
+                        TextEntry::make('discount_total')
                             ->label('Discount')
                             ->money('MYR', divideBy: 100)
                             ->visible(fn ($record) => $record->discount_total > 0),
 
-                        Infolists\Components\TextEntry::make('shipping_total')
+                        TextEntry::make('shipping_total')
                             ->label('Shipping')
                             ->money('MYR', divideBy: 100),
 
-                        Infolists\Components\TextEntry::make('tax_total')
+                        TextEntry::make('tax_total')
                             ->label('Tax')
                             ->money('MYR', divideBy: 100),
 
-                        Infolists\Components\TextEntry::make('grand_total')
+                        TextEntry::make('grand_total')
                             ->label('Grand Total')
                             ->money('MYR', divideBy: 100)
                             ->weight('bold')
@@ -320,13 +322,13 @@ class OrderResource extends Resource
                     ])
                     ->columns(5),
 
-                Infolists\Components\Section::make('Notes')
+                Section::make('Notes')
                     ->schema([
-                        Infolists\Components\TextEntry::make('notes')
+                        TextEntry::make('notes')
                             ->label('Customer Notes')
                             ->placeholder('No notes'),
 
-                        Infolists\Components\TextEntry::make('internal_notes')
+                        TextEntry::make('internal_notes')
                             ->label('Internal Notes')
                             ->placeholder('No internal notes'),
                     ])

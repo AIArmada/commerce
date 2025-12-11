@@ -10,25 +10,33 @@ use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
 use AIArmada\Products\Models\Product;
-use Filament\Forms;
-use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
-use Filament\Forms\Components\SpatieTagsInput;
-use Filament\Forms\Form;
-use Filament\Infolists;
-use Filament\Infolists\Infolist;
+use BackedEnum;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Set;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Schema;
 use Filament\Tables;
-use Filament\Tables\Columns\SpatieMediaLibraryImageColumn;
-use Filament\Tables\Columns\SpatieTagsColumn;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-cube';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-cube';
 
-    protected static ?string $navigationGroup = 'Catalog';
+    protected static string | UnitEnum | null $navigationGroup = 'Catalog';
 
     protected static ?int $navigationSort = 1;
 
@@ -39,56 +47,56 @@ class ProductResource extends Resource
         return static::getModel()::where('status', ProductStatus::Active)->count() ?: null;
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Group::make()
+                Group::make()
                     ->schema([
-                        Forms\Components\Section::make('Product Information')
+                        Section::make('Product Information')
                             ->schema([
-                                Forms\Components\TextInput::make('name')
+                                TextInput::make('name')
                                     ->label('Product Name')
                                     ->required()
                                     ->maxLength(255)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(
-                                        fn (Forms\Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
+                                        fn (Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
                                     ),
 
-                                Forms\Components\TextInput::make('slug')
+                                TextInput::make('slug')
                                     ->label('URL Slug')
                                     ->required()
                                     ->maxLength(100)
                                     ->unique(ignoreRecord: true),
 
-                                Forms\Components\MarkdownEditor::make('description')
+                                MarkdownEditor::make('description')
                                     ->label('Description')
                                     ->columnSpanFull(),
 
-                                Forms\Components\Textarea::make('short_description')
+                                Textarea::make('short_description')
                                     ->label('Short Description')
                                     ->rows(2)
                                     ->columnSpanFull(),
                             ])
                             ->columns(2),
 
-                        Forms\Components\Section::make('Pricing')
+                        Section::make('Pricing')
                             ->schema([
-                                Forms\Components\TextInput::make('price')
+                                TextInput::make('price')
                                     ->label('Price')
                                     ->numeric()
                                     ->prefix('RM')
                                     ->required()
                                     ->minValue(0),
 
-                                Forms\Components\TextInput::make('compare_price')
+                                TextInput::make('compare_price')
                                     ->label('Compare at Price')
                                     ->numeric()
                                     ->prefix('RM')
                                     ->helperText('Original price before discount'),
 
-                                Forms\Components\TextInput::make('cost')
+                                TextInput::make('cost')
                                     ->label('Cost per Item')
                                     ->numeric()
                                     ->prefix('RM')
@@ -96,59 +104,59 @@ class ProductResource extends Resource
                             ])
                             ->columns(3),
 
-                        Forms\Components\Section::make('Inventory')
+                        Section::make('Inventory')
                             ->schema([
-                                Forms\Components\TextInput::make('sku')
+                                TextInput::make('sku')
                                     ->label('SKU')
                                     ->unique(ignoreRecord: true)
                                     ->maxLength(100),
 
-                                Forms\Components\TextInput::make('barcode')
+                                TextInput::make('barcode')
                                     ->label('Barcode (ISBN, UPC, GTIN, etc.)')
                                     ->maxLength(100),
                             ])
                             ->columns(2),
 
-                        Forms\Components\Section::make('Shipping')
+                        Section::make('Shipping')
                             ->schema([
-                                Forms\Components\Toggle::make('requires_shipping')
+                                Toggle::make('requires_shipping')
                                     ->label('This is a physical product')
                                     ->default(true),
 
-                                Forms\Components\TextInput::make('weight')
+                                TextInput::make('weight')
                                     ->label('Weight')
                                     ->numeric()
                                     ->suffix('kg')
-                                    ->visible(fn (Forms\Get $get) => $get('requires_shipping')),
+                                    ->visible(fn (Get $get) => $get('requires_shipping')),
 
-                                Forms\Components\Grid::make(3)
+                                Grid::make(3)
                                     ->schema([
-                                        Forms\Components\TextInput::make('length')
+                                        TextInput::make('length')
                                             ->label('Length')
                                             ->numeric()
                                             ->suffix('cm'),
 
-                                        Forms\Components\TextInput::make('width')
+                                        TextInput::make('width')
                                             ->label('Width')
                                             ->numeric()
                                             ->suffix('cm'),
 
-                                        Forms\Components\TextInput::make('height')
+                                        TextInput::make('height')
                                             ->label('Height')
                                             ->numeric()
                                             ->suffix('cm'),
                                     ])
-                                    ->visible(fn (Forms\Get $get) => $get('requires_shipping')),
+                                    ->visible(fn (Get $get) => $get('requires_shipping')),
                             ]),
 
-                        Forms\Components\Section::make('SEO')
+                        Section::make('SEO')
                             ->schema([
-                                Forms\Components\TextInput::make('meta_title')
+                                TextInput::make('meta_title')
                                     ->label('Meta Title')
                                     ->maxLength(70)
                                     ->helperText('Leave blank to use product name'),
 
-                                Forms\Components\Textarea::make('meta_description')
+                                Textarea::make('meta_description')
                                     ->label('Meta Description')
                                     ->rows(3)
                                     ->maxLength(160),
@@ -157,11 +165,11 @@ class ProductResource extends Resource
                     ])
                     ->columnSpan(['lg' => 2]),
 
-                Forms\Components\Group::make()
+                Group::make()
                     ->schema([
-                        Forms\Components\Section::make('Status')
+                        Section::make('Status')
                             ->schema([
-                                Forms\Components\Select::make('status')
+                                Select::make('status')
                                     ->label('Status')
                                     ->options(
                                         collect(ProductStatus::cases())
@@ -170,7 +178,7 @@ class ProductResource extends Resource
                                     ->required()
                                     ->default('draft'),
 
-                                Forms\Components\Select::make('visibility')
+                                Select::make('visibility')
                                     ->label('Visibility')
                                     ->options(
                                         collect(ProductVisibility::cases())
@@ -179,9 +187,9 @@ class ProductResource extends Resource
                                     ->default('catalog_search'),
                             ]),
 
-                        Forms\Components\Section::make('Product Type')
+                        Section::make('Product Type')
                             ->schema([
-                                Forms\Components\Select::make('type')
+                                Select::make('type')
                                     ->label('Type')
                                     ->options(
                                         collect(ProductType::cases())
@@ -190,49 +198,44 @@ class ProductResource extends Resource
                                     ->required()
                                     ->default('simple'),
 
-                                Forms\Components\Toggle::make('is_featured')
+                                Toggle::make('is_featured')
                                     ->label('Featured Product'),
 
-                                Forms\Components\Toggle::make('is_taxable')
+                                Toggle::make('is_taxable')
                                     ->label('Charge Tax')
                                     ->default(true),
                             ]),
 
-                        Forms\Components\Section::make('Media')
+                        Section::make('Media')
                             ->schema([
-                                SpatieMediaLibraryFileUpload::make('hero')
-                                    ->collection('hero')
+                                FileUpload::make('hero_image')
                                     ->label('Featured Image')
                                     ->image()
-                                    ->imageEditor()
-                                    ->responsiveImages(),
+                                    ->imageEditor(),
 
-                                SpatieMediaLibraryFileUpload::make('gallery')
-                                    ->collection('gallery')
+                                FileUpload::make('gallery_images')
                                     ->label('Gallery')
                                     ->image()
                                     ->multiple()
                                     ->reorderable()
                                     ->imageEditor()
-                                    ->responsiveImages()
                                     ->maxFiles(20),
                             ]),
 
-                        Forms\Components\Section::make('Organization')
+                        Section::make('Organization')
                             ->schema([
-                                Forms\Components\Select::make('categories')
+                                Select::make('categories')
                                     ->label('Categories')
                                     ->relationship('categories', 'name')
                                     ->multiple()
                                     ->preload()
                                     ->searchable(),
 
-                                SpatieTagsInput::make('tags')
+                                TagsInput::make('tags')
                                     ->label('Tags'),
 
-                                SpatieTagsInput::make('colors')
-                                    ->label('Colors')
-                                    ->type('colors'),
+                                TagsInput::make('colors')
+                                    ->label('Colors'),
                             ]),
                     ])
                     ->columnSpan(['lg' => 1]),
@@ -244,8 +247,7 @@ class ProductResource extends Resource
     {
         return $table
             ->columns([
-                SpatieMediaLibraryImageColumn::make('hero')
-                    ->collection('hero')
+                Tables\Columns\ImageColumn::make('hero_image')
                     ->circular()
                     ->size(40),
 
@@ -285,8 +287,10 @@ class ProductResource extends Resource
                     ->boolean()
                     ->toggleable(),
 
-                SpatieTagsColumn::make('tags')
+                Tables\Columns\TextColumn::make('tags')
                     ->label('Tags')
+                    ->badge()
+                    ->separator(',')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('variants_count')
@@ -359,22 +363,22 @@ class ProductResource extends Resource
             ]);
     }
 
-    public static function infolist(Infolist $infolist): Infolist
+    public static function infolist(Schema $schema): Schema
     {
-        return $infolist
+        return $schema
             ->schema([
-                Infolists\Components\Section::make('Product Details')
+                Section::make('Product Details')
                     ->schema([
-                        Infolists\Components\TextEntry::make('name')
+                        TextEntry::make('name')
                             ->label('Name'),
-                        Infolists\Components\TextEntry::make('sku')
+                        TextEntry::make('sku')
                             ->label('SKU')
                             ->copyable(),
-                        Infolists\Components\TextEntry::make('type')
+                        TextEntry::make('type')
                             ->label('Type')
                             ->badge()
                             ->formatStateUsing(fn ($state) => $state->label()),
-                        Infolists\Components\TextEntry::make('status')
+                        TextEntry::make('status')
                             ->label('Status')
                             ->badge()
                             ->formatStateUsing(fn ($state) => $state->label())
@@ -382,22 +386,22 @@ class ProductResource extends Resource
                     ])
                     ->columns(4),
 
-                Infolists\Components\Section::make('Pricing')
+                Section::make('Pricing')
                     ->schema([
-                        Infolists\Components\TextEntry::make('price')
+                        TextEntry::make('price')
                             ->money('MYR', divideBy: 100),
-                        Infolists\Components\TextEntry::make('compare_price')
+                        TextEntry::make('compare_price')
                             ->money('MYR', divideBy: 100)
                             ->visible(fn ($record) => $record->compare_price),
-                        Infolists\Components\TextEntry::make('cost')
+                        TextEntry::make('cost')
                             ->money('MYR', divideBy: 100)
                             ->visible(fn ($record) => $record->cost),
                     ])
                     ->columns(3),
 
-                Infolists\Components\Section::make('Description')
+                Section::make('Description')
                     ->schema([
-                        Infolists\Components\TextEntry::make('description')
+                        TextEntry::make('description')
                             ->markdown()
                             ->columnSpanFull(),
                     ])

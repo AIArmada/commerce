@@ -6,22 +6,30 @@ namespace AIArmada\FilamentProducts\Resources;
 
 use AIArmada\FilamentProducts\Resources\CategoryResource\Pages;
 use AIArmada\Products\Models\Category;
-use Filament\Forms;
-use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
-use Filament\Forms\Form;
-use Filament\Infolists;
-use Filament\Infolists\Infolist;
+use BackedEnum;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Forms\Set;
+use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Group;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use UnitEnum;
 
 class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
 
-    protected static ?string $navigationIcon = 'heroicon-o-folder';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-folder';
 
-    protected static ?string $navigationGroup = 'Catalog';
+    protected static string | UnitEnum | null $navigationGroup = 'Catalog';
 
     protected static ?int $navigationSort = 2;
 
@@ -32,30 +40,30 @@ class CategoryResource extends Resource
         return static::getModel()::count() ?: null;
     }
 
-    public static function form(Form $form): Form
+    public static function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Group::make()
+                Group::make()
                     ->schema([
-                        Forms\Components\Section::make('Category Information')
+                        Section::make('Category Information')
                             ->schema([
-                                Forms\Components\TextInput::make('name')
+                                TextInput::make('name')
                                     ->label('Category Name')
                                     ->required()
                                     ->maxLength(255)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(
-                                        fn (Forms\Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
+                                        fn (Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
                                     ),
 
-                                Forms\Components\TextInput::make('slug')
+                                TextInput::make('slug')
                                     ->label('URL Slug')
                                     ->required()
                                     ->maxLength(100)
                                     ->unique(ignoreRecord: true),
 
-                                Forms\Components\Select::make('parent_id')
+                                Select::make('parent_id')
                                     ->label('Parent Category')
                                     ->relationship('parent', 'name')
                                     ->searchable()
@@ -63,20 +71,20 @@ class CategoryResource extends Resource
                                     ->placeholder('None (Root Category)')
                                     ->helperText('Leave blank to make this a root category'),
 
-                                Forms\Components\MarkdownEditor::make('description')
+                                MarkdownEditor::make('description')
                                     ->label('Description')
                                     ->columnSpanFull(),
                             ])
                             ->columns(2),
 
-                        Forms\Components\Section::make('SEO')
+                        Section::make('SEO')
                             ->schema([
-                                Forms\Components\TextInput::make('meta_title')
+                                TextInput::make('meta_title')
                                     ->label('Meta Title')
                                     ->maxLength(70)
                                     ->helperText('Leave blank to use category name'),
 
-                                Forms\Components\Textarea::make('meta_description')
+                                Textarea::make('meta_description')
                                     ->label('Meta Description')
                                     ->rows(3)
                                     ->maxLength(160),
@@ -85,47 +93,42 @@ class CategoryResource extends Resource
                     ])
                     ->columnSpan(['lg' => 2]),
 
-                Forms\Components\Group::make()
+                Group::make()
                     ->schema([
-                        Forms\Components\Section::make('Display')
+                        Section::make('Display')
                             ->schema([
-                                Forms\Components\TextInput::make('position')
+                                TextInput::make('position')
                                     ->label('Position')
                                     ->numeric()
                                     ->default(0)
                                     ->helperText('Lower numbers appear first'),
 
-                                Forms\Components\Toggle::make('is_visible')
+                                Toggle::make('is_visible')
                                     ->label('Visible')
                                     ->default(true)
                                     ->helperText('Show in navigation and listing'),
 
-                                Forms\Components\Toggle::make('is_featured')
+                                Toggle::make('is_featured')
                                     ->label('Featured')
                                     ->helperText('Highlight on homepage'),
                             ]),
 
-                        Forms\Components\Section::make('Media')
+                        Section::make('Media')
                             ->schema([
-                                SpatieMediaLibraryFileUpload::make('hero')
-                                    ->collection('hero')
+                                FileUpload::make('hero_image')
                                     ->label('Hero Image')
                                     ->image()
-                                    ->imageEditor()
-                                    ->responsiveImages(),
+                                    ->imageEditor(),
 
-                                SpatieMediaLibraryFileUpload::make('icon')
-                                    ->collection('icon')
+                                FileUpload::make('icon_image')
                                     ->label('Icon Image')
                                     ->image()
                                     ->imageEditor(),
 
-                                SpatieMediaLibraryFileUpload::make('banner')
-                                    ->collection('banner')
+                                FileUpload::make('banner_image')
                                     ->label('Banner Image')
                                     ->image()
-                                    ->imageEditor()
-                                    ->responsiveImages(),
+                                    ->imageEditor(),
                             ]),
                     ])
                     ->columnSpan(['lg' => 1]),
@@ -219,35 +222,35 @@ class CategoryResource extends Resource
             ]);
     }
 
-    public static function infolist(Infolist $infolist): Infolist
+    public static function infolist(Schema $schema): Schema
     {
-        return $infolist
+        return $schema
             ->schema([
-                Infolists\Components\Section::make('Category Details')
+                Section::make('Category Details')
                     ->schema([
-                        Infolists\Components\TextEntry::make('name')
+                        TextEntry::make('name')
                             ->label('Name'),
-                        Infolists\Components\TextEntry::make('slug')
+                        TextEntry::make('slug')
                             ->label('Slug')
                             ->copyable(),
-                        Infolists\Components\TextEntry::make('parent.name')
+                        TextEntry::make('parent.name')
                             ->label('Parent')
                             ->placeholder('Root Category'),
-                        Infolists\Components\TextEntry::make('full_path')
+                        TextEntry::make('full_path')
                             ->label('Full Path')
                             ->getStateUsing(fn ($record) => $record->getFullPath()),
                     ])
                     ->columns(2),
 
-                Infolists\Components\Section::make('Statistics')
+                Section::make('Statistics')
                     ->schema([
-                        Infolists\Components\TextEntry::make('products_count')
+                        TextEntry::make('products_count')
                             ->label('Direct Products')
                             ->getStateUsing(fn ($record) => $record->products()->count()),
-                        Infolists\Components\TextEntry::make('all_products_count')
+                        TextEntry::make('all_products_count')
                             ->label('All Products (including children)')
                             ->getStateUsing(fn ($record) => $record->getProductCount(true)),
-                        Infolists\Components\TextEntry::make('children_count')
+                        TextEntry::make('children_count')
                             ->label('Child Categories')
                             ->getStateUsing(fn ($record) => $record->children()->count()),
                     ])

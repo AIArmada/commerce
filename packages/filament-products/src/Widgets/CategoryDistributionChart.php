@@ -9,7 +9,7 @@ use Filament\Widgets\ChartWidget;
 
 class CategoryDistributionChart extends ChartWidget
 {
-    protected static ?string $heading = 'Products by Category';
+    protected ?string $heading = 'Products by Category';
 
     protected static ?int $sort = 4;
 
