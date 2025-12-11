@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Vouchers\Campaigns\Models\Campaign;
 use AIArmada\Vouchers\Campaigns\Models\CampaignVariant;
 use AIArmada\Vouchers\Enums\VoucherStatus;
@@ -16,7 +17,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 // Conditional import for affiliate integration
 use function class_exists;
@@ -68,8 +68,7 @@ use function class_exists;
  */
 class Voucher extends Model
 {
-    use HasFactory;
-    use HasUuids;
+    use HasFactory, HasOwner, HasUuids;
 
     protected $fillable = [
         'code',
@@ -132,11 +131,6 @@ class Voucher extends Model
         $relation = $this->hasMany(VoucherTransaction::class);
 
         return $relation;
-    }
-
-    public function owner(): MorphTo
-    {
-        return $this->morphTo();
     }
 
     /**
@@ -421,13 +415,13 @@ class Voucher extends Model
             /** @var int|string $key */
             $key = $owner->getKey();
 
-            return $name ?? $displayName ?? $email ?? class_basename($owner) . ':' . (string) $key;
+            return $name ?? $displayName ?? $email ?? class_basename($owner).':'.(string) $key;
         }
 
         /** @var int|string $key */
         $key = $owner->getKey();
 
-        return class_basename($owner) . ':' . (string) $key;
+        return class_basename($owner).':'.(string) $key;
     }
 
     public function getRemainingUsesAttribute(): ?int
