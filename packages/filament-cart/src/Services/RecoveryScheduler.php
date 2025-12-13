@@ -153,7 +153,7 @@ class RecoveryScheduler
         }
 
         // Exclude carts already in this campaign
-        $query->whereNotExists(function ($subquery) use ($campaign) {
+        $query->whereNotExists(function ($subquery) use ($campaign): void {
             $prefix = config('filament-cart.database.table_prefix', 'cart_');
             $subquery->select(DB::raw(1))
                 ->from($prefix . 'recovery_attempts')
@@ -162,7 +162,7 @@ class RecoveryScheduler
         });
 
         // Only get carts with contact info
-        $query->where(function ($q) {
+        $query->where(function ($q): void {
             $q->whereNotNull('email')
                 ->orWhereRaw("JSON_EXTRACT(metadata, '$.email') IS NOT NULL");
         });

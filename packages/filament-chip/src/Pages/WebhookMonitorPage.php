@@ -23,6 +23,14 @@ class WebhookMonitorPage extends Page implements HasTable
 {
     use InteractsWithTable;
 
+    public ?WebhookHealth $health = null;
+
+    /** @var array<string, int> */
+    public array $eventDistribution = [];
+
+    /** @var array<string, int> */
+    public array $failureBreakdown = [];
+
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedSignal;
 
     protected static ?string $navigationLabel = 'Webhook Monitor';
@@ -33,13 +41,15 @@ class WebhookMonitorPage extends Page implements HasTable
 
     protected static ?int $navigationSort = 100;
 
-    public ?WebhookHealth $health = null;
+    public static function getNavigationGroup(): ?string
+    {
+        return config('filament-chip.navigation.group', 'Payments');
+    }
 
-    /** @var array<string, int> */
-    public array $eventDistribution = [];
-
-    /** @var array<string, int> */
-    public array $failureBreakdown = [];
+    public static function shouldRegisterNavigation(): bool
+    {
+        return true;
+    }
 
     public function mount(): void
     {
@@ -48,51 +58,6 @@ class WebhookMonitorPage extends Page implements HasTable
         $this->health = $monitor->getHealth();
         $this->eventDistribution = $monitor->getEventDistribution();
         $this->failureBreakdown = $monitor->getFailureBreakdown();
-    }
-
-    public static function getNavigationGroup(): ?string
-    {
-        return config('filament-chip.navigation.group', 'Payments');
-    }
-
-    protected function getHeaderActions(): array
-    {
-        return [
-            Action::make('retry_failed')
-                ->label('Retry Failed')
-                ->icon(Heroicon::ArrowPath)
-                ->color('warning')
-                ->requiresConfirmation()
-                ->action(function (): void {
-                    $manager = app(WebhookRetryManager::class);
-                    $retryable = $manager->getRetryableWebhooks()->take(10);
-
-                    $succeeded = 0;
-                    $failed = 0;
-
-                    foreach ($retryable as $webhook) {
-                        $result = $manager->retry($webhook);
-                        if ($result->isSuccess()) {
-                            $succeeded++;
-                        } else {
-                            $failed++;
-                        }
-                    }
-
-                    Notification::make()
-                        ->title('Retry Complete')
-                        ->body("{$succeeded} succeeded, {$failed} failed")
-                        ->success()
-                        ->send();
-
-                    $this->mount(); // Refresh data
-                }),
-
-            Action::make('refresh')
-                ->label('Refresh')
-                ->icon(Heroicon::ArrowPath)
-                ->action(fn () => $this->mount()),
-        ];
     }
 
     public function table(Table $table): Table
@@ -164,8 +129,43 @@ class WebhookMonitorPage extends Page implements HasTable
         ]);
     }
 
-    public static function shouldRegisterNavigation(): bool
+    protected function getHeaderActions(): array
     {
-        return true;
+        return [
+            Action::make('retry_failed')
+                ->label('Retry Failed')
+                ->icon(Heroicon::ArrowPath)
+                ->color('warning')
+                ->requiresConfirmation()
+                ->action(function (): void {
+                    $manager = app(WebhookRetryManager::class);
+                    $retryable = $manager->getRetryableWebhooks()->take(10);
+
+                    $succeeded = 0;
+                    $failed = 0;
+
+                    foreach ($retryable as $webhook) {
+                        $result = $manager->retry($webhook);
+                        if ($result->isSuccess()) {
+                            $succeeded++;
+                        } else {
+                            $failed++;
+                        }
+                    }
+
+                    Notification::make()
+                        ->title('Retry Complete')
+                        ->body("{$succeeded} succeeded, {$failed} failed")
+                        ->success()
+                        ->send();
+
+                    $this->mount(); // Refresh data
+                }),
+
+            Action::make('refresh')
+                ->label('Refresh')
+                ->icon(Heroicon::ArrowPath)
+                ->action(fn () => $this->mount()),
+        ];
     }
 }

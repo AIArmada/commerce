@@ -110,6 +110,23 @@ class MetricsAggregator
     }
 
     /**
+     * Backfill metrics for a date range.
+     */
+    public function backfill(Carbon $startDate, Carbon $endDate): int
+    {
+        $days = 0;
+        $current = $startDate->copy();
+
+        while ($current->lte($endDate)) {
+            $this->aggregateForDate($current);
+            $current->addDay();
+            $days++;
+        }
+
+        return $days;
+    }
+
+    /**
      * Get failure breakdown for a date range and payment method.
      *
      * @return array<string, int>
@@ -129,22 +146,5 @@ class MetricsAggregator
             ->groupBy('reason')
             ->pluck('count', 'reason')
             ->toArray();
-    }
-
-    /**
-     * Backfill metrics for a date range.
-     */
-    public function backfill(Carbon $startDate, Carbon $endDate): int
-    {
-        $days = 0;
-        $current = $startDate->copy();
-
-        while ($current->lte($endDate)) {
-            $this->aggregateForDate($current);
-            $current->addDay();
-            $days++;
-        }
-
-        return $days;
     }
 }

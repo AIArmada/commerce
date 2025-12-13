@@ -228,7 +228,7 @@ class AnalyticsPage extends Page
             ->send();
 
         return Response::streamDownload(
-            function () use ($filePath) {
+            function () use ($filePath): void {
                 echo file_get_contents($filePath);
                 unlink($filePath);
             },

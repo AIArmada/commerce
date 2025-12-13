@@ -81,7 +81,7 @@ class RecoveryDispatcher
         $htmlBody = $template->renderHtmlBody($variables);
         $textBody = $template->renderTextBody($variables);
 
-        Mail::send([], [], function ($message) use ($attempt, $template, $subject, $htmlBody, $textBody) {
+        Mail::send([], [], function ($message) use ($attempt, $template, $subject, $htmlBody, $textBody): void {
             $message->to($attempt->recipient_email, $attempt->recipient_name)
                 ->subject($subject)
                 ->html($htmlBody);
