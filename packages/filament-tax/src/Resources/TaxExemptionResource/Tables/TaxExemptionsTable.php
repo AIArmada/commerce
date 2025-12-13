@@ -13,11 +13,9 @@ use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
 use Filament\Forms\Components\DatePicker;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
-use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 
 final class TaxExemptionsTable
@@ -30,13 +28,15 @@ final class TaxExemptionsTable
                     ->label('Customer')
                     ->searchable()
                     ->sortable()
+                    ->placeholder('N/A')
                     ->description(fn (TaxExemption $record): ?string => $record->exemptable_type === 'AIArmada\\Customers\\Models\\CustomerGroup' ? 'Group' : null),
 
                 TextColumn::make('certificate_number')
                     ->label('Certificate #')
                     ->searchable()
                     ->copyable()
-                    ->sortable(),
+                    ->sortable()
+                    ->placeholder('—'),
 
                 TextColumn::make('taxZone.name')
                     ->label('Zone')
@@ -44,10 +44,21 @@ final class TaxExemptionsTable
                     ->placeholder('All Zones')
                     ->color('info'),
 
+                TextColumn::make('status')
+                    ->label('Status')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'approved' => 'success',
+                        'pending' => 'warning',
+                        'rejected' => 'danger',
+                        default => 'gray',
+                    }),
+
                 TextColumn::make('starts_at')
                     ->label('Valid From')
                     ->date('d M Y')
-                    ->sortable(),
+                    ->sortable()
+                    ->placeholder('—'),
 
                 TextColumn::make('expires_at')
                     ->label('Expires')
@@ -84,14 +95,6 @@ final class TaxExemptionsTable
 
                         return 'heroicon-o-check-circle';
                     }),
-
-                IconColumn::make('is_verified')
-                    ->label('Verified')
-                    ->boolean(),
-
-                IconColumn::make('is_active')
-                    ->label('Active')
-                    ->boolean(),
             ])
             ->defaultSort('expires_at', 'asc')
             ->filters([
@@ -99,11 +102,13 @@ final class TaxExemptionsTable
                     ->label('Zone')
                     ->relationship('taxZone', 'name'),
 
-                TernaryFilter::make('is_verified')
-                    ->label('Verified'),
-
-                TernaryFilter::make('is_active')
-                    ->label('Active'),
+                SelectFilter::make('status')
+                    ->label('Status')
+                    ->options([
+                        'pending' => 'Pending',
+                        'approved' => 'Approved',
+                        'rejected' => 'Rejected',
+                    ]),
 
                 Filter::make('expiring_soon')
                     ->label('Expiring in 30 days')
@@ -128,14 +133,14 @@ final class TaxExemptionsTable
                 ActionGroup::make([
                     ViewAction::make(),
                     EditAction::make(),
-                    Action::make('verify')
-                        ->label('Verify')
+                    Action::make('approve')
+                        ->label('Approve')
                         ->icon(Heroicon::OutlinedCheckBadge)
                         ->color('success')
-                        ->visible(fn (TaxExemption $record): bool => ! $record->is_verified)
+                        ->visible(fn (TaxExemption $record): bool => $record->status === 'pending')
                         ->requiresConfirmation()
-                        ->action(fn (TaxExemption $record) => $record->update(['is_verified' => true]))
-                        ->successNotificationTitle('Exemption verified'),
+                        ->action(fn (TaxExemption $record) => $record->approve())
+                        ->successNotificationTitle('Exemption approved'),
                     Action::make('renew')
                         ->label('Renew')
                         ->icon(Heroicon::OutlinedArrowPath)
@@ -155,19 +160,19 @@ final class TaxExemptionsTable
                 ]),
             ])
             ->toolbarActions([
-                BulkAction::make('verify')
-                    ->label('Verify Selected')
+                BulkAction::make('approve')
+                    ->label('Approve Selected')
                     ->icon(Heroicon::OutlinedCheckBadge)
                     ->color('success')
                     ->requiresConfirmation()
-                    ->action(fn ($records) => $records->each->update(['is_verified' => true]))
+                    ->action(fn ($records) => $records->each->approve())
                     ->deselectRecordsAfterCompletion(),
-                BulkAction::make('deactivate')
-                    ->label('Deactivate')
+                BulkAction::make('reject')
+                    ->label('Reject Selected')
                     ->icon(Heroicon::OutlinedXCircle)
                     ->color('danger')
                     ->requiresConfirmation()
-                    ->action(fn ($records) => $records->each->update(['is_active' => false]))
+                    ->action(fn ($records) => $records->each->reject('Bulk rejected'))
                     ->deselectRecordsAfterCompletion(),
                 BulkAction::make('delete')
                     ->label('Delete Selected')

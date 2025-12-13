@@ -23,10 +23,14 @@
         "filament/filament": "^3.0"
     },
     "require-dev": {
+        "filament/spatie-laravel-settings-plugin": "^3.0",
         "laravel/pint": "^1.0",
         "orchestra/testbench": "^9.0|^10.0",
         "pestphp/pest": "^3.0",
         "phpstan/phpstan": "^2.0"
+    },
+    "suggest": {
+        "filament/spatie-laravel-settings-plugin": "Required for the ManageTaxSettings page"
     },
     "autoload": {
         "psr-4": {

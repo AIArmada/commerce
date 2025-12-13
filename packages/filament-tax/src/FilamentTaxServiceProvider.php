@@ -15,6 +15,17 @@ class FilamentTaxServiceProvider extends ServiceProvider
 
     public function boot(): void
     {
-        //
+        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'filament-tax');
+        $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'filament-tax');
+
+        if ($this->app->runningInConsole()) {
+            $this->publishes([
+                __DIR__ . '/../resources/views' => resource_path('views/vendor/filament-tax'),
+            ], 'filament-tax-views');
+
+            $this->publishes([
+                __DIR__ . '/../resources/lang' => lang_path('vendor/filament-tax'),
+            ], 'filament-tax-lang');
+        }
     }
 }

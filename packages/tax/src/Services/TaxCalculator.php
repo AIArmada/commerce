@@ -156,9 +156,12 @@ class TaxCalculator
             return null;
         }
 
+        $zoneId = $context['zone_id'] ?? null;
+
         return TaxExemption::query()
             ->where('exemptable_id', $customerId)
             ->active()
+            ->forZone($zoneId)
             ->first();
     }
 

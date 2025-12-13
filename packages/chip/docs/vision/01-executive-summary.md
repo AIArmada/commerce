@@ -109,6 +109,10 @@ Better builders, validation, error handling, and testing utilities.
 | 03 | [Enhanced Webhooks](03-enhanced-webhooks.md) | Advanced webhook handling |
 | 04 | [Local Analytics](04-local-analytics.md) | Revenue analytics from local data |
 | 05 | [Implementation Roadmap](05-implementation-roadmap.md) | Phased delivery plan |
+| 06 | [CHIP Send Admin](06-chip-send-admin.md) | Payout management UI |
+| 07 | [Financial Management](07-financial-management.md) | Live balance, statements |
+| 08 | [Token & Webhook Mgmt](08-token-webhook-management.md) | Token and webhook config |
+| 09 | [Operations & Bulk](09-operations-bulk-actions.md) | Refunds, bulk payouts, exports |
 
 ---
 
@@ -136,42 +140,62 @@ Better builders, validation, error handling, and testing utilities.
 ## Roadmap Overview
 
 ```
-Phase 1: Recurring Payments (3-4 weeks)
+Phase 1-4: COMPLETED ✅
     │
-    ├── ChipRecurringSchedule model (local)
-    ├── Scheduled payment jobs
-    ├── Token lifecycle management
-    └── Retry logic for failed charges
+    ├── Recurring Payments (app-layer)
+    ├── Enhanced Webhooks (pipeline + handlers)
+    ├── Local Analytics (aggregation + dashboard)
+    └── Filament Integration (widgets + resources)
 
-Phase 2: Enhanced Webhooks (2 weeks)
+Phase 5: CHIP Send Admin (P0 - Critical)
     │
-    ├── Enriched payload processing
-    ├── Improved routing
-    └── Retry & monitoring
+    ├── SendInstructionResource (payouts)
+    ├── BankAccountResource
+    ├── PayoutDashboardPage
+    └── 4 Payout widgets
 
-Phase 3: Local Analytics (2 weeks)
+Phase 6: Financial Management (P1 - High)
     │
-    ├── Aggregation from purchases
-    ├── Dashboard widgets
-    └── Export functionality
+    ├── AccountBalanceWidget (live API)
+    ├── AccountTurnoverWidget (live API)
+    ├── CompanyStatementResource
+    └── FinancialOverviewPage
 
-Phase 4: Filament (2-3 weeks)
+Phase 7: Token & Webhook Management (P2 - Medium)
     │
-    ├── Enhanced resources
-    ├── Dashboard widgets
-    └── Bulk operations
+    ├── RecurringTokenResource (virtual)
+    ├── WebhookConfigResource (CHIP API)
+    └── TokenStatsWidget
+
+Phase 8: Operations & Bulk Actions (P3 - Medium-Low)
+    │
+    ├── RefundCenterPage
+    ├── BulkPayoutPage
+    ├── Export features
+    └── Scheduled reports
 ```
 
 ---
 
 ## Success Criteria
 
-- [ ] Recurring payments work via app-layer scheduler
-- [ ] Webhook processing is reliable with retry
-- [ ] Revenue metrics computed from local data
-- [ ] Comprehensive Filament admin
-- [ ] PHPStan Level 6 compliance
-- [ ] ≥85% test coverage
+### Phase 1-4 (Completed)
+- [x] Recurring payments work via app-layer scheduler
+- [x] Webhook processing is reliable with retry
+- [x] Revenue metrics computed from local data
+- [x] Comprehensive Filament admin
+- [x] PHPStan Level 6 compliance
+- [ ] ≥85% test coverage (tests pending)
+
+### Phase 5-8 (Planned)
+- [ ] Complete CHIP Send UI (payouts, bank accounts)
+- [ ] Real-time balance and turnover widgets
+- [ ] Company statement management
+- [ ] Recurring token administration
+- [ ] Webhook configuration UI
+- [ ] Bulk operation capabilities
+- [ ] Export functionality
+- [ ] Scheduled reports
 
 ---
 

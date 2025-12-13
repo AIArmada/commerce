@@ -1,7 +1,7 @@
 # Chip Vision Progress
 
 > **Package:** `aiarmada/chip` + `aiarmada/filament-chip`  
-> **Last Updated:** December 14, 2025  
+> **Last Updated:** December 13, 2025  
 > **Scope:** API-Constrained (Chip API only)
 
 ---
@@ -11,9 +11,13 @@
 | Phase | Status | Progress |
 |-------|--------|----------|
 | Phase 1: Recurring Payments | 🟢 Completed | 100% |
-| Phase 2: Enhanced Webhooks | � Completed | 100% |
+| Phase 2: Enhanced Webhooks | 🟢 Completed | 100% |
 | Phase 3: Local Analytics | 🟢 Completed | 100% |
 | Phase 4: Filament Integration | 🟢 Completed | 100% |
+| Phase 5: CHIP Send Admin Suite | 🔴 Not Started | 0% |
+| Phase 6: Financial Management | 🔴 Not Started | 0% |
+| Phase 7: Token & Webhook Management | 🔴 Not Started | 0% |
+| Phase 8: Operations & Bulk Actions | 🔴 Not Started | 0% |
 
 ---
 
@@ -436,3 +440,117 @@ Added baseline entries for optional Spatie dependencies:
 - `packages/commerce-support/src/Webhooks/CommerceWebhookProcessor.php` - Added @property PHPDoc
 - `packages/chip/src/Webhooks/ProcessChipWebhook.php` - Added @property PHPDoc
 - `phpstan-baseline.neon` - Added baseline entries for optional dependencies
+---
+
+## Phase 5: CHIP Send Admin Suite (Payouts)
+
+### Resources
+- [ ] `SendInstructionResource` - Full CRUD for payouts
+- [ ] `BankAccountResource` - Bank account management
+
+### Pages
+- [ ] `PayoutDashboardPage` - Payout operations dashboard
+
+### Widgets
+- [ ] `PayoutStatsWidget` - Pending/completed/failed counts
+- [ ] `PayoutAmountWidget` - Today/week/month totals
+- [ ] `RecentPayoutsWidget` - Latest payouts table
+- [ ] `BankAccountStatusWidget` - Account verification status
+
+### Actions
+- [ ] Cancel payout action
+- [ ] Resend webhook action (send instruction)
+- [ ] Resend webhook action (bank account)
+
+### Tests
+- [ ] `SendInstructionResourceTest`
+- [ ] `BankAccountResourceTest`
+
+---
+
+## Phase 6: Financial Management
+
+### Widgets (Live API)
+- [ ] `AccountBalanceWidget` - Real-time balance from CHIP API
+- [ ] `AccountTurnoverWidget` - Real-time turnover with date range
+
+### Resources
+- [ ] `CompanyStatementResource` - Statement management
+
+### Pages
+- [ ] `FinancialOverviewPage` - Financial dashboard
+
+### Actions
+- [ ] Download statement action
+- [ ] Cancel pending statement action
+- [ ] Generate statement action
+
+### Tests
+- [ ] `AccountBalanceWidgetTest`
+- [ ] `CompanyStatementResourceTest`
+
+---
+
+## Phase 7: Token & Webhook Management
+
+### Resources
+- [ ] `RecurringTokenResource` - Virtual resource (API-based)
+- [ ] `WebhookConfigResource` - CHIP Collect webhook configuration
+- [ ] `SendWebhookConfigResource` - CHIP Send webhook configuration
+
+### Widgets
+- [ ] `TokenStatsWidget` - Active tokens, expiring soon
+
+### Actions
+- [ ] Revoke token action
+- [ ] Test webhook action
+- [ ] Create webhook action
+
+### Tests
+- [ ] `RecurringTokenResourceTest`
+- [ ] `WebhookConfigResourceTest`
+
+---
+
+## Phase 8: Operations & Bulk Actions
+
+### Pages
+- [ ] `RefundCenterPage` - Dedicated refund workflow
+- [ ] `BulkPayoutPage` - CSV import for mass payouts
+
+### Exporters
+- [ ] `PurchaseExporter` - Export transactions
+- [ ] `PayoutExporter` - Export send instructions
+
+### Jobs
+- [ ] `ProcessBulkPayoutJob` - Background payout processing
+- [ ] `GenerateWeeklyPaymentReport` - Scheduled reporting
+- [ ] `GenerateMonthlyAnalyticsReport` - Monthly analytics
+
+### Features
+- [ ] Partial refund calculator
+- [ ] Bulk refund selection
+- [ ] CSV template download
+- [ ] Validation preview
+- [ ] Progress tracking via broadcasting
+
+### Tests
+- [ ] `RefundCenterPageTest`
+- [ ] `BulkPayoutPageTest`
+- [ ] `ExporterTests`
+
+---
+
+## Vision Documents
+
+| Document | Status |
+|----------|--------|
+| [01-executive-summary.md](01-executive-summary.md) | ✅ Complete |
+| [02-recurring-payments.md](02-recurring-payments.md) | ✅ Complete |
+| [03-enhanced-webhooks.md](03-enhanced-webhooks.md) | ✅ Complete |
+| [04-local-analytics.md](04-local-analytics.md) | ✅ Complete |
+| [05-implementation-roadmap.md](05-implementation-roadmap.md) | ✅ Complete |
+| [06-chip-send-admin.md](06-chip-send-admin.md) | ✅ New |
+| [07-financial-management.md](07-financial-management.md) | ✅ New |
+| [08-token-webhook-management.md](08-token-webhook-management.md) | ✅ New |
+| [09-operations-bulk-actions.md](09-operations-bulk-actions.md) | ✅ New |

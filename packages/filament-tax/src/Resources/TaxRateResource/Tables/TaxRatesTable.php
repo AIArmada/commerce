@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxRateResource\Tables;
 
-use AIArmada\Tax\Models\TaxRate;
 use Filament\Actions\BulkAction;
 use Filament\Actions\EditAction;
 use Filament\Actions\ViewAction;
@@ -31,8 +30,7 @@ final class TaxRatesTable
                 TextColumn::make('name')
                     ->label('Rate Name')
                     ->searchable()
-                    ->sortable()
-                    ->description(fn (TaxRate $record): ?string => $record->description),
+                    ->sortable(),
 
                 TextColumn::make('tax_class')
                     ->label('Class')

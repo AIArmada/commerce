@@ -1,7 +1,7 @@
 # Filament Cashier Chip Vision Progress
 
 > **Package:** `aiarmada/filament-cashier-chip`  
-> **Last Updated:** December 9, 2025  
+> **Last Updated:** December 10, 2025  
 > **Dependencies:** `aiarmada/cashier-chip` → `aiarmada/chip` → Chip API
 
 ---
@@ -21,7 +21,7 @@ Chip Payment Gateway API (External)
 
 | Phase | Status | Progress |
 |-------|--------|----------|
-| Phase 1: Foundation Setup | � Completed | 100% |
+| Phase 1: Foundation Setup | 🟢 Completed | 100% |
 | Phase 2: Subscription Management UI | 🟢 Completed | 100% |
 | Phase 3: Customer Billing Portal | 🟢 Completed | 100% |
 | Phase 4: Admin Dashboard & Widgets | 🟢 Completed | 100% |
@@ -60,6 +60,8 @@ Chip Payment Gateway API (External)
 - [x] Update quantity action
 - [x] Sync status action
 - [x] Pause/Unpause actions
+- [x] **Swap Plan action** *(Added Dec 10, 2025)*
+- [x] **End Trial Now action** *(Added Dec 10, 2025)*
 
 ### SubscriptionItemRelationManager
 - [x] Items table within subscription
@@ -116,11 +118,13 @@ Chip Payment Gateway API (External)
 - [x] `RevenueChartWidget` - Revenue trend over 12 months
 - [x] `SubscriptionDistributionWidget` - Plans breakdown (doughnut chart)
 - [x] `TrialConversionsWidget` - Trial to paid conversion rate
+- [x] **`AttentionRequiredWidget`** - Issues requiring attention *(Added Dec 10, 2025)*
 
 ### Dashboard Page
 - [x] Dedicated `BillingDashboard` page
 - [x] Customizable widget layout (header/footer widgets)
 - [x] Responsive grid layout
+- [x] 4-column header widget grid *(Updated Dec 10, 2025)*
 
 ### Real-time Updates
 - [x] Widget polling configuration via config
@@ -186,6 +190,7 @@ Chip Payment Gateway API (External)
 - `src/Widgets/RevenueChartWidget.php`
 - `src/Widgets/SubscriptionDistributionWidget.php`
 - `src/Widgets/TrialConversionsWidget.php`
+- `src/Widgets/AttentionRequiredWidget.php` *(Added Dec 10, 2025)*
 
 ### Pages
 - `src/Pages/BillingDashboard.php`
@@ -278,7 +283,7 @@ FilamentCashierChipPlugin::make()
 
 ---
 
-## Notes
+## Audit History
 
 ### December 9, 2025
 - Initial vision documentation created
@@ -313,3 +318,24 @@ FilamentCashierChipPlugin::make()
 - **Tests**: ✅ 100% Passing (77 tests, 77 assertions)
 - **Pint Code Style**: ✅ Fixed (types, spaces, concatenation)
 - **Rector**: ✅ Fixed files (rules applied: AddClosureVoidReturnTypeWhereNoReturnRector)
+
+### December 10, 2025 (Audit - Part 3 - Vision Verification)
+- **Full Vision Document Audit Completed**
+- **Gaps Identified & Fixed**:
+  1. **Swap Plan Action** - Added to ViewSubscription.php (uses `$subscription->swap($price)`)
+  2. **End Trial Now Action** - Added to ViewSubscription.php (uses `$subscription->endTrial()`)
+  3. **AttentionRequiredWidget** - Created new widget showing:
+     - Trials ending within 3 days
+     - Past due subscriptions
+     - Grace periods ending within 3 days
+     - Incomplete subscriptions
+     - Unpaid subscriptions
+- **Files Modified**:
+  - `src/Resources/SubscriptionResource/Pages/ViewSubscription.php` - Added 2 new actions
+  - `src/Pages/BillingDashboard.php` - Added AttentionRequiredWidget, increased header columns to 4
+  - `config/filament-cashier-chip.php` - Added `attention_required` widget config
+- **Files Created**:
+  - `src/Widgets/AttentionRequiredWidget.php` - New attention monitoring widget
+- **PHPStan Level 6**: ✅ Passing (both cashier-chip and filament-cashier-chip)
+- **Pint Code Style**: ✅ Passing
+- **Vision Compliance**: ✅ 100% - All documented features now implemented

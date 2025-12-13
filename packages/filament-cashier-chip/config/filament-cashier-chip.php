@@ -54,6 +54,7 @@ return [
             'mrr' => true,
             'active_subscribers' => true,
             'churn_rate' => true,
+            'attention_required' => true,
             'revenue_chart' => true,
             'subscription_distribution' => true,
             'trial_conversions' => true,

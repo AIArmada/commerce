@@ -6,6 +6,7 @@ namespace AIArmada\Tax\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -16,12 +17,18 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property string $id
  * @property string|null $exemptable_id
  * @property string|null $exemptable_type
+ * @property string|null $tax_zone_id
  * @property string $reason
  * @property string|null $certificate_number
  * @property string|null $document_path
  * @property string $status
+ * @property string|null $rejection_reason
  * @property \Illuminate\Support\Carbon|null $verified_at
+ * @property string|null $verified_by
+ * @property \Illuminate\Support\Carbon|null $starts_at
  * @property \Illuminate\Support\Carbon|null $expires_at
+ * @property-read TaxZone|null $taxZone
+ * @property-read Model|null $exemptable
  */
 class TaxExemption extends Model
 {
@@ -35,6 +42,7 @@ class TaxExemption extends Model
      */
     protected $casts = [
         'verified_at' => 'datetime',
+        'starts_at' => 'datetime',
         'expires_at' => 'datetime',
     ];
 
@@ -64,27 +72,70 @@ class TaxExemption extends Model
         return $this->morphTo();
     }
 
+    /**
+     * The tax zone this exemption applies to (null = all zones).
+     *
+     * @return BelongsTo<TaxZone, $this>
+     */
+    public function taxZone(): BelongsTo
+    {
+        return $this->belongsTo(TaxZone::class, 'tax_zone_id');
+    }
+
     // =========================================================================
     // SCOPES
     // =========================================================================
 
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
     public function scopeActive($query)
     {
         return $query->where('status', 'approved')
             ->where(function ($q): void {
                 $q->whereNull('expires_at')
                     ->orWhere('expires_at', '>=', now());
+            })
+            ->where(function ($q): void {
+                $q->whereNull('starts_at')
+                    ->orWhere('starts_at', '<=', now());
             });
     }
 
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
     public function scopePending($query)
     {
         return $query->where('status', 'pending');
     }
 
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
     public function scopeApproved($query)
     {
         return $query->where('status', 'approved');
+    }
+
+    /**
+     * Scope to exemptions for a specific zone (or all zones).
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopeForZone($query, ?string $zoneId)
+    {
+        return $query->where(function ($q) use ($zoneId): void {
+            $q->whereNull('tax_zone_id'); // Applies to all zones
+
+            if ($zoneId) {
+                $q->orWhere('tax_zone_id', $zoneId);
+            }
+        });
     }
 
     // =========================================================================
@@ -97,6 +148,10 @@ class TaxExemption extends Model
             return false;
         }
 
+        if ($this->starts_at && $this->starts_at > now()) {
+            return false;
+        }
+
         if ($this->expires_at && $this->expires_at < now()) {
             return false;
         }
@@ -106,12 +161,35 @@ class TaxExemption extends Model
 
     public function isExpired(): bool
     {
-        return $this->expires_at && $this->expires_at < now();
+        return $this->expires_at !== null && $this->expires_at < now();
     }
 
     public function isPending(): bool
     {
         return $this->status === 'pending';
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->status === 'approved';
+    }
+
+    public function isRejected(): bool
+    {
+        return $this->status === 'rejected';
+    }
+
+    /**
+     * Check if exemption applies to a specific zone.
+     */
+    public function appliesToZone(?string $zoneId): bool
+    {
+        // If no zone specified on exemption, it applies to all
+        if ($this->tax_zone_id === null) {
+            return true;
+        }
+
+        return $this->tax_zone_id === $zoneId;
     }
 
     public function approve(): self
@@ -141,7 +219,7 @@ class TaxExemption extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['reason', 'status', 'verified_at', 'expires_at'])
+            ->logOnly(['reason', 'status', 'verified_at', 'starts_at', 'expires_at'])
             ->logOnlyDirty()
             ->useLogName('tax');
     }
