@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
-use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -19,11 +18,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $campaign
  * @property string|null $term
  * @property string|null $content
+ * @property string|null $ip_address
+ * @property string|null $user_agent
  * @property array<string, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon|null $touched_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property-read string|null $ip_address IP address from the parent attribution
  * @property-read AffiliateAttribution $attribution
  * @property-read Affiliate $affiliate
  */
@@ -40,6 +40,8 @@ class AffiliateTouchpoint extends Model
         'campaign',
         'term',
         'content',
+        'ip_address',
+        'user_agent',
         'metadata',
         'touched_at',
     ];
@@ -68,17 +70,5 @@ class AffiliateTouchpoint extends Model
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);
-    }
-
-    /**
-     * Get the IP address from the parent attribution.
-     *
-     * @return Attribute<string|null, never>
-     */
-    protected function ipAddress(): Attribute
-    {
-        return Attribute::make(
-            get: fn () => $this->attribution?->ip_address,
-        );
     }
 }
