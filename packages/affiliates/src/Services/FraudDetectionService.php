@@ -11,16 +11,12 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Event;
 
 final class FraudDetectionService
 {
-    public function __construct(
-        private readonly Dispatcher $events
-    ) {}
-
     /**
      * Analyze a click/visit for fraud signals.
      *
@@ -357,7 +353,7 @@ final class FraudDetectionService
             'detected_at' => now(),
         ]);
 
-        $this->events->dispatch(new FraudSignalDetected($signal));
+        Event::dispatch(new FraudSignalDetected($signal));
 
         return $signal;
     }

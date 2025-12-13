@@ -33,8 +33,9 @@ final class RankQualificationService
     {
         $metrics = $this->calculateMetrics($affiliate);
 
+        // Order by level DESC to find highest qualifying rank first
         return AffiliateRank::query()
-            ->orderBy('level', 'asc')
+            ->orderBy('level', 'desc')
             ->get()
             ->first(fn (AffiliateRank $rank) => $rank->meetsQualification(
                 $affiliate,
