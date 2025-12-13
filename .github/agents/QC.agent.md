@@ -81,7 +81,7 @@ Run commands:
 ./vendor/bin/pest tests/src/PackageName/Feature
 
 # Run with coverage
-./vendor/bin/phpunit .xml/package.xml --coverage
+./vendor/bin/pest --coverage --configuration=.xml/package.xml
 
 # Capture failures for batch fixing
 ./vendor/bin/pest tests/src/PackageName 2>&1 | tee test-failures.txt
