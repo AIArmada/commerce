@@ -36,7 +36,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
 
     protected static ?int $navigationSort = 12;
 
-    protected static string $view = 'filament-affiliates::pages.payout-batch';
+    protected string $view = 'filament-affiliates::pages.payout-batch';
 
     public function table(Table $table): Table
     {
