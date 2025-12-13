@@ -160,6 +160,8 @@ You have FULL AUTHORITY to fix packages when they don't work as expected.
 
 🎯 1E. COMPREHENSIVE COVERAGE (NO STONE UNTURNED)
 
+**Coverage Optimization Tip:** When aiming for a specific coverage percentage, create as many tests as possible before running coverage analysis. This batch approach is much faster than running coverage after each individual test, as coverage calculation is computationally expensive.
+
 Test categories you MUST cover:
 
 **CRUD Operations:**
