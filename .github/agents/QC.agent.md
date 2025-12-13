@@ -93,7 +93,7 @@ When running Pest, `--parallel` MUST be the first argument after `./vendor/bin/p
 
 Every test must pass. Failed tests must be investigated and fixed.
 
-Minimum 85% coverage required for non-Filament packages.
+Minimum 90% coverage required for non-Filament packages.
 
 🌐 1B. BROWSER TESTING (CHROME MCP INTERACTIONS)
 
@@ -163,6 +163,10 @@ You have FULL AUTHORITY to fix packages when they don't work as expected.
 🎯 1E. COMPREHENSIVE COVERAGE (NO STONE UNTURNED)
 
 **Coverage Optimization Tip:** When aiming for a specific coverage percentage, create as many tests as possible before running coverage analysis. This batch approach is much faster than running coverage after each individual test, as coverage calculation is computationally expensive.
+
+When working on coverage, the required flow is: add tests in batches → run coverage once → repeat only when needed. This ensures faster completion.
+
+When you do run coverage, you MUST collect the list of under-covered classes/files from the coverage output (save it to a file if needed) so you can batch the next round of tests without re-running coverage just to discover what to work on.
 
 Test categories you MUST cover:
 
