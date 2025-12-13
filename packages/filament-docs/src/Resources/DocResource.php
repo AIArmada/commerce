@@ -9,7 +9,11 @@ use AIArmada\FilamentDocs\Resources\DocResource\Pages\CreateDoc;
 use AIArmada\FilamentDocs\Resources\DocResource\Pages\EditDoc;
 use AIArmada\FilamentDocs\Resources\DocResource\Pages\ListDocs;
 use AIArmada\FilamentDocs\Resources\DocResource\Pages\ViewDoc;
+use AIArmada\FilamentDocs\Resources\DocResource\RelationManagers\ApprovalsRelationManager;
+use AIArmada\FilamentDocs\Resources\DocResource\RelationManagers\EmailsRelationManager;
+use AIArmada\FilamentDocs\Resources\DocResource\RelationManagers\PaymentsRelationManager;
 use AIArmada\FilamentDocs\Resources\DocResource\RelationManagers\StatusHistoriesRelationManager;
+use AIArmada\FilamentDocs\Resources\DocResource\RelationManagers\VersionsRelationManager;
 use AIArmada\FilamentDocs\Resources\DocResource\Schemas\DocForm;
 use AIArmada\FilamentDocs\Resources\DocResource\Schemas\DocInfolist;
 use AIArmada\FilamentDocs\Resources\DocResource\Tables\DocsTable;
@@ -55,6 +59,10 @@ final class DocResource extends Resource
     {
         return [
             StatusHistoriesRelationManager::class,
+            PaymentsRelationManager::class,
+            EmailsRelationManager::class,
+            VersionsRelationManager::class,
+            ApprovalsRelationManager::class,
         ];
     }
 
