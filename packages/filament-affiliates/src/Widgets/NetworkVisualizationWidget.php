@@ -17,7 +17,7 @@ final class NetworkVisualizationWidget extends Widget
 
     protected int | string | array $columnSpan = 'full';
 
-    protected static string $view = 'filament-affiliates::widgets.network-visualization';
+    protected string $view = 'filament-affiliates::widgets.network-visualization';
 
     public function mount(?string $affiliateId = null): void
     {

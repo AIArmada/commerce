@@ -13,90 +13,68 @@ use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 
-class SendEmailAction extends Action
+final class SendEmailAction
 {
-    protected function setUp(): void
-    {
-        parent::setUp();
-
-        $this->name('send_email');
-
-        $this->label(__('Send Email'));
-
-        $this->icon('heroicon-o-envelope');
-
-        $this->color('info');
-
-        $this->modalHeading(__('Send Document via Email'));
-
-        $this->modalDescription(__('Send this document to the specified recipient.'));
-
-        $this->form($this->getEmailForm());
-
-        $this->action(function (Doc $record, array $data): void {
-            $this->sendEmail($record, $data);
-        });
-
-        $this->visible(function (Doc $record): bool {
-            return $record->recipient_email !== null;
-        });
-    }
-
-    public static function make(?string $name = null): static
-    {
-        return parent::make($name ?? 'send_email');
-    }
-
     /**
-     * @return array<int, \Filament\Forms\Components\Component>
+     * Create the send email action.
      */
-    protected function getEmailForm(): array
+    public static function make(string $name = 'send_email'): Action
     {
-        return [
-            TextInput::make('to')
-                ->label(__('Recipient Email'))
-                ->email()
-                ->required()
-                ->default(fn (Doc $record): ?string => $record->recipient_email),
+        return Action::make($name)
+            ->label(__('Send Email'))
+            ->icon('heroicon-o-envelope')
+            ->color('info')
+            ->modalHeading(__('Send Document via Email'))
+            ->modalDescription(__('Send this document to the specified recipient.'))
+            ->form([
+                TextInput::make('to')
+                    ->label(__('Recipient Email'))
+                    ->email()
+                    ->required()
+                    ->default(fn (Doc $record): ?string => self::getRecipientEmail($record)),
 
-            TextInput::make('cc')
-                ->label(__('CC'))
-                ->email()
-                ->nullable(),
+                TextInput::make('cc')
+                    ->label(__('CC'))
+                    ->email()
+                    ->nullable(),
 
-            Select::make('template_id')
-                ->label(__('Email Template'))
-                ->options(function (): array {
-                    $templateClass = config('docs.models.email_template');
+                Select::make('template_id')
+                    ->label(__('Email Template'))
+                    ->options(function (): array {
+                        $templateClass = config('docs.models.email_template');
 
-                    if (! class_exists($templateClass)) {
-                        return [];
-                    }
+                        if (! $templateClass || ! class_exists($templateClass)) {
+                            return [];
+                        }
 
-                    return $templateClass::query()
-                        ->where('is_active', true)
-                        ->pluck('name', 'id')
-                        ->toArray();
-                })
-                ->nullable()
-                ->searchable(),
+                        return $templateClass::query()
+                            ->where('is_active', true)
+                            ->pluck('name', 'id')
+                            ->toArray();
+                    })
+                    ->nullable()
+                    ->searchable(),
 
-            TextInput::make('subject')
-                ->label(__('Subject'))
-                ->required()
-                ->default(fn (Doc $record): string => __('Document: :number', ['number' => $record->document_number])),
+                TextInput::make('subject')
+                    ->label(__('Subject'))
+                    ->required()
+                    ->default(fn (Doc $record): string => __('Document: :number', ['number' => $record->doc_number])),
 
-            Textarea::make('message')
-                ->label(__('Message'))
-                ->rows(5)
-                ->default(__('Please find the attached document.')),
-        ];
+                Textarea::make('message')
+                    ->label(__('Message'))
+                    ->rows(5)
+                    ->default(__('Please find the attached document.')),
+            ])
+            ->action(function (Doc $record, array $data): void {
+                self::sendEmail($record, $data);
+            })
+            ->visible(fn (Doc $record): bool => self::getRecipientEmail($record) !== null);
     }
 
     /**
      * @param  array<string, mixed>  $data
      */
-    protected function sendEmail(Doc $record, array $data): void
+    private static function sendEmail(Doc $record, array $data): void
     {
         $emailService = app(DocEmailService::class);
 
@@ -104,7 +82,7 @@ class SendEmailAction extends Action
             $emailService->send(
                 doc: $record,
                 recipientEmail: $data['to'],
-                recipientName: $record->recipient_name,
+                recipientName: self::getRecipientName($record),
             );
 
             Notification::make()
@@ -119,5 +97,19 @@ class SendEmailAction extends Action
                 ->danger()
                 ->send();
         }
+    }
+
+    private static function getRecipientEmail(Doc $doc): ?string
+    {
+        $customerData = $doc->customer_data;
+
+        return is_array($customerData) ? ($customerData['email'] ?? null) : null;
+    }
+
+    private static function getRecipientName(Doc $doc): ?string
+    {
+        $customerData = $doc->customer_data;
+
+        return is_array($customerData) ? ($customerData['name'] ?? null) : null;
     }
 }

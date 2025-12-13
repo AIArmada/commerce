@@ -194,7 +194,6 @@ abstract class TestCase extends Orchestra
         $app['config']->set('cart.events', true);
 
         // Configure docs settings for testing
-        $app['config']->set('docs.database.table_prefix', '');
         $app['config']->set('docs.types', [
             'invoice' => [
                 'default_template' => 'doc-default',

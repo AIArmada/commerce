@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs;
 
+use AIArmada\FilamentDocs\Pages\AgingReportPage;
+use AIArmada\FilamentDocs\Pages\PendingApprovalsPage;
 use AIArmada\FilamentDocs\Resources\DocResource;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource;
 use AIArmada\FilamentDocs\Widgets\DocStatsWidget;
@@ -36,6 +38,10 @@ final class FilamentDocsPlugin implements Plugin
             ->resources([
                 DocResource::class,
                 DocTemplateResource::class,
+            ])
+            ->pages([
+                AgingReportPage::class,
+                PendingApprovalsPage::class,
             ])
             ->widgets([
                 DocStatsWidget::class,
