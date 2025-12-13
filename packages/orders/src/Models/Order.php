@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\Orders\Database\Factories\OrderFactory;
 use AIArmada\Orders\States\OrderStatus;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
@@ -51,6 +53,9 @@ use Spatie\ModelStates\HasStates;
  */
 class Order extends Model
 {
+    /** @use HasFactory<OrderFactory> */
+    use HasFactory;
+
     use HasOwner;
     use HasStates;
     use HasUuids;
@@ -313,6 +318,14 @@ class Order extends Model
         $this->grand_total = $subtotal + $this->shipping_total + $taxTotal - $this->discount_total;
 
         return $this;
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): OrderFactory
+    {
+        return OrderFactory::new();
     }
 
     // ─────────────────────────────────────────────────────────────

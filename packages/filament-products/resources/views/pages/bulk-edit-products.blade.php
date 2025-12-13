@@ -5,7 +5,7 @@
         </x-slot>
 
         <x-slot name="description">
-            Select products and use bulk actions to update prices, stock levels, statuses, or categories efficiently.
+            Select products and use bulk actions to update prices, statuses, visibility, or categories efficiently.
         </x-slot>
 
         <div class="mt-4">
@@ -20,10 +20,9 @@
 
         <div class="prose dark:prose-invert max-w-none">
             <ul>
-                <li><strong>Update Price:</strong> Set new prices, or increase/decrease by percentage or fixed amount
-                </li>
-                <li><strong>Update Stock:</strong> Set inventory levels, or increase/decrease quantities</li>
+                <li><strong>Update Price:</strong> Set new prices, or increase/decrease by percentage or fixed amount</li>
                 <li><strong>Change Status:</strong> Move products between active, draft, and archived states</li>
+                <li><strong>Change Visibility:</strong> Control where products appear (catalog, search, or hidden)</li>
                 <li><strong>Assign Categories:</strong> Add or replace product categories</li>
             </ul>
 

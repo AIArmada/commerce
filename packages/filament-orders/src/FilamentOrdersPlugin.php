@@ -32,11 +32,12 @@ class FilamentOrdersPlugin implements Plugin
                 Resources\OrderResource::class,
             ])
             ->pages([
-                // Pages will be added here
+                Pages\FulfillmentQueue::class,
             ])
             ->widgets([
                 Widgets\OrderStatsWidget::class,
                 Widgets\RecentOrdersWidget::class,
+                Widgets\OrderStatusDistributionWidget::class,
             ]);
     }
 

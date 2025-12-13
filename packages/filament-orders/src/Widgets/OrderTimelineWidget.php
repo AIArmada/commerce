@@ -47,8 +47,11 @@ class OrderTimelineWidget extends Widget implements HasForms
         ]);
 
         // Status transitions from activity log (if using spatie/laravel-activitylog)
-        if (method_exists($this->record, 'activities')) {
-            foreach ($this->record->activities as $activity) {
+        if (method_exists($this->record, 'activities') && property_exists($this->record, 'activities')) {
+            /** @var Collection<int, object> $activities */
+            $activities = $this->record->activities;
+            foreach ($activities as $activity) {
+                /** @var object{description: string, properties: array{old_status?: string, new_status?: string}, created_at: \Carbon\Carbon, causer?: object{name: string}|null} $activity */
                 if ($activity->description === 'status_changed') {
                     $events->push([
                         'type' => 'status_change',
@@ -76,7 +79,7 @@ class OrderTimelineWidget extends Widget implements HasForms
                     '%s payment of %s via %s',
                     ucfirst($payment->status),
                     'RM ' . number_format($payment->amount / 100, 2),
-                    $payment->method
+                    $payment->gateway
                 ),
                 'icon' => $payment->status === 'completed' ? 'heroicon-o-check-circle' : 'heroicon-o-credit-card',
                 'color' => $payment->status === 'completed' ? 'success' : 'warning',

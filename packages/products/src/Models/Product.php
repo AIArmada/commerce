@@ -12,6 +12,7 @@ use AIArmada\Products\Database\Factories\ProductFactory;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
+use AIArmada\Products\Traits\HasAttributes;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -26,8 +27,49 @@ use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 use Spatie\Tags\HasTags;
 
+/**
+ * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
+ * @property string $name
+ * @property string $slug
+ * @property string|null $description
+ * @property string|null $short_description
+ * @property string|null $sku
+ * @property string|null $barcode
+ * @property ProductType $type
+ * @property ProductStatus $status
+ * @property ProductVisibility $visibility
+ * @property int $price
+ * @property int|null $compare_price
+ * @property int|null $cost
+ * @property string $currency
+ * @property float|null $weight
+ * @property float|null $length
+ * @property float|null $width
+ * @property float|null $height
+ * @property string $weight_unit
+ * @property string $dimension_unit
+ * @property bool $is_featured
+ * @property bool $is_taxable
+ * @property bool $requires_shipping
+ * @property string|null $meta_title
+ * @property string|null $meta_description
+ * @property string|null $tax_class
+ * @property array<string, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $published_at
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property \Illuminate\Support\Carbon|null $deleted_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Variant> $variants
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Option> $options
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Category> $categories
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AttributeValue> $attributeValues
+ */
 class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceable
 {
+    use HasAttributes;
     use HasFactory;
     use HasOwner;
     use HasSlug;
@@ -56,7 +98,7 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
     ];
 
     /**
-     * @var array<int, string>
+     * @var array<string, mixed>
      */
     protected $attributes = [
         'type' => 'simple',
@@ -154,33 +196,28 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
             ->width(150)
             ->height(150)
             ->sharpen(10)
-            ->optimize()
-            ->nonQueued();
+            ->optimize();
 
         $this->addMediaConversion('card')
             ->width(400)
             ->height(400)
-            ->optimize()
-            ->nonQueued();
+            ->optimize();
 
         $this->addMediaConversion('detail')
             ->width(800)
             ->height(800)
-            ->optimize()
-            ->queued();
+            ->optimize();
 
         $this->addMediaConversion('zoom')
             ->width(1600)
             ->height(1600)
-            ->optimize()
-            ->queued();
+            ->optimize();
 
         $this->addMediaConversion('webp-card')
             ->width(400)
             ->height(400)
             ->format('webp')
-            ->optimize()
-            ->queued();
+            ->optimize();
     }
 
     // =========================================================================

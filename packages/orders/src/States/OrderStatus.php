@@ -97,6 +97,7 @@ abstract class OrderStatus extends State
 
     /**
      * Whether the order can be canceled in this state.
+     * Override in child classes to enable cancellation.
      */
     public function canCancel(): bool
     {
@@ -105,6 +106,7 @@ abstract class OrderStatus extends State
 
     /**
      * Whether a refund can be processed in this state.
+     * Override in child classes to enable refunds.
      */
     public function canRefund(): bool
     {
@@ -113,6 +115,7 @@ abstract class OrderStatus extends State
 
     /**
      * Whether the order can be modified in this state.
+     * Override in child classes to enable modification.
      */
     public function canModify(): bool
     {
@@ -121,6 +124,7 @@ abstract class OrderStatus extends State
 
     /**
      * Whether this is a final/terminal state.
+     * Override in child classes for terminal states.
      */
     public function isFinal(): bool
     {

@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Widgets;
 
+use AIArmada\Products\Enums\ProductStatus;
+use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Models\Product;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Facades\DB;
 
 class LowStockAlertWidget extends BaseWidget
 {
@@ -15,47 +16,47 @@ class LowStockAlertWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        // Get products with low stock (assuming track_inventory and stock_quantity exist)
-        $lowStockCount = Product::query()
-            ->where('track_inventory', true)
-            ->where('stock_quantity', '<=', DB::raw('low_stock_threshold'))
-            ->where('stock_quantity', '>', 0)
+        // Count products by type for visibility into catalog composition
+        $physicalProducts = Product::query()
+            ->where('status', ProductStatus::Active)
+            ->whereIn('type', [ProductType::Simple, ProductType::Configurable, ProductType::Bundle])
+            ->where('requires_shipping', true)
             ->count();
 
-        $outOfStockCount = Product::query()
-            ->where('track_inventory', true)
-            ->where('stock_quantity', '<=', 0)
+        $digitalProducts = Product::query()
+            ->where('status', ProductStatus::Active)
+            ->where('type', ProductType::Digital)
             ->count();
 
-        $totalTracked = Product::query()
-            ->where('track_inventory', true)
+        $subscriptionProducts = Product::query()
+            ->where('status', ProductStatus::Active)
+            ->where('type', ProductType::Subscription)
+            ->count();
+
+        $totalActive = Product::query()
+            ->where('status', ProductStatus::Active)
             ->count();
 
         return [
-            Stat::make('Low Stock Products', $lowStockCount)
-                ->description('Products below threshold')
-                ->descriptionIcon('heroicon-o-exclamation-triangle')
-                ->color('warning')
-                ->url(route('filament.admin.resources.products.index', [
-                    'tableFilters' => [
-                        'low_stock' => ['isActive' => true],
-                    ],
-                ])),
-
-            Stat::make('Out of Stock', $outOfStockCount)
-                ->description('Need restocking')
-                ->descriptionIcon('heroicon-o-x-circle')
-                ->color('danger')
-                ->url(route('filament.admin.resources.products.index', [
-                    'tableFilters' => [
-                        'out_of_stock' => ['isActive' => true],
-                    ],
-                ])),
-
-            Stat::make('Inventory Tracked', $totalTracked)
-                ->description('Total products tracked')
-                ->descriptionIcon('heroicon-o-cube')
+            Stat::make('Physical Products', $physicalProducts)
+                ->description('Require shipping')
+                ->descriptionIcon('heroicon-o-truck')
                 ->color('info'),
+
+            Stat::make('Digital Products', $digitalProducts)
+                ->description('Downloadable')
+                ->descriptionIcon('heroicon-o-cloud-arrow-down')
+                ->color('success'),
+
+            Stat::make('Subscriptions', $subscriptionProducts)
+                ->description('Recurring billing')
+                ->descriptionIcon('heroicon-o-arrow-path')
+                ->color('primary'),
+
+            Stat::make('Total Active', $totalActive)
+                ->description('Active in catalog')
+                ->descriptionIcon('heroicon-o-check-circle')
+                ->color('success'),
         ];
     }
 }

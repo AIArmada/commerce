@@ -1,6 +1,7 @@
 {
     "name": "aiarmada/filament-cashier",
     "description": "Unified Filament admin interface for multi-gateway billing management",
+    "license": "MIT",
     "keywords": [
         "filament",
         "cashier",
@@ -12,7 +13,6 @@
         "multi-gateway"
     ],
     "homepage": "https://github.com/aiarmada/commerce",
-    "license": "MIT",
     "authors": [
         {
             "name": "AIArmada",
@@ -33,11 +33,6 @@
             "AIArmada\\FilamentCashier\\": "src/"
         }
     },
-    "autoload-dev": {
-        "psr-4": {
-            "AIArmada\\FilamentCashier\\Tests\\": "tests/"
-        }
-    },
     "extra": {
         "laravel": {
             "providers": [
@@ -46,10 +41,7 @@
         }
     },
     "config": {
-        "sort-packages": true,
-        "allow-plugins": {
-            "pestphp/pest-plugin": true
-        }
+        "sort-packages": true
     },
     "minimum-stability": "dev",
     "prefer-stable": true

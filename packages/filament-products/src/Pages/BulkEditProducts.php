@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Pages;
 
+use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
 use BackedEnum;
 use Filament\Forms\Components\Radio;
@@ -40,60 +41,37 @@ class BulkEditProducts extends Page implements HasForms, HasTable
         return $table
             ->query(Product::query())
             ->columns([
-                Tables\Columns\ImageColumn::make('hero_image')
-                    ->label('')
-                    ->circular()
-                    ->width(50)
-                    ->height(50),
-
                 Tables\Columns\TextColumn::make('name')
                     ->searchable()
                     ->sortable()
-                    ->weight('bold'),
+                    ->weight('bold')
+                    ->description(fn ($record) => $record->sku),
 
-                Tables\Columns\TextColumn::make('sku')
-                    ->searchable()
-                    ->sortable()
-                    ->copyable(),
+                Tables\Columns\TextColumn::make('type')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => $state->label())
+                    ->color('info'),
 
                 Tables\Columns\TextColumn::make('price')
-                    ->money('MYR')
+                    ->money('MYR', divideBy: 100)
                     ->sortable(),
-
-                Tables\Columns\TextColumn::make('stock_quantity')
-                    ->label('Stock')
-                    ->numeric()
-                    ->sortable()
-                    ->badge()
-                    ->color(fn ($state) => match (true) {
-                        $state <= 0 => 'danger',
-                        $state <= 10 => 'warning',
-                        default => 'success',
-                    }),
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'active' => 'success',
-                        'draft' => 'warning',
-                        'archived' => 'danger',
-                        default => 'gray',
-                    }),
+                    ->formatStateUsing(fn ($state) => $state->label())
+                    ->color(fn ($state) => $state->color()),
+
+                Tables\Columns\TextColumn::make('visibility')
+                    ->badge()
+                    ->formatStateUsing(fn ($state) => $state->label())
+                    ->color(fn ($state) => $state->color()),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
-                    ->options([
-                        'active' => 'Active',
-                        'draft' => 'Draft',
-                        'archived' => 'Archived',
-                    ]),
+                    ->options(ProductStatus::class),
 
                 Tables\Filters\SelectFilter::make('type')
-                    ->options([
-                        'simple' => 'Simple',
-                        'variable' => 'Variable',
-                        'digital' => 'Digital',
-                    ]),
+                    ->options(\AIArmada\Products\Enums\ProductType::class),
             ])
             ->bulkActions([
                 Tables\Actions\BulkActionGroup::make([
@@ -151,60 +129,13 @@ class BulkEditProducts extends Page implements HasForms, HasTable
                         })
                         ->deselectRecordsAfterCompletion(),
 
-                    Tables\Actions\BulkAction::make('update_stock')
-                        ->label('Update Stock')
-                        ->icon('heroicon-o-cube')
-                        ->color('warning')
-                        ->form([
-                            Radio::make('stock_action')
-                                ->label('Action')
-                                ->options([
-                                    'set' => 'Set to specific quantity',
-                                    'increase' => 'Increase quantity',
-                                    'decrease' => 'Decrease quantity',
-                                ])
-                                ->required()
-                                ->live()
-                                ->default('set'),
-
-                            TextInput::make('quantity')
-                                ->label('Quantity')
-                                ->numeric()
-                                ->required()
-                                ->minValue(0),
-                        ])
-                        ->action(function ($records, array $data): void {
-                            foreach ($records as $product) {
-                                $currentStock = $product->stock_quantity;
-
-                                $newStock = match ($data['stock_action']) {
-                                    'set' => $data['quantity'],
-                                    'increase' => $currentStock + $data['quantity'],
-                                    'decrease' => max(0, $currentStock - $data['quantity']),
-                                    default => $currentStock,
-                                };
-
-                                $product->update(['stock_quantity' => $newStock]);
-                            }
-
-                            Notification::make()
-                                ->title('Stock updated')
-                                ->success()
-                                ->send();
-                        })
-                        ->deselectRecordsAfterCompletion(),
-
                     Tables\Actions\BulkAction::make('update_status')
                         ->label('Change Status')
                         ->icon('heroicon-o-flag')
                         ->form([
                             Select::make('status')
                                 ->label('New Status')
-                                ->options([
-                                    'active' => 'Active',
-                                    'draft' => 'Draft',
-                                    'archived' => 'Archived',
-                                ])
+                                ->options(ProductStatus::class)
                                 ->required(),
                         ])
                         ->action(function ($records, array $data): void {
@@ -214,6 +145,27 @@ class BulkEditProducts extends Page implements HasForms, HasTable
 
                             Notification::make()
                                 ->title('Status updated')
+                                ->success()
+                                ->send();
+                        })
+                        ->deselectRecordsAfterCompletion(),
+
+                    Tables\Actions\BulkAction::make('update_visibility')
+                        ->label('Change Visibility')
+                        ->icon('heroicon-o-eye')
+                        ->form([
+                            Select::make('visibility')
+                                ->label('New Visibility')
+                                ->options(\AIArmada\Products\Enums\ProductVisibility::class)
+                                ->required(),
+                        ])
+                        ->action(function ($records, array $data): void {
+                            foreach ($records as $product) {
+                                $product->update(['visibility' => $data['visibility']]);
+                            }
+
+                            Notification::make()
+                                ->title('Visibility updated')
                                 ->success()
                                 ->send();
                         })

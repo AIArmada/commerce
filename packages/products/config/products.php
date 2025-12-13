@@ -22,7 +22,12 @@ return [
         'collections' => 'product_collections',
         'collection_product' => 'collection_product',
         'attributes' => 'product_attributes',
+        'attribute_groups' => 'product_attribute_groups',
         'attribute_values' => 'product_attribute_values',
+        'attribute_sets' => 'product_attribute_sets',
+        'attribute_attribute_group' => 'product_attribute_attribute_group',
+        'attribute_attribute_set' => 'product_attribute_attribute_set',
+        'attribute_group_attribute_set' => 'product_attribute_group_attribute_set',
     ],
 
     /*

@@ -32,12 +32,19 @@ class FilamentProductsPlugin implements Plugin
                 Resources\ProductResource::class,
                 Resources\CategoryResource::class,
                 Resources\CollectionResource::class,
+                Resources\AttributeResource::class,
+                Resources\AttributeGroupResource::class,
+                Resources\AttributeSetResource::class,
             ])
             ->pages([
-                // Pages will be added here
+                Pages\BulkEditProducts::class,
+                Pages\ImportExportProducts::class,
             ])
             ->widgets([
                 Widgets\ProductStatsWidget::class,
+                Widgets\CategoryDistributionChart::class,
+                Widgets\LowStockAlertWidget::class,
+                Widgets\TopSellingProductsWidget::class,
             ]);
     }
 

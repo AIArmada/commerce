@@ -15,6 +15,27 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
+/**
+ * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
+ * @property string $name
+ * @property string $slug
+ * @property string|null $description
+ * @property string $type
+ * @property array<string, mixed>|null $conditions
+ * @property int $position
+ * @property bool $is_visible
+ * @property bool $is_featured
+ * @property \Illuminate\Support\Carbon|null $published_at
+ * @property \Illuminate\Support\Carbon|null $unpublished_at
+ * @property string|null $meta_title
+ * @property string|null $meta_description
+ * @property array<string, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
+ */
 class Collection extends Model implements HasMedia
 {
     use HasFactory;
@@ -40,7 +61,7 @@ class Collection extends Model implements HasMedia
     ];
 
     /**
-     * @var array<int, string>
+     * @var array<string, mixed>
      */
     protected $attributes = [
         'type' => 'manual',
@@ -250,6 +271,7 @@ class Collection extends Model implements HasMedia
     /**
      * Apply rule conditions to a query.
      *
+     * @param  Builder<Product>  $query
      * @param  array<string, mixed>  $conditions
      */
     protected function applyConditions(Builder $query, array $conditions): void
@@ -268,7 +290,7 @@ class Collection extends Model implements HasMedia
                 'price_max' => $query->where('price', '<=', $value),
                 'type' => $query->where('type', $value),
                 'category' => $query->whereHas('categories', fn ($q) => $q->where('category_id', $value)),
-                'tag' => $query->withAnyTags([$value]),
+                'tag' => $query->whereHas('tags', fn ($q) => $q->where('name->en', $value)->orWhere('name', $value)),
                 'is_featured' => $query->where('is_featured', (bool) $value),
                 default => $query->where($field, $operator, $value),
             };

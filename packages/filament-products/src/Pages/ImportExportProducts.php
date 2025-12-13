@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Pages;
 
+use AIArmada\Products\Enums\ProductStatus;
+use AIArmada\Products\Enums\ProductType;
+use AIArmada\Products\Enums\ProductVisibility;
 use AIArmada\Products\Models\Product;
 use BackedEnum;
 use Exception;
@@ -79,15 +82,18 @@ class ImportExportProducts extends Page
                         'sku' => $record['sku'] ?? null,
                         'slug' => $record['slug'] ?? \Illuminate\Support\Str::slug($record['name'] ?? ''),
                         'description' => $record['description'] ?? null,
+                        'short_description' => $record['short_description'] ?? null,
                         'price' => isset($record['price']) ? (int) ($record['price'] * 100) : 0,
-                        'compare_at_price' => isset($record['compare_at_price']) ? (int) ($record['compare_at_price'] * 100) : null,
+                        'compare_price' => isset($record['compare_price']) ? (int) ($record['compare_price'] * 100) : null,
                         'cost' => isset($record['cost']) ? (int) ($record['cost'] * 100) : null,
-                        'stock_quantity' => $record['stock_quantity'] ?? 0,
-                        'low_stock_threshold' => $record['low_stock_threshold'] ?? 5,
                         'weight' => $record['weight'] ?? null,
-                        'status' => $record['status'] ?? 'draft',
-                        'type' => $record['type'] ?? 'simple',
-                        'visibility' => $record['visibility'] ?? 'visible',
+                        'status' => ProductStatus::tryFrom($record['status'] ?? 'draft') ?? ProductStatus::Draft,
+                        'type' => ProductType::tryFrom($record['type'] ?? 'simple') ?? ProductType::Simple,
+                        'visibility' => ProductVisibility::tryFrom($record['visibility'] ?? 'catalog_search') ?? ProductVisibility::CatalogSearch,
+                        'is_featured' => filter_var($record['is_featured'] ?? false, FILTER_VALIDATE_BOOLEAN),
+                        'is_taxable' => filter_var($record['is_taxable'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                        'requires_shipping' => filter_var($record['requires_shipping'] ?? true, FILTER_VALIDATE_BOOLEAN),
+                        'tax_class' => $record['tax_class'] ?? null,
                     ];
 
                     if ($data['update_existing'] && isset($record['sku'])) {
@@ -152,17 +158,20 @@ class ImportExportProducts extends Page
                             'sku' => 'SKU',
                             'slug' => 'Slug',
                             'description' => 'Description',
+                            'short_description' => 'Short Description',
                             'price' => 'Price',
-                            'compare_at_price' => 'Compare at Price',
+                            'compare_price' => 'Compare Price',
                             'cost' => 'Cost',
-                            'stock_quantity' => 'Stock Quantity',
-                            'low_stock_threshold' => 'Low Stock Threshold',
                             'weight' => 'Weight',
                             'status' => 'Status',
                             'type' => 'Type',
                             'visibility' => 'Visibility',
+                            'is_featured' => 'Featured',
+                            'is_taxable' => 'Taxable',
+                            'requires_shipping' => 'Requires Shipping',
+                            'tax_class' => 'Tax Class',
                         ])
-                        ->default(['name', 'sku', 'price', 'stock_quantity'])
+                        ->default(['name', 'sku', 'price', 'status', 'type'])
                         ->required()
                         ->columns(3),
 
@@ -170,9 +179,9 @@ class ImportExportProducts extends Page
                         ->label('Filter by Status')
                         ->options([
                             'all' => 'All Products',
-                            'active' => 'Active Only',
-                            'draft' => 'Draft Only',
-                            'archived' => 'Archived Only',
+                            ...collect(ProductStatus::cases())
+                                ->mapWithKeys(fn ($status) => [$status->value => $status->label()])
+                                ->all(),
                         ])
                         ->default('all'),
                 ])
@@ -213,8 +222,18 @@ class ImportExportProducts extends Page
                 $value = $product->{$field};
 
                 // Convert cents to dollars for price fields
-                if (in_array($field, ['price', 'compare_at_price', 'cost']) && is_numeric($value)) {
+                if (in_array($field, ['price', 'compare_price', 'cost']) && is_numeric($value)) {
                     $value /= 100;
+                }
+
+                // Convert enums to their values
+                if ($value instanceof BackedEnum) {
+                    $value = $value->value;
+                }
+
+                // Convert booleans to readable format
+                if (is_bool($value)) {
+                    $value = $value ? 'true' : 'false';
                 }
 
                 $row[] = $value;
@@ -238,15 +257,18 @@ class ImportExportProducts extends Page
             'sku',
             'slug',
             'description',
+            'short_description',
             'price',
-            'compare_at_price',
+            'compare_price',
             'cost',
-            'stock_quantity',
-            'low_stock_threshold',
             'weight',
             'status',
             'type',
             'visibility',
+            'is_featured',
+            'is_taxable',
+            'requires_shipping',
+            'tax_class',
         ]);
 
         // Add example row
@@ -255,15 +277,18 @@ class ImportExportProducts extends Page
             'EXAMPLE-001',
             'example-product',
             'This is an example product description',
+            'Short desc',
             '99.99',
             '129.99',
             '50.00',
-            '100',
-            '10',
-            '500',
+            '0.5',
             'active',
             'simple',
-            'visible',
+            'catalog_search',
+            'true',
+            'true',
+            'true',
+            'standard',
         ]);
 
         return response()->streamDownload(function () use ($csv): void {

@@ -10,6 +10,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
+/**
+ * @property string $id
+ * @property string $option_id
+ * @property string $name
+ * @property int $position
+ * @property string|null $swatch_color
+ * @property string|null $swatch_image
+ * @property array<string, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Option $option
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Variant> $variants
+ */
 class OptionValue extends Model
 {
     use HasFactory;
@@ -27,7 +40,7 @@ class OptionValue extends Model
     ];
 
     /**
-     * @var array<int, string>
+     * @var array<string, mixed>
      */
     protected $attributes = [
         'position' => 0,
@@ -110,5 +123,16 @@ class OptionValue extends Model
     public function scopeOrdered($query)
     {
         return $query->orderBy('position');
+    }
+
+    // =========================================================================
+    // BOOT
+    // =========================================================================
+
+    protected static function booted(): void
+    {
+        static::deleting(function (OptionValue $optionValue): void {
+            $optionValue->variants()->detach();
+        });
     }
 }
