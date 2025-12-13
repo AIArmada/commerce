@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Models;
 
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Events\CustomerCreated;
@@ -19,6 +20,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
+use Spatie\MediaLibrary\HasMedia;
+use Spatie\MediaLibrary\InteractsWithMedia;
+use Spatie\Tags\HasTags;
 
 /**
  * @property string $id
@@ -53,11 +57,14 @@ use Illuminate\Support\Carbon;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, CustomerNote> $notes
  * @property-read \Illuminate\Database\Eloquent\Collection<int, CustomerGroup> $groups
  */
-class Customer extends Model
+class Customer extends Model implements HasMedia
 {
     use HasFactory;
     use HasOwner;
+    use HasTags;
     use HasUuids;
+    use InteractsWithMedia;
+    use LogsCommerceActivity;
     use SoftDeletes;
 
     protected $guarded = ['id'];
@@ -372,6 +379,59 @@ class Customer extends Model
     }
 
     // =========================================================================
+    // MEDIA COLLECTIONS
+    // =========================================================================
+
+    /**
+     * Register media collections for customer files.
+     */
+    public function registerMediaCollections(): void
+    {
+        $this->addMediaCollection('avatar')
+            ->singleFile()
+            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
+
+        $this->addMediaCollection('documents');
+    }
+
+    /**
+     * Get the customer's avatar URL.
+     */
+    public function getAvatarUrl(?string $conversion = ''): ?string
+    {
+        $media = $this->getFirstMedia('avatar');
+
+        return $media?->getUrl($conversion);
+    }
+
+    // =========================================================================
+    // TAG HELPERS
+    // =========================================================================
+
+    /**
+     * Tag the customer for segmentation.
+     *
+     * @param  array<int, string>|string  $tags
+     */
+    public function tagForSegment(array | string $tags): static
+    {
+        $this->attachTags($tags, 'segments');
+
+        return $this;
+    }
+
+    /**
+     * Get customers in a specific segment tag.
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<self>
+     */
+    public function scopeWithSegmentTag($query, string $tag)
+    {
+        return $query->withAnyTags([$tag], 'segments');
+    }
+
+    // =========================================================================
     // BOOT
     // =========================================================================
 
@@ -384,5 +444,36 @@ class Customer extends Model
             $customer->segments()->detach();
             $customer->groups()->detach();
         });
+    }
+
+    // =========================================================================
+    // ACTIVITY LOGGING
+    // =========================================================================
+
+    /**
+     * Get the attributes to log for activity tracking.
+     *
+     * @return array<int, string>
+     */
+    protected function getLoggableAttributes(): array
+    {
+        return [
+            'first_name',
+            'last_name',
+            'email',
+            'phone',
+            'status',
+            'wallet_balance',
+            'accepts_marketing',
+            'is_tax_exempt',
+        ];
+    }
+
+    /**
+     * Get the activity log name for categorization.
+     */
+    protected function getActivityLogName(): string
+    {
+        return 'customers';
     }
 }

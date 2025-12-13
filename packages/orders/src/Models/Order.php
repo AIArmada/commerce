@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Models;
 
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Orders\Database\Factories\OrderFactory;
 use AIArmada\Orders\States\OrderStatus;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
+use OwenIt\Auditing\Contracts\Auditable;
 use Spatie\ModelStates\HasStates;
 
 /**
@@ -51,8 +53,10 @@ use Spatie\ModelStates\HasStates;
  * @property-read Collection<int, OrderRefund> $refunds
  * @property-read Collection<int, OrderNote> $orderNotes
  */
-class Order extends Model
+class Order extends Model implements Auditable
 {
+    use HasCommerceAudit;
+
     /** @use HasFactory<OrderFactory> */
     use HasFactory;
 
@@ -321,6 +325,28 @@ class Order extends Model
     }
 
     /**
+     * Get the attributes that should be audited for compliance.
+     *
+     * @return array<int, string>
+     */
+    public function getAuditInclude(): array
+    {
+        return [
+            'status',
+            'subtotal',
+            'discount_total',
+            'shipping_total',
+            'tax_total',
+            'grand_total',
+            'paid_at',
+            'shipped_at',
+            'delivered_at',
+            'canceled_at',
+            'cancellation_reason',
+        ];
+    }
+
+    /**
      * Create a new factory instance for the model.
      */
     protected static function newFactory(): OrderFactory
@@ -382,5 +408,15 @@ class Order extends Model
         };
 
         return $symbol . number_format($amountInCents / 100, $decimalPlaces);
+    }
+
+    /**
+     * Get tags for categorizing this audit.
+     *
+     * @return array<int, string>
+     */
+    protected function getAuditTags(): array
+    {
+        return ['commerce', 'orders'];
     }
 }

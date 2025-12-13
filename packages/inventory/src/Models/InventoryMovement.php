@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\Inventory\Database\Factories\InventoryMovementFactory;
 use AIArmada\Inventory\Enums\MovementType;
 use Illuminate\Database\Eloquent\Builder;
@@ -47,6 +48,7 @@ final class InventoryMovement extends Model
     use HasFactory;
 
     use HasUuids;
+    use LogsCommerceActivity;
 
     /**
      * The attributes that are mass assignable.
@@ -211,5 +213,33 @@ final class InventoryMovement extends Model
             'quantity' => 'integer',
             'occurred_at' => 'datetime',
         ];
+    }
+
+    /**
+     * Get the attributes to log for activity tracking.
+     *
+     * @return array<int, string>
+     */
+    protected function getLoggableAttributes(): array
+    {
+        return [
+            'inventoryable_type',
+            'inventoryable_id',
+            'from_location_id',
+            'to_location_id',
+            'quantity',
+            'type',
+            'reason',
+            'reference',
+            'user_id',
+        ];
+    }
+
+    /**
+     * Get the activity log name for categorization.
+     */
+    protected function getActivityLogName(): string
+    {
+        return 'inventory';
     }
 }
