@@ -4,12 +4,20 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates;
 
+use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
+use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
+use AIArmada\FilamentAffiliates\Pages\ReportsPage;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliatePayoutResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateProgramResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateResource;
 use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
+use AIArmada\FilamentAffiliates\Widgets\FraudAlertWidget;
+use AIArmada\FilamentAffiliates\Widgets\NetworkVisualizationWidget;
+use AIArmada\FilamentAffiliates\Widgets\PayoutQueueWidget;
+use AIArmada\FilamentAffiliates\Widgets\PerformanceOverviewWidget;
+use AIArmada\FilamentAffiliates\Widgets\RealTimeActivityWidget;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
@@ -43,8 +51,18 @@ final class FilamentAffiliatesPlugin implements Plugin
                 AffiliateProgramResource::class,
                 AffiliateFraudSignalResource::class,
             ])
+            ->pages([
+                FraudReviewPage::class,
+                PayoutBatchPage::class,
+                ReportsPage::class,
+            ])
             ->widgets([
                 AffiliateStatsWidget::class,
+                PerformanceOverviewWidget::class,
+                RealTimeActivityWidget::class,
+                FraudAlertWidget::class,
+                PayoutQueueWidget::class,
+                NetworkVisualizationWidget::class,
             ]);
     }
 

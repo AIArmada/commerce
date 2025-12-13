@@ -16,7 +16,7 @@ use Illuminate\Support\Facades\Hash;
 
 class PortalRegistration extends FilamentRegister
 {
-    protected static string $view = 'filament-affiliates::pages.portal.registration';
+    protected string $view = 'filament-affiliates::pages.portal.registration';
 
     protected bool $registrationEnabled;
 

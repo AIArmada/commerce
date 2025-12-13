@@ -33,7 +33,7 @@ final class ReportsPage extends Page implements HasForms
 
     protected static ?int $navigationSort = 10;
 
-    protected static string $view = 'filament-affiliates::pages.reports';
+    protected string $view = 'filament-affiliates::pages.reports';
 
     public function mount(): void
     {
