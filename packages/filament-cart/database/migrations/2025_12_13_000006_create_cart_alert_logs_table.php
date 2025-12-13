@@ -13,7 +13,7 @@ return new class extends Migration
         $prefix = config('filament-cart.database.table_prefix', 'cart_');
         $jsonType = config('filament-cart.database.json_column_type', 'json');
 
-        Schema::create($prefix . 'alert_logs', function (Blueprint $table) use ($jsonType) {
+        Schema::create($prefix . 'alert_logs', function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('alert_rule_id');
 

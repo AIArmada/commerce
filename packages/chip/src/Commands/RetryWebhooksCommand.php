@@ -58,7 +58,7 @@ final class RetryWebhooksCommand extends Command
                 $result = $retryManager->retry($webhook);
 
                 if ($result->isSuccess()) {
-                    $this->info("  ✓ Retry succeeded");
+                    $this->info('  ✓ Retry succeeded');
                     $succeeded++;
                 } else {
                     $this->warn("  ✗ Retry failed: {$result->message}");

@@ -27,11 +27,11 @@ class ScheduleRecoveryCommand extends Command
 
         $query = RecoveryCampaign::query()
             ->where('status', 'active')
-            ->where(function ($q) {
+            ->where(function ($q): void {
                 $q->whereNull('starts_at')
                     ->orWhere('starts_at', '<=', now());
             })
-            ->where(function ($q) {
+            ->where(function ($q): void {
                 $q->whereNull('ends_at')
                     ->orWhere('ends_at', '>=', now());
             });

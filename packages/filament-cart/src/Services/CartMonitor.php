@@ -125,7 +125,7 @@ class CartMonitor
             ->where('items_count', '>', 0)
             ->where('updated_at', '<', now()->subMinutes($abandonmentMinutes))
             ->where('updated_at', '>=', now()->subHours(24))
-            ->whereNotExists(function (Builder $query) {
+            ->whereNotExists(function (Builder $query): void {
                 $query->select(DB::raw(1))
                     ->from($this->getAlertLogsTable())
                     ->whereColumn('cart_id', $this->getSnapshotsTable() . '.id')
@@ -147,17 +147,17 @@ class CartMonitor
         // This is a simplified detection - real implementation would be more sophisticated
         return DB::table($this->getSnapshotsTable())
             ->where('status', 'active')
-            ->where(function ($query) {
+            ->where(function ($query): void {
                 // High value + new session
                 $query->where('total_cents', '>=', 50000)
                     ->where('created_at', '>=', now()->subMinutes(10));
             })
-            ->orWhere(function ($query) {
+            ->orWhere(function ($query): void {
                 // Multiple high-quantity items
                 $query->where('items_count', '>=', 10)
                     ->where('total_cents', '>=', 100000);
             })
-            ->whereNotExists(function (Builder $query) {
+            ->whereNotExists(function (Builder $query): void {
                 $query->select(DB::raw(1))
                     ->from($this->getAlertLogsTable())
                     ->whereColumn('cart_id', $this->getSnapshotsTable() . '.id')

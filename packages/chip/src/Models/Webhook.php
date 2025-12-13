@@ -6,6 +6,7 @@ namespace AIArmada\Chip\Models;
 
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Support\Carbon;
+use Throwable;
 
 /**
  * @property string|null $url
@@ -61,7 +62,7 @@ class Webhook extends ChipModel
     /**
      * Mark the webhook as failed.
      */
-    public function markFailed(\Throwable $exception): self
+    public function markFailed(Throwable $exception): self
     {
         $this->update([
             'status' => 'failed',

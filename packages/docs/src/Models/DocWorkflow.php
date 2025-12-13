@@ -43,7 +43,7 @@ class DocWorkflow extends Model
         $tables = config('docs.database.tables', []);
         $prefix = config('docs.database.table_prefix', 'docs_');
 
-        return $tables['workflows'] ?? $prefix.'workflows';
+        return $tables['workflows'] ?? $prefix . 'workflows';
     }
 
     /**
@@ -74,6 +74,13 @@ class DocWorkflow extends Model
         return $this->evaluateRules($doc);
     }
 
+    protected static function booted(): void
+    {
+        static::deleting(function (DocWorkflow $workflow): void {
+            $workflow->steps()->delete();
+        });
+    }
+
     /**
      * Evaluate workflow rules against a document.
      */
@@ -93,7 +100,7 @@ class DocWorkflow extends Model
     /**
      * Evaluate a single condition against the document.
      *
-     * @param array<string, mixed>|mixed $condition
+     * @param  array<string, mixed>|mixed  $condition
      */
     protected function evaluateCondition(Doc $doc, string $field, mixed $condition): bool
     {
@@ -104,8 +111,8 @@ class DocWorkflow extends Model
             $compareValue = $condition['value'] ?? null;
 
             return match ($operator) {
-                '=' => $value == $compareValue,
-                '!=' => $value != $compareValue,
+                '=' => $value === $compareValue,
+                '!=' => $value !== $compareValue,
                 '>' => $value > $compareValue,
                 '>=' => $value >= $compareValue,
                 '<' => $value < $compareValue,
@@ -116,14 +123,7 @@ class DocWorkflow extends Model
             };
         }
 
-        return $value == $condition;
-    }
-
-    protected static function booted(): void
-    {
-        static::deleting(function (DocWorkflow $workflow): void {
-            $workflow->steps()->delete();
-        });
+        return $value === $condition;
     }
 
     /**

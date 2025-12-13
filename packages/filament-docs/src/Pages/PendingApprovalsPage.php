@@ -33,11 +33,6 @@ class PendingApprovalsPage extends Page implements HasTable
         return __('Pending Approvals');
     }
 
-    public function getTitle(): string|Htmlable
-    {
-        return __('My Pending Approvals');
-    }
-
     public static function getNavigationGroup(): ?string
     {
         return config('filament-docs.navigation.group', __('Documents'));
@@ -72,6 +67,11 @@ class PendingApprovalsPage extends Page implements HasTable
             ->where('assigned_to', $userId)
             ->where('status', 'pending')
             ->count();
+    }
+
+    public function getTitle(): string | Htmlable
+    {
+        return __('My Pending Approvals');
     }
 
     public function table(Table $table): Table

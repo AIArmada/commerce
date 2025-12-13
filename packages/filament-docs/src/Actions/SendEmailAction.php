@@ -6,6 +6,7 @@ namespace AIArmada\FilamentDocs\Actions;
 
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocEmailService;
+use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -93,7 +94,7 @@ class SendEmailAction extends Action
     }
 
     /**
-     * @param array<string, mixed> $data
+     * @param  array<string, mixed>  $data
      */
     protected function sendEmail(Doc $record, array $data): void
     {
@@ -111,7 +112,7 @@ class SendEmailAction extends Action
                 ->body(__('The document has been sent to :email', ['email' => $data['to']]))
                 ->success()
                 ->send();
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Notification::make()
                 ->title(__('Email Failed'))
                 ->body(__('Failed to send the document. Please try again.'))
