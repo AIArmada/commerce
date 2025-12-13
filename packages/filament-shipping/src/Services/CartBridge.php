@@ -7,6 +7,7 @@ namespace AIArmada\FilamentShipping\Services;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShipmentItemData;
+use Throwable;
 
 /**
  * Bridge service for integrating with the Cart package.
@@ -85,7 +86,11 @@ class CartBridge
             return null;
         }
 
-        return $resourceClass::getUrl('view', ['record' => $orderId]);
+        try {
+            return $resourceClass::getUrl('view', ['record' => $orderId]);
+        } catch (Throwable $e) {
+            return null;
+        }
     }
 
     /**

@@ -14,6 +14,9 @@ it('exposes a stable plugin id', function (): void {
     expect($plugin->getId())->toBe('filament-docs');
 });
 
+use AIArmada\FilamentDocs\Pages\AgingReportPage;
+use AIArmada\FilamentDocs\Pages\PendingApprovalsPage;
+
 it('registers docs resources and widgets on the panel', function (): void {
     /** @var Panel&Mockery\MockInterface $panel */
     $panel = Mockery::mock(Panel::class);
@@ -22,6 +25,12 @@ it('registers docs resources and widgets on the panel', function (): void {
     $panel->shouldReceive('resources')
         ->once()
         ->with([DocResource::class, DocTemplateResource::class])
+        ->andReturnSelf();
+
+    // @phpstan-ignore method.notFound
+    $panel->shouldReceive('pages')
+        ->once()
+        ->with([AgingReportPage::class, PendingApprovalsPage::class])
         ->andReturnSelf();
 
     // @phpstan-ignore method.notFound

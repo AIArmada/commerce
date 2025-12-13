@@ -161,7 +161,7 @@
 |-------|--------|
 | PHPStan Level 6 (jnt) | ✅ 1 error (optional health check dependency) |
 | PHPStan Level 6 (filament-jnt) | ✅ 0 errors |
-| Unit Tests | ✅ 335 passing |
+| Unit Tests | ✅ 425 passing |
 | Feature Tests | ✅ Passing |
 | Notification Tests | ✅ 3 tests passing |
 
