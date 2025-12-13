@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax\Resources\TaxExemptionResource\Schemas;
 
+use AIArmada\Tax\Models\TaxExemption;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
-use Filament\Forms\Components\Toggle;
 use Filament\Forms\Get as GetFormState;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
@@ -28,29 +28,31 @@ final class TaxExemptionForm
                             ->schema([
                                 Select::make('exemptable_type')
                                     ->label('Entity Type')
-                                    ->options([
-                                        'AIArmada\\Customers\\Models\\Customer' => 'Customer',
-                                        'AIArmada\\Customers\\Models\\CustomerGroup' => 'Customer Group',
-                                    ])
+                                    ->options(self::getExemptableTypes())
                                     ->required()
                                     ->live()
                                     ->default('AIArmada\\Customers\\Models\\Customer'),
 
                                 Select::make('exemptable_id')
-                                    ->label('Customer')
+                                    ->label('Customer/Entity')
                                     ->searchable()
                                     ->required()
-                                    ->options(function (GetFormState $get) {
+                                    ->options(function (GetFormState $get): array {
                                         $type = $get('exemptable_type');
 
-                                        if ($type === 'AIArmada\\Customers\\Models\\Customer') {
-                                            return \AIArmada\Customers\Models\Customer::query()
-                                                ->get()
-                                                ->mapWithKeys(fn ($c) => [$c->id => $c->full_name . ' (' . $c->email . ')']);
+                                        if (! $type || ! class_exists($type)) {
+                                            return [];
                                         }
 
-                                        if ($type === 'AIArmada\\Customers\\Models\\CustomerGroup') {
-                                            return \AIArmada\Customers\Models\CustomerGroup::pluck('name', 'id');
+                                        if ($type === 'AIArmada\\Customers\\Models\\Customer' && class_exists($type)) {
+                                            return $type::query()
+                                                ->get()
+                                                ->mapWithKeys(fn ($c): array => [$c->id => $c->full_name . ' (' . $c->email . ')'])
+                                                ->toArray();
+                                        }
+
+                                        if ($type === 'AIArmada\\Customers\\Models\\CustomerGroup' && class_exists($type)) {
+                                            return $type::pluck('name', 'id')->toArray();
                                         }
 
                                         return [];
@@ -61,6 +63,7 @@ final class TaxExemptionForm
                                     ->relationship('taxZone', 'name')
                                     ->searchable()
                                     ->preload()
+                                    ->placeholder('All Zones')
                                     ->helperText('Leave empty to apply exemption to all zones'),
                             ])
                             ->columns(3),
@@ -69,11 +72,10 @@ final class TaxExemptionForm
                             ->schema([
                                 TextInput::make('certificate_number')
                                     ->label('Certificate Number')
-                                    ->required()
                                     ->maxLength(100)
                                     ->unique(ignoreRecord: true),
 
-                                FileUpload::make('certificate_file')
+                                FileUpload::make('document_path')
                                     ->label('Certificate Document')
                                     ->acceptedFileTypes(['application/pdf', 'image/*'])
                                     ->maxSize(5120)
@@ -111,48 +113,86 @@ final class TaxExemptionForm
                     ->schema([
                         Section::make('Status')
                             ->schema([
-                                Toggle::make('is_verified')
-                                    ->label('Verified')
-                                    ->helperText('Mark as verified after review')
-                                    ->default(false),
-
-                                Toggle::make('is_active')
-                                    ->label('Active')
-                                    ->default(true),
+                                Select::make('status')
+                                    ->label('Status')
+                                    ->options([
+                                        'pending' => 'Pending Review',
+                                        'approved' => 'Approved',
+                                        'rejected' => 'Rejected',
+                                    ])
+                                    ->default('pending')
+                                    ->required(),
 
                                 Placeholder::make('status_info')
-                                    ->label('Status')
-                                    ->content(function ($record) {
+                                    ->label('Status Info')
+                                    ->content(function (?TaxExemption $record): string {
                                         if (! $record) {
-                                            return 'New exemption';
+                                            return 'New exemption - pending review';
                                         }
 
-                                        if ($record->expires_at && $record->expires_at->isPast()) {
-                                            return '⚠️ Expired';
+                                        if ($record->expires_at?->isPast()) {
+                                            return '⚠️ Expired on ' . $record->expires_at->format('d M Y');
                                         }
 
-                                        if ($record->expires_at && $record->expires_at->isBefore(now()->addDays(30))) {
-                                            return '⏰ Expiring Soon';
+                                        if ($record->expires_at?->isBefore(now()->addDays(30))) {
+                                            return '⏰ Expiring in ' . $record->expires_at->diffForHumans();
                                         }
 
-                                        if ($record->is_verified) {
-                                            return '✅ Active & Verified';
+                                        if ($record->status === 'approved') {
+                                            return '✅ Active & Approved';
                                         }
 
-                                        return '⏳ Pending Verification';
+                                        if ($record->status === 'rejected') {
+                                            return '❌ Rejected';
+                                        }
+
+                                        return '⏳ Pending Review';
+                                    }),
+
+                                Placeholder::make('verified_info')
+                                    ->label('Verified')
+                                    ->content(function (?TaxExemption $record): string {
+                                        if (! $record || ! $record->verified_at) {
+                                            return 'Not yet verified';
+                                        }
+
+                                        return $record->verified_at->format('d M Y H:i');
                                     }),
                             ]),
 
-                        Section::make('Notes')
+                        Section::make('Internal Notes')
                             ->schema([
-                                Textarea::make('internal_notes')
-                                    ->label('Internal Notes')
+                                Textarea::make('rejection_reason')
+                                    ->label('Rejection Reason / Notes')
                                     ->rows(4)
-                                    ->helperText('For internal use only'),
+                                    ->helperText('Required if rejecting the exemption'),
                             ]),
                     ])
                     ->columnSpan(['lg' => 1]),
             ])
             ->columns(3);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private static function getExemptableTypes(): array
+    {
+        $types = [];
+
+        if (class_exists('AIArmada\\Customers\\Models\\Customer')) {
+            $types['AIArmada\\Customers\\Models\\Customer'] = 'Customer';
+        }
+
+        if (class_exists('AIArmada\\Customers\\Models\\CustomerGroup')) {
+            $types['AIArmada\\Customers\\Models\\CustomerGroup'] = 'Customer Group';
+        }
+
+        // Fallback if customers package not installed
+        if (empty($types)) {
+            $types['App\\Models\\User'] = 'User';
+        }
+
+        return $types;
     }
 }

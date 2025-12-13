@@ -16,12 +16,15 @@ return new class extends Migration
             // Polymorphic: Customer, User, etc.
             $table->uuidMorphs('exemptable');
 
+            // Optional: specific zone or null for all zones
+            $table->foreignUuid('tax_zone_id')->nullable();
+
             // Exemption details
             $table->string('reason');
             $table->string('certificate_number')->nullable();
             $table->string('document_path')->nullable();
 
-            // Status: pending, approved, rejected, expired
+            // Status: pending, approved, rejected
             $table->string('status')->default('pending');
             $table->text('rejection_reason')->nullable();
 
@@ -29,7 +32,8 @@ return new class extends Migration
             $table->timestamp('verified_at')->nullable();
             $table->uuid('verified_by')->nullable();
 
-            // Expiration
+            // Validity period
+            $table->timestamp('starts_at')->nullable();
             $table->timestamp('expires_at')->nullable();
 
             $table->timestamps();
@@ -37,6 +41,7 @@ return new class extends Migration
             // Indexes
             $table->index(['exemptable_type', 'exemptable_id', 'status']);
             $table->index(['status', 'expires_at']);
+            $table->index(['tax_zone_id']);
         });
     }
 

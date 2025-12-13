@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Pages;
 
 use AIArmada\FilamentCashierChip\Widgets\ActiveSubscribersWidget;
+use AIArmada\FilamentCashierChip\Widgets\AttentionRequiredWidget;
 use AIArmada\FilamentCashierChip\Widgets\ChurnRateWidget;
 use AIArmada\FilamentCashierChip\Widgets\MRRWidget;
 use AIArmada\FilamentCashierChip\Widgets\RevenueChartWidget;
@@ -46,6 +47,7 @@ final class BillingDashboard extends Page
             MRRWidget::class,
             ActiveSubscribersWidget::class,
             ChurnRateWidget::class,
+            AttentionRequiredWidget::class,
         ];
     }
 
@@ -60,7 +62,7 @@ final class BillingDashboard extends Page
 
     public function getHeaderWidgetsColumns(): int | array
     {
-        return 3;
+        return 4;
     }
 
     public function getFooterWidgetsColumns(): int | array
