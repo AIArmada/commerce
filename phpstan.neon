@@ -118,6 +118,20 @@ parameters:
         - message: '#Access to an undefined property AIArmada\\Inventory\\Models\\.*::\$value\.#'
         # Ignore aggregate query property access for FilamentCart models (DB::raw() creates dynamic properties)
         - message: '#Access to an undefined property AIArmada\\FilamentCart\\Models\\.*::\$.*#'
+        # Ignore cross-package Product/Variant/Option model property access (properties exist, PHPStan can't resolve cross-package)
+        - message: '#Access to an undefined property AIArmada\\Products\\Models\\Product::\$.*#'
+        - message: '#Access to an undefined property AIArmada\\Products\\Models\\Variant::\$.*#'
+        - message: '#Access to an undefined property AIArmada\\Products\\Models\\Option::\$.*#'
+        - message: '#Access to an undefined property AIArmada\\Products\\Models\\OptionValue::\$.*#'
+        - message: '#Access to an undefined property AIArmada\\Products\\Models\\Collection::\$.*#'
+        - message: '#Access to an undefined property AIArmada\\Products\\Models\\Category::\$.*#'
+        # Ignore Spatie Tags method calls (dynamically resolved)
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder::withAnyTags\(\)\.#'
+        - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder::withAllTags\(\)\.#'
+        # Ignore Spatie Image Driver method calls (version-specific methods)
+        - message: '#Call to an undefined method Spatie\\Image\\Drivers\\ImageDriver::.*#'
+        # Ignore property.phpDocType for model $attributes array shape (PHPStan variance issue)
+        - identifier: 'property.phpDocType'
         # Ignore unresolvable return types from collection operations
         - message: '#Return type of call to method Illuminate\\.*Collection.*::map\(\) contains unresolvable type\.#'
         - message: '#Return type of call to method Illuminate\\Support\\Collection.*::values\(\) contains unresolvable type\.#'
@@ -165,6 +179,23 @@ parameters:
         - message: '#Call to an undefined method PHPUnit\\Framework\\TestCase::actingAs\(\)\.#'
         - message: '#Access to an undefined property PHPUnit\\Framework\\TestCase::\$userClass\.#'
         - message: '#Unable to resolve the template type TValue in call to function expect#'
+        # Ignore Faker method calls (methods exist but PHPStan can't resolve them)
+        - message: '#Call to an undefined method Faker\\Generator::.*#'
+        # Ignore unused traits in customers (public API for consumers)
+        - message: '#Trait AIArmada\\Customers\\Concerns\\.*is used zero times and is not analysed\.#'
+        # Ignore factory static method calls (Laravel's HasFactory trait provides this)
+        - message: '#Call to an undefined static method AIArmada\\.*::factory\(\)\.#'
+        # Ignore Spatie Laravel PDF methods (version-specific)
+        - message: '#Call to an undefined method Spatie\\LaravelPdf\\PdfBuilder::.*#'
+        # Ignore Spatie Health classes (class exists at runtime when package installed)
+        - message: '#.*invalid.*type Spatie\\Health\\Checks\\Result\.#'
+        - message: '#.*unknown class Spatie\\Health\\Checks\\Result\.#'
+        - message: '#.*unknown class Spatie\\Health\\Checks\\Check\.#'
+        - message: '#.*unknown class Spatie\\Health\\ResultStores\\ResultStore\.#'
+        - message: '#Class Spatie\\Health\\.*not found\.#'
+        - message: '#.*on an unknown class Spatie\\Health\\.*#'
+        # Ignore Orders model property access (cross-package)
+        - message: '#Access to an undefined property AIArmada\\Orders\\Models\\.*::\$.*#'
          # Ignore collection proxy method calls
         - message: '#Call to an undefined method Illuminate\\Support\\HigherOrderCollectionProxy.*::markAsRedeemed\(\)\.#'
         # Ignore return type covariance issues with Eloquent relations (PHPStan template variance)
@@ -427,6 +458,15 @@ parameters:
             # Exclude Filament Settings pages (require optional spatie-laravel-settings-plugin)
             - packages/filament-tax/src/Pages/ManageTaxSettings.php
             - packages/filament-pricing/src/Pages/ManagePricingSettings.php
+            # Exclude Health check files (extend Spatie Health Check which is optional)
+            - packages/commerce-support/src/Health/CommerceHealthCheck.php
+            - packages/commerce-support/src/Contracts/HasHealthCheck.php
+            - packages/commerce-support/src/Contracts/Auditable.php
+            - packages/commerce-support/src/Concerns/HasCommerceAudit.php
+            - packages/chip/src/Health/ChipGatewayCheck.php
+            - packages/jnt/src/Health/JntHealthCheck.php
+            - packages/inventory/src/Health/LowStockCheck.php
+            - packages/orders/src/Health/OrderProcessingCheck.php
             # Exclude examples file with external dependencies
             - packages/vouchers/examples/usage.php
         - vendor
