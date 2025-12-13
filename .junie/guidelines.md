@@ -3,6 +3,12 @@
 
 # Filament Guidelines
 
+## Version & Docs (Mandatory)
+
+- Implement using the **Filament v5 API**.
+- Filament v5 is largely compatible with Filament v4 patterns in this repo, but **do not assume** an API exists or behaves identically.
+- **Always verify** any Filament approach, class, method, or signature against the official Filament docs for the relevant version before coding.
+
 ## Spatie Integrations (Mandatory)
 
 When implementing Filament functionality around Spatie packages, you MUST use the official FilamentPHP plugins (do not roll your own integrations or use third-party alternatives):
@@ -24,6 +30,7 @@ For any import or export workflows in Filament, you MUST use Filament's built-in
 - Do not introduce alternative import/export libraries (e.g., custom CSV/XLSX handlers) unless explicitly requested and approved.
 - Prefer official Filament plugins and documented APIs over custom panels, fields, or bespoke integrations.
 - If a feature is covered by an official plugin/action, use it as the default implementation path.
+- When uncertain or when upgrading patterns, consult docs first; never rely on memory or “common knowledge”.
 
 
 === .ai/multitenancy rules ===
