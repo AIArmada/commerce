@@ -364,13 +364,31 @@ Example workflow:
 ```
 
 <laravel-boost-guidelines>
-=== .ai/test rules ===
+=== .ai/filament rules ===
 
-# Testing Guidelines
+# Filament Guidelines
 
-- **Never run the whole Pest suite**; always run by package only (e.g., `./vendor/bin/pest tests/src/Inventory --parallel`). Identify the package you touched and target that package's tests.
-- When many failures: capture once, group by cause, batch-fix, rerun targeted files (`--filter` when needed) before full package run.
-- Coverage: use package-specific XML in `.xml/`; create if missing. Target ≥85% for non-Filament packages. Commands: `./vendor/bin/pest tests/src/PackageName --parallel`, `./vendor/bin/phpunit .xml/package.xml --coverage`, `./vendor/bin/pest --coverage --min=85` when applicable.
+## Spatie Integrations (Mandatory)
+
+When implementing Filament functionality around Spatie packages, you MUST use the official FilamentPHP plugins (do not roll your own integrations or use third-party alternatives):
+
+- Tags (Spatie Laravel Tags): https://github.com/filamentphp/spatie-laravel-tags-plugin
+- Settings (Spatie Laravel Settings): https://github.com/filamentphp/spatie-laravel-settings-plugin
+- Google Fonts (Spatie Laravel Google Fonts): https://github.com/filamentphp/spatie-laravel-google-fonts-plugin
+- Media Library (Spatie Laravel Media Library): https://github.com/filamentphp/spatie-laravel-media-library-plugin
+
+## Import / Export (Mandatory)
+
+For any import or export workflows in Filament, you MUST use Filament's built-in Actions:
+
+- Import: https://filamentphp.com/docs/4.x/actions/import
+- Export: https://filamentphp.com/docs/4.x/actions/export
+
+## Rules
+
+- Do not introduce alternative import/export libraries (e.g., custom CSV/XLSX handlers) unless explicitly requested and approved.
+- Prefer official Filament plugins and documented APIs over custom panels, fields, or bespoke integrations.
+- If a feature is covered by an official plugin/action, use it as the default implementation path.
 
 
 === .ai/multitenancy rules ===
@@ -473,15 +491,6 @@ Model::globalOnly()->get();
 - Test both owner-scoped and global record scenarios
 
 
-=== .ai/phpstan rules ===
-
-# PHPStan Guidelines
-
-- All code must pass PHPStan level 6.
-- **Never run PHPStan on the whole `packages` directory.** Run it per package you changed (e.g., `./vendor/bin/phpstan analyse --level=6 packages/inventory`).
-- Verify with the per-package command (`phpstan.neon` baseline applies).
-
-
 === .ai/development rules ===
 
 # Development Guidelines
@@ -494,67 +503,209 @@ Model::globalOnly()->get();
 - Pint: never run repo-wide; format only the affected package (e.g., `./vendor/bin/pint packages/inventory`).
 
 
-=== .ai/filament rules ===
+=== .ai/model rules ===
 
-# Filament Guidelines
+<?php /** @var \Illuminate\View\ComponentAttributeBag $attributes */ ?>
+## Model Guidelines
 
-## Spatie Integrations (Mandatory)
-
-When implementing Filament functionality around Spatie packages, you MUST use the official FilamentPHP plugins (do not roll your own integrations or use third-party alternatives):
-
-- Tags (Spatie Laravel Tags): https://github.com/filamentphp/spatie-laravel-tags-plugin
-- Settings (Spatie Laravel Settings): https://github.com/filamentphp/spatie-laravel-settings-plugin
-- Google Fonts (Spatie Laravel Google Fonts): https://github.com/filamentphp/spatie-laravel-google-fonts-plugin
-- Media Library (Spatie Laravel Media Library): https://github.com/filamentphp/spatie-laravel-media-library-plugin
-
-## Import / Export (Mandatory)
-
-For any import or export workflows in Filament, you MUST use Filament's built-in Actions:
-
-- Import: https://filamentphp.com/docs/4.x/actions/import
-- Export: https://filamentphp.com/docs/4.x/actions/export
-
-## Rules
-
-- Do not introduce alternative import/export libraries (e.g., custom CSV/XLSX handlers) unless explicitly requested and approved.
-- Prefer official Filament plugins and documented APIs over custom panels, fields, or bespoke integrations.
-- If a feature is covered by an official plugin/action, use it as the default implementation path.
+- No DB-level FK constraints or cascades; handle all cascades in application code.
+- Required structure: use `HasUuids`; no `$table` property; `getTable()` pulls from config with prefix fallback; fillables match migration.
+- Relations typed with generics and PHPDoc properties.
+- `booted()` must implement application-level cascades (delete children or null FK as appropriate).
+- `casts()` set for arrays/booleans/datetimes as needed.
+- Migration reminder: use `foreignUuid()` without `constrained()`/cascades.
 
 
-=== .ai/config rules ===
+=== .ai/database rules ===
 
-# Config Guidelines
+# Database Guidelines
 
-- Only keep config keys that are used in code.
-- Order core package configs: Database → Credentials/API → Defaults → Features/Behavior → Integrations → HTTP → Webhooks → Cache → Logging.
-- Order Filament configs: Navigation → Tables → Features → Resources.
-- Keep configs minimal; publish only what is needed; nest related settings.
-- Migrations with JSON columns require a `json_column_type` config key.
-- Prefer defaults over excess env() wrappers; remove unused keys.
-- Comments: Laravel-style section headers only; inline comments only for non-obvious values.
-- Verify with `grep -r "config('package.key')" src/ packages/*/src/`; remove keys with no matches.
-
-
-=== .ai/packages rules ===
-
-# Packages Guidelines
-
-- Independence: each package must run standalone; prefer `suggest`/optional deps over `require`.
-- Integration: when co-installed, auto-enable hooks via service providers using `class_exists()`/config toggles.
-- DTOs: all DTOs must use Laravel Data for consistency.
-- Example integration pattern:
+- Primary keys: `uuid('id')->primary()` only.
+- Foreign keys: `foreignUuid('relation_id')`; never use `constrained()` or DB-level cascades—handle in application logic.
+- Sample:
 ```php
-public function boot(): void
-{
-    if (class_exists(Cashier::class)) {
-        // Cart-Cashier integration
-    }
-    if (class_exists(Chip::class)) {
-        // Cart-Chip integration
-    }
-}
+Schema::create('orders', function (Blueprint $table) {
+    $table->uuid('id')->primary();
+    $table->foreignUuid('user_id');
+    $table->foreignUuid('cart_id');
+    $table->timestamps();
+});
 ```
-- Verification: test package alone via `composer require package/<pkg>` and together to confirm auto-features.
+- Verify migrations contain no DB constraints; ensure cascades are implemented in models/services instead.
+
+
+=== .ai/spatie rules ===
+
+<?php /** @var \Illuminate\View\ComponentAttributeBag $attributes */ ?>
+
+## Spatie integration guidelines
+
+Use Spatie packages deliberately and consistently across Commerce packages.
+Prefer official Filament plugins for Spatie packages when Filament UI is involved.
+
+### Decision table (what to use when)
+
+#### Auditing vs activity logging (hybrid architecture)
+
+- Use `owen-it/laravel-auditing` for compliance-grade audit trails on compliance-critical domains:
+	- Orders, payments, customers, inventory adjustments and other regulated/forensic records.
+	- Requirements usually include IP/UA/URL capture, state restoration, redaction, and pivot auditing.
+
+- Use `spatie/laravel-activitylog` for business event logging and product analytics:
+	- Cart actions, voucher usage, affiliate events, pricing changes, admin actions.
+	- Prefer it when you need flexible “what happened” narratives, log categories, and batch grouping.
+
+Rule of thumb:
+- If the question is “who changed this model and what were old/new values for compliance?” → auditing.
+- If the question is “what business event happened and why, across multiple models?” → activity log.
+
+#### Webhooks
+
+- Use `spatie/laravel-webhook-client` for all inbound webhooks (payments, shipping carriers, etc).
+	- Do not implement bespoke webhook persistence/retry/signature validation if webhook-client can do it.
+	- Implement provider-specific `SignatureValidator`, optional `WebhookProfile` for event filtering, and a single `ProcessWebhookJob` per provider.
+
+#### State machines
+
+- Use `spatie/laravel-model-states` when a domain has complex lifecycle transitions:
+	- Orders, shipments, payouts, subscription/payment states.
+	- Always enforce allowed transitions (never “set status string directly” in business logic).
+
+#### API filtering/sorting
+
+- Use `spatie/laravel-query-builder` for public/internal read APIs that require filtering/sorting/includes.
+	- Only expose `allowedFilters`, `allowedSorts`, `allowedIncludes`, `allowedFields`.
+	- Never accept arbitrary column filtering from user input.
+
+#### Media
+
+- Use `spatie/laravel-medialibrary` for product/customer media (images, PDFs, documents).
+	- Keep conversions queued where appropriate; avoid large synchronous conversions.
+
+#### Slugs
+
+- Use `spatie/laravel-sluggable` for stable SEO slugs (products, categories) and optionally voucher-friendly codes.
+	- For vouchers, prefer a purpose-built code generator when codes must be random/non-guessable.
+
+#### Tags
+
+- Use `spatie/laravel-tags` for flexible categorization and segmentation:
+	- Products (attributes/labels), customers (segments/marketing cohorts), vouchers (campaign categorization).
+	- Prefer typed tags (tag “types”) when tags mean different things (e.g. `colors`, `segments`).
+
+#### Runtime settings
+
+- Use `spatie/laravel-settings` for runtime configuration that business users change without deploys:
+	- Pricing rules, tax defaults/zones, operational thresholds.
+	- Settings changes should be logged (typically via activity log) unless compliance requires auditing.
+
+#### Translations
+
+- Use `spatie/laravel-translatable` for multi-language content models (product names/descriptions, segments).
+	- Avoid rolling your own JSON translation structures.
+
+#### Operational health
+
+- Use `spatie/laravel-health` for operational monitoring and dependency checks (payment gateways, queues, storage).
+
+### Implementation rules
+
+#### Activity logging (`spatie/laravel-activitylog`)
+
+- Prefer model-based logging when a model is the “subject” of the event.
+- Prefer manual `activity()` logging when the event is cross-cutting (e.g., cart session actions).
+- Log categories must be explicit (use log names) so consumers can filter by domain.
+- Log payload must be minimal and safe:
+	- Do not log secrets or full payloads containing sensitive data.
+	- Use redaction/whitelisting strategies (log only what you need).
+
+#### Auditing (`owen-it/laravel-auditing`)
+
+- Only enable it for compliance-critical models.
+- Use redaction/encoding for PII where applicable.
+- Do not rely on database cascades/constraints for integrity (application-level behavior only).
+
+#### Webhooks (`spatie/laravel-webhook-client`)
+
+- Every provider integration must:
+	- Validate signatures.
+	- Persist webhook calls.
+	- Process via a job that is idempotent.
+	- Emit domain events rather than doing business logic in controllers.
+
+### Filament rules
+
+- If a Spatie package has an official Filament plugin (e.g., tags/settings/media library), use it.
+- Do not build custom Filament integrations when an official plugin exists.
+
+### Package matrix (default choices)
+
+Use this as the default mapping unless a package has documented exceptions.
+
+- `commerce-support`
+	- DTOs: `spatie/laravel-data`
+	- Activity logging primitives: `spatie/laravel-activitylog` (business events)
+	- Compliance auditing primitives: `owen-it/laravel-auditing` (regulated domains)
+	- Settings: `spatie/laravel-settings` (pricing/tax/ops settings) + log settings changes
+
+- `cart`
+	- Business events: `spatie/laravel-activitylog` (cart add/remove/update/abandon)
+
+- `inventory`
+	- Compliance auditing (critical): `owen-it/laravel-auditing` for inventory adjustments/movements when required
+	- Business events: `spatie/laravel-activitylog` for operational analytics
+	- Optional lifecycle: `spatie/laravel-model-states` for movement status
+
+- `vouchers`
+	- Business events: `spatie/laravel-activitylog` (redeem/apply/deny)
+	- Categorization: `spatie/laravel-tags` (campaigns/segments)
+	- Codes: prefer custom secure generator; `spatie/laravel-sluggable` only for human-friendly codes
+
+- `products`
+	- Media: `spatie/laravel-medialibrary`
+	- Slugs: `spatie/laravel-sluggable`
+	- Tags: `spatie/laravel-tags`
+	- Translations: `spatie/laravel-translatable` (customer-facing content)
+	- APIs: `spatie/laravel-query-builder` for catalog filtering/sorting
+
+- `customers`
+	- Compliance auditing (PII): `owen-it/laravel-auditing` for profile/PII changes where required
+	- Business events: `spatie/laravel-activitylog` (logins, address changes, CRM events)
+	- Segmentation: `spatie/laravel-tags`
+	- Media (optional): `spatie/laravel-medialibrary` for avatars/documents
+
+- `orders`
+	- Compliance auditing (critical): `owen-it/laravel-auditing`
+	- State machine (critical): `spatie/laravel-model-states`
+	- Documents: `spatie/laravel-pdf` for invoices/packing slips
+	- APIs: `spatie/laravel-query-builder` for listing/filtering
+
+- `shipping` + carriers (e.g. `jnt`)
+	- State machine: `spatie/laravel-model-states` for shipment lifecycle
+	- Inbound webhooks: `spatie/laravel-webhook-client` (carrier status updates)
+	- Business events: `spatie/laravel-activitylog` for operational visibility
+
+- payments (`chip`, `cashier`, `cashier-chip`)
+	- Inbound webhooks (critical): `spatie/laravel-webhook-client`
+	- Compliance auditing: `owen-it/laravel-auditing` for payment/refund/subscription state changes where required
+	- Business events: `spatie/laravel-activitylog` for customer support + analytics
+
+- `affiliates`
+	- Business events: `spatie/laravel-activitylog` (referrals, commissions, payouts)
+	- Optional lifecycle: `spatie/laravel-model-states` for payout status
+
+- `pricing` + `tax`
+	- Runtime config (critical): `spatie/laravel-settings`
+	- Business events: `spatie/laravel-activitylog` for rate/rule changes
+	- APIs: `spatie/laravel-query-builder` where listing/filtering is needed
+
+- Filament packages (e.g. `filament-products`, `filament-vouchers`)
+	- Always prefer official Filament plugins for Spatie integrations (tags/settings/media library).
+
+### Config rules
+
+- Only add configuration keys that are referenced in code.
+- Keep package configs minimal and ordered per the repo config guidelines.
 
 
 === .ai/docs rules ===
@@ -846,35 +997,58 @@ ls packages/*/docs/*.md | grep -v "/[0-9][0-9]-"
 - [ ] All files have frontmatter with `title:`
 
 
-=== .ai/model rules ===
+=== .ai/phpstan rules ===
 
-<?php /** @var \Illuminate\View\ComponentAttributeBag $attributes */ ?>
-## Model Guidelines
+# PHPStan Guidelines
 
-- No DB-level FK constraints or cascades; handle all cascades in application code.
-- Required structure: use `HasUuids`; no `$table` property; `getTable()` pulls from config with prefix fallback; fillables match migration.
-- Relations typed with generics and PHPDoc properties.
-- `booted()` must implement application-level cascades (delete children or null FK as appropriate).
-- `casts()` set for arrays/booleans/datetimes as needed.
-- Migration reminder: use `foreignUuid()` without `constrained()`/cascades.
+- All code must pass PHPStan level 6.
+- **Never run PHPStan on the whole `packages` directory.** Run it per package you changed (e.g., `./vendor/bin/phpstan analyse --level=6 packages/inventory`).
+- Verify with the per-package command (`phpstan.neon` baseline applies).
 
 
-=== .ai/database rules ===
+=== .ai/packages rules ===
 
-# Database Guidelines
+# Packages Guidelines
 
-- Primary keys: `uuid('id')->primary()` only.
-- Foreign keys: `foreignUuid('relation_id')`; never use `constrained()` or DB-level cascades—handle in application logic.
-- Sample:
+- Independence: each package must run standalone; prefer `suggest`/optional deps over `require`.
+- Integration: when co-installed, auto-enable hooks via service providers using `class_exists()`/config toggles.
+- DTOs: all DTOs must use Laravel Data for consistency.
+- Example integration pattern:
 ```php
-Schema::create('orders', function (Blueprint $table) {
-    $table->uuid('id')->primary();
-    $table->foreignUuid('user_id');
-    $table->foreignUuid('cart_id');
-    $table->timestamps();
-});
+public function boot(): void
+{
+    if (class_exists(Cashier::class)) {
+        // Cart-Cashier integration
+    }
+    if (class_exists(Chip::class)) {
+        // Cart-Chip integration
+    }
+}
 ```
-- Verify migrations contain no DB constraints; ensure cascades are implemented in models/services instead.
+- Verification: test package alone via `composer require package/<pkg>` and together to confirm auto-features.
+
+
+=== .ai/config rules ===
+
+# Config Guidelines
+
+- Only keep config keys that are used in code.
+- Order core package configs: Database → Credentials/API → Defaults → Features/Behavior → Integrations → HTTP → Webhooks → Cache → Logging.
+- Order Filament configs: Navigation → Tables → Features → Resources.
+- Keep configs minimal; publish only what is needed; nest related settings.
+- Migrations with JSON columns require a `json_column_type` config key.
+- Prefer defaults over excess env() wrappers; remove unused keys.
+- Comments: Laravel-style section headers only; inline comments only for non-obvious values.
+- Verify with `grep -r "config('package.key')" src/ packages/*/src/`; remove keys with no matches.
+
+
+=== .ai/test rules ===
+
+# Testing Guidelines
+
+- **Never run the whole Pest suite**; always run by package only (e.g., `./vendor/bin/pest tests/src/Inventory --parallel`). Identify the package you touched and target that package's tests.
+- When many failures: capture once, group by cause, batch-fix, rerun targeted files (`--filter` when needed) before full package run.
+- Coverage: use package-specific XML in `.xml/`; create if missing. Target ≥85% for non-Filament packages. Commands: `./vendor/bin/pest tests/src/PackageName --parallel`, `./vendor/bin/phpunit .xml/package.xml --coverage`, `./vendor/bin/pest --coverage --min=85` when applicable.
 
 
 === foundation rules ===
