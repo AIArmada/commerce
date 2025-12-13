@@ -74,20 +74,22 @@ Run commands:
 
 ```bash
 # Run package tests with parallel execution
-./vendor/bin/pest tests/src/PackageName --parallel
+./vendor/bin/pest --parallel tests/src/PackageName
 
 # Run specific test types
-./vendor/bin/pest tests/src/PackageName/Unit
-./vendor/bin/pest tests/src/PackageName/Feature
+./vendor/bin/pest --parallel tests/src/PackageName/Unit
+./vendor/bin/pest --parallel tests/src/PackageName/Feature
 
 # Run with coverage
-./vendor/bin/pest --coverage --configuration=.xml/package.xml
+./vendor/bin/pest --parallel --coverage --configuration=.xml/package.xml
 
 # Capture failures for batch fixing
-./vendor/bin/pest tests/src/PackageName 2>&1 | tee test-failures.txt
+./vendor/bin/pest --parallel tests/src/PackageName 2>&1 | tee test-failures.txt
 ```
 
 Always use the `--parallel` flag to speed up test execution.
+
+When running Pest, `--parallel` MUST be the first argument after `./vendor/bin/pest`.
 
 Every test must pass. Failed tests must be investigated and fixed.
 
@@ -476,7 +478,7 @@ After all testing, run these commands:
 
 ```bash
 # Run all tests
-./vendor/bin/pest tests/src/PackageName --parallel
+./vendor/bin/pest --parallel tests/src/PackageName
 
 # Check coverage
 ./vendor/bin/phpunit .xml/package.xml --coverage
