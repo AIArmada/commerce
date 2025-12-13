@@ -12,6 +12,7 @@ return new class extends Migration
     {
         Schema::create(config('pricing.tables.price_tiers', 'price_tiers'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->foreignUuid('price_list_id')->nullable();
 
             // Polymorphic: Product, Variant, etc.
             $table->uuidMorphs('tierable');

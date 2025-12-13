@@ -7,6 +7,7 @@ namespace AIArmada\Orders\Actions;
 use AIArmada\Orders\Models\Order;
 use Illuminate\Support\Str;
 use Spatie\LaravelPdf\Facades\Pdf;
+use Spatie\LaravelPdf\PdfBuilder;
 
 /**
  * Generate PDF invoice for an order.
@@ -14,35 +15,11 @@ use Spatie\LaravelPdf\Facades\Pdf;
 class GenerateInvoice
 {
     /**
-     * Generate and return a PDF invoice as a string.
-     */
-    public function handle(Order $order): string
-    {
-        $invoiceNumber = $this->generateInvoiceNumber($order);
-
-        $pdf = Pdf::view('orders::pdf.invoice', [
-            'order' => $order,
-            'items' => $order->items,
-            'billingAddress' => $order->billingAddress,
-            'shippingAddress' => $order->shippingAddress,
-            'payments' => $order->payments()->where('status', 'completed')->get(),
-            'invoiceNumber' => $invoiceNumber,
-            'invoiceDate' => now(),
-        ])
-            ->format('a4')
-            ->margins(15, 15, 15, 15)
-            ->name("invoice-{$order->order_number}.pdf");
-
-        return $pdf->toString();
-    }
-
-    /**
      * Generate and save invoice to a path.
      */
     public function save(Order $order, string $path): string
     {
-        $content = $this->handle($order);
-        file_put_contents($path, $content);
+        $this->buildPdf($order)->save($path);
 
         return $path;
     }
@@ -53,6 +30,14 @@ class GenerateInvoice
      * @return \Symfony\Component\HttpFoundation\StreamedResponse
      */
     public function download(Order $order)
+    {
+        return $this->buildPdf($order)->download();
+    }
+
+    /**
+     * Build the PDF builder instance.
+     */
+    protected function buildPdf(Order $order): PdfBuilder
     {
         $invoiceNumber = $this->generateInvoiceNumber($order);
 
@@ -67,8 +52,7 @@ class GenerateInvoice
         ])
             ->format('a4')
             ->margins(15, 15, 15, 15)
-            ->name("invoice-{$order->order_number}.pdf")
-            ->download();
+            ->name("invoice-{$order->order_number}.pdf");
     }
 
     /**

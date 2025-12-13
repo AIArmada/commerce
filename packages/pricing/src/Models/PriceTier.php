@@ -6,6 +6,7 @@ namespace AIArmada\Pricing\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
@@ -14,6 +15,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * Represents quantity-based tiered pricing.
  *
  * @property string $id
+ * @property string|null $price_list_id
  * @property string|null $tierable_id
  * @property string|null $tierable_type
  * @property int $min_quantity
@@ -22,6 +24,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property string|null $discount_type
  * @property int|null $discount_value
  * @property string $currency
+ * @property-read PriceList|null $priceList
  */
 class PriceTier extends Model
 {
@@ -65,6 +68,16 @@ class PriceTier extends Model
     public function tierable(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * The price list this tier belongs to (optional).
+     *
+     * @return BelongsTo<PriceList, $this>
+     */
+    public function priceList(): BelongsTo
+    {
+        return $this->belongsTo(PriceList::class);
     }
 
     // =========================================================================

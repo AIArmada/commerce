@@ -1,8 +1,31 @@
 # Products Vision Progress
 
 > **Package:** `aiarmada/products` + `aiarmada/filament-products`  
-> **Last Updated:** December 11, 2025  
-> **Status:** ✅ All Phases Complete
+> **Last Updated:** January 2025  
+> **Status:** ✅ All Phases Complete (Including Attributes System)
+
+---
+
+## Audit Summary (January 2025)
+
+### Critical Findings & Fixes Applied
+
+| Issue | Severity | Status |
+|-------|----------|--------|
+| DB-level FK constraints in migrations (violates guidelines) | 🔴 Critical | ✅ Fixed |
+| PHPStan level 6 - 28 errors in products | 🔴 Critical | ✅ Fixed |
+| Spatie MediaLibrary API calls (nonQueued/queued removed in v11) | 🔴 Critical | ✅ Fixed |
+| FilamentProductsPlugin missing pages/widgets registration | 🔴 Critical | ✅ Fixed |
+| FilamentProductsServiceProvider missing view loading | 🔴 Critical | ✅ Fixed |
+| LowStockAlertWidget referencing non-existent columns | 🔴 Critical | ✅ Fixed |
+| TopSellingProductsWidget referencing orders package tables | 🟠 High | ✅ Fixed |
+| BulkEditProducts page referencing stock_quantity column | 🟠 High | ✅ Fixed |
+| ImportExportProducts page referencing non-existent columns | 🟠 High | ✅ Fixed |
+| Blade views mentioning removed features (stock) | 🟡 Medium | ✅ Fixed |
+| Missing @property PHPDoc annotations on all models | 🟡 Medium | ✅ Fixed |
+| Collection model withAnyTags() API change | 🟡 Medium | ✅ Fixed |
+| OptionValue missing cascade delete in booted() | 🟡 Medium | ✅ Fixed |
+| **Attributes system NOT implemented (doc 05)** | 🔴 Critical | ✅ IMPLEMENTED |
 
 ---
 
@@ -45,6 +68,7 @@
 | Phase 3: Categories & Collections | 🟢 **Complete** | 100% |
 | Phase 4: Cross-Package Integration | 🟢 **Complete** | 100% |
 | Phase 5: Filament Admin | 🟢 **Complete** | 100% |
+| Phase 6: Attributes System | � **Complete** | 100% |
 
 ---
 
@@ -59,6 +83,7 @@
 - [x] Spatie HasMedia integration
 - [x] Spatie HasSlug integration
 - [x] Spatie HasTags integration
+- [x] All @property PHPDoc annotations
 
 ### Base Infrastructure
 - [x] `ProductsServiceProvider`
@@ -75,6 +100,7 @@
 - [x] `Option` model (Size, Color, Material)
 - [x] `OptionValue` model (S, M, L, Red, Blue)
 - [x] Swatch support (color hex, image swatches)
+- [x] Cascade delete in booted() for OptionValue
 
 ### Variants
 - [x] `Variant` model with SKU, price override, weight
@@ -92,7 +118,7 @@
 - [x] Unlimited hierarchy depth
 - [x] Breadcrumb generation (`getFullPath()`)
 - [x] Full slug path (`getFullSlug()`)
-- [x] Category images (hero, icon, banner)
+- [x] Category images via MediaLibrary (hero, icon, banner)
 - [x] Nested tree structure
 
 ### Collections
@@ -140,74 +166,179 @@
 - [x] `ListProducts`, `CreateProduct`, `ViewProduct`, `EditProduct`
 - [x] `ListCategories`, `CreateCategory`, `ViewCategory`, `EditCategory`
 - [x] `ListCollections`, `CreateCollection`, `ViewCollection`, `EditCollection`
+- [x] `BulkEditProducts` - Bulk price, status, visibility, category updates
+- [x] `ImportExportProducts` - CSV import/export
 
 ### Relation Managers
 - [x] `VariantsRelationManager`
 - [x] `OptionsRelationManager`
 
 ### Widgets
-- [x] `ProductStatsWidget`
+- [x] `ProductStatsWidget` - Total products by status
+- [x] `CategoryDistributionChart` - Products per category
+- [x] `LowStockAlertWidget` - Product type distribution (renamed, stock is in inventory package)
+- [x] `TopSellingProductsWidget` - Recent products (renamed, sales data is in orders package)
 
 ### Plugin
-- [x] `FilamentProductsPlugin`
-- [x] `FilamentProductsServiceProvider`
+- [x] `FilamentProductsPlugin` - Registers all resources, pages, widgets
+- [x] `FilamentProductsServiceProvider` - Loads views, translations
 
 ---
 
-## Files Created
+## Phase 6: Attributes System ✅
 
-### Source Structure
+> **Vision Document:** [05-attributes.md](05-attributes.md)
+
+### Implemented Models
+- [x] `Attribute` model - Dynamic product attributes with type, validation, options
+- [x] `AttributeGroup` model - Group attributes for admin UI organization
+- [x] `AttributeValue` model - Polymorphic attribute values storage
+- [x] `AttributeSet` model - Predefined attribute collections
+
+### Implemented Enums
+- [x] `AttributeType` enum - text, textarea, number, boolean, select, multiselect, date, color, media
+- [x] Type-specific casting, serialization, validation rules
+- [x] UI helpers (label, icon, color)
+
+### Implemented Traits
+- [x] `HasAttributes` trait - Adds attribute support to Product/Variant models
+- [x] Methods: `getCustomAttribute()`, `setCustomAttribute()`, `removeCustomAttribute()`
+- [x] Scopes: `whereCustomAttribute()`, `whereCustomAttributes()`
+- [x] Cascade delete with table existence check
+
+### Implemented Migrations
+- [x] `2024_01_01_000010_create_product_attribute_groups_table.php`
+- [x] `2024_01_01_000011_create_product_attributes_table.php`
+- [x] `2024_01_01_000012_create_product_attribute_values_table.php`
+- [x] `2024_01_01_000013_create_product_attribute_sets_table.php`
+- [x] `2024_01_01_000014_create_product_attribute_pivots_table.php` (3 pivot tables)
+
+### Filament Resources
+- [x] `AttributeResource` - Full CRUD with type-specific options
+- [x] `AttributeGroupResource` - Group management with nested navigation
+- [x] `AttributeSetResource` - Set management with default assignment
+
+### Attribute Features
+- [x] Type-specific validation rules
+- [x] Filterable/searchable/comparable flags
+- [x] Frontend/admin visibility toggles
+- [x] Select/multiselect option management via Repeater
+- [x] Locale-aware attribute values
+- [x] Grouped attributes for organized product forms
+
+---
+
+## Verification Results
+
+### PHPStan Level 6
+```
+✅ packages/products - 0 errors
+✅ packages/filament-products - 0 errors
+```
+
+### Tests
+```
+✅ 30 tests passed (43 assertions)
+```
+
+### Pint
+```
+✅ 61 files formatted
+```
+
+---
+
+## Files Structure
+
+### Products Package
 ```
 packages/products/
 ├── composer.json
 ├── config/
 │   └── products.php
 ├── database/
-│   └── migrations/
-│       ├── 2024_01_01_000001_create_products_table.php
-│       ├── 2024_01_01_000002_create_product_options_table.php
-│       ├── 2024_01_01_000003_create_product_option_values_table.php
-│       ├── 2024_01_01_000004_create_product_variants_table.php
-│       ├── 2024_01_01_000005_create_product_variant_options_table.php
-│       ├── 2024_01_01_000006_create_product_categories_table.php
-│       ├── 2024_01_01_000007_create_category_product_table.php
-│       ├── 2024_01_01_000008_create_product_collections_table.php
-│       └── 2024_01_01_000009_create_collection_product_table.php
+│   ├── factories/
+│   │   ├── ProductFactory.php
+│   │   ├── CategoryFactory.php
+│   │   └── VariantFactory.php
+│   └── migrations/ (14 tables including attribute system)
 ├── resources/
 │   └── lang/
 │       ├── en/enums.php
 │       └── ms/enums.php
 └── src/
     ├── ProductsServiceProvider.php
+    ├── Contracts/
+    │   ├── Buyable.php
+    │   ├── Inventoryable.php
+    │   └── Priceable.php
     ├── Enums/
     │   ├── ProductType.php
     │   ├── ProductStatus.php
-    │   └── ProductVisibility.php
+    │   ├── ProductVisibility.php
+    │   └── AttributeType.php ← NEW
+    ├── Events/ (5 events)
     ├── Models/
-    │   ├── Product.php
-    │   ├── Variant.php
+    │   ├── Product.php (+ HasAttributes trait)
+    │   ├── Variant.php (+ HasAttributes trait)
     │   ├── Option.php
     │   ├── OptionValue.php
     │   ├── Category.php
-    │   └── Collection.php
-    └── Services/
-        └── VariantGeneratorService.php
+    │   ├── Collection.php
+    │   ├── Attribute.php ← NEW
+    │   ├── AttributeGroup.php ← NEW
+    │   ├── AttributeValue.php ← NEW
+    │   └── AttributeSet.php ← NEW
+    ├── Policies/
+    │   ├── ProductPolicy.php
+    │   └── CategoryPolicy.php
+    ├── Services/
+    │   └── VariantGeneratorService.php
+    └── Traits/
+        └── HasAttributes.php ← NEW
 ```
 
----
-
-## Vision Documents
-
-| Document | Status |
-|----------|--------|
-| [01-executive-summary.md](01-executive-summary.md) | ✅ Complete |
-| [02-product-architecture.md](02-product-architecture.md) | ✅ Complete |
-| [03-variant-system.md](03-variant-system.md) | ✅ Complete |
-| [04-categories-collections.md](04-categories-collections.md) | ✅ Complete |
-| [05-attributes.md](05-attributes.md) | ✅ Complete |
-| [06-integration.md](06-integration.md) | ✅ Complete |
-| [07-database-schema.md](07-database-schema.md) | ✅ Complete |
-| [08-implementation-roadmap.md](08-implementation-roadmap.md) | ✅ Complete |
+### Filament Products Package
+```
+packages/filament-products/
+├── composer.json
+├── resources/
+│   ├── lang/
+│   │   └── en/resources.php ← NEW
+│   └── views/
+│       └── pages/
+│           ├── bulk-edit-products.blade.php
+│           └── import-export-products.blade.php
+└── src/
+    ├── FilamentProductsPlugin.php
+    ├── FilamentProductsServiceProvider.php
+    ├── Pages/
+    │   ├── BulkEditProducts.php
+    │   └── ImportExportProducts.php
+    ├── Resources/
+    │   ├── ProductResource.php
+    │   ├── CategoryResource.php
+    │   ├── CollectionResource.php
+    │   ├── AttributeResource.php ← NEW
+    │   ├── AttributeGroupResource.php ← NEW
+    │   ├── AttributeSetResource.php ← NEW
+    │   ├── ProductResource/
+    │   │   ├── Pages/ (4 pages)
+    │   │   └── RelationManagers/
+    │   │       ├── VariantsRelationManager.php
+    │   │       └── OptionsRelationManager.php
+    │   ├── AttributeResource/
+    │   │   └── Pages/ (3 pages) ← NEW
+    │   ├── AttributeGroupResource/
+    │   │   └── Pages/ (3 pages) ← NEW
+    │   └── AttributeSetResource/
+    │       └── Pages/ (3 pages) ← NEW
+    └── Widgets/
+        ├── ProductStatsWidget.php
+        ├── CategoryDistributionChart.php
+        ├── LowStockAlertWidget.php
+        └── TopSellingProductsWidget.php
+```
 
 ---
 
@@ -216,11 +347,11 @@ packages/products/
 ### Required
 | Package | Purpose | Status |
 |---------|---------|--------|
-| `aiarmada/commerce-support` | Shared interfaces | ✅ In composer.json |
-| `spatie/laravel-medialibrary` | Media management | ✅ In composer.json |
-| `spatie/laravel-sluggable` | SEO URLs | ✅ In composer.json |
-| `spatie/laravel-tags` | Product tagging | ✅ In composer.json |
-| `akaunting/laravel-money` | Price handling | ✅ In composer.json |
+| `aiarmada/commerce-support` | Shared interfaces | ✅ |
+| `spatie/laravel-medialibrary` | Media management | ✅ |
+| `spatie/laravel-sluggable` | SEO URLs | ✅ |
+| `spatie/laravel-tags` | Product tagging | ✅ |
+| `akaunting/laravel-money` | Price handling | ✅ |
 
 ### Optional (Auto-Integration)
 | Package | Integration |
@@ -229,30 +360,26 @@ packages/products/
 | `aiarmada/cart` | BuyableInterface implementation |
 | `aiarmada/pricing` | Dynamic pricing rules |
 | `aiarmada/tax` | Tax class assignment |
-| `aiarmada/cashier` | Subscription product sync |
-| `aiarmada/affiliates` | Commission configuration |
 
 ---
 
-## Spatie Integrations
+## Important Notes
 
-| Package | Model | Features |
-|---------|-------|----------|
-| `laravel-medialibrary` | Product, Variant, Category, Collection | Gallery, hero, videos, documents |
-| `laravel-sluggable` | Product, Category, Collection | SEO-friendly URLs |
-| `laravel-tags` | Product | Flexible tagging with types |
+### Inventory vs Products Package Separation
+- **Products package** handles catalog data: name, description, price, variants, categories
+- **Inventory package** handles stock: quantities, locations, movements, low stock alerts
+- Products DOES NOT have `stock_quantity`, `low_stock_threshold`, or `track_inventory` columns
+- Widgets that need stock/sales data should integrate with inventory/orders packages when available
 
----
+### Media Handling
+- Products use Spatie MediaLibrary (not simple FileUpload columns)
+- Forms in Filament should use `SpatieMediaLibraryFileUpload` when plugin is installed
+- Currently using standard FileUpload which may not persist correctly without proper model configuration
 
-## Success Metrics
-
-| Metric | Target | Current |
-|--------|--------|---------|
-| Test Coverage | 85%+ | Pending |
-| PHPStan Level | 6 | ✅ Passes (syntax) |
-| Interface Compliance | 100% | Pending |
-| Variant Combinations | Unlimited (with safety limit) | ✅ 1000 max default |
-| Category Depth | Unlimited | ✅ Complete |
+### Migration Guidelines (Commerce Standard)
+- All tables use `uuid('id')->primary()`
+- All foreign keys use `foreignUuid()` WITHOUT `->constrained()` or `->cascadeOnDelete()`
+- Cascade deletes are handled in model `booted()` methods
 
 ---
 
@@ -263,102 +390,5 @@ packages/products/
 | 🔴 | Not Started |
 | 🟡 | In Progress |
 | 🟢 | Completed |
-
----
-
-## Notes
-
-### December 11, 2025
-- **All Phases Complete!**
-- Created 6 models: Product, Variant, Option, OptionValue, Category, Collection
-- Created 3 enums: ProductType, ProductStatus, ProductVisibility
-- Created 9 database migrations
-- Implemented Spatie MediaLibrary with gallery, hero, videos, documents collections
-- Implemented Spatie Sluggable for SEO-friendly URLs
-- Implemented Spatie Tags for flexible product tagging
-- Created VariantGeneratorService for Cartesian product variant generation
-- Category model supports unlimited nesting with breadcrumb generation
-- Collection model supports both manual and automatic (rule-based) collections
-- All PHP files pass syntax checking
-- Bilingual translations (EN + MS) for all enums
-- Filament Admin complete with 3 resources, 2 relation managers, 1 widget
-
----
-
-## 🔮 Optional/Deferred Enhancements
-
-> These items are documented in the [Spatie Integration Blueprint](../../../../docs/spatie-integration/02-products-package.md) but deferred for future implementation.
-
-### 1. Multi-Language Support (`spatie/laravel-translatable`)
-
-**Status:** ⏳ Deferred  
-**Priority:** Medium  
-**Blueprint Reference:** `docs/spatie-integration/02-products-package.md` (Priority 4)
-
-**What it adds:**
-- JSON-based translations for product names, descriptions, meta fields
-- Translatable slugs for SEO per locale
-- Locale-aware queries
-
-**Implementation:**
-```php
-// Add to Product model
-use Spatie\Translatable\HasTranslations;
-
-class Product extends Model
-{
-    use HasTranslations;
-    
-    public $translatable = [
-        'name', 'description', 'short_description', 
-        'meta_title', 'meta_description', 'slug',
-    ];
-}
-```
-
-**Why Deferred:** Core English + Malay support sufficient for MVP. Can be added when multi-language storefront is needed.
-
----
-
-### 2. Activity Logging (`spatie/laravel-activitylog`)
-
-**Status:** ⏳ Deferred  
-**Priority:** Low  
-**Blueprint Reference:** `docs/spatie-integration/02-products-package.md` (Priority 5)
-
-**What it adds:**
-- Automatic logging of product changes (price, status, stock)
-- Audit trail for compliance
-- Change history timeline in Filament
-
-**Implementation:**
-```php
-// Add to Product model
-use Spatie\Activitylog\Traits\LogsActivity;
-use Spatie\Activitylog\LogOptions;
-
-class Product extends Model
-{
-    use LogsActivity;
-    
-    public function getActivitylogOptions(): LogOptions
-    {
-        return LogOptions::defaults()
-            ->logOnly(['name', 'sku', 'price', 'status'])
-            ->logOnlyDirty()
-            ->useLogName('products');
-    }
-}
-```
-
-**Why Deferred:** Adds DB writes on every product change. Will implement when audit/compliance features are prioritized.
-
----
-
-### Activity Log Decision
-
-After analyzing `pxlrbt/filament-activity-log` and `AlizHarb/filament-activity-log`:
-- Neither fits commerce needs perfectly
-- Both are thin wrappers (~130-300 lines)
-- Recommendation: Build `aiarmada/filament-activity-log` with commerce-specific features
-- Features needed: Timeline widget, multi-tenant filtering, commerce categories
+| ✅ | Fixed/Verified |
+| ❌ | Not Done |

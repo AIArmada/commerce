@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Models;
 
+use AIArmada\Products\Traits\HasAttributes;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -14,8 +15,31 @@ use Illuminate\Support\Collection;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 
+/**
+ * @property string $id
+ * @property string $product_id
+ * @property string $sku
+ * @property string|null $barcode
+ * @property int|null $price
+ * @property int|null $compare_price
+ * @property int|null $cost
+ * @property float|null $weight
+ * @property float|null $length
+ * @property float|null $width
+ * @property float|null $height
+ * @property bool $is_default
+ * @property bool $is_enabled
+ * @property array<string, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Product $product
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, OptionValue> $optionValues
+ * @property-read Collection<int, \Spatie\MediaLibrary\MediaCollections\Models\Media> $display_images
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, AttributeValue> $attributeValues
+ */
 class Variant extends Model implements HasMedia
 {
+    use HasAttributes;
     use HasFactory;
     use HasUuids;
     use InteractsWithMedia;
@@ -36,7 +60,7 @@ class Variant extends Model implements HasMedia
     ];
 
     /**
-     * @var array<int, string>
+     * @var array<string, mixed>
      */
     protected $attributes = [
         'is_default' => false,

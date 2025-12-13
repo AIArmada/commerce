@@ -10,6 +10,18 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
+/**
+ * @property string $id
+ * @property string $product_id
+ * @property string $name
+ * @property string|null $display_name
+ * @property int $position
+ * @property bool $is_visible
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Product $product
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, OptionValue> $values
+ */
 class Option extends Model
 {
     use HasFactory;
@@ -26,7 +38,7 @@ class Option extends Model
     ];
 
     /**
-     * @var array<int, string>
+     * @var array<string, mixed>
      */
     protected $attributes = [
         'position' => 0,

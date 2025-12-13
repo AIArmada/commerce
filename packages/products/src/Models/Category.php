@@ -17,6 +17,26 @@ use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
+/**
+ * @property string $id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
+ * @property string|null $parent_id
+ * @property string $name
+ * @property string $slug
+ * @property string|null $description
+ * @property int $position
+ * @property bool $is_visible
+ * @property bool $is_featured
+ * @property string|null $meta_title
+ * @property string|null $meta_description
+ * @property array<string, mixed>|null $metadata
+ * @property \Illuminate\Support\Carbon|null $created_at
+ * @property \Illuminate\Support\Carbon|null $updated_at
+ * @property-read Category|null $parent
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Category> $children
+ * @property-read \Illuminate\Database\Eloquent\Collection<int, Product> $products
+ */
 class Category extends Model implements HasMedia
 {
     use HasFactory;
@@ -38,7 +58,7 @@ class Category extends Model implements HasMedia
     ];
 
     /**
-     * @var array<int, string>
+     * @var array<string, mixed>
      */
     protected $attributes = [
         'position' => 0,

@@ -76,6 +76,16 @@ class PriceList extends Model
         return $this->hasMany(Price::class);
     }
 
+    /**
+     * Price tiers associated with this price list.
+     *
+     * @return HasMany<PriceTier, $this>
+     */
+    public function tiers(): HasMany
+    {
+        return $this->hasMany(PriceTier::class);
+    }
+
     // =========================================================================
     // SCOPES
     // =========================================================================

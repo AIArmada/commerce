@@ -297,6 +297,10 @@ parameters:
         - message: '#Trait AIArmada\\Cart\\Concerns\\.*is used zero times and is not analysed\.#'
         - message: '#Trait AIArmada\\Cart\\Traits\\.*is used zero times and is not analysed\.#'
 
+        # Ignore Products package model property access (external package references in filament-pricing)
+        - message: '#Access to an undefined property AIArmada\\Products\\Models\\Product::\$.*\.#'
+        - message: '#Access to an undefined property AIArmada\\Products\\Models\\Variant::\$.*\.#'
+
         # ============================================
         # External/Optional Dependency Ignores
         # ============================================
@@ -467,6 +471,9 @@ parameters:
             - packages/jnt/src/Health/JntHealthCheck.php
             - packages/inventory/src/Health/LowStockCheck.php
             - packages/orders/src/Health/OrderProcessingCheck.php
+            # Exclude Filament Settings pages (depend on filament/spatie-laravel-settings-plugin)
+            - packages/filament-pricing/src/Pages/ManagePricingSettings.php
+            - packages/filament-tax/src/Pages/ManageTaxSettings.php
             # Exclude examples file with external dependencies
             - packages/vouchers/examples/usage.php
         - vendor

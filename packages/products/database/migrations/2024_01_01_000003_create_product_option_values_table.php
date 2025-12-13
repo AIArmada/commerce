@@ -13,9 +13,7 @@ return new class extends Migration
         Schema::create(config('products.tables.option_values', 'product_option_values'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
 
-            $table->foreignUuid('option_id')
-                ->constrained(config('products.tables.options', 'product_options'))
-                ->cascadeOnDelete();
+            $table->foreignUuid('option_id');
 
             $table->string('name'); // e.g., Small, Medium, Large, Red, Blue
             $table->unsignedInteger('position')->default(0);

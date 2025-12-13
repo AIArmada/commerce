@@ -23,4 +23,15 @@ return [
         'individual' => 'Individual (not listed)',
         'hidden' => 'Hidden',
     ],
+    'attribute_type' => [
+        'text' => 'Text',
+        'textarea' => 'Textarea',
+        'number' => 'Number',
+        'boolean' => 'Yes/No',
+        'select' => 'Dropdown',
+        'multiselect' => 'Multi-select',
+        'date' => 'Date',
+        'color' => 'Color',
+        'media' => 'Media',
+    ],
 ];
