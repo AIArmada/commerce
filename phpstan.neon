@@ -424,6 +424,9 @@ parameters:
             - packages/filament-affiliates/src/Actions/BulkPayoutAction.php
             - packages/filament-affiliates/src/Pages/Portal/PortalRegistration.php
             - packages/filament-affiliates/src/Pages/Portal/PortalLinks.php
+            # Exclude Filament Settings pages (require optional spatie-laravel-settings-plugin)
+            - packages/filament-tax/src/Pages/ManageTaxSettings.php
+            - packages/filament-pricing/src/Pages/ManagePricingSettings.php
             # Exclude examples file with external dependencies
             - packages/vouchers/examples/usage.php
         - vendor

@@ -202,6 +202,64 @@ final class ViewSubscription extends ViewRecord
                     $this->refreshFormData(['trial_ends_at']);
                 }),
 
+            Action::make('end_trial')
+                ->label('End Trial Now')
+                ->icon('heroicon-o-stop')
+                ->color('danger')
+                ->requiresConfirmation()
+                ->modalHeading('End Trial Period')
+                ->modalDescription('This will immediately end the trial period and convert the subscription to a paid subscription.')
+                ->visible(function (): bool {
+                    /** @var Subscription $record */
+                    $record = $this->getRecord();
+
+                    return $record->onTrial();
+                })
+                ->action(function (): void {
+                    /** @var Subscription $subscription */
+                    $subscription = $this->getRecord();
+                    $subscription->endTrial();
+
+                    Notification::make()
+                        ->title('Trial Ended')
+                        ->body('The trial has been ended and the subscription is now active.')
+                        ->success()
+                        ->send();
+
+                    $this->refreshFormData(['trial_ends_at', 'chip_status']);
+                }),
+
+            Action::make('swap_plan')
+                ->label('Swap Plan')
+                ->icon('heroicon-o-arrows-right-left')
+                ->color('info')
+                ->form([
+                    TextInput::make('price')
+                        ->label('New Price ID')
+                        ->required()
+                        ->placeholder('price_...')
+                        ->helperText('Enter the Chip price ID for the new plan'),
+                ])
+                ->visible(function (): bool {
+                    /** @var Subscription $record */
+                    $record = $this->getRecord();
+
+                    return $record->active() || $record->onTrial();
+                })
+                ->action(function (array $data): void {
+                    /** @var Subscription $subscription */
+                    $subscription = $this->getRecord();
+                    $subscription->swap($data['price']);
+
+                    Notification::make()
+                        ->title('Plan Swapped')
+                        ->body('The subscription has been swapped to the new plan.')
+                        ->success()
+                        ->send();
+
+                    $this->refreshFormData(['chip_price', 'quantity']);
+                }),
+
             Action::make('update_quantity')
                 ->label('Update Quantity')
                 ->icon('heroicon-o-calculator')
