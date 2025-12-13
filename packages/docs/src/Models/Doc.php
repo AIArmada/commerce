@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 
@@ -44,6 +45,11 @@ use Illuminate\Support\Carbon;
  * @property Carbon $updated_at
  * @property-read DocTemplate|null $template
  * @property-read Collection<int, DocStatusHistory> $statusHistories
+ * @property-read Collection<int, DocPayment> $payments
+ * @property-read Collection<int, DocVersion> $versions
+ * @property-read Collection<int, DocEmail> $emails
+ * @property-read Collection<int, DocApproval> $approvals
+ * @property-read DocEInvoiceSubmission|null $eInvoiceSubmission
  * @property-read Model|null $docable
  */
 final class Doc extends Model
@@ -105,6 +111,46 @@ final class Doc extends Model
     public function statusHistories(): HasMany
     {
         return $this->hasMany(DocStatusHistory::class);
+    }
+
+    /**
+     * @return HasMany<DocPayment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(DocPayment::class);
+    }
+
+    /**
+     * @return HasMany<DocVersion, $this>
+     */
+    public function versions(): HasMany
+    {
+        return $this->hasMany(DocVersion::class);
+    }
+
+    /**
+     * @return HasMany<DocEmail, $this>
+     */
+    public function emails(): HasMany
+    {
+        return $this->hasMany(DocEmail::class);
+    }
+
+    /**
+     * @return HasMany<DocApproval, $this>
+     */
+    public function approvals(): HasMany
+    {
+        return $this->hasMany(DocApproval::class);
+    }
+
+    /**
+     * @return HasOne<DocEInvoiceSubmission, $this>
+     */
+    public function eInvoiceSubmission(): HasOne
+    {
+        return $this->hasOne(DocEInvoiceSubmission::class);
     }
 
     public function isOverdue(): bool
@@ -190,6 +236,11 @@ final class Doc extends Model
     {
         self::deleting(function (Doc $doc): void {
             $doc->statusHistories()->delete();
+            $doc->payments()->delete();
+            $doc->versions()->delete();
+            $doc->emails()->delete();
+            $doc->approvals()->delete();
+            $doc->eInvoiceSubmission?->delete();
         });
     }
 
