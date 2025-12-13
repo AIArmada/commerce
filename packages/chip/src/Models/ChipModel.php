@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Models;
 
+use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Builder;
@@ -12,6 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use Override;
+use OwenIt\Auditing\Contracts\Auditable;
 
 /**
  * @property string|null $owner_type
@@ -19,8 +21,9 @@ use Override;
  *
  * @method static Builder<static> forOwner(?Model $owner = null, bool $includeGlobal = true)
  */
-abstract class ChipModel extends Model
+abstract class ChipModel extends Model implements Auditable
 {
+    use HasCommerceAudit;
     use HasUuids;
 
     public $timestamps = false;
@@ -100,6 +103,25 @@ abstract class ChipModel extends Model
         return $this;
     }
 
+    // =========================================================================
+    // AUDIT CONFIGURATION
+    // =========================================================================
+
+    /**
+     * Get the attributes that should be audited for compliance.
+     *
+     * @return array<int, string>
+     */
+    public function getAuditInclude(): array
+    {
+        // Default attributes for all CHIP models - subclasses can override
+        return [
+            'status',
+            'amount',
+            'currency',
+        ];
+    }
+
     protected function resolveOwner(): ?Model
     {
         if (! app()->bound(OwnerResolverInterface::class)) {
@@ -127,5 +149,15 @@ abstract class ChipModel extends Model
         }
 
         return Money::{$currency}($amount);
+    }
+
+    /**
+     * Get tags for categorizing this audit.
+     *
+     * @return array<int, string>
+     */
+    protected function getAuditTags(): array
+    {
+        return ['commerce', 'payments', 'chip'];
     }
 }

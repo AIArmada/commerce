@@ -18,7 +18,9 @@
         }
     ],
     "require": {
-        "aiarmada/commerce-support": "self.version"
+        "aiarmada/commerce-support": "self.version",
+        "spatie/laravel-medialibrary": "^11.0",
+        "spatie/laravel-tags": "^4.2"
     },
     "autoload": {
         "psr-4": {

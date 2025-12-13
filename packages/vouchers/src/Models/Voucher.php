@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Models;
 
+use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Vouchers\Campaigns\Models\Campaign;
 use AIArmada\Vouchers\Campaigns\Models\CampaignVariant;
@@ -71,6 +72,7 @@ class Voucher extends Model
     use HasFactory;
     use HasOwner;
     use HasUuids;
+    use LogsCommerceActivity;
 
     protected $fillable = [
         'code',
@@ -517,5 +519,33 @@ class Voucher extends Model
             'exclusion_groups' => 'array',
             'stacking_priority' => 'integer',
         ];
+    }
+
+    /**
+     * Get the attributes to log for activity tracking.
+     *
+     * @return array<int, string>
+     */
+    protected function getLoggableAttributes(): array
+    {
+        return [
+            'code',
+            'name',
+            'type',
+            'value',
+            'status',
+            'usage_limit',
+            'starts_at',
+            'expires_at',
+            'applied_count',
+        ];
+    }
+
+    /**
+     * Get the activity log name for categorization.
+     */
+    protected function getActivityLogName(): string
+    {
+        return 'vouchers';
     }
 }
