@@ -63,7 +63,7 @@ class DocWorkflow extends Model
             return false;
         }
 
-        if ($this->doc_type !== null && $this->doc_type !== $doc->type) {
+        if ($this->doc_type !== null && $this->doc_type->value !== $doc->doc_type) {
             return false;
         }
 

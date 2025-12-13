@@ -60,8 +60,9 @@ class SendDocReminderJob implements ShouldQueue
     protected function sendReminderForDoc(DocEmailService $emailService, string $docId): void
     {
         $doc = Doc::find($docId);
+        $recipientEmail = $this->getRecipientEmail($doc);
 
-        if (! $doc || ! $doc->recipient_email) {
+        if (! $doc || ! $recipientEmail) {
             Log::warning('SendDocReminderJob: Document not found or has no recipient email', [
                 'doc_id' => $docId,
             ]);
@@ -74,12 +75,12 @@ class SendDocReminderJob implements ShouldQueue
         }
 
         try {
-            $emailService->sendReminder($doc, $doc->recipient_email);
+            $emailService->sendReminder($doc, $recipientEmail);
 
             Log::info('SendDocReminderJob: Reminder sent', [
                 'doc_id' => $doc->id,
-                'doc_number' => $doc->document_number,
-                'recipient' => $doc->recipient_email,
+                'doc_number' => $doc->doc_number,
+                'recipient' => $recipientEmail,
             ]);
         } catch (Exception $e) {
             Log::error('SendDocReminderJob: Failed to send reminder', [
@@ -96,16 +97,19 @@ class SendDocReminderJob implements ShouldQueue
         $docs = $this->getDocsDueSoon();
 
         foreach ($docs as $doc) {
-            if (! $doc->recipient_email) {
+            $recipientEmail = $this->getRecipientEmail($doc);
+            $recipientName = $this->getRecipientName($doc);
+
+            if (! $recipientEmail) {
                 continue;
             }
 
             try {
                 $emailService->send(
                     doc: $doc,
-                    recipientEmail: $doc->recipient_email,
-                    recipientName: $doc->recipient_name,
-                    template: $emailService->findTemplate($doc->type->value, 'due_soon'),
+                    recipientEmail: $recipientEmail,
+                    recipientName: $recipientName,
+                    template: $emailService->findTemplate($doc->doc_type, 'due_soon'),
                     variables: [
                         'days_until_due' => $doc->due_date?->diffInDays(now()),
                     ],
@@ -113,7 +117,7 @@ class SendDocReminderJob implements ShouldQueue
 
                 Log::info('SendDocReminderJob: Due soon reminder sent', [
                     'doc_id' => $doc->id,
-                    'doc_number' => $doc->document_number,
+                    'doc_number' => $doc->doc_number,
                     'days_until_due' => $doc->due_date?->diffInDays(now()),
                 ]);
             } catch (Exception $e) {
@@ -130,16 +134,18 @@ class SendDocReminderJob implements ShouldQueue
         $docs = $this->getOverdueDocs();
 
         foreach ($docs as $doc) {
-            if (! $doc->recipient_email) {
+            $recipientEmail = $this->getRecipientEmail($doc);
+
+            if (! $recipientEmail) {
                 continue;
             }
 
             try {
-                $emailService->sendReminder($doc, $doc->recipient_email);
+                $emailService->sendReminder($doc, $recipientEmail);
 
                 Log::info('SendDocReminderJob: Overdue reminder sent', [
                     'doc_id' => $doc->id,
-                    'doc_number' => $doc->document_number,
+                    'doc_number' => $doc->doc_number,
                     'days_overdue' => $doc->due_date?->diffInDays(now()),
                 ]);
             } catch (Exception $e) {
@@ -159,10 +165,10 @@ class SendDocReminderJob implements ShouldQueue
         $dueDate = now()->addDays($this->daysBeforeDue);
 
         return Doc::query()
-            ->whereIn('status', [DocStatus::Sent, DocStatus::Pending])
+            ->whereIn('status', [DocStatus::SENT, DocStatus::PENDING])
             ->whereNotNull('due_date')
             ->whereDate('due_date', '=', $dueDate->toDateString())
-            ->whereNotNull('recipient_email')
+            ->whereJsonContainsKey('customer_data->email')
             ->get();
     }
 
@@ -174,22 +180,44 @@ class SendDocReminderJob implements ShouldQueue
         $overdueDate = now()->subDays($this->daysAfterOverdue);
 
         return Doc::query()
-            ->where('status', DocStatus::Overdue)
+            ->where('status', DocStatus::OVERDUE)
             ->whereNotNull('due_date')
             ->whereDate('due_date', '=', $overdueDate->toDateString())
-            ->whereNotNull('recipient_email')
+            ->whereJsonContainsKey('customer_data->email')
             ->get();
     }
 
     protected function shouldSendReminder(Doc $doc): bool
     {
         $reminderStatuses = [
-            DocStatus::Draft,
-            DocStatus::Pending,
-            DocStatus::Sent,
-            DocStatus::Overdue,
+            DocStatus::DRAFT,
+            DocStatus::PENDING,
+            DocStatus::SENT,
+            DocStatus::OVERDUE,
         ];
 
         return in_array($doc->status, $reminderStatuses, true);
+    }
+
+    protected function getRecipientEmail(?Doc $doc): ?string
+    {
+        if (! $doc) {
+            return null;
+        }
+
+        $customerData = $doc->customer_data;
+
+        return is_array($customerData) ? ($customerData['email'] ?? null) : null;
+    }
+
+    protected function getRecipientName(?Doc $doc): ?string
+    {
+        if (! $doc) {
+            return null;
+        }
+
+        $customerData = $doc->customer_data;
+
+        return is_array($customerData) ? ($customerData['name'] ?? null) : null;
     }
 }

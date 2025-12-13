@@ -7,11 +7,14 @@ namespace AIArmada\FilamentDocs\Resources\DocResource\Tables;
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
+use AIArmada\FilamentDocs\Actions\RecordPaymentAction;
+use AIArmada\FilamentDocs\Exports\DocExporter;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Actions\BulkAction;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\EditAction;
+use Filament\Actions\ExportAction;
 use Filament\Actions\ViewAction;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
@@ -119,6 +122,12 @@ final class DocsTable
                             ->whereYear('issue_date', now()->year)
                     ),
             ])
+            ->headerActions([
+                ExportAction::make()
+                    ->exporter(DocExporter::class)
+                    ->icon(Heroicon::OutlinedArrowDownTray)
+                    ->label('Export'),
+            ])
             ->recordActions([
                 ViewAction::make()
                     ->icon(Heroicon::OutlinedEye),
@@ -134,6 +143,8 @@ final class DocsTable
                             app(DocService::class)->generatePdf($record, save: true);
                             Notification::make()->title('PDF generated')->success()->send();
                         }),
+
+                    RecordPaymentAction::make(),
 
                     Action::make('mark_sent')
                         ->label('Mark as Sent')

@@ -6,6 +6,7 @@ namespace AIArmada\FilamentDocs\Pages;
 
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
+use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
@@ -24,9 +25,9 @@ class PendingApprovalsPage extends Page implements HasTable
 {
     use InteractsWithTable;
 
-    protected static ?string $navigationIcon = 'heroicon-o-clipboard-document-check';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-clipboard-document-check';
 
-    protected static string $view = 'filament-docs::pages.pending-approvals';
+    protected string $view = 'filament-docs::pages.pending-approvals';
 
     public static function getNavigationLabel(): string
     {
@@ -50,7 +51,7 @@ class PendingApprovalsPage extends Page implements HasTable
         return $count > 0 ? (string) $count : null;
     }
 
-    public static function getNavigationBadgeColor(): ?string
+    public static function getNavigationBadgeColor(): string | array | null
     {
         return 'warning';
     }
@@ -79,18 +80,18 @@ class PendingApprovalsPage extends Page implements HasTable
         return $table
             ->query($this->getTableQuery())
             ->columns([
-                TextColumn::make('doc.document_number')
+                TextColumn::make('doc.doc_number')
                     ->label(__('Document'))
                     ->searchable()
                     ->sortable()
                     ->url(fn (DocApproval $record): string => route('filament.admin.resources.docs.view', $record->doc_id)),
 
-                TextColumn::make('doc.type')
+                TextColumn::make('doc.doc_type')
                     ->label(__('Type'))
                     ->badge()
                     ->sortable(),
 
-                TextColumn::make('doc.recipient_name')
+                TextColumn::make('doc.customer_data.name')
                     ->label(__('Recipient'))
                     ->searchable(),
 
@@ -119,8 +120,7 @@ class PendingApprovalsPage extends Page implements HasTable
                     ->label(__('Document Type'))
                     ->options(fn (): array => Doc::query()
                         ->distinct()
-                        ->pluck('type', 'type')
-                        ->mapWithKeys(fn ($type) => [$type->value => $type->getLabel()])
+                        ->pluck('doc_type', 'doc_type')
                         ->toArray()),
             ])
             ->actions([
@@ -137,7 +137,7 @@ class PendingApprovalsPage extends Page implements HasTable
                     ->action(function (DocApproval $record, array $data): void {
                         $record->update([
                             'status' => 'approved',
-                            'responded_at' => now(),
+                            'approved_at' => now(),
                             'comments' => $data['comments'] ?? null,
                         ]);
 
@@ -161,7 +161,7 @@ class PendingApprovalsPage extends Page implements HasTable
                     ->action(function (DocApproval $record, array $data): void {
                         $record->update([
                             'status' => 'rejected',
-                            'responded_at' => now(),
+                            'rejected_at' => now(),
                             'comments' => $data['comments'],
                         ]);
 
