@@ -7,6 +7,7 @@ namespace AIArmada\Docs\Jobs;
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocEmailService;
+use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -44,6 +45,18 @@ class SendDocReminderJob implements ShouldQueue
         $this->sendRemindersForOverdue($emailService);
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    public function tags(): array
+    {
+        return [
+            'docs',
+            'reminder',
+            $this->docId ? "doc:{$this->docId}" : 'batch',
+        ];
+    }
+
     protected function sendReminderForDoc(DocEmailService $emailService, string $docId): void
     {
         $doc = Doc::find($docId);
@@ -68,7 +81,7 @@ class SendDocReminderJob implements ShouldQueue
                 'doc_number' => $doc->document_number,
                 'recipient' => $doc->recipient_email,
             ]);
-        } catch (\Exception $e) {
+        } catch (Exception $e) {
             Log::error('SendDocReminderJob: Failed to send reminder', [
                 'doc_id' => $doc->id,
                 'error' => $e->getMessage(),
@@ -103,7 +116,7 @@ class SendDocReminderJob implements ShouldQueue
                     'doc_number' => $doc->document_number,
                     'days_until_due' => $doc->due_date?->diffInDays(now()),
                 ]);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 Log::error('SendDocReminderJob: Failed to send due soon reminder', [
                     'doc_id' => $doc->id,
                     'error' => $e->getMessage(),
@@ -129,7 +142,7 @@ class SendDocReminderJob implements ShouldQueue
                     'doc_number' => $doc->document_number,
                     'days_overdue' => $doc->due_date?->diffInDays(now()),
                 ]);
-            } catch (\Exception $e) {
+            } catch (Exception $e) {
                 Log::error('SendDocReminderJob: Failed to send overdue reminder', [
                     'doc_id' => $doc->id,
                     'error' => $e->getMessage(),
@@ -178,17 +191,5 @@ class SendDocReminderJob implements ShouldQueue
         ];
 
         return in_array($doc->status, $reminderStatuses, true);
-    }
-
-    /**
-     * @return array<string, mixed>
-     */
-    public function tags(): array
-    {
-        return [
-            'docs',
-            'reminder',
-            $this->docId ? "doc:{$this->docId}" : 'batch',
-        ];
     }
 }

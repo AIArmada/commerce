@@ -76,7 +76,7 @@ class AlertDispatcher
             }
 
             foreach ($recipients as $recipient) {
-                Mail::raw($this->formatEmailMessage($event), function ($message) use ($recipient, $event) {
+                Mail::raw($this->formatEmailMessage($event), function ($message) use ($recipient, $event): void {
                     $message->to($recipient)
                         ->subject("[{$event->severity}] {$event->title}");
                 });

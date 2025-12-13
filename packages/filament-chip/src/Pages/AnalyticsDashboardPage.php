@@ -15,6 +15,13 @@ use Illuminate\Support\Carbon;
 
 class AnalyticsDashboardPage extends Page
 {
+    public string $period = '30';
+
+    public ?DashboardMetrics $metrics = null;
+
+    /** @var array<int, array{period: string, count: int, revenue: int}> */
+    public array $revenueTrend = [];
+
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedChartBar;
 
     protected static ?string $navigationLabel = 'Analytics';
@@ -25,12 +32,15 @@ class AnalyticsDashboardPage extends Page
 
     protected static ?int $navigationSort = 99;
 
-    public string $period = '30';
+    public static function getNavigationGroup(): ?string
+    {
+        return config('filament-chip.navigation.group', 'Payments');
+    }
 
-    public ?DashboardMetrics $metrics = null;
-
-    /** @var array<int, array{period: string, count: int, revenue: int}> */
-    public array $revenueTrend = [];
+    public static function shouldRegisterNavigation(): bool
+    {
+        return true;
+    }
 
     public function mount(): void
     {
@@ -52,9 +62,13 @@ class AnalyticsDashboardPage extends Page
         $this->loadMetrics();
     }
 
-    public static function getNavigationGroup(): ?string
+    public function render(): View
     {
-        return config('filament-chip.navigation.group', 'Payments');
+        return view('filament-chip::pages.analytics-dashboard', [
+            'metrics' => $this->metrics,
+            'revenueTrend' => $this->revenueTrend,
+            'period' => $this->period,
+        ]);
     }
 
     protected function getHeaderActions(): array
@@ -89,19 +103,5 @@ class AnalyticsDashboardPage extends Page
                 ->icon(Heroicon::ArrowPath)
                 ->action(fn () => $this->loadMetrics()),
         ];
-    }
-
-    public function render(): View
-    {
-        return view('filament-chip::pages.analytics-dashboard', [
-            'metrics' => $this->metrics,
-            'revenueTrend' => $this->revenueTrend,
-            'period' => $this->period,
-        ]);
-    }
-
-    public static function shouldRegisterNavigation(): bool
-    {
-        return true;
     }
 }

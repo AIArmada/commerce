@@ -246,7 +246,7 @@ class AlertRuleResource extends Resource
                     ->requiresConfirmation()
                     ->modalHeading('Test Alert Rule')
                     ->modalDescription('This will send a test alert to all configured channels.')
-                    ->action(function (AlertRule $record) {
+                    ->action(function (AlertRule $record): void {
                         // Dispatch test alert
                         $dispatcher = app(\AIArmada\FilamentCart\Services\AlertDispatcher::class);
                         $event = \AIArmada\FilamentCart\Data\AlertEvent::custom(

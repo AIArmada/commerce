@@ -50,7 +50,7 @@ class DocWorkflowStep extends Model
         $tables = config('docs.database.tables', []);
         $prefix = config('docs.database.table_prefix', 'docs_');
 
-        return $tables['workflow_steps'] ?? $prefix.'workflow_steps';
+        return $tables['workflow_steps'] ?? $prefix . 'workflow_steps';
     }
 
     /**
@@ -122,8 +122,8 @@ class DocWorkflowStep extends Model
                 $compareValue = $condition['value'] ?? null;
 
                 $result = match ($operator) {
-                    '=' => $value == $compareValue,
-                    '!=' => $value != $compareValue,
+                    '=' => $value === $compareValue,
+                    '!=' => $value !== $compareValue,
                     '>' => $value > $compareValue,
                     '>=' => $value >= $compareValue,
                     '<' => $value < $compareValue,
@@ -134,7 +134,7 @@ class DocWorkflowStep extends Model
                 if (! $result) {
                     return false;
                 }
-            } elseif ($value != $condition) {
+            } elseif ($value !== $condition) {
                 return false;
             }
         }

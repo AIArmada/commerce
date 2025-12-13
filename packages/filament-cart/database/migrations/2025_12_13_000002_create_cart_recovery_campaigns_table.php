@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $prefix = config('filament-cart.database.table_prefix', 'cart_');
 
-        Schema::create($prefix . 'recovery_campaigns', function (Blueprint $table) {
+        Schema::create($prefix . 'recovery_campaigns', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name');
             $table->text('description')->nullable();

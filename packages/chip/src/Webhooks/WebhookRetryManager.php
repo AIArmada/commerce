@@ -96,7 +96,7 @@ class WebhookRetryManager
         return Webhook::query()
             ->where('status', 'failed')
             ->where('retry_count', '<', count($this->backoffSchedule))
-            ->where(function ($query) {
+            ->where(function ($query): void {
                 $query->whereNull('last_retry_at')
                     ->orWhereRaw('last_retry_at < DATE_SUB(NOW(), INTERVAL retry_count * 60 SECOND)');
             })

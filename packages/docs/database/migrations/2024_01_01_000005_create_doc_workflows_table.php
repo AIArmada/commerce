@@ -13,7 +13,7 @@ return new class extends Migration
         $prefix = config('docs.database.table_prefix', 'docs_');
         $jsonColumnType = config('docs.database.json_column_type', 'json');
 
-        Schema::create($prefix.'workflows', function (Blueprint $table) use ($jsonColumnType): void {
+        Schema::create($prefix . 'workflows', function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
             $table->nullableMorphs('owner');
             $table->string('name');
@@ -26,7 +26,7 @@ return new class extends Migration
             $table->index(['is_active', 'doc_type', 'priority']);
         });
 
-        Schema::create($prefix.'workflow_steps', function (Blueprint $table) use ($prefix, $jsonColumnType): void {
+        Schema::create($prefix . 'workflow_steps', function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('workflow_id');
             $table->string('name');
@@ -46,7 +46,7 @@ return new class extends Migration
     {
         $prefix = config('docs.database.table_prefix', 'docs_');
 
-        Schema::dropIfExists($prefix.'workflow_steps');
-        Schema::dropIfExists($prefix.'workflows');
+        Schema::dropIfExists($prefix . 'workflow_steps');
+        Schema::dropIfExists($prefix . 'workflows');
     }
 };
