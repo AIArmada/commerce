@@ -1,5 +1,10 @@
 # Testing Guidelines
 
+**The ultimate goal is to ELIMINATE all bugs.**
+Not skipping them. Not avoiding them.
+If there is one thing you should be very sensitive about, it's the bugs.
+**FIX THEM LIKE THE WORLD IS GONNA END IF NOT.**
+
 ## Core Principle: Targeted Testing First
 
 - **Never run full package tests unnecessarily**; always prefer targeted test execution for specific files or
