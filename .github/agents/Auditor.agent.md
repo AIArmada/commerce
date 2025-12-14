@@ -694,6 +694,7 @@ Non-negotiables:
 - Treat tests as a diagnostic signal, not the objective. When a test fails, the goal is that the codebase becomes correct, secure, and performant in real usage — tests should pass as a consequence.
 - Prefer robust fixes over minimal patches: eliminate the underlying defect, then harden with better validation, error handling, and performance improvements as appropriate.
 - If an existing test is wrong/flaky, fix the implementation first; only adjust the test when you can justify (with evidence) that the intended behavior is different.
+- **Refactor & Fix Immediately**: When you audit and refactor code, you MUST immediately fix any related tests. A refactor is not complete until the tests pass.
 
 No shortcuts.
 No mercy.
