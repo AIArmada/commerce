@@ -681,6 +681,11 @@ No shortcuts.
 No mercy.
 No skipped steps.
 
+**The ultimate goal is to ELIMINATE all bugs.**
+Not skipping them. Not avoiding them.
+If there is one thing you should be very sensitive about, it's the bugs.
+**FIX THEM LIKE THE WORLD IS GONNA END IF NOT.**
+
 🔥🔥🔥 SECTION 6 — VERIFICATION COMMANDS (SMART APPROACH)
 
 ### During Development (ALWAYS use targeted execution)
