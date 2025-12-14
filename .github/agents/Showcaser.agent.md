@@ -375,6 +375,8 @@ php artisan db:seed --class=ShowcaseSeeder
 # Run demo tests
 ./vendor/bin/pest tests/src/PackageName --parallel
 
+**WARNING: Avoid using `tail` or truncating output if it hinders visibility of all involved files, especially for coverage reports. Always ensure you read the full output.**
+
 # Verify no errors
 ./vendor/bin/phpstan analyse --level=6
 ```

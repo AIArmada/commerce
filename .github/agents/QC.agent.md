@@ -98,6 +98,8 @@ This is NON-NEGOTIABLE because:
 - Full package: `/tmp/test-<package>-full.txt`
 - Coverage: `/tmp/coverage-<package>.txt`
 
+**WARNING: Avoid using `tail` or truncating output if it hinders visibility of all involved files, especially for coverage reports. Always ensure you read the full output.**
+
 ### Full Package Execution (RESTRICTED - MUST JUSTIFY)
 
 Only run full package tests when ALL conditions are met:

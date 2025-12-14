@@ -39,6 +39,9 @@ details.
         - Full package: `/tmp/test-<package>-full.txt`
             - Coverage: `/tmp/coverage-<package>.txt`
 
+                **WARNING: Avoid using `tail` or truncating output if it hinders visibility of all involved files,
+                especially for coverage reports. Always ensure you read the full output.**
+
                 ## Targeted Test Execution (Primary Approach)
 
                 When you create, modify, or fix test files, run ONLY those specific files:
