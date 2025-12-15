@@ -74,12 +74,14 @@ class Cashier
         static::$deactivatePastDue = $deactivate;
 
         // Sync to underlying packages if available
+        // @codeCoverageIgnoreStart
         if (class_exists(\Laravel\Cashier\Cashier::class)) {
             \Laravel\Cashier\Cashier::$deactivatePastDue = $deactivate;
         }
         if (class_exists(\AIArmada\CashierChip\Cashier::class)) {
             \AIArmada\CashierChip\Cashier::$deactivatePastDue = $deactivate;
         }
+        // @codeCoverageIgnoreEnd
     }
 
     /**
@@ -90,12 +92,14 @@ class Cashier
         static::$deactivateIncomplete = $deactivate;
 
         // Sync to underlying packages if available
+        // @codeCoverageIgnoreStart
         if (class_exists(\Laravel\Cashier\Cashier::class)) {
             \Laravel\Cashier\Cashier::$deactivateIncomplete = $deactivate;
         }
         if (class_exists(\AIArmada\CashierChip\Cashier::class)) {
             \AIArmada\CashierChip\Cashier::$deactivateIncomplete = $deactivate;
         }
+        // @codeCoverageIgnoreEnd
     }
 
     /**

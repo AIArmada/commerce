@@ -3,7 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Models\OrderAddress;
 use AIArmada\Orders\Models\OrderItem;
+use AIArmada\Orders\Models\OrderNote;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\Models\OrderRefund;
 use AIArmada\Orders\States\Canceled;
@@ -206,21 +208,66 @@ describe('Order Model', function (): void {
         });
     });
 
-    describe('Order Soft Deletes', function (): void {
-        it('can soft delete an order', function (): void {
+    describe('Order Deletes', function (): void {
+        it('deletes order and cascades related records', function (): void {
             $order = Order::create([
-                'order_number' => 'ORD-DEL-' . uniqid(),
+                'order_number' => 'ORD-DEL-REL-' . uniqid(),
                 'status' => Canceled::class,
                 'currency' => 'MYR',
                 'subtotal' => 5000,
                 'grand_total' => 5000,
             ]);
 
-            $id = $order->id;
+            OrderItem::create([
+                'order_id' => $order->id,
+                'name' => 'Product 1',
+                'quantity' => 1,
+                'unit_price' => 5000,
+            ]);
+
+            OrderAddress::create([
+                'order_id' => $order->id,
+                'type' => 'billing',
+                'first_name' => 'John',
+                'last_name' => 'Doe',
+                'line1' => '123 Billing St',
+                'city' => 'KL',
+                'postcode' => '50000',
+                'country_code' => 'MY',
+            ]);
+
+            OrderPayment::create([
+                'order_id' => $order->id,
+                'gateway' => 'manual',
+                'amount' => 5000,
+                'currency' => 'MYR',
+                'status' => 'completed',
+            ]);
+
+            OrderRefund::create([
+                'order_id' => $order->id,
+                'gateway' => 'manual',
+                'amount' => 5000,
+                'currency' => 'MYR',
+                'reason' => 'Customer request',
+                'status' => 'completed',
+            ]);
+
+            OrderNote::create([
+                'order_id' => $order->id,
+                'content' => 'Internal note',
+                'is_customer_visible' => false,
+            ]);
+
+            $orderId = $order->id;
             $order->delete();
 
-            expect(Order::find($id))->toBeNull()
-                ->and(Order::withTrashed()->find($id))->not->toBeNull();
+            expect(Order::find($orderId))->toBeNull();
+            expect(OrderItem::where('order_id', $orderId)->count())->toBe(0);
+            expect(OrderAddress::where('order_id', $orderId)->count())->toBe(0);
+            expect(OrderPayment::where('order_id', $orderId)->count())->toBe(0);
+            expect(OrderRefund::where('order_id', $orderId)->count())->toBe(0);
+            expect(OrderNote::where('order_id', $orderId)->count())->toBe(0);
         });
     });
 
@@ -256,7 +303,7 @@ describe('Order Model', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $billingAddress = AIArmada\Orders\Models\OrderAddress::create([
+            $billingAddress = OrderAddress::create([
                 'order_id' => $order->id,
                 'type' => 'billing',
                 'first_name' => 'John',
@@ -270,7 +317,7 @@ describe('Order Model', function (): void {
                 'country_code' => 'MY',
             ]);
 
-            $shippingAddress = AIArmada\Orders\Models\OrderAddress::create([
+            $shippingAddress = OrderAddress::create([
                 'order_id' => $order->id,
                 'type' => 'shipping',
                 'first_name' => 'Jane',
@@ -349,7 +396,7 @@ describe('Order Model', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            AIArmada\Orders\Models\OrderNote::create([
+            OrderNote::create([
                 'order_id' => $order->id,
                 'content' => 'Customer called about delivery',
                 'is_customer_visible' => true,
@@ -592,11 +639,11 @@ describe('Order Model', function (): void {
             // Item 2: (1 * 3000) + 180 = 3180
             // Subtotal: 5300 + 3180 = 8480
             // Tax total: 300 + 180 = 480
-            // Grand total: 8480 + 1000 + 480 - 500 = 9460
+            // Grand total: 8480 + 1000 - 500 = 8980
 
             expect($order->subtotal)->toBe(8480)
                 ->and($order->tax_total)->toBe(480)
-                ->and($order->grand_total)->toBe(9460);
+                ->and($order->grand_total)->toBe(8980);
         });
     });
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 return [
     /*
     |--------------------------------------------------------------------------
-    | Database Tables
+    | Database
     |--------------------------------------------------------------------------
     |
     | Configure the database table names used by the orders package.
@@ -20,28 +20,12 @@ return [
             'order_refunds' => 'order_refunds',
             'order_notes' => 'order_notes',
         ],
-        'json_column_type' => 'json',
+        'json_column_type' => env('ORDERS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Order Number Generation
-    |--------------------------------------------------------------------------
-    |
-    | Configure how order numbers are generated.
-    |
-    */
-    'order_number' => [
-        'prefix' => 'ORD',
-        'separator' => '-',
-        'length' => 8,
-        'use_date' => true,
-        'date_format' => 'Ymd',
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Currency
+    | Defaults
     |--------------------------------------------------------------------------
     |
     | Default currency for orders.
@@ -54,28 +38,33 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Audit Settings
+    | Order Number Generation
     |--------------------------------------------------------------------------
     |
-    | Configure audit trail for orders (using owen-it/laravel-auditing).
+    | Configure how order numbers are generated.
     |
     */
-    'audit' => [
-        'enabled' => true,
-        'threshold' => 500, // Keep extensive history for compliance
+    'order_number' => [
+        'prefix' => env('ORDERS_ORDER_NUMBER_PREFIX', 'ORD'),
+        'separator' => env('ORDERS_ORDER_NUMBER_SEPARATOR', '-'),
+        'length' => env('ORDERS_ORDER_NUMBER_LENGTH', 8),
+        'use_date' => env('ORDERS_ORDER_NUMBER_USE_DATE', true),
+        'date_format' => env('ORDERS_ORDER_NUMBER_DATE_FORMAT', 'Ymd'),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | State Machine
+    | Invoice
     |--------------------------------------------------------------------------
     |
-    | Configure order state machine behavior.
+    | Configure invoice number generation.
     |
     */
-    'states' => [
-        'default' => 'created',
-        'log_transitions' => true,
+    'invoice' => [
+        'prefix' => env('ORDERS_INVOICE_PREFIX', 'INV'),
+        'separator' => env('ORDERS_INVOICE_SEPARATOR', '-'),
+        'random_length' => env('ORDERS_INVOICE_RANDOM_LENGTH', 6),
+        'date_format' => env('ORDERS_INVOICE_DATE_FORMAT', 'Ymd'),
     ],
 
     /*
@@ -102,17 +91,14 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Notifications
+    | Auditing
     |--------------------------------------------------------------------------
     |
-    | Configure order notifications.
+    | Configure compliance-grade auditing with owen-it/laravel-auditing.
     |
     */
-    'notifications' => [
-        'order_confirmed' => true,
-        'payment_received' => true,
-        'order_shipped' => true,
-        'order_delivered' => true,
-        'order_canceled' => true,
+    'audit' => [
+        'enabled' => env('ORDERS_AUDIT_ENABLED', true),
+        'threshold' => env('ORDERS_AUDIT_THRESHOLD', 500),
     ],
 ];

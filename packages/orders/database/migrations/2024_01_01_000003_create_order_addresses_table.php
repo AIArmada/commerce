@@ -10,7 +10,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('orders.database.tables.order_addresses', 'order_addresses'), function (Blueprint $table): void {
+        $databaseConfig = (array) config('orders.database', []);
+        $jsonType = (string) ($databaseConfig['json_column_type'] ?? commerce_json_column_type('orders', 'json'));
+
+        Schema::create(config('orders.database.tables.order_addresses', 'order_addresses'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('order_id');
 
@@ -33,7 +36,7 @@ return new class extends Migration
             $table->string('phone')->nullable();
             $table->string('email')->nullable();
 
-            $table->json('metadata')->nullable();
+            $table->{$jsonType}('metadata')->nullable();
             $table->timestamps();
 
             // Indexes

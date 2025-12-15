@@ -248,9 +248,10 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
 
     public function getFormattedPrice(): string
     {
-        $currency = config('products.currency.default', 'MYR');
+        $currency = mb_strtoupper($this->currency ?: config('products.currency.default', 'MYR'));
+        $asMajorUnits = ! (bool) config('products.currency.store_in_cents', true);
 
-        return Money::$currency($this->price, true)->format();
+        return Money::$currency($this->price, $asMajorUnits)->format();
     }
 
     public function getFormattedComparePrice(): ?string
@@ -259,9 +260,10 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
             return null;
         }
 
-        $currency = config('products.currency.default', 'MYR');
+        $currency = mb_strtoupper($this->currency ?: config('products.currency.default', 'MYR'));
+        $asMajorUnits = ! (bool) config('products.currency.store_in_cents', true);
 
-        return Money::$currency($this->compare_price, true)->format();
+        return Money::$currency($this->compare_price, $asMajorUnits)->format();
     }
 
     public function getFormattedCost(): ?string
@@ -270,16 +272,18 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
             return null;
         }
 
-        $currency = config('products.currency.default', 'MYR');
+        $currency = mb_strtoupper($this->currency ?: config('products.currency.default', 'MYR'));
+        $asMajorUnits = ! (bool) config('products.currency.store_in_cents', true);
 
-        return Money::$currency($this->cost, true)->format();
+        return Money::$currency($this->cost, $asMajorUnits)->format();
     }
 
     public function getPriceAsMoney(): Money
     {
-        $currency = config('products.currency.default', 'MYR');
+        $currency = mb_strtoupper($this->currency ?: config('products.currency.default', 'MYR'));
+        $asMajorUnits = ! (bool) config('products.currency.store_in_cents', true);
 
-        return Money::$currency($this->price, true);
+        return Money::$currency($this->price, $asMajorUnits);
     }
 
     // =========================================================================
@@ -368,6 +372,10 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
     public function getProfitMargin(): ?float
     {
         if (! $this->cost || $this->cost === 0) {
+            return null;
+        }
+
+        if ($this->price === 0) {
             return null;
         }
 

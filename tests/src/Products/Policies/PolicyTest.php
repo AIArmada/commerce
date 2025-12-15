@@ -8,6 +8,14 @@ use AIArmada\Products\Models\Product;
 use AIArmada\Products\Policies\CategoryPolicy;
 use AIArmada\Products\Policies\ProductPolicy;
 use Illuminate\Foundation\Auth\User;
+use Illuminate\Support\Facades\Gate;
+
+describe('Policy Registration', function (): void {
+    it('registers policies with Gate', function (): void {
+        expect(Gate::getPolicyFor(Product::class))->toBeInstanceOf(ProductPolicy::class)
+            ->and(Gate::getPolicyFor(Category::class))->toBeInstanceOf(CategoryPolicy::class);
+    });
+});
 
 describe('Category Policy', function (): void {
     beforeEach(function (): void {

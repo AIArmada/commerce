@@ -10,7 +10,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('orders.database.tables.orders', 'orders'), function (Blueprint $table): void {
+        $databaseConfig = (array) config('orders.database', []);
+        $jsonType = (string) ($databaseConfig['json_column_type'] ?? commerce_json_column_type('orders', 'json'));
+
+        Schema::create(config('orders.database.tables.orders', 'orders'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('order_number')->unique();
             $table->string('status', 50)->default('created')->index();
@@ -34,7 +37,7 @@ return new class extends Migration
             $table->text('internal_notes')->nullable();
 
             // Metadata
-            $table->json('metadata')->nullable();
+            $table->{$jsonType}('metadata')->nullable();
 
             // Timestamps
             $table->timestamp('paid_at')->nullable()->index();
@@ -44,7 +47,6 @@ return new class extends Migration
             $table->string('cancellation_reason')->nullable();
 
             $table->timestamps();
-            $table->softDeletes();
 
             // Indexes
             $table->index(['status', 'created_at']);

@@ -1000,6 +1000,16 @@ class Subscription extends Model
     }
 
     /**
+     * Calculate the total subscription amount based on items.
+     */
+    public function calculateSubscriptionAmount(): int
+    {
+        return $this->items->sum(function ($item) {
+            return ($item->unit_amount ?? 0) * ($item->quantity ?? 1);
+        });
+    }
+
+    /**
      * The "booted" method of the model.
      */
     protected static function booted(): void
@@ -1117,16 +1127,6 @@ class Subscription extends Model
             ),
             default => null,
         };
-    }
-
-    /**
-     * Calculate the total subscription amount based on items.
-     */
-    protected function calculateSubscriptionAmount(): int
-    {
-        return $this->items->sum(function ($item) {
-            return ($item->unit_amount ?? 0) * ($item->quantity ?? 1);
-        });
     }
 
     /**

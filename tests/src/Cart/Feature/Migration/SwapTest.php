@@ -25,6 +25,8 @@ beforeEach(function (): void {
     $connection->getSchemaBuilder()->create('carts_swap_test', function ($table): void {
         $table->uuid('id')->primary();
         $table->string('identifier')->index();
+        $table->string('owner_type')->default('');
+        $table->string('owner_id')->default('');
         $table->string('instance')->default('default')->index();
         $table->longText('items')->nullable();
         $table->longText('conditions')->nullable();
@@ -32,7 +34,7 @@ beforeEach(function (): void {
         $table->bigInteger('version')->default(1)->index()->comment('Version number for optimistic locking');
         $table->timestamp('expires_at')->nullable()->index();
         $table->timestamps();
-        $table->unique(['identifier', 'instance']);
+        $table->unique(['owner_type', 'owner_id', 'identifier', 'instance']);
     });
 
     $this->storage = new DatabaseStorage($connection, 'carts_swap_test');
@@ -205,13 +207,15 @@ it('returns false when swapping non-existent cart', function (): void {
     $connection->getSchemaBuilder()->create('carts_swap_test_3', function ($table): void {
         $table->uuid('id')->primary();
         $table->string('identifier')->index();
+        $table->string('owner_type')->default('');
+        $table->string('owner_id')->default('');
         $table->string('instance')->default('default')->index();
         $table->longText('items')->nullable();
         $table->longText('conditions')->nullable();
         $table->longText('metadata')->nullable();
         $table->timestamp('expires_at')->nullable()->index();
         $table->timestamps();
-        $table->unique(['identifier', 'instance']);
+        $table->unique(['owner_type', 'owner_id', 'identifier', 'instance']);
     });
 
     $storage = new DatabaseStorage($connection, 'carts_swap_test_3');

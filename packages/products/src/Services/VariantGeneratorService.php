@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Products\Services;
 
 use AIArmada\Products\Models\Option;
+use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Illuminate\Support\Collection;
@@ -24,6 +25,10 @@ class VariantGeneratorService
     public function generate(Product $product): Collection
     {
         $options = $product->options()->with('values')->ordered()->get();
+
+        $options->each(function (Option $option): void {
+            $option->values->each(fn (OptionValue $value) => $value->setRelation('option', $option));
+        });
 
         if ($options->isEmpty()) {
             return collect();
@@ -65,6 +70,16 @@ class VariantGeneratorService
      */
     public function addVariant(Product $product, array $optionValueIds): Variant
     {
+        $optionValueIds = collect($optionValueIds)
+            ->filter()
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($optionValueIds === []) {
+            throw new RuntimeException('Option values are required.');
+        }
+
         // Check if variant already exists
         $existingVariant = $this->findVariantByCombination($product, $optionValueIds);
 
@@ -72,7 +87,15 @@ class VariantGeneratorService
             throw new RuntimeException('A variant with this combination already exists.');
         }
 
-        $optionValues = \AIArmada\Products\Models\OptionValue::whereIn('id', $optionValueIds)->get();
+        $optionValues = OptionValue::query()
+            ->whereIn('id', $optionValueIds)
+            ->whereHas('option', fn ($query) => $query->where('product_id', $product->id))
+            ->with('option')
+            ->get();
+
+        if ($optionValues->count() !== count($optionValueIds)) {
+            throw new RuntimeException('One or more option values do not belong to this product.');
+        }
 
         return $this->createVariant($product, $optionValues, ! $product->variants()->exists());
     }
@@ -86,9 +109,16 @@ class VariantGeneratorService
     {
         $count = count($optionValueIds);
 
+        if ($count === 0) {
+            return null;
+        }
+
+        $pivotTable = config('products.tables.variant_options', 'product_variant_options');
+
         return $product->variants()
-            ->whereHas('optionValues', function ($query) use ($optionValueIds): void {
-                $query->whereIn('option_value_id', $optionValueIds);
+            ->has('optionValues', '=', $count)
+            ->whereHas('optionValues', function ($query) use ($optionValueIds, $pivotTable): void {
+                $query->whereIn($pivotTable . '.option_value_id', $optionValueIds);
             }, '=', $count)
             ->first();
     }
@@ -121,7 +151,7 @@ class VariantGeneratorService
     /**
      * Create a single variant from a combination of option values.
      *
-     * @param  Collection<int, \AIArmada\Products\Models\OptionValue>  $optionValues
+     * @param  Collection<int, OptionValue>  $optionValues
      */
     protected function createVariant(Product $product, Collection $optionValues, bool $isDefault): Variant
     {
@@ -140,7 +170,7 @@ class VariantGeneratorService
     /**
      * Generate SKU for a variant.
      *
-     * @param  Collection<int, \AIArmada\Products\Models\OptionValue>  $optionValues
+     * @param  Collection<int, OptionValue>  $optionValues
      */
     protected function generateSku(Product $product, Collection $optionValues): string
     {

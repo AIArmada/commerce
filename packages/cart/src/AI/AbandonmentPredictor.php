@@ -6,6 +6,7 @@ namespace AIArmada\Cart\AI;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\Cart\Support\CartOwnerScope;
 use DateTimeImmutable;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
@@ -49,12 +50,9 @@ final class AbandonmentPredictor
      */
     private array $configuration;
 
-    private ?StorageInterface $storage;
-
-    public function __construct(?StorageInterface $storage = null)
-    {
-        $this->storage = $storage;
-        $this->configuration = config('cart.ai', []);
+    public function __construct(
+        private readonly StorageInterface $storage
+    ) {
         $this->configuration = config('cart.ai.abandonment', [
             'enabled' => true,
             'inactivity_threshold_minutes' => 15,
@@ -68,7 +66,7 @@ final class AbandonmentPredictor
      */
     public function predict(Cart $cart, ?string $userId = null): AbandonmentPrediction
     {
-        $cacheKey = "cart:abandonment:{$cart->getId()}";
+        $cacheKey = $this->cacheKeyForCart($cart);
 
         return Cache::remember(
             $cacheKey,
@@ -100,27 +98,36 @@ final class AbandonmentPredictor
         $cartsTable = config('cart.database.table', 'carts');
         $inactivityThreshold = $this->configuration['inactivity_threshold_minutes'] ?? 15;
 
-        $carts = DB::table($cartsTable)
+        $query = DB::table($cartsTable)
             ->whereNotNull('last_activity_at')
             ->whereNull('checkout_abandoned_at')
             ->whereNull('recovered_at')
             ->where('last_activity_at', '<', now()->subMinutes($inactivityThreshold))
             ->where('last_activity_at', '>', now()->subHours(24))
             ->orderBy('last_activity_at', 'asc')
-            ->limit($limit)
-            ->get();
+            ->limit($limit);
 
-        return $carts->map(function ($cartRecord) {
+        $carts = CartOwnerScope::apply($query, $this->storage)->get([
+            'id',
+            'identifier',
+            'instance',
+            'items',
+            'last_activity_at',
+            'checkout_started_at',
+        ]);
+
+        return $carts->map(function (object $cartRecord) {
             $features = $this->extractFeaturesFromRecord($cartRecord);
             $probability = $this->calculateProbability($features);
 
             return [
                 'cart_id' => $cartRecord->id,
                 'identifier' => $cartRecord->identifier,
+                'instance' => $cartRecord->instance ?? 'default',
                 'probability' => $probability,
                 'risk_level' => $this->getRiskLevel($probability),
                 'last_activity' => $cartRecord->last_activity_at,
-                'cart_total' => $cartRecord->total ?? 0,
+                'cart_total' => $this->calculateTotalFromRecord($cartRecord),
             ];
         })->filter(fn ($cart) => $cart['probability'] >= self::RISK_MEDIUM);
     }
@@ -222,12 +229,8 @@ final class AbandonmentPredictor
      */
     private function extractFeatures(Cart $cart, ?string $userId): array
     {
-        $lastActivity = null;
-
-        if ($this->storage) {
-            $lastActivityStr = $this->storage->getLastActivityAt($cart->getIdentifier(), $cart->instance());
-            $lastActivity = $lastActivityStr ? new DateTimeImmutable($lastActivityStr) : null;
-        }
+        $lastActivityStr = $this->storage->getLastActivityAt($cart->getIdentifier(), $cart->instance());
+        $lastActivity = $lastActivityStr ? new DateTimeImmutable($lastActivityStr) : null;
 
         $minutesSinceActivity = $lastActivity
             ? now()->diffInMinutes($lastActivity)
@@ -240,7 +243,7 @@ final class AbandonmentPredictor
             'time_since_activity' => min(1.0, $minutesSinceActivity / 60),
             'cart_value' => min(1.0, $cart->getRawTotal() / $highValueThreshold),
             'item_count' => min(1.0, $cart->countItems() / 10),
-            'user_history' => $userId ? $this->getUserHistoryScore($userId) : 0.5,
+            'user_history' => $userId ? $this->getIdentifierHistoryScore($userId) : 0.5,
             'session_behavior' => $this->getSessionBehaviorScore($cart->getIdentifier()),
             'device_type' => $this->getDeviceTypeScore(),
             'time_of_day' => $this->getTimeOfDayScore(),
@@ -259,13 +262,15 @@ final class AbandonmentPredictor
         $minutesSinceActivity = (time() - $lastActivity) / 60;
 
         $highValueThreshold = $this->configuration['high_value_threshold_cents'] ?? 50000;
-        $cartTotal = $record->total ?? 0;
+        $cartTotal = $this->calculateTotalFromRecord($record);
+        $itemCount = $this->calculateItemCountFromRecord($record);
+        $historyScore = $this->getIdentifierHistoryScore((string) ($record->identifier ?? ''));
 
         return [
             'time_since_activity' => min(1.0, $minutesSinceActivity / 60),
             'cart_value' => min(1.0, $cartTotal / $highValueThreshold),
-            'item_count' => 0.3,
-            'user_history' => $record->user_id ? 0.4 : 0.6,
+            'item_count' => min(1.0, $itemCount / 10),
+            'user_history' => $historyScore,
             'session_behavior' => 0.5,
             'device_type' => 0.5,
             'time_of_day' => $this->getTimeOfDayScore(),
@@ -364,15 +369,20 @@ final class AbandonmentPredictor
     /**
      * Get user history score (higher = more likely to abandon).
      */
-    private function getUserHistoryScore(string $userId): float
+    private function getIdentifierHistoryScore(string $identifier): float
     {
-        $cacheKey = "user:abandonment_rate:{$userId}";
+        if ($identifier === '') {
+            return 0.5;
+        }
 
-        return Cache::remember($cacheKey, 3600, function () use ($userId) {
+        $cacheKey = "cart:abandonment_rate:{$this->ownerCacheKeyPart()}:{$identifier}";
+
+        return Cache::remember($cacheKey, 3600, function () use ($identifier) {
             $cartsTable = config('cart.database.table', 'carts');
 
-            $stats = DB::table($cartsTable)
-                ->where('user_id', $userId)
+            $query = DB::table($cartsTable)->where('identifier', $identifier);
+
+            $stats = CartOwnerScope::apply($query, $this->storage)
                 ->selectRaw('COUNT(*) as total')
                 ->selectRaw('SUM(CASE WHEN checkout_abandoned_at IS NOT NULL THEN 1 ELSE 0 END) as abandoned')
                 ->first();
@@ -490,5 +500,65 @@ final class AbandonmentPredictor
     private function saveWeights(): void
     {
         Cache::put('cart:abandonment_model:weights', $this->featureWeights, 86400 * 30);
+    }
+
+    private function calculateTotalFromRecord(object $record): int
+    {
+        $items = $record->items ?? [];
+        if (is_string($items)) {
+            $items = json_decode($items, true) ?: [];
+        }
+
+        if (! is_array($items)) {
+            return 0;
+        }
+
+        $total = 0;
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $price = (int) ($item['price'] ?? 0);
+            $quantity = (int) ($item['quantity'] ?? 1);
+            $total += max(0, $price) * max(0, $quantity);
+        }
+
+        return $total;
+    }
+
+    private function calculateItemCountFromRecord(object $record): int
+    {
+        $items = $record->items ?? [];
+        if (is_string($items)) {
+            $items = json_decode($items, true) ?: [];
+        }
+
+        return is_array($items) ? count($items) : 0;
+    }
+
+    private function ownerCacheKeyPart(): string
+    {
+        $ownerType = $this->storage->getOwnerType();
+        $ownerId = $this->storage->getOwnerId();
+
+        if ($ownerType === null || $ownerId === null) {
+            return 'global';
+        }
+
+        $normalizedOwnerType = str_replace('\\', '.', $ownerType);
+
+        return 'owner:' . $normalizedOwnerType . ':' . (string) $ownerId;
+    }
+
+    private function cacheKeyForCart(Cart $cart): string
+    {
+        $id = $cart->getId();
+
+        if ($id !== null) {
+            return "cart:abandonment:{$this->ownerCacheKeyPart()}:{$id}";
+        }
+
+        return "cart:abandonment:{$this->ownerCacheKeyPart()}:{$cart->getIdentifier()}:{$cart->instance()}";
     }
 }

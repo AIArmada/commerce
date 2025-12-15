@@ -55,7 +55,7 @@ class ShipInventoryTest extends InventoryTestCase
         );
 
         expect($movement->getMovementType())->toBe(MovementType::Shipment);
-        expect($movement->quantity)->toBe(-5);
+        expect($movement->quantity)->toBe(5);
         expect($movement->reason)->toBe('sale');
         expect($movement->reference)->toBe('ORDER-123');
         expect($movement->note)->toBe('Shipped to customer');

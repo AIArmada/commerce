@@ -50,7 +50,7 @@ class TransferInventoryTest extends InventoryTestCase
             'quantity_reserved' => 0,
         ]);
 
-        $movements = $this->action->handle(
+        $movement = $this->action->handle(
             $this->item,
             $this->fromLocation->id,
             $this->toLocation->id,
@@ -59,11 +59,10 @@ class TransferInventoryTest extends InventoryTestCase
             'user-1'
         );
 
-        expect($movements)->toHaveKeys(['from', 'to']);
-        expect($movements['from']->getMovementType())->toBe(MovementType::Transfer);
-        expect($movements['from']->quantity)->toBe(-20);
-        expect($movements['to']->getMovementType())->toBe(MovementType::Transfer);
-        expect($movements['to']->quantity)->toBe(20);
+        expect($movement->getMovementType())->toBe(MovementType::Transfer);
+        expect($movement->quantity)->toBe(20);
+        expect($movement->from_location_id)->toBe($this->fromLocation->id);
+        expect($movement->to_location_id)->toBe($this->toLocation->id);
 
         Event::assertDispatched(InventoryTransferred::class);
     }

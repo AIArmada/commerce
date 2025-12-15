@@ -20,7 +20,7 @@ return new class extends Migration
             $table->text('address')->nullable();
             $table->boolean('is_active')->default(true);
             $table->integer('priority')->default(0);
-            $jsonType = config('inventory.json_column_type', 'json');
+            $jsonType = config('inventory.database.json_column_type', config('inventory.json_column_type', 'json'));
             $table->{$jsonType}('metadata')->nullable();
             $table->timestamps();
 

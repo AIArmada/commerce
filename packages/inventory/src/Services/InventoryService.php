@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Services;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryAdjusted;
 use AIArmada\Inventory\Events\InventoryReceived;
@@ -15,6 +16,7 @@ use AIArmada\Inventory\Exceptions\InsufficientStockException;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -37,6 +39,10 @@ final class InventoryService
      */
     private array $totalAvailableCache = [];
 
+    public function __construct(
+        private readonly OwnerResolverInterface $ownerResolver,
+    ) {}
+
     /**
      * Receive inventory at a location.
      */
@@ -55,6 +61,7 @@ final class InventoryService
         return DB::transaction(function () use ($model, $locationId, $quantity, $reason, $note, $userId): InventoryMovement {
             $level = $this->getOrCreateLevel($model, $locationId);
             $level->incrementOnHand($quantity);
+            $this->clearCache($model);
 
             $movement = InventoryMovement::create([
                 'inventoryable_type' => $model->getMorphClass(),
@@ -91,17 +98,29 @@ final class InventoryService
         }
 
         return DB::transaction(function () use ($model, $locationId, $quantity, $reason, $reference, $note, $userId): InventoryMovement {
-            $level = $this->getLevel($model, $locationId);
+            $scope = $this->ownerScope();
 
-            if ($level === null || $level->quantity_on_hand < $quantity) {
-                throw InsufficientStockException::forLocation(
-                    $locationId,
-                    $quantity,
-                    $level?->quantity_on_hand ?? 0
-                );
+            $levelQuery = InventoryLevel::query()
+                ->where('inventoryable_type', $model->getMorphClass())
+                ->where('inventoryable_id', $model->getKey())
+                ->where('location_id', $locationId);
+
+            if ($scope['enabled']) {
+                $levelQuery->whereHas('location', function (Builder $locationQuery) use ($scope): void {
+                    $this->applyOwnerScopeToLocationQuery($locationQuery, $scope);
+                });
+            }
+
+            $level = $levelQuery->lockForUpdate()->first();
+
+            $available = $level?->available ?? 0;
+
+            if ($level === null || $available < $quantity) {
+                throw InsufficientStockException::forLocation($locationId, $quantity, $available);
             }
 
             $level->decrementOnHand($quantity);
+            $this->clearCache($model);
 
             $movement = InventoryMovement::create([
                 'inventoryable_type' => $model->getMorphClass(),
@@ -144,16 +163,32 @@ final class InventoryService
         }
 
         return DB::transaction(function () use ($model, $fromLocationId, $toLocationId, $quantity, $note, $userId): InventoryMovement {
-            $fromLevel = $this->getLevel($model, $fromLocationId);
+            $scope = $this->ownerScope();
 
-            if ($fromLevel === null || $fromLevel->available < $quantity) {
-                throw new InvalidArgumentException('Insufficient available inventory to transfer');
+            $fromLevelQuery = InventoryLevel::query()
+                ->where('inventoryable_type', $model->getMorphClass())
+                ->where('inventoryable_id', $model->getKey())
+                ->where('location_id', $fromLocationId);
+
+            if ($scope['enabled']) {
+                $fromLevelQuery->whereHas('location', function (Builder $locationQuery) use ($scope): void {
+                    $this->applyOwnerScopeToLocationQuery($locationQuery, $scope);
+                });
+            }
+
+            $fromLevel = $fromLevelQuery->lockForUpdate()->first();
+
+            $available = $fromLevel?->available ?? 0;
+
+            if ($fromLevel === null || $available < $quantity) {
+                throw InsufficientStockException::forLocation($fromLocationId, $quantity, $available);
             }
 
             $toLevel = $this->getOrCreateLevel($model, $toLocationId);
 
             $fromLevel->decrementOnHand($quantity);
             $toLevel->incrementOnHand($quantity);
+            $this->clearCache($model);
 
             $movement = InventoryMovement::create([
                 'inventoryable_type' => $model->getMorphClass(),
@@ -200,6 +235,7 @@ final class InventoryService
             }
 
             $level->update(['quantity_on_hand' => $newQuantity]);
+            $this->clearCache($model);
 
             $movement = InventoryMovement::create([
                 'inventoryable_type' => $model->getMorphClass(),
@@ -232,13 +268,17 @@ final class InventoryService
      */
     public function getAvailability(Model $model): array
     {
-        $cacheKey = $model->getMorphClass() . ':' . $model->getKey();
+        $cacheKey = $this->availabilityCacheKey($model);
+        $scope = $this->ownerScope();
 
         if (! isset($this->availabilityCache[$cacheKey])) {
             $this->availabilityCache[$cacheKey] = InventoryLevel::query()
                 ->where('inventoryable_type', $model->getMorphClass())
                 ->where('inventoryable_id', $model->getKey())
-                ->whereHas('location', fn ($q) => $q->where('is_active', true))
+                ->whereHas('location', function (Builder $query) use ($scope): void {
+                    $query->where('is_active', true);
+                    $this->applyOwnerScopeToLocationQuery($query, $scope);
+                })
                 ->get()
                 ->mapWithKeys(fn (InventoryLevel $level): array => [$level->location_id => $level->available])
                 ->toArray();
@@ -255,13 +295,17 @@ final class InventoryService
      */
     public function getTotalAvailable(Model $model): int
     {
-        $cacheKey = $model->getMorphClass() . ':' . $model->getKey();
+        $cacheKey = $this->availabilityCacheKey($model);
+        $scope = $this->ownerScope();
 
         if (! isset($this->totalAvailableCache[$cacheKey])) {
             $this->totalAvailableCache[$cacheKey] = InventoryLevel::query()
                 ->where('inventoryable_type', $model->getMorphClass())
                 ->where('inventoryable_id', $model->getKey())
-                ->whereHas('location', fn ($q) => $q->where('is_active', true))
+                ->whereHas('location', function (Builder $query) use ($scope): void {
+                    $query->where('is_active', true);
+                    $this->applyOwnerScopeToLocationQuery($query, $scope);
+                })
                 ->get()
                 ->sum(fn (InventoryLevel $level): int => $level->available);
         }
@@ -302,8 +346,19 @@ final class InventoryService
             $this->availabilityCache = [];
             $this->totalAvailableCache = [];
         } else {
-            $cacheKey = $model->getMorphClass() . ':' . $model->getKey();
-            unset($this->availabilityCache[$cacheKey], $this->totalAvailableCache[$cacheKey]);
+            $modelCacheKey = $this->modelCacheKey($model);
+
+            foreach (array_keys($this->availabilityCache) as $cacheKey) {
+                if ($cacheKey === $modelCacheKey || str_starts_with($cacheKey, $modelCacheKey . '|')) {
+                    unset($this->availabilityCache[$cacheKey]);
+                }
+            }
+
+            foreach (array_keys($this->totalAvailableCache) as $cacheKey) {
+                if ($cacheKey === $modelCacheKey || str_starts_with($cacheKey, $modelCacheKey . '|')) {
+                    unset($this->totalAvailableCache[$cacheKey]);
+                }
+            }
         }
     }
 
@@ -312,11 +367,20 @@ final class InventoryService
      */
     public function getLevel(Model $model, string $locationId): ?InventoryLevel
     {
-        return InventoryLevel::query()
+        $scope = $this->ownerScope();
+
+        $query = InventoryLevel::query()
             ->where('inventoryable_type', $model->getMorphClass())
             ->where('inventoryable_id', $model->getKey())
-            ->where('location_id', $locationId)
-            ->first();
+            ->where('location_id', $locationId);
+
+        if ($scope['enabled']) {
+            $query->whereHas('location', function (Builder $locationQuery) use ($scope): void {
+                $this->applyOwnerScopeToLocationQuery($locationQuery, $scope);
+            });
+        }
+
+        return $query->first();
     }
 
     /**
@@ -324,6 +388,18 @@ final class InventoryService
      */
     public function getOrCreateLevel(Model $model, string $locationId): InventoryLevel
     {
+        $scope = $this->ownerScope();
+
+        if ($scope['enabled']) {
+            $locationQuery = InventoryLocation::query()->whereKey($locationId);
+            $this->applyOwnerScopeToLocationQuery($locationQuery, $scope);
+            $locationExists = $locationQuery->exists();
+
+            if (! $locationExists) {
+                throw new InvalidArgumentException('Invalid location for current owner');
+            }
+        }
+
         return InventoryLevel::firstOrCreate(
             [
                 'inventoryable_type' => $model->getMorphClass(),
@@ -381,6 +457,83 @@ final class InventoryService
         $location = InventoryLocation::getOrCreateDefault();
 
         return $this->ship($model, $location->id, $quantity, $reason, $reference, $note, $userId);
+    }
+
+    /**
+     * @return array{enabled: bool, owner: Model|null, includeGlobal: bool}
+     */
+    private function ownerScope(): array
+    {
+        $enabled = (bool) config('inventory.owner.enabled', false);
+
+        if (! $enabled) {
+            return [
+                'enabled' => false,
+                'owner' => null,
+                'includeGlobal' => true,
+            ];
+        }
+
+        return [
+            'enabled' => true,
+            'owner' => $this->ownerResolver->resolve(),
+            'includeGlobal' => (bool) config('inventory.owner.include_global', true),
+        ];
+    }
+
+    private function applyOwnerScopeToLocationQuery(Builder $query, array $scope): void
+    {
+        if (! $scope['enabled']) {
+            return;
+        }
+
+        $owner = $scope['owner'];
+        $includeGlobal = $scope['includeGlobal'];
+
+        if ($owner === null) {
+            if ($includeGlobal) {
+                $query->whereNull('owner_id');
+
+                return;
+            }
+
+            $query->whereNull('owner_type')->whereNull('owner_id');
+
+            return;
+        }
+
+        $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
+            $builder->where('owner_type', $owner->getMorphClass())
+                ->where('owner_id', $owner->getKey());
+
+            if ($includeGlobal) {
+                $builder->orWhere(function (Builder $inner): void {
+                    $inner->whereNull('owner_type')->whereNull('owner_id');
+                });
+            }
+        });
+    }
+
+    private function modelCacheKey(Model $model): string
+    {
+        return $model->getMorphClass() . ':' . $model->getKey();
+    }
+
+    private function availabilityCacheKey(Model $model): string
+    {
+        $cacheKey = $this->modelCacheKey($model);
+        $scope = $this->ownerScope();
+
+        if (! $scope['enabled']) {
+            return $cacheKey;
+        }
+
+        $owner = $scope['owner'];
+        $ownerKey = $owner === null
+            ? 'null'
+            : $owner->getMorphClass() . ':' . $owner->getKey();
+
+        return $cacheKey . '|owner=' . $ownerKey . '|includeGlobal=' . ($scope['includeGlobal'] ? '1' : '0');
     }
 
     /**

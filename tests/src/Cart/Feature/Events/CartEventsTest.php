@@ -92,7 +92,7 @@ describe('Cart Events', function (): void {
         expect($conditionRemovedEvents)->toHaveCount(1);
 
         $event = reset($conditionRemovedEvents);
-        expect($event->condition()->getName())->toBe('summer_sale');
+        expect($event->condition->getName())->toBe('summer_sale');
     });
 
     it('calculates correct impact for condition added event', function (): void {

@@ -2,109 +2,134 @@
 
 declare(strict_types=1);
 
+namespace AIArmada\Commerce\Tests\CashierChip\Unit;
+
 use AIArmada\CashierChip\CheckoutBuilder;
-use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
+use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 
-beforeEach(function (): void {
-    $this->owner = new User([
-        'id' => 1,
-        'name' => 'Test User',
-        'email' => 'test@example.com',
-    ]);
-});
+class CheckoutBuilderTest extends CashierChipTestCase
+{
+    public function test_can_create_guest_builder(): void
+    {
+        $builder = new CheckoutBuilder();
 
-it('can create checkout builder without owner', function (): void {
-    $builder = new CheckoutBuilder;
+        $this->assertInstanceOf(CheckoutBuilder::class, $builder);
+    }
 
-    expect($builder)->toBeInstanceOf(CheckoutBuilder::class);
-});
+    public function test_can_create_builder_with_owner(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new CheckoutBuilder($user);
 
-it('can create checkout builder with owner', function (): void {
-    $builder = new CheckoutBuilder($this->owner);
+        $this->assertInstanceOf(CheckoutBuilder::class, $builder);
+    }
 
-    expect($builder)->toBeInstanceOf(CheckoutBuilder::class);
-});
+    public function test_recurring(): void
+    {
+        $builder = new CheckoutBuilder();
 
-it('can set recurring', function (): void {
-    $builder = new CheckoutBuilder($this->owner);
+        $result = $builder->recurring();
 
-    $result = $builder->recurring();
+        $this->assertSame($builder, $result);
+    }
 
-    expect($result)->toBeInstanceOf(CheckoutBuilder::class);
-});
+    public function test_recurring_with_false(): void
+    {
+        $builder = new CheckoutBuilder();
+        $builder->recurring();
 
-it('can set success url', function (): void {
-    $builder = new CheckoutBuilder($this->owner);
+        $result = $builder->recurring(false);
 
-    $result = $builder->successUrl('https://example.com/success');
+        $this->assertSame($builder, $result);
+    }
 
-    expect($result)->toBeInstanceOf(CheckoutBuilder::class);
-});
+    public function test_success_url(): void
+    {
+        $builder = new CheckoutBuilder();
 
-it('can set cancel url', function (): void {
-    $builder = new CheckoutBuilder($this->owner);
+        $result = $builder->successUrl('https://example.com/success');
 
-    $result = $builder->cancelUrl('https://example.com/cancel');
+        $this->assertSame($builder, $result);
+    }
 
-    expect($result)->toBeInstanceOf(CheckoutBuilder::class);
-});
+    public function test_cancel_url(): void
+    {
+        $builder = new CheckoutBuilder();
 
-it('can set webhook url', function (): void {
-    $builder = new CheckoutBuilder($this->owner);
+        $result = $builder->cancelUrl('https://example.com/cancel');
 
-    $result = $builder->webhookUrl('https://example.com/webhook');
+        $this->assertSame($builder, $result);
+    }
 
-    expect($result)->toBeInstanceOf(CheckoutBuilder::class);
-});
+    public function test_webhook_url(): void
+    {
+        $builder = new CheckoutBuilder();
 
-it('can add metadata', function (): void {
-    $builder = new CheckoutBuilder($this->owner);
+        $result = $builder->webhookUrl('https://example.com/webhook');
 
-    $result = $builder->withMetadata(['order_id' => '12345']);
+        $this->assertSame($builder, $result);
+    }
 
-    expect($result)->toBeInstanceOf(CheckoutBuilder::class);
-});
+    public function test_with_metadata(): void
+    {
+        $builder = new CheckoutBuilder();
 
-it('can add product', function (): void {
-    $builder = new CheckoutBuilder($this->owner);
+        $result = $builder->withMetadata(['key' => 'value']);
 
-    $result = $builder->addProduct('Test Product', 9900, 2);
+        $this->assertSame($builder, $result);
+    }
 
-    expect($result)->toBeInstanceOf(CheckoutBuilder::class);
-});
+    public function test_add_product(): void
+    {
+        $builder = new CheckoutBuilder();
 
-it('can set multiple products', function (): void {
-    $builder = new CheckoutBuilder($this->owner);
+        $result = $builder->addProduct('Test Product', 1000);
 
-    $products = [
-        ['name' => 'Product 1', 'price' => 50.00, 'quantity' => 1],
-        ['name' => 'Product 2', 'price' => 25.00, 'quantity' => 2],
-    ];
+        $this->assertSame($builder, $result);
+    }
 
-    $result = $builder->products($products);
+    public function test_add_product_with_quantity(): void
+    {
+        $builder = new CheckoutBuilder();
 
-    expect($result)->toBeInstanceOf(CheckoutBuilder::class);
-});
+        $result = $builder->addProduct('Test Product', 1000, 5);
 
-it('can set currency', function (): void {
-    $builder = new CheckoutBuilder($this->owner);
+        $this->assertSame($builder, $result);
+    }
 
-    $result = $builder->currency('USD');
+    public function test_products(): void
+    {
+        $builder = new CheckoutBuilder();
 
-    expect($result)->toBeInstanceOf(CheckoutBuilder::class);
-});
+        $result = $builder->products([
+            ['name' => 'Product 1', 'price' => 10.00, 'quantity' => 1],
+        ]);
 
-it('can chain multiple methods', function (): void {
-    $builder = new CheckoutBuilder($this->owner);
+        $this->assertSame($builder, $result);
+    }
 
-    $result = $builder
-        ->recurring()
-        ->successUrl('https://example.com/success')
-        ->cancelUrl('https://example.com/cancel')
-        ->webhookUrl('https://example.com/webhook')
-        ->currency('MYR')
-        ->withMetadata(['order_id' => '12345'])
-        ->addProduct('Test Product', 9900);
+    public function test_currency(): void
+    {
+        $builder = new CheckoutBuilder();
 
-    expect($result)->toBeInstanceOf(CheckoutBuilder::class);
-});
+        $result = $builder->currency('MYR');
+
+        $this->assertSame($builder, $result);
+    }
+
+    public function test_fluent_chaining(): void
+    {
+        $builder = new CheckoutBuilder();
+
+        $result = $builder
+            ->recurring()
+            ->successUrl('https://example.com/success')
+            ->cancelUrl('https://example.com/cancel')
+            ->webhookUrl('https://example.com/webhook')
+            ->withMetadata(['key' => 'value'])
+            ->addProduct('Test', 1000)
+            ->currency('MYR');
+
+        $this->assertInstanceOf(CheckoutBuilder::class, $result);
+    }
+}

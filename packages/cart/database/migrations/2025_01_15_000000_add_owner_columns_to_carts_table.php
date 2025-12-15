@@ -17,16 +17,11 @@ return new class extends Migration
     {
         $tableName = config('cart.database.table', 'carts');
 
-        if (Schema::hasColumn($tableName, 'owner_type')) {
-            return;
-        }
-
         Schema::table($tableName, function (Blueprint $table): void {
-            $table->string('owner_type')->nullable()->after('identifier')->index();
-            $table->string('owner_id')->nullable()->after('owner_type')->index();
+            $table->string('owner_type')->default('')->after('identifier');
+            $table->string('owner_id')->default('')->after('owner_type');
         });
 
-        // Update the unique constraint to include owner columns
         Schema::table($tableName, function (Blueprint $table): void {
             $table->dropUnique(['identifier', 'instance']);
             $table->unique(['owner_type', 'owner_id', 'identifier', 'instance']);
@@ -40,14 +35,13 @@ return new class extends Migration
     {
         $tableName = config('cart.database.table', 'carts');
 
-        if (! Schema::hasColumn($tableName, 'owner_type')) {
-            return;
-        }
-
         Schema::table($tableName, function (Blueprint $table): void {
             $table->dropUnique(['owner_type', 'owner_id', 'identifier', 'instance']);
-            $table->unique(['identifier', 'instance']);
             $table->dropColumn(['owner_type', 'owner_id']);
+        });
+
+        Schema::table($tableName, function (Blueprint $table): void {
+            $table->unique(['identifier', 'instance']);
         });
     }
 };

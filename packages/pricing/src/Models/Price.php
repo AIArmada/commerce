@@ -15,9 +15,9 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * Represents a price for a specific product/variant in a price list.
  *
  * @property string $id
- * @property string|null $price_list_id
- * @property string|null $priceable_id
- * @property string|null $priceable_type
+ * @property string $price_list_id
+ * @property string $priceable_id
+ * @property string $priceable_type
  * @property int $amount
  * @property int|null $compare_amount
  * @property string $currency
@@ -84,12 +84,14 @@ class Price extends Model
 
     public function scopeActive($query)
     {
+        $now = now();
+
         return $query
-            ->where(function ($q): void {
-                $q->whereNull('starts_at')->orWhere('starts_at', '<=', now());
+            ->where(function ($q) use ($now): void {
+                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
             })
-            ->where(function ($q): void {
-                $q->whereNull('ends_at')->orWhere('ends_at', '>=', now());
+            ->where(function ($q) use ($now): void {
+                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
             });
     }
 

@@ -6,11 +6,21 @@ use AIArmada\Cart\Broadcasting\CartChannel;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Query\Builder;
 
 describe('CartChannel', function (): void {
     beforeEach(function (): void {
         $this->storage = new InMemoryStorage;
-        $this->channel = new CartChannel($this->storage);
+
+        $this->queryBuilder = Mockery::mock(Builder::class);
+        $this->queryBuilder->shouldReceive('where')->andReturnSelf();
+        $this->queryBuilder->shouldReceive('first')->andReturn(null);
+
+        $this->connection = Mockery::mock(ConnectionInterface::class);
+        $this->connection->shouldReceive('table')->andReturn($this->queryBuilder);
+
+        $this->channel = new CartChannel($this->connection, $this->storage);
     });
 
     it('can be instantiated', function (): void {

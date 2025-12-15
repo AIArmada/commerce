@@ -55,7 +55,7 @@ return new class extends Migration
 
             // Notes and metadata
             $table->text('notes')->nullable();
-            $jsonType = config('inventory.json_column_type', 'json');
+            $jsonType = config('inventory.database.json_column_type', config('inventory.json_column_type', 'json'));
             $table->{$jsonType}('metadata')->nullable();
 
             $table->timestamps();

@@ -76,7 +76,9 @@ class AdjustInventoryTest extends InventoryTestCase
 
         $movement = $this->action->handle($this->item, $this->location->id, 5);
 
-        expect($movement->quantity)->toBe(-15); // 5 - 20 = -15
+        expect($movement->quantity)->toBe(15); // abs(5 - 20) = 15
+        expect($movement->from_location_id)->toBe($this->location->id);
+        expect($movement->to_location_id)->toBeNull();
 
         $level = $this->item->inventoryLevels()->where('location_id', $this->location->id)->first();
         expect($level->quantity_on_hand)->toBe(5);

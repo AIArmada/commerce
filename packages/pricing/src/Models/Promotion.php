@@ -11,7 +11,8 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\MorphToMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
+
+use Illuminate\Support\Facades\DB;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -22,6 +23,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property string $name
+ * @property string|null $code
  * @property string|null $description
  * @property PromotionType $type
  * @property int $discount_value
@@ -30,6 +32,9 @@ use Spatie\Activitylog\Traits\LogsActivity;
  * @property bool $is_active
  * @property int|null $usage_limit
  * @property int $usage_count
+ * @property int|null $per_customer_limit
+ * @property int|null $min_purchase_amount
+ * @property int|null $min_quantity
  * @property array|null $conditions
  * @property \Illuminate\Support\Carbon|null $starts_at
  * @property \Illuminate\Support\Carbon|null $ends_at
@@ -39,7 +44,7 @@ class Promotion extends Model
     use HasOwner;
     use HasUuids;
     use LogsActivity;
-    use SoftDeletes;
+
 
     protected $guarded = ['id'];
 
@@ -54,6 +59,9 @@ class Promotion extends Model
         'is_active' => 'boolean',
         'usage_limit' => 'integer',
         'usage_count' => 'integer',
+        'per_customer_limit' => 'integer',
+        'min_purchase_amount' => 'integer',
+        'min_quantity' => 'integer',
         'conditions' => 'array',
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
@@ -89,7 +97,7 @@ class Promotion extends Model
         return $this->morphedByMany(
             config('products.model', \AIArmada\Products\Models\Product::class),
             'promotionable',
-            'promotionables'
+            config('pricing.tables.promotionables', 'promotionables')
         );
     }
 
@@ -103,7 +111,7 @@ class Promotion extends Model
         return $this->morphedByMany(
             config('products.models.category', \AIArmada\Products\Models\Category::class),
             'promotionable',
-            'promotionables'
+            config('pricing.tables.promotionables', 'promotionables')
         );
     }
 
@@ -113,12 +121,14 @@ class Promotion extends Model
 
     public function scopeActive($query)
     {
+        $now = now();
+
         return $query->where('is_active', true)
-            ->where(function ($q): void {
-                $q->whereNull('starts_at')->orWhere('starts_at', '<=', now());
+            ->where(function ($q) use ($now): void {
+                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
             })
-            ->where(function ($q): void {
-                $q->whereNull('ends_at')->orWhere('ends_at', '>=', now());
+            ->where(function ($q) use ($now): void {
+                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
             })
             ->where(function ($q): void {
                 $q->whereNull('usage_limit')
@@ -136,11 +146,11 @@ class Promotion extends Model
      */
     public function scopeForOwner(Builder $query, ?EloquentModel $owner, bool $includeGlobal = true): Builder
     {
-        if (! config('pricing.owner.enabled', false)) {
+        if (!config('pricing.owner.enabled', false)) {
             return $query;
         }
 
-        if (! $owner) {
+        if (!$owner) {
             return $includeGlobal
                 ? $query->whereNull('owner_id')
                 : $query->whereNull('owner_type')->whereNull('owner_id');
@@ -164,7 +174,7 @@ class Promotion extends Model
 
     public function isActive(): bool
     {
-        if (! $this->is_active) {
+        if (!$this->is_active) {
             return false;
         }
 
@@ -178,7 +188,7 @@ class Promotion extends Model
             return false;
         }
 
-        if ($this->usage_limit && $this->usage_count >= $this->usage_limit) {
+        if ($this->usage_limit !== null && $this->usage_count >= $this->usage_limit) {
             return false;
         }
 
@@ -223,8 +233,21 @@ class Promotion extends Model
     public function getActivitylogOptions(): LogOptions
     {
         return LogOptions::defaults()
-            ->logOnly(['name', 'type', 'discount_value', 'is_active', 'starts_at', 'ends_at'])
+            ->logOnly(['name', 'code', 'type', 'discount_value', 'priority', 'is_stackable', 'usage_limit', 'is_active', 'starts_at', 'ends_at'])
             ->logOnlyDirty()
             ->useLogName('pricing');
+    }
+
+    // =========================================================================
+    // BOOT
+    // =========================================================================
+
+    protected static function booted(): void
+    {
+        static::deleting(function (Promotion $promotion): void {
+            DB::table(config('pricing.tables.promotionables', 'promotionables'))
+                ->where('promotion_id', $promotion->id)
+                ->delete();
+        });
     }
 }

@@ -62,7 +62,9 @@ class GenerateInvoice
     {
         $prefix = config('orders.invoice.prefix', 'INV');
         $separator = config('orders.invoice.separator', '-');
+        $dateFormat = config('orders.invoice.date_format', 'Ymd');
+        $randomLength = (int) config('orders.invoice.random_length', 6);
 
-        return $prefix . $separator . now()->format('Ymd') . $separator . mb_strtoupper(Str::random(6));
+        return $prefix . $separator . now()->format($dateFormat) . $separator . mb_strtoupper(Str::random($randomLength));
     }
 }

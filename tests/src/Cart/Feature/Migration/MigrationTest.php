@@ -62,6 +62,8 @@ it('can migrate guest cart to user cart', function (): void {
     $connection->getSchemaBuilder()->create('carts', function ($table): void {
         $table->uuid('id')->primary();
         $table->string('identifier')->index();
+        $table->string('owner_type')->default('');
+        $table->string('owner_id')->default('');
         $table->string('instance')->default('default')->index();
         $table->longText('items')->nullable();
         $table->longText('conditions')->nullable();
@@ -69,7 +71,7 @@ it('can migrate guest cart to user cart', function (): void {
         $table->bigInteger('version')->default(1)->index()->comment('Version number for optimistic locking');
         $table->timestamp('expires_at')->nullable()->index();
         $table->timestamps();
-        $table->unique(['identifier', 'instance']);
+        $table->unique(['owner_type', 'owner_id', 'identifier', 'instance']);
     });
 
     $storage = new DatabaseStorage($connection, 'carts');

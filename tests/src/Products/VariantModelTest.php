@@ -182,7 +182,27 @@ describe('Variant Model', function (): void {
                 'price' => 3500,
             ]);
 
-            expect($variant->getFormattedPrice())->toContain('3,500');
+            expect($variant->getFormattedPrice())->toContain('35.00');
+        });
+
+        it('formats price using the parent product currency', function (): void {
+            config(['products.currency.default' => 'MYR']);
+
+            $product = Product::create([
+                'name' => 'USD Parent Product',
+                'price' => 1000,
+                'currency' => 'USD',
+                'status' => ProductStatus::Active,
+            ]);
+
+            $variant = Variant::create([
+                'product_id' => $product->id,
+                'name' => 'USD Variant',
+                'sku' => 'USD-VAR-' . uniqid(),
+                'price' => 1000,
+            ]);
+
+            expect($variant->getFormattedPrice())->toContain('$');
         });
 
         it('gets effective compare price from variant when set', function (): void {
@@ -235,7 +255,7 @@ describe('Variant Model', function (): void {
                 'compare_price' => 5000,
             ]);
 
-            expect($variant->getFormattedComparePrice())->toContain('5,000');
+            expect($variant->getFormattedComparePrice())->toContain('50.00');
         });
 
         it('returns null for formatted compare price when no compare price', function (): void {

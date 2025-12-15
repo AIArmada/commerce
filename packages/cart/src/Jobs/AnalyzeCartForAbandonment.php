@@ -101,7 +101,7 @@ final class AnalyzeCartForAbandonment implements ShouldQueue
                 ->setInstance($cartRecord->instance ?? 'default')
                 ->getCurrentCart();
 
-            $prediction = $predictor->predict($cart, $cartRecord->user_id);
+            $prediction = $predictor->predict($cart, (string) $cartRecord->identifier);
 
             if ($prediction->needsIntervention()) {
                 $strategy = $optimizer->getOptimalStrategy($cart, $prediction);
@@ -140,6 +140,7 @@ final class AnalyzeCartForAbandonment implements ShouldQueue
             try {
                 $cart = $cartManager
                     ->setIdentifier($cartData['identifier'])
+                    ->setInstance($cartData['instance'] ?? 'default')
                     ->getCurrentCart();
 
                 $prediction = $predictor->predict($cart);

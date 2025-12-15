@@ -71,6 +71,15 @@ final readonly class SessionStorage implements StorageInterface
         $this->session->forget($this->getIdKey($identifier, $instance));
         $this->session->forget($this->getCreatedAtKey($identifier, $instance));
         $this->session->forget($this->getUpdatedAtKey($identifier, $instance));
+        $this->session->forget($this->getExpiresAtKey($identifier, $instance));
+        $this->session->forget($this->getLastActivityAtKey($identifier, $instance));
+        $this->session->forget($this->getCheckoutStartedAtKey($identifier, $instance));
+        $this->session->forget($this->getCheckoutAbandonedAtKey($identifier, $instance));
+        $this->session->forget($this->getRecoveryAttemptsKey($identifier, $instance));
+        $this->session->forget($this->getRecoveredAtKey($identifier, $instance));
+        $this->session->forget($this->getEventStreamPositionKey($identifier, $instance));
+        $this->session->forget($this->getAggregateVersionKey($identifier, $instance));
+        $this->session->forget($this->getSnapshotAtKey($identifier, $instance));
         $this->unregisterInstance($identifier, $instance);
     }
 

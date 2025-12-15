@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Product;
+use Illuminate\Support\Str;
 
 describe('Collection Model', function (): void {
     describe('Collection Creation', function (): void {
@@ -91,6 +92,96 @@ describe('Collection Model', function (): void {
             $matchingProducts = $collection->getMatchingProducts();
 
             expect($matchingProducts->where('is_featured', true)->count())->toBeGreaterThanOrEqual(1);
+        });
+
+        it('does not leak products across owners for automatic collections', function (): void {
+            $ownerType = 'tenant';
+            $ownerAId = (string) Str::uuid();
+            $ownerBId = (string) Str::uuid();
+
+            $collection = Collection::create([
+                'name' => 'Owner A Featured',
+                'type' => 'automatic',
+                'owner_type' => $ownerType,
+                'owner_id' => $ownerAId,
+                'conditions' => [
+                    ['field' => 'is_featured', 'operator' => '=', 'value' => true],
+                ],
+            ]);
+
+            $ownerAProduct = Product::create([
+                'owner_type' => $ownerType,
+                'owner_id' => $ownerAId,
+                'name' => 'Owner A Featured Product',
+                'price' => 3000,
+                'status' => ProductStatus::Active,
+                'is_featured' => true,
+            ]);
+
+            $ownerBProduct = Product::create([
+                'owner_type' => $ownerType,
+                'owner_id' => $ownerBId,
+                'name' => 'Owner B Featured Product',
+                'price' => 3000,
+                'status' => ProductStatus::Active,
+                'is_featured' => true,
+            ]);
+
+            $globalProduct = Product::create([
+                'name' => 'Global Featured Product',
+                'price' => 3000,
+                'status' => ProductStatus::Active,
+                'is_featured' => true,
+            ]);
+
+            $matchingProducts = $collection->getMatchingProducts();
+
+            expect($matchingProducts->contains('id', $ownerAProduct->id))->toBeTrue()
+                ->and($matchingProducts->contains('id', $ownerBProduct->id))->toBeFalse()
+                ->and($matchingProducts->contains('id', $globalProduct->id))->toBeTrue();
+        });
+
+        it('filters manual collection products to same owner and global', function (): void {
+            $ownerType = 'tenant';
+            $ownerAId = (string) Str::uuid();
+            $ownerBId = (string) Str::uuid();
+
+            $collection = Collection::create([
+                'name' => 'Owner A Manual',
+                'type' => 'manual',
+                'owner_type' => $ownerType,
+                'owner_id' => $ownerAId,
+            ]);
+
+            $ownerAProduct = Product::create([
+                'owner_type' => $ownerType,
+                'owner_id' => $ownerAId,
+                'name' => 'Owner A Product',
+                'price' => 1000,
+                'status' => ProductStatus::Active,
+            ]);
+
+            $ownerBProduct = Product::create([
+                'owner_type' => $ownerType,
+                'owner_id' => $ownerBId,
+                'name' => 'Owner B Product',
+                'price' => 1000,
+                'status' => ProductStatus::Active,
+            ]);
+
+            $globalProduct = Product::create([
+                'name' => 'Global Product',
+                'price' => 1000,
+                'status' => ProductStatus::Active,
+            ]);
+
+            $collection->products()->attach([$ownerAProduct->id, $ownerBProduct->id, $globalProduct->id]);
+
+            $matchingProducts = $collection->getMatchingProducts();
+
+            expect($matchingProducts->contains('id', $ownerAProduct->id))->toBeTrue()
+                ->and($matchingProducts->contains('id', $ownerBProduct->id))->toBeFalse()
+                ->and($matchingProducts->contains('id', $globalProduct->id))->toBeTrue();
         });
     });
 

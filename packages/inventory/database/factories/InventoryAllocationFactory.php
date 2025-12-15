@@ -26,7 +26,7 @@ class InventoryAllocationFactory extends Factory
             'level_id' => InventoryLevel::factory(),
             'cart_id' => $this->faker->uuid(),
             'quantity' => $this->faker->numberBetween(1, 10),
-            'expires_at' => now()->addMinutes(config('inventory.allocation_expiry_minutes', 15)),
+            'expires_at' => now()->addMinutes(config('inventory.allocation_ttl_minutes', 30)),
         ];
     }
 

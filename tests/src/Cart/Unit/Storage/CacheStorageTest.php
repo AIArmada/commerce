@@ -57,13 +57,41 @@ describe('CacheStorage', function (): void {
         $this->storage->putItems('cart-123', 'default', ['item' => []]);
         $this->storage->putItems('cart-123', 'wishlist', ['item' => []]);
 
+        $this->storage->touchLastActivity('cart-123', 'default');
+        $this->storage->markCheckoutStarted('cart-123', 'default');
+        $this->storage->markCheckoutAbandoned('cart-123', 'default');
+        $this->storage->incrementRecoveryAttempts('cart-123', 'default');
+        $this->storage->markRecovered('cart-123', 'default');
+        $this->storage->setEventStreamPosition('cart-123', 'default', 10);
+        $this->storage->setAggregateVersion('cart-123', 'default', '2.0');
+        $this->storage->markSnapshotTaken('cart-123', 'default');
+
+        expect($this->storage->getLastActivityAt('cart-123', 'default'))->not->toBeNull();
+        expect($this->storage->getCheckoutStartedAt('cart-123', 'default'))->not->toBeNull();
+        expect($this->storage->getCheckoutAbandonedAt('cart-123', 'default'))->not->toBeNull();
+        expect($this->storage->getRecoveryAttempts('cart-123', 'default'))->toBe(1);
+        expect($this->storage->getRecoveredAt('cart-123', 'default'))->not->toBeNull();
+        expect($this->storage->getEventStreamPosition('cart-123', 'default'))->toBe(10);
+        expect($this->storage->getAggregateVersion('cart-123', 'default'))->toBe('2.0');
+        expect($this->storage->getSnapshotAt('cart-123', 'default'))->not->toBeNull();
+
         $this->storage->forget('cart-123', 'default');
 
         expect($this->storage->has('cart-123', 'default'))->toBeFalse();
         expect($this->storage->has('cart-123', 'wishlist'))->toBeTrue();
+        expect($this->storage->getLastActivityAt('cart-123', 'default'))->toBeNull();
+        expect($this->storage->getCheckoutStartedAt('cart-123', 'default'))->toBeNull();
+        expect($this->storage->getCheckoutAbandonedAt('cart-123', 'default'))->toBeNull();
+        expect($this->storage->getRecoveryAttempts('cart-123', 'default'))->toBe(0);
+        expect($this->storage->getRecoveredAt('cart-123', 'default'))->toBeNull();
+        expect($this->storage->getEventStreamPosition('cart-123', 'default'))->toBe(0);
+        expect($this->storage->getAggregateVersion('cart-123', 'default'))->toBe('1.0');
+        expect($this->storage->getSnapshotAt('cart-123', 'default'))->toBeNull();
     });
 
     it('flushes all cart data with prefix', function (): void {
+        Cache::store()->put('unrelated_key', 'keep-me', 3600);
+
         $this->storage->putItems('cart-1', 'default', ['item' => []]);
         $this->storage->putItems('cart-2', 'default', ['item' => []]);
 
@@ -71,6 +99,7 @@ describe('CacheStorage', function (): void {
 
         expect($this->storage->has('cart-1', 'default'))->toBeFalse();
         expect($this->storage->has('cart-2', 'default'))->toBeFalse();
+        expect(Cache::store()->get('unrelated_key'))->toBe('keep-me');
     });
 
     it('returns stored instances for identifier', function (): void {

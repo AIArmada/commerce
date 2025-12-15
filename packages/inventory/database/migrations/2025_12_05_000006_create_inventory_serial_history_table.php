@@ -37,7 +37,7 @@ return new class extends Migration
 
             // Details
             $table->text('notes')->nullable();
-            $jsonType = config('inventory.json_column_type', 'json');
+            $jsonType = config('inventory.database.json_column_type', config('inventory.json_column_type', 'json'));
             $table->{$jsonType}('metadata')->nullable();
 
             $table->timestamp('occurred_at')->useCurrent();

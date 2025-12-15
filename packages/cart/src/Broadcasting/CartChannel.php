@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Broadcasting;
 
 use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\Cart\Support\CartOwnerScope;
 use Illuminate\Broadcasting\Channel;
 use Illuminate\Broadcasting\PresenceChannel;
+use Illuminate\Database\ConnectionInterface;
 
 /**
  * Broadcasting channel for real-time cart collaboration.
@@ -14,6 +16,7 @@ use Illuminate\Broadcasting\PresenceChannel;
 final class CartChannel
 {
     public function __construct(
+        private readonly ConnectionInterface $connection,
         private readonly StorageInterface $storage
     ) {}
 
@@ -125,17 +128,27 @@ final class CartChannel
      */
     private function getCartData(string $cartId): ?array
     {
-        $metadata = $this->storage->getAllMetadata($cartId, 'default');
+        $query = $this->connection
+            ->table(config('cart.database.table', 'carts'))
+            ->where('id', $cartId);
 
-        if (empty($metadata)) {
+        $cart = CartOwnerScope::apply($query, $this->storage)
+            ->first(['id', 'is_collaborative', 'owner_user_id', 'collaborators']);
+
+        if ($cart === null) {
             return null;
         }
 
+        $collaborators = $cart->collaborators ?? [];
+        if (is_string($collaborators)) {
+            $collaborators = json_decode($collaborators, true) ?: [];
+        }
+
         return [
-            'id' => $cartId,
-            'is_collaborative' => $metadata['is_collaborative'] ?? false,
-            'owner_user_id' => $metadata['owner_user_id'] ?? null,
-            'collaborators' => $metadata['collaborators'] ?? [],
+            'id' => $cart->id,
+            'is_collaborative' => (bool) ($cart->is_collaborative ?? false),
+            'owner_user_id' => $cart->owner_user_id ?? null,
+            'collaborators' => is_array($collaborators) ? $collaborators : [],
         ];
     }
 
@@ -146,14 +159,17 @@ final class CartChannel
      */
     private function canAccessCart(mixed $user, array $cartData): bool
     {
-        if (($cartData['owner_user_id'] ?? null) === $user->id) {
+        if ((string) ($cartData['owner_user_id'] ?? '') === (string) $user->id) {
             return true;
         }
 
         $collaborators = $cartData['collaborators'] ?? [];
 
         foreach ($collaborators as $collaborator) {
-            if (($collaborator['user_id'] ?? null) === $user->id && ($collaborator['status'] ?? '') === 'active') {
+            if (
+                (string) ($collaborator['user_id'] ?? '') === (string) $user->id
+                && ($collaborator['status'] ?? '') === 'active'
+            ) {
                 return true;
             }
         }
@@ -168,14 +184,14 @@ final class CartChannel
      */
     private function getUserRole(mixed $user, array $cartData): string
     {
-        if (($cartData['owner_user_id'] ?? null) === $user->id) {
+        if ((string) ($cartData['owner_user_id'] ?? '') === (string) $user->id) {
             return 'owner';
         }
 
         $collaborators = $cartData['collaborators'] ?? [];
 
         foreach ($collaborators as $collaborator) {
-            if (($collaborator['user_id'] ?? null) === $user->id) {
+            if ((string) ($collaborator['user_id'] ?? '') === (string) $user->id) {
                 return $collaborator['role'] ?? 'viewer';
             }
         }

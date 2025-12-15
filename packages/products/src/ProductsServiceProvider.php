@@ -4,6 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Products;
 
+use AIArmada\Products\Models\Category;
+use AIArmada\Products\Models\Product;
+use AIArmada\Products\Policies\CategoryPolicy;
+use AIArmada\Products\Policies\ProductPolicy;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 
 class ProductsServiceProvider extends ServiceProvider
@@ -26,13 +31,17 @@ class ProductsServiceProvider extends ServiceProvider
         }
 
         $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-        $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'products');
+
+        if (is_dir(__DIR__ . '/../resources/lang')) {
+            $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'products');
+        }
 
         $this->registerPolicies();
     }
 
     protected function registerPolicies(): void
     {
-        // Policies will be registered here
+        Gate::policy(Product::class, ProductPolicy::class);
+        Gate::policy(Category::class, CategoryPolicy::class);
     }
 }

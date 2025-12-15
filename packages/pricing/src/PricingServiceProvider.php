@@ -26,12 +26,18 @@ class PricingServiceProvider extends ServiceProvider
                 __DIR__ . '/../database/migrations' => database_path('migrations'),
             ], 'pricing-migrations');
 
+            $this->publishes([
+                __DIR__ . '/../database/settings' => database_path('settings'),
+            ], 'pricing-settings');
+
             // Skip loading migrations in testing - handled by TestCase
             if (! $this->app->environment('testing')) {
                 $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
             }
         }
 
-        $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'pricing');
+        if (is_dir(__DIR__ . '/../resources/lang')) {
+            $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'pricing');
+        }
     }
 }

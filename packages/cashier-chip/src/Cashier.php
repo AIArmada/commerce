@@ -174,7 +174,7 @@ class Cashier
         $locale = $locale ?? config('cashier-chip.currency_locale', 'ms_MY');
 
         // Akaunting\Money expects amount in cents/minor units
-        $money = new Money($amount, new Currency($currency), true);
+        $money = new Money($amount, new Currency($currency), false);
 
         return $money->format($locale);
     }

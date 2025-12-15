@@ -71,6 +71,7 @@
             "AIArmada\\Cashier\\": "packages/cashier/src",
             "AIArmada\\Cashier\\Tests\\": "packages/cashier/tests/",
             "AIArmada\\CashierChip\\": "packages/cashier-chip/src",
+            "AIArmada\\CashierChip\\Database\\Factories\\": "packages/cashier-chip/database/factories",
             "AIArmada\\CashierChip\\Tests\\": "packages/cashier-chip/tests/",
             "AIArmada\\Chip\\": "packages/chip/src",
             "AIArmada\\Chip\\Tests\\": "packages/chip/tests/",

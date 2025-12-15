@@ -132,13 +132,15 @@ final class ExecuteRecoveryIntervention implements ShouldQueue
             return ['status' => 'skipped', 'reason' => 'no_email'];
         }
 
+        $cartTotalCents = $this->calculateCartTotalCents($cartRecord);
+
         $template = $this->strategy['parameters']['template'] ?? 'cart_reminder';
         $discountPercentage = $this->strategy['parameters']['discount_percentage'] ?? null;
 
         $mailData = [
             'cart_id' => $this->cartId,
             'cart_identifier' => $cartRecord->identifier,
-            'cart_total' => $cartRecord->total ?? 0,
+            'cart_total' => $cartTotalCents,
             'discount_percentage' => $discountPercentage,
             'recovery_url' => $this->generateRecoveryUrl($cartRecord),
             'prediction' => $this->prediction,
@@ -162,7 +164,7 @@ final class ExecuteRecoveryIntervention implements ShouldQueue
      */
     private function executePushNotification(object $cartRecord): array
     {
-        $userId = $cartRecord->user_id;
+        $userId = $this->getUserId($cartRecord);
 
         if (! $userId) {
             return ['status' => 'skipped', 'reason' => 'no_user'];
@@ -176,7 +178,7 @@ final class ExecuteRecoveryIntervention implements ShouldQueue
             if ($user) {
                 Notification::send($user, new $notificationClass([
                     'cart_id' => $this->cartId,
-                    'cart_total' => $cartRecord->total ?? 0,
+                    'cart_total' => $this->calculateCartTotalCents($cartRecord),
                     'recovery_url' => $this->generateRecoveryUrl($cartRecord),
                 ]));
 
@@ -228,6 +230,7 @@ final class ExecuteRecoveryIntervention implements ShouldQueue
             'show_discount' => $this->strategy['parameters']['show_discount'] ?? false,
             'discount_percentage' => $this->strategy['parameters']['discount_percentage'] ?? null,
             'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         return ['status' => 'recorded', 'type' => 'popup'];
@@ -238,13 +241,16 @@ final class ExecuteRecoveryIntervention implements ShouldQueue
      */
     private function getUserEmail(object $cartRecord): ?string
     {
-        if ($cartRecord->user_id) {
-            $user = $this->getUser($cartRecord->user_id);
+        $userId = $this->getUserId($cartRecord);
+
+        if ($userId !== null) {
+            $user = $this->getUser($userId);
 
             return $user?->email;
         }
 
         $metadata = json_decode($cartRecord->metadata ?? '{}', true);
+        $metadata = is_array($metadata) ? $metadata : [];
 
         return $metadata['email'] ?? null;
     }
@@ -254,13 +260,16 @@ final class ExecuteRecoveryIntervention implements ShouldQueue
      */
     private function getUserPhone(object $cartRecord): ?string
     {
-        if ($cartRecord->user_id) {
-            $user = $this->getUser($cartRecord->user_id);
+        $userId = $this->getUserId($cartRecord);
+
+        if ($userId !== null) {
+            $user = $this->getUser($userId);
 
             return $user?->phone ?? null;
         }
 
         $metadata = json_decode($cartRecord->metadata ?? '{}', true);
+        $metadata = is_array($metadata) ? $metadata : [];
 
         return $metadata['phone'] ?? null;
     }
@@ -295,7 +304,8 @@ final class ExecuteRecoveryIntervention implements ShouldQueue
      */
     private function generateRecoveryToken(object $cartRecord): string
     {
-        $data = $this->cartId . $cartRecord->identifier . ($cartRecord->user_id ?? '');
+        $userId = $this->getUserId($cartRecord) ?? '';
+        $data = $this->cartId . $cartRecord->identifier . $userId;
 
         return hash_hmac('sha256', $data, config('app.key'));
     }
@@ -306,9 +316,54 @@ final class ExecuteRecoveryIntervention implements ShouldQueue
     private function buildSmsMessage(object $cartRecord): string
     {
         $appName = config('app.name');
-        $total = number_format(($cartRecord->total ?? 0) / 100, 2);
+        $total = number_format($this->calculateCartTotalCents($cartRecord) / 100, 2);
         $url = $this->generateRecoveryUrl($cartRecord);
 
         return "{$appName}: Your cart ({$total}) is waiting! Complete your order: {$url}";
+    }
+
+    private function getUserId(object $cartRecord): ?string
+    {
+        $metadata = json_decode($cartRecord->metadata ?? '{}', true);
+        $metadata = is_array($metadata) ? $metadata : [];
+
+        $metadataUserId = $metadata['user_id'] ?? null;
+        if (is_string($metadataUserId) && $metadataUserId !== '') {
+            return $metadataUserId;
+        }
+
+        $identifier = $cartRecord->identifier ?? null;
+        if (! is_string($identifier) || $identifier === '') {
+            return null;
+        }
+
+        $user = $this->getUser($identifier);
+
+        return $user !== null ? (string) $user->getKey() : null;
+    }
+
+    private function calculateCartTotalCents(object $cartRecord): int
+    {
+        $items = $cartRecord->items ?? [];
+        if (is_string($items)) {
+            $items = json_decode($items, true) ?: [];
+        }
+
+        if (! is_array($items)) {
+            return 0;
+        }
+
+        $total = 0;
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $price = (int) ($item['price'] ?? 0);
+            $quantity = (int) ($item['quantity'] ?? 1);
+            $total += max(0, $price) * max(0, $quantity);
+        }
+
+        return $total;
     }
 }

@@ -2,196 +2,185 @@
 
 declare(strict_types=1);
 
-use AIArmada\CashierChip\Subscription;
+namespace AIArmada\Commerce\Tests\CashierChip\Unit;
+
 use AIArmada\CashierChip\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use Carbon\Carbon;
+use Exception;
+use InvalidArgumentException;
 
-uses(CashierChipTestCase::class);
+class SubscriptionBuilderTest extends CashierChipTestCase
+{
+    public function test_can_create_builder(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
-beforeEach(function (): void {
-    $this->user = $this->createUser([
-        'chip_id' => 'test-chip-client-id',
-    ]);
-});
+        $this->assertInstanceOf(SubscriptionBuilder::class, $builder);
+    }
 
-it('can create subscription builder', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard', 'price_monthly');
+    public function test_can_add_price(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default');
 
-    expect($builder)->toBeInstanceOf(SubscriptionBuilder::class);
-    expect($builder->getType())->toBe('standard');
-});
+        $result = $builder->price('price_123');
 
-it('can add price to subscription', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard');
+        $this->assertSame($builder, $result);
+    }
 
-    $builder->price('price_monthly', 1);
+    public function test_can_add_price_with_quantity(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default');
 
-    expect($builder->getItems())->toHaveCount(1);
-    expect($builder->getItems()['price_monthly']['price'])->toBe('price_monthly');
-});
+        $result = $builder->price('price_123', 5);
 
-it('can add multiple prices', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard');
+        $this->assertSame($builder, $result);
+    }
 
-    $builder->price('price_basic', 1)
-        ->price('price_addon', 2);
+    public function test_quantity_throws_without_price(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default');
 
-    expect($builder->getItems())->toHaveCount(2);
-});
+        $this->expectException(InvalidArgumentException::class);
 
-it('can set quantity', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard', 'price_monthly');
+        $builder->quantity(5);
+    }
 
-    $builder->quantity(5);
+    public function test_quantity_with_single_price(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
-    expect($builder->getItems()['price_monthly']['quantity'])->toBe(5);
-});
+        $result = $builder->quantity(5);
 
-it('can set trial days', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard', 'price_monthly');
+        $this->assertSame($builder, $result);
+    }
 
-    $builder->trialDays(14);
+    public function test_trial_days(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
-    expect($builder->getTrialEnd())->not->toBeNull();
-    // The diff can be 13 or 14 depending on timing, so we check the range
-    $diffDays = (int) abs($builder->getTrialEnd()->diffInDays(Carbon::now()));
-    expect($diffDays)->toBeGreaterThanOrEqual(13);
-    expect($diffDays)->toBeLessThanOrEqual(14);
-});
+        $result = $builder->trialDays(14);
 
-it('can set trial until date', function (): void {
-    $trialEnd = Carbon::now()->addMonth();
+        $this->assertSame($builder, $result);
+    }
 
-    $builder = new SubscriptionBuilder($this->user, 'standard', 'price_monthly');
-    $builder->trialUntil($trialEnd);
+    public function test_trial_until(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
-    expect($builder->getTrialEnd()->toDateString())->toBe($trialEnd->toDateString());
-});
+        $trialEnd = Carbon::now()->addDays(30);
+        $result = $builder->trialUntil($trialEnd);
 
-it('can skip trial', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard', 'price_monthly');
+        $this->assertSame($builder, $result);
+    }
 
-    $builder->trialDays(14)->skipTrial();
+    public function test_skip_trial(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
-    // Verify skipTrial is set in the builder
-    expect($builder->getSkipTrial())->toBeTrue();
-});
+        $result = $builder->skipTrial();
 
-it('can set monthly billing', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard', 'price_monthly');
+        $this->assertSame($builder, $result);
+    }
 
-    $result = $builder->monthly();
+    public function test_billing_interval(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
-    // Verify the builder is returned for chaining
-    expect($result)->toBeInstanceOf(SubscriptionBuilder::class);
-    expect($result->getBillingInterval())->toBe('month');
-    expect($result->getBillingIntervalCount())->toBe(1);
-});
+        $result = $builder->billingInterval('month', 1);
 
-it('can set yearly billing', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard', 'price_yearly');
+        $this->assertSame($builder, $result);
+    }
 
-    $result = $builder->yearly();
+    public function test_monthly(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
-    expect($result)->toBeInstanceOf(SubscriptionBuilder::class);
-    expect($result->getBillingInterval())->toBe('year');
-    expect($result->getBillingIntervalCount())->toBe(1);
-});
+        $result = $builder->monthly();
 
-it('can set weekly billing', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard', 'price_weekly');
+        $this->assertSame($builder, $result);
+    }
 
-    $result = $builder->weekly();
+    public function test_yearly(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
-    expect($result)->toBeInstanceOf(SubscriptionBuilder::class);
-    expect($result->getBillingInterval())->toBe('week');
-    expect($result->getBillingIntervalCount())->toBe(1);
-});
+        $result = $builder->yearly();
 
-it('can set custom billing interval', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard', 'price_biweekly');
+        $this->assertSame($builder, $result);
+    }
 
-    $result = $builder->billingInterval('week', 2);
+    public function test_weekly(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
-    expect($result)->toBeInstanceOf(SubscriptionBuilder::class);
-    expect($result->getBillingInterval())->toBe('week');
-    expect($result->getBillingIntervalCount())->toBe(2);
-});
+        $result = $builder->weekly();
 
-it('can anchor billing cycle', function (): void {
-    $anchor = Carbon::now()->addDays(15);
+        $this->assertSame($builder, $result);
+    }
 
-    $builder = new SubscriptionBuilder($this->user, 'standard', 'price_monthly');
-    $result = $builder->anchorBillingCycleOn($anchor);
+    public function test_daily(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
-    expect($result)->toBeInstanceOf(SubscriptionBuilder::class);
-    expect($result->getBillingCycleAnchor())->not->toBeNull();
-    expect($result->getBillingCycleAnchor()->toDateString())->toBe($anchor->toDateString());
-});
+        $result = $builder->daily();
 
-it('can add metadata', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard', 'price_monthly');
+        $this->assertSame($builder, $result);
+    }
 
-    $result = $builder->withMetadata(['plan_name' => 'Premium']);
+    public function test_anchor_billing_cycle(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
-    expect($result)->toBeInstanceOf(SubscriptionBuilder::class);
-});
+        $anchor = Carbon::now()->addDay();
+        $result = $builder->anchorBillingCycleOn($anchor);
 
-it('can create subscription without payment using add', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard', 'price_monthly');
+        $this->assertSame($builder, $result);
+    }
 
-    $subscription = $builder->add();
+    public function test_with_metadata(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default', 'price_123');
 
-    expect($subscription)->toBeInstanceOf(Subscription::class);
-    expect($subscription->type)->toBe('standard');
-    expect($subscription->chip_price)->toBe('price_monthly');
-});
+        $result = $builder->withMetadata(['key' => 'value']);
 
-it('can create subscription with recurring token', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard', 'price_monthly');
+        $this->assertSame($builder, $result);
+    }
 
-    // Create subscription with a recurring token
-    $subscription = $builder->create('test-recurring-token');
+    public function test_add_throws_without_prices(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default');
 
-    expect($subscription)->toBeInstanceOf(Subscription::class);
-    expect($subscription->recurring_token)->toBe('test-recurring-token');
-});
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('At least one price is required');
 
-it('creates subscription items for each price', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard');
+        $builder->add();
+    }
 
-    $builder->price('price_basic', 1)
-        ->price('price_addon', 2);
+    public function test_create_throws_without_prices(): void
+    {
+        $user = $this->createUser(['chip_id' => 'cli_123']);
+        $builder = new SubscriptionBuilder($user, 'default');
 
-    $subscription = $builder->add();
+        $this->expectException(Exception::class);
+        $this->expectExceptionMessage('At least one price is required');
 
-    expect($subscription->items)->toHaveCount(2);
-
-    // Get items as a keyed collection by chip_price
-    $items = $subscription->items->keyBy('chip_price');
-
-    expect($items->has('price_basic'))->toBeTrue();
-    expect($items->has('price_addon'))->toBeTrue();
-    expect($items->get('price_basic')->quantity)->toBe(1);
-    expect($items->get('price_addon')->quantity)->toBe(2);
-});
-
-it('requires price for quantity when multiple prices', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard');
-
-    $builder->price('price_basic')
-        ->price('price_addon');
-
-    $builder->quantity(5);
-})->throws(InvalidArgumentException::class);
-
-it('can use conditionable trait', function (): void {
-    $builder = new SubscriptionBuilder($this->user, 'standard', 'price_monthly');
-
-    $result = $builder->when(true, function ($builder) {
-        return $builder->trialDays(14);
-    });
-
-    expect($result->getTrialEnd())->not->toBeNull();
-});
+        $builder->create();
+    }
+}

@@ -43,6 +43,10 @@ return [
     | Defaults
     |--------------------------------------------------------------------------
     */
+    'defaults' => [
+        'currency' => env('INVENTORY_CURRENCY', env('COMMERCE_CURRENCY', 'MYR')),
+    ],
+
     'default_reorder_point' => env('INVENTORY_DEFAULT_REORDER_POINT', 10),
     'allocation_strategy' => env('INVENTORY_ALLOCATION_STRATEGY', 'priority'), // priority, fifo, least_stock, single_location
     'allocation_ttl_minutes' => env('INVENTORY_ALLOCATION_TTL', 30),
@@ -82,8 +86,20 @@ return [
         // Auto-allocate inventory when items are added to cart
         'auto_allocate_on_add' => env('INVENTORY_AUTO_ALLOCATE_ON_ADD', false),
 
+        // Reserve stock when checkout starts
+        'reserve_on_checkout' => env('INVENTORY_RESERVE_ON_CHECKOUT', true),
+
+        // Block checkout if any item cannot be reserved
+        'block_checkout_on_insufficient' => env('INVENTORY_BLOCK_CHECKOUT_ON_INSUFFICIENT', true),
+
         // Default allocation TTL in minutes
         'allocation_ttl_minutes' => env('INVENTORY_ALLOCATION_TTL', 30),
+
+        // Reservation TTL during checkout flow
+        'checkout_reservation_ttl_minutes' => env(
+            'INVENTORY_CHECKOUT_RESERVATION_TTL',
+            env('INVENTORY_ALLOCATION_TTL', 30)
+        ),
 
         // Allow adding items even when out of stock (backorder support)
         'allow_backorder' => env('INVENTORY_ALLOW_BACKORDER', false),

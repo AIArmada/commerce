@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
+
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -35,7 +35,7 @@ class PriceList extends Model
     use HasOwner;
     use HasUuids;
     use LogsActivity;
-    use SoftDeletes;
+
 
     protected $guarded = ['id'];
 
@@ -92,12 +92,14 @@ class PriceList extends Model
 
     public function scopeActive($query)
     {
+        $now = now();
+
         return $query->where('is_active', true)
-            ->where(function ($q): void {
-                $q->whereNull('starts_at')->orWhere('starts_at', '<=', now());
+            ->where(function ($q) use ($now): void {
+                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $now);
             })
-            ->where(function ($q): void {
-                $q->whereNull('ends_at')->orWhere('ends_at', '>=', now());
+            ->where(function ($q) use ($now): void {
+                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $now);
             });
     }
 
@@ -116,11 +118,11 @@ class PriceList extends Model
      */
     public function scopeForOwner(Builder $query, ?EloquentModel $owner, bool $includeGlobal = true): Builder
     {
-        if (! config('pricing.owner.enabled', false)) {
+        if (!config('pricing.owner.enabled', false)) {
             return $query;
         }
 
-        if (! $owner) {
+        if (!$owner) {
             return $includeGlobal
                 ? $query->whereNull('owner_id')
                 : $query->whereNull('owner_type')->whereNull('owner_id');
@@ -144,7 +146,7 @@ class PriceList extends Model
 
     public function isActive(): bool
     {
-        if (! $this->is_active) {
+        if (!$this->is_active) {
             return false;
         }
 
@@ -181,6 +183,7 @@ class PriceList extends Model
     {
         static::deleting(function (PriceList $priceList): void {
             $priceList->prices()->delete();
+            $priceList->tiers()->delete();
         });
     }
 }

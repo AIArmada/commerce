@@ -12,6 +12,7 @@ use AIArmada\Cart\Events\ItemRemoved;
 use AIArmada\Cart\Events\ItemUpdated;
 use AIArmada\Cart\Projectors\CartProjector;
 use AIArmada\Cart\ReadModels\CartReadModel;
+use AIArmada\Cart\Storage\StorageInterface;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
 use Illuminate\Database\ConnectionInterface;
@@ -21,7 +22,11 @@ describe('CartProjector', function (): void {
     beforeEach(function (): void {
         $this->connection = Mockery::mock(ConnectionInterface::class);
         $this->cache = new Repository(new ArrayStore);
-        $this->readModel = new CartReadModel($this->connection, $this->cache);
+        $this->storage = Mockery::mock(StorageInterface::class);
+        $this->storage->shouldReceive('getOwnerType')->andReturn(null);
+        $this->storage->shouldReceive('getOwnerId')->andReturn(null);
+
+        $this->readModel = new CartReadModel($this->connection, $this->cache, $this->storage);
         $this->projector = new CartProjector($this->readModel);
     });
 

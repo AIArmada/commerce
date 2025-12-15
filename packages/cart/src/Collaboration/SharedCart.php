@@ -6,7 +6,6 @@ namespace AIArmada\Cart\Collaboration;
 
 use AIArmada\Cart\Broadcasting\CartChannel;
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\CartManager;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -41,7 +40,6 @@ final class SharedCart
     private ?DateTimeInterface $shareExpiresAt = null;
 
     public function __construct(
-        private readonly CartManager $cartManager,
         private readonly CollaboratorManager $collaboratorManager,
         private readonly CartCRDT $crdt
     ) {}
@@ -98,7 +96,7 @@ final class SharedCart
         $this->checkCollaboratorLimit();
 
         $collaborator = $this->collaboratorManager->createInvitation(
-            cartId: $this->cart->getIdentifier(),
+            cartId: $this->cartIdOrFail(),
             email: $email,
             role: $role
         );
@@ -225,7 +223,7 @@ final class SharedCart
         $this->ensureCanEdit($userId);
 
         $operation = $this->crdt->createAddOperation(
-            cartId: $this->cart->getIdentifier(),
+            cartId: $this->cartIdOrFail(),
             userId: $userId,
             itemId: $itemId,
             data: [
@@ -254,7 +252,7 @@ final class SharedCart
         $this->ensureCanEdit($userId);
 
         $operation = $this->crdt->createUpdateOperation(
-            cartId: $this->cart->getIdentifier(),
+            cartId: $this->cartIdOrFail(),
             userId: $userId,
             itemId: $itemId,
             data: ['quantity' => $quantity]
@@ -278,7 +276,7 @@ final class SharedCart
         $this->ensureCanEdit($userId);
 
         $operation = $this->crdt->createRemoveOperation(
-            cartId: $this->cart->getIdentifier(),
+            cartId: $this->cartIdOrFail(),
             userId: $userId,
             itemId: $itemId
         );
@@ -363,9 +361,13 @@ final class SharedCart
         $this->ensureCollaborative();
 
         $cartsTable = config('cart.database.table', 'carts');
-        DB::table($cartsTable)
-            ->where('id', $this->cart->getIdentifier())
+        $updated = DB::table($cartsTable)
+            ->where('id', $this->cartIdOrFail())
             ->update(['max_collaborators' => $max]);
+
+        if ($updated === 0) {
+            throw new RuntimeException('Cart record not found.');
+        }
 
         return $this;
     }
@@ -428,7 +430,7 @@ final class SharedCart
     {
         $cartsTable = config('cart.database.table', 'carts');
         $maxCollaborators = DB::table($cartsTable)
-            ->where('id', $this->cart->getIdentifier())
+            ->where('id', $this->cartIdOrFail())
             ->value('max_collaborators') ?? 5;
 
         if (count($this->collaborators) >= $maxCollaborators) {
@@ -441,9 +443,14 @@ final class SharedCart
      */
     private function loadCollaborationState(): void
     {
+        $cartId = $this->cartId();
+        if ($cartId === null) {
+            return;
+        }
+
         $cartsTable = config('cart.database.table', 'carts');
         $record = DB::table($cartsTable)
-            ->where('id', $this->cart->getIdentifier())
+            ->where('id', $cartId)
             ->first();
 
         if (! $record) {
@@ -472,8 +479,8 @@ final class SharedCart
     {
         $cartsTable = config('cart.database.table', 'carts');
 
-        DB::table($cartsTable)
-            ->where('id', $this->cart->getIdentifier())
+        $updated = DB::table($cartsTable)
+            ->where('id', $this->cartIdOrFail())
             ->update([
                 'is_collaborative' => $this->isCollaborative,
                 'owner_user_id' => $this->ownerUserId,
@@ -487,7 +494,11 @@ final class SharedCart
                 'updated_at' => now(),
             ]);
 
-        Cache::forget("cart:collaboration:{$this->cart->getIdentifier()}");
+        if ($updated === 0) {
+            throw new RuntimeException('Cart record not found.');
+        }
+
+        Cache::forget("cart:collaboration:{$this->cartIdOrFail()}");
     }
 
     /**
@@ -497,12 +508,28 @@ final class SharedCart
      */
     private function broadcastUpdate(string $event, array $data = []): void
     {
-        $cartId = $this->cart->getIdentifier();
+        $cartId = $this->cartIdOrFail();
         $payload = array_merge($data, [
             'cart_id' => $cartId,
             'timestamp' => now()->toIso8601String(),
         ]);
 
         CartChannel::broadcastSync($cartId, $payload);
+    }
+
+    private function cartId(): ?string
+    {
+        return $this->cart->getId();
+    }
+
+    private function cartIdOrFail(): string
+    {
+        $cartId = $this->cartId();
+
+        if ($cartId === null) {
+            throw new RuntimeException('Cart must be persisted before using collaboration features.');
+        }
+
+        return $cartId;
     }
 }

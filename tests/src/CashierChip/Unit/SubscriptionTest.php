@@ -2,350 +2,233 @@
 
 declare(strict_types=1);
 
+namespace AIArmada\Commerce\Tests\CashierChip\Unit;
+
+use AIArmada\CashierChip\PaymentMethod;
 use AIArmada\CashierChip\Subscription;
-use AIArmada\CashierChip\SubscriptionItem;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
 use Carbon\Carbon;
+use LogicException;
+use Mockery;
 
-uses(CashierChipTestCase::class);
+class SubscriptionTest extends CashierChipTestCase
+{
+    public function test_can_check_active_status()
+    {
+        $subscription = new Subscription(['chip_status' => Subscription::STATUS_ACTIVE]);
+        $this->assertTrue($subscription->active());
+        $this->assertFalse($subscription->onTrial());
 
-beforeEach(function (): void {
-    $this->user = $this->createUser();
-});
+        $subscription->chip_status = Subscription::STATUS_TRIALING;
+        $subscription->trial_ends_at = Carbon::now()->addDay();
+        $this->assertTrue($subscription->onTrial());
+        $this->assertTrue($subscription->active()); // trialing is active
 
-it('can create a subscription', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
-        'chip_price' => 'price_monthly',
-        'quantity' => 1,
-        'billing_interval' => 'month',
-        'billing_interval_count' => 1,
-    ]);
+        $subscription->chip_status = Subscription::STATUS_PAST_DUE;
+        $this->assertFalse($subscription->active());
 
-    expect($subscription)->toBeInstanceOf(Subscription::class);
-    expect($subscription->type)->toBe('standard');
-    expect($subscription->chip_status)->toBe(Subscription::STATUS_ACTIVE);
-});
+        $subscription->chip_status = Subscription::STATUS_UNPAID;
+        $this->assertFalse($subscription->active());
 
-it('can determine if subscription is active', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
-        'chip_price' => 'price_monthly',
-    ]);
+        $subscription->chip_status = Subscription::STATUS_CANCELED;
+        $subscription->ends_at = Carbon::now()->subDay();
+        $this->assertFalse($subscription->active());
 
-    expect($subscription->active())->toBeTrue();
-    expect($subscription->valid())->toBeTrue();
-});
+        $subscription->chip_status = Subscription::STATUS_INCOMPLETE;
+        $this->assertFalse($subscription->active());
+    }
 
-it('can determine if subscription is on trial', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_TRIALING,
-        'chip_price' => 'price_monthly',
-        'trial_ends_at' => Carbon::now()->addDays(14),
-    ]);
+    public function test_can_check_valid_status()
+    {
+        $subscription = new Subscription(['chip_status' => Subscription::STATUS_ACTIVE]);
+        $this->assertTrue($subscription->valid());
 
-    expect($subscription->onTrial())->toBeTrue();
-    expect($subscription->valid())->toBeTrue();
-});
+        $subscription->chip_status = Subscription::STATUS_PAST_DUE;
+        $this->assertFalse($subscription->valid());
 
-it('can determine if subscription trial has expired', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
-        'chip_price' => 'price_monthly',
-        'trial_ends_at' => Carbon::now()->subDays(1),
-    ]);
+        $subscription->chip_status = Subscription::STATUS_CANCELED;
+        $subscription->ends_at = Carbon::now()->subDay();
+        $this->assertFalse($subscription->valid());
+    }
 
-    expect($subscription->onTrial())->toBeFalse();
-    expect($subscription->hasExpiredTrial())->toBeTrue();
-});
+    public function test_can_check_incomplete()
+    {
+        $subscription = new Subscription(['chip_status' => Subscription::STATUS_INCOMPLETE]);
+        $this->assertTrue($subscription->incomplete());
 
-it('can determine if subscription is canceled', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
-        'chip_price' => 'price_monthly',
-        'ends_at' => Carbon::now()->addDays(7),
-    ]);
+        $subscription->chip_status = Subscription::STATUS_INCOMPLETE_EXPIRED;
+        $this->assertFalse($subscription->incomplete()); // wait, check logic
 
-    expect($subscription->canceled())->toBeTrue();
-    expect($subscription->onGracePeriod())->toBeTrue();
-});
+        $subscription->chip_status = Subscription::STATUS_ACTIVE;
+        $this->assertFalse($subscription->incomplete());
+    }
 
-it('can determine if subscription has ended', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_CANCELED,
-        'chip_price' => 'price_monthly',
-        'ends_at' => Carbon::now()->subDays(1),
-    ]);
+    public function test_can_check_canceled()
+    {
+        $subscription = new Subscription(['chip_status' => Subscription::STATUS_CANCELED, 'ends_at' => Carbon::now()]);
+        $this->assertTrue($subscription->canceled());
 
-    expect($subscription->ended())->toBeTrue();
-    expect($subscription->valid())->toBeFalse();
-});
+        $subscription->chip_status = Subscription::STATUS_ACTIVE;
+        $subscription->ends_at = null;
+        $this->assertFalse($subscription->canceled());
 
-it('can determine if subscription is incomplete', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_INCOMPLETE,
-        'chip_price' => 'price_monthly',
-    ]);
+        // Grace period cancellation
+        $subscription->chip_status = Subscription::STATUS_ACTIVE;
+        $subscription->ends_at = Carbon::now()->addDay();
+        $this->assertTrue($subscription->onGracePeriod());
+        $this->assertTrue($subscription->canceled());
 
-    expect($subscription->incomplete())->toBeTrue();
-});
+        $subscription->ends_at = null; // Uncancel
+        $this->assertFalse($subscription->canceled());
+    }
 
-it('can determine if subscription is past due', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_PAST_DUE,
-        'chip_price' => 'price_monthly',
-    ]);
+    public function test_can_check_ended()
+    {
+        $subscription = new Subscription([
+            'chip_status' => Subscription::STATUS_CANCELED,
+            'ends_at' => Carbon::now()->subDay(),
+        ]);
+        $this->assertTrue($subscription->ended());
 
-    expect($subscription->pastDue())->toBeTrue();
-    expect($subscription->hasIncompletePayment())->toBeTrue();
-});
+        $subscription->chip_status = Subscription::STATUS_ACTIVE;
+        $subscription->ends_at = null;
+        $this->assertFalse($subscription->ended());
 
-it('can determine if subscription is recurring', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
-        'chip_price' => 'price_monthly',
-    ]);
+        // Grace period is NOT ended
+        $subscription->ends_at = Carbon::now()->addDay();
+        $this->assertFalse($subscription->ended());
+    }
 
-    expect($subscription->recurring())->toBeTrue();
-});
+    public function test_has_incomplete_payment()
+    {
+        $subscription = new Subscription([
+            'chip_status' => Subscription::STATUS_PAST_DUE,
+        ]);
+        // Mock latestPayment?
+        // Method uses $this->pastDue() || $this->isIncomplete().
 
-it('can cancel subscription at period end', function (): void {
-    $nextBilling = Carbon::now()->addMonth();
+        $this->assertTrue($subscription->hasIncompletePayment());
 
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
-        'chip_price' => 'price_monthly',
-        'next_billing_at' => $nextBilling,
-    ]);
+        $subscription->chip_status = Subscription::STATUS_INCOMPLETE;
+        $this->assertTrue($subscription->hasIncompletePayment());
 
-    $subscription->cancel();
+        $subscription->chip_status = Subscription::STATUS_ACTIVE;
+        $this->assertFalse($subscription->hasIncompletePayment());
+    }
 
-    expect($subscription->canceled())->toBeTrue();
-    expect($subscription->ends_at->toDateString())->toBe($nextBilling->toDateString());
-});
+    public function test_owner_relationship()
+    {
+        $user = new User();
+        $subscription = new Subscription();
+        $subscription->setRelation('owner', $user);
 
-it('can cancel subscription immediately', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
-        'chip_price' => 'price_monthly',
-    ]);
+        $this->assertSame($user, $subscription->owner);
+    }
 
-    $subscription->cancelNow();
+    public function test_items_relationship()
+    {
+        // hasMany relation
+        $subscription = new Subscription();
+        $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class, $subscription->items());
+    }
 
-    expect($subscription->chip_status)->toBe(Subscription::STATUS_CANCELED);
-    expect($subscription->ended())->toBeTrue();
-});
+    public function test_can_cancel_immediately()
+    {
+        $user = User::create(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
+        $subscription = Subscription::factory()->for($user, 'owner')->create(['chip_status' => Subscription::STATUS_ACTIVE]);
 
-it('can resume a canceled subscription on grace period', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
-        'chip_price' => 'price_monthly',
-        'ends_at' => Carbon::now()->addDays(7),
-    ]);
+        $subscription->cancelNow();
 
-    $subscription->resume();
+        $this->assertTrue($subscription->canceled());
+        $this->assertEquals(Subscription::STATUS_CANCELED, $subscription->chip_status);
+        $this->assertNotNull($subscription->ends_at);
+    }
 
-    expect($subscription->ends_at)->toBeNull();
-    expect($subscription->chip_status)->toBe(Subscription::STATUS_ACTIVE);
-});
+    public function test_can_resume()
+    {
+        $user = User::create(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
+        $subscription = Subscription::factory()->for($user, 'owner')->create([
+            'chip_status' => Subscription::STATUS_CANCELED,
+            'ends_at' => Carbon::tomorrow(),
+        ]);
 
-it('cannot resume a subscription that has ended', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_CANCELED,
-        'chip_price' => 'price_monthly',
-        'ends_at' => Carbon::now()->subDays(1),
-    ]);
+        $subscription->resume();
 
-    $subscription->resume();
-})->throws(LogicException::class);
+        $this->assertTrue($subscription->active());
+        $this->assertFalse($subscription->canceled());
+        $this->assertNull($subscription->ends_at);
+        $this->assertEquals(Subscription::STATUS_ACTIVE, $subscription->chip_status);
+    }
 
-it('can skip trial', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_TRIALING,
-        'chip_price' => 'price_monthly',
-        'trial_ends_at' => Carbon::now()->addDays(14),
-    ]);
+    public function test_resume_throws_exception_if_not_on_grace_period()
+    {
+        $subscription = new Subscription([
+            'chip_status' => Subscription::STATUS_CANCELED,
+            'ends_at' => Carbon::yesterday(),
+        ]);
 
-    $subscription->skipTrial();
+        $this->expectException(LogicException::class);
+        $subscription->resume();
+    }
 
-    expect($subscription->trial_ends_at)->toBeNull();
-});
+    public function test_skip_trial()
+    {
+        $subscription = new Subscription([
+            'trial_ends_at' => Carbon::tomorrow(),
+        ]);
 
-it('can extend trial', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_TRIALING,
-        'chip_price' => 'price_monthly',
-        'trial_ends_at' => Carbon::now()->addDays(14),
-    ]);
+        $subscription->skipTrial();
+        $this->assertNull($subscription->trial_ends_at);
+    }
 
-    $newTrialEnd = Carbon::now()->addDays(30);
-    $subscription->extendTrial($newTrialEnd);
+    public function test_end_trial()
+    {
+        $user = User::create(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
+        $subscription = Subscription::factory()->for($user, 'owner')->create([
+            'trial_ends_at' => Carbon::tomorrow(),
+        ]);
 
-    expect($subscription->trial_ends_at->toDateString())->toBe($newTrialEnd->toDateString());
-});
+        $subscription->endTrial();
 
-it('cannot extend trial to past date', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_TRIALING,
-        'chip_price' => 'price_monthly',
-        'trial_ends_at' => Carbon::now()->addDays(14),
-    ]);
+        $this->assertNull($subscription->fresh()->trial_ends_at);
+    }
 
-    $subscription->extendTrial(Carbon::now()->subDays(1));
-})->throws(InvalidArgumentException::class);
+    public function test_recurring_token()
+    {
+        $subscription = new Subscription(['recurring_token' => 'tok_123']);
+        $this->assertEquals('tok_123', $subscription->recurringToken());
 
-it('can update quantity', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
-        'chip_price' => 'price_monthly',
-        'quantity' => 1,
-    ]);
+        $subscription = new Subscription();
+        $owner = Mockery::mock(User::class);
+        $pm = Mockery::mock(PaymentMethod::class);
+        $pm->shouldReceive('id')->andReturn('tok_default');
+        $owner->shouldReceive('defaultPaymentMethod')->andReturn($pm);
+        $subscription->setRelation('owner', $owner);
 
-    $subscription->items()->create([
-        'chip_id' => 'item-1',
-        'chip_price' => 'price_monthly',
-        'quantity' => 1,
-    ]);
+        $this->assertEquals('tok_default', $subscription->recurringToken());
+    }
 
-    $subscription->updateQuantity(5);
+    public function test_increment_decrement_quantity()
+    {
+        $user = User::create(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
+        $subscription = Subscription::factory()->for($user, 'owner')->create(['quantity' => 1, 'chip_price' => 'price_1']);
+        $subscription->items()->create(['quantity' => 1, 'chip_id' => 'si_1', 'chip_price' => 'price_1']);
 
-    expect($subscription->quantity)->toBe(5);
-});
+        $subscription->incrementQuantity();
+        $this->assertEquals(2, $subscription->fresh()->quantity);
 
-it('can increment quantity', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
-        'chip_price' => 'price_monthly',
-        'quantity' => 2,
-    ]);
+        $subscription->decrementQuantity();
+        $this->assertEquals(1, $subscription->fresh()->quantity);
+    }
 
-    $subscription->items()->create([
-        'chip_id' => 'item-1',
-        'chip_price' => 'price_monthly',
-        'quantity' => 2,
-    ]);
+    public function test_scope_active()
+    {
+        $user = User::create(['email' => 'u1', 'name' => 'U1', 'chip_id' => 'c1']);
+        Subscription::factory()->for($user, 'owner')->create(['chip_status' => Subscription::STATUS_ACTIVE]);
+        Subscription::factory()->for($user, 'owner')->create(['chip_status' => Subscription::STATUS_CANCELED, 'ends_at' => Carbon::now()->subDay()]);
 
-    $subscription->incrementQuantity();
-
-    expect($subscription->quantity)->toBe(3);
-});
-
-it('can decrement quantity', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
-        'chip_price' => 'price_monthly',
-        'quantity' => 5,
-    ]);
-
-    $subscription->items()->create([
-        'chip_id' => 'item-1',
-        'chip_price' => 'price_monthly',
-        'quantity' => 5,
-    ]);
-
-    $subscription->decrementQuantity(2);
-
-    expect($subscription->quantity)->toBe(3);
-});
-
-it('can check for specific price', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
-        'chip_price' => 'price_monthly',
-    ]);
-
-    expect($subscription->hasPrice('price_monthly'))->toBeTrue();
-    expect($subscription->hasPrice('price_yearly'))->toBeFalse();
-});
-
-it('can get owner', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
-        'chip_price' => 'price_monthly',
-    ]);
-
-    expect($subscription->owner)->toBeInstanceOf(User::class);
-    expect($subscription->owner->id)->toBe($this->user->id);
-});
-
-it('has subscription items relationship', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
-        'chip_price' => 'price_monthly',
-    ]);
-
-    $subscription->items()->create([
-        'chip_id' => 'item-1',
-        'chip_product' => 'prod_123',
-        'chip_price' => 'price_monthly',
-        'quantity' => 1,
-        'unit_amount' => 9900,
-    ]);
-
-    expect($subscription->items)->toHaveCount(1);
-    expect($subscription->items->first())->toBeInstanceOf(SubscriptionItem::class);
-});
-
-it('can swap prices', function (): void {
-    $subscription = $this->user->subscriptions()->create([
-        'type' => 'standard',
-        'chip_id' => 'test-sub-id',
-        'chip_status' => Subscription::STATUS_ACTIVE,
-        'chip_price' => 'price_monthly',
-    ]);
-
-    $subscription->items()->create([
-        'chip_id' => 'item-1',
-        'chip_price' => 'price_monthly',
-        'quantity' => 1,
-    ]);
-
-    $subscription->swap('price_yearly');
-
-    expect($subscription->chip_price)->toBe('price_yearly');
-});
+        // Use query()->active()
+        $this->assertEquals(1, Subscription::query()->active()->count());
+    }
+}

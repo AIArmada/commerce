@@ -154,11 +154,15 @@ class Collection extends Model implements HasMedia
     public function getMatchingProducts(): \Illuminate\Support\Collection
     {
         if ($this->isManual()) {
-            return $this->products()->get();
+            $relation = $this->products();
+            $this->applyOwnerScopeToProductsQuery($relation->getQuery());
+
+            return $relation->get();
         }
 
         // Build query from conditions
         $query = Product::query()->active();
+        $this->applyOwnerScopeToProductsQuery($query);
 
         if (! empty($this->conditions)) {
             $this->applyConditions($query, $this->conditions);
@@ -178,7 +182,7 @@ class Collection extends Model implements HasMedia
 
         $matchingProducts = $this->getMatchingProducts();
 
-        // Sync without detaching to preserve positions for manual overrides
+        // Sync to match current rule results (existing pivot positions are preserved)
         $this->products()->sync($matchingProducts->pluck('id'));
     }
 
@@ -295,5 +299,30 @@ class Collection extends Model implements HasMedia
                 default => $query->where($field, $operator, $value),
             };
         }
+    }
+
+    /**
+     * Apply owner scoping so collections never leak cross-tenant products.
+     *
+     * @param  Builder<Product>  $query
+     */
+    protected function applyOwnerScopeToProductsQuery(Builder $query): void
+    {
+        if ($this->owner_type === null || $this->owner_id === null) {
+            $query->whereNull('owner_type')->whereNull('owner_id');
+
+            return;
+        }
+
+        $ownerType = $this->owner_type;
+        $ownerId = $this->owner_id;
+
+        $query->where(function (Builder $builder) use ($ownerType, $ownerId): void {
+            $builder->where('owner_type', $ownerType)
+                ->where('owner_id', $ownerId)
+                ->orWhere(function (Builder $inner): void {
+                    $inner->whereNull('owner_type')->whereNull('owner_id');
+                });
+        });
     }
 }

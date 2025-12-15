@@ -414,6 +414,8 @@ abstract class TestCase extends Orchestra
         Schema::create('carts', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('identifier')->index();
+            $table->string('owner_type')->default('');
+            $table->string('owner_id')->default('');
             $table->string('instance')->default('default')->index();
             $table->json('items')->nullable();
             $table->json('conditions')->nullable();
@@ -422,7 +424,7 @@ abstract class TestCase extends Orchestra
             $table->timestamp('expires_at')->nullable()->index();
             $table->timestamps();
 
-            $table->unique(['identifier', 'instance']);
+            $table->unique(['owner_type', 'owner_id', 'identifier', 'instance']);
         });
 
         // Stock tables
@@ -772,12 +774,15 @@ abstract class TestCase extends Orchestra
         Schema::create('customer_segments', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name');
+            $table->string('slug')->unique();
+            $table->string('type')->nullable();
             $table->text('description')->nullable();
             $table->json('conditions')->nullable();
             $table->boolean('is_active')->default(true);
             $table->boolean('is_automatic')->default(true);
             $table->integer('priority')->default(0);
             $table->nullableUuidMorphs('owner');
+            $table->json('metadata')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
@@ -796,10 +801,16 @@ abstract class TestCase extends Orchestra
             $table->string('postal_code')->nullable();
             $table->string('country');
             $table->string('phone')->nullable();
+            $table->string('recipient_name')->nullable();
             $table->boolean('is_default')->default(false);
             $table->boolean('is_default_billing')->default(false);
             $table->boolean('is_default_shipping')->default(false);
             $table->boolean('is_verified')->default(false);
+            $table->string('postcode')->nullable();
+            $table->string('label')->nullable();
+            $table->decimal('latitude', 10, 7)->nullable();
+            $table->decimal('longitude', 10, 7)->nullable();
+            $table->json('metadata')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
@@ -808,16 +819,25 @@ abstract class TestCase extends Orchestra
             $table->uuid('id')->primary();
             $table->uuid('customer_id');
             $table->string('name')->default('My Wishlist');
+            $table->text('description')->nullable();
             $table->boolean('is_public')->default(false);
+            $table->string('share_token', 64)->unique();
+            $table->boolean('is_default')->default(false);
+            $table->json('metadata')->nullable();
             $table->timestamps();
         });
 
         Schema::create('wishlist_items', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('wishlist_id');
-            $table->uuidMorphs('wishlistable');
+            $table->string('product_type');
+            $table->uuid('product_id');
+            $table->boolean('notified_on_sale')->default(false);
+            $table->boolean('notified_in_stock')->default(false);
+            $table->timestamp('added_at')->nullable();
             $table->integer('priority')->default(0);
             $table->text('notes')->nullable();
+            $table->json('metadata')->nullable();
             $table->timestamps();
         });
 
@@ -826,6 +846,9 @@ abstract class TestCase extends Orchestra
             $table->uuid('customer_id');
             $table->text('content');
             $table->boolean('is_internal')->default(true);
+            $table->boolean('is_pinned')->default(false);
+            $table->nullableUuidMorphs('created_by');
+            $table->json('metadata')->nullable();
             $table->timestamps();
         });
 
@@ -838,6 +861,7 @@ abstract class TestCase extends Orchestra
         Schema::create('customer_segment_customer', function (Blueprint $table): void {
             $table->uuid('customer_id');
             $table->uuid('segment_id');
+            $table->timestamps();
             $table->primary(['customer_id', 'segment_id']);
         });
 

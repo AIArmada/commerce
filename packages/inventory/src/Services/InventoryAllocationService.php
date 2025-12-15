@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Services;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Inventory\Enums\AllocationStrategy;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryAllocated;
 use AIArmada\Inventory\Events\InventoryReleased;
 use AIArmada\Inventory\Events\LowInventoryDetected;
 use AIArmada\Inventory\Events\OutOfInventory;
+use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryMovement;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +25,8 @@ use InvalidArgumentException;
 final class InventoryAllocationService
 {
     public function __construct(
-        private InventoryService $inventoryService
+        private InventoryService $inventoryService,
+        private readonly OwnerResolverInterface $ownerResolver,
     ) {}
 
     /**
@@ -100,12 +104,18 @@ final class InventoryAllocationService
                     $allocation->delete();
                 }
 
-                throw new InvalidArgumentException(
-                    sprintf('Insufficient inventory. Requested: %d, Available: %d', $quantity, $quantity - $remaining)
+                $allocatedQuantity = $quantity - $remaining;
+
+                throw new InsufficientInventoryException(
+                    sprintf('Insufficient inventory. Requested: %d, Available: %d', $quantity, $allocatedQuantity),
+                    (string) $model->getKey(),
+                    $quantity,
+                    $allocatedQuantity
                 );
             }
 
             if ($allocations->isNotEmpty()) {
+                $this->inventoryService->clearCache($model);
                 Event::dispatch(new InventoryAllocated($model, $allocations, $cartId));
             }
 
@@ -119,18 +129,28 @@ final class InventoryAllocationService
     public function releaseAllocation(InventoryAllocation $allocation): int
     {
         return DB::transaction(function () use ($allocation): int {
+            $lockedAllocation = InventoryAllocation::query()
+                ->whereKey($allocation->getKey())
+                ->lockForUpdate()
+                ->first();
+
+            if ($lockedAllocation === null) {
+                return 0;
+            }
+
             // Ensure relationships are loaded
-            $allocation->loadMissing(['level', 'inventoryable']);
+            $lockedAllocation->loadMissing(['level', 'inventoryable']);
 
-            $quantity = $allocation->quantity;
-            $allocation->level->decrementReserved($quantity);
+            $quantity = $lockedAllocation->quantity;
+            $lockedAllocation->level->decrementReserved($quantity);
 
-            $inventoryable = $allocation->inventoryable;
-            $cartId = $allocation->cart_id;
+            $inventoryable = $lockedAllocation->inventoryable;
+            $cartId = $lockedAllocation->cart_id;
 
-            $allocation->delete();
+            $lockedAllocation->delete();
 
             if ($inventoryable !== null) {
+                $this->inventoryService->clearCache($inventoryable);
                 Event::dispatch(new InventoryReleased($inventoryable, $quantity, $cartId));
             }
 
@@ -148,6 +168,7 @@ final class InventoryAllocationService
                 ->where('inventoryable_type', $model->getMorphClass())
                 ->where('inventoryable_id', $model->getKey())
                 ->forCart($cartId)
+                ->lockForUpdate()
                 ->get();
 
             $totalReleased = 0;
@@ -159,6 +180,7 @@ final class InventoryAllocationService
             }
 
             if ($totalReleased > 0) {
+                $this->inventoryService->clearCache($model);
                 Event::dispatch(new InventoryReleased($model, $totalReleased, $cartId));
             }
 
@@ -175,6 +197,7 @@ final class InventoryAllocationService
             $allocations = InventoryAllocation::query()
                 ->forCart($cartId)
                 ->with('level')
+                ->lockForUpdate()
                 ->get();
 
             $totalReleased = 0;
@@ -183,6 +206,10 @@ final class InventoryAllocationService
                 $allocation->level->decrementReserved($allocation->quantity);
                 $totalReleased += $allocation->quantity;
                 $allocation->delete();
+            }
+
+            if ($totalReleased > 0) {
+                $this->inventoryService->clearCache();
             }
 
             return $totalReleased;
@@ -200,6 +227,7 @@ final class InventoryAllocationService
             $allocations = InventoryAllocation::query()
                 ->forCart($cartId)
                 ->with(['level', 'inventoryable'])
+                ->lockForUpdate()
                 ->get();
 
             $movements = [];
@@ -228,6 +256,10 @@ final class InventoryAllocationService
                 $this->checkLowInventory($allocation->inventoryable, $allocation->level);
 
                 $allocation->delete();
+            }
+
+            if (count($movements) > 0) {
+                $this->inventoryService->clearCache();
             }
 
             return $movements;
@@ -332,6 +364,7 @@ final class InventoryAllocationService
             $allocations = InventoryAllocation::query()
                 ->expired()
                 ->with('level')
+                ->lockForUpdate()
                 ->get();
 
             $count = 0;
@@ -340,6 +373,10 @@ final class InventoryAllocationService
                 $allocation->level->decrementReserved($allocation->quantity);
                 $allocation->delete();
                 $count++;
+            }
+
+            if ($count > 0) {
+                $this->inventoryService->clearCache();
             }
 
             return $count;
@@ -367,17 +404,79 @@ final class InventoryAllocationService
     }
 
     /**
+     * @return array{enabled: bool, owner: Model|null, includeGlobal: bool}
+     */
+    private function ownerScope(): array
+    {
+        $enabled = (bool) config('inventory.owner.enabled', false);
+
+        if (! $enabled) {
+            return [
+                'enabled' => false,
+                'owner' => null,
+                'includeGlobal' => true,
+            ];
+        }
+
+        return [
+            'enabled' => true,
+            'owner' => $this->ownerResolver->resolve(),
+            'includeGlobal' => (bool) config('inventory.owner.include_global', true),
+        ];
+    }
+
+    private function applyOwnerScopeToLocationQuery(Builder $query, array $scope): void
+    {
+        if (! $scope['enabled']) {
+            return;
+        }
+
+        $owner = $scope['owner'];
+        $includeGlobal = $scope['includeGlobal'];
+
+        if ($owner === null) {
+            if ($includeGlobal) {
+                $query->whereNull('owner_id');
+
+                return;
+            }
+
+            $query->whereNull('owner_type')->whereNull('owner_id');
+
+            return;
+        }
+
+        $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
+            $builder->where('owner_type', $owner->getMorphClass())
+                ->where('owner_id', $owner->getKey());
+
+            if ($includeGlobal) {
+                $builder->orWhere(function (Builder $inner): void {
+                    $inner->whereNull('owner_type')->whereNull('owner_id');
+                });
+            }
+        });
+    }
+
+    /**
      * Get inventory levels ordered by allocation strategy.
      *
      * @return Collection<int, InventoryLevel>
      */
     private function getLevelsForAllocation(Model $model, AllocationStrategy $strategy): Collection
     {
+        $scope = $this->ownerScope();
+
         $query = InventoryLevel::query()
             ->where('inventoryable_type', $model->getMorphClass())
             ->where('inventoryable_id', $model->getKey())
-            ->whereHas('location', fn ($q) => $q->where('is_active', true))
-            ->with('location');
+            ->whereHas('location', function (Builder $query) use ($scope): void {
+                $query->where('is_active', true);
+
+                $this->applyOwnerScopeToLocationQuery($query, $scope);
+            })
+            ->with('location')
+            ->lockForUpdate();
 
         return match ($strategy) {
             AllocationStrategy::Priority => $query
