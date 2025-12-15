@@ -30,6 +30,10 @@ beforeEach(function (): void {
     );
 });
 
+afterEach(function (): void {
+    Mockery::close();
+});
+
 describe('PermissionAggregator', function (): void {
     describe('getEffectivePermissions', function (): void {
         it('returns empty collection for objects without getRoleNames', function (): void {
@@ -64,6 +68,22 @@ describe('PermissionAggregator', function (): void {
 
             $cacheKey = 'permissions:aggregated:role:' . $role->id;
             expect(Cache::has($cacheKey))->toBeTrue();
+        });
+
+        it('includes inherited permissions from parent roles', function (): void {
+            $parentRole = Role::create(['name' => 'parent-role', 'guard_name' => 'web']);
+            $childRole = Role::create(['name' => 'child-role', 'guard_name' => 'web']);
+
+            $parentPermission = Permission::create(['name' => 'parent.permission', 'guard_name' => 'web']);
+            $parentRole->givePermissionTo($parentPermission);
+
+            // Set parent relationship if the service supports it
+            $this->roleInheritance->setParent($childRole, $parentRole);
+
+            Cache::flush();
+            $permissions = $this->aggregator->getEffectiveRolePermissions($childRole);
+
+            expect($permissions->pluck('name')->toArray())->toContain('parent.permission');
         });
     });
 
@@ -115,6 +135,67 @@ describe('PermissionAggregator', function (): void {
         });
     });
 
+    describe('userHasAnyPermission', function (): void {
+        it('returns false for empty permissions array', function (): void {
+            $nonUser = new class
+            {
+                public string $name = 'Not a user';
+            };
+
+            $result = $this->aggregator->userHasAnyPermission($nonUser, []);
+
+            expect($result)->toBeFalse();
+        });
+
+        it('returns false when user has no getRoleNames method', function (): void {
+            $nonUser = new class
+            {
+                public string $name = 'Not a user';
+            };
+
+            $result = $this->aggregator->userHasAnyPermission($nonUser, ['test.permission']);
+
+            expect($result)->toBeFalse();
+        });
+    });
+
+    describe('userHasAllPermissions', function (): void {
+        it('returns true for empty permissions array', function (): void {
+            $nonUser = new class
+            {
+                public string $name = 'Not a user';
+            };
+
+            $result = $this->aggregator->userHasAllPermissions($nonUser, []);
+
+            expect($result)->toBeTrue();
+        });
+
+        it('returns false when user has no permissions', function (): void {
+            $nonUser = new class
+            {
+                public string $name = 'Not a user';
+            };
+
+            $result = $this->aggregator->userHasAllPermissions($nonUser, ['test.permission']);
+
+            expect($result)->toBeFalse();
+        });
+    });
+
+    describe('userHasPermission', function (): void {
+        it('returns false when user has no getRoleNames method', function (): void {
+            $nonUser = new class
+            {
+                public string $name = 'Not a user';
+            };
+
+            $result = $this->aggregator->userHasPermission($nonUser, 'test.permission');
+
+            expect($result)->toBeFalse();
+        });
+    });
+
     describe('clearRoleCache', function (): void {
         it('clears role cache', function (): void {
             $role = Role::create(['name' => 'editor', 'guard_name' => 'web']);
@@ -129,6 +210,21 @@ describe('PermissionAggregator', function (): void {
 
             expect(Cache::has($cacheKey))->toBeFalse();
         });
+
+        it('clears descendant role caches', function (): void {
+            $parentRole = Role::create(['name' => 'clear-parent', 'guard_name' => 'web']);
+            $childRole = Role::create(['name' => 'clear-child', 'guard_name' => 'web']);
+            $this->roleInheritance->setParent($childRole, $parentRole);
+
+            // Populate caches
+            $this->aggregator->getEffectiveRolePermissions($childRole);
+
+            $this->aggregator->clearRoleCache($parentRole);
+
+            // Child cache should be cleared
+            $childCacheKey = 'permissions:aggregated:role:' . $childRole->id;
+            expect(Cache::has($childCacheKey))->toBeFalse();
+        });
     });
 
     describe('clearAllCache', function (): void {
@@ -136,6 +232,26 @@ describe('PermissionAggregator', function (): void {
             // This just verifies no exception is thrown
             $this->aggregator->clearAllCache();
             expect(true)->toBeTrue();
+        });
+    });
+
+    describe('clearUserCache', function (): void {
+        it('clears user cache key', function (): void {
+            // Use a simple mock to test the cache key format
+            $mockUser = new class
+            {
+                public function getKey(): string
+                {
+                    return 'test-user-123';
+                }
+            };
+
+            // The method should call Cache::forget with the correct key
+            Cache::shouldReceive('forget')
+                ->once()
+                ->with('permissions:aggregated:user:test-user-123');
+
+            $this->aggregator->clearUserCache($mockUser);
         });
     });
 });
