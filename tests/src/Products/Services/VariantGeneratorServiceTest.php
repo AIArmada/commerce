@@ -211,6 +211,39 @@ describe('VariantGeneratorService', function (): void {
                 ->and($variant->optionValues)->toHaveCount(1);
         });
 
+        it('throws when option values do not belong to the product', function (): void {
+            $productA = Product::create([
+                'name' => 'Product A',
+                'price' => 7000,
+                'status' => ProductStatus::Active,
+                'type' => ProductType::Configurable,
+                'sku' => 'PROD-A',
+            ]);
+
+            $productB = Product::create([
+                'name' => 'Product B',
+                'price' => 7000,
+                'status' => ProductStatus::Active,
+                'type' => ProductType::Configurable,
+                'sku' => 'PROD-B',
+            ]);
+
+            $optionB = Option::create([
+                'product_id' => $productB->id,
+                'name' => 'Color',
+                'position' => 0,
+            ]);
+
+            $optionValueB = OptionValue::create([
+                'option_id' => $optionB->id,
+                'name' => 'Yellow',
+                'position' => 0,
+            ]);
+
+            expect(fn () => $this->service->addVariant($productA, [$optionValueB->id]))
+                ->toThrow(RuntimeException::class, 'do not belong to this product');
+        });
+
         it('marks variant as non-default when product already has variants', function (): void {
             $product = Product::create([
                 'name' => 'Add Non-Default Variant Product',

@@ -68,3 +68,30 @@ it('can create subscription canceled event', function (): void {
 
     expect($event->subscription)->toBe($subscription);
 });
+
+it('can create subscription renewal failed event', function (): void {
+    $subscription = new Subscription([
+        'type' => 'standard',
+        'chip_id' => 'test-sub-id',
+    ]);
+    $event = new AIArmada\CashierChip\Events\SubscriptionRenewalFailed($subscription, 'Payment declined');
+
+    expect($event->subscription)->toBe($subscription);
+    expect($event->reason)->toBe('Payment declined');
+});
+
+it('can create subscription renewed event', function (): void {
+    $subscription = new Subscription([
+        'type' => 'standard',
+        'chip_id' => 'test-sub-id',
+    ]);
+    $payment = new AIArmada\CashierChip\Payment(AIArmada\Chip\Data\PurchaseData::from([
+        'id' => 'test-purchase',
+        'purchase' => ['total' => 1000],
+    ]));
+
+    $event = new AIArmada\CashierChip\Events\SubscriptionRenewed($subscription, $payment);
+
+    expect($event->subscription)->toBe($subscription);
+    expect($event->payment)->toBe($payment);
+});

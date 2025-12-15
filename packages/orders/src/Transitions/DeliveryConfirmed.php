@@ -7,6 +7,7 @@ namespace AIArmada\Orders\Transitions;
 use AIArmada\Orders\Events\OrderDelivered;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Delivered;
+use Illuminate\Support\Arr;
 use Spatie\ModelStates\Transition;
 
 /**
@@ -24,10 +25,36 @@ class DeliveryConfirmed extends Transition
 
     public function handle(): Order
     {
-        // Update order state and delivered timestamp
+        $deliveredAt = now();
+
+        $existingMetadata = $this->order->metadata ?? [];
+        if (! is_array($existingMetadata)) {
+            $existingMetadata = [];
+        }
+
+        $existingShipping = Arr::get($existingMetadata, 'shipping', []);
+        if (! is_array($existingShipping)) {
+            $existingShipping = [];
+        }
+
+        $existingDeliveryMetadata = Arr::get($existingShipping, 'delivery_metadata', []);
+        if (! is_array($existingDeliveryMetadata)) {
+            $existingDeliveryMetadata = [];
+        }
+
+        $shipping = array_merge($existingShipping, [
+            'delivered_at' => $deliveredAt->toIso8601String(),
+        ]);
+
+        if ($this->metadata !== []) {
+            $shipping['delivery_metadata'] = array_merge($existingDeliveryMetadata, $this->metadata);
+        }
+
+        $existingMetadata['shipping'] = $shipping;
+        $this->order->metadata = $existingMetadata;
+        $this->order->delivered_at = $deliveredAt;
+
         $this->order->status->transitionTo(Delivered::class);
-        $this->order->delivered_at = now();
-        $this->order->save();
 
         // Dispatch event
         event(new OrderDelivered($this->order));

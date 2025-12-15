@@ -10,6 +10,7 @@ use AIArmada\Inventory\Events\InventoryAllocated;
 use AIArmada\Inventory\Events\InventoryReleased;
 use AIArmada\Inventory\Events\LowInventoryDetected;
 use AIArmada\Inventory\Events\OutOfInventory;
+use AIArmada\Inventory\Exceptions\InsufficientInventoryException;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryAllocationService;
@@ -146,7 +147,7 @@ class InventoryAllocationServiceTest extends InventoryTestCase
     public function test_throws_exception_when_insufficient_inventory(): void
     {
         expect(fn () => $this->allocationService->allocate($this->item, 100, 'cart-1'))
-            ->toThrow(InvalidArgumentException::class, 'Insufficient inventory');
+            ->toThrow(InsufficientInventoryException::class, 'Insufficient inventory');
     }
 
     public function test_releases_existing_allocations_before_new_allocation(): void
@@ -346,7 +347,7 @@ class InventoryAllocationServiceTest extends InventoryTestCase
 
         // Can't allocate 12 because neither location has enough (A has 10, B has 6)
         expect(fn () => $this->allocationService->allocate($this->item, 12, 'cart-no-split'))
-            ->toThrow(InvalidArgumentException::class);
+            ->toThrow(InsufficientInventoryException::class, 'Insufficient inventory');
     }
 
     public function test_release_returns_zero_when_no_allocations(): void

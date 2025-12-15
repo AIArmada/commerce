@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @property string $id
@@ -119,8 +120,20 @@ class AttributeSet extends Model
      */
     public function setAsDefault(): void
     {
-        static::query()->update(['is_default' => false]);
-        $this->update(['is_default' => true]);
+        DB::transaction(function (): void {
+            $query = static::query();
+
+            if ($this->owner_type === null || $this->owner_id === null) {
+                $query->whereNull('owner_type')->whereNull('owner_id');
+            } else {
+                $query->where('owner_type', $this->owner_type)
+                    ->where('owner_id', $this->owner_id);
+            }
+
+            $query->update(['is_default' => false]);
+
+            $this->update(['is_default' => true]);
+        });
     }
 
     protected static function booted(): void

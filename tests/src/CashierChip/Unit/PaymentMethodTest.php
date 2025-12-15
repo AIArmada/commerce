@@ -2,105 +2,74 @@
 
 declare(strict_types=1);
 
+namespace AIArmada\Commerce\Tests\CashierChip\Unit;
+
 use AIArmada\CashierChip\PaymentMethod;
+use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Commerce\Tests\CashierChip\Fixtures\User;
+use Mockery;
 
-beforeEach(function (): void {
-    $this->owner = new User([
-        'id' => 1,
-        'name' => 'Test User',
-        'email' => 'test@example.com',
-        'default_pm_id' => 'test-recurring-token',
-    ]);
+class PaymentMethodTest extends CashierChipTestCase
+{
+    public function test_it_can_instantiate_and_access_properties()
+    {
+        $owner = new User;
+        $tokenData = [
+            'id' => 'tok_123',
+            'recurring_token' => 'tok_123',
+            'card_brand' => 'Visa',
+            'brand' => 'Visa',
+            'last_4' => '4242',
+            'card_last_4' => '4242',
+            'exp_month' => 12,
+            'exp_year' => 2030,
+            'type' => 'card',
+        ];
 
-    $this->recurringTokenData = [
-        'id' => 'test-recurring-token',
-        'recurring_token' => 'test-recurring-token',
-        'card_brand' => 'Visa',
-        'brand' => 'Visa',
-        'last_4' => '4242',
-        'card_last_4' => '4242',
-        'exp_month' => 12,
-        'exp_year' => 2025,
-        'type' => 'card',
-    ];
-});
+        $paymentMethod = new PaymentMethod($owner, $tokenData);
 
-it('can get recurring token id', function (): void {
-    $paymentMethod = new PaymentMethod($this->owner, $this->recurringTokenData);
+        $this->assertEquals('tok_123', $paymentMethod->id());
+        $this->assertEquals('Visa', $paymentMethod->brand());
+        $this->assertEquals('4242', $paymentMethod->lastFour());
+        $this->assertEquals(12, $paymentMethod->expirationMonth());
+        $this->assertEquals(2030, $paymentMethod->expirationYear());
+        $this->assertEquals('card', $paymentMethod->type());
+        $this->assertSame($owner, $paymentMethod->owner());
+        $this->assertEquals($tokenData, $paymentMethod->asChipRecurringToken());
+        $this->assertEquals($tokenData, $paymentMethod->toArray());
+        $this->assertEquals(json_encode($tokenData), $paymentMethod->toJson());
 
-    expect($paymentMethod->id())->toBe('test-recurring-token');
-});
+        // Blade aliases
+        $this->assertEquals('Visa', $paymentMethod->cardBrand());
+        $this->assertEquals('4242', $paymentMethod->cardLastFour());
+        $this->assertEquals(12, $paymentMethod->cardExpMonth());
+        $this->assertEquals(2030, $paymentMethod->cardExpYear());
+        $this->assertEquals('tok_123', $paymentMethod->chipToken());
+    }
 
-it('can get card brand', function (): void {
-    $paymentMethod = new PaymentMethod($this->owner, $this->recurringTokenData);
+    public function test_it_can_check_is_default()
+    {
+        $owner = Mockery::mock(User::class);
+        $tokenData = ['id' => 'tok_123'];
+        $paymentMethod = new PaymentMethod($owner, $tokenData);
 
-    expect($paymentMethod->brand())->toBe('Visa');
-});
+        $owner->shouldReceive('defaultPaymentMethod')->andReturn($paymentMethod);
 
-it('can get last four digits', function (): void {
-    $paymentMethod = new PaymentMethod($this->owner, $this->recurringTokenData);
+        $this->assertTrue($paymentMethod->isDefault());
 
-    expect($paymentMethod->lastFour())->toBe('4242');
-});
+        $otherMethod = new PaymentMethod($owner, ['id' => 'tok_456']);
+        $this->assertFalse($otherMethod->isDefault());
+    }
 
-it('can get expiration month', function (): void {
-    $paymentMethod = new PaymentMethod($this->owner, $this->recurringTokenData);
+    public function test_it_can_delete()
+    {
+        $owner = Mockery::mock(User::class);
+        $tokenData = ['id' => 'tok_123'];
+        $paymentMethod = new PaymentMethod($owner, $tokenData);
 
-    expect($paymentMethod->expirationMonth())->toBe(12);
-});
+        $owner->shouldReceive('deletePaymentMethod')->with('tok_123')->once();
 
-it('can get expiration year', function (): void {
-    $paymentMethod = new PaymentMethod($this->owner, $this->recurringTokenData);
-
-    expect($paymentMethod->expirationYear())->toBe(2025);
-});
-
-it('can get payment method type', function (): void {
-    $paymentMethod = new PaymentMethod($this->owner, $this->recurringTokenData);
-
-    expect($paymentMethod->type())->toBe('card');
-});
-
-it('can check if default payment method', function (): void {
-    // For isDefault() to work, the owner needs to have a defaultPaymentMethod() method
-    // that returns a PaymentMethod instance. Since our mock User doesn't have this,
-    // we create a mock that returns null (meaning this is not the default)
-    $paymentMethod = new PaymentMethod($this->owner, $this->recurringTokenData);
-
-    // The method should return false since mock User->defaultPaymentMethod() returns null
-    expect($paymentMethod->isDefault())->toBeFalse();
-});
-
-it('can get owner', function (): void {
-    $paymentMethod = new PaymentMethod($this->owner, $this->recurringTokenData);
-
-    expect($paymentMethod->owner())->toBe($this->owner);
-});
-
-it('can get as chip recurring token', function (): void {
-    $paymentMethod = new PaymentMethod($this->owner, $this->recurringTokenData);
-
-    expect($paymentMethod->asChipRecurringToken())->toBeArray();
-    expect($paymentMethod->asChipRecurringToken()['id'])->toBe('test-recurring-token');
-});
-
-it('can convert to array', function (): void {
-    $paymentMethod = new PaymentMethod($this->owner, $this->recurringTokenData);
-
-    expect($paymentMethod->toArray())->toBeArray();
-    expect($paymentMethod->toArray()['id'])->toBe('test-recurring-token');
-});
-
-it('can convert to json', function (): void {
-    $paymentMethod = new PaymentMethod($this->owner, $this->recurringTokenData);
-
-    expect($paymentMethod->toJson())->toBeString();
-});
-
-it('can dynamically access properties', function (): void {
-    $paymentMethod = new PaymentMethod($this->owner, $this->recurringTokenData);
-
-    expect($paymentMethod->id)->toBe('test-recurring-token');
-    expect($paymentMethod->type)->toBe('card');
-});
+        $paymentMethod->delete();
+        $this->assertTrue(true);
+    }
+}

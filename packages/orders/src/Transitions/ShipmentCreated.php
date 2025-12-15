@@ -7,6 +7,7 @@ namespace AIArmada\Orders\Transitions;
 use AIArmada\Orders\Events\OrderShipped;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Shipped;
+use Illuminate\Support\Arr;
 use Spatie\ModelStates\Transition;
 
 /**
@@ -28,22 +29,39 @@ class ShipmentCreated extends Transition
 
     public function handle(): Order
     {
-        // Update order state and shipped timestamp
-        $this->order->status->transitionTo(Shipped::class);
-        $this->order->shipped_at = now();
-        $this->order->save();
+        $shippedAt = now();
 
-        // Store shipping info in metadata if no dedicated shipment table
         $existingMetadata = $this->order->metadata ?? [];
-        $this->order->metadata = array_merge($existingMetadata, [
-            'shipping' => [
-                'carrier' => $this->carrier,
-                'tracking_number' => $this->trackingNumber,
-                'shipment_id' => $this->shipmentId,
-                'shipped_at' => now()->toIso8601String(),
-            ],
+        if (! is_array($existingMetadata)) {
+            $existingMetadata = [];
+        }
+
+        $existingShipping = Arr::get($existingMetadata, 'shipping', []);
+        if (! is_array($existingShipping)) {
+            $existingShipping = [];
+        }
+
+        $existingShippingMetadata = Arr::get($existingShipping, 'metadata', []);
+        if (! is_array($existingShippingMetadata)) {
+            $existingShippingMetadata = [];
+        }
+
+        $shipping = array_merge($existingShipping, [
+            'carrier' => $this->carrier,
+            'tracking_number' => $this->trackingNumber,
+            'shipment_id' => $this->shipmentId,
+            'shipped_at' => $shippedAt->toIso8601String(),
         ]);
-        $this->order->save();
+
+        if ($this->metadata !== []) {
+            $shipping['metadata'] = array_merge($existingShippingMetadata, $this->metadata);
+        }
+
+        $existingMetadata['shipping'] = $shipping;
+        $this->order->metadata = $existingMetadata;
+        $this->order->shipped_at = $shippedAt;
+
+        $this->order->status->transitionTo(Shipped::class);
 
         // Dispatch event
         event(new OrderShipped(

@@ -21,8 +21,8 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
 
             // Optional: Link to customer or segment
-            $table->uuid('customer_id')->nullable();
-            $table->uuid('segment_id')->nullable();
+            $table->foreignUuid('customer_id')->nullable();
+            $table->foreignUuid('segment_id')->nullable();
 
             // Scheduling
             $table->timestamp('starts_at')->nullable();
@@ -34,6 +34,8 @@ return new class extends Migration
             // Indexes
             $table->index(['is_active', 'priority']);
             $table->index(['starts_at', 'ends_at']);
+            $table->index('customer_id');
+            $table->index('segment_id');
         });
     }
 

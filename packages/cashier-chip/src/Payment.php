@@ -136,7 +136,7 @@ class Payment implements Arrayable, Jsonable, JsonSerializable
      */
     public function isSucceeded(): bool
     {
-        return $this->status() === self::STATUS_SUCCESS;
+        return in_array($this->status(), [self::STATUS_SUCCESS, 'paid'], true);
     }
 
     /**

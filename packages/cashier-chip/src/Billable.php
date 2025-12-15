@@ -12,6 +12,7 @@ use AIArmada\CashierChip\Concerns\PerformsCharges;
 
 trait Billable
 {
+    use Concerns\HandlesPaymentFailures;
     use ManagesCustomer;
     use ManagesInvoices;
     use ManagesPaymentMethods;

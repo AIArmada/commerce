@@ -235,7 +235,20 @@ describe('Product Model', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            expect($product->getFormattedPrice())->toContain('1,050');
+            expect($product->getFormattedPrice())->toContain('10.50');
+        });
+
+        it('formats price using the product currency', function (): void {
+            config(['products.currency.default' => 'MYR']);
+
+            $product = Product::create([
+                'name' => 'USD Product',
+                'price' => 1000,
+                'currency' => 'USD',
+                'status' => ProductStatus::Active,
+            ]);
+
+            expect($product->getFormattedPrice())->toContain('$');
         });
 
         it('can format compare price', function (): void {
@@ -246,7 +259,7 @@ describe('Product Model', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            expect($product->getFormattedComparePrice())->toContain('1,000');
+            expect($product->getFormattedComparePrice())->toContain('10.00');
         });
 
         it('returns null for formatted compare price when not set', function (): void {
@@ -267,7 +280,7 @@ describe('Product Model', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            expect($product->getFormattedCost())->toContain('500');
+            expect($product->getFormattedCost())->toContain('5.00');
         });
 
         it('returns null for formatted cost when not set', function (): void {
@@ -359,6 +372,17 @@ describe('Product Model', function (): void {
                 'name' => 'Zero Cost Product',
                 'price' => 1000,
                 'cost' => 0,
+                'status' => ProductStatus::Active,
+            ]);
+
+            expect($product->getProfitMargin())->toBeNull();
+        });
+
+        it('returns null when price is zero (avoid division by zero)', function (): void {
+            $product = Product::create([
+                'name' => 'Zero Price Product',
+                'price' => 0,
+                'cost' => 100,
                 'status' => ProductStatus::Active,
             ]);
 

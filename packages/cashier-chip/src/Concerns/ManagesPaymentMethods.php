@@ -25,6 +25,10 @@ trait ManagesPaymentMethods
 
         $tokens = Cashier::chip()->listClientRecurringTokens($this->chip_id);
 
+        if (isset($tokens['results']) && is_array($tokens['results'])) {
+            $tokens = $tokens['results'];
+        }
+
         return collect($tokens)->map(function ($token) {
             return new PaymentMethod($this, $token);
         });

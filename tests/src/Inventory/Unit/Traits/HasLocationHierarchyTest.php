@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Inventory\Models\InventoryLocation;
 use Illuminate\Database\Eloquent\Collection;
-use InvalidArgumentException;
 
 describe('HasLocationHierarchy', function (): void {
     describe('parent relationship', function (): void {

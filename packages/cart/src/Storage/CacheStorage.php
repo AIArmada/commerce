@@ -73,11 +73,20 @@ final readonly class CacheStorage implements StorageInterface
     {
         $this->cache->forget($this->getItemsKey($identifier, $instance));
         $this->cache->forget($this->getConditionsKey($identifier, $instance));
-        $this->clearMetadata($identifier, $instance);
+        $this->clearMetadataKeys($identifier, $instance);
         $this->cache->forget($this->getVersionKey($identifier, $instance));
         $this->cache->forget($this->getIdKey($identifier, $instance));
         $this->cache->forget($this->getCreatedAtKey($identifier, $instance));
         $this->cache->forget($this->getUpdatedAtKey($identifier, $instance));
+        $this->cache->forget($this->getExpiresAtKey($identifier, $instance));
+        $this->cache->forget($this->getLastActivityAtKey($identifier, $instance));
+        $this->cache->forget($this->getCheckoutStartedAtKey($identifier, $instance));
+        $this->cache->forget($this->getCheckoutAbandonedAtKey($identifier, $instance));
+        $this->cache->forget($this->getRecoveryAttemptsKey($identifier, $instance));
+        $this->cache->forget($this->getRecoveredAtKey($identifier, $instance));
+        $this->cache->forget($this->getEventStreamPositionKey($identifier, $instance));
+        $this->cache->forget($this->getAggregateVersionKey($identifier, $instance));
+        $this->cache->forget($this->getSnapshotAtKey($identifier, $instance));
         $this->unregisterInstance($identifier, $instance);
     }
 
@@ -86,21 +95,27 @@ final readonly class CacheStorage implements StorageInterface
      */
     public function flush(): void
     {
-        // For cache storage, we'll clear all items
-        // In production you might want to use cache tags for more granular control
-        $store = $this->cache->getStore();
-        if (method_exists($store, 'flush')) { // @phpstan-ignore function.alreadyNarrowedType
-            $store->flush();
+        $identifiers = $this->cache->get($this->getIdentifiersRegistryKey(), []);
+
+        if (! is_array($identifiers) || $identifiers === []) {
+            return;
         }
+
+        foreach ($identifiers as $identifier) {
+            if (! is_string($identifier) || $identifier === '') {
+                continue;
+            }
+
+            $this->forgetIdentifier($identifier);
+        }
+
+        $this->cache->forget($this->getIdentifiersRegistryKey());
     }
 
     /**
      * Get all instances for a specific identifier
      *
-     * @return array<string, mixed>
-     */
-    /**
-     * @return array<int, mixed>
+     * @return array<string>
      */
     public function getInstances(string $identifier): array
     {
@@ -730,7 +745,13 @@ final readonly class CacheStorage implements StorageInterface
      */
     private function registerInstance(string $identifier, string $instance): void
     {
+        $this->registerIdentifier($identifier);
+
         $instances = $this->cache->get($this->getInstanceRegistryKey($identifier), []);
+        if (! is_array($instances)) {
+            $instances = [];
+        }
+
         if (! in_array($instance, $instances, true)) {
             $instances[] = $instance;
         }
@@ -745,16 +766,63 @@ final readonly class CacheStorage implements StorageInterface
     {
         $instances = $this->cache->get($this->getInstanceRegistryKey($identifier), []);
 
-        if ($instances === []) {
+        if (! is_array($instances) || $instances === []) {
             return;
         }
 
-        $filtered = array_values(array_filter($instances, fn (string $value) => $value !== $instance));
+        $filtered = array_values(array_filter(
+            $instances,
+            static fn (mixed $value): bool => is_string($value) && $value !== $instance
+        ));
         if ($filtered === []) {
             $this->cache->forget($this->getInstanceRegistryKey($identifier));
+            $this->unregisterIdentifier($identifier);
         } else {
             $this->cache->put($this->getInstanceRegistryKey($identifier), $filtered, $this->ttl);
         }
+    }
+
+    private function getIdentifiersRegistryKey(): string
+    {
+        return "{$this->getBasePrefix()}._identifiers";
+    }
+
+    private function registerIdentifier(string $identifier): void
+    {
+        $registryKey = $this->getIdentifiersRegistryKey();
+        $identifiers = $this->cache->get($registryKey, []);
+
+        if (! is_array($identifiers)) {
+            $identifiers = [];
+        }
+
+        if (! in_array($identifier, $identifiers, true)) {
+            $identifiers[] = $identifier;
+            $this->cache->put($registryKey, $identifiers, $this->ttl);
+        }
+    }
+
+    private function unregisterIdentifier(string $identifier): void
+    {
+        $registryKey = $this->getIdentifiersRegistryKey();
+        $identifiers = $this->cache->get($registryKey, []);
+
+        if (! is_array($identifiers) || $identifiers === []) {
+            return;
+        }
+
+        $filtered = array_values(array_filter(
+            $identifiers,
+            static fn (mixed $value): bool => is_string($value) && $value !== $identifier
+        ));
+
+        if ($filtered === []) {
+            $this->cache->forget($registryKey);
+
+            return;
+        }
+
+        $this->cache->put($registryKey, $filtered, $this->ttl);
     }
 
     private function touchCart(string $identifier, string $instance): void

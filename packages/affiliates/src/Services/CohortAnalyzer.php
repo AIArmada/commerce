@@ -279,9 +279,14 @@ final class CohortAnalyzer
         $to = $to ?? now();
 
         $affiliatesTable = (new Affiliate)->getTable();
+        $driver = DB::connection()->getDriverName();
+
+        $sourceExpression = $driver === 'sqlite'
+            ? "COALESCE(json_extract(metadata, '$.source'), 'direct')"
+            : "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.source')), 'direct')";
 
         $sources = DB::table($affiliatesTable)
-            ->selectRaw("COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.source')), 'direct') as source")
+            ->selectRaw("$sourceExpression as source")
             ->whereBetween('created_at', [$from, $to])
             ->groupBy('source')
             ->pluck('source');
@@ -336,13 +341,18 @@ final class CohortAnalyzer
     private function getCohorts(Carbon $from, Carbon $to): Collection
     {
         $affiliatesTable = (new Affiliate)->getTable();
+        $driver = DB::connection()->getDriverName();
+
+        $dateFormat = $driver === 'sqlite'
+            ? "strftime('%Y-%m', created_at)"
+            : "DATE_FORMAT(created_at, '%Y-%m')";
 
         return DB::table($affiliatesTable)
-            ->select('id', DB::raw("DATE_FORMAT(created_at, '%Y-%m') as cohort_month"))
+            ->select('id', DB::raw("$dateFormat as cohort_month"))
             ->whereBetween('created_at', [$from, $to])
             ->get()
             ->groupBy('cohort_month')
-            ->map(fn ($group) => $group->pluck('id')->toArray());
+            ->map(fn($group) => $group->pluck('id')->toArray());
     }
 
     /**

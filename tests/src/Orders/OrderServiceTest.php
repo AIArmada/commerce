@@ -163,7 +163,7 @@ describe('OrderService', function (): void {
 
             expect($updatedOrder->subtotal)->toBe(10450) // 5300 + 5150 (item totals)
                 ->and($updatedOrder->tax_total)->toBe(450) // 300 + 150 (tax_amounts)
-                ->and($updatedOrder->grand_total)->toBe(11200); // 10450 + 500 + 450 - 200
+                ->and($updatedOrder->grand_total)->toBe(10750); // 10450 + 500 - 200
         });
 
         it('can create order from cart object', function (): void {

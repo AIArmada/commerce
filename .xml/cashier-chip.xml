@@ -13,6 +13,10 @@
         <include>
             <directory>../packages/cashier-chip/src</directory>
         </include>
+        <exclude>
+            <file>../packages/cashier-chip/src/Invoices/DocsInvoiceRenderer.php</file>
+            <directory>../packages/cashier-chip/src/Testing</directory>
+        </exclude>
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>

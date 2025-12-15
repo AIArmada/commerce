@@ -10,6 +10,7 @@ use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Pricing\Models\Promotion;
 use AIArmada\Pricing\Services\PriceCalculator;
+use Illuminate\Support\Facades\DB;
 
 // Test implementation of Priceable interface
 class TestPriceableItem implements Priceable
@@ -334,6 +335,79 @@ describe('PriceCalculator Service', function (): void {
     });
 
     describe('promotional pricing', function (): void {
+        it('applies promotion when item is attached', function (): void {
+            $itemId = 'promo-item-' . uniqid();
+
+            $promotion = Promotion::create([
+                'name' => 'Summer Sale',
+                'type' => PromotionType::Percentage,
+                'discount_value' => 20, // 20%
+                'is_active' => true,
+            ]);
+
+            DB::table('promotionables')->insert([
+                'promotion_id' => $promotion->id,
+                'promotionable_type' => TestPriceableItem::class,
+                'promotionable_id' => $itemId,
+            ]);
+
+            $item = new TestPriceableItem($itemId, 10000);
+            $result = $this->calculator->calculate($item);
+
+            expect($result->finalPrice)->toBe(8000)
+                ->and($result->discountSource)->toBe('Promotion')
+                ->and($result->promotionName)->toBe('Summer Sale')
+                ->and($result->breakdown[0]['type'])->toBe('promotion');
+        });
+
+        it('skips attached promotion when minimum quantity not met', function (): void {
+            $itemId = 'promo-min-qty-item-' . uniqid();
+
+            $promotion = Promotion::create([
+                'name' => 'Bulk Only',
+                'type' => PromotionType::Percentage,
+                'discount_value' => 20,
+                'min_quantity' => 3,
+                'is_active' => true,
+            ]);
+
+            DB::table('promotionables')->insert([
+                'promotion_id' => $promotion->id,
+                'promotionable_type' => TestPriceableItem::class,
+                'promotionable_id' => $itemId,
+            ]);
+
+            $item = new TestPriceableItem($itemId, 10000);
+            $result = $this->calculator->calculate($item, 2);
+
+            expect($result->finalPrice)->toBe(10000)
+                ->and($result->promotionName)->toBeNull();
+        });
+
+        it('skips attached promotion when minimum purchase not met', function (): void {
+            $itemId = 'promo-min-purchase-item-' . uniqid();
+
+            $promotion = Promotion::create([
+                'name' => 'Min Spend',
+                'type' => PromotionType::Percentage,
+                'discount_value' => 20,
+                'min_purchase_amount' => 25000, // RM250.00
+                'is_active' => true,
+            ]);
+
+            DB::table('promotionables')->insert([
+                'promotion_id' => $promotion->id,
+                'promotionable_type' => TestPriceableItem::class,
+                'promotionable_id' => $itemId,
+            ]);
+
+            $item = new TestPriceableItem($itemId, 10000);
+            $result = $this->calculator->calculate($item, 2);
+
+            expect($result->finalPrice)->toBe(10000)
+                ->and($result->promotionName)->toBeNull();
+        });
+
         it('does not apply promotion when item is not attached', function (): void {
             $itemId = 'no-promo-item-' . uniqid();
 
@@ -356,11 +430,17 @@ describe('PriceCalculator Service', function (): void {
         it('does not apply inactive promotion', function (): void {
             $itemId = 'inactive-promo-item-' . uniqid();
 
-            Promotion::create([
+            $promotion = Promotion::create([
                 'name' => 'Inactive Sale',
                 'type' => PromotionType::Percentage,
                 'discount_value' => 50,
                 'is_active' => false,
+            ]);
+
+            DB::table('promotionables')->insert([
+                'promotion_id' => $promotion->id,
+                'promotionable_type' => TestPriceableItem::class,
+                'promotionable_id' => $itemId,
             ]);
 
             $item = new TestPriceableItem($itemId, 10000);
@@ -373,12 +453,18 @@ describe('PriceCalculator Service', function (): void {
         it('does not apply expired promotion', function (): void {
             $itemId = 'expired-promo-item-' . uniqid();
 
-            Promotion::create([
+            $promotion = Promotion::create([
                 'name' => 'Expired Sale',
                 'type' => PromotionType::Percentage,
                 'discount_value' => 30,
                 'is_active' => true,
                 'ends_at' => now()->subDay(),
+            ]);
+
+            DB::table('promotionables')->insert([
+                'promotion_id' => $promotion->id,
+                'promotionable_type' => TestPriceableItem::class,
+                'promotionable_id' => $itemId,
             ]);
 
             $item = new TestPriceableItem($itemId, 10000);
