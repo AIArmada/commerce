@@ -53,6 +53,7 @@ final class CalculateShippingRate
                 $rates = $rates->merge($carrierRates);
             } catch (Throwable $e) {
                 report($e);
+
                 continue;
             }
         }

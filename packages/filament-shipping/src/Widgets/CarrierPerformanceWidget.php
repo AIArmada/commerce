@@ -97,15 +97,6 @@ class CarrierPerformanceWidget extends ChartWidget
         ];
     }
 
-    private function resolveOwner(): ?Model
-    {
-        if (! app()->bound(OwnerResolverInterface::class)) {
-            return null;
-        }
-
-        return app(OwnerResolverInterface::class)->resolve();
-    }
-
     protected function getOptions(): array
     {
         return [
@@ -124,5 +115,14 @@ class CarrierPerformanceWidget extends ChartWidget
                 ],
             ],
         ];
+    }
+
+    private function resolveOwner(): ?Model
+    {
+        if (! app()->bound(OwnerResolverInterface::class)) {
+            return null;
+        }
+
+        return app(OwnerResolverInterface::class)->resolve();
     }
 }

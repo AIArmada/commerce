@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 $tablePrefix = env('JNT_TABLE_PREFIX', 'jnt_');
 
 $tables = [

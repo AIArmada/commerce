@@ -57,8 +57,8 @@ describe('RoleHierarchyWidget', function (): void {
         $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
 
         // Give the role some permissions
-        $perm1 = \Spatie\Permission\Models\Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
-        $perm2 = \Spatie\Permission\Models\Permission::create(['name' => 'posts.edit', 'guard_name' => 'web']);
+        $perm1 = Spatie\Permission\Models\Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
+        $perm2 = Spatie\Permission\Models\Permission::create(['name' => 'posts.edit', 'guard_name' => 'web']);
         $role->givePermissionTo([$perm1, $perm2]);
 
         $mockService = Mockery::mock(RoleInheritanceService::class);
@@ -86,13 +86,13 @@ describe('RoleHierarchyWidget', function (): void {
     it('builds hierarchy with nested children', function (): void {
         // Create parent role with permissions
         $parentRole = Role::create(['name' => 'super-admin', 'guard_name' => 'web']);
-        $perm1 = \Spatie\Permission\Models\Permission::create(['name' => 'all.manage', 'guard_name' => 'web']);
-        $perm2 = \Spatie\Permission\Models\Permission::create(['name' => 'users.manage', 'guard_name' => 'web']);
+        $perm1 = Spatie\Permission\Models\Permission::create(['name' => 'all.manage', 'guard_name' => 'web']);
+        $perm2 = Spatie\Permission\Models\Permission::create(['name' => 'users.manage', 'guard_name' => 'web']);
         $parentRole->givePermissionTo([$perm1, $perm2]);
 
         // Create child role with permissions
         $childRole = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $perm3 = \Spatie\Permission\Models\Permission::create(['name' => 'posts.edit', 'guard_name' => 'web']);
+        $perm3 = Spatie\Permission\Models\Permission::create(['name' => 'posts.edit', 'guard_name' => 'web']);
         $childRole->givePermissionTo($perm3);
 
         $mockService = Mockery::mock(RoleInheritanceService::class);
@@ -127,7 +127,7 @@ describe('RoleHierarchyWidget', function (): void {
     it('handles multiple root roles', function (): void {
         // Create roles with permissions
         $role1 = Role::create(['name' => 'admin', 'guard_name' => 'web']);
-        $perm1 = \Spatie\Permission\Models\Permission::create(['name' => 'admin.manage', 'guard_name' => 'web']);
+        $perm1 = Spatie\Permission\Models\Permission::create(['name' => 'admin.manage', 'guard_name' => 'web']);
         $role1->givePermissionTo($perm1);
 
         $role2 = Role::create(['name' => 'editor', 'guard_name' => 'web']);

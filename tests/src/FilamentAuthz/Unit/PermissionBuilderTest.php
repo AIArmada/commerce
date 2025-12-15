@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\Services\PermissionBuilder;
-use AIArmada\FilamentAuthz\Services\PermissionRegistry;
 
 describe('PermissionBuilder', function (): void {
     describe('for', function (): void {
@@ -215,7 +214,7 @@ describe('PermissionBuilder', function (): void {
 
             expect($permissions)->toHaveCount(5);
 
-            foreach ($permissions as $name => $definition) {
+            foreach ($permissions as $definition) {
                 expect($definition)->toHaveKeys(['name', 'description', 'group', 'resource', 'guard_name'])
                     ->and($definition['resource'])->toBe('posts')
                     ->and($definition['group'])->toBe('Content')

@@ -9,24 +9,23 @@ use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredWidget;
 use Illuminate\Console\Command;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Permission;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     config()->set('permission.models.permission', Permission::class);
 });
 
-describe('DiscoverCommand', function () {
-    it('has correct signature', function () {
+describe('DiscoverCommand', function (): void {
+    it('has correct signature', function (): void {
         $command = new DiscoverCommand;
         $signature = $command->getName();
 
         expect($signature)->toBe('authz:discover');
     });
 
-    it('discovers all entity types by default', function () {
+    it('discovers all entity types by default', function (): void {
         $discovery = Mockery::mock(EntityDiscoveryService::class);
         $discovery->shouldReceive('discoverResources')->andReturn(collect());
         $discovery->shouldReceive('discoverPages')->andReturn(collect());
@@ -38,7 +37,7 @@ describe('DiscoverCommand', function () {
             ->assertSuccessful();
     });
 
-    it('discovers only resources when type option is resources', function () {
+    it('discovers only resources when type option is resources', function (): void {
         $discovery = Mockery::mock(EntityDiscoveryService::class);
         $discovery->shouldReceive('discoverResources')->once()->andReturn(collect());
         $discovery->shouldNotReceive('discoverPages');
@@ -50,7 +49,7 @@ describe('DiscoverCommand', function () {
             ->assertSuccessful();
     });
 
-    it('discovers only pages when type option is pages', function () {
+    it('discovers only pages when type option is pages', function (): void {
         $discovery = Mockery::mock(EntityDiscoveryService::class);
         $discovery->shouldNotReceive('discoverResources');
         $discovery->shouldReceive('discoverPages')->once()->andReturn(collect());
@@ -62,7 +61,7 @@ describe('DiscoverCommand', function () {
             ->assertSuccessful();
     });
 
-    it('discovers only widgets when type option is widgets', function () {
+    it('discovers only widgets when type option is widgets', function (): void {
         $discovery = Mockery::mock(EntityDiscoveryService::class);
         $discovery->shouldNotReceive('discoverResources');
         $discovery->shouldNotReceive('discoverPages');
@@ -74,7 +73,7 @@ describe('DiscoverCommand', function () {
             ->assertSuccessful();
     });
 
-    it('filters by panel when option provided', function () {
+    it('filters by panel when option provided', function (): void {
         $discovery = Mockery::mock(EntityDiscoveryService::class);
         $discovery->shouldReceive('discoverResources')
             ->with(Mockery::on(fn ($opts) => $opts['panels'] === ['admin']))
@@ -92,7 +91,7 @@ describe('DiscoverCommand', function () {
             ->assertSuccessful();
     });
 
-    it('outputs json format when format option is json', function () {
+    it('outputs json format when format option is json', function (): void {
         $discovery = Mockery::mock(EntityDiscoveryService::class);
         $discovery->shouldReceive('discoverResources')->andReturn(collect());
         $discovery->shouldReceive('discoverPages')->andReturn(collect());
@@ -104,7 +103,7 @@ describe('DiscoverCommand', function () {
             ->assertSuccessful();
     });
 
-    it('displays discovered resources in table', function () {
+    it('displays discovered resources in table', function (): void {
         $resource = new DiscoveredResource(
             fqcn: 'App\Filament\Resources\UserResource',
             model: 'App\Models\User',
@@ -125,7 +124,7 @@ describe('DiscoverCommand', function () {
             ->assertSuccessful();
     });
 
-    it('displays discovered pages in table', function () {
+    it('displays discovered pages in table', function (): void {
         $page = new DiscoveredPage(
             fqcn: 'App\Filament\Pages\SettingsPage',
             title: 'Settings',
@@ -146,7 +145,7 @@ describe('DiscoverCommand', function () {
             ->assertSuccessful();
     });
 
-    it('displays discovered widgets in table', function () {
+    it('displays discovered widgets in table', function (): void {
         $widget = new DiscoveredWidget(
             fqcn: 'App\Filament\Widgets\StatsWidget',
             type: 'stats',
@@ -167,7 +166,7 @@ describe('DiscoverCommand', function () {
             ->assertSuccessful();
     });
 
-    it('generates permissions when generate option is provided', function () {
+    it('generates permissions when generate option is provided', function (): void {
         $resource = new DiscoveredResource(
             fqcn: 'App\Filament\Resources\UserResource',
             model: 'App\Models\User',
@@ -208,7 +207,7 @@ describe('DiscoverCommand', function () {
         expect(Permission::count())->toBeGreaterThan(0);
     });
 
-    it('shows none found when no entities discovered', function () {
+    it('shows none found when no entities discovered', function (): void {
         $discovery = Mockery::mock(EntityDiscoveryService::class);
         $discovery->shouldReceive('discoverResources')->andReturn(collect());
         $discovery->shouldReceive('discoverPages')->andReturn(collect());

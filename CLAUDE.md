@@ -28,7 +28,7 @@
 - **Impl**:
 - Mig: `$table->nullableMorphs('owner')`.
 - Model: `use HasOwner`.
-- Provider: Configure `COMMERCE_OWNER_RESOLVER` (or bind `OwnerResolverInterface` once, centrally via commerce-support).
+- Provider: Bind `OwnerResolverInterface`.
 - **Usage**:
 - Owner: `Model::forOwner($owner)->get()`.
 - Global: `Model::globalOnly()->get()`.
@@ -250,12 +250,4 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 ## Enums
 - Typically, keys in an Enum should be TitleCase. For example: `FavoritePerson`, `BestLake`, `Monthly`.
-
-
-=== tests rules ===
-
-## Test Enforcement
-
-- Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
-- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test` with a specific filename or filter.
 </laravel-boost-guidelines>

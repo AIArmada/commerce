@@ -7,7 +7,6 @@ use AIArmada\FilamentAuthz\Http\Middleware\AuthorizePanelRoles;
 use Filament\Facades\Filament;
 use Filament\Panel;
 use Illuminate\Http\Request;
-use Mockery\MockInterface;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 beforeEach(function (): void {

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 $webhookKeysEnv = env('CHIP_WEBHOOK_PUBLIC_KEYS');
 $webhookKeys = [];
 if ($webhookKeysEnv !== null) {

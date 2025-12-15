@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 $tablePrefix = env('VOUCHERS_TABLE_PREFIX', env('COMMERCE_TABLE_PREFIX', ''));
 
 $tables = [

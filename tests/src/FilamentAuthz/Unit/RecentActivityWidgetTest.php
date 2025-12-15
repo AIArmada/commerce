@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Models\PermissionAuditLog;
 use AIArmada\FilamentAuthz\Widgets\RecentActivityWidget;
-use Filament\Tables\Columns\TextColumn;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
