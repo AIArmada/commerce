@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Enums;
 
+use AIArmada\Shipping\Enums\TrackingStatus;
+
 /**
  * Shipment status workflow.
  */
@@ -136,5 +138,26 @@ enum ShipmentStatus: string
             self::Cancelled,
             self::ReturnToSender,
         ], true);
+    }
+
+    /**
+     * Convert this shipment status to a normalized tracking status.
+     */
+    public function toTrackingStatus(): TrackingStatus
+    {
+        return match ($this) {
+            self::Draft => TrackingStatus::LabelCreated,
+            self::Pending => TrackingStatus::AwaitingPickup,
+            self::AwaitingPickup => TrackingStatus::AwaitingPickup,
+            self::Shipped => TrackingStatus::PickedUp,
+            self::InTransit => TrackingStatus::InTransit,
+            self::OutForDelivery => TrackingStatus::OutForDelivery,
+            self::Delivered => TrackingStatus::Delivered,
+            self::DeliveryFailed => TrackingStatus::DeliveryAttemptFailed,
+            self::ReturnToSender => TrackingStatus::ReturnToSender,
+            self::Cancelled => TrackingStatus::OnHold,
+            self::OnHold => TrackingStatus::OnHold,
+            self::Exception => TrackingStatus::Delayed,
+        };
     }
 }

@@ -260,8 +260,8 @@ describe('PriceTier Model', function (): void {
 
         $tier1 = PriceTier::create([
             'price_list_id' => $priceList->id,
-            'priceable_type' => 'AIArmada\Products\Models\Product',
-            'priceable_id' => 'fake-product-id',
+            'tierable_type' => 'AIArmada\Products\Models\Product',
+            'tierable_id' => 'fake-product-id',
             'min_quantity' => 1,
             'max_quantity' => 9,
             'amount' => 1000,
@@ -270,8 +270,8 @@ describe('PriceTier Model', function (): void {
 
         $tier2 = PriceTier::create([
             'price_list_id' => $priceList->id,
-            'priceable_type' => 'AIArmada\Products\Models\Product',
-            'priceable_id' => 'fake-product-id',
+            'tierable_type' => 'AIArmada\Products\Models\Product',
+            'tierable_id' => 'fake-product-id',
             'min_quantity' => 10,
             'max_quantity' => 49,
             'amount' => 900,
@@ -280,8 +280,8 @@ describe('PriceTier Model', function (): void {
 
         $tier3 = PriceTier::create([
             'price_list_id' => $priceList->id,
-            'priceable_type' => 'AIArmada\Products\Models\Product',
-            'priceable_id' => 'fake-product-id',
+            'tierable_type' => 'AIArmada\Products\Models\Product',
+            'tierable_id' => 'fake-product-id',
             'min_quantity' => 50,
             'max_quantity' => null,
             'amount' => 800,

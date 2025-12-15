@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Tax\DTOs;
+namespace AIArmada\Tax\Data;
 
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
@@ -11,7 +11,7 @@ use Spatie\LaravelData\Data;
 /**
  * Data Transfer Object representing a tax calculation result.
  */
-class TaxResult extends Data
+class TaxResultData extends Data
 {
     public function __construct(
         public int $taxAmount,

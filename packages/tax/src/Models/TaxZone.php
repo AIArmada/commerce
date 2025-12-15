@@ -72,7 +72,6 @@ class TaxZone extends Model
     public static function zeroRate(): self
     {
         return new self([
-            'id' => 'zero-rate',
             'name' => 'Zero Rate Zone',
             'code' => 'ZERO',
             'is_active' => true,
@@ -239,7 +238,7 @@ class TaxZone extends Model
 
         // Wildcard match (e.g., "100*")
         if (str_contains($pattern, '*')) {
-            $regex = '/^' . str_replace('*', '.*', preg_quote($pattern, '/')) . '$/';
+            $regex = '/^' . str_replace('*', '.*', $pattern) . '$/';
 
             return (bool) preg_match($regex, $postcode);
         }

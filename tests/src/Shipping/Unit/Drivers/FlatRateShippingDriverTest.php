@@ -139,3 +139,113 @@ it('services all destinations', function (): void {
     expect($this->driver->servicesDestination($myDestination))->toBeTrue();
     expect($this->driver->servicesDestination($sgDestination))->toBeTrue();
 });
+
+it('tracks shipment with awaiting pickup status', function (): void {
+    $trackingData = $this->driver->track('FLAT-123ABC');
+
+    expect($trackingData->trackingNumber)->toBe('FLAT-123ABC');
+    expect($trackingData->status)->toBe(\AIArmada\Shipping\Enums\TrackingStatus::AwaitingPickup);
+    expect($trackingData->carrier)->toBe('flat_rate');
+    expect($trackingData->events)->toHaveCount(1);
+    expect($trackingData->events->first()->code)->toBe('FLAT');
+    expect($trackingData->events->first()->description)->toBe('Flat rate shipment - tracking not available');
+});
+
+it('validates address always returns valid', function (): void {
+    $address = new AddressData(
+        name: 'Test',
+        phone: '+60123456789',
+        address: '123 Test St',
+        postCode: '50000',
+    );
+
+    $result = $this->driver->validateAddress($address);
+
+    expect($result->isValid())->toBeTrue();
+});
+
+it('cancels shipment always returns true', function (): void {
+    $result = $this->driver->cancelShipment('FLAT-123ABC');
+
+    expect($result)->toBeTrue();
+});
+
+it('generates label with no content', function (): void {
+    $label = $this->driver->generateLabel('FLAT-123ABC');
+
+    expect($label->format)->toBe('none');
+    expect($label->url)->toBeNull();
+    expect($label->content)->toBeNull();
+});
+
+it('returns custom carrier name from config', function (): void {
+    $customDriver = new FlatRateShippingDriver([
+        'name' => 'Custom Flat Rate',
+    ]);
+
+    expect($customDriver->getCarrierName())->toBe('Custom Flat Rate');
+});
+
+it('returns configured methods', function (): void {
+    $customDriver = new FlatRateShippingDriver([
+        'rates' => [
+            'standard' => [
+                'name' => 'Standard Shipping',
+                'rate' => 1000,
+                'estimated_days' => 5,
+            ],
+            'express' => [
+                'name' => 'Express Shipping',
+                'rate' => 2000,
+                'estimated_days' => 2,
+            ],
+        ],
+    ]);
+
+    $methods = $customDriver->getAvailableMethods();
+
+    expect($methods)->toHaveCount(2);
+    expect($methods->first()->code)->toBe('standard');
+    expect($methods->first()->name)->toBe('Standard Shipping');
+    expect($methods->last()->code)->toBe('express');
+});
+
+it('returns multiple configured rates', function (): void {
+    $customDriver = new FlatRateShippingDriver([
+        'rates' => [
+            'standard' => [
+                'name' => 'Standard',
+                'rate' => 1000,
+                'estimated_days' => 5,
+            ],
+            'express' => [
+                'name' => 'Express',
+                'rate' => 2500,
+                'estimated_days' => 2,
+            ],
+        ],
+        'currency' => 'USD',
+    ]);
+
+    $origin = new AddressData(
+        name: 'Sender',
+        phone: '+60123456789',
+        address: '123 Test St',
+        postCode: '50000',
+    );
+
+    $destination = new AddressData(
+        name: 'Receiver',
+        phone: '+60198765432',
+        address: '456 Target St',
+        postCode: '40000',
+    );
+
+    $packages = [new PackageData(weight: 500)];
+
+    $rates = $customDriver->getRates($origin, $destination, $packages);
+
+    expect($rates)->toHaveCount(2);
+    expect($rates->first()->currency)->toBe('USD');
+    expect($rates->first()->calculatedLocally)->toBeTrue();
+});

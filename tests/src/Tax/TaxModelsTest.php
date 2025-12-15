@@ -252,6 +252,7 @@ describe('TaxExemption Model', function (): void {
                 'exemptable_type' => 'Customer',
                 'exemptable_id' => 'cust-' . uniqid(),
                 'certificate_number' => 'CERT-001',
+                'reason' => 'Tax exempt organization',
                 'status' => 'approved',
                 'expires_at' => Carbon::now()->addYear(),
             ]);

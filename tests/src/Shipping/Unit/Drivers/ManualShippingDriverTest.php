@@ -147,3 +147,143 @@ it('validates all addresses as valid', function (): void {
     expect($result)->toBeInstanceOf(AddressValidationResult::class);
     expect($result->valid)->toBeTrue();
 });
+
+it('returns address validation warning', function (): void {
+    $address = new AddressData(
+        name: 'Test',
+        phone: '+60123456789',
+        address: '123 Test St',
+        postCode: '50000',
+    );
+
+    $result = $this->driver->validateAddress($address);
+
+    expect($result->warnings)->toContain('Address validation not available for manual shipping.');
+});
+
+it('tracks shipment with awaiting pickup status', function (): void {
+    $trackingData = $this->driver->track('MAN-123ABC');
+
+    expect($trackingData->trackingNumber)->toBe('MAN-123ABC');
+    expect($trackingData->status)->toBe(\AIArmada\Shipping\Enums\TrackingStatus::AwaitingPickup);
+    expect($trackingData->carrier)->toBe('manual');
+    expect($trackingData->events)->toHaveCount(1);
+    expect($trackingData->events->first()->code)->toBe('MANUAL');
+    expect($trackingData->events->first()->description)->toBe('Manual shipment - tracking not available');
+});
+
+it('cancels shipment always returns true', function (): void {
+    $result = $this->driver->cancelShipment('MAN-123ABC');
+
+    expect($result)->toBeTrue();
+});
+
+it('generates label with no content', function (): void {
+    $label = $this->driver->generateLabel('MAN-123ABC');
+
+    expect($label->format)->toBe('none');
+    expect($label->url)->toBeNull();
+    expect($label->content)->toBeNull();
+});
+
+it('returns custom carrier name from config', function (): void {
+    $customDriver = new ManualShippingDriver([
+        'name' => 'My Custom Shipping',
+    ]);
+
+    expect($customDriver->getCarrierName())->toBe('My Custom Shipping');
+});
+
+it('uses custom estimated days from config', function (): void {
+    $customDriver = new ManualShippingDriver([
+        'estimated_days' => 7,
+    ]);
+
+    $methods = $customDriver->getAvailableMethods();
+
+    expect($methods->first()->minDays)->toBe(7);
+    expect($methods->first()->maxDays)->toBe(9);
+});
+
+it('applies free shipping when cart total meets threshold', function (): void {
+    $customDriver = new ManualShippingDriver([
+        'default_rate' => 1500,
+        'free_shipping_threshold' => 10000, // RM100
+    ]);
+
+    $origin = new AddressData(
+        name: 'Sender',
+        phone: '+60123456789',
+        address: '123 Test St',
+        postCode: '50000',
+    );
+
+    $destination = new AddressData(
+        name: 'Receiver',
+        phone: '+60198765432',
+        address: '456 Target St',
+        postCode: '40000',
+    );
+
+    $packages = [new PackageData(weight: 500)];
+
+    // Cart total above threshold
+    $rates = $customDriver->getRates($origin, $destination, $packages, ['cart_total' => 15000]);
+
+    expect($rates->first()->rate)->toBe(0); // Free shipping
+});
+
+it('does not apply free shipping when cart total below threshold', function (): void {
+    $customDriver = new ManualShippingDriver([
+        'default_rate' => 1500,
+        'free_shipping_threshold' => 10000, // RM100
+    ]);
+
+    $origin = new AddressData(
+        name: 'Sender',
+        phone: '+60123456789',
+        address: '123 Test St',
+        postCode: '50000',
+    );
+
+    $destination = new AddressData(
+        name: 'Receiver',
+        phone: '+60198765432',
+        address: '456 Target St',
+        postCode: '40000',
+    );
+
+    $packages = [new PackageData(weight: 500)];
+
+    // Cart total below threshold
+    $rates = $customDriver->getRates($origin, $destination, $packages, ['cart_total' => 5000]);
+
+    expect($rates->first()->rate)->toBe(1500); // Default rate
+});
+
+it('uses custom currency from config', function (): void {
+    $customDriver = new ManualShippingDriver([
+        'default_rate' => 1000,
+        'currency' => 'USD',
+    ]);
+
+    $origin = new AddressData(
+        name: 'Sender',
+        phone: '+60123456789',
+        address: '123 Test St',
+        postCode: '50000',
+    );
+
+    $destination = new AddressData(
+        name: 'Receiver',
+        phone: '+60198765432',
+        address: '456 Target St',
+        postCode: '40000',
+    );
+
+    $packages = [new PackageData(weight: 500)];
+
+    $rates = $customDriver->getRates($origin, $destination, $packages);
+
+    expect($rates->first()->currency)->toBe('USD');
+});

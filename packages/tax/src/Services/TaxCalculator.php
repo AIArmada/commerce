@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Tax\Services;
 
-use AIArmada\Tax\DTOs\TaxResult;
+use AIArmada\Tax\Data\TaxResultData;
 use AIArmada\Tax\Exceptions\TaxZoneNotFoundException;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
@@ -22,7 +22,10 @@ class TaxCalculator
         string $taxClass = 'standard',
         ?string $zoneId = null,
         array $context = []
-    ): TaxResult {
+    ): TaxResultData {
+        // Add zone ID to context for exemption checking
+        $context['zone_id'] = $zoneId;
+
         // Check for exemption first
         $exemption = $this->checkExemption($context);
         if ($exemption) {
@@ -46,7 +49,7 @@ class TaxCalculator
             $taxAmount = (int) round($taxAmount);
         }
 
-        return new TaxResult(
+        return new TaxResultData(
             taxAmount: $taxAmount,
             rate: $rate,
             zone: $zone,
@@ -57,7 +60,7 @@ class TaxCalculator
     /**
      * Calculate tax for shipping.
      */
-    public function calculateShippingTax(int $shippingAmountInCents, ?string $zoneId = null, array $context = []): TaxResult
+    public function calculateShippingTax(int $shippingAmountInCents, ?string $zoneId = null, array $context = []): TaxResultData
     {
         if (! config('tax.calculate_tax_on_shipping', true)) {
             return $this->createZeroResult($zoneId, $context);
@@ -158,22 +161,23 @@ class TaxCalculator
 
         $zoneId = $context['zone_id'] ?? null;
 
-        return TaxExemption::query()
+        $query = TaxExemption::query()
             ->where('exemptable_id', $customerId)
-            ->active()
-            ->forZone($zoneId)
-            ->first();
+            ->where('status', 'approved')
+            ->forZone($zoneId);
+
+        return $query->first();
     }
 
     /**
      * Create an exempt result.
      */
-    protected function createExemptResult(TaxExemption $exemption): TaxResult
+    protected function createExemptResult(TaxExemption $exemption): TaxResultData
     {
         $zone = TaxZone::zeroRate();
         $rate = TaxRate::zeroRate('exempt', $zone);
 
-        return new TaxResult(
+        return new TaxResultData(
             taxAmount: 0,
             rate: $rate,
             zone: $zone,
@@ -187,13 +191,13 @@ class TaxCalculator
      *
      * @param  array<string, mixed>  $context
      */
-    protected function createZeroResult(?string $zoneId, array $context): TaxResult
+    protected function createZeroResult(?string $zoneId, array $context): TaxResultData
     {
         $zone = $zoneId ? TaxZone::find($zoneId) : null;
         $zone = $zone ?? $this->resolveZone($zoneId, $context);
         $rate = TaxRate::zeroRate('zero', $zone);
 
-        return new TaxResult(
+        return new TaxResultData(
             taxAmount: 0,
             rate: $rate,
             zone: $zone,

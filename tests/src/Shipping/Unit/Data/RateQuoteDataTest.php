@@ -129,3 +129,82 @@ it('can create copy with modified rate', function (): void {
     expect($modifiedQuote->carrier)->toBe('jnt'); // Other fields preserved
     expect($quote->rate)->toBe(800); // Original unchanged
 });
+
+it('can create copy with modified note', function (): void {
+    $quote = new RateQuoteData(
+        carrier: 'jnt',
+        service: 'EZ',
+        rate: 800,
+        currency: 'MYR',
+        estimatedDays: 3,
+        note: null,
+    );
+
+    $modifiedQuote = $quote->withNote('Free shipping promotion');
+
+    expect($modifiedQuote->note)->toBe('Free shipping promotion');
+    expect($modifiedQuote->carrier)->toBe('jnt'); // Other fields preserved
+    expect($modifiedQuote->rate)->toBe(800); // Other fields preserved
+    expect($quote->note)->toBeNull(); // Original unchanged
+});
+
+it('returns estimated delivery date when available', function (): void {
+    $quote = new RateQuoteData(
+        carrier: 'jnt',
+        service: 'EZ',
+        rate: 800,
+        currency: 'MYR',
+        estimatedDays: 3,
+        estimatedDeliveryDate: '2025-12-20',
+    );
+
+    expect($quote->getDeliveryEstimate())->toBe('2025-12-20');
+});
+
+it('preserves restrictions when creating with modified rate', function (): void {
+    $restrictions = ['max_weight' => 30, 'max_value' => 100000];
+    $quote = new RateQuoteData(
+        carrier: 'jnt',
+        service: 'EZ',
+        rate: 800,
+        currency: 'MYR',
+        estimatedDays: 3,
+        restrictions: $restrictions,
+    );
+
+    $modifiedQuote = $quote->withRate(0);
+
+    expect($modifiedQuote->restrictions)->toBe($restrictions);
+});
+
+it('preserves all fields when creating with modified note', function (): void {
+    $expiresAt = new DateTimeImmutable('2025-12-31');
+    $quote = new RateQuoteData(
+        carrier: 'jnt',
+        service: 'EXPRESS',
+        rate: 1500,
+        currency: 'MYR',
+        estimatedDays: 1,
+        estimatedDeliveryDate: '2025-12-20',
+        serviceDescription: 'Express Delivery',
+        restrictions: ['max_weight' => 30],
+        calculatedLocally: true,
+        quoteId: 'QUOTE-123',
+        expiresAt: $expiresAt,
+    );
+
+    $modifiedQuote = $quote->withNote('Promo applied');
+
+    expect($modifiedQuote->carrier)->toBe('jnt');
+    expect($modifiedQuote->service)->toBe('EXPRESS');
+    expect($modifiedQuote->rate)->toBe(1500);
+    expect($modifiedQuote->currency)->toBe('MYR');
+    expect($modifiedQuote->estimatedDays)->toBe(1);
+    expect($modifiedQuote->estimatedDeliveryDate)->toBe('2025-12-20');
+    expect($modifiedQuote->serviceDescription)->toBe('Express Delivery');
+    expect($modifiedQuote->restrictions)->toBe(['max_weight' => 30]);
+    expect($modifiedQuote->calculatedLocally)->toBeTrue();
+    expect($modifiedQuote->quoteId)->toBe('QUOTE-123');
+    expect($modifiedQuote->expiresAt)->toBe($expiresAt);
+    expect($modifiedQuote->note)->toBe('Promo applied');
+});

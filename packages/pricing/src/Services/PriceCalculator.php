@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Pricing\Services;
 
 use AIArmada\Pricing\Contracts\Priceable;
-use AIArmada\Pricing\DTOs\PriceResult;
+use AIArmada\Pricing\Data\PriceResultData;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Pricing\Models\Promotion;
@@ -17,7 +17,7 @@ class PriceCalculator
      *
      * @param  array<string, mixed>  $context
      */
-    public function calculate(Priceable $item, int $quantity = 1, array $context = []): PriceResult
+    public function calculate(Priceable $item, int $quantity = 1, array $context = []): PriceResultData
     {
         $basePrice = $item->getBasePrice();
         $breakdown = [];
@@ -236,13 +236,13 @@ class PriceCalculator
         ?string $priceListName = null,
         ?string $tierDescription = null,
         ?string $promotionName = null
-    ): PriceResult {
+    ): PriceResultData {
         $discountAmount = max(0, $originalPrice - $finalPrice);
         $discountPercentage = $originalPrice > 0
             ? round(($discountAmount / $originalPrice) * 100, 1)
             : null;
 
-        return new PriceResult(
+        return new PriceResultData(
             originalPrice: $originalPrice,
             finalPrice: $finalPrice,
             discountAmount: $discountAmount,

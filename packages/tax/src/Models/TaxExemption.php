@@ -93,13 +93,13 @@ class TaxExemption extends Model
     public function scopeActive($query)
     {
         return $query->where('status', 'approved')
-            ->where(function ($q): void {
+            ->where(function ($q) {
                 $q->whereNull('expires_at')
-                    ->orWhere('expires_at', '>=', now());
+                    ->orWhere('expires_at', '>=', \Illuminate\Support\Carbon::now());
             })
-            ->where(function ($q): void {
+            ->where(function ($q) {
                 $q->whereNull('starts_at')
-                    ->orWhere('starts_at', '<=', now());
+                    ->orWhere('starts_at', '<=', \Illuminate\Support\Carbon::now());
             });
     }
 
@@ -129,13 +129,7 @@ class TaxExemption extends Model
      */
     public function scopeForZone($query, ?string $zoneId)
     {
-        return $query->where(function ($q) use ($zoneId): void {
-            $q->whereNull('tax_zone_id'); // Applies to all zones
-
-            if ($zoneId) {
-                $q->orWhere('tax_zone_id', $zoneId);
-            }
-        });
+        return $query->whereRaw('(tax_zone_id IS NULL OR tax_zone_id = ?)', [$zoneId]);
     }
 
     // =========================================================================
@@ -194,20 +188,18 @@ class TaxExemption extends Model
 
     public function approve(): self
     {
-        $this->update([
-            'status' => 'approved',
-            'verified_at' => now(),
-        ]);
+        $this->status = 'approved';
+        $this->verified_at = now();
+        $this->save();
 
         return $this;
     }
 
     public function reject(string $reason): self
     {
-        $this->update([
-            'status' => 'rejected',
-            'rejection_reason' => $reason,
-        ]);
+        $this->status = 'rejected';
+        $this->rejection_reason = $reason;
+        $this->save();
 
         return $this;
     }
