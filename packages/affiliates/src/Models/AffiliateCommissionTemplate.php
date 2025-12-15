@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
+
 use Illuminate\Support\Str;
 
 /**
@@ -25,12 +25,11 @@ use Illuminate\Support\Str;
  * @property array<string, mixed>|null $metadata
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
  */
 final class AffiliateCommissionTemplate extends Model
 {
     use HasUuids;
-    use SoftDeletes;
+
 
     protected $fillable = [
         'name',
