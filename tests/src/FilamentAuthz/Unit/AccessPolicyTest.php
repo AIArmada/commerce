@@ -527,7 +527,7 @@ test('casts work correctly', function (): void {
         ->and($policy->priority)->toBeInt()
         ->and($policy->conditions)->toBeArray()
         ->and($policy->metadata)->toBeArray()
-        ->and($policy->valid_from)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+        ->and($policy->valid_from)->toBeInstanceOf(Illuminate\Support\Carbon::class);
 });
 
 test('scopeForOwner filters by owner when enabled', function (): void {

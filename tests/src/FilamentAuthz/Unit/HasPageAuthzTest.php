@@ -8,11 +8,10 @@ use AIArmada\FilamentAuthz\Services\PermissionAggregator;
 use Filament\Facades\Filament;
 use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     config()->set('filament-authz.super_admin_role', 'super-admin');
 });
 
@@ -21,19 +20,19 @@ class TestPageWithAuthzConcern
 {
     use HasPageAuthz;
 
-    public function getTitle(): string
-    {
-        return 'Test Page';
-    }
-
     public static function getSlug(): string
     {
         return 'test-page';
     }
+
+    public function getTitle(): string
+    {
+        return 'Test Page';
+    }
 }
 
-describe('HasPageAuthz', function () {
-    it('generates permission key from slug', function () {
+describe('HasPageAuthz', function (): void {
+    it('generates permission key from slug', function (): void {
         // Reset static state first using reflection
         $reflection = new ReflectionClass(TestPageWithAuthzConcern::class);
         $property = $reflection->getProperty('pagePermissionKey');
@@ -43,7 +42,7 @@ describe('HasPageAuthz', function () {
         expect(TestPageWithAuthzConcern::getPagePermissionKey())->toBe('page.test-page');
     });
 
-    it('uses custom permission key when set', function () {
+    it('uses custom permission key when set', function (): void {
         TestPageWithAuthzConcern::setPagePermissionKey('custom.permission');
 
         expect(TestPageWithAuthzConcern::getPagePermissionKey())->toBe('custom.permission');
@@ -55,7 +54,7 @@ describe('HasPageAuthz', function () {
         $property->setValue(null, null);
     });
 
-    it('stores required permissions', function () {
+    it('stores required permissions', function (): void {
         TestPageWithAuthzConcern::requirePermissions(['permission.view', 'permission.create']);
 
         $reflection = new ReflectionClass(TestPageWithAuthzConcern::class);
@@ -68,7 +67,7 @@ describe('HasPageAuthz', function () {
         TestPageWithAuthzConcern::requirePermissions([]);
     });
 
-    it('stores required roles', function () {
+    it('stores required roles', function (): void {
         TestPageWithAuthzConcern::requireRoles(['admin', 'manager']);
 
         $reflection = new ReflectionClass(TestPageWithAuthzConcern::class);
@@ -81,7 +80,7 @@ describe('HasPageAuthz', function () {
         TestPageWithAuthzConcern::requireRoles([]);
     });
 
-    it('stores team scope configuration', function () {
+    it('stores team scope configuration', function (): void {
         TestPageWithAuthzConcern::scopeToTeam('team_id');
 
         $reflection = new ReflectionClass(TestPageWithAuthzConcern::class);
@@ -94,7 +93,7 @@ describe('HasPageAuthz', function () {
         $property->setValue(null, null);
     });
 
-    it('returns title with permission debug in local environment', function () {
+    it('returns title with permission debug in local environment', function (): void {
         // Set page permission key first
         TestPageWithAuthzConcern::setPagePermissionKey('page.test-page');
 
@@ -108,7 +107,7 @@ describe('HasPageAuthz', function () {
         expect($title)->toBe('Test Page [page.test-page]');
     });
 
-    it('returns plain title in non-local environment', function () {
+    it('returns plain title in non-local environment', function (): void {
         // Set page permission key first
         TestPageWithAuthzConcern::setPagePermissionKey('page.test-page');
 
@@ -122,7 +121,7 @@ describe('HasPageAuthz', function () {
         expect($title)->toBe('Test Page');
     });
 
-    it('denies access when user is not authenticated', function () {
+    it('denies access when user is not authenticated', function (): void {
         // Mock Guard properly
         $guard = Mockery::mock(Guard::class);
         $guard->shouldReceive('user')->andReturn(null);
@@ -132,7 +131,7 @@ describe('HasPageAuthz', function () {
         expect(TestPageWithAuthzConcern::canAccess())->toBeFalse();
     });
 
-    it('allows access for super admin user', function () {
+    it('allows access for super admin user', function (): void {
         $user = Mockery::mock(User::class)->makePartial();
         $user->shouldReceive('hasRole')->with('super-admin')->andReturn(true);
 
@@ -144,7 +143,7 @@ describe('HasPageAuthz', function () {
         expect(TestPageWithAuthzConcern::canAccess())->toBeTrue();
     });
 
-    it('checks standard permission via aggregator when not super admin', function () {
+    it('checks standard permission via aggregator when not super admin', function (): void {
         // Ensure no required roles or permissions
         TestPageWithAuthzConcern::requireRoles([]);
         TestPageWithAuthzConcern::requirePermissions([]);

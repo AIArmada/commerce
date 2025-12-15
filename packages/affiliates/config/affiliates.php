@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 $tablePrefix = env('AFFILIATES_TABLE_PREFIX', 'affiliate_');
 $tables = [
     'affiliates' => $tablePrefix . 'affiliates',

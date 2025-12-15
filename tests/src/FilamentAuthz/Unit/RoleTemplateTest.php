@@ -2,10 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentAuthz\Models\RoleTemplate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\FilamentAuthz\Models\RoleTemplate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Role;
 
 uses(RefreshDatabase::class);
 

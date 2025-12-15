@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Enums\PermissionScope;
 use AIArmada\FilamentAuthz\Models\ScopedPermission;
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 
@@ -800,7 +800,7 @@ describe('ScopedPermission', function (): void {
 
             $scopedPermission->refresh();
 
-            expect($scopedPermission->granted_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+            expect($scopedPermission->granted_at)->toBeInstanceOf(Illuminate\Support\Carbon::class);
         });
 
         it('casts expires_at to datetime', function (): void {
@@ -823,7 +823,7 @@ describe('ScopedPermission', function (): void {
 
             $scopedPermission->refresh();
 
-            expect($scopedPermission->expires_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+            expect($scopedPermission->expires_at)->toBeInstanceOf(Illuminate\Support\Carbon::class);
         });
     });
 });

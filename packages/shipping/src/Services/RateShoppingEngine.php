@@ -228,9 +228,6 @@ class RateShoppingEngine
         return $rates->sortBy('rate');
     }
 
-    /**
-     * @return CacheRepository
-     */
     protected function cacheRepository(): CacheRepository
     {
         return Cache::store();

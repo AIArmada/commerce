@@ -34,6 +34,16 @@ final class SupportServiceProvider extends PackageServiceProvider
         $this->registerOwnerResolver();
     }
 
+    /**
+     * Get the services provided by the provider.
+     *
+     * @return array<string>
+     */
+    public function provides(): array
+    {
+        return [];
+    }
+
     private function registerOwnerResolver(): void
     {
         if ($this->app->bound(OwnerResolverInterface::class)) {
@@ -54,15 +64,5 @@ final class SupportServiceProvider extends PackageServiceProvider
 
             return $resolver;
         });
-    }
-
-    /**
-     * Get the services provided by the provider.
-     *
-     * @return array<string>
-     */
-    public function provides(): array
-    {
-        return [];
     }
 }

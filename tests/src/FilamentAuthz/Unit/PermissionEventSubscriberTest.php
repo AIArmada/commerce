@@ -18,6 +18,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use stdClass;
 
 uses(RefreshDatabase::class);
 
@@ -157,7 +158,7 @@ describe('PermissionEventSubscriber', function (): void {
         it('logs role created event when role property exists', function (): void {
             $role = Role::create(['name' => 'editor', 'guard_name' => 'web']);
 
-            $event = new \stdClass;
+            $event = new stdClass;
             $event->role = $role;
 
             $this->auditLogger
@@ -169,7 +170,7 @@ describe('PermissionEventSubscriber', function (): void {
         });
 
         it('does nothing when role property missing', function (): void {
-            $event = new \stdClass;
+            $event = new stdClass;
 
             $this->auditLogger->shouldNotReceive('logRoleCreated');
 
@@ -181,7 +182,7 @@ describe('PermissionEventSubscriber', function (): void {
         it('logs role deleted event when role property exists', function (): void {
             $role = Role::create(['name' => 'editor', 'guard_name' => 'web']);
 
-            $event = new \stdClass;
+            $event = new stdClass;
             $event->role = $role;
 
             $this->auditLogger
@@ -193,7 +194,7 @@ describe('PermissionEventSubscriber', function (): void {
         });
 
         it('does nothing when role property missing', function (): void {
-            $event = new \stdClass;
+            $event = new stdClass;
 
             $this->auditLogger->shouldNotReceive('logRoleDeleted');
 
@@ -205,7 +206,7 @@ describe('PermissionEventSubscriber', function (): void {
         it('logs permission created event when permission property exists', function (): void {
             $permission = Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
 
-            $event = new \stdClass;
+            $event = new stdClass;
             $event->permission = $permission;
 
             $this->auditLogger
@@ -220,7 +221,7 @@ describe('PermissionEventSubscriber', function (): void {
         });
 
         it('does nothing when permission property missing', function (): void {
-            $event = new \stdClass;
+            $event = new stdClass;
 
             $this->auditLogger->shouldNotReceive('log');
 
@@ -232,7 +233,7 @@ describe('PermissionEventSubscriber', function (): void {
         it('logs permission deleted event when permission property exists', function (): void {
             $permission = Permission::create(['name' => 'posts.delete', 'guard_name' => 'web']);
 
-            $event = new \stdClass;
+            $event = new stdClass;
             $event->permission = $permission;
 
             $this->auditLogger
@@ -247,7 +248,7 @@ describe('PermissionEventSubscriber', function (): void {
         });
 
         it('does nothing when permission property missing', function (): void {
-            $event = new \stdClass;
+            $event = new stdClass;
 
             $this->auditLogger->shouldNotReceive('log');
 

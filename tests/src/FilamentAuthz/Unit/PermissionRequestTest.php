@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentAuthz\Models\PermissionRequest;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\FilamentAuthz\Models\PermissionRequest;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -452,7 +452,7 @@ describe('PermissionRequest', function (): void {
 
             $request->refresh();
 
-            expect($request->approved_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+            expect($request->approved_at)->toBeInstanceOf(Illuminate\Support\Carbon::class);
         });
 
         it('casts denied_at to datetime', function (): void {
@@ -470,7 +470,7 @@ describe('PermissionRequest', function (): void {
 
             $request->refresh();
 
-            expect($request->denied_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+            expect($request->denied_at)->toBeInstanceOf(Illuminate\Support\Carbon::class);
         });
 
         it('casts expires_at to datetime', function (): void {
@@ -488,7 +488,7 @@ describe('PermissionRequest', function (): void {
 
             $request->refresh();
 
-            expect($request->expires_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+            expect($request->expires_at)->toBeInstanceOf(Illuminate\Support\Carbon::class);
         });
     });
 });

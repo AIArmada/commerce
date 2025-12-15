@@ -226,17 +226,17 @@ class ManifestPage extends Page implements HasTable
                         });
 
                     $query->each(function (Shipment $shipment) use ($user): void {
-                            if (! $user->can('update', $shipment)) {
-                                return;
-                            }
+                        if (! $user->can('update', $shipment)) {
+                            return;
+                        }
 
-                            $shipment->update([
-                                'metadata' => array_merge($shipment->metadata ?? [], [
-                                    'picked_up' => true,
-                                    'picked_up_at' => now()->toDateTimeString(),
-                                ]),
-                            ]);
-                        });
+                        $shipment->update([
+                            'metadata' => array_merge($shipment->metadata ?? [], [
+                                'picked_up' => true,
+                                'picked_up_at' => now()->toDateTimeString(),
+                            ]),
+                        ]);
+                    });
 
                     Notification::make()
                         ->title('All Shipments Marked as Picked Up')
@@ -266,15 +266,6 @@ class ManifestPage extends Page implements HasTable
         return $query;
     }
 
-    private function resolveOwner(): ?Model
-    {
-        if (! app()->bound(OwnerResolverInterface::class)) {
-            return null;
-        }
-
-        return app(OwnerResolverInterface::class)->resolve();
-    }
-
     /**
      * @return array<string, string>
      */
@@ -285,5 +276,14 @@ class ManifestPage extends Page implements HasTable
         return collect($shipping->getAvailableDrivers())
             ->mapWithKeys(fn ($driver) => [$driver => ucfirst($driver)])
             ->toArray();
+    }
+
+    private function resolveOwner(): ?Model
+    {
+        if (! app()->bound(OwnerResolverInterface::class)) {
+            return null;
+        }
+
+        return app(OwnerResolverInterface::class)->resolve();
     }
 }

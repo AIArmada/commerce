@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-
 $tablePrefix = env('INVENTORY_TABLE_PREFIX', 'inventory_');
 
 $tables = [

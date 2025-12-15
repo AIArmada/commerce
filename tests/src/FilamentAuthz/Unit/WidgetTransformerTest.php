@@ -5,8 +5,6 @@ declare(strict_types=1);
 use AIArmada\FilamentAuthz\Services\Discovery\WidgetTransformer;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredWidget;
 use AIArmada\FilamentAuthz\Widgets\PermissionStatsWidget;
-use Filament\Widgets\StatsOverviewWidget;
-use Filament\Widgets\Widget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);

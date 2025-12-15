@@ -60,6 +60,7 @@ class BulkPrintLabelsAction extends BulkAction
 
                             if (! filter_var($url, FILTER_VALIDATE_URL) || ! in_array($scheme, ['http', 'https'], true)) {
                                 $errors[] = "{$record->tracking_number}: invalid label URL";
+
                                 continue;
                             }
 

@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     config()->set('filament-authz.super_admin_role', 'super-admin');
 });
 
@@ -21,8 +21,8 @@ class TestWidgetWithAuthzConcern
     use HasWidgetAuthz;
 }
 
-describe('HasWidgetAuthz', function () {
-    it('generates permission key from class name', function () {
+describe('HasWidgetAuthz', function (): void {
+    it('generates permission key from class name', function (): void {
         // Reset static state first using reflection
         $reflection = new ReflectionClass(TestWidgetWithAuthzConcern::class);
         $property = $reflection->getProperty('widgetPermissionKey');
@@ -32,7 +32,7 @@ describe('HasWidgetAuthz', function () {
         expect(TestWidgetWithAuthzConcern::getWidgetPermissionKey())->toBe('widget.test_widget_with_authz_concern');
     });
 
-    it('uses custom permission key when set', function () {
+    it('uses custom permission key when set', function (): void {
         TestWidgetWithAuthzConcern::setWidgetPermissionKey('widget.custom');
 
         expect(TestWidgetWithAuthzConcern::getWidgetPermissionKey())->toBe('widget.custom');
@@ -44,7 +44,7 @@ describe('HasWidgetAuthz', function () {
         $property->setValue(null, null);
     });
 
-    it('stores required widget permissions', function () {
+    it('stores required widget permissions', function (): void {
         TestWidgetWithAuthzConcern::requireWidgetPermissions(['permission.view', 'permission.create']);
 
         $reflection = new ReflectionClass(TestWidgetWithAuthzConcern::class);
@@ -57,7 +57,7 @@ describe('HasWidgetAuthz', function () {
         TestWidgetWithAuthzConcern::requireWidgetPermissions([]);
     });
 
-    it('stores required widget roles', function () {
+    it('stores required widget roles', function (): void {
         TestWidgetWithAuthzConcern::requireWidgetRoles(['admin', 'manager']);
 
         $reflection = new ReflectionClass(TestWidgetWithAuthzConcern::class);
@@ -70,7 +70,7 @@ describe('HasWidgetAuthz', function () {
         TestWidgetWithAuthzConcern::requireWidgetRoles([]);
     });
 
-    it('stores widget team scope configuration', function () {
+    it('stores widget team scope configuration', function (): void {
         TestWidgetWithAuthzConcern::scopeWidgetToTeam('team_id');
 
         $reflection = new ReflectionClass(TestWidgetWithAuthzConcern::class);
@@ -83,7 +83,7 @@ describe('HasWidgetAuthz', function () {
         $property->setValue(null, null);
     });
 
-    it('sets hide when unauthorized to false when showing placeholder', function () {
+    it('sets hide when unauthorized to false when showing placeholder', function (): void {
         TestWidgetWithAuthzConcern::showPlaceholderWhenUnauthorized();
 
         $reflection = new ReflectionClass(TestWidgetWithAuthzConcern::class);
@@ -96,7 +96,7 @@ describe('HasWidgetAuthz', function () {
         $property->setValue(null, true);
     });
 
-    it('denies view when user is not authenticated', function () {
+    it('denies view when user is not authenticated', function (): void {
         $guard = Mockery::mock(Guard::class);
         $guard->shouldReceive('user')->andReturn(null);
 
@@ -105,7 +105,7 @@ describe('HasWidgetAuthz', function () {
         expect(TestWidgetWithAuthzConcern::canView())->toBeFalse();
     });
 
-    it('allows view for super admin user', function () {
+    it('allows view for super admin user', function (): void {
         $user = Mockery::mock(User::class)->makePartial();
         $user->shouldReceive('hasRole')->with('super-admin')->andReturn(true);
 
@@ -117,7 +117,7 @@ describe('HasWidgetAuthz', function () {
         expect(TestWidgetWithAuthzConcern::canView())->toBeTrue();
     });
 
-    it('checks widget permission via aggregator when not super admin', function () {
+    it('checks widget permission via aggregator when not super admin', function (): void {
         // Ensure no required roles or permissions
         TestWidgetWithAuthzConcern::requireWidgetRoles([]);
         TestWidgetWithAuthzConcern::requireWidgetPermissions([]);
@@ -151,7 +151,7 @@ describe('HasWidgetAuthz', function () {
         expect(TestWidgetWithAuthzConcern::canView())->toBeTrue();
     });
 
-    it('denies view when user lacks required roles', function () {
+    it('denies view when user lacks required roles', function (): void {
         TestWidgetWithAuthzConcern::requireWidgetRoles(['admin', 'manager']);
 
         $user = Mockery::mock(User::class)->makePartial();

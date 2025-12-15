@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\FilamentAuthz\Unit;
 
-use AIArmada\FilamentAuthz\Enums\PermissionScope;
 use AIArmada\FilamentAuthz\Services\ContextualAuthorizationService;
 use AIArmada\FilamentAuthz\Services\PermissionAggregator;
 use Illuminate\Database\Eloquent\Collection;

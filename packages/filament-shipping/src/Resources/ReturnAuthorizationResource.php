@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Pages;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\RelationManagers;
 use AIArmada\Shipping\Enums\ReturnReason;
@@ -17,7 +18,6 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 
 class ReturnAuthorizationResource extends Resource
 {

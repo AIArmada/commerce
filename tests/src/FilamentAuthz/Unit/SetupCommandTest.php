@@ -7,15 +7,15 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-describe('SetupCommand', function () {
-    it('has correct signature', function () {
+describe('SetupCommand', function (): void {
+    it('has correct signature', function (): void {
         $command = new SetupCommand;
         $signature = $command->getName();
 
         expect($signature)->toBe('authz:setup');
     });
 
-    it('fails in production without force flag', function () {
+    it('fails in production without force flag', function (): void {
         app()->detectEnvironment(fn () => 'production');
 
         $this->artisan('authz:setup')
@@ -23,7 +23,7 @@ describe('SetupCommand', function () {
             ->assertFailed();
     });
 
-    it('runs minimal setup without prompts', function () {
+    it('runs minimal setup without prompts', function (): void {
         app()->detectEnvironment(fn () => 'testing');
 
         // Minimal setup avoids interactive prompts
@@ -34,7 +34,7 @@ describe('SetupCommand', function () {
         ])->assertSuccessful();
     });
 
-    it('accepts panel option', function () {
+    it('accepts panel option', function (): void {
         app()->detectEnvironment(fn () => 'testing');
 
         $this->artisan('authz:setup', [
@@ -45,7 +45,7 @@ describe('SetupCommand', function () {
         ])->assertSuccessful();
     });
 
-    it('accepts tenant option', function () {
+    it('accepts tenant option', function (): void {
         app()->detectEnvironment(fn () => 'testing');
 
         $this->artisan('authz:setup', [
@@ -56,7 +56,7 @@ describe('SetupCommand', function () {
         ])->assertSuccessful();
     });
 
-    it('displays welcome message', function () {
+    it('displays welcome message', function (): void {
         app()->detectEnvironment(fn () => 'testing');
 
         $this->artisan('authz:setup', [
@@ -68,7 +68,7 @@ describe('SetupCommand', function () {
             ->assertSuccessful();
     });
 
-    it('displays setup complete message', function () {
+    it('displays setup complete message', function (): void {
         app()->detectEnvironment(fn () => 'testing');
 
         $this->artisan('authz:setup', [
@@ -80,7 +80,7 @@ describe('SetupCommand', function () {
             ->assertSuccessful();
     });
 
-    it('creates super admin role', function () {
+    it('creates super admin role', function (): void {
         app()->detectEnvironment(fn () => 'testing');
 
         $this->artisan('authz:setup', [
@@ -89,10 +89,10 @@ describe('SetupCommand', function () {
             '--skip-permissions' => true,
         ])->assertSuccessful();
 
-        expect(\Spatie\Permission\Models\Role::where('name', 'Super Admin')->exists())->toBeTrue();
+        expect(Spatie\Permission\Models\Role::where('name', 'Super Admin')->exists())->toBeTrue();
     });
 
-    it('shows next steps after completion', function () {
+    it('shows next steps after completion', function (): void {
         app()->detectEnvironment(fn () => 'testing');
 
         $this->artisan('authz:setup', [
