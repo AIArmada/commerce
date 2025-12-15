@@ -10,7 +10,6 @@ use AIArmada\Vouchers\Targeting\Enums\TargetingRuleType;
 use AIArmada\Vouchers\Targeting\Evaluators\ReferrerEvaluator;
 use AIArmada\Vouchers\Targeting\TargetingContext;
 use Illuminate\Http\Request;
-use Symfony\Component\HttpFoundation\HeaderBag;
 
 beforeEach(function (): void {
     $this->evaluator = new ReferrerEvaluator();

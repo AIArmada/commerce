@@ -28,7 +28,7 @@ function createCartForUserAttrTest(): Cart
  * Creates a mock user model with specified attributes.
  *
  * @param  array<string, mixed>  $attributes
- * @return \Mockery\MockInterface&Model
+ * @return Mockery\MockInterface&Model
  */
 function createMockUserWithAttributes(array $attributes): Mockery\MockInterface
 {
@@ -66,7 +66,7 @@ function createMockUserWithAttributes(array $attributes): Mockery\MockInterface
  * Creates a mock user model with getter methods.
  *
  * @param  array<string, mixed>  $attributes
- * @return \Mockery\MockInterface&Model
+ * @return Mockery\MockInterface&Model
  */
 function createMockUserWithGetters(array $attributes): Mockery\MockInterface
 {

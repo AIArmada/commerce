@@ -13,7 +13,6 @@ use AIArmada\Vouchers\Stacking\Contracts\StackingRuleInterface;
 use AIArmada\Vouchers\Stacking\Enums\StackingMode;
 use AIArmada\Vouchers\Stacking\StackingDecision;
 use AIArmada\Vouchers\Stacking\StackingEngine;
-use Illuminate\Support\Collection;
 use Mockery;
 
 afterEach(function (): void {

@@ -75,7 +75,7 @@ describe('CartEventRecorder', function (): void {
         $this->recorder->enable();
 
         try {
-            $this->recorder->withoutRecording(function () {
+            $this->recorder->withoutRecording(function (): void {
                 throw new Exception('Test exception');
             });
         } catch (Exception) {

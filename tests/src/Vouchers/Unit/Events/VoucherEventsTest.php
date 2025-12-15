@@ -50,7 +50,7 @@ describe('VoucherApplied event', function (): void {
     it('implements VoucherEventInterface', function (): void {
         $event = new VoucherApplied($this->cart, $this->voucherData);
 
-        expect($event)->toBeInstanceOf(\AIArmada\CommerceSupport\Contracts\Events\VoucherEventInterface::class);
+        expect($event)->toBeInstanceOf(AIArmada\CommerceSupport\Contracts\Events\VoucherEventInterface::class);
     });
 
     it('uses HasVoucherEventData trait', function (): void {
@@ -121,7 +121,7 @@ describe('VoucherRemoved event', function (): void {
     it('implements VoucherEventInterface', function (): void {
         $event = new VoucherRemoved($this->cart, $this->voucherData);
 
-        expect($event)->toBeInstanceOf(\AIArmada\CommerceSupport\Contracts\Events\VoucherEventInterface::class);
+        expect($event)->toBeInstanceOf(AIArmada\CommerceSupport\Contracts\Events\VoucherEventInterface::class);
     });
 
     it('uses HasVoucherEventData trait', function (): void {

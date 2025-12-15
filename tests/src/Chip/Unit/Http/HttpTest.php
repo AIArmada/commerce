@@ -8,19 +8,19 @@ use AIArmada\Chip\Services\WebhookService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
 
-describe('WebhookController', function () {
-    beforeEach(function () {
+describe('WebhookController', function (): void {
+    beforeEach(function (): void {
         // Disable listeners that require database
         Event::fake();
         config(['chip.webhooks.store_data' => false]);
     });
 
-    it('can be instantiated', function () {
+    it('can be instantiated', function (): void {
         $controller = new WebhookController;
         expect($controller)->toBeInstanceOf(WebhookController::class);
     });
 
-    it('handles purchase.paid webhook', function () {
+    it('handles purchase.paid webhook', function (): void {
         $controller = new WebhookController;
 
         $payload = [
@@ -47,7 +47,7 @@ describe('WebhookController', function () {
             ->and($response->getData()->event_type)->toBe('purchase.paid');
     });
 
-    it('handles payout webhook', function () {
+    it('handles payout webhook', function (): void {
         $controller = new WebhookController;
 
         $payload = [
@@ -69,7 +69,7 @@ describe('WebhookController', function () {
             ->and($response->getData()->event_type)->toBe('payout.success');
     });
 
-    it('handles billing template client webhook', function () {
+    it('handles billing template client webhook', function (): void {
         $controller = new WebhookController;
 
         $payload = [
@@ -91,7 +91,7 @@ describe('WebhookController', function () {
             ->and($response->getData()->event_type)->toBe('billing_template_client.subscription_billing_cancelled');
     });
 
-    it('handles unknown event type gracefully', function () {
+    it('handles unknown event type gracefully', function (): void {
         $controller = new WebhookController;
 
         $payload = [
@@ -107,7 +107,7 @@ describe('WebhookController', function () {
             ->and($response->getData()->event_type)->toBe('unknown.event');
     });
 
-    it('handles missing event_type', function () {
+    it('handles missing event_type', function (): void {
         $controller = new WebhookController;
 
         $request = Request::create('/webhook', 'POST', []);
@@ -118,27 +118,27 @@ describe('WebhookController', function () {
     });
 });
 
-describe('VerifyWebhookSignature middleware', function () {
-    it('can be instantiated', function () {
+describe('VerifyWebhookSignature middleware', function (): void {
+    it('can be instantiated', function (): void {
         $webhookService = Mockery::mock(WebhookService::class);
         $middleware = new VerifyWebhookSignature($webhookService);
 
         expect($middleware)->toBeInstanceOf(VerifyWebhookSignature::class);
     });
 
-    it('returns 400 when signature header is missing', function () {
+    it('returns 400 when signature header is missing', function (): void {
         $webhookService = Mockery::mock(WebhookService::class);
         $middleware = new VerifyWebhookSignature($webhookService);
 
         $request = Request::create('/webhook', 'POST', ['test' => 'data']);
 
-        $response = $middleware->handle($request, fn() => response()->json(['ok' => true]));
+        $response = $middleware->handle($request, fn () => response()->json(['ok' => true]));
 
         expect($response->getStatusCode())->toBe(400)
             ->and($response->getData()->error)->toContain('Missing');
     });
 
-    it('returns 401 when signature verification fails', function () {
+    it('returns 401 when signature verification fails', function (): void {
         $webhookService = Mockery::mock(WebhookService::class);
         $webhookService->shouldReceive('verifySignature')
             ->once()
@@ -150,13 +150,13 @@ describe('VerifyWebhookSignature middleware', function () {
             'HTTP_X_SIGNATURE' => 'invalid-signature',
         ]);
 
-        $response = $middleware->handle($request, fn() => response()->json(['ok' => true]));
+        $response = $middleware->handle($request, fn () => response()->json(['ok' => true]));
 
         expect($response->getStatusCode())->toBe(401)
             ->and($response->getData()->error)->toContain('Invalid');
     });
 
-    it('passes request when signature is valid', function () {
+    it('passes request when signature is valid', function (): void {
         $webhookService = Mockery::mock(WebhookService::class);
         $webhookService->shouldReceive('verifySignature')
             ->once()
@@ -173,13 +173,13 @@ describe('VerifyWebhookSignature middleware', function () {
             'HTTP_X_SIGNATURE' => 'valid-signature',
         ]);
 
-        $response = $middleware->handle($request, fn() => response()->json(['ok' => true]));
+        $response = $middleware->handle($request, fn () => response()->json(['ok' => true]));
 
         expect($response->getStatusCode())->toBe(200)
             ->and($response->getData()->ok)->toBeTrue();
     });
 
-    it('logs payload when logging is enabled', function () {
+    it('logs payload when logging is enabled', function (): void {
         $webhookService = Mockery::mock(WebhookService::class);
         $webhookService->shouldReceive('verifySignature')
             ->once()
@@ -196,7 +196,7 @@ describe('VerifyWebhookSignature middleware', function () {
             'HTTP_X_SIGNATURE' => 'valid-signature',
         ]);
 
-        $response = $middleware->handle($request, fn() => response()->json(['ok' => true]));
+        $response = $middleware->handle($request, fn () => response()->json(['ok' => true]));
 
         expect($response->getStatusCode())->toBe(200);
     });

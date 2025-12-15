@@ -6,7 +6,6 @@ use AIArmada\Vouchers\Actions\AddVoucherToWallet;
 use AIArmada\Vouchers\Actions\CreateVoucher;
 use AIArmada\Vouchers\Actions\RecordVoucherUsage;
 use AIArmada\Vouchers\Actions\ValidateVoucher;
-use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Models\Voucher;
@@ -112,9 +111,9 @@ describe('AddVoucherToWallet Action', function (): void {
 
         $owner = new class extends Model
         {
-            protected $table = 'users';
-
             public $exists = true;
+
+            protected $table = 'users';
 
             public function getKey(): string
             {
@@ -147,9 +146,9 @@ describe('AddVoucherToWallet Action', function (): void {
 
         $owner = new class extends Model
         {
-            protected $table = 'users';
-
             public $exists = true;
+
+            protected $table = 'users';
 
             public function getKey(): string
             {
@@ -173,9 +172,9 @@ describe('AddVoucherToWallet Action', function (): void {
     it('throws exception for non-existent voucher', function (): void {
         $owner = new class extends Model
         {
-            protected $table = 'users';
-
             public $exists = true;
+
+            protected $table = 'users';
 
             public function getKey(): string
             {
@@ -203,9 +202,9 @@ describe('AddVoucherToWallet Action', function (): void {
 
         $owner = new class extends Model
         {
-            protected $table = 'users';
-
             public $exists = true;
+
+            protected $table = 'users';
 
             public function getKey(): string
             {
@@ -235,9 +234,9 @@ describe('AddVoucherToWallet Action', function (): void {
 
         $owner = new class extends Model
         {
-            protected $table = 'users';
-
             public $exists = true;
+
+            protected $table = 'users';
 
             public function getKey(): string
             {
@@ -293,9 +292,9 @@ describe('RecordVoucherUsage Action', function (): void {
 
         $user = new class extends Model
         {
-            protected $table = 'users';
-
             public $exists = true;
+
+            protected $table = 'users';
 
             public function getKey(): string
             {

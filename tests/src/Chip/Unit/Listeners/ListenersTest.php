@@ -9,13 +9,13 @@ use AIArmada\Chip\Listeners\GenerateDocOnPayment;
 use AIArmada\Chip\Listeners\GenerateDocOnRefund;
 use AIArmada\Chip\Listeners\StoreWebhookData;
 
-describe('StoreWebhookData listener', function () {
-    it('can be instantiated', function () {
+describe('StoreWebhookData listener', function (): void {
+    it('can be instantiated', function (): void {
         $listener = new StoreWebhookData;
         expect($listener)->toBeInstanceOf(StoreWebhookData::class);
     });
 
-    it('returns early when config disabled', function () {
+    it('returns early when config disabled', function (): void {
         config(['chip.webhooks.store_data' => false]);
 
         $listener = new StoreWebhookData;
@@ -29,7 +29,7 @@ describe('StoreWebhookData listener', function () {
         expect(true)->toBeTrue();
     });
 
-    it('returns early for non-purchase type', function () {
+    it('returns early for non-purchase type', function (): void {
         config(['chip.webhooks.store_data' => true]);
 
         $listener = new StoreWebhookData;
@@ -43,7 +43,7 @@ describe('StoreWebhookData listener', function () {
         expect(true)->toBeTrue();
     });
 
-    it('returns early when no purchase ID', function () {
+    it('returns early when no purchase ID', function (): void {
         config(['chip.webhooks.store_data' => true]);
 
         $listener = new StoreWebhookData;
@@ -58,18 +58,18 @@ describe('StoreWebhookData listener', function () {
     });
 });
 
-describe('GenerateDocOnPayment listener', function () {
-    it('can be instantiated', function () {
+describe('GenerateDocOnPayment listener', function (): void {
+    it('can be instantiated', function (): void {
         $listener = new GenerateDocOnPayment;
         expect($listener)->toBeInstanceOf(GenerateDocOnPayment::class);
     });
 
-    it('implements ShouldQueue', function () {
+    it('implements ShouldQueue', function (): void {
         $listener = new GenerateDocOnPayment;
-        expect($listener)->toBeInstanceOf(\Illuminate\Contracts\Queue\ShouldQueue::class);
+        expect($listener)->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldQueue::class);
     });
 
-    it('returns early when DocService class does not exist', function () {
+    it('returns early when DocService class does not exist', function (): void {
         // DocService may not be installed, so this tests the defensive check
         $payload = [
             'id' => 'purch_test123',
@@ -90,7 +90,7 @@ describe('GenerateDocOnPayment listener', function () {
         expect(true)->toBeTrue();
     });
 
-    it('returns early when paid_doc_type config is null', function () {
+    it('returns early when paid_doc_type config is null', function (): void {
         config(['chip.integrations.docs.paid_doc_type' => null]);
 
         $payload = [
@@ -112,18 +112,18 @@ describe('GenerateDocOnPayment listener', function () {
     });
 });
 
-describe('GenerateDocOnRefund listener', function () {
-    it('can be instantiated', function () {
+describe('GenerateDocOnRefund listener', function (): void {
+    it('can be instantiated', function (): void {
         $listener = new GenerateDocOnRefund;
         expect($listener)->toBeInstanceOf(GenerateDocOnRefund::class);
     });
 
-    it('implements ShouldQueue', function () {
+    it('implements ShouldQueue', function (): void {
         $listener = new GenerateDocOnRefund;
-        expect($listener)->toBeInstanceOf(\Illuminate\Contracts\Queue\ShouldQueue::class);
+        expect($listener)->toBeInstanceOf(Illuminate\Contracts\Queue\ShouldQueue::class);
     });
 
-    it('returns early when DocService class does not exist', function () {
+    it('returns early when DocService class does not exist', function (): void {
         $payload = [
             'id' => 'purch_refund123',
             'status' => 'refunded',
@@ -142,7 +142,7 @@ describe('GenerateDocOnRefund listener', function () {
         expect(true)->toBeTrue();
     });
 
-    it('returns early when refund_doc_type config is null', function () {
+    it('returns early when refund_doc_type config is null', function (): void {
         config(['chip.integrations.docs.refund_doc_type' => null]);
 
         $payload = [
@@ -163,7 +163,7 @@ describe('GenerateDocOnRefund listener', function () {
         expect(true)->toBeTrue();
     });
 
-    it('returns early when purchase ID is null', function () {
+    it('returns early when purchase ID is null', function (): void {
         // Create event with null purchase
         $event = new PaymentRefunded(null, []);
         $listener = new GenerateDocOnRefund;

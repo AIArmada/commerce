@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Contracts\StatusMapperInterface;
-use AIArmada\Shipping\Data\TrackingData;
-use AIArmada\Shipping\Data\TrackingEventData;
 use AIArmada\Shipping\Enums\DriverCapability;
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Enums\TrackingStatus;

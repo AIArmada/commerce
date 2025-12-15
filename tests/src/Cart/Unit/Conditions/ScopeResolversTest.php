@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Collections\CartConditionCollection;
-use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use AIArmada\Cart\Conditions\Pipeline\Resolvers\ConditionScopeResolverInterface;
 use AIArmada\Cart\Conditions\Pipeline\Resolvers\DefaultScopeResolver;

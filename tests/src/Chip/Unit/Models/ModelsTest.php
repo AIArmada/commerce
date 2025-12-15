@@ -20,13 +20,13 @@ use AIArmada\Chip\Models\Webhook;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
-describe('ChipModel base class', function () {
-    it('uses HasUuids trait', function () {
+describe('ChipModel base class', function (): void {
+    it('uses HasUuids trait', function (): void {
         $purchase = new Purchase;
         expect(in_array(HasUuids::class, class_uses_recursive($purchase)))->toBeTrue();
     });
 
-    it('returns correct table name with prefix', function () {
+    it('returns correct table name with prefix', function (): void {
         config(['chip.database.table_prefix' => 'chip_']);
 
         $purchase = new Purchase;
@@ -39,17 +39,17 @@ describe('ChipModel base class', function () {
         expect($schedule->getTable())->toBe('chip_recurring_schedules');
     });
 
-    it('uses guarded property', function () {
+    it('uses guarded property', function (): void {
         $purchase = new Purchase;
         expect($purchase->getGuarded())->toBe([]);
     });
 
-    it('has owner relationship', function () {
+    it('has owner relationship', function (): void {
         $purchase = new Purchase;
-        expect($purchase->owner())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphTo::class);
+        expect($purchase->owner())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphTo::class);
     });
 
-    it('can check if model has owner', function () {
+    it('can check if model has owner', function (): void {
         $purchase = new Purchase;
         expect($purchase->hasOwner())->toBeFalse();
         expect($purchase->isGlobal())->toBeTrue();
@@ -62,12 +62,13 @@ describe('ChipModel base class', function () {
         expect($purchase->isGlobal())->toBeFalse();
     });
 
-    it('can assign owner to model', function () {
+    it('can assign owner to model', function (): void {
         $purchase = new Purchase;
-        $mockOwner = new class extends Model {
+        $mockOwner = new class extends Model
+        {
             protected $guarded = [];
 
-            public function getKey(): string|int|null
+            public function getKey(): string | int | null
             {
                 return 'owner-123';
             }
@@ -84,7 +85,7 @@ describe('ChipModel base class', function () {
             ->and($purchase->owner_id)->toBe('owner-123');
     });
 
-    it('can remove owner from model', function () {
+    it('can remove owner from model', function (): void {
         $purchase = new Purchase;
         $purchase->forceFill([
             'owner_type' => 'App\\Models\\User',
@@ -97,7 +98,7 @@ describe('ChipModel base class', function () {
             ->and($purchase->owner_id)->toBeNull();
     });
 
-    it('returns audit include fields', function () {
+    it('returns audit include fields', function (): void {
         $purchase = new Purchase;
         $auditFields = $purchase->getAuditInclude();
 
@@ -106,14 +107,14 @@ describe('ChipModel base class', function () {
     });
 });
 
-describe('ChipIntegerModel base class', function () {
-    it('uses integer primary key', function () {
+describe('ChipIntegerModel base class', function (): void {
+    it('uses integer primary key', function (): void {
         $bankAccount = new BankAccount;
         expect($bankAccount->getKeyType())->toBe('int')
             ->and($bankAccount->getIncrementing())->toBeFalse();
     });
 
-    it('returns correct table name with prefix for integer models', function () {
+    it('returns correct table name with prefix for integer models', function (): void {
         config(['chip.database.table_prefix' => 'chip_']);
 
         $bankAccount = new BankAccount;
@@ -130,18 +131,18 @@ describe('ChipIntegerModel base class', function () {
     });
 });
 
-describe('Purchase model', function () {
-    it('has fillable attributes', function () {
+describe('Purchase model', function (): void {
+    it('has fillable attributes', function (): void {
         $purchase = new Purchase;
         expect($purchase->getGuarded())->toBe([]);
     });
 
-    it('has payments relationship', function () {
+    it('has payments relationship', function (): void {
         $purchase = new Purchase;
-        expect($purchase->payments())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+        expect($purchase->payments())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
     });
 
-    it('can access amount attribute', function () {
+    it('can access amount attribute', function (): void {
         $purchase = new Purchase;
         $purchase->forceFill([
             'purchase' => ['amount' => 10000, 'currency' => 'MYR', 'total' => 10000],
@@ -151,7 +152,7 @@ describe('Purchase model', function () {
         expect($purchase->currency)->toBe('MYR');
     });
 
-    it('can access client email attribute', function () {
+    it('can access client email attribute', function (): void {
         $purchase = new Purchase;
         $purchase->forceFill([
             'client' => ['email' => 'test@example.com'],
@@ -160,7 +161,7 @@ describe('Purchase model', function () {
         expect($purchase->clientEmail)->toBe('test@example.com');
     });
 
-    it('can get status color', function () {
+    it('can get status color', function (): void {
         $purchase = new Purchase;
         $purchase->forceFill(['status' => 'paid']);
         expect($purchase->statusColor())->toBe('success');
@@ -175,23 +176,23 @@ describe('Purchase model', function () {
         expect($purchase->statusColor())->toBe('secondary');
     });
 
-    it('can get status badge', function () {
+    it('can get status badge', function (): void {
         $purchase = new Purchase;
         $purchase->forceFill(['status' => 'pending_capture']);
 
         expect($purchase->statusBadge())->toBe('Pending Capture');
     });
 
-    it('can access total money', function () {
+    it('can access total money', function (): void {
         $purchase = new Purchase;
         $purchase->forceFill([
             'purchase' => ['total' => 15000, 'currency' => 'MYR'],
         ]);
 
-        expect($purchase->totalMoney)->toBeInstanceOf(\Akaunting\Money\Money::class);
+        expect($purchase->totalMoney)->toBeInstanceOf(Akaunting\Money\Money::class);
     });
 
-    it('can get formatted total', function () {
+    it('can get formatted total', function (): void {
         $purchase = new Purchase;
         $purchase->forceFill([
             'purchase' => ['total' => 15000, 'currency' => 'MYR'],
@@ -200,7 +201,7 @@ describe('Purchase model', function () {
         expect($purchase->formattedTotal)->toBeString();
     });
 
-    it('can build timeline from status history', function () {
+    it('can build timeline from status history', function (): void {
         $purchase = new Purchase;
         $purchase->forceFill([
             'status_history' => [
@@ -217,14 +218,14 @@ describe('Purchase model', function () {
     });
 });
 
-describe('Client model', function () {
-    it('returns correct table name', function () {
+describe('Client model', function (): void {
+    it('returns correct table name', function (): void {
         config(['chip.database.table_prefix' => 'chip_']);
         $client = new Client;
         expect($client->getTable())->toBe('chip_clients');
     });
 
-    it('can access location attribute', function () {
+    it('can access location attribute', function (): void {
         $client = new Client;
         $client->forceFill([
             'city' => 'Kuala Lumpur',
@@ -235,12 +236,12 @@ describe('Client model', function () {
         expect($client->location)->toBe('Kuala Lumpur, WP, Malaysia');
     });
 
-    it('returns null for empty location', function () {
+    it('returns null for empty location', function (): void {
         $client = new Client;
         expect($client->location)->toBeNull();
     });
 
-    it('can access shipping location attribute', function () {
+    it('can access shipping location attribute', function (): void {
         $client = new Client;
         $client->forceFill([
             'shipping_city' => 'Penang',
@@ -252,13 +253,13 @@ describe('Client model', function () {
     });
 });
 
-describe('Payment model', function () {
-    it('has purchase relationship', function () {
+describe('Payment model', function (): void {
+    it('has purchase relationship', function (): void {
         $payment = new Payment;
-        expect($payment->purchase())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+        expect($payment->purchase())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
     });
 
-    it('can access money attributes', function () {
+    it('can access money attributes', function (): void {
         $payment = new Payment;
         $payment->forceFill([
             'amount' => 10000,
@@ -268,13 +269,13 @@ describe('Payment model', function () {
             'currency' => 'MYR',
         ]);
 
-        expect($payment->amountMoney)->toBeInstanceOf(\Akaunting\Money\Money::class);
-        expect($payment->netAmountMoney)->toBeInstanceOf(\Akaunting\Money\Money::class);
-        expect($payment->feeAmountMoney)->toBeInstanceOf(\Akaunting\Money\Money::class);
-        expect($payment->pendingAmountMoney)->toBeInstanceOf(\Akaunting\Money\Money::class);
+        expect($payment->amountMoney)->toBeInstanceOf(Akaunting\Money\Money::class);
+        expect($payment->netAmountMoney)->toBeInstanceOf(Akaunting\Money\Money::class);
+        expect($payment->feeAmountMoney)->toBeInstanceOf(Akaunting\Money\Money::class);
+        expect($payment->pendingAmountMoney)->toBeInstanceOf(Akaunting\Money\Money::class);
     });
 
-    it('can get formatted amounts', function () {
+    it('can get formatted amounts', function (): void {
         $payment = new Payment;
         $payment->forceFill([
             'amount' => 10000,
@@ -290,7 +291,7 @@ describe('Payment model', function () {
         expect($payment->formattedPendingAmount)->toBeString();
     });
 
-    it('can access timestamp attributes', function () {
+    it('can access timestamp attributes', function (): void {
         $payment = new Payment;
         $payment->forceFill([
             'paid_on' => time(),
@@ -300,32 +301,32 @@ describe('Payment model', function () {
             'currency' => 'MYR',
         ]);
 
-        expect($payment->paidOn)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
-        expect($payment->remotePaidOn)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
-        expect($payment->createdOn)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
-        expect($payment->updatedOn)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+        expect($payment->paidOn)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+        expect($payment->remotePaidOn)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+        expect($payment->createdOn)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+        expect($payment->updatedOn)->toBeInstanceOf(Illuminate\Support\Carbon::class);
     });
 });
 
-describe('Webhook model', function () {
-    it('returns correct table name', function () {
+describe('Webhook model', function (): void {
+    it('returns correct table name', function (): void {
         config(['chip.database.table_prefix' => 'chip_']);
         $webhook = new Webhook;
         expect($webhook->getTable())->toBe('chip_webhooks');
     });
 
-    it('can access timestamp attributes', function () {
+    it('can access timestamp attributes', function (): void {
         $webhook = new Webhook;
         $webhook->forceFill([
             'created_on' => time(),
             'updated_on' => time(),
         ]);
 
-        expect($webhook->createdOn)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
-        expect($webhook->updatedOn)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+        expect($webhook->createdOn)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+        expect($webhook->updatedOn)->toBeInstanceOf(Illuminate\Support\Carbon::class);
     });
 
-    it('has correct casts', function () {
+    it('has correct casts', function (): void {
         $webhook = new Webhook;
         $casts = $webhook->getCasts();
 
@@ -337,18 +338,18 @@ describe('Webhook model', function () {
     });
 });
 
-describe('RecurringSchedule model', function () {
-    it('has charges relationship', function () {
+describe('RecurringSchedule model', function (): void {
+    it('has charges relationship', function (): void {
         $schedule = new RecurringSchedule;
-        expect($schedule->charges())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+        expect($schedule->charges())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
     });
 
-    it('has subscriber morphTo relationship', function () {
+    it('has subscriber morphTo relationship', function (): void {
         $schedule = new RecurringSchedule;
-        expect($schedule->subscriber())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphTo::class);
+        expect($schedule->subscriber())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphTo::class);
     });
 
-    it('can check status helpers', function () {
+    it('can check status helpers', function (): void {
         $schedule = new RecurringSchedule;
         $schedule->forceFill(['status' => RecurringStatus::Active, 'interval' => RecurringInterval::Monthly, 'interval_count' => 1]);
 
@@ -367,7 +368,7 @@ describe('RecurringSchedule model', function () {
         expect($schedule->isFailed())->toBeTrue();
     });
 
-    it('can check if due', function () {
+    it('can check if due', function (): void {
         $schedule = new RecurringSchedule;
         $schedule->forceFill([
             'status' => RecurringStatus::Active,
@@ -385,7 +386,7 @@ describe('RecurringSchedule model', function () {
         expect($schedule->isDue())->toBeFalse();
     });
 
-    it('can calculate next charge date', function () {
+    it('can calculate next charge date', function (): void {
         $schedule = new RecurringSchedule;
         $schedule->forceFill([
             'interval' => RecurringInterval::Daily,
@@ -394,31 +395,31 @@ describe('RecurringSchedule model', function () {
         ]);
 
         $nextCharge = $schedule->calculateNextChargeDate();
-        expect($nextCharge)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+        expect($nextCharge)->toBeInstanceOf(Illuminate\Support\Carbon::class);
 
         $schedule->forceFill([
             'interval' => RecurringInterval::Weekly,
             'interval_count' => 2,
         ]);
         $nextChargeWeekly = $schedule->calculateNextChargeDate();
-        expect($nextChargeWeekly)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+        expect($nextChargeWeekly)->toBeInstanceOf(Illuminate\Support\Carbon::class);
 
         $schedule->forceFill([
             'interval' => RecurringInterval::Monthly,
             'interval_count' => 1,
         ]);
         $nextChargeMonthly = $schedule->calculateNextChargeDate();
-        expect($nextChargeMonthly)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+        expect($nextChargeMonthly)->toBeInstanceOf(Illuminate\Support\Carbon::class);
 
         $schedule->forceFill([
             'interval' => RecurringInterval::Yearly,
             'interval_count' => 1,
         ]);
         $nextChargeYearly = $schedule->calculateNextChargeDate();
-        expect($nextChargeYearly)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+        expect($nextChargeYearly)->toBeInstanceOf(Illuminate\Support\Carbon::class);
     });
 
-    it('can format amount', function () {
+    it('can format amount', function (): void {
         $schedule = new RecurringSchedule;
         $schedule->forceFill([
             'amount_minor' => 10000,
@@ -431,13 +432,13 @@ describe('RecurringSchedule model', function () {
     });
 });
 
-describe('RecurringCharge model', function () {
-    it('has schedule relationship', function () {
+describe('RecurringCharge model', function (): void {
+    it('has schedule relationship', function (): void {
         $charge = new RecurringCharge;
-        expect($charge->schedule())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+        expect($charge->schedule())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
     });
 
-    it('can check status helpers', function () {
+    it('can check status helpers', function (): void {
         $charge = new RecurringCharge;
         $charge->forceFill(['status' => ChargeStatus::Success, 'attempted_at' => now()]);
 
@@ -452,7 +453,7 @@ describe('RecurringCharge model', function () {
         expect($charge->isPending())->toBeTrue();
     });
 
-    it('can format amount', function () {
+    it('can format amount', function (): void {
         $charge = new RecurringCharge;
         $charge->forceFill([
             'amount_minor' => 5000,
@@ -464,24 +465,24 @@ describe('RecurringCharge model', function () {
     });
 });
 
-describe('DailyMetric model', function () {
-    it('returns correct table name', function () {
+describe('DailyMetric model', function (): void {
+    it('returns correct table name', function (): void {
         config(['chip.database.table_prefix' => 'chip_']);
         $metric = new DailyMetric;
         expect($metric->getTable())->toBe('chip_daily_metrics');
     });
 });
 
-describe('CompanyStatement model', function () {
-    it('returns correct table name', function () {
+describe('CompanyStatement model', function (): void {
+    it('returns correct table name', function (): void {
         config(['chip.database.table_prefix' => 'chip_']);
         $statement = new CompanyStatement;
         expect($statement->getTable())->toBe('chip_company_statements');
     });
 });
 
-describe('BankAccount model', function () {
-    it('returns correct table name', function () {
+describe('BankAccount model', function (): void {
+    it('returns correct table name', function (): void {
         config(['chip.database.table_prefix' => 'chip_']);
         $bankAccount = new BankAccount;
         expect($bankAccount->getTable())->toBe('chip_bank_accounts');

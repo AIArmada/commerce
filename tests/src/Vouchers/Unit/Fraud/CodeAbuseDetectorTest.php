@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Vouchers\Fraud\Detectors\CodeAbuseDetector;
 use AIArmada\Vouchers\Fraud\Enums\FraudSignalType;
 use AIArmada\Vouchers\Fraud\FraudDetectorResult;
-use Illuminate\Database\Eloquent\Model;
 
 describe('CodeAbuseDetector', function (): void {
     describe('basic properties', function (): void {

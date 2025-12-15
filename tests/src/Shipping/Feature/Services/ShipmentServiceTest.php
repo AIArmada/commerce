@@ -252,11 +252,11 @@ describe('ShipmentService', function (): void {
             rawResponse: ['success' => true]
         );
 
-        $mockDriver = \Mockery::mock(ShippingDriverInterface::class);
+        $mockDriver = Mockery::mock(ShippingDriverInterface::class);
         $mockDriver->shouldReceive('createShipment')->andReturn($mockResult);
         $mockDriver->shouldReceive('supports')->with(DriverCapability::LabelGeneration)->andReturn(false);
 
-        $this->manager = \Mockery::mock(ShippingManager::class);
+        $this->manager = Mockery::mock(ShippingManager::class);
         $this->manager->shouldReceive('driver')->with('null')->andReturn($mockDriver);
 
         // Create service with mocked manager
@@ -340,10 +340,10 @@ describe('ShipmentService', function (): void {
             trackingNumber: 'TRACK123'
         );
 
-        $mockDriver = \Mockery::mock(ShippingDriverInterface::class);
+        $mockDriver = Mockery::mock(ShippingDriverInterface::class);
         $mockDriver->shouldReceive('generateLabel')->with('TRACK123', [])->andReturn($mockLabelData);
 
-        $this->manager = \Mockery::mock(ShippingManager::class);
+        $this->manager = Mockery::mock(ShippingManager::class);
         $this->manager->shouldReceive('driver')->with('null')->andReturn($mockDriver);
 
         $service = new ShipmentService($this->manager);

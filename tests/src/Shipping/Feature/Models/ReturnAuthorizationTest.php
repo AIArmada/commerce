@@ -102,7 +102,7 @@ describe('ReturnAuthorization Model', function (): void {
 
         expect($rma->originalShipment)->toBeInstanceOf(Shipment::class);
         expect($rma->originalShipment->id)->toBe($shipment->id);
-        expect($rma->items())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+        expect($rma->items())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
     });
 
     it('has status helper methods', function (): void {
@@ -281,7 +281,7 @@ describe('ReturnAuthorization Model', function (): void {
 
         $rma->refresh();
 
-        expect($rma->returnShipment())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasOne::class);
+        expect($rma->returnShipment())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasOne::class);
         expect($rma->returnShipment)->toBeInstanceOf(Shipment::class);
         expect($rma->returnShipment->id)->toBe($returnShipment->id);
     });

@@ -5,11 +5,9 @@ declare(strict_types=1);
 namespace Tests\Vouchers\Unit\Targeting;
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Targeting\TargetingContext;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Mockery;
@@ -126,7 +124,7 @@ function createMockRequest(array $headers = [], ?string $userAgent = null): Requ
     $mock = Mockery::mock(Request::class);
 
     $mock->shouldReceive('header')
-        ->andReturnUsing(fn (string $key) => $headers[strtolower($key)] ?? $headers[$key] ?? null);
+        ->andReturnUsing(fn (string $key) => $headers[mb_strtolower($key)] ?? $headers[$key] ?? null);
 
     $mock->shouldReceive('userAgent')
         ->andReturn($userAgent);

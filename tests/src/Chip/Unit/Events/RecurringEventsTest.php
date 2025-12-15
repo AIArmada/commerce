@@ -13,8 +13,8 @@ use AIArmada\Chip\Events\RecurringScheduleFailed;
 use AIArmada\Chip\Models\RecurringCharge;
 use AIArmada\Chip\Models\RecurringSchedule;
 
-describe('RecurringScheduleCreated event', function () {
-    it('can be constructed with a schedule', function () {
+describe('RecurringScheduleCreated event', function (): void {
+    it('can be constructed with a schedule', function (): void {
         $schedule = new RecurringSchedule;
         $schedule->forceFill([
             'id' => 'sched_123',
@@ -34,8 +34,8 @@ describe('RecurringScheduleCreated event', function () {
     });
 });
 
-describe('RecurringScheduleCancelled event', function () {
-    it('can be constructed with a schedule', function () {
+describe('RecurringScheduleCancelled event', function (): void {
+    it('can be constructed with a schedule', function (): void {
         $schedule = new RecurringSchedule;
         $schedule->forceFill([
             'id' => 'sched_456',
@@ -56,8 +56,8 @@ describe('RecurringScheduleCancelled event', function () {
     });
 });
 
-describe('RecurringScheduleFailed event', function () {
-    it('can be constructed with a schedule', function () {
+describe('RecurringScheduleFailed event', function (): void {
+    it('can be constructed with a schedule', function (): void {
         $schedule = new RecurringSchedule;
         $schedule->forceFill([
             'id' => 'sched_789',
@@ -79,8 +79,8 @@ describe('RecurringScheduleFailed event', function () {
     });
 });
 
-describe('RecurringChargeRetryScheduled event', function () {
-    it('can be constructed with schedule and retry delay', function () {
+describe('RecurringChargeRetryScheduled event', function (): void {
+    it('can be constructed with schedule and retry delay', function (): void {
         $schedule = new RecurringSchedule;
         $schedule->forceFill([
             'id' => 'sched_retry',
@@ -102,8 +102,8 @@ describe('RecurringChargeRetryScheduled event', function () {
     });
 });
 
-describe('RecurringChargeSucceeded event', function () {
-    it('can be constructed with schedule and charge', function () {
+describe('RecurringChargeSucceeded event', function (): void {
+    it('can be constructed with schedule and charge', function (): void {
         $schedule = new RecurringSchedule;
         $schedule->forceFill([
             'id' => 'sched_success',

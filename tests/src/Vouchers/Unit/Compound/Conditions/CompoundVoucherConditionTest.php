@@ -55,7 +55,7 @@ function createCompoundVoucherData(VoucherType $type, array $valueConfig = []): 
 {
     return VoucherData::fromArray([
         'id' => 'voucher-' . uniqid(),
-        'code' => 'COMPOUND-' . strtoupper(uniqid()),
+        'code' => 'COMPOUND-' . mb_strtoupper(uniqid()),
         'type' => $type->value,
         'value' => 0,
         'value_config' => $valueConfig,

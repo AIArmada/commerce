@@ -10,8 +10,8 @@ use AIArmada\Chip\Events\BillingCancelled;
 use AIArmada\Chip\Events\PaymentRefunded;
 use AIArmada\Chip\Events\WebhookReceived;
 
-describe('PaymentRefunded event', function () {
-    it('can create from payload', function () {
+describe('PaymentRefunded event', function (): void {
+    it('can create from payload', function (): void {
         $payload = [
             'id' => 'purch_refund_123',
             'status' => 'refunded',
@@ -38,7 +38,7 @@ describe('PaymentRefunded event', function () {
             ->and($event->isTest())->toBeTrue();
     });
 
-    it('returns default values when purchase is null', function () {
+    it('returns default values when purchase is null', function (): void {
         $event = new PaymentRefunded(null, []);
 
         expect($event->getAmount())->toBe(0)
@@ -48,7 +48,7 @@ describe('PaymentRefunded event', function () {
             ->and($event->isTest())->toBeTrue();
     });
 
-    it('returns false for isTest when explicitly set', function () {
+    it('returns false for isTest when explicitly set', function (): void {
         $payload = [
             'id' => 'purch_live',
             'status' => 'refunded',
@@ -70,7 +70,7 @@ describe('PaymentRefunded event', function () {
     });
 });
 
-describe('BillingCancelled event', function () {
+describe('BillingCancelled event', function (): void {
     function createBillingPayload(array $overrides = []): array
     {
         return array_merge([
@@ -90,7 +90,7 @@ describe('BillingCancelled event', function () {
         ], $overrides);
     }
 
-    it('can create from payload', function () {
+    it('can create from payload', function (): void {
         $payload = createBillingPayload();
 
         $event = BillingCancelled::fromPayload($payload);
@@ -103,7 +103,7 @@ describe('BillingCancelled event', function () {
             ->and($event->isTest())->toBeTrue();
     });
 
-    it('correctly checks isTest for live event', function () {
+    it('correctly checks isTest for live event', function (): void {
         $payload = createBillingPayload(['is_test' => false]);
 
         $event = BillingCancelled::fromPayload($payload);
@@ -112,8 +112,8 @@ describe('BillingCancelled event', function () {
     });
 });
 
-describe('WebhookReceived event', function () {
-    it('can create from purchase payload', function () {
+describe('WebhookReceived event', function (): void {
+    it('can create from purchase payload', function (): void {
         $payload = [
             'id' => 'purch_123',
             'type' => 'purchase',
@@ -138,7 +138,7 @@ describe('WebhookReceived event', function () {
             ->and($event->billingTemplateClient)->toBeNull();
     });
 
-    it('can create from payout payload', function () {
+    it('can create from payout payload', function (): void {
         $payload = [
             'id' => 'payout_123',
             'type' => 'payout',
@@ -158,7 +158,7 @@ describe('WebhookReceived event', function () {
             ->and($event->billingTemplateClient)->toBeNull();
     });
 
-    it('can create from billing template client payload', function () {
+    it('can create from billing template client payload', function (): void {
         $payload = [
             'id' => 'btc_123',
             'type' => 'billing_template_client',
@@ -178,21 +178,21 @@ describe('WebhookReceived event', function () {
             ->and($event->payout)->toBeNull();
     });
 
-    it('returns event type enum when valid', function () {
+    it('returns event type enum when valid', function (): void {
         $payload = ['event_type' => 'purchase.paid', 'is_test' => true];
         $event = new WebhookReceived('purchase.paid', $payload);
 
         expect($event->getEventTypeEnum())->toBe(WebhookEventType::PurchasePaid);
     });
 
-    it('returns null for unknown event type', function () {
+    it('returns null for unknown event type', function (): void {
         $payload = ['event_type' => 'unknown.event', 'is_test' => true];
         $event = new WebhookReceived('unknown.event', $payload);
 
         expect($event->getEventTypeEnum())->toBeNull();
     });
 
-    it('correctly identifies purchase lifecycle events', function () {
+    it('correctly identifies purchase lifecycle events', function (): void {
         $events = [
             'purchase.created' => 'isCreated',
             'purchase.paid' => 'isPaid',
@@ -206,7 +206,7 @@ describe('WebhookReceived event', function () {
         }
     });
 
-    it('correctly identifies pending events', function () {
+    it('correctly identifies pending events', function (): void {
         $events = [
             'purchase.pending_execute' => 'isPendingExecute',
             'purchase.pending_charge' => 'isPendingCharge',
@@ -222,7 +222,7 @@ describe('WebhookReceived event', function () {
         }
     });
 
-    it('correctly identifies authorization/capture events', function () {
+    it('correctly identifies authorization/capture events', function (): void {
         $events = [
             'purchase.hold' => 'isHold',
             'purchase.captured' => 'isCaptured',
@@ -236,7 +236,7 @@ describe('WebhookReceived event', function () {
         }
     });
 
-    it('correctly identifies recurring and subscription events', function () {
+    it('correctly identifies recurring and subscription events', function (): void {
         $event1 = new WebhookReceived('purchase.recurring_token_deleted', ['is_test' => true]);
         expect($event1->isRecurringTokenDeleted())->toBeTrue();
 
@@ -244,7 +244,7 @@ describe('WebhookReceived event', function () {
         expect($event2->isSubscriptionChargeFailure())->toBeTrue();
     });
 
-    it('correctly identifies refund and billing events', function () {
+    it('correctly identifies refund and billing events', function (): void {
         $event1 = new WebhookReceived('payment.refunded', ['is_test' => true]);
         expect($event1->isRefunded())->toBeTrue();
 
@@ -252,7 +252,7 @@ describe('WebhookReceived event', function () {
         expect($event2->isBillingCancelled())->toBeTrue();
     });
 
-    it('correctly identifies payout events', function () {
+    it('correctly identifies payout events', function (): void {
         $events = [
             'payout.pending' => 'isPayoutPending',
             'payout.failed' => 'isPayoutFailed',
@@ -265,7 +265,7 @@ describe('WebhookReceived event', function () {
         }
     });
 
-    it('correctly identifies event categories', function () {
+    it('correctly identifies event categories', function (): void {
         expect((new WebhookReceived('purchase.paid', []))->isPurchaseEvent())->toBeTrue();
         expect((new WebhookReceived('payout.success', []))->isPayoutEvent())->toBeTrue();
         expect((new WebhookReceived('billing_template_client.cancelled', []))->isBillingEvent())->toBeTrue();
@@ -273,7 +273,7 @@ describe('WebhookReceived event', function () {
         expect((new WebhookReceived('purchase.pending_charge', []))->isPendingEvent())->toBeTrue();
     });
 
-    it('correctly identifies success events', function () {
+    it('correctly identifies success events', function (): void {
         $successEvents = [
             'purchase.paid',
             'purchase.captured',
@@ -288,7 +288,7 @@ describe('WebhookReceived event', function () {
         }
     });
 
-    it('correctly identifies failure events', function () {
+    it('correctly identifies failure events', function (): void {
         $failureEvents = [
             'purchase.payment_failure',
             'purchase.subscription_charge_failure',
@@ -301,7 +301,7 @@ describe('WebhookReceived event', function () {
         }
     });
 
-    it('provides correct data accessors', function () {
+    it('provides correct data accessors', function (): void {
         $payload = [
             'event_type' => 'purchase.paid',
             'id' => 'purch_xyz',
@@ -322,7 +322,7 @@ describe('WebhookReceived event', function () {
             ->and($event->isTest())->toBeFalse();
     });
 
-    it('returns default values for missing data', function () {
+    it('returns default values for missing data', function (): void {
         $event = new WebhookReceived('unknown', []);
 
         expect($event->getReference())->toBeNull()
@@ -333,7 +333,7 @@ describe('WebhookReceived event', function () {
             ->and($event->isTest())->toBeTrue();
     });
 
-    it('gets amount from nested purchase data', function () {
+    it('gets amount from nested purchase data', function (): void {
         $payload = [
             'purchase' => [
                 'total' => 25000,

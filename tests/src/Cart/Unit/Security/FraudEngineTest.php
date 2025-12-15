@@ -2,14 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Cart;
-use AIArmada\Cart\Security\Fraud\DetectorResult;
-use AIArmada\Cart\Security\Fraud\FraudContext;
 use AIArmada\Cart\Security\Fraud\FraudDetectionEngine;
 use AIArmada\Cart\Security\Fraud\FraudDetectorInterface;
-use AIArmada\Cart\Security\Fraud\FraudSignal;
 use AIArmada\Cart\Security\Fraud\FraudSignalCollector;
-use AIArmada\Cart\Testing\InMemoryStorage;
 
 describe('FraudDetectionEngine', function (): void {
     beforeEach(function (): void {

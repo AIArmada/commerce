@@ -21,7 +21,7 @@ use AIArmada\Chip\Events\PurchaseRecurringTokenDeleted;
 use AIArmada\Chip\Events\PurchaseReleased;
 use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
 
-describe('PurchaseEvent base class', function () {
+describe('PurchaseEvent base class', function (): void {
     function createPurchasePayload(array $overrides = []): array
     {
         $defaults = [
@@ -60,7 +60,7 @@ describe('PurchaseEvent base class', function () {
         return array_replace_recursive($defaults, $overrides);
     }
 
-    it('can create PurchasePaid from payload', function () {
+    it('can create PurchasePaid from payload', function (): void {
         $payload = createPurchasePayload();
 
         $event = PurchasePaid::fromPayload($payload);
@@ -71,7 +71,7 @@ describe('PurchaseEvent base class', function () {
             ->and($event->eventType())->toBe(WebhookEventType::PurchasePaid);
     });
 
-    it('returns correct event type for all purchase events', function () {
+    it('returns correct event type for all purchase events', function (): void {
         $payload = createPurchasePayload();
         $purchaseData = PurchaseData::from($payload);
 
@@ -100,7 +100,7 @@ describe('PurchaseEvent base class', function () {
         }
     });
 
-    it('provides correct getEventTypeValue', function () {
+    it('provides correct getEventTypeValue', function (): void {
         $payload = createPurchasePayload();
         $purchaseData = PurchaseData::from($payload);
         $event = new PurchasePaid($purchaseData, $payload);
@@ -108,7 +108,7 @@ describe('PurchaseEvent base class', function () {
         expect($event->getEventTypeValue())->toBe('purchase.paid');
     });
 
-    it('provides correct getReference', function () {
+    it('provides correct getReference', function (): void {
         $payload = createPurchasePayload(['reference' => 'MY-REF-456']);
         $purchaseData = PurchaseData::from($payload);
         $event = new PurchasePaid($purchaseData, $payload);
@@ -116,7 +116,7 @@ describe('PurchaseEvent base class', function () {
         expect($event->getReference())->toBe('MY-REF-456');
     });
 
-    it('provides correct getPurchaseId', function () {
+    it('provides correct getPurchaseId', function (): void {
         $payload = createPurchasePayload(['id' => 'purch_abc123']);
         $purchaseData = PurchaseData::from($payload);
         $event = new PurchasePaid($purchaseData, $payload);
@@ -124,7 +124,7 @@ describe('PurchaseEvent base class', function () {
         expect($event->getPurchaseId())->toBe('purch_abc123');
     });
 
-    it('provides correct getClientId', function () {
+    it('provides correct getClientId', function (): void {
         $payload = createPurchasePayload(['client_id' => 'client_xyz']);
         $purchaseData = PurchaseData::from($payload);
         $event = new PurchasePaid($purchaseData, $payload);
@@ -132,7 +132,7 @@ describe('PurchaseEvent base class', function () {
         expect($event->getClientId())->toBe('client_xyz');
     });
 
-    it('provides correct getAmount from purchase total', function () {
+    it('provides correct getAmount from purchase total', function (): void {
         $payload = createPurchasePayload([
             'purchase' => [
                 'total' => 15000,
@@ -146,7 +146,7 @@ describe('PurchaseEvent base class', function () {
         expect($event->getAmount())->toBe(15000);
     });
 
-    it('provides correct getCurrency', function () {
+    it('provides correct getCurrency', function (): void {
         $payload = createPurchasePayload([
             'purchase' => [
                 'total' => 5000,
@@ -160,7 +160,7 @@ describe('PurchaseEvent base class', function () {
         expect($event->getCurrency())->toBe('USD');
     });
 
-    it('provides correct getStatus', function () {
+    it('provides correct getStatus', function (): void {
         $payload = createPurchasePayload(['status' => 'hold']);
         $purchaseData = PurchaseData::from($payload);
         $event = new PurchaseHold($purchaseData, $payload);
@@ -168,7 +168,7 @@ describe('PurchaseEvent base class', function () {
         expect($event->getStatus())->toBe('hold');
     });
 
-    it('provides correct getCustomerEmail from client', function () {
+    it('provides correct getCustomerEmail from client', function (): void {
         $payload = createPurchasePayload([
             'client' => ['email' => 'customer@example.com', 'full_name' => 'John'],
         ]);
@@ -178,7 +178,7 @@ describe('PurchaseEvent base class', function () {
         expect($event->getCustomerEmail())->toBe('customer@example.com');
     });
 
-    it('provides correct getCustomerName from client', function () {
+    it('provides correct getCustomerName from client', function (): void {
         $payload = createPurchasePayload([
             'client' => ['email' => 'test@test.com', 'full_name' => 'Jane Doe'],
         ]);
@@ -188,7 +188,7 @@ describe('PurchaseEvent base class', function () {
         expect($event->getCustomerName())->toBe('Jane Doe');
     });
 
-    it('provides correct getRecurringToken', function () {
+    it('provides correct getRecurringToken', function (): void {
         $payload = createPurchasePayload(['recurring_token' => 'rt_xyz123']);
         $purchaseData = PurchaseData::from($payload);
         $event = new PurchasePaid($purchaseData, $payload);
@@ -196,7 +196,7 @@ describe('PurchaseEvent base class', function () {
         expect($event->getRecurringToken())->toBe('rt_xyz123');
     });
 
-    it('correctly checks hasRecurringToken', function () {
+    it('correctly checks hasRecurringToken', function (): void {
         $payload = createPurchasePayload(['recurring_token' => 'rt_xyz123']);
         $purchaseData = PurchaseData::from($payload);
         $event = new PurchasePaid($purchaseData, $payload);
@@ -210,7 +210,7 @@ describe('PurchaseEvent base class', function () {
         expect($event2->hasRecurringToken())->toBeFalse();
     });
 
-    it('correctly checks isTest', function () {
+    it('correctly checks isTest', function (): void {
         $payload = createPurchasePayload(['is_test' => true]);
         $purchaseData = PurchaseData::from($payload);
         $event = new PurchasePaid($purchaseData, $payload);
@@ -224,7 +224,7 @@ describe('PurchaseEvent base class', function () {
         expect($event2->isTest())->toBeFalse();
     });
 
-    it('provides correct getPaymentMethod', function () {
+    it('provides correct getPaymentMethod', function (): void {
         $payload = createPurchasePayload([
             'transaction_data' => ['payment_method' => 'ewallet', 'attempts' => []],
         ]);
@@ -234,7 +234,7 @@ describe('PurchaseEvent base class', function () {
         expect($event->getPaymentMethod())->toBe('ewallet');
     });
 
-    it('provides correct getMetadata', function () {
+    it('provides correct getMetadata', function (): void {
         $payload = createPurchasePayload([
             'purchase' => [
                 'total' => 10000,
@@ -252,7 +252,7 @@ describe('PurchaseEvent base class', function () {
             ->and($metadata['cart_id'])->toBe('cart-789');
     });
 
-    it('provides correct getMetadataValue', function () {
+    it('provides correct getMetadataValue', function (): void {
         $payload = createPurchasePayload([
             'purchase' => [
                 'total' => 10000,
@@ -269,8 +269,8 @@ describe('PurchaseEvent base class', function () {
     });
 });
 
-describe('PurchasePaid specific methods', function () {
-    it('returns net amount from payment', function () {
+describe('PurchasePaid specific methods', function (): void {
+    it('returns net amount from payment', function (): void {
         $payload = [
             'id' => 'purch_test',
             'status' => 'paid',
@@ -296,7 +296,7 @@ describe('PurchasePaid specific methods', function () {
         expect($event->getFeeAmount())->toBe(200);
     });
 
-    it('returns fallback amount when no payment', function () {
+    it('returns fallback amount when no payment', function (): void {
         $payload = [
             'id' => 'purch_test',
             'status' => 'paid',
@@ -317,8 +317,8 @@ describe('PurchasePaid specific methods', function () {
     });
 });
 
-describe('PurchaseEvent edge cases', function () {
-    it('handles empty client gracefully', function () {
+describe('PurchaseEvent edge cases', function (): void {
+    it('handles empty client gracefully', function (): void {
         $payload = [
             'id' => 'purch_test',
             'status' => 'paid',
@@ -339,7 +339,7 @@ describe('PurchaseEvent edge cases', function () {
             ->and($event->getCustomerName())->toBeNull();
     });
 
-    it('handles empty transaction_data gracefully', function () {
+    it('handles empty transaction_data gracefully', function (): void {
         $payload = [
             'id' => 'purch_test',
             'status' => 'paid',
@@ -359,7 +359,7 @@ describe('PurchaseEvent edge cases', function () {
         expect($event->getPaymentMethod())->toBe('');
     });
 
-    it('handles null metadata gracefully', function () {
+    it('handles null metadata gracefully', function (): void {
         $payload = [
             'id' => 'purch_test',
             'status' => 'paid',

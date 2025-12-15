@@ -57,7 +57,7 @@ function createEventTestVoucher(string $code = 'TEST10', float $value = 1000): V
 /**
  * Create a test cart for event testing.
  */
-function createEventTestCart(string $identifier = null): Cart
+function createEventTestCart(?string $identifier = null): Cart
 {
     return new Cart(
         new InMemoryStorage(),

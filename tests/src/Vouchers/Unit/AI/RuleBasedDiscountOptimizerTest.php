@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\CartCondition;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\AI\CartFeatureExtractor;
 use AIArmada\Vouchers\AI\DiscountRecommendation;

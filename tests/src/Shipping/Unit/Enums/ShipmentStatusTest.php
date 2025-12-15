@@ -145,18 +145,18 @@ it('returns colors for all statuses', function (): void {
 });
 
 it('converts to tracking status for all statuses', function (): void {
-    expect(ShipmentStatus::Draft->toTrackingStatus())->toBe(\AIArmada\Shipping\Enums\TrackingStatus::LabelCreated);
-    expect(ShipmentStatus::Pending->toTrackingStatus())->toBe(\AIArmada\Shipping\Enums\TrackingStatus::AwaitingPickup);
-    expect(ShipmentStatus::AwaitingPickup->toTrackingStatus())->toBe(\AIArmada\Shipping\Enums\TrackingStatus::AwaitingPickup);
-    expect(ShipmentStatus::Shipped->toTrackingStatus())->toBe(\AIArmada\Shipping\Enums\TrackingStatus::PickedUp);
-    expect(ShipmentStatus::InTransit->toTrackingStatus())->toBe(\AIArmada\Shipping\Enums\TrackingStatus::InTransit);
-    expect(ShipmentStatus::OutForDelivery->toTrackingStatus())->toBe(\AIArmada\Shipping\Enums\TrackingStatus::OutForDelivery);
-    expect(ShipmentStatus::Delivered->toTrackingStatus())->toBe(\AIArmada\Shipping\Enums\TrackingStatus::Delivered);
-    expect(ShipmentStatus::DeliveryFailed->toTrackingStatus())->toBe(\AIArmada\Shipping\Enums\TrackingStatus::DeliveryAttemptFailed);
-    expect(ShipmentStatus::ReturnToSender->toTrackingStatus())->toBe(\AIArmada\Shipping\Enums\TrackingStatus::ReturnToSender);
-    expect(ShipmentStatus::Cancelled->toTrackingStatus())->toBe(\AIArmada\Shipping\Enums\TrackingStatus::OnHold);
-    expect(ShipmentStatus::OnHold->toTrackingStatus())->toBe(\AIArmada\Shipping\Enums\TrackingStatus::OnHold);
-    expect(ShipmentStatus::Exception->toTrackingStatus())->toBe(\AIArmada\Shipping\Enums\TrackingStatus::Delayed);
+    expect(ShipmentStatus::Draft->toTrackingStatus())->toBe(AIArmada\Shipping\Enums\TrackingStatus::LabelCreated);
+    expect(ShipmentStatus::Pending->toTrackingStatus())->toBe(AIArmada\Shipping\Enums\TrackingStatus::AwaitingPickup);
+    expect(ShipmentStatus::AwaitingPickup->toTrackingStatus())->toBe(AIArmada\Shipping\Enums\TrackingStatus::AwaitingPickup);
+    expect(ShipmentStatus::Shipped->toTrackingStatus())->toBe(AIArmada\Shipping\Enums\TrackingStatus::PickedUp);
+    expect(ShipmentStatus::InTransit->toTrackingStatus())->toBe(AIArmada\Shipping\Enums\TrackingStatus::InTransit);
+    expect(ShipmentStatus::OutForDelivery->toTrackingStatus())->toBe(AIArmada\Shipping\Enums\TrackingStatus::OutForDelivery);
+    expect(ShipmentStatus::Delivered->toTrackingStatus())->toBe(AIArmada\Shipping\Enums\TrackingStatus::Delivered);
+    expect(ShipmentStatus::DeliveryFailed->toTrackingStatus())->toBe(AIArmada\Shipping\Enums\TrackingStatus::DeliveryAttemptFailed);
+    expect(ShipmentStatus::ReturnToSender->toTrackingStatus())->toBe(AIArmada\Shipping\Enums\TrackingStatus::ReturnToSender);
+    expect(ShipmentStatus::Cancelled->toTrackingStatus())->toBe(AIArmada\Shipping\Enums\TrackingStatus::OnHold);
+    expect(ShipmentStatus::OnHold->toTrackingStatus())->toBe(AIArmada\Shipping\Enums\TrackingStatus::OnHold);
+    expect(ShipmentStatus::Exception->toTrackingStatus())->toBe(AIArmada\Shipping\Enums\TrackingStatus::Delayed);
 });
 
 it('returns allowed transitions for all statuses', function (): void {

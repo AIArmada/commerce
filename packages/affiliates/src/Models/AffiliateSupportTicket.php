@@ -59,7 +59,7 @@ final class AffiliateSupportTicket extends Model
 
     protected static function booted(): void
     {
-        static::deleting(function (self $ticket): void {
+        self::deleting(function (self $ticket): void {
             $ticket->messages()->delete();
         });
     }

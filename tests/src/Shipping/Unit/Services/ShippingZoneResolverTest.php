@@ -303,7 +303,7 @@ describe('ShippingZoneResolver', function (): void {
             'active' => true,
         ]);
 
-        \AIArmada\Shipping\Models\ShippingRate::create([
+        AIArmada\Shipping\Models\ShippingRate::create([
             'zone_id' => $zone->id,
             'carrier_code' => null, // Null carrier code matches all carriers
             'method_code' => 'standard',
@@ -313,7 +313,7 @@ describe('ShippingZoneResolver', function (): void {
             'active' => true,
         ]);
 
-        \AIArmada\Shipping\Models\ShippingRate::create([
+        AIArmada\Shipping\Models\ShippingRate::create([
             'zone_id' => $zone->id,
             'carrier_code' => null, // Null carrier code matches all carriers
             'method_code' => 'express',
@@ -353,7 +353,7 @@ describe('ShippingZoneResolver', function (): void {
             'active' => true,
         ]);
 
-        \AIArmada\Shipping\Models\ShippingRate::create([
+        AIArmada\Shipping\Models\ShippingRate::create([
             'zone_id' => $zone->id,
             'carrier_code' => 'fedex',
             'method_code' => 'standard',
@@ -363,7 +363,7 @@ describe('ShippingZoneResolver', function (): void {
             'active' => true,
         ]);
 
-        \AIArmada\Shipping\Models\ShippingRate::create([
+        AIArmada\Shipping\Models\ShippingRate::create([
             'zone_id' => $zone->id,
             'carrier_code' => 'ups',
             'method_code' => 'standard',

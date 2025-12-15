@@ -273,7 +273,7 @@ describe('PriceTier Model - Extended Tests', function (): void {
             // Don't set tierable_type to avoid class resolution
             $relation = $tier->tierable();
 
-            expect($relation)->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphTo::class);
+            expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphTo::class);
         });
     });
 

@@ -186,5 +186,4 @@ describe('ShipmentItem Model', function (): void {
         // Note: We can't test the actual relationship resolution without a real model
     });
 
-
 });

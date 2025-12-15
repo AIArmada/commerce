@@ -34,7 +34,7 @@ afterEach(function (): void {
 
 it('returns empty conditions when no shipping address', function (): void {
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-shipping-' . uniqid(), events: null);
 
     $provider = new ShippingConditionProvider($this->rateEngine);
 
@@ -45,7 +45,7 @@ it('returns empty conditions when no shipping address', function (): void {
 
 it('returns empty conditions when shipping address is not an array', function (): void {
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-shipping-' . uniqid(), events: null);
     $cart->setMetadata('shipping_address', 'invalid');
 
     $provider = new ShippingConditionProvider($this->rateEngine);
@@ -57,7 +57,7 @@ it('returns empty conditions when shipping address is not an array', function ()
 
 it('returns empty conditions when no rate available', function (): void {
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-shipping-' . uniqid(), events: null);
     $cart->setMetadata('shipping_address', [
         'name' => 'John Doe',
         'phone' => '123456',
@@ -78,7 +78,7 @@ it('returns empty conditions when no rate available', function (): void {
 
 it('returns shipping condition when rate is available', function (): void {
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-shipping-' . uniqid(), events: null);
     $cart->setMetadata('shipping_address', [
         'name' => 'John Doe',
         'phone' => '123456',
@@ -110,7 +110,7 @@ it('returns shipping condition when rate is available', function (): void {
 
 it('applies free shipping when evaluator returns applies true', function (): void {
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-shipping-' . uniqid(), events: null);
     $cart->setMetadata('shipping_address', [
         'name' => 'John Doe',
         'phone' => '123456',
@@ -146,7 +146,7 @@ it('applies free shipping when evaluator returns applies true', function (): voi
 
 it('validates shipping condition requires shipping address', function (): void {
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-shipping-' . uniqid(), events: null);
 
     $condition = new CartCondition(
         name: 'Shipping',
@@ -162,7 +162,7 @@ it('validates shipping condition requires shipping address', function (): void {
 
 it('validates shipping condition passes when address exists', function (): void {
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-shipping-' . uniqid(), events: null);
     $cart->setMetadata('shipping_address', [
         'name' => 'John Doe',
         'phone' => '123456',
@@ -185,7 +185,7 @@ it('validates shipping condition passes when address exists', function (): void 
 
 it('validates non-shipping conditions always pass', function (): void {
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-shipping-' . uniqid(), events: null);
 
     $condition = new CartCondition(
         name: 'Tax',
@@ -213,7 +213,7 @@ it('returns correct priority', function (): void {
 
 it('gets selected rate when method is specified', function (): void {
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-shipping-' . uniqid(), events: null);
     $cart->setMetadata('shipping_address', [
         'name' => 'John Doe',
         'phone' => '123456',
@@ -253,7 +253,7 @@ it('gets selected rate when method is specified', function (): void {
 
 it('calculates package weight from cart items', function (): void {
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-shipping-' . uniqid(), events: null);
     $cart->setMetadata('shipping_address', [
         'name' => 'John Doe',
         'phone' => '123456',

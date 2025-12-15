@@ -51,7 +51,7 @@ describe('RateShoppingEngine', function (): void {
 
         $engine = new RateShoppingEngine($shippingManager, [
             'cache_ttl' => 0, // Disable caching for tests
-            'strategy' => 'cheapest'
+            'strategy' => 'cheapest',
         ]);
 
         $origin = new AddressData(
@@ -123,7 +123,7 @@ describe('RateShoppingEngine', function (): void {
 
         $engine = new RateShoppingEngine($shippingManager, [
             'cache_ttl' => 0, // Disable caching for tests
-            'strategy' => 'cheapest'
+            'strategy' => 'cheapest',
         ]);
 
         $origin = new AddressData(
@@ -165,7 +165,7 @@ describe('RateShoppingEngine', function (): void {
         $shippingManager = Mockery::mock(ShippingManager::class);
         $engine = new RateShoppingEngine($shippingManager, ['cache_ttl' => 0]);
 
-        $strategy = Mockery::mock(\AIArmada\Shipping\Contracts\RateSelectionStrategyInterface::class);
+        $strategy = Mockery::mock(AIArmada\Shipping\Contracts\RateSelectionStrategyInterface::class);
         $strategy->shouldReceive('select')->andReturn(null);
 
         $result = $engine->setStrategy($strategy);
@@ -194,7 +194,7 @@ describe('RateShoppingEngine', function (): void {
 
         $engine = new RateShoppingEngine($shippingManager, [
             'cache_ttl' => 0,
-            'fallback_to_manual' => true
+            'fallback_to_manual' => true,
         ]);
 
         $origin = new AddressData(
@@ -244,7 +244,7 @@ describe('RateShoppingEngine', function (): void {
 
         $engine = new RateShoppingEngine($shippingManager, [
             'cache_ttl' => 0,
-            'fallback_to_manual' => false
+            'fallback_to_manual' => false,
         ]);
 
         $origin = new AddressData(
@@ -282,7 +282,7 @@ describe('RateShoppingEngine', function (): void {
 
     it('uses fastest strategy when configured', function (): void {
         $shippingManager = Mockery::mock(ShippingManager::class);
-        
+
         $fedexDriver = Mockery::mock(ShippingDriverInterface::class);
         $fedexDriver->shouldReceive('getCarrierCode')->andReturn('fedex');
 
@@ -297,7 +297,7 @@ describe('RateShoppingEngine', function (): void {
 
         $engine = new RateShoppingEngine($shippingManager, [
             'cache_ttl' => 0,
-            'strategy' => 'fastest'
+            'strategy' => 'fastest',
         ]);
 
         $origin = new AddressData(
@@ -337,7 +337,7 @@ describe('RateShoppingEngine', function (): void {
 
     it('uses preferred carrier strategy when configured', function (): void {
         $shippingManager = Mockery::mock(ShippingManager::class);
-        
+
         $fedexDriver = Mockery::mock(ShippingDriverInterface::class);
         $upsDriver = Mockery::mock(ShippingDriverInterface::class);
         $fedexDriver->shouldReceive('getCarrierCode')->andReturn('fedex');
@@ -357,7 +357,7 @@ describe('RateShoppingEngine', function (): void {
         $engine = new RateShoppingEngine($shippingManager, [
             'cache_ttl' => 0,
             'strategy' => 'preferred',
-            'carrier_priority' => ['fedex' => 1, 'ups' => 2] // Prefer FedEx (lower number = higher priority)
+            'carrier_priority' => ['fedex' => 1, 'ups' => 2], // Prefer FedEx (lower number = higher priority)
         ]);
 
         $origin = new AddressData(
@@ -396,13 +396,13 @@ describe('RateShoppingEngine', function (): void {
 
     it('uses caching when cache_ttl is positive', function (): void {
         $shippingManager = Mockery::mock(ShippingManager::class);
-        
+
         $fedexDriver = Mockery::mock(ShippingDriverInterface::class);
         $fedexDriver->shouldReceive('getCarrierCode')->andReturn('fedex');
 
         $engine = new RateShoppingEngine($shippingManager, [
             'cache_ttl' => 300,
-            'strategy' => 'cheapest'
+            'strategy' => 'cheapest',
         ]);
 
         $origin = new AddressData(
@@ -448,7 +448,7 @@ describe('RateShoppingEngine', function (): void {
 
     it('gets rates from specific carriers only', function (): void {
         $shippingManager = Mockery::mock(ShippingManager::class);
-        
+
         $fedexDriver = Mockery::mock(ShippingDriverInterface::class);
         $fedexDriver->shouldReceive('servicesDestination')->andReturn(true);
         $fedexDriver->shouldReceive('getRates')->andReturn(collect([
@@ -493,7 +493,7 @@ describe('RateShoppingEngine', function (): void {
 
     it('skips carriers that do not service destination in getRatesFromCarriers', function (): void {
         $shippingManager = Mockery::mock(ShippingManager::class);
-        
+
         $fedexDriver = Mockery::mock(ShippingDriverInterface::class);
         $fedexDriver->shouldReceive('servicesDestination')->andReturn(false); // Does not service destination
 
@@ -533,10 +533,10 @@ describe('RateShoppingEngine', function (): void {
 
     it('handles carrier errors in getRatesFromCarriers gracefully', function (): void {
         $shippingManager = Mockery::mock(ShippingManager::class);
-        
+
         $fedexDriver = Mockery::mock(ShippingDriverInterface::class);
         $fedexDriver->shouldReceive('servicesDestination')->andReturn(true);
-        $fedexDriver->shouldReceive('getRates')->andThrow(new \Exception('API Error'));
+        $fedexDriver->shouldReceive('getRates')->andThrow(new Exception('API Error'));
 
         $shippingManager->shouldReceive('hasDriver')->with('fedex')->andReturn(true);
         $shippingManager->shouldReceive('driver')->with('fedex')->andReturn($fedexDriver);

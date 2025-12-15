@@ -93,11 +93,11 @@ class TaxExemption extends Model
     public function scopeActive($query)
     {
         return $query->where('status', 'approved')
-            ->where(function ($q) {
+            ->where(function ($q): void {
                 $q->whereNull('expires_at')
                     ->orWhere('expires_at', '>=', \Illuminate\Support\Carbon::now());
             })
-            ->where(function ($q) {
+            ->where(function ($q): void {
                 $q->whereNull('starts_at')
                     ->orWhere('starts_at', '<=', \Illuminate\Support\Carbon::now());
             });
