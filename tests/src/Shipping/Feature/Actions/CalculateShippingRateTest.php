@@ -36,11 +36,11 @@ describe('CalculateShippingRate Action', function (): void {
 
         $rates = $action->handle($origin, $destination, $packages, 'null');
 
-        expect($rates)->toBeInstanceOf(\Illuminate\Support\Collection::class);
+        expect($rates)->toBeInstanceOf(Illuminate\Support\Collection::class);
         expect($rates)->toHaveCount(2);
 
         $standardRate = $rates->first();
-        expect($standardRate)->toBeInstanceOf(\AIArmada\Shipping\Data\RateQuoteData::class);
+        expect($standardRate)->toBeInstanceOf(AIArmada\Shipping\Data\RateQuoteData::class);
         expect($standardRate->carrier)->toBe('null');
         expect($standardRate->service)->toBe('standard');
     });
@@ -74,7 +74,7 @@ describe('CalculateShippingRate Action', function (): void {
 
         $rates = $action->handle($origin, $destination, $packages);
 
-        expect($rates)->toBeInstanceOf(\Illuminate\Support\Collection::class);
+        expect($rates)->toBeInstanceOf(Illuminate\Support\Collection::class);
         expect($rates)->toHaveCount(0); // No carriers configured in config
     });
 
@@ -179,7 +179,7 @@ describe('CalculateShippingRate Action', function (): void {
         // Should not throw, just skip failing carrier
         $rates = $action->handle($origin, $destination, $packages);
 
-        expect($rates)->toBeInstanceOf(\Illuminate\Support\Collection::class);
+        expect($rates)->toBeInstanceOf(Illuminate\Support\Collection::class);
         // Only null driver rates should be included
         expect($rates->count())->toBeGreaterThanOrEqual(0);
     });

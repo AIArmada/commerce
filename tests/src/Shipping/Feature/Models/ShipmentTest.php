@@ -95,16 +95,16 @@ describe('Shipment Model', function (): void {
         ]);
 
         // Test items relationship
-        expect($shipment->items())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+        expect($shipment->items())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
 
         // Test events relationship
-        expect($shipment->events())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+        expect($shipment->events())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
 
         // Test labels relationship
-        expect($shipment->labels())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class);
+        expect($shipment->labels())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
 
         // Test shippable relationship
-        expect($shipment->shippable())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphTo::class);
+        expect($shipment->shippable())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphTo::class);
     });
 
     it('can create shipment items', function (): void {

@@ -11,7 +11,6 @@ use AIArmada\Vouchers\Targeting\Evaluators\DeviceEvaluator;
 use AIArmada\Vouchers\Targeting\Evaluators\FirstPurchaseEvaluator;
 use AIArmada\Vouchers\Targeting\TargetingContext;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Http\Request;
 use Mockery;
 
 afterEach(function (): void {

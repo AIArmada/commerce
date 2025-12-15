@@ -179,7 +179,7 @@ describe('AffiliateIntegrationRegistrar affiliate voucher creation', function ()
         $generatedCode = mb_strtoupper($prefix . $randomPart);
 
         expect($generatedCode)->toStartWith('REF')
-            ->and(strlen($generatedCode))->toBe(11); // REF + 8 hex chars
+            ->and(mb_strlen($generatedCode))->toBe(11); // REF + 8 hex chars
     });
 });
 
@@ -248,7 +248,7 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
         $code = $method->invoke($registrar, $affiliate);
 
         expect($code)->toStartWith('REF')
-            ->and(strlen($code))->toBe(11); // REF + 8 hex chars
+            ->and(mb_strlen($code))->toBe(11); // REF + 8 hex chars
     });
 
     it('generates affiliate voucher code using default format for unknown format', function (): void {

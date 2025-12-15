@@ -72,7 +72,7 @@ final class AffiliateTrainingModule extends Model
 
     protected static function booted(): void
     {
-        static::deleting(function (self $module): void {
+        self::deleting(function (self $module): void {
             $module->progress()->delete();
         });
     }

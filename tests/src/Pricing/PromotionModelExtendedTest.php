@@ -276,13 +276,13 @@ describe('Promotion Model - Extended Tests', function (): void {
         it('has morphToMany products relationship', function (): void {
             $promotion = new Promotion;
 
-            expect($promotion->products())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphToMany::class);
+            expect($promotion->products())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphToMany::class);
         });
 
         it('has morphToMany categories relationship', function (): void {
             $promotion = new Promotion;
 
-            expect($promotion->categories())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\MorphToMany::class);
+            expect($promotion->categories())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphToMany::class);
         });
     });
 
@@ -441,10 +441,11 @@ describe('Promotion Model - Extended Tests', function (): void {
             $ownerId = 'owner-' . uniqid();
 
             // Create a mock owner model
-            $owner = new class extends \Illuminate\Database\Eloquent\Model {
-                protected $keyType = 'string';
-
+            $owner = new class extends Illuminate\Database\Eloquent\Model
+            {
                 public $incrementing = false;
+
+                protected $keyType = 'string';
             };
             $owner->id = $ownerId;
             $owner->setTable('stores');
@@ -491,10 +492,11 @@ describe('Promotion Model - Extended Tests', function (): void {
             $ownerId = 'owner-' . uniqid();
 
             // Create a mock owner model
-            $owner = new class extends \Illuminate\Database\Eloquent\Model {
-                protected $keyType = 'string';
-
+            $owner = new class extends Illuminate\Database\Eloquent\Model
+            {
                 public $incrementing = false;
+
+                protected $keyType = 'string';
             };
             $owner->id = $ownerId;
             $owner->setTable('stores');

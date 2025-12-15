@@ -7,49 +7,49 @@ use AIArmada\Chip\Health\ChipGatewayCheck;
 use Illuminate\Support\Facades\Http;
 use Spatie\Health\Checks\Result;
 
-describe('NoRecurringTokenException', function () {
-    it('can be constructed with default message', function () {
+describe('NoRecurringTokenException', function (): void {
+    it('can be constructed with default message', function (): void {
         $exception = new NoRecurringTokenException;
 
         expect($exception)->toBeInstanceOf(NoRecurringTokenException::class)
             ->and($exception->getMessage())->toBe('No recurring token available');
     });
 
-    it('can be constructed with custom message', function () {
+    it('can be constructed with custom message', function (): void {
         $exception = new NoRecurringTokenException('Custom error message');
 
         expect($exception->getMessage())->toBe('Custom error message');
     });
 
-    it('is throwable', function () {
-        expect(fn() => throw new NoRecurringTokenException('Test'))
+    it('is throwable', function (): void {
+        expect(fn () => throw new NoRecurringTokenException('Test'))
             ->toThrow(NoRecurringTokenException::class, 'Test');
     });
 });
 
-describe('ChipGatewayCheck', function () {
-    it('can be instantiated', function () {
+describe('ChipGatewayCheck', function (): void {
+    it('can be instantiated', function (): void {
         $check = new ChipGatewayCheck;
 
         expect($check)->toBeInstanceOf(ChipGatewayCheck::class)
             ->and($check->name)->toBe('CHIP Payment Gateway');
     });
 
-    it('can set endpoint', function () {
+    it('can set endpoint', function (): void {
         $check = new ChipGatewayCheck;
         $result = $check->endpoint('https://custom-endpoint.com/');
 
         expect($result)->toBe($check); // Returns self for chaining
     });
 
-    it('can set timeout', function () {
+    it('can set timeout', function (): void {
         $check = new ChipGatewayCheck;
         $result = $check->timeout(30);
 
         expect($result)->toBe($check); // Returns self for chaining
     });
 
-    it('returns warning when credentials not configured', function () {
+    it('returns warning when credentials not configured', function (): void {
         config(['chip.brand_id' => null, 'chip.api_key' => null]);
 
         $check = new ChipGatewayCheck;
@@ -59,7 +59,7 @@ describe('ChipGatewayCheck', function () {
             ->and($result->status->value)->toBe('warning');
     });
 
-    it('returns warning when only brand_id is missing', function () {
+    it('returns warning when only brand_id is missing', function (): void {
         config(['chip.brand_id' => null, 'chip.api_key' => 'test-key']);
 
         $check = new ChipGatewayCheck;
@@ -69,7 +69,7 @@ describe('ChipGatewayCheck', function () {
             ->and($result->status->value)->toBe('warning');
     });
 
-    it('returns warning when only api_key is missing', function () {
+    it('returns warning when only api_key is missing', function (): void {
         config(['chip.brand_id' => 'test-brand', 'chip.api_key' => null]);
 
         $check = new ChipGatewayCheck;
@@ -79,7 +79,7 @@ describe('ChipGatewayCheck', function () {
             ->and($result->status->value)->toBe('warning');
     });
 
-    it('returns success when API responds successfully', function () {
+    it('returns success when API responds successfully', function (): void {
         config([
             'chip.brand_id' => 'test-brand-123',
             'chip.api_key' => 'test-api-key',
@@ -96,7 +96,7 @@ describe('ChipGatewayCheck', function () {
             ->and($result->status->value)->toBe('ok');
     });
 
-    it('returns failure when API responds with error', function () {
+    it('returns failure when API responds with error', function (): void {
         config([
             'chip.brand_id' => 'test-brand-123',
             'chip.api_key' => 'test-api-key',
@@ -113,14 +113,14 @@ describe('ChipGatewayCheck', function () {
             ->and($result->status->value)->toBe('failed');
     });
 
-    it('returns failure when connection fails', function () {
+    it('returns failure when connection fails', function (): void {
         config([
             'chip.brand_id' => 'test-brand-123',
             'chip.api_key' => 'test-api-key',
         ]);
 
-        Http::fake(function () {
-            throw new \Exception('Connection refused');
+        Http::fake(function (): void {
+            throw new Exception('Connection refused');
         });
 
         $check = new ChipGatewayCheck;

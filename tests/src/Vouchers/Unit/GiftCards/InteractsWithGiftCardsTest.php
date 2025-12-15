@@ -7,15 +7,14 @@ namespace Tests\Vouchers\Unit\GiftCards;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Testing\InMemoryStorage;
-use AIArmada\Vouchers\GiftCards\Conditions\GiftCardCondition;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardStatus;
-use AIArmada\Vouchers\GiftCards\Enums\GiftCardType;
 use AIArmada\Vouchers\GiftCards\Exceptions\InvalidGiftCardException;
 use AIArmada\Vouchers\GiftCards\Exceptions\InvalidGiftCardPinException;
 use AIArmada\Vouchers\GiftCards\Models\GiftCard;
 use AIArmada\Vouchers\GiftCards\Traits\InteractsWithGiftCards;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use ReflectionClass;
 
 uses(RefreshDatabase::class);
 
@@ -362,7 +361,7 @@ describe('InteractsWithGiftCards Apply Condition Value', function (): void {
         $wrapper = createGiftCardCartWrapper();
 
         // Access protected method via reflection
-        $reflection = new \ReflectionClass($wrapper);
+        $reflection = new ReflectionClass($wrapper);
         $method = $reflection->getMethod('applyConditionToValue');
         $method->setAccessible(true);
 
@@ -385,7 +384,7 @@ describe('InteractsWithGiftCards Apply Condition Value', function (): void {
     it('applies positive fixed condition', function (): void {
         $wrapper = createGiftCardCartWrapper();
 
-        $reflection = new \ReflectionClass($wrapper);
+        $reflection = new ReflectionClass($wrapper);
         $method = $reflection->getMethod('applyConditionToValue');
         $method->setAccessible(true);
 
@@ -408,7 +407,7 @@ describe('InteractsWithGiftCards Apply Condition Value', function (): void {
     it('applies negative fixed condition', function (): void {
         $wrapper = createGiftCardCartWrapper();
 
-        $reflection = new \ReflectionClass($wrapper);
+        $reflection = new ReflectionClass($wrapper);
         $method = $reflection->getMethod('applyConditionToValue');
         $method->setAccessible(true);
 

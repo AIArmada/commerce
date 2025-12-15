@@ -7,27 +7,27 @@ use AIArmada\Chip\Webhooks\WebhookLogger;
 use AIArmada\Chip\Webhooks\WebhookValidator;
 use Illuminate\Http\Request;
 
-describe('ChipWebhookProfile', function () {
-    it('can be instantiated', function () {
+describe('ChipWebhookProfile', function (): void {
+    it('can be instantiated', function (): void {
         $profile = new ChipWebhookProfile;
         expect($profile)->toBeInstanceOf(ChipWebhookProfile::class);
     });
 
-    it('returns false when event_type is missing', function () {
+    it('returns false when event_type is missing', function (): void {
         $profile = new ChipWebhookProfile;
         $request = Request::create('/webhook', 'POST', []);
 
         expect($profile->shouldProcess($request))->toBeFalse();
     });
 
-    it('returns false for empty event_type', function () {
+    it('returns false for empty event_type', function (): void {
         $profile = new ChipWebhookProfile;
         $request = Request::create('/webhook', 'POST', ['event_type' => '']);
 
         expect($profile->shouldProcess($request))->toBeFalse();
     });
 
-    it('returns true for purchase events', function () {
+    it('returns true for purchase events', function (): void {
         $profile = new ChipWebhookProfile;
 
         $events = [
@@ -43,14 +43,14 @@ describe('ChipWebhookProfile', function () {
         }
     });
 
-    it('returns true for payment events', function () {
+    it('returns true for payment events', function (): void {
         $profile = new ChipWebhookProfile;
         $request = Request::create('/webhook', 'POST', ['event_type' => 'payment.refunded']);
 
         expect($profile->shouldProcess($request))->toBeTrue();
     });
 
-    it('returns true for payout events', function () {
+    it('returns true for payout events', function (): void {
         $profile = new ChipWebhookProfile;
 
         $events = [
@@ -65,7 +65,7 @@ describe('ChipWebhookProfile', function () {
         }
     });
 
-    it('returns true for billing_template_client events', function () {
+    it('returns true for billing_template_client events', function (): void {
         $profile = new ChipWebhookProfile;
         $request = Request::create('/webhook', 'POST', [
             'event_type' => 'billing_template_client.subscription_billing_cancelled',
@@ -74,7 +74,7 @@ describe('ChipWebhookProfile', function () {
         expect($profile->shouldProcess($request))->toBeTrue();
     });
 
-    it('returns false for unknown event types', function () {
+    it('returns false for unknown event types', function (): void {
         $profile = new ChipWebhookProfile;
         $request = Request::create('/webhook', 'POST', ['event_type' => 'unknown.event']);
 
@@ -82,13 +82,13 @@ describe('ChipWebhookProfile', function () {
     });
 });
 
-describe('WebhookValidator', function () {
-    it('can be instantiated', function () {
+describe('WebhookValidator', function (): void {
+    it('can be instantiated', function (): void {
         $validator = new WebhookValidator;
         expect($validator)->toBeInstanceOf(WebhookValidator::class);
     });
 
-    it('returns false when signature header is missing', function () {
+    it('returns false when signature header is missing', function (): void {
         config(['chip.webhook_signature_header' => 'X-Signature']);
         $validator = new WebhookValidator;
         $request = Request::create('/webhook', 'POST', [], [], [], [], '{"test":"data"}');
@@ -96,7 +96,7 @@ describe('WebhookValidator', function () {
         expect($validator->validate($request))->toBeFalse();
     });
 
-    it('returns false when webhook secret is not configured', function () {
+    it('returns false when webhook secret is not configured', function (): void {
         config([
             'chip.webhook_signature_header' => 'X-Signature',
             'chip.webhook_secret' => null,
@@ -110,7 +110,7 @@ describe('WebhookValidator', function () {
         expect($validator->validate($request))->toBeFalse();
     });
 
-    it('returns false for invalid signature', function () {
+    it('returns false for invalid signature', function (): void {
         config([
             'chip.webhook_signature_header' => 'X-Signature',
             'chip.webhook_secret' => 'test-secret',
@@ -124,7 +124,7 @@ describe('WebhookValidator', function () {
         expect($validator->validate($request))->toBeFalse();
     });
 
-    it('returns true for valid signature', function () {
+    it('returns true for valid signature', function (): void {
         $secret = 'test-secret-key';
         $payload = '{"test":"data"}';
         $validSignature = hash_hmac('sha256', $payload, $secret);
@@ -143,13 +143,13 @@ describe('WebhookValidator', function () {
     });
 });
 
-describe('WebhookLogger', function () {
-    it('can be instantiated', function () {
+describe('WebhookLogger', function (): void {
+    it('can be instantiated', function (): void {
         $logger = new WebhookLogger;
         expect($logger)->toBeInstanceOf(WebhookLogger::class);
     });
 
-    it('generates idempotency key from payload', function () {
+    it('generates idempotency key from payload', function (): void {
         $logger = new WebhookLogger;
 
         $payload = [
@@ -161,10 +161,10 @@ describe('WebhookLogger', function () {
         $key = $logger->generateIdempotencyKey($payload);
 
         expect($key)->toBeString()
-            ->and(strlen($key))->toBe(64); // SHA256 hash length
+            ->and(mb_strlen($key))->toBe(64); // SHA256 hash length
     });
 
-    it('generates consistent idempotency key for same payload', function () {
+    it('generates consistent idempotency key for same payload', function (): void {
         $logger = new WebhookLogger;
 
         $payload = [
@@ -179,7 +179,7 @@ describe('WebhookLogger', function () {
         expect($key1)->toBe($key2);
     });
 
-    it('generates different keys for different payloads', function () {
+    it('generates different keys for different payloads', function (): void {
         $logger = new WebhookLogger;
 
         $payload1 = [
@@ -200,7 +200,7 @@ describe('WebhookLogger', function () {
         expect($key1)->not->toBe($key2);
     });
 
-    it('handles nested data structure for idempotency key', function () {
+    it('handles nested data structure for idempotency key', function (): void {
         $logger = new WebhookLogger;
 
         $payload = [
@@ -214,10 +214,10 @@ describe('WebhookLogger', function () {
         $key = $logger->generateIdempotencyKey($payload);
 
         expect($key)->toBeString()
-            ->and(strlen($key))->toBe(64);
+            ->and(mb_strlen($key))->toBe(64);
     });
 
-    it('logs invalid signature warning', function () {
+    it('logs invalid signature warning', function (): void {
         $logger = new WebhookLogger;
         $request = Request::create('/webhook', 'POST');
 

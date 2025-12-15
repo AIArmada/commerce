@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Testing\SimulatesWebhooks;
 use AIArmada\Chip\Enums\WebhookEventType;
+use AIArmada\Chip\Testing\SimulatesWebhooks;
 use AIArmada\Chip\Testing\WebhookSimulator;
 
 /**
@@ -59,15 +59,15 @@ class TraitTestClass
     }
 }
 
-describe('SimulatesWebhooks trait', function () {
-    it('creates webhook simulator', function () {
+describe('SimulatesWebhooks trait', function (): void {
+    it('creates webhook simulator', function (): void {
         $test = new TraitTestClass;
         $simulator = $test->testSimulateWebhook();
 
         expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
     });
 
-    it('creates paid webhook simulator', function () {
+    it('creates paid webhook simulator', function (): void {
         $test = new TraitTestClass;
         $simulator = $test->testSimulatePaidWebhook();
 
@@ -75,49 +75,49 @@ describe('SimulatesWebhooks trait', function () {
         expect($simulator->getPayload()['status'])->toBe('paid');
     });
 
-    it('creates paid webhook simulator with URL', function () {
+    it('creates paid webhook simulator with URL', function (): void {
         $test = new TraitTestClass;
         $simulator = $test->testSimulatePaidWebhook('https://example.com/webhook');
 
         expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
     });
 
-    it('creates failed webhook simulator', function () {
+    it('creates failed webhook simulator', function (): void {
         $test = new TraitTestClass;
         $simulator = $test->testSimulateFailedWebhook();
 
         expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
     });
 
-    it('creates cancelled webhook simulator', function () {
+    it('creates cancelled webhook simulator', function (): void {
         $test = new TraitTestClass;
         $simulator = $test->testSimulateCancelledWebhook();
 
         expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
     });
 
-    it('creates refunded webhook simulator', function () {
+    it('creates refunded webhook simulator', function (): void {
         $test = new TraitTestClass;
         $simulator = $test->testSimulateRefundedWebhook();
 
         expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
     });
 
-    it('creates simulator for specific event type', function () {
+    it('creates simulator for specific event type', function (): void {
         $test = new TraitTestClass;
         $simulator = $test->testSimulateWebhookEvent(WebhookEventType::PurchasePaid);
 
         expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
     });
 
-    it('creates simulator for event type with URL', function () {
+    it('creates simulator for event type with URL', function (): void {
         $test = new TraitTestClass;
         $simulator = $test->testSimulateWebhookEvent(WebhookEventType::PurchasePaid, 'https://example.com');
 
         expect($simulator)->toBeInstanceOf(WebhookSimulator::class);
     });
 
-    it('disables signature verification', function () {
+    it('disables signature verification', function (): void {
         config(['chip.webhooks.verify_signature' => true]);
 
         $test = new TraitTestClass;

@@ -12,7 +12,6 @@ use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Stacking\Enums\StackingMode;
 use AIArmada\Vouchers\Stacking\Enums\StackingRuleType;
 use AIArmada\Vouchers\Stacking\StackingPolicy;
-use Illuminate\Support\Collection;
 
 /**
  * Create a cart for stacking policy tests.

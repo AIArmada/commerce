@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Storage\StorageInterface;

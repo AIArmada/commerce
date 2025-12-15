@@ -6,7 +6,6 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Shipping\Services\FreeShippingEvaluator;
 use AIArmada\Shipping\Services\FreeShippingResult;
-use Brick\Money\Money;
 
 // ============================================
 // FreeShippingEvaluator Tests
@@ -16,7 +15,7 @@ it('returns null when free shipping is disabled', function (): void {
     $evaluator = new FreeShippingEvaluator(['enabled' => false]);
 
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-free-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-free-shipping-' . uniqid(), events: null);
 
     $result = $evaluator->evaluate($cart);
 
@@ -30,7 +29,7 @@ it('returns null when no threshold configured', function (): void {
     ]);
 
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-free-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-free-shipping-' . uniqid(), events: null);
 
     $result = $evaluator->evaluate($cart);
 
@@ -44,7 +43,7 @@ it('applies free shipping when cart meets threshold', function (): void {
     ]);
 
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-free-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-free-shipping-' . uniqid(), events: null);
     // Add items totaling 15000 (RM150)
     $cart->add('item1', 'Test Product', 15000, 1);
 
@@ -63,7 +62,7 @@ it('returns remaining amount when below threshold', function (): void {
     ]);
 
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-free-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-free-shipping-' . uniqid(), events: null);
     // Add items totaling 7500 (RM75)
     $cart->add('item1', 'Test Product', 7500, 1);
 
@@ -83,7 +82,7 @@ it('applies free shipping at exact threshold', function (): void {
     ]);
 
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-free-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-free-shipping-' . uniqid(), events: null);
     // Add items totaling exactly 10000 (RM100)
     $cart->add('item1', 'Test Product', 10000, 1);
 
@@ -100,7 +99,7 @@ it('uses default currency when not configured', function (): void {
     ]);
 
     $storage = new InMemoryStorage;
-    $cart = new Cart($storage, 'test-free-shipping-'.uniqid(), events: null);
+    $cart = new Cart($storage, 'test-free-shipping-' . uniqid(), events: null);
     // Add items totaling 5000 (RM50)
     $cart->add('item1', 'Test Product', 5000, 1);
 

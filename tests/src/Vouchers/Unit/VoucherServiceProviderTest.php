@@ -29,7 +29,7 @@ use AIArmada\Vouchers\Support\AffiliateIntegrationRegistrar;
 use AIArmada\Vouchers\Support\VoucherRulesFactory;
 use Illuminate\Support\Facades\Event;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 describe('VoucherServiceProvider', function (): void {
     describe('service bindings', function (): void {
@@ -236,10 +236,12 @@ describe('VoucherServiceProvider', function (): void {
             foreach ($listeners as $listener) {
                 if (is_string($listener) && str_contains($listener, IncrementVoucherAppliedCount::class)) {
                     $hasListener = true;
+
                     break;
                 }
                 if (is_array($listener) && $listener[0] instanceof IncrementVoucherAppliedCount) {
                     $hasListener = true;
+
                     break;
                 }
             }

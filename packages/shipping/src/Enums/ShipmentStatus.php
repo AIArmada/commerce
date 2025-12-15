@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Enums;
 
-use AIArmada\Shipping\Enums\TrackingStatus;
-
 /**
  * Shipment status workflow.
  */

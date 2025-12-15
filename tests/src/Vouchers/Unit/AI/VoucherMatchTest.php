@@ -16,8 +16,8 @@ function createVoucher(array $attributes = []): Voucher
 {
     $voucher = new Voucher;
     $voucher->forceFill(array_merge([
-        'id' => 'test-voucher-'.uniqid(),
-        'code' => 'TEST'.strtoupper(substr(uniqid(), 0, 6)),
+        'id' => 'test-voucher-' . uniqid(),
+        'code' => 'TEST' . mb_strtoupper(mb_substr(uniqid(), 0, 6)),
         'name' => 'Test Voucher',
         'type' => VoucherType::Percentage,
         'value' => 1000,

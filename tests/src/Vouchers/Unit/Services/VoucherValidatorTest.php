@@ -238,7 +238,7 @@ describe('VoucherValidator', function (): void {
     describe('getUser method', function (): void {
         it('returns null when Auth user is null', function (): void {
             config(['vouchers.owner.enabled' => false]);
-            \Illuminate\Support\Facades\Auth::shouldReceive('user')->andReturn(null);
+            Illuminate\Support\Facades\Auth::shouldReceive('user')->andReturn(null);
 
             $ownerResolver = Mockery::mock(OwnerResolverInterface::class);
             $ownerResolver->shouldReceive('resolve')->andReturn(null);
@@ -258,10 +258,10 @@ describe('VoucherValidator', function (): void {
             config(['vouchers.owner.enabled' => false]);
 
             // Use a non-Model object
-            $nonModelUser = new \stdClass;
+            $nonModelUser = new stdClass;
             $nonModelUser->id = 123;
 
-            \Illuminate\Support\Facades\Auth::shouldReceive('user')->andReturn($nonModelUser);
+            Illuminate\Support\Facades\Auth::shouldReceive('user')->andReturn($nonModelUser);
 
             $ownerResolver = Mockery::mock(OwnerResolverInterface::class);
             $ownerResolver->shouldReceive('resolve')->andReturn(null);
@@ -281,7 +281,7 @@ describe('VoucherValidator', function (): void {
             config(['vouchers.owner.enabled' => false]);
 
             $mockUser = Mockery::mock(Model::class);
-            \Illuminate\Support\Facades\Auth::shouldReceive('user')->andReturn($mockUser);
+            Illuminate\Support\Facades\Auth::shouldReceive('user')->andReturn($mockUser);
 
             $ownerResolver = Mockery::mock(OwnerResolverInterface::class);
             $ownerResolver->shouldReceive('resolve')->andReturn(null);
@@ -301,7 +301,7 @@ describe('VoucherValidator', function (): void {
     describe('getUserIdentifier method', function (): void {
         it('returns user id when authenticated', function (): void {
             config(['vouchers.owner.enabled' => false]);
-            \Illuminate\Support\Facades\Auth::shouldReceive('id')->andReturn(123);
+            Illuminate\Support\Facades\Auth::shouldReceive('id')->andReturn(123);
 
             $ownerResolver = Mockery::mock(OwnerResolverInterface::class);
             $ownerResolver->shouldReceive('resolve')->andReturn(null);
@@ -319,8 +319,8 @@ describe('VoucherValidator', function (): void {
 
         it('returns session id when not authenticated', function (): void {
             config(['vouchers.owner.enabled' => false]);
-            \Illuminate\Support\Facades\Auth::shouldReceive('id')->andReturn(null);
-            \Illuminate\Support\Facades\Session::shouldReceive('getId')->andReturn('session-abc123');
+            Illuminate\Support\Facades\Auth::shouldReceive('id')->andReturn(null);
+            Illuminate\Support\Facades\Session::shouldReceive('getId')->andReturn('session-abc123');
 
             $ownerResolver = Mockery::mock(OwnerResolverInterface::class);
             $ownerResolver->shouldReceive('resolve')->andReturn(null);

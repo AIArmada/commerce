@@ -95,7 +95,7 @@ describe('ShippingRate Model', function (): void {
             'base_rate' => 500,
         ]);
 
-        expect($rate->zone())->toBeInstanceOf(\Illuminate\Database\Eloquent\Relations\BelongsTo::class);
+        expect($rate->zone())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
         expect($rate->zone->name)->toBe('Test Zone');
     });
 

@@ -79,7 +79,8 @@ describe('CartCommandBus', function (): void {
         $container = Mockery::mock(Container::class);
         $bus = new CartCommandBus($container);
 
-        $unknownCommand = new class {
+        $unknownCommand = new class
+        {
             public string $data = 'test';
         };
 

@@ -15,9 +15,9 @@ class VoucherOwnerModel extends Model
 {
     use HasVoucherOwnership;
 
-    protected $table = 'users';
-
     public $timestamps = false;
+
+    protected $table = 'users';
 }
 
 describe('HasVoucherOwnership Trait', function (): void {

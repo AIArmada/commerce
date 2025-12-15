@@ -9,8 +9,8 @@ use AIArmada\Chip\Data\TransactionMetrics;
 use AIArmada\Chip\Data\WebhookHealth;
 use AIArmada\Chip\Data\WebhookResult;
 
-describe('RevenueMetrics data object', function () {
-    it('can be constructed', function () {
+describe('RevenueMetrics data object', function (): void {
+    it('can be constructed', function (): void {
         $metrics = new RevenueMetrics(
             grossRevenue: 100000,
             refunds: 5000,
@@ -30,7 +30,7 @@ describe('RevenueMetrics data object', function () {
             ->and($metrics->currency)->toBe('MYR');
     });
 
-    it('formats gross revenue', function () {
+    it('formats gross revenue', function (): void {
         $metrics = new RevenueMetrics(
             grossRevenue: 100000,
             refunds: 0,
@@ -44,7 +44,7 @@ describe('RevenueMetrics data object', function () {
         expect($metrics->grossRevenueFormatted())->toBe('1,000.00 MYR');
     });
 
-    it('formats net revenue', function () {
+    it('formats net revenue', function (): void {
         $metrics = new RevenueMetrics(
             grossRevenue: 100000,
             refunds: 5000,
@@ -58,7 +58,7 @@ describe('RevenueMetrics data object', function () {
         expect($metrics->netRevenueFormatted())->toBe('950.00 USD');
     });
 
-    it('formats average transaction', function () {
+    it('formats average transaction', function (): void {
         $metrics = new RevenueMetrics(
             grossRevenue: 100000,
             refunds: 0,
@@ -72,7 +72,7 @@ describe('RevenueMetrics data object', function () {
         expect($metrics->averageTransactionFormatted())->toBe('200.00 MYR');
     });
 
-    it('checks positive growth', function () {
+    it('checks positive growth', function (): void {
         $positive = new RevenueMetrics(
             grossRevenue: 100000,
             refunds: 0,
@@ -98,8 +98,8 @@ describe('RevenueMetrics data object', function () {
     });
 });
 
-describe('TransactionMetrics data object', function () {
-    it('can be constructed', function () {
+describe('TransactionMetrics data object', function (): void {
+    it('can be constructed', function (): void {
         $metrics = new TransactionMetrics(
             total: 100,
             successful: 95,
@@ -116,7 +116,7 @@ describe('TransactionMetrics data object', function () {
             ->and($metrics->successRate)->toBe(95.0);
     });
 
-    it('checks if healthy', function () {
+    it('checks if healthy', function (): void {
         $healthy = new TransactionMetrics(
             total: 100,
             successful: 96,
@@ -139,7 +139,7 @@ describe('TransactionMetrics data object', function () {
             ->and($unhealthy->isHealthy())->toBeFalse();
     });
 
-    it('calculates failure rate', function () {
+    it('calculates failure rate', function (): void {
         $metrics = new TransactionMetrics(
             total: 100,
             successful: 90,
@@ -164,8 +164,8 @@ describe('TransactionMetrics data object', function () {
     });
 });
 
-describe('DashboardMetrics data object', function () {
-    it('can be constructed', function () {
+describe('DashboardMetrics data object', function (): void {
+    it('can be constructed', function (): void {
         $revenue = new RevenueMetrics(
             grossRevenue: 100000,
             refunds: 0,
@@ -203,8 +203,8 @@ describe('DashboardMetrics data object', function () {
     });
 });
 
-describe('WebhookHealth data object', function () {
-    it('can be created from stats', function () {
+describe('WebhookHealth data object', function (): void {
+    it('can be created from stats', function (): void {
         $health = WebhookHealth::fromStats(
             total: 100,
             processed: 95,
@@ -222,7 +222,7 @@ describe('WebhookHealth data object', function () {
             ->and($health->isHealthy)->toBeTrue();
     });
 
-    it('marks unhealthy when success rate is low', function () {
+    it('marks unhealthy when success rate is low', function (): void {
         $health = WebhookHealth::fromStats(
             total: 100,
             processed: 90,
@@ -233,7 +233,7 @@ describe('WebhookHealth data object', function () {
         expect($health->isHealthy)->toBeFalse();
     });
 
-    it('marks unhealthy when too many pending', function () {
+    it('marks unhealthy when too many pending', function (): void {
         $health = WebhookHealth::fromStats(
             total: 200,
             processed: 100,
@@ -244,7 +244,7 @@ describe('WebhookHealth data object', function () {
         expect($health->isHealthy)->toBeFalse();
     });
 
-    it('handles zero total gracefully', function () {
+    it('handles zero total gracefully', function (): void {
         $health = WebhookHealth::fromStats(
             total: 0,
             processed: 0,
@@ -256,7 +256,7 @@ describe('WebhookHealth data object', function () {
             ->and($health->isHealthy)->toBeTrue();
     });
 
-    it('calculates failure rate', function () {
+    it('calculates failure rate', function (): void {
         $health = WebhookHealth::fromStats(
             total: 100,
             processed: 90,
@@ -277,8 +277,8 @@ describe('WebhookHealth data object', function () {
     });
 });
 
-describe('WebhookResult data object', function () {
-    it('can create handled result', function () {
+describe('WebhookResult data object', function (): void {
+    it('can create handled result', function (): void {
         $result = WebhookResult::handled('Payment processed');
 
         expect($result->success)->toBeTrue()
@@ -290,13 +290,13 @@ describe('WebhookResult data object', function () {
             ->and($result->isFailed())->toBeFalse();
     });
 
-    it('can create handled with default message', function () {
+    it('can create handled with default message', function (): void {
         $result = WebhookResult::handled();
 
         expect($result->message)->toBe('Webhook handled successfully');
     });
 
-    it('can create skipped result', function () {
+    it('can create skipped result', function (): void {
         $result = WebhookResult::skipped('No handler for event');
 
         expect($result->success)->toBeTrue()
@@ -308,7 +308,7 @@ describe('WebhookResult data object', function () {
             ->and($result->isFailed())->toBeFalse();
     });
 
-    it('can create failed result', function () {
+    it('can create failed result', function (): void {
         $result = WebhookResult::failed('Signature verification failed', ['error_code' => 'INVALID_SIGNATURE']);
 
         expect($result->success)->toBeFalse()
@@ -322,8 +322,8 @@ describe('WebhookResult data object', function () {
     });
 });
 
-describe('EnrichedWebhookPayload data object', function () {
-    it('can be created from payload', function () {
+describe('EnrichedWebhookPayload data object', function (): void {
+    it('can be created from payload', function (): void {
         $payload = [
             'id' => 'purch_123',
             'client_id' => 'client_abc',
@@ -337,11 +337,11 @@ describe('EnrichedWebhookPayload data object', function () {
             ->and($enriched->rawPayload)->toBe($payload)
             ->and($enriched->purchaseId)->toBe('purch_123')
             ->and($enriched->clientId)->toBe('client_abc')
-            ->and($enriched->receivedAt)->toBeInstanceOf(\Illuminate\Support\Carbon::class)
-            ->and($enriched->eventTimestamp)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+            ->and($enriched->receivedAt)->toBeInstanceOf(Illuminate\Support\Carbon::class)
+            ->and($enriched->eventTimestamp)->toBeInstanceOf(Illuminate\Support\Carbon::class);
     });
 
-    it('handles nested data structure', function () {
+    it('handles nested data structure', function (): void {
         $payload = [
             'data' => [
                 'id' => 'purch_nested',
@@ -355,7 +355,7 @@ describe('EnrichedWebhookPayload data object', function () {
             ->and($enriched->clientId)->toBe('client_nested');
     });
 
-    it('handles created_on timestamp format', function () {
+    it('handles created_on timestamp format', function (): void {
         $payload = [
             'id' => 'purch_123',
             'created_on' => time(),
@@ -363,10 +363,10 @@ describe('EnrichedWebhookPayload data object', function () {
 
         $enriched = EnrichedWebhookPayload::fromPayload('purchase.paid', $payload);
 
-        expect($enriched->eventTimestamp)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+        expect($enriched->eventTimestamp)->toBeInstanceOf(Illuminate\Support\Carbon::class);
     });
 
-    it('checks for local purchase and owner', function () {
+    it('checks for local purchase and owner', function (): void {
         $enriched = new EnrichedWebhookPayload(
             event: 'purchase.paid',
             rawPayload: [],
@@ -378,7 +378,7 @@ describe('EnrichedWebhookPayload data object', function () {
             ->and($enriched->hasOwner())->toBeFalse();
     });
 
-    it('can get values from raw payload', function () {
+    it('can get values from raw payload', function (): void {
         $payload = [
             'id' => 'purch_123',
             'nested' => [

@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Enums\WebhookEventType;
 use AIArmada\Chip\Events\PurchaseHold;
 use AIArmada\Chip\Events\PurchasePaymentFailure;
 use AIArmada\Chip\Events\PurchasePreauthorized;
 use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
-use AIArmada\Chip\Enums\WebhookEventType;
 
-describe('PurchasePaymentFailure event', function () {
-    it('can be created from payload', function () {
+describe('PurchasePaymentFailure event', function (): void {
+    it('can be created from payload', function (): void {
         $payload = createLowCoveragePayload('payment_failure');
         $event = PurchasePaymentFailure::fromPayload($payload);
 
@@ -17,7 +17,7 @@ describe('PurchasePaymentFailure event', function () {
             ->and($event->eventType())->toBe(WebhookEventType::PurchasePaymentFailure);
     });
 
-    it('returns error message from last attempt', function () {
+    it('returns error message from last attempt', function (): void {
         $payload = [
             'id' => 'purch_test',
             'status' => 'error',
@@ -49,7 +49,7 @@ describe('PurchasePaymentFailure event', function () {
             ->and($event->getErrorCode())->toBe('INSUFFICIENT_FUNDS');
     });
 
-    it('returns null when no error in attempts', function () {
+    it('returns null when no error in attempts', function (): void {
         $payload = createLowCoveragePayload('payment_failure');
         $event = PurchasePaymentFailure::fromPayload($payload);
 
@@ -58,8 +58,8 @@ describe('PurchasePaymentFailure event', function () {
     });
 });
 
-describe('PurchaseHold event', function () {
-    it('can be created from payload', function () {
+describe('PurchaseHold event', function (): void {
+    it('can be created from payload', function (): void {
         $payload = createLowCoveragePayload('hold');
         $event = PurchaseHold::fromPayload($payload);
 
@@ -67,7 +67,7 @@ describe('PurchaseHold event', function () {
             ->and($event->eventType())->toBe(WebhookEventType::PurchaseHold);
     });
 
-    it('returns correct event type value', function () {
+    it('returns correct event type value', function (): void {
         $payload = createLowCoveragePayload('hold');
         $event = PurchaseHold::fromPayload($payload);
 
@@ -75,8 +75,8 @@ describe('PurchaseHold event', function () {
     });
 });
 
-describe('PurchasePreauthorized event', function () {
-    it('can be created from payload', function () {
+describe('PurchasePreauthorized event', function (): void {
+    it('can be created from payload', function (): void {
         $payload = createLowCoveragePayload('preauthorized');
         $event = PurchasePreauthorized::fromPayload($payload);
 
@@ -84,7 +84,7 @@ describe('PurchasePreauthorized event', function () {
             ->and($event->eventType())->toBe(WebhookEventType::PurchasePreauthorized);
     });
 
-    it('returns correct event type value', function () {
+    it('returns correct event type value', function (): void {
         $payload = createLowCoveragePayload('preauthorized');
         $event = PurchasePreauthorized::fromPayload($payload);
 
@@ -92,8 +92,8 @@ describe('PurchasePreauthorized event', function () {
     });
 });
 
-describe('PurchaseSubscriptionChargeFailure event', function () {
-    it('can be created from payload', function () {
+describe('PurchaseSubscriptionChargeFailure event', function (): void {
+    it('can be created from payload', function (): void {
         $payload = [
             'id' => 'purch_sub_fail',
             'status' => 'error',
@@ -116,7 +116,7 @@ describe('PurchaseSubscriptionChargeFailure event', function () {
             ->and($event->eventType())->toBe(WebhookEventType::PurchaseSubscriptionChargeFailure);
     });
 
-    it('returns subscription metadata', function () {
+    it('returns subscription metadata', function (): void {
         $payload = [
             'id' => 'purch_sub_fail',
             'status' => 'error',

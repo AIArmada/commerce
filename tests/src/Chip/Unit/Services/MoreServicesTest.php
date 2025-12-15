@@ -2,28 +2,27 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Enums\RecurringInterval;
+use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\LocalAnalyticsService;
 use AIArmada\Chip\Services\MetricsAggregator;
 use AIArmada\Chip\Services\RecurringService;
-use AIArmada\Chip\Services\ChipCollectService;
-use AIArmada\Chip\Enums\RecurringInterval;
-use AIArmada\Chip\Models\RecurringSchedule;
 use Illuminate\Support\Carbon;
 
-describe('LocalAnalyticsService', function () {
-    it('can be instantiated', function () {
+describe('LocalAnalyticsService', function (): void {
+    it('can be instantiated', function (): void {
         $service = new LocalAnalyticsService;
         expect($service)->toBeInstanceOf(LocalAnalyticsService::class);
     });
 });
 
-describe('MetricsAggregator', function () {
-    it('can be instantiated', function () {
+describe('MetricsAggregator', function (): void {
+    it('can be instantiated', function (): void {
         $aggregator = new MetricsAggregator;
         expect($aggregator)->toBeInstanceOf(MetricsAggregator::class);
     });
 
-    it('can calculate backfill days', function () {
+    it('can calculate backfill days', function (): void {
         $aggregator = Mockery::mock(MetricsAggregator::class)->makePartial();
         $aggregator->shouldReceive('aggregateForDate')
             ->times(7);
@@ -37,15 +36,15 @@ describe('MetricsAggregator', function () {
     });
 });
 
-describe('RecurringService', function () {
-    it('can be instantiated', function () {
+describe('RecurringService', function (): void {
+    it('can be instantiated', function (): void {
         $chipService = Mockery::mock(ChipCollectService::class);
         $service = new RecurringService($chipService);
 
         expect($service)->toBeInstanceOf(RecurringService::class);
     });
 
-    it('throws when purchase has no recurring token', function () {
+    it('throws when purchase has no recurring token', function (): void {
         $chipService = Mockery::mock(ChipCollectService::class);
         $service = new RecurringService($chipService);
 
@@ -56,9 +55,9 @@ describe('RecurringService', function () {
             // No recurring_token
         ];
 
-        expect(fn() => $service->createScheduleFromPurchase(
+        expect(fn () => $service->createScheduleFromPurchase(
             $purchaseData,
             RecurringInterval::Monthly
-        ))->toThrow(\AIArmada\Chip\Exceptions\NoRecurringTokenException::class);
+        ))->toThrow(AIArmada\Chip\Exceptions\NoRecurringTokenException::class);
     });
 });

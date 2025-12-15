@@ -21,7 +21,8 @@ function createTestBuyable(
     int $increment = 1,
     bool $purchasable = true
 ): BuyableInterface {
-    return new class ($id, $name, $price, $stock, $minQty, $maxQty, $increment, $purchasable) implements BuyableInterface {
+    return new class($id, $name, $price, $stock, $minQty, $maxQty, $increment, $purchasable) implements BuyableInterface
+    {
         public function __construct(
             private string $id,
             private string $name,
@@ -31,8 +32,7 @@ function createTestBuyable(
             private ?int $maxQty,
             private int $increment,
             private bool $purchasable
-        ) {
-        }
+        ) {}
 
         public function getBuyableIdentifier(): string
         {
@@ -51,7 +51,7 @@ function createTestBuyable(
 
         public function getBuyablePrice(): Money
         {
-            return new Money($this->price, new \Akaunting\Money\Currency('USD'));
+            return new Money($this->price, new Akaunting\Money\Currency('USD'));
         }
 
         public function getBuyableStock(): ?int
@@ -61,7 +61,7 @@ function createTestBuyable(
 
         public function canBePurchased(?int $quantity = null): bool
         {
-            if (!$this->purchasable) {
+            if (! $this->purchasable) {
                 return false;
             }
             if ($quantity !== null && $this->stock !== null && $quantity > $this->stock) {

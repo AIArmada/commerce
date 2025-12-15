@@ -7,7 +7,6 @@ use AIArmada\Vouchers\Compound\Enums\ProductMatcherType;
 use AIArmada\Vouchers\Compound\Matchers\CompositeMatcher;
 use AIArmada\Vouchers\Compound\Matchers\PriceMatcher;
 use AIArmada\Vouchers\Compound\Matchers\SkuMatcher;
-use AIArmada\Vouchers\Contracts\ProductMatcherInterface;
 
 /**
  * Helper function to create a CartItem for tests.

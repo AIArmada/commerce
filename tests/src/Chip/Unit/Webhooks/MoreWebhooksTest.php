@@ -10,13 +10,13 @@ use AIArmada\Chip\Webhooks\WebhookEnricher;
 use AIArmada\Chip\Webhooks\WebhookRetryManager;
 use AIArmada\Chip\Webhooks\WebhookRouter;
 
-describe('WebhookRouter', function () {
-    it('can be instantiated', function () {
+describe('WebhookRouter', function (): void {
+    it('can be instantiated', function (): void {
         $router = new WebhookRouter;
         expect($router)->toBeInstanceOf(WebhookRouter::class);
     });
 
-    it('routes purchase.paid to correct handler', function () {
+    it('routes purchase.paid to correct handler', function (): void {
         $router = new WebhookRouter;
         $payload = new EnrichedWebhookPayload(
             event: 'purchase.paid',
@@ -31,7 +31,7 @@ describe('WebhookRouter', function () {
             ->and($result->isSkipped())->toBeTrue();
     });
 
-    it('returns skipped for unknown events', function () {
+    it('returns skipped for unknown events', function (): void {
         $router = new WebhookRouter;
         $payload = new EnrichedWebhookPayload(
             event: 'unknown.event',
@@ -44,7 +44,7 @@ describe('WebhookRouter', function () {
             ->and($result->message)->toContain('No handler');
     });
 
-    it('can check if handler exists', function () {
+    it('can check if handler exists', function (): void {
         $router = new WebhookRouter;
 
         expect($router->hasHandler('purchase.paid'))->toBeTrue()
@@ -52,14 +52,14 @@ describe('WebhookRouter', function () {
             ->and($router->hasHandler('unknown.event'))->toBeFalse();
     });
 
-    it('can register custom handler', function () {
+    it('can register custom handler', function (): void {
         $router = new WebhookRouter;
         $router->registerHandler('custom.event', PurchasePaidHandler::class);
 
         expect($router->hasHandler('custom.event'))->toBeTrue();
     });
 
-    it('returns all registered handlers', function () {
+    it('returns all registered handlers', function (): void {
         $router = new WebhookRouter;
         $handlers = $router->getHandlers();
 
@@ -69,8 +69,8 @@ describe('WebhookRouter', function () {
     });
 });
 
-describe('WebhookRetryManager', function () {
-    it('can be instantiated', function () {
+describe('WebhookRetryManager', function (): void {
+    it('can be instantiated', function (): void {
         $enricher = new WebhookEnricher;
         $router = new WebhookRouter;
         $manager = new WebhookRetryManager($enricher, $router);
@@ -78,7 +78,7 @@ describe('WebhookRetryManager', function () {
         expect($manager)->toBeInstanceOf(WebhookRetryManager::class);
     });
 
-    it('determines if webhook should retry', function () {
+    it('determines if webhook should retry', function (): void {
         $enricher = new WebhookEnricher;
         $router = new WebhookRouter;
         $manager = new WebhookRetryManager($enricher, $router);
@@ -101,7 +101,7 @@ describe('WebhookRetryManager', function () {
         expect($manager->shouldRetry($webhook))->toBeFalse();
     });
 
-    it('calculates next retry delay', function () {
+    it('calculates next retry delay', function (): void {
         $enricher = new WebhookEnricher;
         $router = new WebhookRouter;
         $manager = new WebhookRetryManager($enricher, $router);
@@ -121,7 +121,7 @@ describe('WebhookRetryManager', function () {
         expect($manager->getNextRetryDelay($webhook))->toBe(900);
     });
 
-    it('can set custom backoff schedule', function () {
+    it('can set custom backoff schedule', function (): void {
         $enricher = new WebhookEnricher;
         $router = new WebhookRouter;
         $manager = new WebhookRetryManager($enricher, $router);

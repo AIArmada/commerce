@@ -4,12 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Data\PayoutData;
 use AIArmada\Chip\Enums\WebhookEventType;
-use AIArmada\Chip\Events\PayoutEvent;
 use AIArmada\Chip\Events\PayoutFailed;
 use AIArmada\Chip\Events\PayoutPending;
 use AIArmada\Chip\Events\PayoutSuccess;
 
-describe('PayoutEvent base class', function () {
+describe('PayoutEvent base class', function (): void {
     function createPayoutPayload(array $overrides = []): array
     {
         return array_merge([
@@ -32,7 +31,7 @@ describe('PayoutEvent base class', function () {
         ], $overrides);
     }
 
-    it('can create PayoutSuccess from payload', function () {
+    it('can create PayoutSuccess from payload', function (): void {
         $payload = createPayoutPayload();
 
         $event = PayoutSuccess::fromPayload($payload);
@@ -43,7 +42,7 @@ describe('PayoutEvent base class', function () {
             ->and($event->eventType())->toBe(WebhookEventType::PayoutSuccess);
     });
 
-    it('can create PayoutPending from payload', function () {
+    it('can create PayoutPending from payload', function (): void {
         $payload = createPayoutPayload(['status' => 'pending']);
 
         $event = PayoutPending::fromPayload($payload);
@@ -52,7 +51,7 @@ describe('PayoutEvent base class', function () {
             ->and($event->eventType())->toBe(WebhookEventType::PayoutPending);
     });
 
-    it('can create PayoutFailed from payload', function () {
+    it('can create PayoutFailed from payload', function (): void {
         $payload = createPayoutPayload([
             'status' => 'error',
             'error' => ['message' => 'Insufficient funds', 'code' => 'INSUFFICIENT_FUNDS'],
@@ -66,56 +65,56 @@ describe('PayoutEvent base class', function () {
             ->and($event->getErrorCode())->toBe('INSUFFICIENT_FUNDS');
     });
 
-    it('provides correct getPayoutId', function () {
+    it('provides correct getPayoutId', function (): void {
         $payload = createPayoutPayload(['id' => 'payout_xyz789']);
         $event = PayoutSuccess::fromPayload($payload);
 
         expect($event->getPayoutId())->toBe('payout_xyz789');
     });
 
-    it('provides correct getAmount', function () {
+    it('provides correct getAmount', function (): void {
         $payload = createPayoutPayload(['amount' => 75000]);
         $event = PayoutSuccess::fromPayload($payload);
 
         expect($event->getAmount())->toBe(75000);
     });
 
-    it('provides correct getCurrency', function () {
+    it('provides correct getCurrency', function (): void {
         $payload = createPayoutPayload(['currency' => 'USD']);
         $event = PayoutSuccess::fromPayload($payload);
 
         expect($event->getCurrency())->toBe('USD');
     });
 
-    it('provides correct getStatus', function () {
+    it('provides correct getStatus', function (): void {
         $payload = createPayoutPayload(['status' => 'pending']);
         $event = PayoutPending::fromPayload($payload);
 
         expect($event->getStatus())->toBe('pending');
     });
 
-    it('provides correct getReference', function () {
+    it('provides correct getReference', function (): void {
         $payload = createPayoutPayload(['reference' => 'MY-PAYOUT-REF']);
         $event = PayoutSuccess::fromPayload($payload);
 
         expect($event->getReference())->toBe('MY-PAYOUT-REF');
     });
 
-    it('provides correct getRecipientName', function () {
+    it('provides correct getRecipientName', function (): void {
         $payload = createPayoutPayload(['recipient_name' => 'Jane Smith']);
         $event = PayoutSuccess::fromPayload($payload);
 
         expect($event->getRecipientName())->toBe('Jane Smith');
     });
 
-    it('provides correct getRecipientBankAccount', function () {
+    it('provides correct getRecipientBankAccount', function (): void {
         $payload = createPayoutPayload(['recipient_bank_account' => '9876543210']);
         $event = PayoutSuccess::fromPayload($payload);
 
         expect($event->getRecipientBankAccount())->toBe('9876543210');
     });
 
-    it('correctly checks isTest', function () {
+    it('correctly checks isTest', function (): void {
         $payload = createPayoutPayload(['is_test' => true]);
         $event = PayoutSuccess::fromPayload($payload);
 
@@ -127,7 +126,7 @@ describe('PayoutEvent base class', function () {
         expect($liveEvent->isTest())->toBeFalse();
     });
 
-    it('returns correct event types for all payout events', function () {
+    it('returns correct event types for all payout events', function (): void {
         $payload = createPayoutPayload();
         $payoutData = PayoutData::from($payload);
 
@@ -144,8 +143,8 @@ describe('PayoutEvent base class', function () {
     });
 });
 
-describe('PayoutFailed specific methods', function () {
-    it('returns error message from payout data', function () {
+describe('PayoutFailed specific methods', function (): void {
+    it('returns error message from payout data', function (): void {
         $payload = [
             'id' => 'payout_fail',
             'type' => 'payout',
@@ -164,7 +163,7 @@ describe('PayoutFailed specific methods', function () {
             ->and($event->getErrorCode())->toBe('BANK_REJECTED');
     });
 
-    it('returns null for missing error info', function () {
+    it('returns null for missing error info', function (): void {
         $payload = [
             'id' => 'payout_fail',
             'type' => 'payout',

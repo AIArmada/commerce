@@ -32,7 +32,8 @@ describe('CartChannel', function (): void {
     });
 
     it('returns false when cart data not found', function (): void {
-        $user = new class {
+        $user = new class
+        {
             public int $id = 1;
 
             public string $name = 'John';

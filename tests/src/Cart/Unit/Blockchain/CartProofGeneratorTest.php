@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Blockchain\CartProofGenerator;
 use AIArmada\Cart\Cart;
-use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Testing\InMemoryStorage;
-use Illuminate\Support\Collection;
 
 describe('CartProofGenerator', function (): void {
     beforeEach(function (): void {
@@ -58,7 +56,7 @@ describe('CartProofGenerator', function (): void {
         $hash = $this->generator->generateCompactHash($cart);
 
         expect($hash)->toBeString()
-            ->and(strlen($hash))->toBe(64); // SHA256 produces 64 character hex
+            ->and(mb_strlen($hash))->toBe(64); // SHA256 produces 64 character hex
     });
 
     it('generates consistent hashes for same cart state', function (): void {
@@ -109,6 +107,6 @@ describe('CartProofGenerator', function (): void {
         $proof = $this->generator->generateProof($cart);
 
         expect($proof['signature'])->toBeString()
-            ->and(strlen($proof['signature']))->toBe(64); // HMAC-SHA256
+            ->and(mb_strlen($proof['signature']))->toBe(64); // HMAC-SHA256
     });
 });

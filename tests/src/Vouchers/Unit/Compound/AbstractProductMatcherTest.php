@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Compound\Enums\ProductMatcherType;
 use AIArmada\Vouchers\Compound\Matchers\AbstractProductMatcher;
 use AIArmada\Vouchers\Compound\Matchers\AttributeMatcher;
 use AIArmada\Vouchers\Compound\Matchers\CategoryMatcher;

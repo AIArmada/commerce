@@ -2,29 +2,57 @@
 
 declare(strict_types=1);
 
+use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShippingZone;
-use AIArmada\Shipping\Models\ReturnAuthorization;
+use AIArmada\Shipping\Policies\ReturnAuthorizationPolicy;
 use AIArmada\Shipping\Policies\ShipmentPolicy;
 use AIArmada\Shipping\Policies\ShippingZonePolicy;
-use AIArmada\Shipping\Policies\ReturnAuthorizationPolicy;
 use Illuminate\Contracts\Auth\Authenticatable;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 // Helper: Create user with permission checking
 function createUserWithPermissions(array $permissions): Authenticatable
 {
-    return new class($permissions) implements Authenticatable {
+    return new class($permissions) implements Authenticatable
+    {
         public function __construct(private array $permissions) {}
-        public function getAuthIdentifier(): mixed { return 'user-123'; }
-        public function getAuthIdentifierName(): string { return 'id'; }
-        public function getAuthPassword(): string { return ''; }
-        public function getRememberToken(): ?string { return null; }
+
+        public function getAuthIdentifier(): mixed
+        {
+            return 'user-123';
+        }
+
+        public function getAuthIdentifierName(): string
+        {
+            return 'id';
+        }
+
+        public function getAuthPassword(): string
+        {
+            return '';
+        }
+
+        public function getRememberToken(): ?string
+        {
+            return null;
+        }
+
         public function setRememberToken($value): void {}
-        public function getRememberTokenName(): string { return ''; }
-        public function getAuthPasswordName(): string { return ''; }
-        public function hasPermissionTo(string $permission): bool { 
-            return in_array($permission, $this->permissions, true); 
+
+        public function getRememberTokenName(): string
+        {
+            return '';
+        }
+
+        public function getAuthPasswordName(): string
+        {
+            return '';
+        }
+
+        public function hasPermissionTo(string $permission): bool
+        {
+            return in_array($permission, $this->permissions, true);
         }
     };
 }
@@ -32,31 +60,84 @@ function createUserWithPermissions(array $permissions): Authenticatable
 // Helper: Create user without permission system (fallback to true)
 function createUserWithoutPermissions(): Authenticatable
 {
-    return new class implements Authenticatable {
-        public function getAuthIdentifier(): mixed { return 'user-123'; }
-        public function getAuthIdentifierName(): string { return 'id'; }
-        public function getAuthPassword(): string { return ''; }
-        public function getRememberToken(): ?string { return null; }
+    return new class implements Authenticatable
+    {
+        public function getAuthIdentifier(): mixed
+        {
+            return 'user-123';
+        }
+
+        public function getAuthIdentifierName(): string
+        {
+            return 'id';
+        }
+
+        public function getAuthPassword(): string
+        {
+            return '';
+        }
+
+        public function getRememberToken(): ?string
+        {
+            return null;
+        }
+
         public function setRememberToken($value): void {}
-        public function getRememberTokenName(): string { return ''; }
-        public function getAuthPasswordName(): string { return ''; }
+
+        public function getRememberTokenName(): string
+        {
+            return '';
+        }
+
+        public function getAuthPasswordName(): string
+        {
+            return '';
+        }
     };
 }
 
 // Helper: Create user with can() method (Laravel Gate fallback)
 function createUserWithCan(array $abilities): Authenticatable
 {
-    return new class($abilities) implements Authenticatable {
+    return new class($abilities) implements Authenticatable
+    {
         public function __construct(private array $abilities) {}
-        public function getAuthIdentifier(): mixed { return 'user-456'; }
-        public function getAuthIdentifierName(): string { return 'id'; }
-        public function getAuthPassword(): string { return ''; }
-        public function getRememberToken(): ?string { return null; }
+
+        public function getAuthIdentifier(): mixed
+        {
+            return 'user-456';
+        }
+
+        public function getAuthIdentifierName(): string
+        {
+            return 'id';
+        }
+
+        public function getAuthPassword(): string
+        {
+            return '';
+        }
+
+        public function getRememberToken(): ?string
+        {
+            return null;
+        }
+
         public function setRememberToken($value): void {}
-        public function getRememberTokenName(): string { return ''; }
-        public function getAuthPasswordName(): string { return ''; }
-        public function can(string $ability): bool { 
-            return in_array($ability, $this->abilities, true); 
+
+        public function getRememberTokenName(): string
+        {
+            return '';
+        }
+
+        public function getAuthPasswordName(): string
+        {
+            return '';
+        }
+
+        public function can(string $ability): bool
+        {
+            return in_array($ability, $this->abilities, true);
         }
     };
 }
@@ -111,7 +192,7 @@ describe('ShipmentPolicy', function (): void {
         $shipment->shouldReceive('getAttribute')
             ->with('owner_id')
             ->andReturn('user-123');
-        
+
         expect($this->policy->view($user, $shipment))->toBeTrue();
     });
 
@@ -124,7 +205,7 @@ describe('ShipmentPolicy', function (): void {
         $shipment->shouldReceive('getAttribute')
             ->with('owner_id')
             ->andReturn(null);
-        
+
         expect($this->policy->view($user, $shipment))->toBeFalse();
     });
 
@@ -144,7 +225,7 @@ describe('ShipmentPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.shipments.update']);
         $shipment = Mockery::mock(Shipment::class)->makePartial();
         $shipment->shouldReceive('isTerminal')->andReturn(true);
-        
+
         expect($this->policy->update($user, $shipment))->toBeFalse();
     });
 
@@ -152,7 +233,7 @@ describe('ShipmentPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.shipments.update']);
         $shipment = Mockery::mock(Shipment::class)->makePartial();
         $shipment->shouldReceive('isTerminal')->andReturn(false);
-        
+
         expect($this->policy->update($user, $shipment))->toBeTrue();
     });
 
@@ -160,7 +241,7 @@ describe('ShipmentPolicy', function (): void {
         $user = createUserWithPermissions([]);
         $shipment = Mockery::mock(Shipment::class)->makePartial();
         $shipment->shouldReceive('isTerminal')->andReturn(false);
-        
+
         expect($this->policy->update($user, $shipment))->toBeFalse();
     });
 
@@ -169,7 +250,7 @@ describe('ShipmentPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.shipments.delete']);
         $shipment = Mockery::mock(Shipment::class)->makePartial();
         $shipment->shouldReceive('isCancellable')->andReturn(false);
-        
+
         expect($this->policy->delete($user, $shipment))->toBeFalse();
     });
 
@@ -177,7 +258,7 @@ describe('ShipmentPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.shipments.delete']);
         $shipment = Mockery::mock(Shipment::class)->makePartial();
         $shipment->shouldReceive('isCancellable')->andReturn(true);
-        
+
         expect($this->policy->delete($user, $shipment))->toBeTrue();
     });
 
@@ -186,7 +267,7 @@ describe('ShipmentPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.shipments.ship']);
         $shipment = Mockery::mock(Shipment::class)->makePartial();
         $shipment->shouldReceive('isPending')->andReturn(false);
-        
+
         expect($this->policy->ship($user, $shipment))->toBeFalse();
     });
 
@@ -194,7 +275,7 @@ describe('ShipmentPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.shipments.ship']);
         $shipment = Mockery::mock(Shipment::class)->makePartial();
         $shipment->shouldReceive('isPending')->andReturn(true);
-        
+
         expect($this->policy->ship($user, $shipment))->toBeTrue();
     });
 
@@ -203,7 +284,7 @@ describe('ShipmentPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.shipments.cancel']);
         $shipment = Mockery::mock(Shipment::class)->makePartial();
         $shipment->shouldReceive('isCancellable')->andReturn(false);
-        
+
         expect($this->policy->cancel($user, $shipment))->toBeFalse();
     });
 
@@ -211,7 +292,7 @@ describe('ShipmentPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.shipments.cancel']);
         $shipment = Mockery::mock(Shipment::class)->makePartial();
         $shipment->shouldReceive('isCancellable')->andReturn(true);
-        
+
         expect($this->policy->cancel($user, $shipment))->toBeTrue();
     });
 
@@ -222,7 +303,7 @@ describe('ShipmentPolicy', function (): void {
         $shipment->shouldReceive('getAttribute')
             ->with('tracking_number')
             ->andReturn(null);
-        
+
         expect($this->policy->printLabel($user, $shipment))->toBeFalse();
     });
 
@@ -232,7 +313,7 @@ describe('ShipmentPolicy', function (): void {
         $shipment->shouldReceive('getAttribute')
             ->with('tracking_number')
             ->andReturn('TRACK123');
-        
+
         expect($this->policy->printLabel($user, $shipment))->toBeTrue();
     });
 
@@ -243,7 +324,7 @@ describe('ShipmentPolicy', function (): void {
         $shipment->shouldReceive('getAttribute')
             ->with('tracking_number')
             ->andReturn(null);
-        
+
         expect($this->policy->syncTracking($user, $shipment))->toBeFalse();
     });
 
@@ -253,7 +334,7 @@ describe('ShipmentPolicy', function (): void {
         $shipment->shouldReceive('getAttribute')
             ->with('tracking_number')
             ->andReturn('TRACK123');
-        
+
         expect($this->policy->syncTracking($user, $shipment))->toBeTrue();
     });
 
@@ -261,14 +342,14 @@ describe('ShipmentPolicy', function (): void {
     it('allows restore when user has permission', function (): void {
         $user = createUserWithPermissions(['shipping.shipments.restore']);
         $shipment = Mockery::mock(Shipment::class)->makePartial();
-        
+
         expect($this->policy->restore($user, $shipment))->toBeTrue();
     });
 
     it('denies restore when user lacks permission', function (): void {
         $user = createUserWithPermissions([]);
         $shipment = Mockery::mock(Shipment::class)->makePartial();
-        
+
         expect($this->policy->restore($user, $shipment))->toBeFalse();
     });
 
@@ -276,14 +357,14 @@ describe('ShipmentPolicy', function (): void {
     it('allows forceDelete when user has permission', function (): void {
         $user = createUserWithPermissions(['shipping.shipments.force-delete']);
         $shipment = Mockery::mock(Shipment::class)->makePartial();
-        
+
         expect($this->policy->forceDelete($user, $shipment))->toBeTrue();
     });
 
     it('denies forceDelete when user lacks permission', function (): void {
         $user = createUserWithPermissions([]);
         $shipment = Mockery::mock(Shipment::class)->makePartial();
-        
+
         expect($this->policy->forceDelete($user, $shipment))->toBeFalse();
     });
 });
@@ -335,37 +416,37 @@ describe('ShippingZonePolicy', function (): void {
 
     it('denies delete when zone has active rates', function (): void {
         $user = createUserWithPermissions(['shipping.zones.delete']);
-        
+
         $ratesRelation = Mockery::mock(HasMany::class);
         $ratesRelation->shouldReceive('exists')->andReturn(true);
-        
+
         $zone = Mockery::mock(ShippingZone::class)->makePartial();
         $zone->shouldReceive('rates')->andReturn($ratesRelation);
-        
+
         expect($this->policy->delete($user, $zone))->toBeFalse();
     });
 
     it('allows delete when zone has no rates and user has permission', function (): void {
         $user = createUserWithPermissions(['shipping.zones.delete']);
-        
+
         $ratesRelation = Mockery::mock(HasMany::class);
         $ratesRelation->shouldReceive('exists')->andReturn(false);
-        
+
         $zone = Mockery::mock(ShippingZone::class)->makePartial();
         $zone->shouldReceive('rates')->andReturn($ratesRelation);
-        
+
         expect($this->policy->delete($user, $zone))->toBeTrue();
     });
 
     it('denies delete when zone has no rates but user lacks permission', function (): void {
         $user = createUserWithPermissions([]);
-        
+
         $ratesRelation = Mockery::mock(HasMany::class);
         $ratesRelation->shouldReceive('exists')->andReturn(false);
-        
+
         $zone = Mockery::mock(ShippingZone::class)->makePartial();
         $zone->shouldReceive('rates')->andReturn($ratesRelation);
-        
+
         expect($this->policy->delete($user, $zone))->toBeFalse();
     });
 
@@ -422,7 +503,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $rma->shouldReceive('getAttribute')
             ->with('owner_id')
             ->andReturn('user-123');
-        
+
         expect($this->policy->view($user, $rma))->toBeTrue();
     });
 
@@ -435,7 +516,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $rma->shouldReceive('getAttribute')
             ->with('owner_id')
             ->andReturn(null);
-        
+
         expect($this->policy->view($user, $rma))->toBeFalse();
     });
 
@@ -451,7 +532,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
         $rma->shouldReceive('isCompleted')->andReturn(true);
         $rma->shouldReceive('isCancelled')->andReturn(false);
-        
+
         expect($this->policy->update($user, $rma))->toBeFalse();
     });
 
@@ -460,7 +541,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
         $rma->shouldReceive('isCompleted')->andReturn(false);
         $rma->shouldReceive('isCancelled')->andReturn(true);
-        
+
         expect($this->policy->update($user, $rma))->toBeFalse();
     });
 
@@ -469,7 +550,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
         $rma->shouldReceive('isCompleted')->andReturn(false);
         $rma->shouldReceive('isCancelled')->andReturn(false);
-        
+
         expect($this->policy->update($user, $rma))->toBeTrue();
     });
 
@@ -478,7 +559,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.returns.delete']);
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
         $rma->shouldReceive('isPending')->andReturn(false);
-        
+
         expect($this->policy->delete($user, $rma))->toBeFalse();
     });
 
@@ -486,7 +567,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.returns.delete']);
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
         $rma->shouldReceive('isPending')->andReturn(true);
-        
+
         expect($this->policy->delete($user, $rma))->toBeTrue();
     });
 
@@ -495,7 +576,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.returns.approve']);
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
         $rma->shouldReceive('isPending')->andReturn(false);
-        
+
         expect($this->policy->approve($user, $rma))->toBeFalse();
     });
 
@@ -503,7 +584,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.returns.approve']);
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
         $rma->shouldReceive('isPending')->andReturn(true);
-        
+
         expect($this->policy->approve($user, $rma))->toBeTrue();
     });
 
@@ -512,7 +593,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.returns.reject']);
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
         $rma->shouldReceive('isPending')->andReturn(false);
-        
+
         expect($this->policy->reject($user, $rma))->toBeFalse();
     });
 
@@ -520,7 +601,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.returns.reject']);
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
         $rma->shouldReceive('isPending')->andReturn(true);
-        
+
         expect($this->policy->reject($user, $rma))->toBeTrue();
     });
 
@@ -529,7 +610,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.returns.receive']);
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
         $rma->shouldReceive('isApproved')->andReturn(false);
-        
+
         expect($this->policy->receive($user, $rma))->toBeFalse();
     });
 
@@ -537,7 +618,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.returns.receive']);
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
         $rma->shouldReceive('isApproved')->andReturn(true);
-        
+
         expect($this->policy->receive($user, $rma))->toBeTrue();
     });
 
@@ -546,7 +627,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.returns.complete']);
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
         $rma->shouldReceive('isReceived')->andReturn(false);
-        
+
         expect($this->policy->complete($user, $rma))->toBeFalse();
     });
 
@@ -554,7 +635,7 @@ describe('ReturnAuthorizationPolicy', function (): void {
         $user = createUserWithPermissions(['shipping.returns.complete']);
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
         $rma->shouldReceive('isReceived')->andReturn(true);
-        
+
         expect($this->policy->complete($user, $rma))->toBeTrue();
     });
 });

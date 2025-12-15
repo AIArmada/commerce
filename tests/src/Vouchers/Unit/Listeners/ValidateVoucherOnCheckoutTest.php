@@ -11,7 +11,6 @@ use AIArmada\Vouchers\Exceptions\VoucherValidationException;
 use AIArmada\Vouchers\Listeners\ValidateVoucherOnCheckout;
 use AIArmada\Vouchers\Services\VoucherService;
 use Mockery;
-use Mockery\MockInterface;
 
 /**
  * Create a cart for testing.
@@ -34,7 +33,8 @@ function createCartForListenerTest(array $metadata = []): Cart
  */
 function createCheckoutEvent(Cart $cart): object
 {
-    return new class($cart) {
+    return new class($cart)
+    {
         public function __construct(public readonly Cart $cart) {}
     };
 }
@@ -44,7 +44,8 @@ function createCheckoutEvent(Cart $cart): object
  */
 function createEventWithoutCart(): object
 {
-    return new class {
+    return new class
+    {
         public string $type = 'checkout.started';
     };
 }
@@ -54,7 +55,8 @@ function createEventWithoutCart(): object
  */
 function createEventWithInvalidCart(): object
 {
-    return new class {
+    return new class
+    {
         public string $cart = 'not-a-cart';
     };
 }

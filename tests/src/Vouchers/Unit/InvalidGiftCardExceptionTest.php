@@ -6,7 +6,6 @@ use AIArmada\Vouchers\GiftCards\Exceptions\InvalidGiftCardException;
 
 uses()->group('gift_cards');
 
-
 it('can be instantiated', function (): void {
     expect(new InvalidGiftCardException())->toBeInstanceOf(InvalidGiftCardException::class);
 });

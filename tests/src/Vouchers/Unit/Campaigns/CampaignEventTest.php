@@ -8,7 +8,7 @@ use AIArmada\Vouchers\Campaigns\Models\CampaignEvent;
 use AIArmada\Vouchers\Campaigns\Models\CampaignVariant;
 use Carbon\Carbon;
 
-uses(\Illuminate\Foundation\Testing\RefreshDatabase::class);
+uses(Illuminate\Foundation\Testing\RefreshDatabase::class);
 
 beforeEach(function (): void {
     $this->campaign = Campaign::create([

@@ -327,10 +327,11 @@ describe('PriceList Model - Extended Tests', function (): void {
             $ownerId = 'owner-' . uniqid();
 
             // Create a mock owner model
-            $owner = new class extends \Illuminate\Database\Eloquent\Model {
-                protected $keyType = 'string';
-
+            $owner = new class extends Illuminate\Database\Eloquent\Model
+            {
                 public $incrementing = false;
+
+                protected $keyType = 'string';
             };
             $owner->id = $ownerId;
             $owner->setTable('stores');
@@ -377,10 +378,11 @@ describe('PriceList Model - Extended Tests', function (): void {
             $ownerId = 'owner-' . uniqid();
 
             // Create a mock owner model
-            $owner = new class extends \Illuminate\Database\Eloquent\Model {
-                protected $keyType = 'string';
-
+            $owner = new class extends Illuminate\Database\Eloquent\Model
+            {
                 public $incrementing = false;
+
+                protected $keyType = 'string';
             };
             $owner->id = $ownerId;
             $owner->setTable('stores');

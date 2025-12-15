@@ -144,7 +144,7 @@ it('tracks shipment with awaiting pickup status', function (): void {
     $trackingData = $this->driver->track('FLAT-123ABC');
 
     expect($trackingData->trackingNumber)->toBe('FLAT-123ABC');
-    expect($trackingData->status)->toBe(\AIArmada\Shipping\Enums\TrackingStatus::AwaitingPickup);
+    expect($trackingData->status)->toBe(AIArmada\Shipping\Enums\TrackingStatus::AwaitingPickup);
     expect($trackingData->carrier)->toBe('flat_rate');
     expect($trackingData->events)->toHaveCount(1);
     expect($trackingData->events->first()->code)->toBe('FLAT');

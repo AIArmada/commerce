@@ -12,13 +12,13 @@ use AIArmada\Chip\Webhooks\Handlers\SendCompletedHandler;
 use AIArmada\Chip\Webhooks\Handlers\SendRejectedHandler;
 use AIArmada\Chip\Webhooks\Handlers\WebhookHandler;
 
-describe('PurchasePaidHandler', function () {
-    it('can be instantiated', function () {
+describe('PurchasePaidHandler', function (): void {
+    it('can be instantiated', function (): void {
         $handler = new PurchasePaidHandler;
         expect($handler)->toBeInstanceOf(WebhookHandler::class);
     });
 
-    it('returns skipped when purchase not found locally', function () {
+    it('returns skipped when purchase not found locally', function (): void {
         $handler = new PurchasePaidHandler;
 
         $payload = new EnrichedWebhookPayload(
@@ -35,13 +35,13 @@ describe('PurchasePaidHandler', function () {
     });
 });
 
-describe('PurchaseCancelledHandler', function () {
-    it('can be instantiated', function () {
+describe('PurchaseCancelledHandler', function (): void {
+    it('can be instantiated', function (): void {
         $handler = new PurchaseCancelledHandler;
         expect($handler)->toBeInstanceOf(WebhookHandler::class);
     });
 
-    it('returns skipped when purchase not found locally', function () {
+    it('returns skipped when purchase not found locally', function (): void {
         $handler = new PurchaseCancelledHandler;
 
         $payload = new EnrichedWebhookPayload(
@@ -56,13 +56,13 @@ describe('PurchaseCancelledHandler', function () {
     });
 });
 
-describe('PaymentFailedHandler', function () {
-    it('can be instantiated', function () {
+describe('PaymentFailedHandler', function (): void {
+    it('can be instantiated', function (): void {
         $handler = new PaymentFailedHandler;
         expect($handler)->toBeInstanceOf(WebhookHandler::class);
     });
 
-    it('returns skipped when purchase not found locally', function () {
+    it('returns skipped when purchase not found locally', function (): void {
         $handler = new PaymentFailedHandler;
 
         $payload = new EnrichedWebhookPayload(
@@ -77,13 +77,13 @@ describe('PaymentFailedHandler', function () {
     });
 });
 
-describe('PurchaseRefundedHandler', function () {
-    it('can be instantiated', function () {
+describe('PurchaseRefundedHandler', function (): void {
+    it('can be instantiated', function (): void {
         $handler = new PurchaseRefundedHandler;
         expect($handler)->toBeInstanceOf(WebhookHandler::class);
     });
 
-    it('returns skipped when purchase not found locally', function () {
+    it('returns skipped when purchase not found locally', function (): void {
         $handler = new PurchaseRefundedHandler;
 
         $payload = new EnrichedWebhookPayload(
@@ -98,13 +98,13 @@ describe('PurchaseRefundedHandler', function () {
     });
 });
 
-describe('SendCompletedHandler', function () {
-    it('can be instantiated', function () {
+describe('SendCompletedHandler', function (): void {
+    it('can be instantiated', function (): void {
         $handler = new SendCompletedHandler;
         expect($handler)->toBeInstanceOf(WebhookHandler::class);
     });
 
-    it('returns skipped when instruction not found', function () {
+    it('returns skipped when instruction not found', function (): void {
         $handler = new SendCompletedHandler;
 
         $payload = new EnrichedWebhookPayload(
@@ -120,13 +120,13 @@ describe('SendCompletedHandler', function () {
     });
 });
 
-describe('SendRejectedHandler', function () {
-    it('can be instantiated', function () {
+describe('SendRejectedHandler', function (): void {
+    it('can be instantiated', function (): void {
         $handler = new SendRejectedHandler;
         expect($handler)->toBeInstanceOf(WebhookHandler::class);
     });
 
-    it('returns skipped when instruction not found', function () {
+    it('returns skipped when instruction not found', function (): void {
         $handler = new SendRejectedHandler;
 
         $payload = new EnrichedWebhookPayload(

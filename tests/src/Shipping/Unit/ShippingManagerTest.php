@@ -112,9 +112,9 @@ it('can register and retrieve status mapper', function (): void {
             return 'test_carrier';
         }
 
-        public function map(string $carrierEventCode): \AIArmada\Shipping\Enums\TrackingStatus
+        public function map(string $carrierEventCode): AIArmada\Shipping\Enums\TrackingStatus
         {
-            return \AIArmada\Shipping\Enums\TrackingStatus::InTransit;
+            return AIArmada\Shipping\Enums\TrackingStatus::InTransit;
         }
     };
 
@@ -146,7 +146,7 @@ it('can get drivers for destination', function (): void {
     $drivers = $this->manager->getDriversForDestination($destination);
 
     // At minimum, we should have drivers that service the destination
-    expect($drivers)->toBeInstanceOf(\Illuminate\Support\Collection::class);
+    expect($drivers)->toBeInstanceOf(Illuminate\Support\Collection::class);
 });
 
 it('supports dynamic method calls via facade', function (): void {
