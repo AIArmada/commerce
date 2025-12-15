@@ -1,885 +1,146 @@
 <laravel-boost-guidelines>
-=== .ai/test rules ===
+=== .ai/filament rules ===
 
-# Testing Guidelines
-
-**The ultimate goal is to ELIMINATE all bugs.**
-Not skipping them. Not avoiding them.
-If there is one thing you should be very sensitive about, it's the bugs.
-**FIX THEM LIKE THE WORLD IS GONNA END IF NOT.**
-
-## Filament PHP Testing References
-
-When testing Filament components, refer to these official documentation pages:
-
-| Topic | Documentation URL |
-|-------|-------------------|
-| Overview | https://filamentphp.com/docs/4.x/testing/overview |
-| Testing Resources | https://filamentphp.com/docs/4.x/testing/testing-resources |
-| Testing Tables | https://filamentphp.com/docs/4.x/testing/testing-tables |
-| Testing Schemas | https://filamentphp.com/docs/4.x/testing/testing-schemas |
-| Testing Actions | https://filamentphp.com/docs/4.x/testing/testing-actions |
-| Testing Notifications | https://filamentphp.com/docs/4.x/testing/testing-notifications |
-
-**Key Testing Helpers:**
-- `Livewire::test()` - For testing Filament pages and components
-- `assertCanSeeTableRecords()` - Assert records visible in table
-- `assertFormFieldExists()` - Assert form field presence
-- `callAction()` - Trigger actions in tests
-- `assertNotified()` - Assert notifications were sent
-
-## Core Principle: Targeted Testing First
-
-- **Never run full package tests unnecessarily**; always prefer targeted test execution for specific files or
-directories you modified.
-- Running full package tests is EXPENSIVE (can take 5-10+ minutes). Reserve it for final verification only.
-
-## ⚠️ MANDATORY: Always Save Test Output
-
-**Every test execution MUST capture output to a temporary file.** This prevents re-running tests just to see error
-details.
-
-```bash
-# ALWAYS use this pattern - pipe output to tee
-./vendor/bin/pest tests/src/Cart/Unit/MyTest.php 2>&1 | tee /tmp/test-output.txt
-
-# For full package runs (rare)
-./vendor/bin/pest --parallel tests/src/PackageName 2>&1 | tee /tmp/package-tests.txt
-
-# For coverage runs
-./vendor/bin/pest --parallel --coverage --configuration=.xml/package.xml 2>&1 | tee /tmp/coverage.txt
-```
-
-**Why this matters:**
-- If tests fail, you have the full error output saved
-- No need to re-run tests just to see what failed
-- Can analyze failures, group by cause, and batch-fix
-- Coverage output preserved for identifying low-coverage files
-
-**Naming convention for temp files:**
-- Single file test: `/tmp/test-<filename>.txt`
-    - Directory test: `/tmp/test-<dirname>.txt`
-        - Full package: `/tmp/test-<package>-full.txt`
-            - Coverage: `/tmp/coverage-<package>.txt`
-
-                **WARNING: Avoid using `tail` or truncating output if it hinders visibility of all involved files,
-                especially for coverage reports. Always ensure you read the full output.**
-
-                ## Targeted Test Execution (Primary Approach)
-
-                When you create, modify, or fix test files, run ONLY those specific files:
-
-                ```bash
-                # Run a SINGLE test file (PREFERRED for development)
-                ./vendor/bin/pest tests/src/Cart/Unit/MyNewTest.php
-
-                # Run a small directory of related tests
-                ./vendor/bin/pest tests/src/Cart/Unit/Security/
-
-                # Run with a filter for specific test names
-                ./vendor/bin/pest --filter="test name pattern" tests/src/PackageName
-                ```
-
-                ## When to Use `--parallel`
-
-                - `--parallel` MUST be the first argument after `./vendor/bin/pest`.
-                - Use `--parallel` ONLY for full package/directory runs, NOT for single file execution.
-                - Single file tests are faster without the parallel overhead.
-
-                ```bash
-                # Single file (no --parallel needed)
-                ./vendor/bin/pest tests/src/Cart/Unit/MyTest.php
-
-                # Full package (use --parallel)
-                ./vendor/bin/pest --parallel tests/src/Cart
-                ```
-
-                ## Full Package Test Strategy (RESTRICTED)
-
-                Run full package tests ONLY when ALL of these conditions are met:
-
-                1. **High Confidence**: All individual test files pass when run separately
-                2. **Near Completion**: Working on final verification before PR/commit
-                3. **Coverage Analysis**: Need an actual coverage percentage (do pre-calculation first)
-                4. **Pre-Calculation for Coverage Goals**: Before running full coverage, calculate feasibility:
-
-                ### Coverage Feasibility Pre-Check
-
-                Before running a full coverage report, estimate if your goal is achievable:
-
-                ```
-                Calculation Formula:
-                - Count files at 0% coverage → X files
-                - Count total files in package → Y files
-                - Zero coverage ratio = X / Y
-
-                If zero coverage ratio > 10%, full coverage run is premature.
-                Work on reducing 0% files first with targeted tests.
-                ```
-
-                Example: If goal is 90% coverage but 20% of files have 0% coverage, it's mathematically impossible.
-                Focus on covering
-                those files first.
-
-                ## Test Development Workflow
-
-                1. **Create test file(s)** → Batch multiple tests together before running
-                2. **Run ONLY the new file(s)** → `./vendor/bin/pest tests/src/Package/Unit/NewTest.php`
-                3. **Fix failures immediately** → Don't accumulate failing tests
-                4. **Repeat** → Create more tests, run individually
-                5. **Batch verification** → After 5-10 test files, run the directory
-                6. **Full package (rare)** → Only for final verification
-
-                ## When Many Failures Occur
-
-                1. **Capture once**: `./vendor/bin/pest tests/src/PackageName 2>&1 | tee failures.txt`
-                2. **Group by cause**: Identify common patterns (missing mocks, wrong signatures, etc.)
-                3. **Batch-fix**: Fix all similar issues at once
-                4. **Rerun targeted files**: `./vendor/bin/pest tests/src/PackageName/Unit/FailingTest.php`
-                5. **Only after all pass**: Consider full package run
-
-                ## Coverage Command (Use Sparingly)
-
-                ```bash
-                # Full coverage (EXPENSIVE - 5-10+ minutes)
-                ./vendor/bin/pest --parallel --coverage --configuration=.xml/package.xml
-
-                # AFTER running coverage, capture the output and extract:
-                # - List of 0% coverage files (priority targets)
-                # - List of low coverage files (<50%) # - Save this list to avoid re-running coverage just for discovery
-                    ``` ## Test File Size Strategy - Create MULTIPLE tests per file to reduce file count - Use
-                    `describe()` blocks to group related tests - Aim for 5-20 assertions per test file - This reduces
-                    the number of separate test runs needed ## Minimum Coverage Targets - Core packages (cart, vouchers,
-                    inventory, etc.): ≥85% - Filament packages: ≥70% (UI-heavy, harder to unit test) - Support packages:
-                    ≥80% ## Summary Decision Tree ``` Need to verify test I just wrote? → Run SINGLE FILE only Need to
-                    verify a batch of tests I created? → Run DIRECTORY only Need final verification before commit? → Run
-                    FULL PACKAGE (rare) Need coverage percentage? → Pre-calculate feasibility first → Only run if goal
-                    seems achievable → Save output to avoid re-running for discovery ```
+# Filament Guidelines
+- **Ver**: Filament v5 API Mandatory.
+- **Spatie**: MUST use official Filament plugins (Tags, Settings, Media, Fonts).
+- **Actions**: Use built-in `Import`/`Export` actions only.
+- **Verification**: Verify all signatures against v5 docs.
 
 
 === .ai/multitenancy rules ===
 
 # Multitenancy Guidelines
-
-All multitenancy support is provided by `commerce-support` package via owner-based polymorphic scoping.
-
-## Core Components
-
-- `OwnerResolverInterface` — implement to resolve current tenant/owner from your tenancy solution
-- `NullOwnerResolver` — default no-op resolver (disables multitenancy)
-- `HasOwner` trait — adds owner scoping to Eloquent models
-
-## Migration Pattern
-
-Add nullable polymorphic owner columns:
-```php
-Schema::create('shipping_zones', function (Blueprint $table) {
-$table->uuid('id')->primary();
-$table->nullableMorphs('owner'); // Creates owner_type and owner_id
-// ... other columns
-$table->timestamps();
-});
-```
-
-## Model Pattern
-
-```php
-use AIArmada\CommerceSupport\Traits\HasOwner;
-
-class ShippingZone extends Model
-{
-use HasOwner;
-
-protected $fillable = [
-'owner_type',
-'owner_id',
-// ... other fillables
-];
-}
-```
-
-## Resolver Implementation
-
-Bind your resolver in a service provider:
-```php
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-
-$this->app->bind(OwnerResolverInterface::class, function () {
-return new class implements OwnerResolverInterface {
-public function resolve(): ?Model
-{
-// Spatie multitenancy
-return Tenant::current();
-
-// Filament panels
-return Filament::getTenant();
-
-// User's store
-return auth()->user()?->currentStore;
-}
-};
-});
-```
-
-## Query Scoping
-
-```php
-$owner = app(OwnerResolverInterface::class)->resolve();
-
-// Get owner's records + global records
-Model::forOwner($owner)->get();
-
-// Get owner's records only (exclude global)
-Model::forOwner($owner, includeGlobal: false)->get();
-
-// Get only global records
-Model::globalOnly()->get();
-```
-
-## HasOwner Trait Methods
-
-| Method | Description |
-|--------|-------------|
-| `owner()` | Polymorphic MorphTo relationship |
-| `scopeForOwner($owner, $includeGlobal)` | Scope to owner ± global records |
-| `scopeGlobalOnly()` | Scope to ownerless records only |
-| `hasOwner()` | Check if owner is assigned |
-| `isGlobal()` | Check if no owner (global) |
-| `belongsToOwner($owner)` | Check specific owner match |
-| `assignOwner($owner)` | Assign owner to model |
-| `removeOwner()` | Clear owner (make global) |
-| `owner_display_name` | Human-readable owner name accessor |
-
-## Verification
-
-- Models with `HasOwner` must have `owner_type` and `owner_id` in fillables and migration
-- Queries in multi-tenant contexts must use `forOwner()` scope
-- Test both owner-scoped and global record scenarios
-
-
-=== .ai/phpstan rules ===
-
-# PHPStan Guidelines
-
-- All code must pass PHPStan level 6.
-- **Never run PHPStan on the whole `packages` directory.** Run it per package you changed (e.g., `./vendor/bin/phpstan analyse --level=6 packages/inventory`).
-- Verify with the per-package command (`phpstan.neon` baseline applies).
-
-## Baseline discipline (strict)
-
-- Do **not** add new `ignoreErrors` entries or widen `excludePaths` unless you have exhausted reasonable fixes and can justify why the remaining issue is not safely fixable right now.
-- Prefer fixing root causes (types, generics, nullability, dead code, missing assertions) over suppressing.
-- During development/auditing/planning/execution, proactively try to **reduce** existing `ignoreErrors`/`excludePaths` gradually (delete or narrow them) while keeping targeted tests passing.
-- Any unavoidable ignore must be:
-	- narrowly scoped (specific message + path),
-	- documented in the PR/notes with the fix attempt summary,
-	- and treated as temporary debt to remove soon.
-
-
-=== .ai/spatie rules ===
-
-<?php /** @var \Illuminate\View\ComponentAttributeBag $attributes */ ?>
-
-## Spatie integration guidelines
-
-Use Spatie packages deliberately and consistently across Commerce packages.
-Prefer official Filament plugins for Spatie packages when Filament UI is involved.
-
-### Decision table (what to use when)
-
-#### Auditing vs activity logging (hybrid architecture)
-
-- Use `owen-it/laravel-auditing` for compliance-grade audit trails on compliance-critical domains:
-	- Orders, payments, customers, inventory adjustments and other regulated/forensic records.
-	- Requirements usually include IP/UA/URL capture, state restoration, redaction, and pivot auditing.
-
-- Use `spatie/laravel-activitylog` for business event logging and product analytics:
-	- Cart actions, voucher usage, affiliate events, pricing changes, admin actions.
-	- Prefer it when you need flexible “what happened” narratives, log categories, and batch grouping.
-
-Rule of thumb:
-- If the question is “who changed this model and what were old/new values for compliance?” → auditing.
-- If the question is “what business event happened and why, across multiple models?” → activity log.
-
-#### Webhooks
-
-- Use `spatie/laravel-webhook-client` for all inbound webhooks (payments, shipping carriers, etc).
-	- Do not implement bespoke webhook persistence/retry/signature validation if webhook-client can do it.
-	- Implement provider-specific `SignatureValidator`, optional `WebhookProfile` for event filtering, and a single `ProcessWebhookJob` per provider.
-
-#### State machines
-
-- Use `spatie/laravel-model-states` when a domain has complex lifecycle transitions:
-	- Orders, shipments, payouts, subscription/payment states.
-	- Always enforce allowed transitions (never “set status string directly” in business logic).
-
-#### API filtering/sorting
-
-- Use `spatie/laravel-query-builder` for public/internal read APIs that require filtering/sorting/includes.
-	- Only expose `allowedFilters`, `allowedSorts`, `allowedIncludes`, `allowedFields`.
-	- Never accept arbitrary column filtering from user input.
-
-#### Media
-
-- Use `spatie/laravel-medialibrary` for product/customer media (images, PDFs, documents).
-	- Keep conversions queued where appropriate; avoid large synchronous conversions.
-
-#### Slugs
-
-- Use `spatie/laravel-sluggable` for stable SEO slugs (products, categories) and optionally voucher-friendly codes.
-	- For vouchers, prefer a purpose-built code generator when codes must be random/non-guessable.
-
-#### Tags
-
-- Use `spatie/laravel-tags` for flexible categorization and segmentation:
-	- Products (attributes/labels), customers (segments/marketing cohorts), vouchers (campaign categorization).
-	- Prefer typed tags (tag “types”) when tags mean different things (e.g. `colors`, `segments`).
-
-#### Runtime settings
-
-- Use `spatie/laravel-settings` for runtime configuration that business users change without deploys:
-	- Pricing rules, tax defaults/zones, operational thresholds.
-	- Settings changes should be logged (typically via activity log) unless compliance requires auditing.
-
-#### Translations
-
-- Use `spatie/laravel-translatable` for multi-language content models (product names/descriptions, segments).
-	- Avoid rolling your own JSON translation structures.
-
-#### Operational health
-
-- Use `spatie/laravel-health` for operational monitoring and dependency checks (payment gateways, queues, storage).
-
-### Implementation rules
-
-#### Activity logging (`spatie/laravel-activitylog`)
-
-- Prefer model-based logging when a model is the “subject” of the event.
-- Prefer manual `activity()` logging when the event is cross-cutting (e.g., cart session actions).
-- Log categories must be explicit (use log names) so consumers can filter by domain.
-- Log payload must be minimal and safe:
-	- Do not log secrets or full payloads containing sensitive data.
-	- Use redaction/whitelisting strategies (log only what you need).
-
-#### Auditing (`owen-it/laravel-auditing`)
-
-- Only enable it for compliance-critical models.
-- Use redaction/encoding for PII where applicable.
-- Do not rely on database cascades/constraints for integrity (application-level behavior only).
-
-#### Webhooks (`spatie/laravel-webhook-client`)
-
-- Every provider integration must:
-	- Validate signatures.
-	- Persist webhook calls.
-	- Process via a job that is idempotent.
-	- Emit domain events rather than doing business logic in controllers.
-
-### Filament rules
-
-- If a Spatie package has an official Filament plugin (e.g., tags/settings/media library), use it.
-- Do not build custom Filament integrations when an official plugin exists.
-
-### Package matrix (default choices)
-
-Use this as the default mapping unless a package has documented exceptions.
-
-- `commerce-support`
-	- DTOs: `spatie/laravel-data`
-	- Activity logging primitives: `spatie/laravel-activitylog` (business events)
-	- Compliance auditing primitives: `owen-it/laravel-auditing` (regulated domains)
-	- Settings: `spatie/laravel-settings` (pricing/tax/ops settings) + log settings changes
-
-- `cart`
-	- Business events: `spatie/laravel-activitylog` (cart add/remove/update/abandon)
-
-- `inventory`
-	- Compliance auditing (critical): `owen-it/laravel-auditing` for inventory adjustments/movements when required
-	- Business events: `spatie/laravel-activitylog` for operational analytics
-	- Optional lifecycle: `spatie/laravel-model-states` for movement status
-
-- `vouchers`
-	- Business events: `spatie/laravel-activitylog` (redeem/apply/deny)
-	- Categorization: `spatie/laravel-tags` (campaigns/segments)
-	- Codes: prefer custom secure generator; `spatie/laravel-sluggable` only for human-friendly codes
-
-- `products`
-	- Media: `spatie/laravel-medialibrary`
-	- Slugs: `spatie/laravel-sluggable`
-	- Tags: `spatie/laravel-tags`
-	- Translations: `spatie/laravel-translatable` (customer-facing content)
-	- APIs: `spatie/laravel-query-builder` for catalog filtering/sorting
-
-- `customers`
-	- Compliance auditing (PII): `owen-it/laravel-auditing` for profile/PII changes where required
-	- Business events: `spatie/laravel-activitylog` (logins, address changes, CRM events)
-	- Segmentation: `spatie/laravel-tags`
-	- Media (optional): `spatie/laravel-medialibrary` for avatars/documents
-
-- `orders`
-	- Compliance auditing (critical): `owen-it/laravel-auditing`
-	- State machine (critical): `spatie/laravel-model-states`
-	- Documents: `spatie/laravel-pdf` for invoices/packing slips
-	- APIs: `spatie/laravel-query-builder` for listing/filtering
-
-- `shipping` + carriers (e.g. `jnt`)
-	- State machine: `spatie/laravel-model-states` for shipment lifecycle
-	- Inbound webhooks: `spatie/laravel-webhook-client` (carrier status updates)
-	- Business events: `spatie/laravel-activitylog` for operational visibility
-
-- payments (`chip`, `cashier`, `cashier-chip`)
-	- Inbound webhooks (critical): `spatie/laravel-webhook-client`
-	- Compliance auditing: `owen-it/laravel-auditing` for payment/refund/subscription state changes where required
-	- Business events: `spatie/laravel-activitylog` for customer support + analytics
-
-- `affiliates`
-	- Business events: `spatie/laravel-activitylog` (referrals, commissions, payouts)
-	- Optional lifecycle: `spatie/laravel-model-states` for payout status
-
-- `pricing` + `tax`
-	- Runtime config (critical): `spatie/laravel-settings`
-	- Business events: `spatie/laravel-activitylog` for rate/rule changes
-	- APIs: `spatie/laravel-query-builder` where listing/filtering is needed
-
-- Filament packages (e.g. `filament-products`, `filament-vouchers`)
-	- Always prefer official Filament plugins for Spatie integrations (tags/settings/media library).
-
-### Config rules
-
-- Only add configuration keys that are referenced in code.
-- Keep package configs minimal and ordered per the repo config guidelines.
+- **Pkg**: `commerce-support`.
+- **Impl**:
+- Mig: `$table->nullableMorphs('owner')`.
+- Model: `use HasOwner`.
+- Provider: Bind `OwnerResolverInterface`.
+- **Usage**:
+- Owner: `Model::forOwner($owner)->get()`.
+- Global: `Model::globalOnly()->get()`.
 
 
 === .ai/development rules ===
 
 # Development Guidelines
-
-- **NEVER** do any repo "cleanup" without explicit user instruction/permission.
-- This includes (but is not limited to): `git restore`, `git checkout -- <path>`, `git reset`, `git clean`, removing
-	untracked files, mass-reverting changes, or otherwise trying to "get back to a clean state".
-	- If the working tree is messy or another agent is changing files: stop and ask what to do.
-	- Before destructive changes, copy the file (e.g., `cp file.php file.php.bak`), then delete the backup when done.
-	- Be smart about scope: identify the package for any file you touch and run tooling only for that package.
-	- Pint: never run repo-wide; format only the affected package (e.g., `./vendor/bin/pint packages/inventory`).
-
-	## Laravel Best Practices (Opinionated)
-
-	- **Strictly enforce Laravel ways**: Reject generic PHP solutions if a "Laravel way" exists.
-	- Use `Arr::get()` over `isset()`/`empty()`.
-	- Use `Collections` over native arrays.
-	- Use `Service Container` injection over `new Class()`.
-	- Use `Model::create()`/`update()` over manual property assignment.
-	- **Modern PHP**: Use PHP 8.2+ features (readonly classes, constructor injection, match expressions).
-
-	## Architecture & Design Patterns
-
-	- **SOLID Principles**: Adhere strictly to S.O.L.I.D.
-	- **Action Classes**: Encapsulate all business logic in Action classes (e.g., `ApproveOrderAction`), **NEVER** in
-	Controllers or Models.
-	- Controllers should only validate input, call an Action, and return a response.
-	- Models should only contain relationships, scopes, and simple accessors/mutators.
-	- **Repository Pattern**: Use repositories for data access logic to separate it from business logic.
-	- **Factory Pattern**: Use factories for complex object creation.
-
-	## Naming Conventions (Strict)
-
-	- **Classes**: `PascalCase` (e.g., `OrderController`)
-	- **Methods**: `camelCase` (e.g., `calculateTotal`)
-	- **Variables**: `camelCase` (e.g., `orderItems`)
-	- **Constants**: `SCREAMING_SNAKE_CASE` (e.g., `MAX_RETRIES`)
-	- **Database Tables**: `snake_case` plural (e.g., `order_items`)
-	- **Database Columns**: `snake_case` (e.g., `user_id`)
-	- **Booleans**: `is_`, `has_`, `can_` prefixes (e.g., `is_active`)
-
-
-=== .ai/filament rules ===
-
-# Filament Guidelines
-
-## Version & Docs (Mandatory)
-
-- Implement using the **Filament v5 API**.
-- Filament v5 is largely compatible with Filament v4 patterns in this repo, but **do not assume** an API exists or behaves identically.
-- **Always verify** any Filament approach, class, method, or signature against the official Filament docs for the relevant version before coding.
-
-## Spatie Integrations (Mandatory)
-
-When implementing Filament functionality around Spatie packages, you MUST use the official FilamentPHP plugins (do not roll your own integrations or use third-party alternatives):
-
-- Tags (Spatie Laravel Tags): https://github.com/filamentphp/spatie-laravel-tags-plugin
-- Settings (Spatie Laravel Settings): https://github.com/filamentphp/spatie-laravel-settings-plugin
-- Google Fonts (Spatie Laravel Google Fonts): https://github.com/filamentphp/spatie-laravel-google-fonts-plugin
-- Media Library (Spatie Laravel Media Library): https://github.com/filamentphp/spatie-laravel-media-library-plugin
-
-## Import / Export (Mandatory)
-
-For any import or export workflows in Filament, you MUST use Filament's built-in Actions:
-
-- Import: https://filamentphp.com/docs/4.x/actions/import
-- Export: https://filamentphp.com/docs/4.x/actions/export
-
-## Rules
-
-- Do not introduce alternative import/export libraries (e.g., custom CSV/XLSX handlers) unless explicitly requested and approved.
-- Prefer official Filament plugins and documented APIs over custom panels, fields, or bespoke integrations.
-- If a feature is covered by an official plugin/action, use it as the default implementation path.
-- When uncertain or when upgrading patterns, consult docs first; never rely on memory or “common knowledge”.
-
-
-=== .ai/config rules ===
-
-# Config Guidelines
-
-- Only keep config keys that are used in code.
-- Order core package configs: Database → Credentials/API → Defaults → Features/Behavior → Integrations → HTTP → Webhooks → Cache → Logging.
-- Order Filament configs: Navigation → Tables → Features → Resources.
-- Keep configs minimal; publish only what is needed; nest related settings.
-- Migrations with JSON columns require a `json_column_type` config key.
-- Prefer defaults over excess env() wrappers; remove unused keys.
-- Comments: Laravel-style section headers only; inline comments only for non-obvious values.
-- Verify with `grep -r "config('package.key')" src/ packages/*/src/`; remove keys with no matches.
-
-
-=== .ai/packages rules ===
-
-# Packages Guidelines
-
-- Independence: each package must run standalone; prefer `suggest`/optional deps over `require`.
-- Integration: when co-installed, auto-enable hooks via service providers using `class_exists()`/config toggles.
-- DTOs: all DTOs must use Laravel Data for consistency.
-- Example integration pattern:
-```php
-public function boot(): void
-{
-    if (class_exists(Cashier::class)) {
-        // Cart-Cashier integration
-    }
-    if (class_exists(Chip::class)) {
-        // Cart-Chip integration
-    }
-}
-```
-- Verification: test package alone via `composer require package/<pkg>` and together to confirm auto-features.
-
-
-=== .ai/docs rules ===
-
-# Documentation Guidelines (Filament-Style)
-
-Documentation follows Filament's structure: markdown files with Astro component imports stored in the main repo, consumed by a separate docs site.
-
-## How Filament Does It
-
-1. **Markdown in main repo** - `docs/` and `packages/*/docs/` contain plain markdown
-2. **Astro imports in markdown** - Files include `import Aside from "@components/Aside.astro"` 
-3. **Separate docs site** - A separate repository/project builds the actual website
-4. **Docs site pulls markdown** - The Astro site copies/imports markdown from the main repo
-
-## File Structure
-
-### Naming Convention
-```
-packages/<package>/docs/
-├── 01-overview.md           # Package introduction
-├── 02-installation.md       # Setup instructions
-├── 03-configuration.md      # Config options
-├── 04-usage.md              # Basic usage
-├── 05-<feature>.md          # Feature-specific docs
-├── ...
-└── 99-troubleshooting.md    # Common issues
-```
-
-- Use numbered prefixes (`01-`, `02-`) for ordering
-- Use lowercase kebab-case for filenames
-- One topic per file, max 500 lines
-
-### Frontmatter (Required)
-Every markdown file must have YAML frontmatter:
-
-```yaml
----
-title: Getting Started
----
-```
-
-Optional frontmatter fields:
-```yaml
----
-title: Overview
-contents: false           # Hide table of contents
----
-```
-
-## Astro Components (For Future Docs Site)
-
-Prepare markdown with Astro component imports that will work when the docs site is built:
-
-```md
----
-title: Configuration
----
-import Aside from "@components/Aside.astro"
-import AutoScreenshot from "@components/AutoScreenshot.astro"
-
-## Introduction
-
-<Aside variant="info">
-    This feature requires PHP 8.4 or higher.
-</Aside>
-
-<Aside variant="warning">
-    Breaking change in v2.0: The `oldMethod()` has been renamed to `newMethod()`.
-</Aside>
-```
-
-### Available Components
-
-| Component | Purpose | Variants |
-|-----------|---------|----------|
-| `<Aside>` | Callouts/alerts | `info`, `warning`, `tip`, `danger` |
-| `<AutoScreenshot>` | Versioned screenshots | `version="1.x"` |
-| `<Disclosure>` | Collapsible sections | - |
-
-## Content Style
-
-### Code Examples
-Always include working, copy-paste ready examples:
-
-```php
-use AIArmada\Cart\Facades\Cart;
-
-Cart::session('user-123')
-    ->add([
-        'id' => 'product-1',
-        'name' => 'Product Name',
-        'price' => 99.99,
-        'quantity' => 1,
-    ]);
-```
-
-### Headings
-- `##` for main sections
-- `###` for subsections
-- `####` sparingly for deep nesting
-- Never skip heading levels
-
-### Links
-Cross-reference related documentation:
-```md
-See the [configuration](configuration) documentation for details.
-For panel setup, visit the [introduction/installation](../introduction/installation).
-```
-
-## Package Documentation Structure
-
-Each package must have a `docs/` folder with:
-
-1. **01-overview.md** - What it does, key features
-2. **02-installation.md** - Composer, config, migrations
-3. **03-configuration.md** - All config options explained
-4. **04-usage.md** - Basic usage patterns
-5. **Feature docs** - One file per major feature (numbered)
-6. **99-troubleshooting.md** - Common issues and solutions
-
-## Hosting on Dedicated Domain
-
-### Option 1: Separate Docs Repository (Filament's Approach)
-
-Create a separate repository for the docs site:
-
-```
-commerce-docs/           # Separate repo
-├── astro.config.mjs
-├── package.json
-├── src/
-│   ├── content/
-│   │   └── docs/        # Markdown copied/synced from main repo
-│   └── components/
-│       ├── Aside.astro
-│       ├── AutoScreenshot.astro
-│       └── Disclosure.astro
-└── scripts/
-    └── sync-docs.js     # Script to pull docs from main repo
-```
-
-### Option 2: Monorepo Subfolder
-
-Keep docs site in the main repo:
-
-```
-commerce/
-├── packages/
-├── docs-site/           # Astro project
-│   ├── astro.config.mjs
-│   ├── src/content/docs/
-│   └── scripts/sync-docs.js
-└── ...
-```
-
-### Setup Steps
-
-```bash
-# Create docs site (in separate repo or subfolder)
-npm create astro@latest docs-site -- --template starlight
-
-cd docs-site
-
-# Configure astro.config.mjs
-```
-
-```js
-// astro.config.mjs
-import { defineConfig } from 'astro/config';
-import starlight from '@astrojs/starlight';
-
-export default defineConfig({
-  site: 'https://docs.commerce.dev',
-  integrations: [
-    starlight({
-      title: 'Commerce Docs',
-      social: { github: 'https://github.com/AIArmada/commerce' },
-      sidebar: [
-        { label: 'Getting Started', autogenerate: { directory: 'getting-started' } },
-        { label: 'Cart', autogenerate: { directory: 'cart' } },
-        { label: 'Cashier', autogenerate: { directory: 'cashier' } },
-        { label: 'Chip', autogenerate: { directory: 'chip' } },
-        { label: 'Vouchers', autogenerate: { directory: 'vouchers' } },
-      ],
-    }),
-  ],
-});
-```
-
-### Sync Script
-
-```js
-// scripts/sync-docs.js
-const fs = require('fs');
-const path = require('path');
-
-const MAIN_REPO = process.env.COMMERCE_REPO || '../commerce';
-const DEST = path.join(__dirname, '../src/content/docs');
-
-const packages = [
-  'cart', 'cashier', 'cashier-chip', 'chip', 
-  'vouchers', 'inventory', 'stock', 'docs'
-];
-
-// Clean destination
-fs.rmSync(DEST, { recursive: true, force: true });
-fs.mkdirSync(DEST, { recursive: true });
-
-// Copy package docs
-packages.forEach(pkg => {
-  const src = path.join(MAIN_REPO, 'packages', pkg, 'docs');
-  const dest = path.join(DEST, pkg);
-  if (fs.existsSync(src)) {
-    fs.cpSync(src, dest, { recursive: true });
-    console.log(`✓ Copied ${pkg}/docs`);
-  }
-});
-
-console.log('Docs synced!');
-```
-
-### Deployment
-
-| Platform | Setup |
-|----------|-------|
-| **Vercel** | Connect repo → Auto-detects Astro → Deploy |
-| **Netlify** | Build: `npm run build`, Publish: `dist` |
-| **Cloudflare Pages** | Build: `npm run build`, Output: `dist` |
-| **GitHub Pages** | Use GitHub Actions with `withastro/action@v3` |
-
-### GitHub Actions (for separate repo)
-
-```yaml
-# .github/workflows/deploy.yml
-name: Deploy Docs
-
-on:
-  push:
-    branches: [main]
-  repository_dispatch:
-    types: [docs-update]  # Triggered from main repo
-
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      
-      - name: Clone main repo for docs
-        run: |
-          git clone --depth 1 https://github.com/AIArmada/commerce.git ../commerce
-          node scripts/sync-docs.js
-      
-      - uses: withastro/action@v3
-```
-
-### Domain Configuration
-
-1. Add custom domain in hosting platform dashboard
-2. Configure DNS:
-   ```
-   CNAME docs.commerce.dev → your-site.vercel.app
-   ```
-3. HTTPS is automatic on all major platforms
-
-## Verification
-
-```bash
-# Check all packages have required docs
-for pkg in cart cashier chip vouchers; do
-  ls packages/$pkg/docs/01-*.md 2>/dev/null || echo "Missing: $pkg"
-done
-
-# Validate frontmatter exists
-grep -L "^---" packages/*/docs/*.md
-
-# Check for numbered prefixes
-ls packages/*/docs/*.md | grep -v "/[0-9][0-9]-"
-```
-
-## Content Checklist
-
-- [ ] Every config key has documentation
-- [ ] Every public method has examples  
-- [ ] Every event is documented
-- [ ] Breaking changes have migration guides
-- [ ] Files use numbered prefixes for ordering
-- [ ] All files have frontmatter with `title:`
+- **Safety**: NEVER "cleanup" or mass-revert without permission.
+- **Scope**: Run tools (Pint/PHPStan) ONLY on modified packages.
+
+## Best Practices
+- **Strict Laravel**: `Arr::get()`, `Collections`, `Service Container`.
+- **Modern PHP**: 8.2+ (readonly, match).
+- **Logic**: Action Classes only. No logic in Controllers/Models.
+- **Structure**: SOLID, Repository for access, Factory for creation.
+
+## Naming
+- **Classes**: `PascalCase`.
+- **Methods/Vars**: `camelCase`.
+- **Consts**: `SCREAMING_SNAKE`.
+- **DB**: `snake_case` (tables/cols).
+- **Bool**: `is_`, `has_`, `can_`.
+
+## Agents
+- **Auditor**: Strict auditing/security (`.github/agents/Auditor.agent.md`).
+- **QC**: QA/Testing (`.github/agents/QC.agent.md`).
+- **Visionary**: Architecture (`.github/agents/Visionary.agent.md`).
+
+## Beta Status
+- **Break Changes**: Allowed for improvement. No backward compatibility required.
 
 
 === .ai/model rules ===
 
-<?php /** @var \Illuminate\View\ComponentAttributeBag $attributes */ ?>
-## Model Guidelines
-
-- No DB-level FK constraints or cascades; handle all cascades in application code.
-- Required structure: use `HasUuids`; no `$table` property; `getTable()` pulls from config with prefix fallback; fillables match migration.
-- Relations typed with generics and PHPDoc properties.
-- `booted()` must implement application-level cascades (delete children or null FK as appropriate).
-- `casts()` set for arrays/booleans/datetimes as needed.
-- Migration reminder: use `foreignUuid()` without `constrained()`/cascades.
+# Model Guidelines
+- **Base**: `HasUuids`, no `$table` property (use config).
+- **Relations**: Typed with generics (PHPDoc).
+- **Cascades**: Handle in `booted()` (delete/null). NO DB cascades.
+- **Migration**: `foreignUuid()` only.
 
 
 === .ai/database rules ===
 
 # Database Guidelines
+- **PK**: `uuid('id')->primary()`.
+- **FK**: `foreignUuid('col')` only. NO `constrained()` or DB-level cascades.
+- **Cascades**: Handle in Application Logic (Model/Service).
+- **Schema**: No `down()` logic needed.
+- **Rules**: Ensure migrations are safe and idempotent.
 
-- Primary keys: `uuid('id')->primary()` only.
-- Foreign keys: `foreignUuid('relation_id')`; never use `constrained()` or DB-level cascades—handle in application logic.
-- Sample:
-```php
-Schema::create('orders', function (Blueprint $table) {
-    $table->uuid('id')->primary();
-    $table->foreignUuid('user_id');
-    $table->foreignUuid('cart_id');
-    $table->timestamps();
-});
-```
-- Verify migrations contain no DB constraints; ensure cascades are implemented in models/services instead.
+
+=== .ai/spatie rules ===
+
+# Spatie Guidelines
+- **DTO**: `spatie/laravel-data`.
+- **Logs**: `activitylog` (Business), `auditing` (Compliance).
+- **Filament**: Official plugins MANDATORY.
+- **Webhooks**: `webhook-client` (Idempotent Job).
+- **Media**: `medialibrary`.
+- **Settings**: `laravel-settings`.
+- **Tags**: `laravel-tags`.
+- **States**: `model-states`.
+
+
+=== .ai/docs rules ===
+
+# Documentation Guidelines
+- **Loc**: `packages/<pkg>/docs/`.
+  - **Files**: `01-overview`, `02-install`, `03-config`, `04-usage`, `99-trouble`.
+  - **Fmt**: Markdown + YAML Frontmatter (`title:`).
+
+  ## Features
+  - **Components**: Use `import Aside from "@components/Aside.astro"`.
+  - **Variants**: `info`, `warning`, `tip`, `danger`.
+  - **Content**: Copy-paste ready code examples. `##` headers. Explains breaking changes.
+
+
+=== .ai/phpstan rules ===
+
+# PHPStan Guidelines
+- **Lvl**: 6.
+- **Scope**: Per package (`packages/pkg/src`).
+- **Rules**:
+- Respect `phpstan.neon`.
+- NO new `ignoreErrors` unless exhausted.
+- Fix root causes over suppression.
+
+
+=== .ai/packages rules ===
+
+# Packages Guidelines
+- **Indep**: Must run standalone. `suggest` over `require`.
+- **Integ**: Auto-enable via `class_exists()` check in `boot()`.
+- **Code**: All DTOs via `spatie/laravel-data`.
+- **Test**: Verify standalone install and integration.
+
+
+=== .ai/config rules ===
+
+# Config Guidelines
+- **Keys**: Keep minimal, remove unused (verify via grep).
+- **Structure**:
+  - Core: DB -> Creds -> Defaults -> Features -> Integrations -> HTTP -> Webhooks -> Cache -> Logging.
+  - Filament: Nav -> Tables -> Features -> Resources.
+- **Rules**:
+  - Use `json_column_type` for JSON/Migration.
+  - Prefer defaults over excessive `env()`.
+  - Comments: Section headers only, inline for non-obvious.
+
+
+=== .ai/test rules ===
+
+# Testing Guidelines
+- **Goal**: ELIMINATE BUGS.
+- **Refs**: Filament Testing Docs (Resources, Tables, Schemas).
+- **Exec**:
+- **Single**: `./vendor/bin/pest path/to/Test.php`.
+- **Dir**: `./vendor/bin/pest path/to/dir`.
+- **Full**: `./vendor/bin/pest --parallel ...` (Final only).
+- **Coverage**:
+- Don't run full if `0% files > 10%`.
+- Command: `./vendor/bin/pest --coverage ...`.
+- Targets: Core ≥85%, Filament ≥70%, Support ≥80%.
+- **Output**: ALWAYS pipe: `2>&1 | tee /tmp/out.txt`.
 
 
 === foundation rules ===
