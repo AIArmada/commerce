@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
+
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -34,7 +34,6 @@ use Illuminate\Support\Str;
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property Carbon|null $deleted_at
  * @property-read Collection<int, AffiliateProgramTier> $tiers
  * @property-read Collection<int, Affiliate> $affiliates
  * @property-read Collection<int, AffiliateProgramCreative> $creatives
@@ -43,7 +42,7 @@ class AffiliateProgram extends Model
 {
     use \AIArmada\CommerceSupport\Traits\CachesComputedValues;
     use HasUuids;
-    use SoftDeletes;
+
 
     protected $fillable = [
         'name',
@@ -141,7 +140,7 @@ class AffiliateProgram extends Model
 
     public function canJoin(Affiliate $affiliate): bool
     {
-        if (! $this->isOpen() && ! $this->requires_approval) {
+        if (!$this->isOpen() && !$this->requires_approval) {
             return false;
         }
 
@@ -151,7 +150,7 @@ class AffiliateProgram extends Model
         }
 
         // Check eligibility rules
-        if (! empty($this->eligibility_rules)) {
+        if (!empty($this->eligibility_rules)) {
             return $this->evaluateEligibility($affiliate);
         }
 
@@ -162,7 +161,7 @@ class AffiliateProgram extends Model
     {
         return $this->cachedComputation(
             __METHOD__,
-            fn () => $this->tiers()->orderBy('level')->first()
+            fn() => $this->tiers()->orderBy('level')->first()
         );
     }
 
