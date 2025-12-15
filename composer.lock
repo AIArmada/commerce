@@ -10935,16 +10935,16 @@
         },
         {
             "name": "spatie/laravel-medialibrary",
-            "version": "11.17.6",
+            "version": "11.17.7",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/laravel-medialibrary.git",
-                "reference": "e65a99926c23546692acc7b9f486c772f0f2770c"
+                "reference": "237f34f70ae97523c1a99cad7176e229b8d6f0b6"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/laravel-medialibrary/zipball/e65a99926c23546692acc7b9f486c772f0f2770c",
-                "reference": "e65a99926c23546692acc7b9f486c772f0f2770c",
+                "url": "https://api.github.com/repos/spatie/laravel-medialibrary/zipball/237f34f70ae97523c1a99cad7176e229b8d6f0b6",
+                "reference": "237f34f70ae97523c1a99cad7176e229b8d6f0b6",
                 "shasum": ""
             },
             "require": {
@@ -11029,7 +11029,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/laravel-medialibrary/issues",
-                "source": "https://github.com/spatie/laravel-medialibrary/tree/11.17.6"
+                "source": "https://github.com/spatie/laravel-medialibrary/tree/11.17.7"
             },
             "funding": [
                 {
@@ -11041,7 +11041,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-12-10T09:33:01+00:00"
+            "time": "2025-12-15T08:51:55+00:00"
         },
         {
             "name": "spatie/laravel-model-states",
@@ -11355,16 +11355,16 @@
         },
         {
             "name": "spatie/laravel-ray",
-            "version": "1.43.1",
+            "version": "1.43.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/spatie/laravel-ray.git",
-                "reference": "108454d234d1aec7bd0ed9e1af4c2c0d794ff340"
+                "reference": "6039c5e62118d7b8febc31546d14a5cf9bb63876"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/spatie/laravel-ray/zipball/108454d234d1aec7bd0ed9e1af4c2c0d794ff340",
-                "reference": "108454d234d1aec7bd0ed9e1af4c2c0d794ff340",
+                "url": "https://api.github.com/repos/spatie/laravel-ray/zipball/6039c5e62118d7b8febc31546d14a5cf9bb63876",
+                "reference": "6039c5e62118d7b8febc31546d14a5cf9bb63876",
                 "shasum": ""
             },
             "require": {
@@ -11383,7 +11383,7 @@
             "require-dev": {
                 "guzzlehttp/guzzle": "^7.3",
                 "laravel/framework": "^7.20|^8.19|^9.0|^10.0|^11.0|^12.0",
-                "laravel/pint": "^1.25",
+                "laravel/pint": "^1.26",
                 "orchestra/testbench-core": "^5.0|^6.0|^7.0|^8.0|^9.0|^10.0",
                 "pestphp/pest": "^1.22|^2.0|^3.0|^4.0",
                 "phpstan/phpstan": "^1.10.57|^2.0.2",
@@ -11428,7 +11428,7 @@
             ],
             "support": {
                 "issues": "https://github.com/spatie/laravel-ray/issues",
-                "source": "https://github.com/spatie/laravel-ray/tree/1.43.1"
+                "source": "https://github.com/spatie/laravel-ray/tree/1.43.2"
             },
             "funding": [
                 {
@@ -11440,7 +11440,7 @@
                     "type": "other"
                 }
             ],
-            "time": "2025-11-24T15:54:04+00:00"
+            "time": "2025-12-15T09:06:48+00:00"
         },
         {
             "name": "spatie/laravel-settings",
