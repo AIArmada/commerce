@@ -2,11 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Shipping\Services\BatchRateLimiter;
 use Illuminate\Support\Facades\RateLimiter;
-
-uses(TestCase::class);
 
 // ============================================
 // BatchRateLimiter Tests

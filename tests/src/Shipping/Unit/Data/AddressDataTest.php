@@ -60,3 +60,94 @@ it('validates required fields are present', function (): void {
     expect($address->address)->not->toBeEmpty();
     expect($address->postCode)->not->toBeEmpty();
 });
+
+it('formats full address with all parts', function (): void {
+    $address = new AddressData(
+        name: 'John Doe',
+        phone: '+60123456789',
+        address: '123 Test Street',
+        postCode: '50000',
+        countryCode: 'MYS',
+        city: 'Kuala Lumpur',
+        state: 'WP',
+        address2: 'Suite 100',
+    );
+
+    $fullAddress = $address->getFullAddress();
+
+    expect($fullAddress)->toContain('123 Test Street');
+    expect($fullAddress)->toContain('Suite 100');
+    expect($fullAddress)->toContain('Kuala Lumpur');
+    expect($fullAddress)->toContain('WP');
+    expect($fullAddress)->toContain('50000');
+    expect($fullAddress)->toContain('MYS');
+});
+
+it('formats full address without optional parts', function (): void {
+    $address = new AddressData(
+        name: 'John Doe',
+        phone: '+60123456789',
+        address: '123 Test Street',
+        postCode: '50000',
+        countryCode: 'MYS',
+    );
+
+    $fullAddress = $address->getFullAddress();
+
+    expect($fullAddress)->toBe('123 Test Street, 50000, MYS');
+});
+
+it('formats name with company when company exists', function (): void {
+    $address = new AddressData(
+        name: 'John Doe',
+        phone: '+60123456789',
+        address: '123 Test Street',
+        postCode: '50000',
+        company: 'ACME Corp',
+    );
+
+    expect($address->getFormattedName())->toBe('John Doe (ACME Corp)');
+});
+
+it('formats name without company when company is null', function (): void {
+    $address = new AddressData(
+        name: 'John Doe',
+        phone: '+60123456789',
+        address: '123 Test Street',
+        postCode: '50000',
+    );
+
+    expect($address->getFormattedName())->toBe('John Doe');
+});
+
+it('sets residential flag correctly', function (): void {
+    $residentialAddress = new AddressData(
+        name: 'John Doe',
+        phone: '+60123456789',
+        address: '123 Test Street',
+        postCode: '50000',
+        isResidential: true,
+    );
+
+    $commercialAddress = new AddressData(
+        name: 'John Doe',
+        phone: '+60123456789',
+        address: '123 Test Street',
+        postCode: '50000',
+        isResidential: false,
+    );
+
+    expect($residentialAddress->isResidential)->toBeTrue();
+    expect($commercialAddress->isResidential)->toBeFalse();
+});
+
+it('defaults to residential address', function (): void {
+    $address = new AddressData(
+        name: 'John Doe',
+        phone: '+60123456789',
+        address: '123 Test Street',
+        postCode: '50000',
+    );
+
+    expect($address->isResidential)->toBeTrue();
+});

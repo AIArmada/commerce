@@ -48,10 +48,10 @@ final class UpdateShipmentStatus
             // Create event record
             ShipmentEvent::create([
                 'shipment_id' => $shipment->id,
-                'status' => $status,
+                'normalized_status' => $status->toTrackingStatus()->value,
                 'description' => $description,
                 'location' => $location,
-                'metadata' => $metadata ?: null,
+                'raw_data' => $metadata ?: null,
                 'occurred_at' => now(),
             ]);
 

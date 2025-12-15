@@ -70,9 +70,12 @@ class UserAttributeEvaluator implements TargetingRuleEvaluator
      */
     private function getUserAttributeValue(object $user, string $attribute, TargetingContext $context): mixed
     {
-        // Check user model property first
-        if (property_exists($user, $attribute)) {
-            return $user->{$attribute};
+        // For Eloquent models, use getAttribute if available
+        if (method_exists($user, 'getAttribute')) {
+            $value = $user->getAttribute($attribute);
+            if ($value !== null) {
+                return $value;
+            }
         }
 
         // Check for getter method
@@ -81,10 +84,14 @@ class UserAttributeEvaluator implements TargetingRuleEvaluator
             return $user->{$getter}();
         }
 
+        // Try accessing via magic __get (for objects with __get)
+        if (isset($user->{$attribute})) {
+            return $user->{$attribute};
+        }
+
         // Check metadata from context
-        $metadata = $context->getMetadata();
-        if (isset($metadata['user_attributes'][$attribute])) {
-            return $metadata['user_attributes'][$attribute];
+        if (isset($context->metadata['user_attributes'][$attribute])) {
+            return $context->metadata['user_attributes'][$attribute];
         }
 
         return null;

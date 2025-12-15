@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Pricing\DTOs;
+namespace AIArmada\Pricing\Data;
 
 use Spatie\LaravelData\Data;
 
 /**
  * Data Transfer Object representing a calculated price result.
  */
-class PriceResult extends Data
+class PriceResultData extends Data
 {
     public function __construct(
         public int $originalPrice,
@@ -20,6 +20,7 @@ class PriceResult extends Data
         public ?string $priceListName = null,
         public ?string $tierDescription = null,
         public ?string $promotionName = null,
+        /** @var array<int, array<string, mixed>> */
         public array $breakdown = [],
     ) {}
 

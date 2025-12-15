@@ -290,6 +290,7 @@ abstract class TestCase extends Orchestra
     {
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/chip/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/vouchers/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/shipping/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../vendor/spatie/laravel-permission/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/affiliates/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/docs/database/migrations');
@@ -963,10 +964,13 @@ abstract class TestCase extends Orchestra
 
         Schema::create('price_lists', function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->nullableUuidMorphs('owner');
             $table->string('name');
             $table->string('slug')->unique();
             $table->text('description')->nullable();
             $table->string('currency')->default('MYR');
+            $table->uuid('customer_id')->nullable();
+            $table->uuid('segment_id')->nullable();
             $table->integer('priority')->default(0);
             $table->boolean('is_default')->default(false);
             $table->boolean('is_active')->default(true);
@@ -991,17 +995,20 @@ abstract class TestCase extends Orchestra
 
         Schema::create('price_tiers', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->uuid('price_list_id');
-            $table->uuidMorphs('priceable');
+            $table->uuid('price_list_id')->nullable();
+            $table->uuidMorphs('tierable');
             $table->integer('min_quantity')->default(1);
             $table->integer('max_quantity')->nullable();
             $table->integer('amount')->default(0);
+            $table->string('discount_type')->nullable();
+            $table->integer('discount_value')->nullable();
             $table->string('currency')->default('MYR');
             $table->timestamps();
         });
 
         Schema::create('promotions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->nullableUuidMorphs('owner');
             $table->string('name');
             $table->string('code')->nullable()->unique();
             $table->text('description')->nullable();
@@ -1021,6 +1028,13 @@ abstract class TestCase extends Orchestra
             $table->softDeletes();
         });
 
+        // Pivot table for promotion-product/category relationships
+        Schema::create('promotionables', function (Blueprint $table): void {
+            $table->uuid('promotion_id');
+            $table->uuidMorphs('promotionable');
+            $table->primary(['promotion_id', 'promotionable_id', 'promotionable_type']);
+        });
+
         // =========================================================================
         // TAX PACKAGE TABLES
         // =========================================================================
@@ -1031,6 +1045,7 @@ abstract class TestCase extends Orchestra
 
         Schema::create('tax_zones', function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->nullableUuidMorphs('owner');
             $table->string('name');
             $table->string('code')->unique();
             $table->text('description')->nullable();
@@ -1047,6 +1062,7 @@ abstract class TestCase extends Orchestra
 
         Schema::create('tax_classes', function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->nullableUuidMorphs('owner');
             $table->string('name');
             $table->string('slug')->unique();
             $table->text('description')->nullable();
@@ -1073,9 +1089,15 @@ abstract class TestCase extends Orchestra
         Schema::create('tax_exemptions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuidMorphs('exemptable');
+            $table->foreignUuid('tax_zone_id')->nullable();
+            $table->string('reason');
             $table->string('certificate_number')->nullable();
-            $table->text('reason')->nullable();
+            $table->string('document_path')->nullable();
             $table->string('status')->default('pending');
+            $table->text('rejection_reason')->nullable();
+            $table->timestamp('verified_at')->nullable();
+            $table->uuid('verified_by')->nullable();
+            $table->timestamp('starts_at')->nullable();
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();
             $table->softDeletes();

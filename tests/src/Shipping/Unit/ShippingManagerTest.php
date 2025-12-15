@@ -3,54 +3,29 @@
 declare(strict_types=1);
 
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
+use AIArmada\Shipping\Contracts\StatusMapperInterface;
+use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Drivers\ManualShippingDriver;
 use AIArmada\Shipping\Drivers\NullShippingDriver;
+use AIArmada\Shipping\Facades\Shipping;
 use AIArmada\Shipping\ShippingManager;
-use Illuminate\Contracts\Config\Repository;
-use Illuminate\Contracts\Foundation\Application;
 
 // ============================================
-// ShippingManager Tests
+// ShippingManager Tests (using Laravel framework)
 // ============================================
 
 beforeEach(function (): void {
-    $this->app = Mockery::mock(Application::class);
-    $this->app->shouldReceive('make')->andReturnUsing(function ($class) {
-        if ($class === NullShippingDriver::class) {
-            return new NullShippingDriver;
-        }
-        if ($class === ManualShippingDriver::class) {
-            return new ManualShippingDriver;
-        }
-
-        return null;
-    });
-
-    // Mock config repository
-    $config = Mockery::mock(Repository::class);
-    $config->shouldReceive('get')->with('shipping.drivers', [])->andReturn([
-        'null' => ['driver' => 'null'],
-        'manual' => ['driver' => 'manual'],
-        'flat_rate' => ['driver' => 'flat_rate'],
+    // Configure shipping drivers
+    config([
+        'shipping.default' => 'manual',
+        'shipping.drivers' => [
+            'null' => ['driver' => 'null'],
+            'manual' => ['driver' => 'manual'],
+            'flat_rate' => ['driver' => 'flat_rate'],
+        ],
     ]);
-    $config->shouldReceive('get')->with('shipping.default', 'manual')->andReturn('manual');
-    $config->shouldReceive('get')->with('shipping.drivers.manual', [])->andReturn([]);
-    $config->shouldReceive('get')->with('shipping.drivers.flat_rate', [])->andReturn([]);
-    $config->shouldReceive('has')->with(Mockery::pattern('/^shipping\.drivers\./'))->andReturnUsing(function ($key) {
-        return in_array($key, [
-            'shipping.drivers.null',
-            'shipping.drivers.manual',
-            'shipping.drivers.flat_rate',
-        ]);
-    });
 
-    $this->app->shouldReceive('get')->with('config')->andReturn($config);
-
-    $this->manager = new ShippingManager($this->app);
-});
-
-afterEach(function (): void {
-    Mockery::close();
+    $this->manager = app(ShippingManager::class);
 });
 
 it('returns null driver by default', function (): void {
@@ -69,8 +44,14 @@ it('returns manual driver', function (): void {
 });
 
 it('allows extending with custom drivers', function (): void {
-    $customDriver = Mockery::mock(ShippingDriverInterface::class);
-    $customDriver->shouldReceive('getCarrierCode')->andReturn('custom');
+    // Create a custom driver that extends the NullShippingDriver
+    $customDriver = new class extends NullShippingDriver
+    {
+        public function getCarrierCode(): string
+        {
+            return 'custom';
+        }
+    };
 
     $this->manager->extend('custom', fn () => $customDriver);
 
@@ -116,3 +97,61 @@ it('provides default driver name', function (): void {
 it('throws exception for unsupported driver', function (): void {
     $this->manager->driver('unsupported_carrier');
 })->throws(InvalidArgumentException::class);
+
+it('can set default driver', function (): void {
+    $this->manager->setDefaultDriver('null');
+
+    expect($this->manager->getDefaultDriver())->toBe('null');
+});
+
+it('can register and retrieve status mapper', function (): void {
+    $mapper = new class implements StatusMapperInterface
+    {
+        public function getCarrierCode(): string
+        {
+            return 'test_carrier';
+        }
+
+        public function map(string $carrierEventCode): \AIArmada\Shipping\Enums\TrackingStatus
+        {
+            return \AIArmada\Shipping\Enums\TrackingStatus::InTransit;
+        }
+    };
+
+    $this->manager->registerStatusMapper($mapper);
+
+    $retrieved = $this->manager->getStatusMapper('test_carrier');
+
+    expect($retrieved)->toBe($mapper);
+});
+
+it('returns null for unregistered status mapper', function (): void {
+    $mapper = $this->manager->getStatusMapper('nonexistent');
+
+    expect($mapper)->toBeNull();
+});
+
+it('can get drivers for destination', function (): void {
+    $destination = new AddressData(
+        name: 'Test Destination',
+        phone: '123-456-7890',
+        address: '123 Test St',
+        postCode: '12345',
+        countryCode: 'US',
+        city: 'Test City',
+        state: 'TS'
+    );
+
+    // Both null and manual drivers should return true for servicesDestination by default
+    $drivers = $this->manager->getDriversForDestination($destination);
+
+    // At minimum, we should have drivers that service the destination
+    expect($drivers)->toBeInstanceOf(\Illuminate\Support\Collection::class);
+});
+
+it('supports dynamic method calls via facade', function (): void {
+    // Test that the facade routes calls to the manager
+    $driver = Shipping::driver('null');
+
+    expect($driver)->toBeInstanceOf(NullShippingDriver::class);
+});

@@ -35,7 +35,7 @@ class ShipmentService
     /**
      * Create a new shipment.
      */
-    public function create(ShipmentData $data, ?int $ownerId = null, ?string $ownerType = null): Shipment
+    public function create(ShipmentData $data, ?string $ownerId = null, ?string $ownerType = null): Shipment
     {
         $shipment = Shipment::create([
             'owner_id' => $ownerId,
@@ -279,7 +279,7 @@ class ShipmentService
     ): ShipmentEvent {
         return $shipment->events()->create([
             'carrier_event_code' => $type,
-            'normalized_status' => $shipment->status,
+            'normalized_status' => $shipment->status->toTrackingStatus(),
             'description' => $note,
             'raw_data' => $data,
             'occurred_at' => now(),

@@ -46,11 +46,11 @@ final class RecordVoucherUsage
                 'redeemed_by_type' => $redeemedBy?->getMorphClass(),
                 'redeemed_by_id' => $redeemedBy?->getKey(),
                 'notes' => $notes,
-                'redeemed_at' => now(),
+                'used_at' => now(),
             ]);
 
             // Update the voucher use count
-            $voucher->increment('current_uses');
+            $voucher->increment('applied_count');
 
             return $usage;
         });

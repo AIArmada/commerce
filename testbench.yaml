@@ -11,6 +11,7 @@ providers:
   - AIArmada\Inventory\InventoryServiceProvider
   - AIArmada\Products\ProductsServiceProvider
   - AIArmada\Vouchers\VoucherServiceProvider
+  - AIArmada\Shipping\ShippingServiceProvider
   - AIArmada\FilamentCart\FilamentCartServiceProvider
   - AIArmada\FilamentChip\FilamentChipServiceProvider
   - AIArmada\FilamentInventory\FilamentInventoryServiceProvider
@@ -30,6 +31,7 @@ migrations:
   - packages/docs/database/migrations
   - packages/jnt/database/migrations
   - packages/inventory/database/migrations
+  - packages/shipping/database/migrations
   - packages/products/database/migrations
   - packages/vouchers/database/migrations
 

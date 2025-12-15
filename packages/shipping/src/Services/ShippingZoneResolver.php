@@ -27,7 +27,7 @@ class ShippingZoneResolver
      * Results are cached for the request lifetime, keyed by address + owner.
      * This ensures different addresses within the same request get correct zones.
      */
-    public function resolve(AddressData $address, ?int $ownerId = null, ?string $ownerType = null): ?ShippingZone
+    public function resolve(AddressData $address, ?string $ownerId = null, ?string $ownerType = null): ?ShippingZone
     {
         $cacheKey = $this->buildCacheKey($address, $ownerId, $ownerType);
 
@@ -53,7 +53,7 @@ class ShippingZoneResolver
      *
      * @return Collection<int, ShippingZone>
      */
-    public function resolveAll(AddressData $address, ?int $ownerId = null, ?string $ownerType = null): Collection
+    public function resolveAll(AddressData $address, ?string $ownerId = null, ?string $ownerType = null): Collection
     {
         $query = ShippingZone::query()
             ->active()
@@ -76,7 +76,7 @@ class ShippingZoneResolver
     public function getApplicableRates(
         AddressData $address,
         ?string $carrierCode = null,
-        ?int $ownerId = null,
+        ?string $ownerId = null,
         ?string $ownerType = null
     ): Collection {
         $zone = $this->resolve($address, $ownerId, $ownerType);
@@ -94,7 +94,7 @@ class ShippingZoneResolver
     /**
      * Check if an address is serviceable (has matching zone).
      */
-    public function isServiceable(AddressData $address, ?int $ownerId = null, ?string $ownerType = null): bool
+    public function isServiceable(AddressData $address, ?string $ownerId = null, ?string $ownerType = null): bool
     {
         return $this->resolve($address, $ownerId, $ownerType) !== null;
     }
@@ -104,7 +104,7 @@ class ShippingZoneResolver
      *
      * @return array{matched: bool, zone: ?ShippingZone, reason: string}
      */
-    public function test(AddressData $address, ?int $ownerId = null, ?string $ownerType = null): array
+    public function test(AddressData $address, ?string $ownerId = null, ?string $ownerType = null): array
     {
         $zone = $this->resolve($address, $ownerId, $ownerType);
 
@@ -130,7 +130,7 @@ class ShippingZoneResolver
     /**
      * Perform the actual zone resolution (uncached).
      */
-    private function performZoneResolution(AddressData $address, ?int $ownerId, ?string $ownerType): ?ShippingZone
+    private function performZoneResolution(AddressData $address, ?string $ownerId, ?string $ownerType): ?ShippingZone
     {
         $query = ShippingZone::query()
             ->active()
@@ -156,7 +156,7 @@ class ShippingZoneResolver
     /**
      * Build a cache key from address and owner parameters.
      */
-    private function buildCacheKey(AddressData $address, ?int $ownerId, ?string $ownerType): string
+    private function buildCacheKey(AddressData $address, ?string $ownerId, ?string $ownerType): string
     {
         return md5(serialize([
             'country' => $address->countryCode,

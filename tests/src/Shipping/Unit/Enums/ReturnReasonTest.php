@@ -31,6 +31,12 @@ it('returns readable labels for return reasons', function (): void {
     expect(ReturnReason::Defective->getLabel())->toBe('Item Defective');
     expect(ReturnReason::NotAsDescribed->getLabel())->toBe('Not as Described');
     expect(ReturnReason::ChangedMind->getLabel())->toBe('Changed Mind');
+    expect(ReturnReason::DoesNotFit->getLabel())->toBe('Does Not Fit');
+    expect(ReturnReason::BetterPrice->getLabel())->toBe('Found Better Price');
+    expect(ReturnReason::NoLongerNeeded->getLabel())->toBe('No Longer Needed');
+    expect(ReturnReason::ArrivedTooLate->getLabel())->toBe('Arrived Too Late');
+    expect(ReturnReason::Unauthorized->getLabel())->toBe('Unauthorized Purchase');
+    expect(ReturnReason::Other->getLabel())->toBe('Other');
 });
 
 it('correctly identifies seller fault reasons', function (): void {

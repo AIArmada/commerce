@@ -167,7 +167,8 @@ class ShippingConditionProvider implements ConditionProviderInterface
         foreach ($cart->getItems() as $item) {
             $weight = $item->getAttribute('weight') ?? 0;
             $totalWeight += (int) ($weight * $item->quantity);
-            $totalValue += $item->getSubtotal();
+            // Use getRawSubtotal() to get the integer cents value
+            $totalValue += $item->getRawSubtotal();
         }
 
         // For now, treat entire cart as single package

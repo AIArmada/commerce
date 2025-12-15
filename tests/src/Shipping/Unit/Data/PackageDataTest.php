@@ -78,3 +78,66 @@ it('converts weight to kg', function (): void {
 
     expect($package->getWeightKg())->toBe(2.5);
 });
+
+it('returns actual weight when dimensions are missing', function (): void {
+    $package = new PackageData(
+        weight: 2000,
+        length: 30,
+        width: null,
+        height: null,
+    );
+
+    expect($package->getVolumetricWeight())->toBe(2000);
+});
+
+it('checks valid dimensions when all dimensions present', function (): void {
+    $package = new PackageData(
+        weight: 1000,
+        length: 30,
+        width: 20,
+        height: 10,
+    );
+
+    expect($package->hasValidDimensions())->toBeTrue();
+});
+
+it('checks invalid dimensions when any dimension missing', function (): void {
+    $packageNoLength = new PackageData(
+        weight: 1000,
+        length: null,
+        width: 20,
+        height: 10,
+    );
+
+    $packageNoWidth = new PackageData(
+        weight: 1000,
+        length: 30,
+        width: null,
+        height: 10,
+    );
+
+    $packageNoHeight = new PackageData(
+        weight: 1000,
+        length: 30,
+        width: 20,
+        height: null,
+    );
+
+    expect($packageNoLength->hasValidDimensions())->toBeFalse();
+    expect($packageNoWidth->hasValidDimensions())->toBeFalse();
+    expect($packageNoHeight->hasValidDimensions())->toBeFalse();
+});
+
+it('calculates volumetric weight with custom divisor', function (): void {
+    $package = new PackageData(
+        weight: 100,
+        length: 40,
+        width: 30,
+        height: 20,
+    );
+
+    // With divisor 6000: (40 x 30 x 20) / 6000 = 4 kg = 4000 grams
+    $volumetric = $package->getVolumetricWeight(6000);
+
+    expect($volumetric)->toBe(4000);
+});
