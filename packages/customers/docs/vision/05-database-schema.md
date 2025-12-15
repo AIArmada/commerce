@@ -30,7 +30,6 @@ CREATE TABLE customers (
     total_spent BIGINT NOT NULL DEFAULT 0,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    deleted_at TIMESTAMP NULL,
     
     FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL,
     INDEX idx_customers_user (user_id),

@@ -31,7 +31,16 @@ class TaxClass extends Model
     use HasUuids;
     use LogsActivity;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'owner_type',
+        'owner_id',
+        'name',
+        'slug',
+        'description',
+        'is_default',
+        'is_active',
+        'position',
+    ];
 
     /**
      * @var array<string, string>
@@ -73,24 +82,36 @@ class TaxClass extends Model
 
     public function getTable(): string
     {
-        return config('tax.tables.tax_classes', 'tax_classes');
+        return (string) config('tax.database.tables.tax_classes', 'tax_classes');
     }
 
     // =========================================================================
     // SCOPES
     // =========================================================================
 
-    public function scopeActive($query)
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
-    public function scopeDefault($query)
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeDefault(Builder $query): Builder
     {
         return $query->where('is_default', true);
     }
 
-    public function scopeOrdered($query)
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeOrdered(Builder $query): Builder
     {
         return $query->orderBy('position', 'asc');
     }
@@ -105,7 +126,7 @@ class TaxClass extends Model
      */
     public function scopeForOwner(Builder $query, ?EloquentModel $owner, bool $includeGlobal = true): Builder
     {
-        if (! config('tax.owner.enabled', false)) {
+        if (! config('tax.features.owner.enabled', false)) {
             return $query;
         }
 

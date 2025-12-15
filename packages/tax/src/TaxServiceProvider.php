@@ -26,9 +26,11 @@ class TaxServiceProvider extends ServiceProvider
                 __DIR__ . '/../database/migrations' => database_path('migrations'),
             ], 'tax-migrations');
 
+            $this->publishes([
+                __DIR__ . '/../database/settings' => database_path('settings'),
+            ], 'tax-settings');
+
             $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
         }
-
-        $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'tax');
     }
 }

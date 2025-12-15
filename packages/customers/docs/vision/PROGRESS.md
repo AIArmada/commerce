@@ -50,7 +50,7 @@
 ## Phase 1: Core Models ✅
 
 ### Customer Model
-- [x] `Customer` model with UUIDs, HasOwner, SoftDeletes
+- [x] `Customer` model with UUIDs, HasOwner
 - [x] Link to User model via `user_id`
 - [x] Customer wallet / store credit with balance tracking
 - [x] Lifetime value (LTV) tracking

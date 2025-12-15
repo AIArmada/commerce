@@ -616,21 +616,7 @@ describe('Product Model', function (): void {
         });
     });
 
-    describe('Product Soft Deletes', function (): void {
-        it('can soft delete a product', function (): void {
-            $product = Product::create([
-                'name' => 'To Delete',
-                'price' => 1000,
-                'status' => ProductStatus::Active,
-            ]);
-
-            $id = $product->id;
-            $product->delete();
-
-            expect(Product::find($id))->toBeNull()
-                ->and(Product::withTrashed()->find($id))->not->toBeNull();
-        });
-
+    describe('Product Deletion', function (): void {
         it('deletes related entities when deleted', function (): void {
             $product = Product::create([
                 'name' => 'Delete Relations',

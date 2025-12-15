@@ -46,7 +46,6 @@ return new class extends Migration
             $table->integer('times_converted')->default(0);
 
             $table->timestamps();
-            $table->softDeletes();
 
             $table->index(['type', 'status']);
             $table->index('is_default');

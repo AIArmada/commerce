@@ -43,20 +43,19 @@ class PermissionBuilder
         return $this->abilities(['viewAny', 'view', 'create', 'update', 'delete']);
     }
 
-    /**
-     * Add soft delete abilities.
-     */
     public function softDeletes(): self
     {
-        return $this->abilities(['restore', 'forceDelete']);
+        // Soft deletes have been removed from the system.
+        // This method is kept for backward compatibility but adds no permissions.
+        return $this;
     }
 
     /**
-     * Add full CRUD with soft deletes.
+     * Add full CRUD.
      */
     public function fullCrud(): self
     {
-        return $this->crud()->softDeletes();
+        return $this->crud();
     }
 
     /**
@@ -247,8 +246,6 @@ class PermissionBuilder
             'create' => "Create {$resourceLabel}",
             'update' => "Update {$resourceLabel}",
             'delete' => "Delete {$resourceLabel}",
-            'restore' => "Restore deleted {$resourceLabel}",
-            'forceDelete' => "Permanently delete {$resourceLabel}",
             'replicate' => "Duplicate {$resourceLabel}",
             'export' => "Export {$resourceLabel}",
             'import' => "Import {$resourceLabel}",

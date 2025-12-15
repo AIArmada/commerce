@@ -115,7 +115,7 @@ class TaxCalculatorTest extends TaxTestCase
 
     public function test_calculate_tax_with_tax_inclusive_pricing(): void
     {
-        config(['tax.prices_include_tax' => true]);
+        config(['tax.defaults.prices_include_tax' => true]);
 
         $zone = TaxZone::create([
             'name' => 'Inclusive Zone',
@@ -139,7 +139,7 @@ class TaxCalculatorTest extends TaxTestCase
 
     public function test_calculate_tax_with_rounding(): void
     {
-        config(['tax.round_at_subtotal' => true]);
+        config(['tax.defaults.round_at_subtotal' => true]);
 
         $zone = TaxZone::create([
             'name' => 'Rounding Zone',
@@ -259,7 +259,7 @@ class TaxCalculatorTest extends TaxTestCase
 
     public function test_calculate_shipping_tax_enabled(): void
     {
-        config(['tax.calculate_tax_on_shipping' => true]);
+        config(['tax.defaults.calculate_tax_on_shipping' => true]);
 
         $zone = TaxZone::create([
             'name' => 'Shipping Zone',
@@ -282,7 +282,7 @@ class TaxCalculatorTest extends TaxTestCase
 
     public function test_calculate_shipping_tax_disabled(): void
     {
-        config(['tax.calculate_tax_on_shipping' => false]);
+        config(['tax.defaults.calculate_tax_on_shipping' => false]);
 
         $result = $this->calculator->calculateShippingTax(5000);
 
@@ -357,7 +357,7 @@ class TaxCalculatorTest extends TaxTestCase
 
     public function test_calculate_tax_with_unknown_zone_error_behavior(): void
     {
-        config(['tax.zone_resolution.unknown_zone_behavior' => 'error']);
+        config(['tax.features.zone_resolution.unknown_zone_behavior' => 'error']);
 
         $this->expectException(TaxZoneNotFoundException::class);
 
@@ -367,7 +367,7 @@ class TaxCalculatorTest extends TaxTestCase
 
     public function test_calculate_tax_with_unknown_zone_zero_behavior(): void
     {
-        config(['tax.zone_resolution.unknown_zone_behavior' => 'zero']);
+        config(['tax.features.zone_resolution.unknown_zone_behavior' => 'zero']);
 
         $result = $this->calculator->calculateTax(10000, 'standard');
 
@@ -377,7 +377,7 @@ class TaxCalculatorTest extends TaxTestCase
 
     public function test_calculate_tax_with_address_priority(): void
     {
-        config(['tax.zone_resolution.address_priority' => 'billing']);
+        config(['tax.features.zone_resolution.address_priority' => 'billing']);
 
         $zone = TaxZone::create([
             'name' => 'Billing Priority',
@@ -407,7 +407,7 @@ class TaxCalculatorTest extends TaxTestCase
 
     public function test_calculate_tax_with_disabled_exemptions(): void
     {
-        config(['tax.exemptions.enabled' => false]);
+        config(['tax.features.exemptions.enabled' => false]);
 
         $zone = TaxZone::create([
             'name' => 'Disabled Exemptions',

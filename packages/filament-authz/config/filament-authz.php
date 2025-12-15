@@ -143,8 +143,6 @@ return [
             'create',
             'update',
             'delete',
-            'restore',
-            'forceDelete',
         ],
     ],
 

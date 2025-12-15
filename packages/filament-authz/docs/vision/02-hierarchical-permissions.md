@@ -218,8 +218,6 @@ final class ImplicitPermissionService
         'manage' => ['viewAny', 'view', 'create', 'update', 'delete'],
         'update' => ['view'],
         'delete' => ['view'],
-        'restore' => ['view'],
-        'forceDelete' => ['delete', 'view'],
         'export' => ['viewAny'],
     ];
 
@@ -298,11 +296,6 @@ final class PermissionBuilder
         return $this->abilities(['viewAny', 'view', 'create', 'update', 'delete']);
     }
 
-    public function withSoftDeletes(): self
-    {
-        return $this->abilities(['restore', 'forceDelete']);
-    }
-
     public function abilities(array $abilities): self
     {
         $this->abilities = array_merge($this->abilities, $abilities);
@@ -337,7 +330,6 @@ final class PermissionBuilder
 // Usage
 PermissionBuilder::for('orders')
     ->withCrud()
-    ->withSoftDeletes()
     ->ability('export')
     ->ability('cancel')
     ->create();
@@ -438,7 +430,6 @@ return [
             'manage' => ['viewAny', 'view', 'create', 'update', 'delete'],
             'update' => ['view'],
             'delete' => ['view'],
-        ],
     ],
 
     'groups' => [

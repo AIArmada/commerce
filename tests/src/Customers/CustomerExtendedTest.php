@@ -333,20 +333,4 @@ describe('Customer Model - Extended Coverage', function (): void {
         });
     });
 
-    describe('Soft Deletes', function (): void {
-        it('can be soft deleted', function (): void {
-            $customer = Customer::create([
-                'first_name' => 'Delete',
-                'last_name' => 'Test',
-                'email' => 'delete-test-' . uniqid() . '@example.com',
-                'status' => CustomerStatus::Active,
-            ]);
-
-            $customerId = $customer->id;
-            $customer->delete();
-
-            expect(Customer::find($customerId))->toBeNull()
-                ->and(Customer::withTrashed()->find($customerId))->not->toBeNull();
-        });
-    });
 });

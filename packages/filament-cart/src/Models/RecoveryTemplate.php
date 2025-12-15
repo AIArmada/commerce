@@ -7,7 +7,6 @@ namespace AIArmada\FilamentCart\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * @property string $id
@@ -33,13 +32,11 @@ use Illuminate\Database\Eloquent\SoftDeletes;
  * @property int $times_converted
  * @property \Illuminate\Support\Carbon $created_at
  * @property \Illuminate\Support\Carbon $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, RecoveryAttempt> $attempts
  */
 class RecoveryTemplate extends Model
 {
     use HasUuids;
-    use SoftDeletes;
 
     protected $fillable = [
         'name',

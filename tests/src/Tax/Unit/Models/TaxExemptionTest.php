@@ -368,14 +368,14 @@ class TaxExemptionTest extends TaxTestCase
 
     public function test_get_table_method_with_custom_config(): void
     {
-        config(['tax.tables.tax_exemptions' => 'custom_tax_exemptions']);
+        config(['tax.database.tables.tax_exemptions' => 'custom_tax_exemptions']);
 
         $exemption = new TaxExemption();
 
         $this->assertEquals('custom_tax_exemptions', $exemption->getTable());
 
         // Reset to default
-        config(['tax.tables.tax_exemptions' => 'tax_exemptions']);
+        config(['tax.database.tables.tax_exemptions' => 'tax_exemptions']);
     }
 
     public function test_exemptable_relationship_is_morph_to(): void

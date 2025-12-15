@@ -52,14 +52,4 @@ class CategoryPolicy
 
         return true;
     }
-
-    public function restore($user, Category $category): bool
-    {
-        return $this->update($user, $category);
-    }
-
-    public function forceDelete($user, Category $category): bool
-    {
-        return $this->delete($user, $category);
-    }
 }
