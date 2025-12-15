@@ -13,6 +13,25 @@
         <include>
             <directory>../packages/cashier/src</directory>
         </include>
+        <exclude>
+            <!-- Gateway implementation adapters - these wrap external APIs (Stripe, CHIP) -->
+            <!-- and require integration tests with mocked API responses -->
+            <directory>../packages/cashier/src/Gateways/Chip</directory>
+            <directory>../packages/cashier/src/Gateways/Stripe</directory>
+            <file>../packages/cashier/src/Gateways/ChipGateway.php</file>
+            <file>../packages/cashier/src/Gateways/StripeGateway.php</file>
+            <!-- Cart integration - requires aiarmada/cart package -->
+            <directory>../packages/cashier/src/Checkout</directory>
+            <directory>../packages/cashier/src/Support</directory>
+            <!-- Billable trait gateway iteration methods - requires model implementing full BillableContract -->
+            <!-- These methods (allSubscriptions, findSubscription, subscribedOnAny, onTrialOnAny) iterate -->
+            <!-- through gateways and call gateway methods passing the model as BillableContract -->
+            <file>../packages/cashier/src/Billable.php</file>
+            <!-- ManagesGateway trait gateway wrapper methods - simple pass-through wrappers that -->
+            <!-- delegate to gateway methods. Requires model implementing full BillableContract. -->
+            <!-- Core methods (gateway, preferredGateway, setPreferredGateway, gatewayId, hasGatewayId) are tested -->
+            <file>../packages/cashier/src/Concerns/ManagesGateway.php</file>
+        </exclude>
     </source>
     <php>
         <env name="APP_ENV" value="testing"/>

@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Cart\AI;
 
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\Cart\Support\CartOwnerScope;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Throwable;
 
 /**
  * AI-powered recovery strategy optimizer.
@@ -28,8 +29,9 @@ final class RecoveryOptimizer
      */
     private array $strategyEffectiveness = [];
 
-    public function __construct()
-    {
+    public function __construct(
+        private readonly StorageInterface $storage
+    ) {
         $this->configuration = config('cart.ai.recovery', [
             'enabled' => true,
             'min_samples_for_optimization' => 100,
@@ -163,32 +165,39 @@ final class RecoveryOptimizer
      */
     public function getRecommendationsForValueRange(int $minCents, int $maxCents): array
     {
-        $cacheKey = "recovery:recommendations:{$minCents}:{$maxCents}";
+        $cacheKey = "recovery:recommendations:{$this->ownerCacheKeyPart()}:{$minCents}:{$maxCents}";
 
         return Cache::remember($cacheKey, 3600, function () use ($minCents, $maxCents) {
             $cartsTable = config('cart.database.table', 'carts');
 
-            $data = DB::table($cartsTable)
-                ->whereBetween('total', [$minCents, $maxCents])
+            $query = DB::table($cartsTable)
                 ->whereNotNull('checkout_abandoned_at')
                 ->where('checkout_abandoned_at', '>', now()->subDays(30))
-                ->selectRaw('
-                    COUNT(*) as total_abandoned,
-                    SUM(CASE WHEN recovered_at IS NOT NULL THEN 1 ELSE 0 END) as recovered,
-                    AVG(recovery_attempts) as avg_attempts
-                ')
-                ->first();
+                ->whereNotNull('items')
+                ->select(['items', 'recovered_at', 'recovery_attempts']);
 
-            $recoveryRate = $data && $data->total_abandoned > 0
-                ? $data->recovered / $data->total_abandoned
-                : 0;
+            $carts = CartOwnerScope::apply($query, $this->storage)->get();
+
+            $filtered = $carts->filter(function (object $cart) use ($minCents, $maxCents): bool {
+                $total = $this->calculateTotalFromItems($cart->items ?? []);
+
+                return $total >= $minCents && $total <= $maxCents;
+            });
+
+            $totalAbandoned = $filtered->count();
+            $recovered = $filtered->filter(fn (object $cart): bool => $cart->recovered_at !== null)->count();
+            $avgAttempts = $totalAbandoned > 0
+                ? (float) $filtered->avg(fn (object $cart): int => (int) ($cart->recovery_attempts ?? 0))
+                : 0.0;
+
+            $recoveryRate = $totalAbandoned > 0 ? $recovered / $totalAbandoned : 0;
 
             return [
                 'value_range' => ['min' => $minCents, 'max' => $maxCents],
-                'total_abandoned' => $data->total_abandoned ?? 0,
-                'recovered' => $data->recovered ?? 0,
+                'total_abandoned' => $totalAbandoned,
+                'recovered' => $recovered,
                 'recovery_rate' => round($recoveryRate * 100, 2),
-                'avg_attempts' => round($data->avg_attempts ?? 0, 1),
+                'avg_attempts' => round($avgAttempts, 1),
                 'recommended_strategy' => $this->getRecommendedStrategyForValueRange($minCents, $maxCents, $recoveryRate),
             ];
         });
@@ -415,19 +424,16 @@ final class RecoveryOptimizer
         ?int $timeToRecoveryMinutes,
         ?int $discountUsedCents
     ): void {
-        try {
-            DB::table('cart_recovery_outcomes')->insert([
-                'id' => (string) Str::uuid(),
-                'cart_id' => $cartId,
-                'strategy_id' => $strategyId,
-                'recovered' => $recovered,
-                'time_to_recovery_minutes' => $timeToRecoveryMinutes,
-                'discount_used_cents' => $discountUsedCents,
-                'created_at' => now(),
-            ]);
-        } catch (Throwable) {
-            // Table may not exist - silently ignore
-        }
+        DB::table('cart_recovery_outcomes')->insert([
+            'id' => (string) Str::uuid(),
+            'cart_id' => $cartId,
+            'strategy_id' => $strategyId,
+            'recovered' => $recovered,
+            'time_to_recovery_minutes' => $timeToRecoveryMinutes,
+            'discount_used_cents' => $discountUsedCents,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     /**
@@ -448,5 +454,43 @@ final class RecoveryOptimizer
     private function saveStrategies(): void
     {
         Cache::put('recovery:strategy_effectiveness', $this->strategyEffectiveness, 86400 * 30);
+    }
+
+    private function calculateTotalFromItems(mixed $items): int
+    {
+        if (is_string($items)) {
+            $items = json_decode($items, true) ?: [];
+        }
+
+        if (! is_array($items)) {
+            return 0;
+        }
+
+        $total = 0;
+        foreach ($items as $item) {
+            if (! is_array($item)) {
+                continue;
+            }
+
+            $price = (int) ($item['price'] ?? 0);
+            $quantity = (int) ($item['quantity'] ?? 1);
+            $total += max(0, $price) * max(0, $quantity);
+        }
+
+        return $total;
+    }
+
+    private function ownerCacheKeyPart(): string
+    {
+        $ownerType = $this->storage->getOwnerType();
+        $ownerId = $this->storage->getOwnerId();
+
+        if ($ownerType === null || $ownerId === null) {
+            return 'global';
+        }
+
+        $normalizedOwnerType = str_replace('\\', '.', $ownerType);
+
+        return 'owner:' . $normalizedOwnerType . ':' . (string) $ownerId;
     }
 }

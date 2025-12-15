@@ -111,7 +111,7 @@ describe('Promotion Model', function (): void {
                 'name' => '20% Off Sale',
                 'code' => 'SALE20-' . uniqid(),
                 'type' => PromotionType::Percentage,
-                'discount_value' => 2000,
+                'discount_value' => 20,
                 'is_active' => true,
             ]);
 

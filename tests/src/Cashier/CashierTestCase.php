@@ -112,6 +112,7 @@ abstract class CashierTestCase extends Orchestra
             $table->string('phone')->nullable();
             $table->string('stripe_id')->nullable()->index();
             $table->string('chip_id')->nullable()->index();
+            $table->string('preferred_gateway')->nullable();
             $table->string('pm_type')->nullable();
             $table->string('pm_last_four', 4)->nullable();
             $table->timestamp('trial_ends_at')->nullable();

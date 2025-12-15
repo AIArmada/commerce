@@ -7,6 +7,7 @@ use AIArmada\Cart\Queries\GetAbandonedCartsQuery;
 use AIArmada\Cart\Queries\GetCartSummaryQuery;
 use AIArmada\Cart\Queries\SearchCartsQuery;
 use AIArmada\Cart\ReadModels\CartReadModel;
+use AIArmada\Cart\Storage\StorageInterface;
 use Illuminate\Cache\ArrayStore;
 use Illuminate\Cache\Repository;
 use Illuminate\Database\ConnectionInterface;
@@ -38,8 +39,12 @@ describe('CartQueryHandler', function (): void {
         $this->connection = Mockery::mock(ConnectionInterface::class);
         $this->connection->shouldReceive('table')->andReturn($this->queryBuilder);
 
+        $this->storage = Mockery::mock(StorageInterface::class);
+        $this->storage->shouldReceive('getOwnerType')->andReturn(null);
+        $this->storage->shouldReceive('getOwnerId')->andReturn(null);
+
         $this->cache = new Repository(new ArrayStore);
-        $this->readModel = new CartReadModel($this->connection, $this->cache);
+        $this->readModel = new CartReadModel($this->connection, $this->cache, $this->storage);
         $this->handler = new CartQueryHandler($this->readModel);
     });
 

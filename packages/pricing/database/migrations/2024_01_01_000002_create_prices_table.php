@@ -12,7 +12,7 @@ return new class extends Migration
     {
         Schema::create(config('pricing.tables.prices', 'prices'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->uuid('price_list_id')->nullable();
+            $table->foreignUuid('price_list_id');
 
             // Polymorphic: Product, Variant, etc.
             $table->uuidMorphs('priceable');
@@ -34,6 +34,7 @@ return new class extends Migration
             // Indexes
             $table->index(['priceable_type', 'priceable_id', 'price_list_id']);
             $table->index(['starts_at', 'ends_at']);
+            $table->unique(['price_list_id', 'priceable_type', 'priceable_id', 'min_quantity'], 'prices_unique_per_quantity');
         });
     }
 

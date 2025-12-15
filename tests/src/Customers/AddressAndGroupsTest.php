@@ -149,6 +149,7 @@ describe('Segment Model', function (): void {
     it('can create a segment', function (): void {
         $segment = Segment::create([
             'name' => 'High Spenders',
+            'slug' => 'high-spenders-' . uniqid(),
             'description' => 'Customers who spent over RM10,000',
             'is_active' => true,
         ]);
@@ -165,6 +166,7 @@ describe('Segment Model', function (): void {
 
         $segment = Segment::create([
             'name' => 'Rule-based Segment',
+            'slug' => 'rule-based-' . uniqid(),
             'conditions' => $conditions,
             'is_active' => true,
         ]);
@@ -173,8 +175,8 @@ describe('Segment Model', function (): void {
     });
 
     it('can filter active segments', function (): void {
-        Segment::create(['name' => 'Active Segment', 'is_active' => true]);
-        Segment::create(['name' => 'Inactive Segment', 'is_active' => false]);
+        Segment::create(['name' => 'Active Segment', 'slug' => 'active-' . uniqid(), 'is_active' => true]);
+        Segment::create(['name' => 'Inactive Segment', 'slug' => 'inactive-' . uniqid(), 'is_active' => false]);
 
         expect(Segment::active()->count())->toBeGreaterThanOrEqual(1);
     });

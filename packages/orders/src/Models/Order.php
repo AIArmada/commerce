@@ -15,7 +15,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use OwenIt\Auditing\Contracts\Auditable;
@@ -45,7 +44,6 @@ use Spatie\ModelStates\HasStates;
  * @property string|null $cancellation_reason
  * @property Carbon $created_at
  * @property Carbon $updated_at
- * @property Carbon|null $deleted_at
  * @property-read Collection<int, OrderItem> $items
  * @property-read OrderAddress|null $billingAddress
  * @property-read OrderAddress|null $shippingAddress
@@ -55,7 +53,10 @@ use Spatie\ModelStates\HasStates;
  */
 class Order extends Model implements Auditable
 {
-    use HasCommerceAudit;
+    use HasCommerceAudit {
+        getAuditThreshold as protected getAuditThresholdFromTrait;
+        readyForAuditing as protected readyForAuditingFromTrait;
+    }
 
     /** @use HasFactory<OrderFactory> */
     use HasFactory;
@@ -63,7 +64,6 @@ class Order extends Model implements Auditable
     use HasOwner;
     use HasStates;
     use HasUuids;
-    use SoftDeletes;
 
     public $incrementing = false;
 
@@ -314,14 +314,28 @@ class Order extends Model implements Auditable
 
     public function recalculateTotals(): self
     {
-        $subtotal = $this->items()->sum('total');
-        $taxTotal = $this->items()->sum('tax_amount');
+        $itemsTotal = (int) $this->items()->sum('total');
+        $taxTotal = (int) $this->items()->sum('tax_amount');
 
-        $this->subtotal = $subtotal;
+        $this->subtotal = $itemsTotal;
         $this->tax_total = $taxTotal;
-        $this->grand_total = $subtotal + $this->shipping_total + $taxTotal - $this->discount_total;
+        $this->grand_total = $itemsTotal + $this->shipping_total - $this->discount_total;
 
         return $this;
+    }
+
+    public function getAuditThreshold(): int
+    {
+        return (int) config('orders.audit.threshold', $this->getAuditThresholdFromTrait());
+    }
+
+    public function readyForAuditing(): bool
+    {
+        if (! (bool) config('orders.audit.enabled', true)) {
+            return false;
+        }
+
+        return $this->readyForAuditingFromTrait();
     }
 
     /**

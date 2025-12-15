@@ -150,7 +150,7 @@ final readonly class DatabaseStorage implements StorageInterface
             // If owner scoped, only flush owner's carts
             if ($this->ownerType !== null && $this->ownerId !== null) {
                 $query->where('owner_type', $this->ownerType)
-                    ->where('owner_id', $this->ownerId);
+                    ->where('owner_id', (string) $this->ownerId);
                 $query->delete();
             } else {
                 $query->truncate();
@@ -170,10 +170,7 @@ final readonly class DatabaseStorage implements StorageInterface
         $query = $this->database->table($this->table)
             ->where('identifier', $identifier);
 
-        if ($this->ownerType !== null && $this->ownerId !== null) {
-            $query->where('owner_type', $this->ownerType)
-                ->where('owner_id', $this->ownerId);
-        }
+        $this->applyOwnerConstraints($query);
 
         return $query->pluck('instance')->toArray();
     }
@@ -186,10 +183,7 @@ final readonly class DatabaseStorage implements StorageInterface
         $query = $this->database->table($this->table)
             ->where('identifier', $identifier);
 
-        if ($this->ownerType !== null && $this->ownerId !== null) {
-            $query->where('owner_type', $this->ownerType)
-                ->where('owner_id', $this->ownerId);
-        }
+        $this->applyOwnerConstraints($query);
 
         $query->delete();
     }
@@ -618,12 +612,27 @@ final readonly class DatabaseStorage implements StorageInterface
             ->where('identifier', $identifier)
             ->where('instance', $instance);
 
-        if ($this->ownerType !== null && $this->ownerId !== null) {
-            $query->where('owner_type', $this->ownerType)
-                ->where('owner_id', $this->ownerId);
-        }
+        $this->applyOwnerConstraints($query);
 
         return $query;
+    }
+
+    /**
+     * Apply owner constraints to a query.
+     *
+     * When no owner is set, operations are scoped to global carts only.
+     */
+    private function applyOwnerConstraints(Builder $query): void
+    {
+        if ($this->ownerType !== null && $this->ownerId !== null) {
+            $query->where('owner_type', $this->ownerType)
+                ->where('owner_id', (string) $this->ownerId);
+
+            return;
+        }
+
+        $query->where('owner_type', '')
+            ->where('owner_id', '');
     }
 
     /**
@@ -739,7 +748,18 @@ final readonly class DatabaseStorage implements StorageInterface
         }
 
         try {
-            return json_decode($jsonData, true, 512, JSON_THROW_ON_ERROR);
+            $decoded = json_decode($jsonData, true, 512, JSON_THROW_ON_ERROR);
+
+            if (! is_array($decoded)) {
+                logger()->error("Failed to decode {$type} JSON", [
+                    'type' => $type,
+                    'error' => 'Decoded value is not an array.',
+                ]);
+
+                return $fallback;
+            }
+
+            return $decoded;
         } catch (JsonException $e) {
             logger()->error("Failed to decode {$type} JSON", [
                 'type' => $type,
@@ -765,6 +785,8 @@ final readonly class DatabaseStorage implements StorageInterface
 
             if ($current) {
                 $updateData = array_merge($data, [
+                    'owner_type' => $this->ownerType ?? '',
+                    'owner_id' => $this->ownerId !== null ? (string) $this->ownerId : '',
                     'version' => $current->version + 1,
                     'updated_at' => now(),
                     'expires_at' => $this->calculateExpiresAt(),
@@ -782,17 +804,13 @@ final readonly class DatabaseStorage implements StorageInterface
                     'id' => Str::uuid(),
                     'identifier' => $identifier,
                     'instance' => $instance,
+                    'owner_type' => $this->ownerType ?? '',
+                    'owner_id' => $this->ownerId !== null ? (string) $this->ownerId : '',
                     'version' => 1,
                     'expires_at' => $this->calculateExpiresAt(),
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
-
-                // Include owner columns in insert if set
-                if ($this->ownerType !== null && $this->ownerId !== null) {
-                    $insertData['owner_type'] = $this->ownerType;
-                    $insertData['owner_id'] = $this->ownerId;
-                }
 
                 $this->database->table($this->table)->insert($insertData);
             }

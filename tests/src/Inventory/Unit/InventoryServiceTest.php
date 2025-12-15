@@ -82,6 +82,20 @@ class InventoryServiceTest extends InventoryTestCase
         $this->inventoryService->ship($this->item, $this->locationA->id, 3);
     }
 
+    public function test_shipping_considers_reserved_quantity(): void
+    {
+        $this->inventoryService->receive($this->item, $this->locationA->id, 20);
+
+        $level = $this->inventoryService->getLevel($this->item, $this->locationA->id);
+        expect($level)->not->toBeNull();
+
+        $level->update(['quantity_reserved' => 15]);
+
+        $this->expectException(InsufficientStockException::class);
+
+        $this->inventoryService->ship($this->item, $this->locationA->id, 10);
+    }
+
     public function test_transfers_inventory_between_locations_and_updates_levels(): void
     {
         Event::fake();

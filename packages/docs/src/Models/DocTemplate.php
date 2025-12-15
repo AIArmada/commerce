@@ -66,15 +66,17 @@ final class DocTemplate extends Model
     public function setAsDefault(): void
     {
         // Build query to remove default from other templates of the same type
-        $query = self::where('id', '!=', $this->id)
+        $query = self::whereKeyNot($this->id)
             ->where('doc_type', $this->doc_type);
 
         // Scope to same owner context
-        if ($this->owner_type !== null && $this->owner_id !== null) {
-            $query->where('owner_type', $this->owner_type)
-                ->where('owner_id', $this->owner_id);
-        } else {
-            $query->whereNull('owner_type')->whereNull('owner_id');
+        if (config('docs.owner.enabled', false)) {
+            if ($this->owner_type !== null && $this->owner_id !== null) {
+                $query->where('owner_type', $this->owner_type)
+                    ->where('owner_id', $this->owner_id);
+            } else {
+                $query->whereNull('owner_type')->whereNull('owner_id');
+            }
         }
 
         $query->update(['is_default' => false]);

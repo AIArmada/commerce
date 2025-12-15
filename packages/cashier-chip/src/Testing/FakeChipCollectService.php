@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\CashierChip\Testing;
 
+use AIArmada\Chip\Builders\PurchaseBuilder;
+use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Data\ClientData;
 use AIArmada\Chip\Data\ClientDetailsData;
 use AIArmada\Chip\Data\PurchaseData;
+use AIArmada\Chip\Services\ChipCollectService;
+use Mockery;
 
 /**
  * Fake CHIP Collect Service for testing purposes.
@@ -15,7 +19,7 @@ use AIArmada\Chip\Data\PurchaseData;
  * as the real ChipCollectService, allowing it to be used as a
  * drop-in replacement during tests.
  */
-class FakeChipCollectService
+class FakeChipCollectService extends ChipCollectService
 {
     /**
      * The fake CHIP client.
@@ -28,6 +32,19 @@ class FakeChipCollectService
     public function __construct(?FakeChipClient $fakeClient = null)
     {
         $this->fakeClient = $fakeClient ?? new FakeChipClient();
+
+        // Pass a dummy client to the parent constructor to satisfy requirements
+        // The parent methods won't be used since we override everything
+        /** @var Mockery\MockInterface&ChipCollectClient $dummyClient */
+        $dummyClient = Mockery::mock(ChipCollectClient::class);
+        $dummyClient->shouldIgnoreMissing();
+
+        parent::__construct($dummyClient);
+    }
+
+    public function purchase(): PurchaseBuilder
+    {
+        return new PurchaseBuilder($this);
     }
 
     /**
@@ -225,12 +242,12 @@ class FakeChipCollectService
 
     /**
      * List recurring tokens for a client.
-     *
-     * @return array<int, array<string, mixed>>
      */
     public function listClientRecurringTokens(string $clientId): array
     {
-        return $this->fakeClient->listClientRecurringTokens($clientId);
+        return [
+            'results' => $this->fakeClient->listClientRecurringTokens($clientId),
+        ];
     }
 
     /**
@@ -322,22 +339,32 @@ class FakeChipCollectService
 
     /**
      * Get a company statement.
-     *
-     * @return \AIArmada\Chip\Data\CompanyStatementData
      */
-    public function getCompanyStatement(string $statementId): mixed
+    public function getCompanyStatement(string $statementId): \AIArmada\Chip\Data\CompanyStatementData
     {
-        return null;
+        return \AIArmada\Chip\Data\CompanyStatementData::from([
+            'id' => $statementId,
+            'url' => 'http://example.com/statement.pdf',
+            'period_start' => time(),
+            'period_end' => time(),
+            'created_on' => time(),
+            'status' => 'generated',
+        ]);
     }
 
     /**
      * Cancel a company statement.
-     *
-     * @return \AIArmada\Chip\Data\CompanyStatementData
      */
-    public function cancelCompanyStatement(string $statementId): mixed
+    public function cancelCompanyStatement(string $statementId): \AIArmada\Chip\Data\CompanyStatementData
     {
-        return null;
+        return \AIArmada\Chip\Data\CompanyStatementData::from([
+            'id' => $statementId,
+            'url' => 'http://example.com/statement.pdf',
+            'period_start' => time(),
+            'period_end' => time(),
+            'created_on' => time(),
+            'status' => 'cancelled',
+        ]);
     }
 
     /**

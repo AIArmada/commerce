@@ -37,6 +37,14 @@ abstract class CashierChipTestCase extends Orchestra
         Cashier::useSubscriptionModel(Subscription::class);
         Cashier::useSubscriptionItemModel(SubscriptionItem::class);
 
+        // Manually require factories due to autoload issues in test environment
+        if (file_exists(__DIR__ . '/../../../../packages/cashier-chip/database/factories/SubscriptionFactory.php')) {
+            require_once __DIR__ . '/../../../../packages/cashier-chip/database/factories/SubscriptionFactory.php';
+        }
+        if (file_exists(__DIR__ . '/../../../../packages/cashier-chip/database/factories/SubscriptionItemFactory.php')) {
+            require_once __DIR__ . '/../../../../packages/cashier-chip/database/factories/SubscriptionItemFactory.php';
+        }
+
         // Enable fake CHIP service for all tests
         $this->fakeChip = Cashier::fake();
     }

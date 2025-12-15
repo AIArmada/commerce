@@ -49,12 +49,23 @@ describe('Order Transitions', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $transition = new ShipmentCreated($order, 'J&T', 'JT123456789', 'ship_123');
+            $transition = new ShipmentCreated($order, 'J&T', 'JT123456789', 'ship_123', [
+                'source' => 'test',
+                'warehouse' => 'WH-1',
+            ]);
             $result = $transition->handle();
 
             expect($result)->toBe($order);
             expect($order->status)->toBeInstanceOf(Shipped::class);
             expect($order->shipped_at)->not->toBeNull();
+
+            $order->refresh();
+            expect(data_get($order->metadata, 'shipping.carrier'))->toBe('J&T');
+            expect(data_get($order->metadata, 'shipping.tracking_number'))->toBe('JT123456789');
+            expect(data_get($order->metadata, 'shipping.shipment_id'))->toBe('ship_123');
+            expect(data_get($order->metadata, 'shipping.shipped_at'))->not->toBeNull();
+            expect(data_get($order->metadata, 'shipping.metadata.source'))->toBe('test');
+            expect(data_get($order->metadata, 'shipping.metadata.warehouse'))->toBe('WH-1');
         });
     });
 
@@ -68,12 +79,18 @@ describe('Order Transitions', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $transition = new DeliveryConfirmed($order);
+            $transition = new DeliveryConfirmed($order, [
+                'delivered_by' => 'test-runner',
+            ]);
             $result = $transition->handle();
 
             expect($result)->toBe($order);
             expect($order->status)->toBeInstanceOf(Delivered::class);
             expect($order->delivered_at)->not->toBeNull();
+
+            $order->refresh();
+            expect(data_get($order->metadata, 'shipping.delivered_at'))->not->toBeNull();
+            expect(data_get($order->metadata, 'shipping.delivery_metadata.delivered_by'))->toBe('test-runner');
         });
     });
 

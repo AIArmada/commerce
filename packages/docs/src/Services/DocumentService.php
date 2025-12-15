@@ -20,7 +20,8 @@ final class DocumentService
 {
     public function __construct(
         private readonly SequenceManager $sequenceManager,
-    ) {}
+    ) {
+    }
 
     /**
      * Create a new document.
@@ -72,7 +73,7 @@ final class DocumentService
             if (isset($data['items'])) {
                 $totals = $this->calculateTotals(
                     $data['items'],
-                    $data['discount_amount'] ?? $doc->discount_amount
+                    (float) ($data['discount_amount'] ?? $doc->discount_amount)
                 );
                 $data = array_merge($data, $totals);
             }
@@ -91,11 +92,13 @@ final class DocumentService
      */
     public function convert(Doc $source, DocType $targetType, ?Model $owner = null): Doc
     {
-        $sourceType = DocType::tryFrom($source->doc_type);
+        $sourceType = $source->doc_type instanceof DocType
+            ? $source->doc_type
+            : DocType::tryFrom($source->doc_type);
 
         // Validate conversion is allowed
         $allowedSources = $targetType->getConversionSources();
-        if ($sourceType && ! in_array($sourceType, $allowedSources, true)) {
+        if ($sourceType && !in_array($sourceType, $allowedSources, true)) {
             throw new InvalidArgumentException(
                 "Cannot convert {$sourceType->label()} to {$targetType->label()}"
             );
@@ -170,7 +173,8 @@ final class DocumentService
      */
     public function clone(Doc $source, ?Model $owner = null): Doc
     {
-        $type = DocType::tryFrom($source->doc_type) ?? DocType::Invoice;
+        $val = $source->doc_type;
+        $type = ($val instanceof DocType ? $val : DocType::tryFrom($val)) ?? DocType::Invoice;
 
         return $this->create($type, [
             'docable_type' => $source->docable_type,

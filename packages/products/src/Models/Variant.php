@@ -156,9 +156,10 @@ class Variant extends Model implements HasMedia
      */
     public function getFormattedPrice(): string
     {
-        $currency = config('products.currency.default', 'MYR');
+        $currency = mb_strtoupper($this->product?->currency ?: config('products.currency.default', 'MYR'));
+        $asMajorUnits = ! (bool) config('products.currency.store_in_cents', true);
 
-        return Money::$currency($this->getEffectivePrice(), true)->format();
+        return Money::$currency($this->getEffectivePrice(), $asMajorUnits)->format();
     }
 
     /**
@@ -180,9 +181,10 @@ class Variant extends Model implements HasMedia
             return null;
         }
 
-        $currency = config('products.currency.default', 'MYR');
+        $currency = mb_strtoupper($this->product?->currency ?: config('products.currency.default', 'MYR'));
+        $asMajorUnits = ! (bool) config('products.currency.store_in_cents', true);
 
-        return Money::$currency($comparePrice, true)->format();
+        return Money::$currency($comparePrice, $asMajorUnits)->format();
     }
 
     // =========================================================================

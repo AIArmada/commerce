@@ -214,11 +214,26 @@ class CartManager implements CartManagerInterface
      */
     public function getById(string $uuid): ?Cart
     {
+        if (! $this->storage instanceof Storage\DatabaseStorage) {
+            return null;
+        }
+
         $tableName = config('cart.database.table', 'carts');
 
-        $snapshot = app('db')->table($tableName)
-            ->where('id', $uuid)
-            ->first();
+        $query = app('db')->table($tableName)->where('id', $uuid);
+
+        $ownerType = $this->storage->getOwnerType();
+        $ownerId = $this->storage->getOwnerId();
+
+        if ($ownerType !== null && $ownerId !== null) {
+            $query->where('owner_type', $ownerType)
+                ->where('owner_id', (string) $ownerId);
+        } else {
+            $query->where('owner_type', '')
+                ->where('owner_id', '');
+        }
+
+        $snapshot = $query->first(['identifier', 'instance']);
 
         if (! $snapshot) {
             return null;

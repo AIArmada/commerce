@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\ReadModels;
 
+use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\Cart\Support\CartOwnerScope;
 use DateTimeInterface;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Database\ConnectionInterface;
+use Illuminate\Database\Query\Builder;
 
 /**
  * Cart read model optimized for query operations.
@@ -22,7 +25,8 @@ final class CartReadModel
 
     public function __construct(
         private readonly ConnectionInterface $connection,
-        private readonly CacheRepository $cache
+        private readonly CacheRepository $cache,
+        private readonly StorageInterface $storage
     ) {}
 
     /**
@@ -44,7 +48,7 @@ final class CartReadModel
      */
     public function getCartSummary(string $cartId): ?array
     {
-        $cacheKey = self::CACHE_PREFIX . $cartId . ':summary';
+        $cacheKey = $this->cacheKey($cartId, 'summary');
 
         /** @var array{id: string, identifier: string, instance: string, item_count: int, total_quantity: int, subtotal_cents: int, total_cents: int, savings_cents: int, condition_count: int, created_at: string, updated_at: string}|null $cached */
         $cached = $this->cache->get($cacheKey);
@@ -69,9 +73,7 @@ final class CartReadModel
      */
     public function getCartDetails(string $cartId): ?array
     {
-        $tableName = config('cart.database.table', 'carts');
-
-        $cart = $this->connection->table($tableName)
+        $cart = $this->baseQuery()
             ->where('id', $cartId)
             ->first();
 
@@ -106,9 +108,7 @@ final class CartReadModel
         ?int $minValueCents = null,
         int $limit = 100
     ): array {
-        $tableName = config('cart.database.table', 'carts');
-
-        $query = $this->connection->table($tableName)
+        $query = $this->baseQuery()
             ->whereNotNull('checkout_abandoned_at')
             ->where('checkout_abandoned_at', '<=', $olderThan)
             ->whereNull('recovered_at')
@@ -163,9 +163,7 @@ final class CartReadModel
         int $limit = 50,
         int $offset = 0
     ): array {
-        $tableName = config('cart.database.table', 'carts');
-
-        $query = $this->connection->table($tableName);
+        $query = $this->baseQuery();
 
         if ($identifier !== null) {
             $query->where('identifier', 'like', "%{$identifier}%");
@@ -229,25 +227,23 @@ final class CartReadModel
      */
     public function getCartStatistics(DateTimeInterface $since): array
     {
-        $tableName = config('cart.database.table', 'carts');
-
-        $activeCarts = $this->connection->table($tableName)
+        $activeCarts = $this->baseQuery()
             ->where('updated_at', '>=', $since)
             ->whereNull('checkout_abandoned_at')
             ->count();
 
-        $abandonedCarts = $this->connection->table($tableName)
+        $abandonedCarts = $this->baseQuery()
             ->whereNotNull('checkout_abandoned_at')
             ->where('checkout_abandoned_at', '>=', $since)
             ->count();
 
-        $recoveredCarts = $this->connection->table($tableName)
+        $recoveredCarts = $this->baseQuery()
             ->whereNotNull('recovered_at')
             ->where('recovered_at', '>=', $since)
             ->count();
 
         // Calculate total value and average items from recent carts
-        $recentCarts = $this->connection->table($tableName)
+        $recentCarts = $this->baseQuery()
             ->where('updated_at', '>=', $since)
             ->get(['items']);
 
@@ -280,7 +276,7 @@ final class CartReadModel
      */
     public function invalidateCache(string $cartId): void
     {
-        $this->cache->forget(self::CACHE_PREFIX . $cartId . ':summary');
+        $this->cache->forget($this->cacheKey($cartId, 'summary'));
     }
 
     /**
@@ -302,9 +298,7 @@ final class CartReadModel
      */
     private function buildCartSummary(string $cartId): ?array
     {
-        $tableName = config('cart.database.table', 'carts');
-
-        $cart = $this->connection->table($tableName)
+        $cart = $this->baseQuery()
             ->where('id', $cartId)
             ->first();
 
@@ -351,5 +345,31 @@ final class CartReadModel
             'created_at' => $cart->created_at,
             'updated_at' => $cart->updated_at,
         ];
+    }
+
+    private function baseQuery(): Builder
+    {
+        $query = $this->connection->table(config('cart.database.table', 'carts'));
+
+        return CartOwnerScope::apply($query, $this->storage);
+    }
+
+    private function ownerCacheKeyPart(): string
+    {
+        $ownerType = $this->storage->getOwnerType();
+        $ownerId = $this->storage->getOwnerId();
+
+        if ($ownerType === null || $ownerId === null) {
+            return 'global';
+        }
+
+        $normalizedOwnerType = str_replace('\\', '.', $ownerType);
+
+        return 'owner:' . $normalizedOwnerType . ':' . (string) $ownerId;
+    }
+
+    private function cacheKey(string $cartId, string $suffix): string
+    {
+        return self::CACHE_PREFIX . $this->ownerCacheKeyPart() . ':' . $cartId . ':' . $suffix;
     }
 }

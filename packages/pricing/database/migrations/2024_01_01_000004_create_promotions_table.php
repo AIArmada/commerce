@@ -10,7 +10,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('pricing.tables.promotions', 'promotions'), function (Blueprint $table): void {
+        $jsonColumnType = (string) config('pricing.json_column_type', 'json');
+
+        Schema::create(config('pricing.tables.promotions', 'promotions'), function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('code')->nullable()->unique(); // Optional coupon code
@@ -35,7 +37,7 @@ return new class extends Migration
             $table->unsignedInteger('min_quantity')->nullable();
 
             // Conditions (JSON rules)
-            $table->json('conditions')->nullable();
+            $table->{$jsonColumnType}('conditions')->nullable();
 
             // Scheduling
             $table->timestamp('starts_at')->nullable();
@@ -47,18 +49,12 @@ return new class extends Migration
             // Indexes
             $table->index(['is_active', 'priority']);
             $table->index(['starts_at', 'ends_at']);
-            $table->index('code');
         });
 
         // Pivot table for promotion-product/category relationships
-        Schema::create('promotionables', function (Blueprint $table): void {
-            $table->uuid('promotion_id');
+        Schema::create(config('pricing.tables.promotionables', 'promotionables'), function (Blueprint $table): void {
+            $table->foreignUuid('promotion_id');
             $table->uuidMorphs('promotionable');
-
-            $table->foreign('promotion_id')
-                ->references('id')
-                ->on(config('pricing.tables.promotions', 'promotions'))
-                ->onDelete('cascade');
 
             $table->primary(['promotion_id', 'promotionable_id', 'promotionable_type']);
         });
@@ -66,7 +62,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('promotionables');
+        Schema::dropIfExists(config('pricing.tables.promotionables', 'promotionables'));
         Schema::dropIfExists(config('pricing.tables.promotions', 'promotions'));
     }
 };

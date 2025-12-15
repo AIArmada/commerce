@@ -182,7 +182,7 @@ class FakeChipClient
             'purchase' => [
                 'products' => $data['purchase']['products'] ?? [],
                 'currency' => $data['purchase']['currency'] ?? 'MYR',
-                'total' => $data['purchase']['total'] ?? 0,
+                'total' => $data['purchase']['total'] ?? $this->calculateTotal($data['purchase']['products'] ?? []),
                 'total_override' => $data['purchase']['total_override'] ?? null,
                 'language' => $data['purchase']['language'] ?? 'en',
                 'notes' => $data['purchase']['notes'] ?? null,
@@ -633,5 +633,23 @@ class FakeChipClient
         $this->purchases = [];
         $this->recurringTokens = [];
         $this->webhooks = [];
+    }
+
+    /**
+     * Calculate total from products.
+     *
+     * @param  array<int, array<string, mixed>>  $products
+     */
+    protected function calculateTotal(array $products): int
+    {
+        $total = 0;
+
+        foreach ($products as $product) {
+            $price = (int) ($product['price'] ?? 0);
+            $qty = (int) ($product['quantity'] ?? 1);
+            $total += $price * $qty;
+        }
+
+        return $total;
     }
 }
