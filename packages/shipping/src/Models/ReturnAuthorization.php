@@ -13,7 +13,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 
 /**
@@ -34,7 +33,6 @@ use Illuminate\Support\Carbon;
  * @property array|null $metadata
  * @property Carbon $created_at
  * @property Carbon $updated_at
- * @property Carbon|null $deleted_at
  * @property-read Shipment|null $originalShipment
  * @property-read Shipment|null $returnShipment
  * @property-read Collection<int, ReturnAuthorizationItem> $items
@@ -43,7 +41,6 @@ class ReturnAuthorization extends Model
 {
     use HasOwner;
     use HasUuids;
-    use SoftDeletes;
 
     public $incrementing = false;
 

@@ -48,8 +48,7 @@ CREATE TABLE vouchers (
     owner_type VARCHAR(255),
     owner_id UUID,
     created_at TIMESTAMP,
-    updated_at TIMESTAMP,
-    deleted_at TIMESTAMP
+    updated_at TIMESTAMP
 );
 ```
 
@@ -105,7 +104,6 @@ Schema::create('voucher_campaigns', function (Blueprint $table) {
     $table->jsonb('metrics')->nullable();
     $table->jsonb('automation_rules')->nullable();
     $table->timestamps();
-    $table->softDeletes();
     
     $table->index(['status', 'starts_at', 'ends_at']);
     $table->index(['owner_type', 'owner_id', 'status']);
@@ -201,7 +199,6 @@ Schema::create('gift_cards', function (Blueprint $table) {
     $table->nullableUuidMorphs('owner');
     $table->jsonb('metadata')->nullable();
     $table->timestamps();
-    $table->softDeletes();
     
     $table->index(['status', 'expires_at']);
     $table->index(['recipient_type', 'recipient_id']);
@@ -296,10 +293,10 @@ Schema::create('voucher_ml_training_data', function (Blueprint $table) {
 // Frequent query patterns
 Schema::table('vouchers', function (Blueprint $table) {
     // Active voucher lookup
-    $table->index(['status', 'starts_at', 'expires_at', 'deleted_at'], 'idx_vouchers_active');
+    $table->index(['status', 'starts_at', 'expires_at'], 'idx_vouchers_active');
     
     // Owner-scoped queries
-    $table->index(['owner_type', 'owner_id', 'status', 'deleted_at'], 'idx_vouchers_owner_active');
+    $table->index(['owner_type', 'owner_id', 'status'], 'idx_vouchers_owner_active');
     
     // Campaign analytics
     $table->index(['campaign_id', 'redeemed_count'], 'idx_vouchers_campaign_performance');
@@ -311,7 +308,6 @@ if (config('database.default') === 'pgsql') {
         CREATE INDEX CONCURRENTLY idx_vouchers_active_partial 
         ON vouchers (code, type, value) 
         WHERE status = \'active\' 
-        AND deleted_at IS NULL 
         AND (expires_at IS NULL OR expires_at > NOW())
     ');
 }

@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('tax.tables.tax_rates', 'tax_rates'), function (Blueprint $table): void {
+        Schema::create((string) config('tax.database.tables.tax_rates', 'tax_rates'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('zone_id');
             $table->string('tax_class')->default('standard');
@@ -38,6 +38,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('tax.tables.tax_rates', 'tax_rates'));
+        Schema::dropIfExists((string) config('tax.database.tables.tax_rates', 'tax_rates'));
     }
 };

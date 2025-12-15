@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('tax.tables.tax_exemptions', 'tax_exemptions'), function (Blueprint $table): void {
+        Schema::create((string) config('tax.database.tables.tax_exemptions', 'tax_exemptions'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
 
             // Polymorphic: Customer, User, etc.
@@ -47,6 +47,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('tax.tables.tax_exemptions', 'tax_exemptions'));
+        Schema::dropIfExists((string) config('tax.database.tables.tax_exemptions', 'tax_exemptions'));
     }
 };

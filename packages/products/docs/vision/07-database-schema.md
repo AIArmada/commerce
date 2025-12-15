@@ -38,7 +38,6 @@ CREATE TABLE products (
     published_at TIMESTAMP NULL,
     created_at TIMESTAMP NULL,
     updated_at TIMESTAMP NULL,
-    deleted_at TIMESTAMP NULL,
     
     INDEX idx_products_type (type),
     INDEX idx_products_status (status),

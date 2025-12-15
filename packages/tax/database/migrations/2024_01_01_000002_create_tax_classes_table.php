@@ -10,10 +10,10 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('tax.tables.tax_classes', 'tax_classes'), function (Blueprint $table): void {
+        Schema::create((string) config('tax.database.tables.tax_classes', 'tax_classes'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name');
-            $table->string('slug')->unique();
+            $table->string('slug');
             $table->text('description')->nullable();
 
             // Flags
@@ -24,12 +24,13 @@ return new class extends Migration
             $table->timestamps();
 
             // Indexes
+            $table->index('slug');
             $table->index(['is_active', 'position']);
         });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists(config('tax.tables.tax_classes', 'tax_classes'));
+        Schema::dropIfExists((string) config('tax.database.tables.tax_classes', 'tax_classes'));
     }
 };

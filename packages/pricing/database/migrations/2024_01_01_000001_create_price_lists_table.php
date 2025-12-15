@@ -6,8 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         Schema::create(config('pricing.tables.price_lists', 'price_lists'), function (Blueprint $table): void {
@@ -29,7 +28,6 @@ return new class extends Migration
             $table->timestamp('ends_at')->nullable();
 
             $table->timestamps();
-            $table->softDeletes();
 
             // Indexes
             $table->index(['is_active', 'priority']);

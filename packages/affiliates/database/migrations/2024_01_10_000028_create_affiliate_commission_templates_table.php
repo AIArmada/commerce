@@ -6,8 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         $tableName = config('affiliates.table_names.commission_templates', 'affiliate_commission_templates');
@@ -23,7 +22,6 @@ return new class extends Migration
             $table->{$jsonType}('rules');
             $table->{$jsonType}('metadata')->nullable();
             $table->timestamps();
-            $table->softDeletes();
 
             $table->index(['is_default', 'is_active']);
         });

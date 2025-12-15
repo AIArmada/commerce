@@ -27,7 +27,15 @@ class TaxRate extends Model
     use HasUuids;
     use LogsActivity;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'zone_id',
+        'tax_class',
+        'name',
+        'rate',
+        'is_compound',
+        'priority',
+        'is_active',
+    ];
 
     /**
      * @var array<string, string>
@@ -69,7 +77,7 @@ class TaxRate extends Model
 
     public function getTable(): string
     {
-        return config('tax.tables.tax_rates', 'tax_rates');
+        return (string) config('tax.database.tables.tax_rates', 'tax_rates');
     }
 
     // =========================================================================
@@ -88,17 +96,29 @@ class TaxRate extends Model
     // SCOPES
     // =========================================================================
 
-    public function scopeActive($query)
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('is_active', true);
     }
 
-    public function scopeForClass($query, string $taxClass)
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopeForClass(\Illuminate\Database\Eloquent\Builder $query, string $taxClass): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('tax_class', $taxClass);
     }
 
-    public function scopeForZone($query, string $zoneId)
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopeForZone(\Illuminate\Database\Eloquent\Builder $query, string $zoneId): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('zone_id', $zoneId);
     }

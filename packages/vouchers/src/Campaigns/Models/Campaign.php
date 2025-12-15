@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
+
 use Illuminate\Support\Str;
 
 /**
@@ -42,7 +42,6 @@ use Illuminate\Support\Str;
  * @property array<string, mixed>|null $automation_rules
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read Collection<int, CampaignVariant> $variants
  * @property-read Collection<int, CampaignEvent> $events
  * @property-read Collection<int, Voucher> $vouchers
@@ -54,7 +53,7 @@ class Campaign extends Model
 {
     use HasOwner;
     use HasUuids;
-    use SoftDeletes;
+
 
     protected $fillable = [
         'name',
@@ -276,7 +275,7 @@ class Campaign extends Model
      */
     public function transitionTo(CampaignStatus $status): bool
     {
-        if (! $this->status->canTransitionTo($status)) {
+        if (!$this->status->canTransitionTo($status)) {
             return false;
         }
 

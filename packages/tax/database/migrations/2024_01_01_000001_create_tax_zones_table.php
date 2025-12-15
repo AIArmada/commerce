@@ -10,19 +10,21 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('tax.tables.tax_zones', 'tax_zones'), function (Blueprint $table): void {
+        $jsonColumnType = (string) config('tax.database.json_column_type', 'json');
+
+        Schema::create((string) config('tax.database.tables.tax_zones', 'tax_zones'), function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
             $table->string('name');
-            $table->string('code')->unique();
+            $table->string('code');
             $table->text('description')->nullable();
 
             // Zone type: country, state, postcode
             $table->string('type')->default('country');
 
             // Geographic matching
-            $table->json('countries')->nullable(); // ['MY', 'SG']
-            $table->json('states')->nullable();    // ['Selangor', 'Perak']
-            $table->json('postcodes')->nullable(); // ['10000-19999', '50*']
+            $table->{$jsonColumnType}('countries')->nullable(); // ['MY', 'SG']
+            $table->{$jsonColumnType}('states')->nullable();    // ['Selangor', 'Perak']
+            $table->{$jsonColumnType}('postcodes')->nullable(); // ['10000-19999', '50*']
 
             // Priority for zone matching (higher = checked first)
             $table->integer('priority')->default(0);
@@ -32,9 +34,9 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
 
             $table->timestamps();
-            $table->softDeletes();
 
             // Indexes
+            $table->index('code');
             $table->index(['is_active', 'priority']);
             $table->index('is_default');
         });
@@ -42,6 +44,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('tax.tables.tax_zones', 'tax_zones'));
+        Schema::dropIfExists((string) config('tax.database.tables.tax_zones', 'tax_zones'));
     }
 };

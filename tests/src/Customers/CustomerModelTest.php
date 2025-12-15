@@ -194,20 +194,4 @@ describe('Customer Model', function (): void {
         });
     });
 
-    describe('Customer Soft Deletes', function (): void {
-        it('can soft delete a customer', function (): void {
-            $customer = Customer::create([
-                'first_name' => 'ToDelete',
-                'last_name' => 'User',
-                'email' => 'delete-' . uniqid() . '@test.com',
-                'status' => CustomerStatus::Active,
-            ]);
-
-            $id = $customer->id;
-            $customer->delete();
-
-            expect(Customer::find($id))->toBeNull()
-                ->and(Customer::withTrashed()->find($id))->not->toBeNull();
-        });
-    });
 });

@@ -23,13 +23,12 @@ The Shipment Lifecycle defines the complete journey of a shipment from creation 
 namespace AIArmada\Shipping\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 
 class Shipment extends Model
 {
-    use SoftDeletes, HasOwner;
+    use HasOwner;
 
     protected $table = 'shipments';
 

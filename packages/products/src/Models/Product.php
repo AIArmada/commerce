@@ -19,7 +19,6 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
 use Spatie\MediaLibrary\MediaCollections\Models\Media;
@@ -60,7 +59,6 @@ use Spatie\Tags\HasTags;
  * @property \Illuminate\Support\Carbon|null $published_at
  * @property \Illuminate\Support\Carbon|null $created_at
  * @property \Illuminate\Support\Carbon|null $updated_at
- * @property \Illuminate\Support\Carbon|null $deleted_at
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Variant> $variants
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Option> $options
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Category> $categories
@@ -76,7 +74,6 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
     use HasTags;
     use HasUuids;
     use InteractsWithMedia;
-    use SoftDeletes;
 
     protected $guarded = ['id'];
 

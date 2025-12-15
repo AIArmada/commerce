@@ -48,16 +48,6 @@ class SegmentPolicy
         return true;
     }
 
-    public function restore($user, Segment $segment): bool
-    {
-        return $this->update($user, $segment);
-    }
-
-    public function forceDelete($user, Segment $segment): bool
-    {
-        return $this->delete($user, $segment);
-    }
-
     /**
      * Determine if user can rebuild segment.
      */

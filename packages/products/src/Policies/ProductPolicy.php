@@ -65,22 +65,6 @@ class ProductPolicy
     }
 
     /**
-     * Determine whether the user can restore the product.
-     */
-    public function restore($user, Product $product): bool
-    {
-        return $this->update($user, $product);
-    }
-
-    /**
-     * Determine whether the user can permanently delete the product.
-     */
-    public function forceDelete($user, Product $product): bool
-    {
-        return $this->delete($user, $product);
-    }
-
-    /**
      * Determine whether the user can duplicate the product.
      */
     public function duplicate($user, Product $product): bool

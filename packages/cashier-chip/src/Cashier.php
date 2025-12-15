@@ -11,7 +11,6 @@ use AIArmada\Chip\Services\ChipCollectService;
 use Akaunting\Money\Currency;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 /**
  * Main Cashier class for CHIP payment gateway.
@@ -86,11 +85,7 @@ class Cashier
 
         $model = static::$customerModel;
 
-        $builder = in_array(SoftDeletes::class, class_uses_recursive($model))
-            ? $model::withTrashed()
-            : new $model;
-
-        return $builder->where('chip_id', $chipId)->first();
+        return $model::where('chip_id', $chipId)->first();
     }
 
     /**

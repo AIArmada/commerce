@@ -10,7 +10,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
 use Spatie\Activitylog\LogOptions;
 use Spatie\Activitylog\Traits\LogsActivity;
 
@@ -36,9 +36,21 @@ class TaxZone extends Model
     use HasOwner;
     use HasUuids;
     use LogsActivity;
-    use SoftDeletes;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'owner_type',
+        'owner_id',
+        'name',
+        'code',
+        'description',
+        'type',
+        'countries',
+        'states',
+        'postcodes',
+        'priority',
+        'is_default',
+        'is_active',
+    ];
 
     /**
      * @var array<string, string>
@@ -72,6 +84,7 @@ class TaxZone extends Model
     public static function zeroRate(): self
     {
         return new self([
+            'id' => (string) Str::uuid(),
             'name' => 'Zero Rate Zone',
             'code' => 'ZERO',
             'is_active' => true,
@@ -80,7 +93,7 @@ class TaxZone extends Model
 
     public function getTable(): string
     {
-        return config('tax.tables.tax_zones', 'tax_zones');
+        return (string) config('tax.database.tables.tax_zones', 'tax_zones');
     }
 
     // =========================================================================
@@ -99,29 +112,45 @@ class TaxZone extends Model
     // SCOPES
     // =========================================================================
 
-    public function scopeActive($query)
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
-    public function scopeDefault($query)
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeDefault(Builder $query): Builder
     {
         return $query->where('is_default', true);
     }
 
-    public function scopeForAddress($query, string $country, ?string $state = null, ?string $postcode = null)
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeForAddress(Builder $query, string $country, ?string $state = null, ?string $postcode = null): Builder
     {
-        return $query->active()
-            ->where(function ($q) use ($country, $state): void {
-                // Match by country
-                $q->whereJsonContains('countries', $country);
-
-                // Optionally match by state
-                if ($state) {
-                    $q->orWhereJsonContains('states', $state);
-                }
-
-                // Postcode matching would need custom logic
+        return $query
+            ->active()
+            ->where(function (Builder $builder) use ($country): void {
+                $builder
+                    ->whereNull('countries')
+                    ->orWhereJsonLength('countries', 0)
+                    ->orWhereJsonContains('countries', $country);
+            })
+            ->when($state !== null, function (Builder $builder) use ($state): void {
+                $builder->where(function (Builder $inner) use ($state): void {
+                    $inner
+                        ->whereNull('states')
+                        ->orWhereJsonLength('states', 0)
+                        ->orWhereJsonContains('states', $state);
+                });
             })
             ->orderBy('priority', 'desc');
     }
@@ -136,7 +165,7 @@ class TaxZone extends Model
      */
     public function scopeForOwner(Builder $query, ?EloquentModel $owner, bool $includeGlobal = true): Builder
     {
-        if (! config('tax.owner.enabled', false)) {
+        if (! config('tax.features.owner.enabled', false)) {
             return $query;
         }
 
@@ -168,12 +197,12 @@ class TaxZone extends Model
     public function matchesAddress(string $country, ?string $state = null, ?string $postcode = null): bool
     {
         // Check country match
-        if (! empty($this->countries) && ! in_array($country, $this->countries)) {
+        if (! empty($this->countries) && ! in_array($country, $this->countries, true)) {
             return false;
         }
 
         // Check state match (if states are specified)
-        if (! empty($this->states) && $state && ! in_array($state, $this->states)) {
+        if (! empty($this->states) && $state && ! in_array($state, $this->states, true)) {
             return false;
         }
 
@@ -230,15 +259,23 @@ class TaxZone extends Model
 
         // Range match (e.g., "10000-19999")
         if (str_contains($pattern, '-')) {
-            [$start, $end] = explode('-', $pattern);
+            [$start, $end] = explode('-', $pattern, 2);
             $numericPostcode = (int) preg_replace('/[^0-9]/', '', $postcode);
 
-            return $numericPostcode >= (int) $start && $numericPostcode <= (int) $end;
+            $startNumeric = (int) preg_replace('/[^0-9]/', '', $start);
+            $endNumeric = (int) preg_replace('/[^0-9]/', '', $end);
+
+            if ($startNumeric === 0 && $endNumeric === 0) {
+                return false;
+            }
+
+            return $numericPostcode >= $startNumeric && $numericPostcode <= $endNumeric;
         }
 
         // Wildcard match (e.g., "100*")
         if (str_contains($pattern, '*')) {
-            $regex = '/^' . str_replace('*', '.*', $pattern) . '$/';
+            $quoted = preg_quote($pattern, '/');
+            $regex = '/^' . str_replace('\\*', '.*', $quoted) . '$/';
 
             return (bool) preg_match($regex, $postcode);
         }

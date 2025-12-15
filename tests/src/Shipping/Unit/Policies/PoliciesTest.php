@@ -337,36 +337,6 @@ describe('ShipmentPolicy', function (): void {
 
         expect($this->policy->syncTracking($user, $shipment))->toBeTrue();
     });
-
-    // restore tests
-    it('allows restore when user has permission', function (): void {
-        $user = createUserWithPermissions(['shipping.shipments.restore']);
-        $shipment = Mockery::mock(Shipment::class)->makePartial();
-
-        expect($this->policy->restore($user, $shipment))->toBeTrue();
-    });
-
-    it('denies restore when user lacks permission', function (): void {
-        $user = createUserWithPermissions([]);
-        $shipment = Mockery::mock(Shipment::class)->makePartial();
-
-        expect($this->policy->restore($user, $shipment))->toBeFalse();
-    });
-
-    // forceDelete tests
-    it('allows forceDelete when user has permission', function (): void {
-        $user = createUserWithPermissions(['shipping.shipments.force-delete']);
-        $shipment = Mockery::mock(Shipment::class)->makePartial();
-
-        expect($this->policy->forceDelete($user, $shipment))->toBeTrue();
-    });
-
-    it('denies forceDelete when user lacks permission', function (): void {
-        $user = createUserWithPermissions([]);
-        $shipment = Mockery::mock(Shipment::class)->makePartial();
-
-        expect($this->policy->forceDelete($user, $shipment))->toBeFalse();
-    });
 });
 
 // ============================================

@@ -41,19 +41,9 @@ class OrderPolicy
         return $user->can('delete_order');
     }
 
-    public function restore(User $user, Order $order): bool
-    {
-        return $user->can('restore_order');
-    }
-
-    public function forceDelete(User $user, Order $order): bool
-    {
-        return $user->can('force_delete_order');
-    }
-
     public function cancel(User $user, Order $order): bool
     {
-        if (! $order->canBeCanceled()) {
+        if (!$order->canBeCanceled()) {
             return false;
         }
 
@@ -62,7 +52,7 @@ class OrderPolicy
 
     public function refund(User $user, Order $order): bool
     {
-        if (! $order->canBeRefunded()) {
+        if (!$order->canBeRefunded()) {
             return false;
         }
 

@@ -9,6 +9,9 @@ use AIArmada\Tax\Exceptions\TaxZoneNotFoundException;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
+use AIArmada\Tax\Settings\TaxSettings;
+use AIArmada\Tax\Settings\TaxZoneSettings;
+use Throwable;
 
 class TaxCalculator
 {
@@ -23,6 +26,10 @@ class TaxCalculator
         ?string $zoneId = null,
         array $context = []
     ): TaxResultData {
+        if (! $this->isTaxEnabled()) {
+            return $this->createZeroResult($zoneId, $context);
+        }
+
         // Add zone ID to context for exemption checking
         $context['zone_id'] = $zoneId;
 
@@ -39,13 +46,13 @@ class TaxCalculator
         $rate = $this->getRate($taxClass, $zone);
 
         // Calculate tax
-        $pricesIncludeTax = config('tax.prices_include_tax', false);
+        $pricesIncludeTax = $this->getPricesIncludeTax();
         $taxAmount = $pricesIncludeTax
             ? $rate->extractTax($amountInCents)
             : $rate->calculateTax($amountInCents);
 
         // Round if configured
-        if (config('tax.round_at_subtotal', true)) {
+        if (config('tax.defaults.round_at_subtotal', true)) {
             $taxAmount = (int) round($taxAmount);
         }
 
@@ -62,7 +69,7 @@ class TaxCalculator
      */
     public function calculateShippingTax(int $shippingAmountInCents, ?string $zoneId = null, array $context = []): TaxResultData
     {
-        if (! config('tax.calculate_tax_on_shipping', true)) {
+        if (! $this->isShippingTaxable()) {
             return $this->createZeroResult($zoneId, $context);
         }
 
@@ -86,8 +93,8 @@ class TaxCalculator
         }
 
         // Try to resolve from address in context
-        if (config('tax.zone_resolution.use_customer_address', true)) {
-            $addressPriority = config('tax.zone_resolution.address_priority', 'shipping');
+        if ($this->useCustomerAddressForZoneResolution()) {
+            $addressPriority = $this->getAddressPriority();
             $address = $context["{$addressPriority}_address"] ?? $context['address'] ?? null;
 
             if ($address) {
@@ -109,8 +116,16 @@ class TaxCalculator
             return $defaultZone;
         }
 
+        $fallbackZoneId = $this->getFallbackZoneId();
+        if ($fallbackZoneId) {
+            $fallbackZone = TaxZone::find($fallbackZoneId);
+            if ($fallbackZone) {
+                return $fallbackZone;
+            }
+        }
+
         // Handle unknown zone based on config
-        return match (config('tax.zone_resolution.unknown_zone_behavior', 'default')) {
+        return match ($this->getUnknownZoneBehavior()) {
             'zero' => TaxZone::zeroRate(),
             'error' => throw new TaxZoneNotFoundException('No tax zone could be resolved'),
             default => TaxZone::zeroRate(),
@@ -122,8 +137,7 @@ class TaxCalculator
      */
     protected function findZoneByAddress(string $country, ?string $state, ?string $postcode): ?TaxZone
     {
-        return TaxZone::active()
-            ->orderBy('priority', 'desc')
+        return TaxZone::forAddress($country, $state, $postcode)
             ->get()
             ->first(fn (TaxZone $zone) => $zone->matchesAddress($country, $state, $postcode));
     }
@@ -150,7 +164,7 @@ class TaxCalculator
      */
     protected function checkExemption(array $context): ?TaxExemption
     {
-        if (! config('tax.exemptions.enabled', true)) {
+        if (! config('tax.features.exemptions.enabled', true)) {
             return null;
         }
 
@@ -163,7 +177,7 @@ class TaxCalculator
 
         $query = TaxExemption::query()
             ->where('exemptable_id', $customerId)
-            ->where('status', 'approved')
+            ->active()
             ->forZone($zoneId);
 
         return $query->first();
@@ -203,5 +217,102 @@ class TaxCalculator
             zone: $zone,
             includedInPrice: false,
         );
+    }
+
+    private function isTaxEnabled(): bool
+    {
+        $settings = $this->getTaxSettings();
+        if ($settings) {
+            return $settings->enabled;
+        }
+
+        return (bool) config('tax.features.enabled', true);
+    }
+
+    private function getPricesIncludeTax(): bool
+    {
+        $settings = $this->getTaxSettings();
+        if ($settings) {
+            return $settings->pricesIncludeTax;
+        }
+
+        return (bool) config('tax.defaults.prices_include_tax', false);
+    }
+
+    private function isShippingTaxable(): bool
+    {
+        $settings = $this->getTaxSettings();
+        if ($settings) {
+            return $settings->shippingTaxable;
+        }
+
+        return (bool) config('tax.defaults.calculate_tax_on_shipping', true);
+    }
+
+    private function useCustomerAddressForZoneResolution(): bool
+    {
+        $settings = $this->getTaxZoneSettings();
+        if ($settings) {
+            return $settings->autoDetectZone;
+        }
+
+        return (bool) config('tax.features.zone_resolution.use_customer_address', true);
+    }
+
+    private function getAddressPriority(): string
+    {
+        $settings = $this->getTaxSettings();
+        if ($settings) {
+            return $settings->taxBasedOnShippingAddress ? 'shipping' : 'billing';
+        }
+
+        return (string) config('tax.features.zone_resolution.address_priority', 'shipping');
+    }
+
+    private function getUnknownZoneBehavior(): string
+    {
+        $settings = $this->getTaxZoneSettings();
+        if ($settings) {
+            return $settings->fallbackBehavior;
+        }
+
+        return (string) config('tax.features.zone_resolution.unknown_zone_behavior', 'default');
+    }
+
+    private function getFallbackZoneId(): ?string
+    {
+        $settings = $this->getTaxZoneSettings();
+        if ($settings) {
+            return $settings->defaultZoneId;
+        }
+
+        /** @var string|null $fallbackZoneId */
+        $fallbackZoneId = config('tax.features.zone_resolution.fallback_zone_id');
+
+        return $fallbackZoneId;
+    }
+
+    private function getTaxSettings(): ?TaxSettings
+    {
+        try {
+            /** @var TaxSettings $settings */
+            $settings = app(TaxSettings::class);
+
+            return $settings;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function getTaxZoneSettings(): ?TaxZoneSettings
+    {
+        try {
+            /** @var TaxZoneSettings $settings */
+            $settings = app(TaxZoneSettings::class);
+
+            return $settings;
+        } catch (Throwable) {
+            return null;
+        }
     }
 }
