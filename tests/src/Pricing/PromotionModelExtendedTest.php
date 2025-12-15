@@ -286,23 +286,6 @@ describe('Promotion Model - Extended Tests', function (): void {
         });
     });
 
-    describe('soft deletes', function (): void {
-        it('soft deletes promotion', function (): void {
-            $promotion = Promotion::create([
-                'name' => 'Soft Delete Test',
-                'type' => PromotionType::Percentage,
-                'discount_value' => 10,
-                'is_active' => true,
-            ]);
-
-            $id = $promotion->id;
-            $promotion->delete();
-
-            expect(Promotion::find($id))->toBeNull()
-                ->and(Promotion::withTrashed()->find($id))->not->toBeNull();
-        });
-    });
-
     describe('default attributes', function (): void {
         it('has default type of percentage', function (): void {
             $promotion = new Promotion;

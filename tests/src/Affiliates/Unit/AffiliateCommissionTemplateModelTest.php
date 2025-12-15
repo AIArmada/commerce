@@ -381,18 +381,4 @@ describe('AffiliateCommissionTemplate Model', function (): void {
         expect($template->getTable())->toBe('affiliate_commission_templates');
     });
 
-    it('uses soft deletes', function (): void {
-        $template = AffiliateCommissionTemplate::create([
-            'name' => 'Test',
-            'slug' => 'test',
-            'is_default' => false,
-            'is_active' => true,
-            'rules' => [],
-        ]);
-
-        $template->delete();
-
-        expect($template->trashed())->toBeTrue()
-            ->and(AffiliateCommissionTemplate::withTrashed()->find($template->id))->not->toBeNull();
-    });
 });

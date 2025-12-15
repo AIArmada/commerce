@@ -35,7 +35,20 @@ class TaxExemption extends Model
     use HasUuids;
     use LogsActivity;
 
-    protected $guarded = ['id'];
+    protected $fillable = [
+        'exemptable_id',
+        'exemptable_type',
+        'tax_zone_id',
+        'reason',
+        'certificate_number',
+        'document_path',
+        'status',
+        'rejection_reason',
+        'verified_at',
+        'verified_by',
+        'starts_at',
+        'expires_at',
+    ];
 
     /**
      * @var array<string, string>
@@ -55,7 +68,7 @@ class TaxExemption extends Model
 
     public function getTable(): string
     {
-        return config('tax.tables.tax_exemptions', 'tax_exemptions');
+        return (string) config('tax.database.tables.tax_exemptions', 'tax_exemptions');
     }
 
     // =========================================================================
@@ -90,16 +103,22 @@ class TaxExemption extends Model
      * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
      * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeActive($query)
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopeActive(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
+        $now = now();
+
         return $query->where('status', 'approved')
-            ->where(function ($q): void {
+            ->where(function ($q) use ($now): void {
                 $q->whereNull('expires_at')
-                    ->orWhere('expires_at', '>=', \Illuminate\Support\Carbon::now());
+                    ->orWhere('expires_at', '>=', $now);
             })
-            ->where(function ($q): void {
+            ->where(function ($q) use ($now): void {
                 $q->whereNull('starts_at')
-                    ->orWhere('starts_at', '<=', \Illuminate\Support\Carbon::now());
+                    ->orWhere('starts_at', '<=', $now);
             });
     }
 
@@ -107,7 +126,11 @@ class TaxExemption extends Model
      * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
      * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopePending($query)
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopePending(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('status', 'pending');
     }
@@ -116,7 +139,11 @@ class TaxExemption extends Model
      * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
      * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeApproved($query)
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopeApproved(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->where('status', 'approved');
     }
@@ -127,9 +154,19 @@ class TaxExemption extends Model
      * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
      * @return \Illuminate\Database\Eloquent\Builder<static>
      */
-    public function scopeForZone($query, ?string $zoneId)
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<static>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<static>
+     */
+    public function scopeForZone(\Illuminate\Database\Eloquent\Builder $query, ?string $zoneId): \Illuminate\Database\Eloquent\Builder
     {
-        return $query->whereRaw('(tax_zone_id IS NULL OR tax_zone_id = ?)', [$zoneId]);
+        return $query->where(function (\Illuminate\Database\Eloquent\Builder $builder) use ($zoneId): void {
+            $builder->whereNull('tax_zone_id');
+
+            if ($zoneId !== null) {
+                $builder->orWhere('tax_zone_id', $zoneId);
+            }
+        });
     }
 
     // =========================================================================

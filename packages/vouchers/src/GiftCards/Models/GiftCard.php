@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
+
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
@@ -41,7 +41,6 @@ use RuntimeException;
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property Carbon|null $deleted_at
  * @property-read Collection<int, GiftCardTransaction> $transactions
  * @property-read int|null $used_balance
  * @property-read float $balance_utilization
@@ -50,7 +49,7 @@ class GiftCard extends Model
 {
     use HasOwner;
     use HasUuids;
-    use SoftDeletes;
+
 
     protected $fillable = [
         'code',
@@ -257,7 +256,7 @@ class GiftCard extends Model
     {
         return $this->isActive()
             && $this->hasBalance()
-            && ! $this->isExpired();
+            && !$this->isExpired();
     }
 
     /**
@@ -265,7 +264,7 @@ class GiftCard extends Model
      */
     public function canTopUp(): bool
     {
-        if (! $this->type->canBeToppedup()) {
+        if (!$this->type->canBeToppedup()) {
             return false;
         }
 
@@ -277,7 +276,7 @@ class GiftCard extends Model
      */
     public function canTransfer(): bool
     {
-        if (! $this->type->canBeTransferred()) {
+        if (!$this->type->canBeTransferred()) {
             return false;
         }
 
@@ -321,7 +320,7 @@ class GiftCard extends Model
      */
     public function activate(): static
     {
-        if (! $this->status->canTransitionTo(GiftCardStatus::Active)) {
+        if (!$this->status->canTransitionTo(GiftCardStatus::Active)) {
             throw new RuntimeException(
                 "Cannot activate gift card in {$this->status->value} status"
             );
@@ -345,7 +344,7 @@ class GiftCard extends Model
      */
     public function suspend(): static
     {
-        if (! $this->status->canTransitionTo(GiftCardStatus::Suspended)) {
+        if (!$this->status->canTransitionTo(GiftCardStatus::Suspended)) {
             throw new RuntimeException(
                 "Cannot suspend gift card in {$this->status->value} status"
             );
@@ -362,7 +361,7 @@ class GiftCard extends Model
      */
     public function cancel(): static
     {
-        if (! $this->status->canTransitionTo(GiftCardStatus::Cancelled)) {
+        if (!$this->status->canTransitionTo(GiftCardStatus::Cancelled)) {
             throw new RuntimeException(
                 "Cannot cancel gift card in {$this->status->value} status"
             );
@@ -389,7 +388,7 @@ class GiftCard extends Model
             throw new InvalidArgumentException('Credit amount must be positive');
         }
 
-        if (! $type->isCredit()) {
+        if (!$type->isCredit()) {
             throw new InvalidArgumentException("Transaction type {$type->value} is not a credit type");
         }
 
@@ -429,7 +428,7 @@ class GiftCard extends Model
             throw new InvalidArgumentException('Debit amount must be positive');
         }
 
-        if (! $type->isDebit()) {
+        if (!$type->isDebit()) {
             throw new InvalidArgumentException("Transaction type {$type->value} is not a debit type");
         }
 
@@ -468,7 +467,7 @@ class GiftCard extends Model
         ?string $description = null,
         ?Model $actor = null
     ): GiftCardTransaction {
-        if (! $this->canRedeem()) {
+        if (!$this->canRedeem()) {
             throw new RuntimeException('Gift card cannot be redeemed');
         }
 
@@ -490,7 +489,7 @@ class GiftCard extends Model
         ?string $description = null,
         ?Model $actor = null
     ): GiftCardTransaction {
-        if (! $this->canTopUp()) {
+        if (!$this->canTopUp()) {
             throw new RuntimeException('Gift card cannot be topped up');
         }
 
@@ -526,7 +525,7 @@ class GiftCard extends Model
      */
     public function transferTo(Model $newRecipient, ?Model $actor = null): static
     {
-        if (! $this->canTransfer()) {
+        if (!$this->canTransfer()) {
             throw new RuntimeException('Gift card cannot be transferred');
         }
 
@@ -557,7 +556,7 @@ class GiftCard extends Model
      */
     public function expire(?Model $actor = null): static
     {
-        if (! $this->status->canTransitionTo(GiftCardStatus::Expired)) {
+        if (!$this->status->canTransitionTo(GiftCardStatus::Expired)) {
             throw new RuntimeException(
                 "Cannot expire gift card in {$this->status->value} status"
             );

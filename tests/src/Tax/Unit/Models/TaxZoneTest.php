@@ -292,7 +292,7 @@ class TaxZoneTest extends TaxTestCase
 
     public function test_for_owner_scope_when_owner_disabled(): void
     {
-        config(['tax.owner.enabled' => false]);
+        config(['tax.features.owner.enabled' => false]);
 
         TaxZone::create([
             'name' => 'Global Zone',
@@ -307,7 +307,7 @@ class TaxZoneTest extends TaxTestCase
 
     public function test_for_owner_scope_with_null_owner(): void
     {
-        config(['tax.owner.enabled' => true]);
+        config(['tax.features.owner.enabled' => true]);
 
         TaxZone::create([
             'name' => 'Global Zone',
@@ -334,7 +334,7 @@ class TaxZoneTest extends TaxTestCase
 
     public function test_for_owner_scope_with_null_owner_exclude_global(): void
     {
-        config(['tax.owner.enabled' => true]);
+        config(['tax.features.owner.enabled' => true]);
 
         TaxZone::create([
             'name' => 'Global Zone',
@@ -353,7 +353,7 @@ class TaxZoneTest extends TaxTestCase
 
     public function test_for_owner_scope_with_owner_include_global(): void
     {
-        config(['tax.owner.enabled' => true]);
+        config(['tax.features.owner.enabled' => true]);
 
         $owner = new class extends \Illuminate\Database\Eloquent\Model
         {
@@ -406,7 +406,7 @@ class TaxZoneTest extends TaxTestCase
 
     public function test_for_owner_scope_with_owner_exclude_global(): void
     {
-        config(['tax.owner.enabled' => true]);
+        config(['tax.features.owner.enabled' => true]);
 
         $owner = new class extends \Illuminate\Database\Eloquent\Model
         {

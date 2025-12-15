@@ -18,9 +18,9 @@ class ImplicitPermissionService
      * @var array<string, array<string>>
      */
     protected array $standardMappings = [
-        'manage' => ['viewAny', 'view', 'create', 'update', 'delete', 'restore', 'forceDelete'],
+        'manage' => ['viewAny', 'view', 'create', 'update', 'delete'],
         'edit' => ['view', 'update'],
-        'admin' => ['viewAny', 'view', 'create', 'update', 'delete', 'restore', 'forceDelete', 'replicate'],
+        'admin' => ['viewAny', 'view', 'create', 'update', 'delete', 'replicate'],
         'full_access' => ['*'],
     ];
 

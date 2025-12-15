@@ -23,21 +23,21 @@ abstract class TaxTestCase extends BaseTestCase
         parent::defineEnvironment($app);
 
         // Configure tax settings for testing
-        $app['config']->set('tax.enabled', true);
-        $app['config']->set('tax.prices_include_tax', false);
-        $app['config']->set('tax.round_at_subtotal', true);
-        $app['config']->set('tax.calculate_tax_on_shipping', true);
-        $app['config']->set('tax.zone_resolution.use_customer_address', true);
-        $app['config']->set('tax.zone_resolution.address_priority', 'shipping');
-        $app['config']->set('tax.zone_resolution.unknown_zone_behavior', 'zero');
-        $app['config']->set('tax.exemptions.enabled', true);
-        $app['config']->set('tax.owner.enabled', false);
+        $app['config']->set('tax.features.enabled', true);
+        $app['config']->set('tax.defaults.prices_include_tax', false);
+        $app['config']->set('tax.defaults.round_at_subtotal', true);
+        $app['config']->set('tax.defaults.calculate_tax_on_shipping', true);
+        $app['config']->set('tax.features.zone_resolution.use_customer_address', true);
+        $app['config']->set('tax.features.zone_resolution.address_priority', 'shipping');
+        $app['config']->set('tax.features.zone_resolution.unknown_zone_behavior', 'zero');
+        $app['config']->set('tax.features.exemptions.enabled', true);
+        $app['config']->set('tax.features.owner.enabled', false);
 
         // Configure tax table names
-        $app['config']->set('tax.tables.tax_zones', 'tax_zones');
-        $app['config']->set('tax.tables.tax_classes', 'tax_classes');
-        $app['config']->set('tax.tables.tax_rates', 'tax_rates');
-        $app['config']->set('tax.tables.tax_exemptions', 'tax_exemptions');
+        $app['config']->set('tax.database.tables.tax_zones', 'tax_zones');
+        $app['config']->set('tax.database.tables.tax_classes', 'tax_classes');
+        $app['config']->set('tax.database.tables.tax_rates', 'tax_rates');
+        $app['config']->set('tax.database.tables.tax_exemptions', 'tax_exemptions');
 
         // Configure Spatie Laravel Settings
         $app['config']->set('settings.repositories.database', [

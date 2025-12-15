@@ -117,22 +117,6 @@ class ShipmentPolicy
     }
 
     /**
-     * Determine whether the user can restore the shipment.
-     */
-    public function restore(Authenticatable $user, Shipment $shipment): bool
-    {
-        return $this->hasPermission($user, 'shipping.shipments.restore');
-    }
-
-    /**
-     * Determine whether the user can permanently delete the shipment.
-     */
-    public function forceDelete(Authenticatable $user, Shipment $shipment): bool
-    {
-        return $this->hasPermission($user, 'shipping.shipments.force-delete');
-    }
-
-    /**
      * Check if user has a specific permission.
      */
     protected function hasPermission(Authenticatable $user, string $permission): bool

@@ -7,8 +7,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         $tableName = config('vouchers.table_names.gift_cards', 'gift_cards');
@@ -46,7 +45,6 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
 
             $table->timestamps();
-            $table->softDeletes();
 
             // Indexes
             $table->index(['status', 'expires_at'], 'gift_cards_active_lookup_idx');

@@ -6,8 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         $tableName = config('affiliates.table_names.programs', 'affiliate_programs');
@@ -32,7 +31,6 @@ return new class extends Migration
             $table->addColumn($jsonType, 'metadata')->nullable();
 
             $table->timestamps();
-            $table->softDeletes();
 
             $table->index('status');
             $table->index(['is_public', 'status']);

@@ -140,18 +140,6 @@ describe('CustomerPolicy', function (): void {
         });
     });
 
-    describe('restore', function (): void {
-        it('delegates to update', function (): void {
-            expect($this->policy->restore($this->user, $this->customer))->toBeTrue();
-        });
-    });
-
-    describe('forceDelete', function (): void {
-        it('delegates to delete', function (): void {
-            expect($this->policy->forceDelete($this->user, $this->customer))->toBeTrue();
-        });
-    });
-
     describe('addCredit', function (): void {
         it('allows adding credit', function (): void {
             expect($this->policy->addCredit($this->user, $this->customer))->toBeTrue();
@@ -277,18 +265,6 @@ describe('SegmentPolicy', function (): void {
             $mockSegment->setOwnedByResult(false);
 
             expect($this->policy->delete($this->user, $mockSegment))->toBeFalse();
-        });
-    });
-
-    describe('restore', function (): void {
-        it('delegates to update', function (): void {
-            expect($this->policy->restore($this->user, $this->segment))->toBeTrue();
-        });
-    });
-
-    describe('forceDelete', function (): void {
-        it('delegates to delete', function (): void {
-            expect($this->policy->forceDelete($this->user, $this->segment))->toBeTrue();
         });
     });
 

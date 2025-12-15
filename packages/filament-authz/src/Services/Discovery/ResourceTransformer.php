@@ -23,8 +23,6 @@ class ResourceTransformer
         'create',
         'update',
         'delete',
-        'restore',
-        'forceDelete',
     ];
 
     /**
@@ -109,12 +107,6 @@ class ResourceTransformer
                     if (str_contains($source, 'ExportBulkAction')) {
                         $actions[] = 'export';
                     }
-                    if (str_contains($source, 'RestoreBulkAction')) {
-                        $actions[] = 'restore';
-                    }
-                    if (str_contains($source, 'ForceDeleteBulkAction')) {
-                        $actions[] = 'forceDelete';
-                    }
                 }
             }
         } catch (Throwable) {
@@ -181,7 +173,7 @@ class ResourceTransformer
      */
     protected function isCustomAction(string $action): bool
     {
-        $standardActions = ['view', 'edit', 'delete', 'restore', 'forceDelete', 'replicate'];
+        $standardActions = ['view', 'edit', 'delete', 'replicate'];
 
         return ! in_array(Str::lower($action), array_map('strtolower', $standardActions));
     }

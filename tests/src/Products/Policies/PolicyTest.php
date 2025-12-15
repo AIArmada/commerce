@@ -70,34 +70,6 @@ describe('Category Policy', function (): void {
             expect($this->policy->delete($this->user, $category))->toBeFalse();
         });
     });
-
-    describe('restore', function (): void {
-        it('delegates to update policy', function (): void {
-            $category = Category::create(['name' => 'Restore Test Category']);
-
-            expect($this->policy->restore($this->user, $category))->toBeTrue();
-        });
-    });
-
-    describe('forceDelete', function (): void {
-        it('delegates to delete policy', function (): void {
-            $category = Category::create(['name' => 'Force Delete Category']);
-
-            expect($this->policy->forceDelete($this->user, $category))->toBeTrue();
-        });
-
-        it('prevents force deleting a category with products', function (): void {
-            $category = Category::create(['name' => 'Force Delete Category With Products']);
-            $product = Product::create([
-                'name' => 'Test Product for Force Delete',
-                'price' => 1500,
-                'status' => ProductStatus::Active,
-            ]);
-            $category->products()->attach($product->id);
-
-            expect($this->policy->forceDelete($this->user, $category))->toBeFalse();
-        });
-    });
 });
 
 describe('Product Policy', function (): void {
@@ -151,30 +123,6 @@ describe('Product Policy', function (): void {
             ]);
 
             expect($this->policy->delete($this->user, $product))->toBeTrue();
-        });
-    });
-
-    describe('restore', function (): void {
-        it('delegates to update policy', function (): void {
-            $product = Product::create([
-                'name' => 'Restore Test Product',
-                'price' => 4000,
-                'status' => ProductStatus::Active,
-            ]);
-
-            expect($this->policy->restore($this->user, $product))->toBeTrue();
-        });
-    });
-
-    describe('forceDelete', function (): void {
-        it('delegates to delete policy', function (): void {
-            $product = Product::create([
-                'name' => 'Force Delete Test Product',
-                'price' => 5000,
-                'status' => ProductStatus::Active,
-            ]);
-
-            expect($this->policy->forceDelete($this->user, $product))->toBeTrue();
         });
     });
 

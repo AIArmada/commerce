@@ -182,7 +182,7 @@ class TaxClassTest extends TaxTestCase
 
     public function test_for_owner_scope_when_owner_disabled(): void
     {
-        config(['tax.owner.enabled' => false]);
+        config(['tax.features.owner.enabled' => false]);
 
         TaxClass::create([
             'name' => 'Global Class',
@@ -197,7 +197,7 @@ class TaxClassTest extends TaxTestCase
 
     public function test_for_owner_scope_with_null_owner(): void
     {
-        config(['tax.owner.enabled' => true]);
+        config(['tax.features.owner.enabled' => true]);
 
         TaxClass::create([
             'name' => 'Global Class',
@@ -224,7 +224,7 @@ class TaxClassTest extends TaxTestCase
 
     public function test_for_owner_scope_with_null_owner_exclude_global(): void
     {
-        config(['tax.owner.enabled' => true]);
+        config(['tax.features.owner.enabled' => true]);
 
         TaxClass::create([
             'name' => 'Global Class',
@@ -243,7 +243,7 @@ class TaxClassTest extends TaxTestCase
 
     public function test_for_owner_scope_with_owner_include_global(): void
     {
-        config(['tax.owner.enabled' => true]);
+        config(['tax.features.owner.enabled' => true]);
 
         // Create a mock owner
         $owner = new class extends \Illuminate\Database\Eloquent\Model
@@ -297,7 +297,7 @@ class TaxClassTest extends TaxTestCase
 
     public function test_for_owner_scope_with_owner_exclude_global(): void
     {
-        config(['tax.owner.enabled' => true]);
+        config(['tax.features.owner.enabled' => true]);
 
         $owner = new class extends \Illuminate\Database\Eloquent\Model
         {

@@ -37,7 +37,6 @@ return new class extends Migration
 
             $table->{$jsonType}('metadata')->nullable();
             $table->timestamps();
-            $table->softDeletes();
 
             $table->index(['owner_id', 'owner_type', 'status'], $tableName . '_owner_status');
         });

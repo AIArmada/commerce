@@ -160,7 +160,7 @@ This is NOT required for the package to function properly and is deferred for fu
 - [x] `create_shipment_labels_table` migration
 
 ### Models
-- [x] `Shipment` with HasOwner, HasUuids, SoftDeletes
+- [x] `Shipment` with HasOwner, HasUuids
 - [x] `ShipmentItem` with polymorphic shippable
 - [x] `ShipmentEvent` with tracking events
 - [x] `ShipmentLabel` for generated labels

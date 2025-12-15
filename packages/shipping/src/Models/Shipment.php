@@ -11,7 +11,6 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -42,7 +41,6 @@ use Illuminate\Support\Str;
  * @property array|null $metadata
  * @property Carbon $created_at
  * @property Carbon $updated_at
- * @property Carbon|null $deleted_at
  * @property-read Collection<int, ShipmentItem> $items
  * @property-read Collection<int, ShipmentEvent> $events
  * @property-read Collection<int, ShipmentLabel> $labels
@@ -51,7 +49,6 @@ class Shipment extends Model
 {
     use HasOwner;
     use HasUuids;
-    use SoftDeletes;
 
     public $incrementing = false;
 

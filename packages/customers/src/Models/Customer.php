@@ -18,7 +18,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Carbon;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -47,7 +46,6 @@ use Spatie\Tags\HasTags;
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property Carbon|null $deleted_at
  * @property-read string $full_name
  * @property-read Model|null $user
  * @property-read Model|null $owner
@@ -65,7 +63,6 @@ class Customer extends Model implements HasMedia
     use HasUuids;
     use InteractsWithMedia;
     use LogsCommerceActivity;
-    use SoftDeletes;
 
     protected $guarded = ['id'];
 

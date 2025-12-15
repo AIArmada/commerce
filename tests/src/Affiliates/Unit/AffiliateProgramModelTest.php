@@ -555,20 +555,4 @@ describe('AffiliateProgram Model', function (): void {
         expect($program->getTable())->toBe('affiliate_programs');
     });
 
-    it('uses soft deletes', function (): void {
-        $program = AffiliateProgram::create([
-            'name' => 'Test Program',
-            'status' => ProgramStatus::Active,
-            'requires_approval' => false,
-            'is_public' => true,
-            'default_commission_rate_basis_points' => 1000,
-            'commission_type' => CommissionType::Percentage,
-            'cookie_lifetime_days' => 30,
-        ]);
-
-        $program->delete();
-
-        expect($program->trashed())->toBeTrue()
-            ->and(AffiliateProgram::withTrashed()->find($program->id))->not->toBeNull();
-    });
 });

@@ -205,7 +205,7 @@ describe('PriceList Model - Extended Tests', function (): void {
     });
 
     describe('cascades', function (): void {
-        it('keeps related prices and tiers on soft delete', function (): void {
+        it('deletes related prices and tiers on delete', function (): void {
             $priceList = PriceList::create([
                 'name' => 'To Delete',
                 'slug' => 'to-delete-' . uniqid(),
@@ -232,56 +232,8 @@ describe('PriceList Model - Extended Tests', function (): void {
 
             $priceList->delete();
 
-            expect(Price::find($priceId))->not->toBeNull()
-                ->and(PriceTier::find($tierId))->not->toBeNull();
-        });
-
-        it('deletes related prices and tiers on force delete', function (): void {
-            $priceList = PriceList::create([
-                'name' => 'To Force Delete',
-                'slug' => 'to-force-delete-' . uniqid(),
-                'currency' => 'MYR',
-                'is_active' => true,
-            ]);
-
-            $priceId = Price::create([
-                'price_list_id' => $priceList->id,
-                'priceable_type' => 'TestProduct',
-                'priceable_id' => 'force-del-prod-' . uniqid(),
-                'amount' => 5000,
-                'currency' => 'MYR',
-            ])->id;
-
-            $tierId = PriceTier::create([
-                'price_list_id' => $priceList->id,
-                'tierable_type' => 'TestProduct',
-                'tierable_id' => 'force-del-tier-' . uniqid(),
-                'min_quantity' => 10,
-                'amount' => 900,
-                'currency' => 'MYR',
-            ])->id;
-
-            $priceList->forceDelete();
-
             expect(Price::find($priceId))->toBeNull()
                 ->and(PriceTier::find($tierId))->toBeNull();
-        });
-    });
-
-    describe('soft deletes', function (): void {
-        it('soft deletes price list', function (): void {
-            $priceList = PriceList::create([
-                'name' => 'Soft Delete',
-                'slug' => 'soft-delete-' . uniqid(),
-                'currency' => 'MYR',
-                'is_active' => true,
-            ]);
-
-            $id = $priceList->id;
-            $priceList->delete();
-
-            expect(PriceList::find($id))->toBeNull()
-                ->and(PriceList::withTrashed()->find($id))->not->toBeNull();
         });
     });
 

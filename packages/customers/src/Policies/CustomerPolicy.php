@@ -55,16 +55,6 @@ class CustomerPolicy
         return true;
     }
 
-    public function restore($user, Customer $customer): bool
-    {
-        return $this->update($user, $customer);
-    }
-
-    public function forceDelete($user, Customer $customer): bool
-    {
-        return $this->delete($user, $customer);
-    }
-
     /**
      * Determine if user can add credit to customer wallet.
      */

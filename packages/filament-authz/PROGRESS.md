@@ -261,3 +261,6 @@ Enterprise-grade permissions package for Laravel + Filament extending Spatie Per
 | Code Style (Pint) | ✅ Clean |
 | Vision Docs | ✅ All 10 phases verified |
 | Future Docs | ✅ All 4 phases verified |
+
+## Maintenance - Dec 15, 2024
+- [x] SoftDeletes Removal - Removed `SoftDeletes` related logic and verification.

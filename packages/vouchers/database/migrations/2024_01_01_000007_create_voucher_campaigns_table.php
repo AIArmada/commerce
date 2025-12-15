@@ -7,8 +7,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         $tableName = config('vouchers.table_names.campaigns', 'voucher_campaigns');
@@ -53,7 +52,6 @@ return new class extends Migration
             $table->{$jsonType}('automation_rules')->nullable();
 
             $table->timestamps();
-            $table->softDeletes();
 
             // Indexes
             $table->index(['status', 'starts_at', 'ends_at'], 'campaigns_active_lookup_idx');
