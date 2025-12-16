@@ -15,8 +15,10 @@ use AIArmada\FilamentAuthz\Services\PermissionGroupService;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
+use Illuminate\Filesystem\Filesystem;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 
 uses(RefreshDatabase::class);
 
@@ -230,6 +232,220 @@ describe('GeneratePoliciesCommand execution', function (): void {
             '--dry-run' => true,
             '--resource' => ['UserResource'],
         ])->assertSuccessful();
+    });
+});
+
+describe('AuthzCacheCommand execution', function (): void {
+    it('flushes caches when confirmed', function (): void {
+        $cacheService = \Mockery::mock(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class);
+        $cacheService->shouldReceive('flush')->once();
+        app()->instance(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class, $cacheService);
+
+        $this->artisan('authz:cache', ['action' => 'flush'])
+            ->expectsConfirmation('This will flush all permission caches. Continue?', 'yes')
+            ->expectsOutputToContain('Permission caches flushed successfully')
+            ->assertSuccessful();
+    });
+
+    it('does not flush caches when not confirmed', function (): void {
+        $cacheService = \Mockery::mock(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class);
+        $cacheService->shouldNotReceive('flush');
+        app()->instance(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class, $cacheService);
+
+        $this->artisan('authz:cache', ['action' => 'flush'])
+            ->expectsConfirmation('This will flush all permission caches. Continue?', 'no')
+            ->assertFailed();
+    });
+
+    it('warms role cache', function (): void {
+        $cacheService = \Mockery::mock(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class);
+        $cacheService->shouldReceive('warmRoleCache')->once();
+        app()->instance(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class, $cacheService);
+
+        $this->artisan('authz:cache', ['action' => 'warm'])
+            ->expectsOutputToContain('Cache warming complete')
+            ->assertSuccessful();
+    });
+
+    it('shows cache stats table', function (): void {
+        $cacheService = \Mockery::mock(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class);
+        $cacheService->shouldReceive('getStats')->once()->andReturn([
+            'enabled' => true,
+            'store' => 'array',
+            'ttl' => 60,
+        ]);
+        app()->instance(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class, $cacheService);
+
+        $this->artisan('authz:cache', ['action' => 'stats'])
+            ->assertSuccessful();
+    });
+});
+
+describe('SyncAuthzCommand execution', function (): void {
+    beforeEach(function (): void {
+        config()->set('filament-authz.guards', ['web', 'api']);
+        config()->set('filament-authz.sync', [
+            'permissions' => ['authz.view', 'authz.manage'],
+            'roles' => [
+                'admin' => ['authz.manage'],
+                'viewer' => ['authz.view'],
+            ],
+        ]);
+    });
+
+    it('syncs permissions and roles from config', function (): void {
+        $this->artisan('authz:sync')
+            ->expectsOutputToContain('Permissions & roles synced.')
+            ->assertSuccessful();
+
+        expect(Permission::query()->count())->toBe(4);
+        expect(Role::query()->count())->toBe(4);
+
+        $adminWeb = Role::query()->where('name', 'admin')->where('guard_name', 'web')->firstOrFail();
+        expect($adminWeb->permissions()->pluck('name')->all())->toContain('authz.manage');
+    });
+
+    it('flushes spatie permission cache when option is set', function (): void {
+        $registrar = new class(app(\Illuminate\Cache\CacheManager::class)) extends PermissionRegistrar {
+            public bool $forgotCache = false;
+
+            public function forgetCachedPermissions()
+            {
+                $this->forgotCache = true;
+
+                return parent::forgetCachedPermissions();
+            }
+        };
+        app()->instance(PermissionRegistrar::class, $registrar);
+
+        $this->artisan('authz:sync', ['--flush-cache' => true])
+            ->assertSuccessful();
+
+        expect($registrar->forgotCache)->toBeTrue();
+    });
+});
+
+describe('DoctorAuthzCommand execution', function (): void {
+    beforeEach(function (): void {
+        config()->set('filament-authz.guards', ['web']);
+    });
+
+    it('returns success when no issues detected', function (): void {
+        $role = Role::findOrCreate('admin', 'web');
+        $perm = Permission::findOrCreate('authz.view', 'web');
+        $role->givePermissionTo($perm);
+
+        $this->artisan('authz:doctor')
+            ->expectsOutputToContain('No issues detected.')
+            ->assertSuccessful();
+    });
+
+    it('reports issues and returns failure when anomalies exist', function (): void {
+        Role::findOrCreate('bad-role', 'api');
+        Permission::findOrCreate('bad-perm', 'api');
+
+        Permission::findOrCreate('unused-perm', 'web');
+        Role::findOrCreate('empty-role', 'web');
+
+        $this->artisan('authz:doctor')
+            ->expectsOutputToContain('Total issues:')
+            ->assertFailed();
+    });
+});
+
+describe('ExportAuthzCommand execution', function (): void {
+    it('exports roles and permissions to json', function (): void {
+        $fs = app(Filesystem::class);
+        $path = storage_path('testing/authz-export.json');
+        @mkdir(dirname($path), 0755, true);
+        if ($fs->exists($path)) {
+            $fs->delete($path);
+        }
+
+        $permA = Permission::findOrCreate('alpha', 'web');
+        $permB = Permission::findOrCreate('beta', 'web');
+        $role = Role::findOrCreate('admin', 'web');
+        $role->givePermissionTo([$permA, $permB]);
+
+        $this->artisan('authz:export', ['path' => $path])
+            ->expectsOutputToContain('Exported to:')
+            ->assertSuccessful();
+
+        expect($fs->exists($path))->toBeTrue();
+
+        $payload = json_decode((string) $fs->get($path), true);
+        expect($payload)->toBeArray()
+            ->and($payload)->toHaveKeys(['permissions', 'roles']);
+
+        expect(collect($payload['permissions'])->pluck('name')->all())->toContain('alpha', 'beta');
+        expect(collect($payload['roles'])->pluck('name')->all())->toContain('admin');
+    });
+});
+
+describe('ImportAuthzCommand execution', function (): void {
+    it('fails when file does not exist', function (): void {
+        $path = storage_path('testing/does-not-exist.json');
+
+        $this->artisan('authz:import', ['path' => $path])
+            ->expectsOutputToContain('File not found:')
+            ->assertFailed();
+    });
+
+    it('fails when payload is invalid json', function (): void {
+        $fs = app(Filesystem::class);
+        $path = storage_path('testing/invalid-authz.json');
+        @mkdir(dirname($path), 0755, true);
+        $fs->put($path, 'not-json');
+
+        $this->artisan('authz:import', ['path' => $path])
+            ->expectsOutputToContain('Invalid JSON payload.')
+            ->assertFailed();
+    });
+
+    it('imports permissions and roles and can flush cache', function (): void {
+        $fs = app(Filesystem::class);
+        $path = storage_path('testing/import-authz.json');
+        @mkdir(dirname($path), 0755, true);
+
+        $fs->put($path, json_encode([
+            'permissions' => [
+                ['name' => 'import.one', 'guard_name' => 'web'],
+                ['name' => 'import.two', 'guard_name' => 'web'],
+                ['name' => 'broken'],
+            ],
+            'roles' => [
+                [
+                    'name' => 'import-admin',
+                    'guard_name' => 'web',
+                    'permissions' => ['import.one', 'import.two'],
+                ],
+                ['name' => 'broken-role'],
+            ],
+        ], JSON_PRETTY_PRINT));
+
+        $registrar = new class(app(\Illuminate\Cache\CacheManager::class)) extends PermissionRegistrar {
+            public bool $forgotCache = false;
+
+            public function forgetCachedPermissions()
+            {
+                $this->forgotCache = true;
+
+                return parent::forgetCachedPermissions();
+            }
+        };
+        app()->instance(PermissionRegistrar::class, $registrar);
+
+        $this->artisan('authz:import', ['path' => $path, '--flush-cache' => true])
+            ->expectsOutputToContain('Import completed.')
+            ->assertSuccessful();
+
+        expect($registrar->forgotCache)->toBeTrue();
+
+        expect(Permission::query()->where('name', 'import.one')->exists())->toBeTrue();
+        expect(Role::query()->where('name', 'import-admin')->exists())->toBeTrue();
+
+        $role = Role::query()->where('name', 'import-admin')->where('guard_name', 'web')->firstOrFail();
+        expect($role->permissions()->pluck('name')->all())->toContain('import.one', 'import.two');
     });
 });
 
