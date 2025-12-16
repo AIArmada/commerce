@@ -4,13 +4,20 @@ declare(strict_types=1);
 
 namespace Tests\FilamentAuthz\Unit;
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Enums\PermissionScope;
+use AIArmada\FilamentAuthz\Models\ScopedPermission;
 use AIArmada\FilamentAuthz\Services\ContextualAuthorizationService;
 use AIArmada\FilamentAuthz\Services\PermissionAggregator;
+use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
 use Mockery;
+use Spatie\Permission\Models\Permission;
+
+uses(RefreshDatabase::class);
 
 afterEach(function (): void {
     Mockery::close();

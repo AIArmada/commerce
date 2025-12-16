@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\Services\PermissionBuilder;
 use AIArmada\FilamentAuthz\Services\PermissionRegistry;
+use Mockery;
 
 describe('PermissionBuilder', function (): void {
     describe('for', function (): void {
@@ -279,6 +280,104 @@ describe('PermissionBuilder', function (): void {
 
             // crud=5, export=1, import=1, replicate=1, bulkActions=2, manage=1 = 11
             expect($permissions)->toHaveCount(11);
+        });
+    });
+
+    describe('register', function (): void {
+        it('builds and registers permissions with registry', function (): void {
+            $registry = Mockery::mock(PermissionRegistry::class);
+            $registry->shouldReceive('register')
+                ->times(3) // viewAny, view, create
+                ->andReturnSelf();
+
+            $permissions = PermissionBuilder::for('articles')
+                ->abilities(['viewAny', 'view', 'create'])
+                ->register($registry);
+
+            expect($permissions)->toHaveCount(3);
+            expect($permissions)->toHaveKeys(['articles.viewAny', 'articles.view', 'articles.create']);
+        });
+
+        it('uses app container for registry when not provided', function (): void {
+            // This will try to use the app container
+            $builder = PermissionBuilder::for('test-resource')
+                ->ability('test');
+
+            // Build without registry to test direct build path
+            $permissions = $builder->build();
+
+            expect($permissions)->toHaveKey('test-resource.test');
+        });
+    });
+
+    describe('generateDescription', function (): void {
+        it('generates descriptions for all standard abilities', function (): void {
+            $builder = PermissionBuilder::for('orders');
+
+            // Test all standard ability descriptions
+            $permissions = $builder
+                ->ability('viewAny')
+                ->ability('view')
+                ->ability('create')
+                ->ability('update')
+                ->ability('delete')
+                ->ability('replicate')
+                ->ability('export')
+                ->ability('import')
+                ->ability('bulkDelete')
+                ->ability('bulkUpdate')
+                ->ability('manage')
+                ->ability('*')
+                ->build();
+
+            expect($permissions['orders.viewAny']['description'])->toBe('View any Orders');
+            expect($permissions['orders.view']['description'])->toBe('View Orders');
+            expect($permissions['orders.create']['description'])->toBe('Create Orders');
+            expect($permissions['orders.update']['description'])->toBe('Update Orders');
+            expect($permissions['orders.delete']['description'])->toBe('Delete Orders');
+            expect($permissions['orders.replicate']['description'])->toBe('Duplicate Orders');
+            expect($permissions['orders.export']['description'])->toBe('Export Orders');
+            expect($permissions['orders.import']['description'])->toBe('Import Orders');
+            expect($permissions['orders.bulkDelete']['description'])->toBe('Bulk delete Orders');
+            expect($permissions['orders.bulkUpdate']['description'])->toBe('Bulk update Orders');
+            expect($permissions['orders.manage']['description'])->toBe('Full management of Orders');
+            expect($permissions['orders.*']['description'])->toBe('All Orders permissions');
+        });
+
+        it('generates headline description for custom abilities', function (): void {
+            $permissions = PermissionBuilder::for('invoices')
+                ->ability('sendReminder')
+                ->ability('markAsPaid')
+                ->build();
+
+            expect($permissions['invoices.sendReminder']['description'])->toBe('Send Reminder Invoices');
+            expect($permissions['invoices.markAsPaid']['description'])->toBe('Mark As Paid Invoices');
+        });
+    });
+
+    describe('resource naming', function (): void {
+        it('handles snake_case resource names', function (): void {
+            $permissions = PermissionBuilder::for('order_items')
+                ->ability('view')
+                ->build();
+
+            expect($permissions['order_items.view']['description'])->toBe('View Order Items');
+        });
+
+        it('handles camelCase resource names', function (): void {
+            $permissions = PermissionBuilder::for('orderItems')
+                ->ability('view')
+                ->build();
+
+            expect($permissions['orderItems.view']['description'])->toBe('View Order Items');
+        });
+
+        it('handles kebab-case resource names', function (): void {
+            $permissions = PermissionBuilder::for('order-items')
+                ->ability('view')
+                ->build();
+
+            expect($permissions['order-items.view']['description'])->toBe('View Order Items');
         });
     });
 });
