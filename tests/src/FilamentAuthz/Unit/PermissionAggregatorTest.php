@@ -45,6 +45,76 @@ describe('PermissionAggregator', function (): void {
             $permissions = $this->aggregator->getEffectivePermissions($nonUser);
 
             expect($permissions)->toBeEmpty();
+            expect($permissions)->toBeInstanceOf(EloquentCollection::class);
+        });
+
+        it('returns direct permissions for user', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'direct-perm@example.com',
+                'password' => 'password',
+            ]);
+
+            Permission::create(['name' => 'direct.permission', 'guard_name' => 'web']);
+            $user->givePermissionTo('direct.permission');
+            Cache::flush();
+
+            $permissions = $this->aggregator->getEffectivePermissions($user);
+
+            expect($permissions)->toBeInstanceOf(EloquentCollection::class);
+            expect($permissions->pluck('name')->toArray())->toContain('direct.permission');
+        });
+
+        it('returns role permissions for user', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'role-perm@example.com',
+                'password' => 'password',
+            ]);
+
+            $role = Role::create(['name' => 'role-with-perm', 'guard_name' => 'web']);
+            Permission::create(['name' => 'role.permission', 'guard_name' => 'web']);
+            $role->givePermissionTo('role.permission');
+            $user->assignRole($role);
+            Cache::flush();
+
+            $permissions = $this->aggregator->getEffectivePermissions($user);
+
+            expect($permissions)->toBeInstanceOf(EloquentCollection::class);
+            expect($permissions->pluck('name')->toArray())->toContain('role.permission');
+        });
+
+        it('uses caching for user permissions', function (): void {
+            $user = User::create([
+                'name' => 'Cache User',
+                'email' => 'cache-user@example.com',
+                'password' => 'password',
+            ]);
+
+            Cache::flush();
+            $this->aggregator->getEffectivePermissions($user);
+
+            $cacheKey = 'permissions:aggregated:user:' . $user->getKey();
+            expect(Cache::has($cacheKey))->toBeTrue();
+        });
+    });
+
+    describe('getEffectivePermissionNames', function (): void {
+        it('returns permission names as collection', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'perm-names@example.com',
+                'password' => 'password',
+            ]);
+
+            Permission::create(['name' => 'test.permission.name', 'guard_name' => 'web']);
+            $user->givePermissionTo('test.permission.name');
+            Cache::flush();
+
+            $names = $this->aggregator->getEffectivePermissionNames($user);
+
+            expect($names)->toBeInstanceOf(\Illuminate\Support\Collection::class);
+            expect($names->toArray())->toContain('test.permission.name');
         });
     });
 
@@ -120,6 +190,82 @@ describe('PermissionAggregator', function (): void {
             expect($source['type'])->toBe('role')
                 ->and($source['source'])->toBe('editor');
         });
+
+        it('identifies inherited permission source', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'inherited-source@example.com',
+                'password' => 'password',
+            ]);
+
+            $parentRole = Role::create(['name' => 'source-parent', 'guard_name' => 'web']);
+            $childRole = Role::create(['name' => 'source-child', 'guard_name' => 'web']);
+            $permission = Permission::create(['name' => 'inherited.source.perm', 'guard_name' => 'web']);
+
+            $parentRole->givePermissionTo($permission);
+            $this->roleInheritance->setParent($childRole, $parentRole);
+            $user->assignRole($childRole);
+            Cache::flush();
+
+            $source = $this->aggregator->getPermissionSource($user, 'inherited.source.perm');
+
+            expect($source['type'])->toBe('inherited');
+            expect($source['source'])->toBe('source-parent');
+            expect($source['via'])->toBe('source-child');
+        });
+
+        it('identifies wildcard permission source', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'wildcard-source@example.com',
+                'password' => 'password',
+            ]);
+
+            Permission::create(['name' => 'admin.*', 'guard_name' => 'web']);
+            $user->givePermissionTo('admin.*');
+            Cache::flush();
+
+            $source = $this->aggregator->getPermissionSource($user, 'admin.users');
+
+            expect($source['type'])->toBe('wildcard');
+            expect($source['source'])->toBe('admin.*');
+        });
+
+        it('identifies implicit permission source', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'implicit-source@example.com',
+                'password' => 'password',
+            ]);
+
+            config(['filament-authz.implicit_permissions' => [
+                'content.manage' => ['content.view', 'content.edit'],
+            ]]);
+
+            Permission::create(['name' => 'content.manage', 'guard_name' => 'web']);
+            $user->givePermissionTo('content.manage');
+            Cache::flush();
+            $this->implicitService->clearCache();
+
+            $source = $this->aggregator->getPermissionSource($user, 'content.view');
+
+            expect($source['type'])->toBe('implicit');
+            expect($source['source'])->toBe('content.manage');
+        });
+
+        it('returns none when permission not found', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'no-source@example.com',
+                'password' => 'password',
+            ]);
+
+            $source = $this->aggregator->getPermissionSource($user, 'nonexistent.permission');
+
+            expect($source['type'])->toBe('none');
+            expect($source['source'])->toBeNull();
+            expect($source['via'])->toBeNull();
+        });
     });
 
     describe('getEffectiveRoles', function (): void {
@@ -132,6 +278,41 @@ describe('PermissionAggregator', function (): void {
             $roles = $this->aggregator->getEffectiveRoles($nonUser);
 
             expect($roles)->toBeEmpty();
+            expect($roles)->toBeInstanceOf(EloquentCollection::class);
+        });
+
+        it('returns direct roles for user', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'effective-roles@example.com',
+                'password' => 'password',
+            ]);
+
+            $role = Role::create(['name' => 'effective-role-test', 'guard_name' => 'web']);
+            $user->assignRole($role);
+
+            $roles = $this->aggregator->getEffectiveRoles($user);
+
+            expect($roles)->toBeInstanceOf(EloquentCollection::class);
+            expect($roles->pluck('name')->toArray())->toContain('effective-role-test');
+        });
+
+        it('returns inherited roles from parent', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'inherited-roles@example.com',
+                'password' => 'password',
+            ]);
+
+            $parentRole = Role::create(['name' => 'inherited-parent', 'guard_name' => 'web']);
+            $childRole = Role::create(['name' => 'inherited-child', 'guard_name' => 'web']);
+            $this->roleInheritance->setParent($childRole, $parentRole);
+            $user->assignRole($childRole);
+
+            $roles = $this->aggregator->getEffectiveRoles($user);
+
+            expect($roles->pluck('name')->toArray())->toContain('inherited-child');
+            expect($roles->pluck('name')->toArray())->toContain('inherited-parent');
         });
     });
 
@@ -154,6 +335,35 @@ describe('PermissionAggregator', function (): void {
             };
 
             $result = $this->aggregator->userHasAnyPermission($nonUser, ['test.permission']);
+
+            expect($result)->toBeFalse();
+        });
+
+        it('returns true when user has one of the permissions', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'any-perm@example.com',
+                'password' => 'password',
+            ]);
+
+            Permission::create(['name' => 'perm.one', 'guard_name' => 'web']);
+            $user->givePermissionTo('perm.one');
+            Cache::flush();
+
+            $result = $this->aggregator->userHasAnyPermission($user, ['perm.one', 'perm.two', 'perm.three']);
+
+            expect($result)->toBeTrue();
+        });
+
+        it('returns false when user has none of the permissions', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'no-any-perm@example.com',
+                'password' => 'password',
+            ]);
+
+            Cache::flush();
+            $result = $this->aggregator->userHasAnyPermission($user, ['perm.x', 'perm.y', 'perm.z']);
 
             expect($result)->toBeFalse();
         });
@@ -181,6 +391,39 @@ describe('PermissionAggregator', function (): void {
 
             expect($result)->toBeFalse();
         });
+
+        it('returns true when user has all permissions', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'all-perms@example.com',
+                'password' => 'password',
+            ]);
+
+            Permission::create(['name' => 'all.one', 'guard_name' => 'web']);
+            Permission::create(['name' => 'all.two', 'guard_name' => 'web']);
+            $user->givePermissionTo(['all.one', 'all.two']);
+            Cache::flush();
+
+            $result = $this->aggregator->userHasAllPermissions($user, ['all.one', 'all.two']);
+
+            expect($result)->toBeTrue();
+        });
+
+        it('returns false when user is missing one permission', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'partial-perms@example.com',
+                'password' => 'password',
+            ]);
+
+            Permission::create(['name' => 'partial.one', 'guard_name' => 'web']);
+            $user->givePermissionTo('partial.one');
+            Cache::flush();
+
+            $result = $this->aggregator->userHasAllPermissions($user, ['partial.one', 'partial.two']);
+
+            expect($result)->toBeFalse();
+        });
     });
 
     describe('userHasPermission', function (): void {
@@ -191,6 +434,73 @@ describe('PermissionAggregator', function (): void {
             };
 
             $result = $this->aggregator->userHasPermission($nonUser, 'test.permission');
+
+            expect($result)->toBeFalse();
+        });
+
+        it('returns true for direct permission match', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'direct-match@example.com',
+                'password' => 'password',
+            ]);
+
+            Permission::create(['name' => 'direct.match.perm', 'guard_name' => 'web']);
+            $user->givePermissionTo('direct.match.perm');
+            Cache::flush();
+
+            $result = $this->aggregator->userHasPermission($user, 'direct.match.perm');
+
+            expect($result)->toBeTrue();
+        });
+
+        it('returns true for wildcard permission match', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'wildcard-match@example.com',
+                'password' => 'password',
+            ]);
+
+            Permission::create(['name' => 'posts.*', 'guard_name' => 'web']);
+            $user->givePermissionTo('posts.*');
+            Cache::flush();
+
+            $result = $this->aggregator->userHasPermission($user, 'posts.view');
+
+            expect($result)->toBeTrue();
+        });
+
+        it('returns true for implicit permission match', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'implicit-match@example.com',
+                'password' => 'password',
+            ]);
+
+            // Configure implicit permission
+            config(['filament-authz.implicit_permissions' => [
+                'posts.manage' => ['posts.view', 'posts.edit'],
+            ]]);
+
+            Permission::create(['name' => 'posts.manage', 'guard_name' => 'web']);
+            $user->givePermissionTo('posts.manage');
+            Cache::flush();
+            $this->implicitService->clearCache();
+
+            $result = $this->aggregator->userHasPermission($user, 'posts.view');
+
+            expect($result)->toBeTrue();
+        });
+
+        it('returns false when permission not found', function (): void {
+            $user = User::create([
+                'name' => 'Test User',
+                'email' => 'no-perm@example.com',
+                'password' => 'password',
+            ]);
+
+            Cache::flush();
+            $result = $this->aggregator->userHasPermission($user, 'non.existent.permission');
 
             expect($result)->toBeFalse();
         });

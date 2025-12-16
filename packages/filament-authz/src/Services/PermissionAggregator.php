@@ -55,7 +55,7 @@ class PermissionAggregator
             }
 
             /** @var Collection<int, Permission> */
-            return $permissions->unique('id');
+            return new Collection($permissions->unique('id')->values()->all());
         });
     }
 
@@ -76,7 +76,7 @@ class PermissionAggregator
             $inheritedPermissions = $this->roleInheritance->getInheritedPermissions($role);
             $permissions = $permissions->merge($inheritedPermissions);
 
-            return $permissions->unique('id');
+            return new Collection($permissions->unique('id')->values()->all());
         });
     }
 
@@ -179,7 +179,7 @@ class PermissionAggregator
             $allRoles = $allRoles->merge($ancestors);
         }
 
-        return $allRoles->unique('id');
+        return new Collection($allRoles->unique('id')->values()->all());
     }
 
     /**
