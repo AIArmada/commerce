@@ -165,6 +165,36 @@ test('PermissionScope description returns non-empty', function (): void {
     }
 });
 
+test('PermissionScope icon returns heroicons', function (): void {
+    foreach (PermissionScope::cases() as $case) {
+        expect($case->icon())->toStartWith('heroicon-');
+    }
+});
+
+test('PermissionScope color returns expected values', function (): void {
+    expect(PermissionScope::Global->color())->toBe('primary')
+        ->and(PermissionScope::Team->color())->toBe('success')
+        ->and(PermissionScope::Tenant->color())->toBe('info')
+        ->and(PermissionScope::Resource->color())->toBe('warning')
+        ->and(PermissionScope::Temporal->color())->toBe('danger')
+        ->and(PermissionScope::Owner->color())->toBe('gray');
+});
+
+test('PermissionScope requiresScopeId is false only for Global and Owner', function (): void {
+    expect(PermissionScope::Global->requiresScopeId())->toBeFalse()
+        ->and(PermissionScope::Owner->requiresScopeId())->toBeFalse()
+        ->and(PermissionScope::Team->requiresScopeId())->toBeTrue()
+        ->and(PermissionScope::Tenant->requiresScopeId())->toBeTrue()
+        ->and(PermissionScope::Resource->requiresScopeId())->toBeTrue()
+        ->and(PermissionScope::Temporal->requiresScopeId())->toBeTrue();
+});
+
+test('PermissionScope supportsExpiration is only true for Temporal', function (): void {
+    foreach (PermissionScope::cases() as $case) {
+        expect($case->supportsExpiration())->toBe($case === PermissionScope::Temporal);
+    }
+});
+
 // PolicyCombiningAlgorithm tests
 test('PolicyCombiningAlgorithm has all cases', function (): void {
     expect(PolicyCombiningAlgorithm::cases())->toHaveCount(6);
