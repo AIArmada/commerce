@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\Services\PermissionBuilder;
 use AIArmada\FilamentAuthz\Services\PermissionRegistry;
-use Mockery;
+
+afterEach(function (): void {
+    \Mockery::close();
+});
 
 describe('PermissionBuilder', function (): void {
     describe('for', function (): void {
@@ -285,7 +288,7 @@ describe('PermissionBuilder', function (): void {
 
     describe('register', function (): void {
         it('builds and registers permissions with registry', function (): void {
-            $registry = Mockery::mock(PermissionRegistry::class);
+            $registry = \Mockery::mock(PermissionRegistry::class);
             $registry->shouldReceive('register')
                 ->times(3) // viewAny, view, create
                 ->andReturnSelf();

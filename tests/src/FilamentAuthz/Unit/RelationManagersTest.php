@@ -7,6 +7,7 @@ namespace Tests\FilamentAuthz\Unit;
 use AIArmada\FilamentAuthz\Resources\RoleResource\RelationManagers\PermissionsRelationManager;
 use AIArmada\FilamentAuthz\Resources\UserResource\RelationManagers\PermissionsRelationManager as UserPermissionsRelationManager;
 use AIArmada\FilamentAuthz\Resources\UserResource\RelationManagers\RolesRelationManager;
+use AIArmada\FilamentAuthz\Resources\PermissionResource\RelationManagers\RolesRelationManager as PermissionRolesRelationManager;
 use Filament\Actions\AttachAction;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DetachAction;
@@ -23,6 +24,74 @@ use Spatie\Permission\Models\Role;
 
 afterEach(function (): void {
     Mockery::close();
+});
+
+it('executes RoleResource PermissionsRelationManager table and form', function (): void {
+    $table = Mockery::mock(Table::class);
+    $table->shouldReceive('columns')->once()->andReturnSelf();
+    $table->shouldReceive('headerActions')->once()->andReturnSelf();
+    $table->shouldReceive('recordActions')->once()->andReturnSelf();
+    $table->shouldReceive('toolbarActions')->once()->andReturnSelf();
+
+    $schema = Mockery::mock(Schema::class);
+    $schema->shouldReceive('schema')->once()->andReturnSelf();
+
+    $manager = new PermissionsRelationManager();
+
+    expect($manager->table($table))->toBe($table)
+        ->and($manager->form($schema))->toBe($schema);
+});
+
+it('executes PermissionResource RolesRelationManager table and form', function (): void {
+    $table = Mockery::mock(Table::class);
+    $table->shouldReceive('columns')->once()->andReturnSelf();
+    $table->shouldReceive('headerActions')->once()->andReturnSelf();
+    $table->shouldReceive('recordActions')->once()->andReturnSelf();
+    $table->shouldReceive('toolbarActions')->once()->andReturnSelf();
+
+    $schema = Mockery::mock(Schema::class);
+    $schema->shouldReceive('schema')->once()->andReturnSelf();
+
+    $manager = new PermissionRolesRelationManager();
+
+    expect($manager->table($table))->toBe($table)
+        ->and($manager->form($schema))->toBe($schema);
+});
+
+it('executes UserResource RolesRelationManager table and form', function (): void {
+    config()->set('filament-authz.guards', ['web', 'admin']);
+
+    $table = Mockery::mock(Table::class);
+    $table->shouldReceive('columns')->once()->andReturnSelf();
+    $table->shouldReceive('headerActions')->once()->andReturnSelf();
+    $table->shouldReceive('recordActions')->once()->andReturnSelf();
+    $table->shouldReceive('toolbarActions')->once()->andReturnSelf();
+
+    $schema = Mockery::mock(Schema::class);
+    $schema->shouldReceive('schema')->once()->andReturnSelf();
+
+    $manager = new RolesRelationManager();
+
+    expect($manager->table($table))->toBe($table)
+        ->and($manager->form($schema))->toBe($schema);
+});
+
+it('executes UserResource PermissionsRelationManager table and form', function (): void {
+    config()->set('filament-authz.default_guard_name', 'web');
+
+    $table = Mockery::mock(Table::class);
+    $table->shouldReceive('columns')->once()->andReturnSelf();
+    $table->shouldReceive('headerActions')->once()->andReturnSelf();
+    $table->shouldReceive('recordActions')->once()->andReturnSelf();
+    $table->shouldReceive('toolbarActions')->once()->andReturnSelf();
+
+    $schema = Mockery::mock(Schema::class);
+    $schema->shouldReceive('schema')->once()->andReturnSelf();
+
+    $manager = new UserPermissionsRelationManager();
+
+    expect($manager->table($table))->toBe($table)
+        ->and($manager->form($schema))->toBe($schema);
 });
 
 describe('PermissionsRelationManager (RoleResource)', function (): void {

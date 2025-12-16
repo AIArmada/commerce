@@ -9,10 +9,17 @@ use AIArmada\FilamentAuthz\Resources\PermissionResource\Pages\CreatePermission;
 use AIArmada\FilamentAuthz\Resources\PermissionResource\Pages\EditPermission;
 use AIArmada\FilamentAuthz\Resources\UserResource;
 use AIArmada\FilamentAuthz\Resources\UserResource\Pages\EditUser;
+use Filament\Actions\DeleteAction;
 use Filament\Resources\Pages\CreateRecord;
 use Filament\Resources\Pages\EditRecord;
+use Mockery;
 use ReflectionClass;
 use ReflectionMethod;
+use Spatie\Permission\PermissionRegistrar;
+
+afterEach(function (): void {
+    Mockery::close();
+});
 
 describe('EditPermission Page', function (): void {
     it('extends EditRecord', function (): void {
@@ -39,6 +46,32 @@ describe('EditPermission Page', function (): void {
         expect($method->isProtected())->toBeTrue();
         expect($method->getReturnType()->getName())->toBe('void');
     });
+
+    it('executes getHeaderActions', function (): void {
+        $page = new EditPermission();
+
+        $method = new ReflectionMethod(EditPermission::class, 'getHeaderActions');
+        $method->setAccessible(true);
+
+        $actions = $method->invoke($page);
+
+        expect($actions)->toHaveCount(1)
+            ->and($actions[0])->toBeInstanceOf(DeleteAction::class);
+    });
+
+    it('executes afterSave and clears permission cache', function (): void {
+        $registrar = Mockery::mock(PermissionRegistrar::class);
+        $registrar->shouldReceive('forgetCachedPermissions')->once();
+        app()->instance(PermissionRegistrar::class, $registrar);
+
+        $page = new EditPermission();
+
+        $method = new ReflectionMethod(EditPermission::class, 'afterSave');
+        $method->setAccessible(true);
+        $method->invoke($page);
+
+        expect(true)->toBeTrue();
+    });
 });
 
 describe('CreatePermission Page', function (): void {
@@ -51,6 +84,20 @@ describe('CreatePermission Page', function (): void {
         $property = $reflection->getProperty('resource');
 
         expect($property->getDefaultValue())->toBe(PermissionResource::class);
+    });
+
+    it('executes afterCreate and clears permission cache', function (): void {
+        $registrar = Mockery::mock(PermissionRegistrar::class);
+        $registrar->shouldReceive('forgetCachedPermissions')->once();
+        app()->instance(PermissionRegistrar::class, $registrar);
+
+        $page = new CreatePermission();
+
+        $method = new ReflectionMethod(CreatePermission::class, 'afterCreate');
+        $method->setAccessible(true);
+        $method->invoke($page);
+
+        expect(true)->toBeTrue();
     });
 });
 
@@ -71,5 +118,17 @@ describe('EditUser Page', function (): void {
 
         expect($method->isProtected())->toBeTrue();
         expect($method->getReturnType()->getName())->toBe('array');
+    });
+
+    it('executes getHeaderActions', function (): void {
+        $page = new EditUser();
+
+        $method = new ReflectionMethod(EditUser::class, 'getHeaderActions');
+        $method->setAccessible(true);
+
+        $actions = $method->invoke($page);
+
+        expect($actions)->toHaveCount(1)
+            ->and($actions[0])->toBeInstanceOf(DeleteAction::class);
     });
 });

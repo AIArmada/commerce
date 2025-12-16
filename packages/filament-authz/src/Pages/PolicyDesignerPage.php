@@ -11,6 +11,7 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Section;
 
 class PolicyDesignerPage extends Page
 {
@@ -122,7 +123,7 @@ class PolicyDesignerPage extends Page
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Policy Details')
+                Section::make('Policy Details')
                     ->schema([
                         Forms\Components\TextInput::make('policyName')
                             ->label('Policy Name')

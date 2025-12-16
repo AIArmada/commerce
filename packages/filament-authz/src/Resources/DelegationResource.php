@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources;
 
+use Filament\Actions;
 use AIArmada\FilamentAuthz\Models\Delegation;
 use AIArmada\FilamentAuthz\Resources\DelegationResource\Pages;
 use BackedEnum;
 use Filament\Forms;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -33,7 +35,7 @@ class DelegationResource extends Resource
     {
         return $form
             ->schema([
-                Forms\Components\Section::make('Delegation Details')
+                Section::make('Delegation Details')
                     ->schema([
                         Forms\Components\Select::make('delegator_id')
                             ->label('From User (Delegator)')
@@ -61,7 +63,7 @@ class DelegationResource extends Resource
                             ->default(false),
                     ]),
 
-                Forms\Components\Section::make('Duration')
+                Section::make('Duration')
                     ->schema([
                         Forms\Components\DateTimePicker::make('expires_at')
                             ->label('Expires At')
@@ -137,7 +139,7 @@ class DelegationResource extends Resource
                     ->toggle(),
             ])
             ->actions([
-                Tables\Actions\Action::make('revoke')
+                Actions\Action::make('revoke')
                     ->label('Revoke')
                     ->icon('heroicon-o-x-mark')
                     ->color('danger')
@@ -145,7 +147,7 @@ class DelegationResource extends Resource
                     ->action(fn (Delegation $record) => $record->revoke())
                     ->visible(fn (Delegation $record) => $record->isActive()),
 
-                Tables\Actions\Action::make('extend')
+                Actions\Action::make('extend')
                     ->label('Extend')
                     ->icon('heroicon-o-clock')
                     ->color('info')
@@ -160,19 +162,19 @@ class DelegationResource extends Resource
                     )
                     ->visible(fn (Delegation $record) => $record->isActive()),
 
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                Actions\ViewAction::make(),
+                Actions\EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('revoke_all')
+                Actions\BulkActionGroup::make([
+                    Actions\BulkAction::make('revoke_all')
                         ->label('Revoke Selected')
                         ->icon('heroicon-o-x-mark')
                         ->color('danger')
                         ->requiresConfirmation()
                         ->action(fn ($records) => $records->each->revoke()),
 
-                    Tables\Actions\DeleteBulkAction::make(),
+                    Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

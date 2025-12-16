@@ -43,6 +43,7 @@ use Illuminate\Translation\TranslationServiceProvider;
 use Illuminate\Validation\ValidationServiceProvider;
 use Illuminate\View\ViewServiceProvider;
 use Livewire\LivewireServiceProvider;
+use Livewire\Mechanisms\DataStore;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Spatie\LaravelData\Casts\DateTimeInterfaceCast;
 use Spatie\LaravelData\Casts\EnumCast;
@@ -69,6 +70,9 @@ abstract class TestCase extends Orchestra
         // Start session for Livewire/Filament tests
         $this->app['session']->start();
 
+        // Livewire v4 relies on a singleton DataStore. Ensure it is registered in Testbench.
+        $this->app->make(DataStore::class)->register();
+
         // Share an empty error bag so Blade always receives the expected variable
         $this->app['view']->share('errors', tap(new ViewErrorBag, static function (ViewErrorBag $bag): void {
             $bag->put('default', new MessageBag);
@@ -92,6 +96,9 @@ abstract class TestCase extends Orchestra
             ValidationServiceProvider::class,
             LivewireServiceProvider::class,
             \Filament\Support\SupportServiceProvider::class,
+            \Filament\Actions\ActionsServiceProvider::class,
+            \Filament\Notifications\NotificationsServiceProvider::class,
+            \Filament\Schemas\SchemasServiceProvider::class,
             \Filament\Forms\FormsServiceProvider::class,
             \Filament\Tables\TablesServiceProvider::class,
             FilamentServiceProvider::class,

@@ -8,6 +8,11 @@ use AIArmada\FilamentAuthz\Resources\DelegationResource;
 use AIArmada\FilamentAuthz\Resources\DelegationResource\Pages\EditDelegation;
 use AIArmada\FilamentAuthz\Resources\DelegationResource\Pages\ListDelegations;
 use AIArmada\FilamentAuthz\Resources\DelegationResource\Pages\ViewDelegation;
+use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Resources\Pages\ViewRecord;
@@ -32,6 +37,19 @@ describe('DelegationResource Pages', function (): void {
             expect($method->isProtected())->toBeTrue();
             expect($method->getReturnType()->getName())->toBe('array');
         });
+
+        it('returns create header action', function (): void {
+            $page = new ListDelegations();
+
+            $method = new \ReflectionMethod(ListDelegations::class, 'getHeaderActions');
+            $method->setAccessible(true);
+
+            /** @var array<int, Action> $actions */
+            $actions = $method->invoke($page);
+
+            expect($actions)->toHaveCount(1)
+                ->and($actions[0])->toBeInstanceOf(CreateAction::class);
+        });
     });
 
     describe('EditDelegation', function (): void {
@@ -52,6 +70,20 @@ describe('DelegationResource Pages', function (): void {
             expect($method->isProtected())->toBeTrue();
             expect($method->getReturnType()->getName())->toBe('array');
         });
+
+        it('returns view and delete header actions', function (): void {
+            $page = new EditDelegation();
+
+            $method = new \ReflectionMethod(EditDelegation::class, 'getHeaderActions');
+            $method->setAccessible(true);
+
+            /** @var array<int, Action> $actions */
+            $actions = $method->invoke($page);
+
+            expect($actions)->toHaveCount(2)
+                ->and($actions[0])->toBeInstanceOf(ViewAction::class)
+                ->and($actions[1])->toBeInstanceOf(DeleteAction::class);
+        });
     });
 
     describe('ViewDelegation', function (): void {
@@ -71,6 +103,19 @@ describe('DelegationResource Pages', function (): void {
 
             expect($method->isProtected())->toBeTrue();
             expect($method->getReturnType()->getName())->toBe('array');
+        });
+
+        it('returns edit header action', function (): void {
+            $page = new ViewDelegation();
+
+            $method = new \ReflectionMethod(ViewDelegation::class, 'getHeaderActions');
+            $method->setAccessible(true);
+
+            /** @var array<int, Action> $actions */
+            $actions = $method->invoke($page);
+
+            expect($actions)->toHaveCount(1)
+                ->and($actions[0])->toBeInstanceOf(EditAction::class);
         });
     });
 });
