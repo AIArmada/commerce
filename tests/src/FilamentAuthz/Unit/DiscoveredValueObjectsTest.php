@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\FilamentAuthz\Unit;
 
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredPage;
+use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredWidget;
 
 describe('DiscoveredPage', function (): void {
@@ -244,5 +245,92 @@ describe('DiscoveredWidget', function (): void {
 
             expect($array['name'])->toBe('OrdersWidget');
         });
+    });
+});
+
+describe('DiscoveredResource', function (): void {
+    it('builds permission keys from model basename', function (): void {
+        $resource = new DiscoveredResource(
+            fqcn: 'App\\Filament\\Resources\\OrderResource',
+            model: 'App\\Models\\Order',
+            permissions: ['viewAny', 'view', 'create'],
+            metadata: [],
+            panel: 'admin',
+        );
+
+        expect($resource->toPermissionKeys())->toBe([
+            'order.viewAny',
+            'order.view',
+            'order.create',
+        ]);
+    });
+
+    it('supports custom permission separator', function (): void {
+        $resource = new DiscoveredResource(
+            fqcn: 'App\\Filament\\Resources\\OrderResource',
+            model: 'App\\Models\\Order',
+            permissions: ['viewAny', 'delete'],
+            metadata: [],
+        );
+
+        expect($resource->toPermissionKeys(':'))->toBe([
+            'order:viewAny',
+            'order:delete',
+        ]);
+    });
+
+    it('derives the policy class name from the model namespace', function (): void {
+        $resource = new DiscoveredResource(
+            fqcn: 'App\\Filament\\Resources\\OrderResource',
+            model: 'App\\Models\\Order',
+            permissions: [],
+            metadata: [],
+        );
+
+        expect($resource->getPolicyClass())->toBe('App\\Policies\\OrderPolicy');
+    });
+
+    it('detects when an existing policy class exists', function (): void {
+        if (! class_exists('App\\Policies\\OrderPolicy')) {
+            eval('namespace App\\Policies; class OrderPolicy {}');
+        }
+
+        $resource = new DiscoveredResource(
+            fqcn: 'App\\Filament\\Resources\\OrderResource',
+            model: 'App\\Models\\Order',
+            permissions: [],
+            metadata: [],
+        );
+
+        expect($resource->hasExistingPolicy())->toBeTrue();
+    });
+
+    it('converts to array including derived values', function (): void {
+        $resource = new DiscoveredResource(
+            fqcn: 'App\\Filament\\Resources\\OrderResource',
+            model: 'App\\Models\\Order',
+            permissions: ['viewAny', 'view'],
+            metadata: ['icon' => 'heroicon-o-shopping-bag'],
+            panel: 'admin',
+            navigationGroup: 'Sales',
+            navigationLabel: 'Orders',
+            slug: 'orders',
+            cluster: 'Commerce',
+        );
+
+        $array = $resource->toArray();
+
+        expect($array['fqcn'])->toBe('App\\Filament\\Resources\\OrderResource')
+            ->and($array['model'])->toBe('App\\Models\\Order')
+            ->and($array['model_basename'])->toBe('Order')
+            ->and($array['permissions'])->toBe(['viewAny', 'view'])
+            ->and($array['permission_keys'])->toBe(['order.viewAny', 'order.view'])
+            ->and($array['panel'])->toBe('admin')
+            ->and($array['navigation_group'])->toBe('Sales')
+            ->and($array['navigation_label'])->toBe('Orders')
+            ->and($array['slug'])->toBe('orders')
+            ->and($array['cluster'])->toBe('Commerce')
+            ->and($array['policy_class'])->toBe('App\\Policies\\OrderPolicy')
+            ->and($array['metadata'])->toBe(['icon' => 'heroicon-o-shopping-bag']);
     });
 });
