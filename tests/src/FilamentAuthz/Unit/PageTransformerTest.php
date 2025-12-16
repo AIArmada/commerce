@@ -5,9 +5,7 @@ declare(strict_types=1);
 use AIArmada\FilamentAuthz\Services\Discovery\PageTransformer;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredPage;
 use Filament\Pages\Dashboard;
-use Filament\Pages\Page;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use InvalidArgumentException;
 
 uses(RefreshDatabase::class);
 
@@ -18,11 +16,11 @@ beforeEach(function (): void {
 describe('PageTransformer', function (): void {
     it('throws exception for non-existent class', function (): void {
         $this->transformer->transform('NonExistentClass');
-    })->throws(InvalidArgumentException::class, 'Invalid page class');
+    })->throws(\InvalidArgumentException::class, 'Invalid page class');
 
     it('throws exception for class that is not a Page subclass', function (): void {
         $this->transformer->transform(stdClass::class);
-    })->throws(InvalidArgumentException::class, 'Invalid page class');
+    })->throws(\InvalidArgumentException::class, 'Invalid page class');
 
     it('transforms a valid page class', function (): void {
         // Dashboard is a valid page class that exists in Filament

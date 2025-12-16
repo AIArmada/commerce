@@ -10,6 +10,10 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
+afterEach(function (): void {
+    \Mockery::close();
+});
+
 beforeEach(function () {
     config()->set('filament-authz.enterprise.delegation.enabled', true);
 });
@@ -59,6 +63,28 @@ describe('DelegationResource', function () {
 
     it('returns empty relations array', function () {
         expect(DelegationResource::getRelations())->toBe([]);
+    });
+
+    it('builds form schema', function (): void {
+        $form = \Mockery::mock(Schema::class);
+        $form->shouldReceive('schema')->once()->andReturnSelf();
+
+        $result = DelegationResource::form($form);
+
+        expect($result)->toBe($form);
+    });
+
+    it('builds table with columns, filters, actions, bulk actions, and sort', function (): void {
+        $table = \Mockery::mock(Table::class);
+        $table->shouldReceive('columns')->once()->andReturnSelf();
+        $table->shouldReceive('filters')->once()->andReturnSelf();
+        $table->shouldReceive('actions')->once()->andReturnSelf();
+        $table->shouldReceive('bulkActions')->once()->andReturnSelf();
+        $table->shouldReceive('defaultSort')->once()->andReturnSelf();
+
+        $result = DelegationResource::table($table);
+
+        expect($result)->toBe($table);
     });
 
 

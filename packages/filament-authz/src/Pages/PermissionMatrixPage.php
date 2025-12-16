@@ -51,23 +51,28 @@ class PermissionMatrixPage extends Page
         $this->groupPermissions();
     }
 
-    public function selectRole(string $roleId): void
+    public function selectRole(string | int $roleId): void
     {
-        $this->selectedRole = $roleId;
+        $this->selectedRole = (string) $roleId;
         $role = Role::find($roleId);
 
         if ($role !== null) {
-            $rolePermissions = $role->permissions->pluck('id')->toArray();
+            $rolePermissions = $role->permissions
+                ->pluck('id')
+                ->map(fn (mixed $id): string => (string) $id)
+                ->all();
             $this->permissions = [];
 
             foreach ($this->allPermissions as $permission) {
-                $this->permissions[$permission->id] = in_array($permission->id, $rolePermissions, true);
+                $permissionId = (string) $permission->id;
+                $this->permissions[$permissionId] = in_array($permissionId, $rolePermissions, true);
             }
         }
     }
 
-    public function togglePermission(string $permissionId): void
+    public function togglePermission(string | int $permissionId): void
     {
+        $permissionId = (string) $permissionId;
         $this->permissions[$permissionId] = ! ($this->permissions[$permissionId] ?? false);
     }
 
@@ -119,11 +124,12 @@ class PermissionMatrixPage extends Page
             $matrix[$group] = [];
 
             foreach ($permissions as $permission) {
-                $has = $this->permissions[$permission->id] ?? false;
+                $permissionId = (string) $permission->id;
+                $has = $this->permissions[$permissionId] ?? false;
                 $source = $has ? 'direct' : 'none';
 
                 $matrix[$group][$permission->name] = [
-                    'id' => $permission->id,
+                    'id' => $permissionId,
                     'name' => $permission->name,
                     'has' => $has,
                     'source' => $source,
@@ -165,6 +171,7 @@ class PermissionMatrixPage extends Page
 
                 return $parts[0] ?? 'other';
             })
-            ->toArray();
+            ->map(fn (Collection $permissions): array => $permissions->keyBy('name')->all())
+            ->all();
     }
 }

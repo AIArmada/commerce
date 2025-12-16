@@ -8,6 +8,11 @@ use AIArmada\FilamentAuthz\Resources\PermissionRequestResource;
 use AIArmada\FilamentAuthz\Resources\PermissionRequestResource\Pages\EditPermissionRequest;
 use AIArmada\FilamentAuthz\Resources\PermissionRequestResource\Pages\ListPermissionRequests;
 use AIArmada\FilamentAuthz\Resources\PermissionRequestResource\Pages\ViewPermissionRequest;
+use Filament\Actions\Action;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Resources\Pages\EditRecord;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Resources\Pages\ViewRecord;
@@ -33,6 +38,19 @@ describe('PermissionRequestResource Pages', function (): void {
             expect($method->isProtected())->toBeTrue();
             expect($method->getReturnType()->getName())->toBe('array');
         });
+
+        it('returns create header action', function (): void {
+            $page = new ListPermissionRequests();
+
+            $method = new ReflectionMethod(ListPermissionRequests::class, 'getHeaderActions');
+            $method->setAccessible(true);
+
+            /** @var array<int, Action> $actions */
+            $actions = $method->invoke($page);
+
+            expect($actions)->toHaveCount(1)
+                ->and($actions[0])->toBeInstanceOf(CreateAction::class);
+        });
     });
 
     describe('EditPermissionRequest', function (): void {
@@ -53,6 +71,20 @@ describe('PermissionRequestResource Pages', function (): void {
             expect($method->isProtected())->toBeTrue();
             expect($method->getReturnType()->getName())->toBe('array');
         });
+
+        it('returns view and delete header actions', function (): void {
+            $page = new EditPermissionRequest();
+
+            $method = new ReflectionMethod(EditPermissionRequest::class, 'getHeaderActions');
+            $method->setAccessible(true);
+
+            /** @var array<int, Action> $actions */
+            $actions = $method->invoke($page);
+
+            expect($actions)->toHaveCount(2)
+                ->and($actions[0])->toBeInstanceOf(ViewAction::class)
+                ->and($actions[1])->toBeInstanceOf(DeleteAction::class);
+        });
     });
 
     describe('ViewPermissionRequest', function (): void {
@@ -72,6 +104,19 @@ describe('PermissionRequestResource Pages', function (): void {
 
             expect($method->isProtected())->toBeTrue();
             expect($method->getReturnType()->getName())->toBe('array');
+        });
+
+        it('returns edit header action', function (): void {
+            $page = new ViewPermissionRequest();
+
+            $method = new ReflectionMethod(ViewPermissionRequest::class, 'getHeaderActions');
+            $method->setAccessible(true);
+
+            /** @var array<int, Action> $actions */
+            $actions = $method->invoke($page);
+
+            expect($actions)->toHaveCount(1)
+                ->and($actions[0])->toBeInstanceOf(EditAction::class);
         });
     });
 });
