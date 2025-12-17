@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Pricing\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\Pricing\Support\PricingOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -59,7 +61,7 @@ class PriceList extends Model
 
     public function getTable(): string
     {
-        return config('pricing.tables.price_lists', 'price_lists');
+        return config('pricing.database.tables.price_lists', 'price_lists');
     }
 
     // =========================================================================
@@ -116,7 +118,7 @@ class PriceList extends Model
      */
     public function scopeForOwner(Builder $query, ?EloquentModel $owner, bool $includeGlobal = true): Builder
     {
-        if (! config('pricing.owner.enabled', false)) {
+        if (! config('pricing.features.owner.enabled', false)) {
             return $query;
         }
 
@@ -177,6 +179,24 @@ class PriceList extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (self $priceList): void {
+            if (! PricingOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $owner = PricingOwnerScope::resolveOwner();
+
+            if ($owner !== null) {
+                if ($priceList->owner_type === null && $priceList->owner_id === null) {
+                    $priceList->assignOwner($owner);
+                }
+
+                if (! $priceList->belongsToOwner($owner)) {
+                    throw new AuthorizationException('Cannot write price lists outside the current owner scope.');
+                }
+            }
+        });
+
         static::deleting(function (PriceList $priceList): void {
             $priceList->prices()->delete();
             $priceList->tiers()->delete();

@@ -6,6 +6,7 @@ namespace AIArmada\FilamentPricing\Widgets;
 
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\Promotion;
+use AIArmada\Pricing\Support\PricingOwnerScope;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -15,9 +16,16 @@ class PricingStatsWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        $activePriceLists = PriceList::active()->count();
-        $activePromotions = Promotion::active()->count();
-        $totalPromotionUsage = Promotion::sum('usage_count');
+        $activePriceLists = PricingOwnerScope::applyToOwnedQuery(PriceList::query())
+            ->active()
+            ->count();
+
+        $activePromotions = PricingOwnerScope::applyToOwnedQuery(Promotion::query())
+            ->active()
+            ->count();
+
+        $totalPromotionUsage = PricingOwnerScope::applyToOwnedQuery(Promotion::query())
+            ->sum('usage_count');
 
         return [
             Stat::make('Active Price Lists', number_format($activePriceLists))

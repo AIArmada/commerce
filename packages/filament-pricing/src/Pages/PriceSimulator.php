@@ -17,6 +17,8 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Enums\FontWeight;
 use Filament\Support\Enums\TextSize;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
 class PriceSimulator extends Page
@@ -40,6 +42,15 @@ class PriceSimulator extends Page
         $this->form->fill();
     }
 
+    private function resolveOwner(): ?Model
+    {
+        if (! app()->bound(OwnerResolverInterface::class)) {
+            return null;
+        }
+
+        return app(OwnerResolverInterface::class)->resolve();
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema
@@ -61,13 +72,35 @@ class PriceSimulator extends Page
                             ->searchable()
                             ->required()
                             ->visible(fn (Get $get) => $get('product_type') === 'product')
-                            ->options(function () {
+                            ->getSearchResultsUsing(function (string $search): array {
+                                $owner = $this->resolveOwner();
+
                                 return \AIArmada\Products\Models\Product::query()
-                                    ->forOwner()
+                                    /** @phpstan-ignore-next-line */
+                                    ->forOwner($owner)
+                                    ->where('name', 'like', "%{$search}%")
+                                    ->limit(50)
                                     ->get()
-                                    ->mapWithKeys(fn ($p) => [
+                                    ->mapWithKeys(fn ($p): array => [
                                         $p->id => $p->name . ' (Base: RM' . number_format($p->price / 100, 2) . ')',
-                                    ]);
+                                    ])
+                                    ->toArray();
+                            })
+                            ->getOptionLabelUsing(function ($value): ?string {
+                                if ($value === null) {
+                                    return null;
+                                }
+
+                                $owner = $this->resolveOwner();
+                                $product = \AIArmada\Products\Models\Product::query()
+                                    /** @phpstan-ignore-next-line */
+                                    ->forOwner($owner)
+                                    ->whereKey($value)
+                                    ->first();
+
+                                return $product
+                                    ? $product->name . ' (Base: RM' . number_format($product->price / 100, 2) . ')'
+                                    : null;
                             }),
 
                         Forms\Components\Select::make('variant_id')
@@ -75,35 +108,89 @@ class PriceSimulator extends Page
                             ->searchable()
                             ->required()
                             ->visible(fn (Get $get) => $get('product_type') === 'variant')
-                            ->options(function () {
-                                $productIds = \AIArmada\Products\Models\Product::query()
-                                    ->forOwner()
-                                    ->pluck('id');
+                            ->getSearchResultsUsing(function (string $search): array {
+                                $owner = $this->resolveOwner();
 
                                 return \AIArmada\Products\Models\Variant::query()
                                     ->with('product')
-                                    ->whereIn('product_id', $productIds)
+                                    ->where(function (Builder $query) use ($owner, $search): void {
+                                        $query->where('sku', 'like', "%{$search}%")
+                                            ->orWhereHas('product', function (Builder $inner) use ($owner, $search): void {
+                                                /** @phpstan-ignore-next-line */
+                                                $inner->forOwner($owner)
+                                                    ->where('name', 'like', "%{$search}%");
+                                            });
+                                    })
+                                    ->whereHas('product', function (Builder $query) use ($owner): void {
+                                        /** @phpstan-ignore-next-line */
+                                        $query->forOwner($owner);
+                                    })
+                                    ->limit(50)
                                     ->get()
-                                    ->mapWithKeys(fn ($v) => [
+                                    ->mapWithKeys(fn ($v): array => [
                                         $v->id => $v->product->name . ' - ' . $v->sku . ' (RM' . number_format(($v->price ?? $v->product->price) / 100, 2) . ')',
-                                    ]);
+                                    ])
+                                    ->toArray();
+                            })
+                            ->getOptionLabelUsing(function ($value): ?string {
+                                if ($value === null) {
+                                    return null;
+                                }
+
+                                $owner = $this->resolveOwner();
+
+                                $variant = \AIArmada\Products\Models\Variant::query()
+                                    ->with('product')
+                                    ->whereKey($value)
+                                    ->whereHas('product', function (Builder $query) use ($owner): void {
+                                        /** @phpstan-ignore-next-line */
+                                        $query->forOwner($owner);
+                                    })
+                                    ->first();
+
+                                return $variant
+                                    ? $variant->product->name . ' - ' . $variant->sku . ' (RM' . number_format(($variant->price ?? $variant->product->price) / 100, 2) . ')'
+                                    : null;
                             }),
 
                         Forms\Components\Select::make('customer_id')
                             ->label('Customer')
                             ->searchable()
                             ->helperText('Optional: simulate for a specific customer')
-                            ->options(function () {
-                                $owner = app()->bound(OwnerResolverInterface::class)
-                                    ? app(OwnerResolverInterface::class)->resolve()
-                                    : null;
+                            ->getSearchResultsUsing(function (string $search): array {
+                                $owner = $this->resolveOwner();
 
                                 return \AIArmada\Customers\Models\Customer::query()
+                                    /** @phpstan-ignore-next-line */
                                     ->forOwner($owner)
+                                    ->where(function (Builder $query) use ($search): void {
+                                        $query
+                                            ->where('full_name', 'like', "%{$search}%")
+                                            ->orWhere('email', 'like', "%{$search}%");
+                                    })
+                                    ->limit(50)
                                     ->get()
-                                    ->mapWithKeys(fn ($c) => [
+                                    ->mapWithKeys(fn ($c): array => [
                                         $c->id => $c->full_name . ' (' . $c->email . ')',
-                                    ]);
+                                    ])
+                                    ->toArray();
+                            })
+                            ->getOptionLabelUsing(function ($value): ?string {
+                                if ($value === null) {
+                                    return null;
+                                }
+
+                                $owner = $this->resolveOwner();
+
+                                $customer = \AIArmada\Customers\Models\Customer::query()
+                                    /** @phpstan-ignore-next-line */
+                                    ->forOwner($owner)
+                                    ->whereKey($value)
+                                    ->first();
+
+                                return $customer
+                                    ? $customer->full_name . ' (' . $customer->email . ')'
+                                    : null;
                             }),
 
                         Forms\Components\TextInput::make('quantity')
@@ -128,23 +215,21 @@ class PriceSimulator extends Page
     {
         $data = $this->form->getState();
 
-        $owner = app()->bound(OwnerResolverInterface::class)
-            ? app(OwnerResolverInterface::class)->resolve()
-            : null;
+        $owner = $this->resolveOwner();
 
         // Get the priceable
         $priceable = null;
         if ($data['product_type'] === 'product') {
             $priceable = \AIArmada\Products\Models\Product::query()
-                ->forOwner()
+                /** @phpstan-ignore-next-line */
+                ->forOwner($owner)
                 ->find($data['product_id']);
         } else {
-            $productIds = \AIArmada\Products\Models\Product::query()
-                ->forOwner()
-                ->pluck('id');
-
             $priceable = \AIArmada\Products\Models\Variant::query()
-                ->whereIn('product_id', $productIds)
+                ->whereHas('product', function (Builder $query) use ($owner): void {
+                    /** @phpstan-ignore-next-line */
+                    $query->forOwner($owner);
+                })
                 ->find($data['variant_id']);
         }
 
@@ -155,9 +240,14 @@ class PriceSimulator extends Page
         }
 
         // Get customer if provided
-        $customer = $data['customer_id']
-            ? \AIArmada\Customers\Models\Customer::query()->forOwner($owner)->find($data['customer_id'])
-            : null;
+        $customer = null;
+
+        if (! empty($data['customer_id'])) {
+            $customer = \AIArmada\Customers\Models\Customer::query()
+                /** @phpstan-ignore-next-line */
+                ->forOwner($owner)
+                ->find($data['customer_id']);
+        }
 
         // Calculate price using PriceCalculator
         $pricingService = app(PriceCalculator::class);

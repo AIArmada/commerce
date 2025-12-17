@@ -48,14 +48,17 @@ class PromotionResource extends Resource
         /** @var Builder<Promotion> $query */
         $query = parent::getEloquentQuery();
 
-        if (! (bool) config('pricing.owner.enabled', false)) {
+        if (! (bool) config('pricing.features.owner.enabled', false)) {
             return $query;
         }
 
         $owner = self::resolveOwner();
 
         /** @var Builder<Promotion> $scoped */
-        $scoped = $query->forOwner($owner);
+        $scoped = $query->forOwner(
+            $owner,
+            (bool) config('pricing.features.owner.include_global', true),
+        );
 
         return $scoped;
     }

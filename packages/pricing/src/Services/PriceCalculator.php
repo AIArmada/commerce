@@ -10,6 +10,7 @@ use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Pricing\Models\Promotion;
+use AIArmada\Pricing\Support\PricingOwnerScope;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 
@@ -119,11 +120,17 @@ class PriceCalculator
         }
 
         // Look up customer-specific pricing
-        $price = Price::query()
+        $price = PricingOwnerScope::applyToOwnedQuery(Price::query())
             ->where('priceable_type', $priceableType)
             ->where('priceable_id', $priceableId)
             ->forQuantity($quantity)
-            ->whereIn('price_list_id', PriceList::query()->active()->where('customer_id', $customerId)->select('id'))
+            ->whereIn(
+                'price_list_id',
+                PricingOwnerScope::applyToOwnedQuery(PriceList::query())
+                    ->active()
+                    ->where('customer_id', $customerId)
+                    ->select('id')
+            )
             ->active()
             ->orderByDesc('min_quantity')
             ->first();
@@ -144,11 +151,17 @@ class PriceCalculator
             return null;
         }
 
-        $price = Price::query()
+        $price = PricingOwnerScope::applyToOwnedQuery(Price::query())
             ->where('priceable_type', $priceableType)
             ->where('priceable_id', $priceableId)
             ->forQuantity($quantity)
-            ->whereIn('price_list_id', PriceList::query()->active()->whereIn('segment_id', $segmentIds)->select('id'))
+            ->whereIn(
+                'price_list_id',
+                PricingOwnerScope::applyToOwnedQuery(PriceList::query())
+                    ->active()
+                    ->whereIn('segment_id', $segmentIds)
+                    ->select('id')
+            )
             ->active()
             ->orderBy('amount', 'asc') // Best price
             ->orderByDesc('min_quantity')
@@ -170,7 +183,7 @@ class PriceCalculator
 
         $priceListId = Arr::get($context, 'price_list_id');
 
-        $query = PriceTier::query()
+        $query = PricingOwnerScope::applyToOwnedQuery(PriceTier::query())
             ->where('tierable_type', $tierableType)
             ->where('tierable_id', $tierableId)
             ->forQuantity($quantity)
@@ -202,9 +215,9 @@ class PriceCalculator
     protected function getPromotionPrice(string $promotionableType, string $promotionableId, int $basePrice, int $quantity): ?array
     {
         $promotionTable = (new Promotion)->getTable();
-        $promotionablesTable = config('pricing.tables.promotionables', 'promotionables');
+        $promotionablesTable = config('pricing.database.tables.promotionables', 'promotionables');
 
-        $promotion = Promotion::query()
+        $promotion = PricingOwnerScope::applyToOwnedQuery(Promotion::query())
             ->active()
             ->whereExists(function ($query) use ($promotionTable, $promotionablesTable, $promotionableType, $promotionableId): void {
                 $query->selectRaw('1')
@@ -247,7 +260,7 @@ class PriceCalculator
     {
         $priceListId = Arr::get($context, 'price_list_id');
 
-        $priceListQuery = PriceList::query()->active();
+        $priceListQuery = PricingOwnerScope::applyToOwnedQuery(PriceList::query())->active();
 
         $priceList = is_string($priceListId) && $priceListId !== ''
             ? $priceListQuery->whereKey($priceListId)->first()
@@ -257,7 +270,7 @@ class PriceCalculator
             return null;
         }
 
-        $price = Price::query()
+        $price = PricingOwnerScope::applyToOwnedQuery(Price::query())
             ->where('price_list_id', $priceList->id)
             ->where('priceable_type', $priceableType)
             ->where('priceable_id', $priceableId)

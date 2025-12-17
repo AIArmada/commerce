@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('pricing.tables.prices', 'prices'), function (Blueprint $table): void {
+        Schema::create(config('pricing.database.tables.prices', 'prices'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('price_list_id');
 
@@ -40,6 +40,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('pricing.tables.prices', 'prices'));
+        Schema::dropIfExists(config('pricing.database.tables.prices', 'prices'));
     }
 };

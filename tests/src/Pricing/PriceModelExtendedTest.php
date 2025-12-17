@@ -11,7 +11,7 @@ describe('Price Model - Extended Tests', function (): void {
         it('returns configured table name', function (): void {
             $price = new Price;
 
-            expect($price->getTable())->toBe(config('pricing.tables.prices', 'prices'));
+            expect($price->getTable())->toBe(config('pricing.database.tables.prices', 'prices'));
         });
     });
 

@@ -10,7 +10,7 @@ describe('PriceTier Model - Extended Tests', function (): void {
         it('returns configured table name', function (): void {
             $tier = new PriceTier;
 
-            expect($tier->getTable())->toBe(config('pricing.tables.price_tiers', 'price_tiers'));
+            expect($tier->getTable())->toBe(config('pricing.database.tables.price_tiers', 'price_tiers'));
         });
     });
 

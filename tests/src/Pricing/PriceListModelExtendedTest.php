@@ -12,7 +12,7 @@ describe('PriceList Model - Extended Tests', function (): void {
         it('returns configured table name', function (): void {
             $priceList = new PriceList;
 
-            expect($priceList->getTable())->toBe(config('pricing.tables.price_lists', 'price_lists'));
+            expect($priceList->getTable())->toBe(config('pricing.database.tables.price_lists', 'price_lists'));
         });
     });
 
@@ -138,7 +138,7 @@ describe('PriceList Model - Extended Tests', function (): void {
         it('filters by owner when enabled', function (): void {
             // Note: This test only checks that forOwner scope runs without errors
             // Full owner testing requires migrations with owner columns
-            config(['pricing.owner.enabled' => false]);
+            config(['pricing.features.owner.enabled' => false]);
 
             $prefix = uniqid();
 
@@ -259,7 +259,7 @@ describe('PriceList Model - Extended Tests', function (): void {
 
     describe('forOwner scope', function (): void {
         it('returns all records when owner feature is disabled', function (): void {
-            config(['pricing.owner.enabled' => false]);
+            config(['pricing.features.owner.enabled' => false]);
 
             $prefix = uniqid();
 
@@ -283,7 +283,7 @@ describe('PriceList Model - Extended Tests', function (): void {
         });
 
         it('returns global records when no owner provided and feature enabled', function (): void {
-            config(['pricing.owner.enabled' => true]);
+            config(['pricing.features.owner.enabled' => true]);
 
             $prefix = uniqid();
 
@@ -314,7 +314,7 @@ describe('PriceList Model - Extended Tests', function (): void {
         });
 
         it('returns owned and global records when owner provided with includeGlobal true', function (): void {
-            config(['pricing.owner.enabled' => true]);
+            config(['pricing.features.owner.enabled' => true]);
 
             $prefix = uniqid();
             $ownerId = 'owner-' . uniqid();
@@ -365,7 +365,7 @@ describe('PriceList Model - Extended Tests', function (): void {
         });
 
         it('returns only owned records when includeGlobal is false', function (): void {
-            config(['pricing.owner.enabled' => true]);
+            config(['pricing.features.owner.enabled' => true]);
 
             $prefix = uniqid();
             $ownerId = 'owner-' . uniqid();
@@ -407,7 +407,7 @@ describe('PriceList Model - Extended Tests', function (): void {
         });
 
         it('returns only global records when no owner provided and includeGlobal false', function (): void {
-            config(['pricing.owner.enabled' => true]);
+            config(['pricing.features.owner.enabled' => true]);
 
             $prefix = uniqid();
 

@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Resources\PriceListResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class PricesRelationManager extends RelationManager
 {
@@ -21,18 +24,93 @@ class PricesRelationManager extends RelationManager
     {
         return $schema
             ->schema([
-                Forms\Components\MorphToSelect::make('priceable')
-                    ->label('Product/Variant')
-                    ->types([
-                        Forms\Components\MorphToSelect\Type::make(\AIArmada\Products\Models\Product::class)
-                            ->titleAttribute('name')
-                            ->label('Product'),
-                        Forms\Components\MorphToSelect\Type::make(\AIArmada\Products\Models\Variant::class)
-                            ->titleAttribute('sku')
-                            ->label('Variant'),
+                Forms\Components\Select::make('priceable_type')
+                    ->label('Type')
+                    ->options([
+                        \AIArmada\Products\Models\Product::class => 'Product',
+                        \AIArmada\Products\Models\Variant::class => 'Variant',
                     ])
+                    ->required()
+                    ->live()
+                    ->default(\AIArmada\Products\Models\Product::class),
+
+                Forms\Components\Select::make('priceable_id')
+                    ->label('Product/Variant')
                     ->searchable()
                     ->required()
+                    ->getSearchResultsUsing(function (string $search, Forms\Get $get): array {
+                        $type = $get('priceable_type');
+
+                        /** @var Model|null $owner */
+                        $owner = app(OwnerResolverInterface::class)->resolve();
+
+                        if ($type === \AIArmada\Products\Models\Product::class) {
+                            return \AIArmada\Products\Models\Product::query()
+                                /** @phpstan-ignore-next-line */
+                                ->forOwner($owner)
+                                ->where('name', 'like', "%{$search}%")
+                                ->limit(50)
+                                ->pluck('name', 'id')
+                                ->toArray();
+                        }
+
+                        if ($type === \AIArmada\Products\Models\Variant::class) {
+                            return \AIArmada\Products\Models\Variant::query()
+                                ->with('product')
+                                ->whereHas('product', function (Builder $query) use ($owner): void {
+                                    /** @phpstan-ignore-next-line */
+                                    $query->forOwner($owner);
+                                })
+                                ->where(function (Builder $query) use ($search): void {
+                                    $query->where('sku', 'like', "%{$search}%")
+                                        ->orWhereHas('product', fn (Builder $inner) => $inner->where('name', 'like', "%{$search}%"));
+                                })
+                                ->limit(50)
+                                ->get()
+                                ->mapWithKeys(fn ($v): array => [$v->id => $v->product->name . ' - ' . $v->sku])
+                                ->toArray();
+                        }
+
+                        return [];
+                    })
+                    ->getOptionLabelUsing(function ($value, Forms\Get $get): ?string {
+                        if ($value === null) {
+                            return null;
+                        }
+
+                        $type = $get('priceable_type');
+
+                        /** @var Model|null $owner */
+                        $owner = app(OwnerResolverInterface::class)->resolve();
+
+                        if (! is_string($type) || ! class_exists($type) || ! is_a($type, Model::class, true)) {
+                            return null;
+                        }
+
+                        /** @var Builder<Model> $query */
+                        $query = $type::query();
+
+                        if (method_exists($type, 'scopeForOwner')) {
+                            /** @phpstan-ignore-next-line */
+                            $query = $query->forOwner($owner);
+                        }
+
+                        $record = $query
+                            ->whereKey($value)
+                            ->first();
+
+                        if (! $record) {
+                            return null;
+                        }
+
+                        if ($record instanceof \AIArmada\Products\Models\Variant) {
+                            $record->loadMissing('product');
+
+                            return $record->product->name . ' - ' . $record->sku;
+                        }
+
+                        return (string) ($record->name ?? $record->sku ?? $record->getKey());
+                    })
                     ->columnSpanFull(),
 
                 Forms\Components\TextInput::make('amount')

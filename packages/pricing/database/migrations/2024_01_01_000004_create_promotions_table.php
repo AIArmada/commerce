@@ -10,9 +10,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $jsonColumnType = (string) config('pricing.json_column_type', 'json');
+        $jsonColumnType = (string) config('pricing.database.json_column_type', 'json');
 
-        Schema::create(config('pricing.tables.promotions', 'promotions'), function (Blueprint $table) use ($jsonColumnType): void {
+        Schema::create(config('pricing.database.tables.promotions', 'promotions'), function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('code')->nullable()->unique(); // Optional coupon code
@@ -51,7 +51,7 @@ return new class extends Migration
         });
 
         // Pivot table for promotion-product/category relationships
-        Schema::create(config('pricing.tables.promotionables', 'promotionables'), function (Blueprint $table): void {
+        Schema::create(config('pricing.database.tables.promotionables', 'promotionables'), function (Blueprint $table): void {
             $table->foreignUuid('promotion_id');
             $table->uuidMorphs('promotionable');
 
@@ -61,7 +61,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('pricing.tables.promotionables', 'promotionables'));
-        Schema::dropIfExists(config('pricing.tables.promotions', 'promotions'));
+        Schema::dropIfExists(config('pricing.database.tables.promotionables', 'promotionables'));
+        Schema::dropIfExists(config('pricing.database.tables.promotions', 'promotions'));
     }
 };
