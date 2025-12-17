@@ -21,6 +21,7 @@ class WebhookMonitor
         $since ??= now()->subDay();
 
         $stats = Webhook::query()
+            ->forOwner()
             ->where('created_at', '>=', $since)
             ->selectRaw("
                 COUNT(*) as total,
@@ -50,6 +51,7 @@ class WebhookMonitor
         $since ??= now()->subDay();
 
         return Webhook::query()
+            ->forOwner()
             ->where('created_at', '>=', $since)
             ->selectRaw('event, COUNT(*) as count')
             ->groupBy('event')
@@ -67,6 +69,7 @@ class WebhookMonitor
         $since ??= now()->subDay();
 
         return Webhook::query()
+            ->forOwner()
             ->where('created_at', '>=', $since)
             ->where('status', 'failed')
             ->selectRaw("COALESCE(last_error, 'Unknown') as error, COUNT(*) as count")
@@ -90,6 +93,7 @@ class WebhookMonitor
         // We will leave it as is but fix quotes, acknowledging it might fail on SQLite if tested.
 
         return Webhook::query()
+            ->forOwner()
             ->where('created_at', '>=', $since)
             ->selectRaw("
                 DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour,
@@ -117,6 +121,7 @@ class WebhookMonitor
     public function getPendingWebhooks(int $limit = 100): \Illuminate\Database\Eloquent\Collection
     {
         return Webhook::query()
+            ->forOwner()
             ->where('status', 'pending')
             ->orderBy('created_at', 'asc')
             ->limit($limit)
@@ -131,6 +136,7 @@ class WebhookMonitor
     public function getRecentFailures(int $limit = 50): \Illuminate\Database\Eloquent\Collection
     {
         return Webhook::query()
+            ->forOwner()
             ->where('status', 'failed')
             ->orderBy('created_at', 'desc')
             ->limit($limit)
