@@ -197,16 +197,16 @@
         },
         {
             "name": "aws/aws-sdk-php",
-            "version": "3.367.3",
+            "version": "3.368.0",
             "source": {
                 "type": "git",
                 "url": "https://github.com/aws/aws-sdk-php.git",
-                "reference": "d8e6e0691a38223523c38ca9c452ebcd084c7151"
+                "reference": "c1189f8e4ba3268d6306e515f6f65611c671d033"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/d8e6e0691a38223523c38ca9c452ebcd084c7151",
-                "reference": "d8e6e0691a38223523c38ca9c452ebcd084c7151",
+                "url": "https://api.github.com/repos/aws/aws-sdk-php/zipball/c1189f8e4ba3268d6306e515f6f65611c671d033",
+                "reference": "c1189f8e4ba3268d6306e515f6f65611c671d033",
                 "shasum": ""
             },
             "require": {
@@ -288,9 +288,9 @@
             "support": {
                 "forum": "https://github.com/aws/aws-sdk-php/discussions",
                 "issues": "https://github.com/aws/aws-sdk-php/issues",
-                "source": "https://github.com/aws/aws-sdk-php/tree/3.367.3"
+                "source": "https://github.com/aws/aws-sdk-php/tree/3.368.0"
             },
-            "time": "2025-12-15T19:05:56+00:00"
+            "time": "2025-12-16T20:11:32+00:00"
         },
         {
             "name": "blade-ui-kit/blade-heroicons",
@@ -2896,16 +2896,16 @@
         },
         {
             "name": "kirschbaum-development/eloquent-power-joins",
-            "version": "4.2.10",
+            "version": "4.2.11",
             "source": {
                 "type": "git",
                 "url": "https://github.com/kirschbaum-development/eloquent-power-joins.git",
-                "reference": "ccda351a75701f5b0a6f94586d9a40f1114302b4"
+                "reference": "0e3e3372992e4bf82391b3c7b84b435c3db73588"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/kirschbaum-development/eloquent-power-joins/zipball/ccda351a75701f5b0a6f94586d9a40f1114302b4",
-                "reference": "ccda351a75701f5b0a6f94586d9a40f1114302b4",
+                "url": "https://api.github.com/repos/kirschbaum-development/eloquent-power-joins/zipball/0e3e3372992e4bf82391b3c7b84b435c3db73588",
+                "reference": "0e3e3372992e4bf82391b3c7b84b435c3db73588",
                 "shasum": ""
             },
             "require": {
@@ -2953,9 +2953,9 @@
             ],
             "support": {
                 "issues": "https://github.com/kirschbaum-development/eloquent-power-joins/issues",
-                "source": "https://github.com/kirschbaum-development/eloquent-power-joins/tree/4.2.10"
+                "source": "https://github.com/kirschbaum-development/eloquent-power-joins/tree/4.2.11"
             },
-            "time": "2025-11-13T14:57:49+00:00"
+            "time": "2025-12-17T00:37:48+00:00"
         },
         {
             "name": "larastan/larastan",
@@ -3115,16 +3115,16 @@
         },
         {
             "name": "laravel/framework",
-            "version": "v12.42.0",
+            "version": "v12.43.1",
             "source": {
                 "type": "git",
                 "url": "https://github.com/laravel/framework.git",
-                "reference": "509b33095564c5165366d81bbaa0afaac28abe75"
+                "reference": "195b893593a9298edee177c0844132ebaa02102f"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/laravel/framework/zipball/509b33095564c5165366d81bbaa0afaac28abe75",
-                "reference": "509b33095564c5165366d81bbaa0afaac28abe75",
+                "url": "https://api.github.com/repos/laravel/framework/zipball/195b893593a9298edee177c0844132ebaa02102f",
+                "reference": "195b893593a9298edee177c0844132ebaa02102f",
                 "shasum": ""
             },
             "require": {
@@ -3333,7 +3333,7 @@
                 "issues": "https://github.com/laravel/framework/issues",
                 "source": "https://github.com/laravel/framework"
             },
-            "time": "2025-12-09T15:51:23+00:00"
+            "time": "2025-12-16T18:53:08+00:00"
         },
         {
             "name": "laravel/mcp",
@@ -4593,16 +4593,16 @@
         },
         {
             "name": "livewire/livewire",
-            "version": "v4.0.0-beta.4",
+            "version": "v4.0.0-beta.5",
             "source": {
                 "type": "git",
                 "url": "https://github.com/livewire/livewire.git",
-                "reference": "fc81faf15cc6164cca7c8a89fa672fcaa0893420"
+                "reference": "f868b14968caafbdd50f219698544315347d8a73"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/livewire/livewire/zipball/fc81faf15cc6164cca7c8a89fa672fcaa0893420",
-                "reference": "fc81faf15cc6164cca7c8a89fa672fcaa0893420",
+                "url": "https://api.github.com/repos/livewire/livewire/zipball/f868b14968caafbdd50f219698544315347d8a73",
+                "reference": "f868b14968caafbdd50f219698544315347d8a73",
                 "shasum": ""
             },
             "require": {
@@ -4657,7 +4657,7 @@
             "description": "A front-end framework for Laravel.",
             "support": {
                 "issues": "https://github.com/livewire/livewire/issues",
-                "source": "https://github.com/livewire/livewire/tree/v4.0.0-beta.4"
+                "source": "https://github.com/livewire/livewire/tree/v4.0.0-beta.5"
             },
             "funding": [
                 {
@@ -4665,7 +4665,7 @@
                     "type": "github"
                 }
             ],
-            "time": "2025-12-06T22:41:24+00:00"
+            "time": "2025-12-17T02:05:33+00:00"
         },
         {
             "name": "lorisleiva/laravel-actions",

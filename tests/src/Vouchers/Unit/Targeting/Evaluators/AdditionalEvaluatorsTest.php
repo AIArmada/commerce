@@ -39,7 +39,7 @@ class TestUserWithSegmentsOnly extends Model
  */
 function createTimeEvaluatorContext(string $timezone = 'UTC', array $metadata = []): TargetingContext
 {
-    $cart = new Cart(new InMemoryStorage(), 'time-test-' . uniqid());
+    $cart = new Cart(new InMemoryStorage, 'time-test-' . uniqid());
     $metadata['timezone'] = $timezone;
 
     return new TargetingContext($cart, null, null, $metadata);
@@ -50,7 +50,7 @@ function createTimeEvaluatorContext(string $timezone = 'UTC', array $metadata = 
  */
 function createGeoContext(?string $country = null): TargetingContext
 {
-    $cart = new Cart(new InMemoryStorage(), 'geo-test-' . uniqid());
+    $cart = new Cart(new InMemoryStorage, 'geo-test-' . uniqid());
     $metadata = [];
     if ($country !== null) {
         $metadata['country'] = $country;
@@ -64,7 +64,7 @@ function createGeoContext(?string $country = null): TargetingContext
  */
 function createCartWithProducts(array $productIds): Cart
 {
-    $cart = new Cart(new InMemoryStorage(), 'product-test-' . uniqid());
+    $cart = new Cart(new InMemoryStorage, 'product-test-' . uniqid());
 
     foreach ($productIds as $productId) {
         $cart->add([
@@ -83,7 +83,7 @@ function createCartWithProducts(array $productIds): Cart
  */
 function createUserSegmentContext(array $segments): TargetingContext
 {
-    $cart = new Cart(new InMemoryStorage(), 'segment-test-' . uniqid());
+    $cart = new Cart(new InMemoryStorage, 'segment-test-' . uniqid());
     $user = new TestUserWithSegmentsOnly(['segments' => $segments]);
 
     return new TargetingContext($cart, $user);
@@ -91,7 +91,7 @@ function createUserSegmentContext(array $segments): TargetingContext
 
 describe('DayOfWeekEvaluator', function (): void {
     beforeEach(function (): void {
-        $this->evaluator = new DayOfWeekEvaluator();
+        $this->evaluator = new DayOfWeekEvaluator;
     });
 
     describe('supports', function (): void {
@@ -219,7 +219,7 @@ describe('DayOfWeekEvaluator', function (): void {
 
 describe('TimeWindowEvaluator', function (): void {
     beforeEach(function (): void {
-        $this->evaluator = new TimeWindowEvaluator();
+        $this->evaluator = new TimeWindowEvaluator;
     });
 
     describe('supports', function (): void {
@@ -314,7 +314,7 @@ describe('TimeWindowEvaluator', function (): void {
 
 describe('GeographicEvaluator', function (): void {
     beforeEach(function (): void {
-        $this->evaluator = new GeographicEvaluator();
+        $this->evaluator = new GeographicEvaluator;
     });
 
     describe('supports', function (): void {
@@ -425,7 +425,7 @@ describe('GeographicEvaluator', function (): void {
 
 describe('ProductInCartEvaluator', function (): void {
     beforeEach(function (): void {
-        $this->evaluator = new ProductInCartEvaluator();
+        $this->evaluator = new ProductInCartEvaluator;
     });
 
     describe('supports', function (): void {
@@ -531,7 +531,7 @@ describe('ProductInCartEvaluator', function (): void {
 
 describe('UserSegmentEvaluator', function (): void {
     beforeEach(function (): void {
-        $this->evaluator = new UserSegmentEvaluator();
+        $this->evaluator = new UserSegmentEvaluator;
     });
 
     describe('supports', function (): void {

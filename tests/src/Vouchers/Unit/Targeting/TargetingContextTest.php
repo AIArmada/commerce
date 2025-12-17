@@ -17,7 +17,7 @@ use Mockery;
  */
 function createCartForContextTest(string $id = 'context-test'): Cart
 {
-    return new Cart(new InMemoryStorage(), $id);
+    return new Cart(new InMemoryStorage, $id);
 }
 
 /**
@@ -98,7 +98,7 @@ function createTestUserWithMethods(array $attributes = [], array $methodReturns 
  */
 function createTestUserWithRoles(array $roles): TestUserWithRoles
 {
-    $user = new TestUserWithRoles();
+    $user = new TestUserWithRoles;
     $user->setRoles($roles);
 
     return $user;

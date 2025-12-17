@@ -11,7 +11,7 @@ use AIArmada\Inventory\Strategies\NearestLocationStrategy;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
-    $this->strategy = new NearestLocationStrategy();
+    $this->strategy = new NearestLocationStrategy;
 });
 
 describe('NearestLocationStrategy', function (): void {

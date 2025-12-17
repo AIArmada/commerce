@@ -15,7 +15,7 @@ use AIArmada\Inventory\Services\ReplenishmentService;
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create(['is_active' => true]);
     $this->product = InventoryItem::create(['name' => 'Test Product']);
-    $this->demandForecastService = new DemandForecastService();
+    $this->demandForecastService = new DemandForecastService;
     $this->service = new ReplenishmentService($this->demandForecastService);
 });
 

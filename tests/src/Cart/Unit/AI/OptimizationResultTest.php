@@ -6,7 +6,7 @@ use AIArmada\Cart\AI\OptimizationResult;
 
 describe('OptimizationResult', function (): void {
     it('can be instantiated', function (): void {
-        $optimizedAt = new DateTimeImmutable();
+        $optimizedAt = new DateTimeImmutable;
         $improvements = [
             ['strategy' => 'email', 'action' => 'adjust_delay', 'reason' => 'Low conversion rate'],
         ];
@@ -28,7 +28,7 @@ describe('OptimizationResult', function (): void {
             improvementsApplied: [
                 ['strategy' => 'email', 'action' => 'adjust_delay', 'reason' => 'Low conversion'],
             ],
-            optimizedAt: new DateTimeImmutable()
+            optimizedAt: new DateTimeImmutable
         );
 
         expect($result->hasImprovements())->toBeTrue();
@@ -38,7 +38,7 @@ describe('OptimizationResult', function (): void {
         $result = new OptimizationResult(
             strategiesAnalyzed: 3,
             improvementsApplied: [],
-            optimizedAt: new DateTimeImmutable()
+            optimizedAt: new DateTimeImmutable
         );
 
         expect($result->hasImprovements())->toBeFalse();
@@ -52,7 +52,7 @@ describe('OptimizationResult', function (): void {
                 ['strategy' => 'discount', 'action' => 'increase_amount', 'reason' => 'Better results'],
                 ['strategy' => 'sms', 'action' => 'change_timing', 'reason' => 'Off-peak performance'],
             ],
-            optimizedAt: new DateTimeImmutable()
+            optimizedAt: new DateTimeImmutable
         );
 
         expect($result->getImprovementCount())->toBe(3);
@@ -62,7 +62,7 @@ describe('OptimizationResult', function (): void {
         $result = new OptimizationResult(
             strategiesAnalyzed: 0,
             improvementsApplied: [],
-            optimizedAt: new DateTimeImmutable()
+            optimizedAt: new DateTimeImmutable
         );
 
         expect($result->getImprovementCount())->toBe(0);

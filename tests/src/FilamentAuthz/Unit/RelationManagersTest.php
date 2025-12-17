@@ -29,7 +29,7 @@ it('executes RoleResource PermissionsRelationManager table and form', function (
     $schema = Mockery::mock(Schema::class);
     $schema->shouldReceive('schema')->once()->andReturnSelf();
 
-    $manager = new PermissionsRelationManager();
+    $manager = new PermissionsRelationManager;
 
     expect($manager->table($table))->toBe($table)
         ->and($manager->form($schema))->toBe($schema);
@@ -45,7 +45,7 @@ it('executes PermissionResource RolesRelationManager table and form', function (
     $schema = Mockery::mock(Schema::class);
     $schema->shouldReceive('schema')->once()->andReturnSelf();
 
-    $manager = new PermissionRolesRelationManager();
+    $manager = new PermissionRolesRelationManager;
 
     expect($manager->table($table))->toBe($table)
         ->and($manager->form($schema))->toBe($schema);
@@ -63,7 +63,7 @@ it('executes UserResource RolesRelationManager table and form', function (): voi
     $schema = Mockery::mock(Schema::class);
     $schema->shouldReceive('schema')->once()->andReturnSelf();
 
-    $manager = new RolesRelationManager();
+    $manager = new RolesRelationManager;
 
     expect($manager->table($table))->toBe($table)
         ->and($manager->form($schema))->toBe($schema);
@@ -81,7 +81,7 @@ it('executes UserResource PermissionsRelationManager table and form', function (
     $schema = Mockery::mock(Schema::class);
     $schema->shouldReceive('schema')->once()->andReturnSelf();
 
-    $manager = new UserPermissionsRelationManager();
+    $manager = new UserPermissionsRelationManager;
 
     expect($manager->table($table))->toBe($table)
         ->and($manager->form($schema))->toBe($schema);

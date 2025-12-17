@@ -16,9 +16,9 @@ use AIArmada\Inventory\Services\WeightedAverageCostService;
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create(['is_active' => true]);
     $this->product = InventoryItem::create(['name' => 'Test Product']);
-    $this->fifoCostService = new FifoCostService();
-    $this->weightedAverageCostService = new WeightedAverageCostService();
-    $this->standardCostService = new StandardCostService();
+    $this->fifoCostService = new FifoCostService;
+    $this->weightedAverageCostService = new WeightedAverageCostService;
+    $this->standardCostService = new StandardCostService;
     $this->service = new ValuationService(
         $this->fifoCostService,
         $this->weightedAverageCostService,

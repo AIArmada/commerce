@@ -31,7 +31,7 @@ afterEach(function (): void {
  */
 function createCartForVoucherConditionTest(array $metadata = []): Cart
 {
-    $cart = new Cart(new InMemoryStorage(), 'voucher-condition-test');
+    $cart = new Cart(new InMemoryStorage, 'voucher-condition-test');
     foreach ($metadata as $key => $value) {
         $cart->setMetadata($key, $value);
     }

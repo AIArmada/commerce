@@ -19,7 +19,7 @@ beforeEach(function (): void {
     ]);
     Config::set('cart.database.table', 'carts');
     Cache::flush();
-    $this->cartStorage = new InMemoryStorage();
+    $this->cartStorage = new InMemoryStorage;
 
     // Pre-populate cache to avoid database queries in unit tests
     // Cache key format: cart:abandonment_rate:{ownerCacheKeyPart}:{identifier}
@@ -107,11 +107,11 @@ describe('AbandonmentPredictor', function (): void {
         $storage->shouldReceive('getOwnerType')->andReturn(null);
         $storage->shouldReceive('getOwnerId')->andReturn(null);
 
-        $cartStorage1 = new InMemoryStorage();
+        $cartStorage1 = new InMemoryStorage;
         $cart1 = new Cart($cartStorage1, 'user-1');
         $cart1->add('item-1', 'Product 1', 3333, 3);
 
-        $cartStorage2 = new InMemoryStorage();
+        $cartStorage2 = new InMemoryStorage;
         $cart2 = new Cart($cartStorage2, 'user-2');
         $cart2->add('item-1', 'Product 1', 4000, 5);
 
@@ -266,7 +266,7 @@ describe('AbandonmentPredictor', function (): void {
         $steps = ['cart', 'shipping', 'payment', 'review'];
 
         foreach ($steps as $step) {
-            $stepStorage = new InMemoryStorage();
+            $stepStorage = new InMemoryStorage;
             $cart = new Cart($stepStorage, 'user-test');
             $cart->add('item-1', 'Product 1', 3333, 3);
             $cart->setMetadata('checkout_step', $step);

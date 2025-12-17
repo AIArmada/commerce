@@ -12,28 +12,28 @@ describe('PaymentStage', function (): void {
     });
 
     it('can be instantiated', function (): void {
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
 
         expect($stage)->toBeInstanceOf(PaymentStage::class)
             ->and($stage->getName())->toBe('payment');
     });
 
     it('can set process callback', function (): void {
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $result = $stage->onProcess(fn () => ['success' => true]);
 
         expect($result)->toBe($stage);
     });
 
     it('can set refund callback', function (): void {
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $result = $stage->onRefund(fn () => true);
 
         expect($result)->toBe($stage);
     });
 
     it('should not execute for zero total cart', function (): void {
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $stage->onProcess(fn () => ['success' => true]);
 
         $cart = new Cart($this->storage, 'cart-123');
@@ -43,7 +43,7 @@ describe('PaymentStage', function (): void {
     });
 
     it('should not execute without process callback', function (): void {
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
 
         $cart = new Cart($this->storage, 'cart-123');
         $cart->add('item-1', 'Product', 1000, 1);
@@ -52,7 +52,7 @@ describe('PaymentStage', function (): void {
     });
 
     it('should execute with process callback and positive total', function (): void {
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $stage->onProcess(fn () => ['success' => true]);
 
         $cart = new Cart($this->storage, 'cart-123');
@@ -62,7 +62,7 @@ describe('PaymentStage', function (): void {
     });
 
     it('succeeds without callback configured', function (): void {
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $cart = new Cart($this->storage, 'cart-123');
 
         $result = $stage->execute($cart, []);
@@ -75,7 +75,7 @@ describe('PaymentStage', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
         $cart->add('item-1', 'Product', 5000, 1);
 
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $stage->onProcess(fn ($cart, $context) => [
             'success' => true,
             'transaction_id' => 'txn_abc123',
@@ -94,7 +94,7 @@ describe('PaymentStage', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
         $cart->add('item-1', 'Product', 10000, 1);
 
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $stage->onProcess(fn ($cart, $context) => [
             'success' => true,
             'payment_url' => 'https://payment.example.com/checkout/xyz',
@@ -111,7 +111,7 @@ describe('PaymentStage', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
         $cart->add('item-1', 'Product', 5000, 1);
 
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $stage->onProcess(fn ($cart, $context) => [
             'success' => false,
             'message' => 'Card declined',
@@ -128,7 +128,7 @@ describe('PaymentStage', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
         $cart->add('item-1', 'Product', 5000, 1);
 
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $stage->onProcess(fn ($cart, $context) => ['success' => false]);
 
         $result = $stage->execute($cart, []);
@@ -142,7 +142,7 @@ describe('PaymentStage', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
         $cart->add('item-1', 'Product', 5000, 1);
 
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $stage->onProcess(function ($cart, $context): void {
             throw new Exception('Payment gateway timeout');
         });
@@ -155,7 +155,7 @@ describe('PaymentStage', function (): void {
     });
 
     it('supports rollback with refund callback', function (): void {
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
 
         expect($stage->supportsRollback())->toBeFalse();
 
@@ -172,7 +172,7 @@ describe('PaymentStage', function (): void {
         $refundedAmount = 0;
         $refundedTransactionId = null;
 
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $stage->onRefund(function ($transactionId, $amountCents) use (&$refunded, &$refundedAmount, &$refundedTransactionId) {
             $refunded = true;
             $refundedTransactionId = $transactionId;
@@ -199,7 +199,7 @@ describe('PaymentStage', function (): void {
 
         $refundedAmount = 0;
 
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $stage->onRefund(function ($transactionId, $amountCents) use (&$refundedAmount) {
             $refundedAmount = $amountCents;
 
@@ -217,7 +217,7 @@ describe('PaymentStage', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
         $refundCalled = false;
 
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $stage->onRefund(function () use (&$refundCalled) {
             $refundCalled = true;
 
@@ -232,7 +232,7 @@ describe('PaymentStage', function (): void {
     it('skips rollback without refund callback', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
 
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
 
         $context = ['transaction_id' => 'txn_abc'];
 
@@ -245,7 +245,7 @@ describe('PaymentStage', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
         $cart->add('item-1', 'Product', 5000, 1);
 
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $stage->onRefund(function (): void {
             throw new Exception('Refund service unavailable');
         });
@@ -263,7 +263,7 @@ describe('PaymentStage', function (): void {
 
         $receivedContext = null;
 
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $stage->onProcess(function ($cart, $context) use (&$receivedContext) {
             $receivedContext = $context;
 
@@ -276,7 +276,7 @@ describe('PaymentStage', function (): void {
     });
 
     it('handles zero cart total as skip payment', function (): void {
-        $stage = new PaymentStage();
+        $stage = new PaymentStage;
         $stage->onProcess(fn () => ['success' => true]);
 
         $cart = new Cart($this->storage, 'cart-123');

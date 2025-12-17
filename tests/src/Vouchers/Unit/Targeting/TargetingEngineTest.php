@@ -20,7 +20,7 @@ afterEach(function (): void {
  */
 function createTargetingEngineContext(array $metadata = []): TargetingContext
 {
-    $cart = new Cart(new InMemoryStorage(), 'engine-test-' . uniqid());
+    $cart = new Cart(new InMemoryStorage, 'engine-test-' . uniqid());
     $cart->add([
         'id' => 'product-1',
         'name' => 'Test Product',
@@ -34,7 +34,7 @@ function createTargetingEngineContext(array $metadata = []): TargetingContext
 describe('TargetingEngine', function (): void {
     describe('constructor', function (): void {
         it('registers default evaluators', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $evaluators = $engine->getEvaluators();
 
             expect($evaluators)->toHaveKey('user_segment');
@@ -55,7 +55,7 @@ describe('TargetingEngine', function (): void {
 
     describe('registerEvaluator', function (): void {
         it('registers custom evaluator', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
 
             $customEvaluator = Mockery::mock(TargetingRuleEvaluator::class);
             $customEvaluator->shouldReceive('getType')->andReturn('custom_type');
@@ -69,7 +69,7 @@ describe('TargetingEngine', function (): void {
 
     describe('getEvaluator', function (): void {
         it('returns evaluator by type', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
 
             $evaluator = $engine->getEvaluator('cart_value');
 
@@ -78,7 +78,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('returns null for unknown type', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
 
             expect($engine->getEvaluator('unknown_type'))->toBeNull();
         });
@@ -86,14 +86,14 @@ describe('TargetingEngine', function (): void {
 
     describe('evaluate', function (): void {
         it('returns true for empty targeting', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             expect($engine->evaluate([], $context))->toBeTrue();
         });
 
         it('uses all mode by default', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             // Cart has total 10000 (5000 * 2 items), so >= 5000 should pass
@@ -107,7 +107,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('evaluates with all mode - all rules must pass', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluate([
@@ -122,7 +122,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('evaluates with all mode - fails if any rule fails', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluate([
@@ -137,7 +137,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('evaluates with any mode - one rule must pass', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluate([
@@ -152,7 +152,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('evaluates with any mode - fails if all rules fail', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluate([
@@ -167,7 +167,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('evaluates with custom mode using expression', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluate([
@@ -186,14 +186,14 @@ describe('TargetingEngine', function (): void {
 
     describe('evaluateAll', function (): void {
         it('returns true for empty rules', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             expect($engine->evaluateAll([], $context))->toBeTrue();
         });
 
         it('returns true when all rules pass', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluateAll([
@@ -205,7 +205,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('returns false when any rule fails', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluateAll([
@@ -218,14 +218,14 @@ describe('TargetingEngine', function (): void {
 
     describe('evaluateAny', function (): void {
         it('returns true for empty rules', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             expect($engine->evaluateAny([], $context))->toBeTrue();
         });
 
         it('returns true when any rule passes', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluateAny([
@@ -237,7 +237,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('returns false when no rules pass', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluateAny([
@@ -251,14 +251,14 @@ describe('TargetingEngine', function (): void {
 
     describe('evaluateExpression', function (): void {
         it('returns true for empty expression', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             expect($engine->evaluateExpression([], $context))->toBeTrue();
         });
 
         it('evaluates AND expression', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluateExpression([
@@ -272,7 +272,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('evaluates AND expression - fails if any fails', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluateExpression([
@@ -286,7 +286,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('returns false for invalid AND expression', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluateExpression([
@@ -297,7 +297,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('evaluates OR expression', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluateExpression([
@@ -311,7 +311,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('evaluates OR expression - fails if all fail', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluateExpression([
@@ -325,7 +325,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('returns false for invalid OR expression', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluateExpression([
@@ -336,7 +336,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('evaluates NOT expression', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluateExpression([
@@ -347,7 +347,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('evaluates NOT expression - inverts true to false', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluateExpression([
@@ -358,7 +358,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('returns true for invalid NOT expression', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluateExpression([
@@ -369,7 +369,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('evaluates nested expressions', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             // (cart_value >= 5000) AND (cart_quantity >= 999 OR cart_quantity >= 2)
@@ -389,7 +389,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('evaluates single rule expression', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluateExpression([
@@ -404,21 +404,21 @@ describe('TargetingEngine', function (): void {
 
     describe('evaluateRule', function (): void {
         it('returns true for empty rule type', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             expect($engine->evaluateRule([], $context))->toBeTrue();
         });
 
         it('returns true for unknown rule type', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             expect($engine->evaluateRule(['type' => 'unknown'], $context))->toBeTrue();
         });
 
         it('evaluates known rule type', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
             $context = createTargetingEngineContext();
 
             $result = $engine->evaluateRule([
@@ -433,7 +433,7 @@ describe('TargetingEngine', function (): void {
 
     describe('validate', function (): void {
         it('returns error for invalid mode', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
 
             $errors = $engine->validate(['mode' => 'invalid_mode']);
 
@@ -441,7 +441,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('validates rules for non-custom modes', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
 
             $errors = $engine->validate([
                 'mode' => 'all',
@@ -452,7 +452,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('validates custom mode requires expression', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
 
             $errors = $engine->validate([
                 'mode' => 'custom',
@@ -462,7 +462,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('validates custom mode expression must be array', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
 
             $errors = $engine->validate([
                 'mode' => 'custom',
@@ -473,7 +473,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('validates rule types', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
 
             $errors = $engine->validate([
                 'mode' => 'all',
@@ -486,7 +486,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('validates rule type is required', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
 
             $errors = $engine->validate([
                 'mode' => 'all',
@@ -499,7 +499,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('validates expression AND must be array', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
 
             $errors = $engine->validate([
                 'mode' => 'custom',
@@ -510,7 +510,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('validates expression OR must be array', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
 
             $errors = $engine->validate([
                 'mode' => 'custom',
@@ -521,7 +521,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('validates expression NOT must be object', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
 
             $errors = $engine->validate([
                 'mode' => 'custom',
@@ -532,7 +532,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('validates nested expression', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
 
             $errors = $engine->validate([
                 'mode' => 'custom',
@@ -547,7 +547,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('returns no errors for valid configuration', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
 
             $errors = $engine->validate([
                 'mode' => 'all',
@@ -560,7 +560,7 @@ describe('TargetingEngine', function (): void {
         });
 
         it('validates operator for rule type', function (): void {
-            $engine = new TargetingEngine();
+            $engine = new TargetingEngine;
 
             $errors = $engine->validate([
                 'mode' => 'all',

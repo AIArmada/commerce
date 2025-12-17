@@ -15,7 +15,7 @@ beforeEach(function (): void {
 
 describe('getHeaders', function (): void {
     it('returns correct headers', function (): void {
-        $export = new BatchExport();
+        $export = new BatchExport;
 
         $headers = $export->getHeaders();
 
@@ -37,7 +37,7 @@ describe('getRows', function (): void {
             'location_id' => $this->location->id,
         ]);
 
-        $export = new BatchExport();
+        $export = new BatchExport;
         $rows = iterator_to_array($export->getRows());
 
         expect($rows)->toHaveCount(3);
@@ -102,7 +102,7 @@ describe('getRows', function (): void {
             'location_id' => $this->location->id,
         ]);
 
-        $export = new BatchExport();
+        $export = new BatchExport;
         $rows = iterator_to_array($export->getRows());
 
         expect($rows[0][3])->toBe('Warehouse A');
@@ -117,7 +117,7 @@ describe('getRows', function (): void {
             'expires_at' => $expiryDate,
         ]);
 
-        $export = new BatchExport();
+        $export = new BatchExport;
         $rows = iterator_to_array($export->getRows());
 
         // Days until expiry is in column index 10
@@ -127,7 +127,7 @@ describe('getRows', function (): void {
 
 describe('getFilename', function (): void {
     it('generates filename with date', function (): void {
-        $export = new BatchExport();
+        $export = new BatchExport;
         $filename = $export->getFilename();
 
         expect($filename)->toStartWith('batches-');

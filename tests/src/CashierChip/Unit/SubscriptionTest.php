@@ -119,8 +119,8 @@ class SubscriptionTest extends CashierChipTestCase
 
     public function test_owner_relationship()
     {
-        $user = new User();
-        $subscription = new Subscription();
+        $user = new User;
+        $subscription = new Subscription;
         $subscription->setRelation('owner', $user);
 
         $this->assertSame($user, $subscription->owner);
@@ -129,7 +129,7 @@ class SubscriptionTest extends CashierChipTestCase
     public function test_items_relationship()
     {
         // hasMany relation
-        $subscription = new Subscription();
+        $subscription = new Subscription;
         $this->assertInstanceOf(\Illuminate\Database\Eloquent\Relations\HasMany::class, $subscription->items());
     }
 
@@ -199,7 +199,7 @@ class SubscriptionTest extends CashierChipTestCase
         $subscription = new Subscription(['recurring_token' => 'tok_123']);
         $this->assertEquals('tok_123', $subscription->recurringToken());
 
-        $subscription = new Subscription();
+        $subscription = new Subscription;
         $owner = Mockery::mock(User::class);
         $pm = Mockery::mock(PaymentMethod::class);
         $pm->shouldReceive('id')->andReturn('tok_default');

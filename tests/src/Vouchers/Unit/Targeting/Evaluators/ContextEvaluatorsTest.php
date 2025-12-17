@@ -33,7 +33,7 @@ function createContextForDeviceChannelTests(
     ?string $device = null,
     bool $isFirstPurchase = false,
 ): TargetingContext {
-    $cart = new Cart(new InMemoryStorage(), 'test-' . uniqid());
+    $cart = new Cart(new InMemoryStorage, 'test-' . uniqid());
 
     $metadata = [];
     if ($channel !== null) {
@@ -51,7 +51,7 @@ function createContextForDeviceChannelTests(
 
 describe('ChannelEvaluator', function (): void {
     beforeEach(function (): void {
-        $this->evaluator = new ChannelEvaluator();
+        $this->evaluator = new ChannelEvaluator;
     });
 
     describe('supports', function (): void {
@@ -156,7 +156,7 @@ describe('ChannelEvaluator', function (): void {
 
 describe('DeviceEvaluator', function (): void {
     beforeEach(function (): void {
-        $this->evaluator = new DeviceEvaluator();
+        $this->evaluator = new DeviceEvaluator;
     });
 
     describe('supports', function (): void {
@@ -260,7 +260,7 @@ describe('DeviceEvaluator', function (): void {
 
 describe('FirstPurchaseEvaluator', function (): void {
     beforeEach(function (): void {
-        $this->evaluator = new FirstPurchaseEvaluator();
+        $this->evaluator = new FirstPurchaseEvaluator;
     });
 
     describe('supports', function (): void {

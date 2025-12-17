@@ -15,12 +15,12 @@ beforeEach(function (): void {
 
 describe('ValuationExport', function (): void {
     it('implements ExportableInterface', function (): void {
-        $export = new ValuationExport();
+        $export = new ValuationExport;
         expect($export)->toBeInstanceOf(ExportableInterface::class);
     });
 
     it('returns correct headers', function (): void {
-        $export = new ValuationExport();
+        $export = new ValuationExport;
         $headers = $export->getHeaders();
 
         expect($headers)->toBeArray();
@@ -32,7 +32,7 @@ describe('ValuationExport', function (): void {
     });
 
     it('generates filename with date', function (): void {
-        $export = new ValuationExport();
+        $export = new ValuationExport;
         $filename = $export->getFilename();
 
         expect($filename)->toStartWith('valuation-');
@@ -84,7 +84,7 @@ describe('ValuationExport', function (): void {
             'variance_from_previous_minor' => 100,
         ]);
 
-        $export = new ValuationExport();
+        $export = new ValuationExport;
         $rows = iterator_to_array($export->getRows());
 
         expect($rows[0][5])->toBe(123.45); // Total Value (12345 / 100)
@@ -102,7 +102,7 @@ describe('ValuationExport', function (): void {
             'variance_from_previous_minor' => null,
         ]);
 
-        $export = new ValuationExport();
+        $export = new ValuationExport;
         $rows = iterator_to_array($export->getRows());
 
         expect($rows[0][8])->toBeNull();
@@ -115,7 +115,7 @@ describe('ValuationExport', function (): void {
             'snapshot_date' => CarbonImmutable::now(),
         ]);
 
-        $export = new ValuationExport();
+        $export = new ValuationExport;
         $rows = iterator_to_array($export->getRows());
 
         expect($rows[0][1])->toBe(CostingMethod::Fifo->label());
@@ -128,7 +128,7 @@ describe('ValuationExport', function (): void {
             'snapshot_date' => CarbonImmutable::now(),
         ]);
 
-        $export = new ValuationExport();
+        $export = new ValuationExport;
         $rows = iterator_to_array($export->getRows());
 
         expect($rows[0][2])->toBe($this->location->name);
@@ -149,7 +149,7 @@ describe('ValuationExport', function (): void {
             'snapshot_date' => CarbonImmutable::now()->subMonths(18),
         ]);
 
-        $export = new ValuationExport();
+        $export = new ValuationExport;
         $rows = iterator_to_array($export->getRows());
 
         expect($rows)->toHaveCount(1);
@@ -170,7 +170,7 @@ describe('ValuationExport', function (): void {
             'variance_from_previous_minor' => -500,
         ]);
 
-        $export = new ValuationExport();
+        $export = new ValuationExport;
         $rows = iterator_to_array($export->getRows());
 
         expect($rows[0][0])->toBe($snapshotDate->format('Y-m-d')); // Snapshot Date
@@ -208,7 +208,7 @@ describe('ValuationExport', function (): void {
             'sku_count' => 3,
         ]);
 
-        $export = new ValuationExport();
+        $export = new ValuationExport;
         $rows = iterator_to_array($export->getRows());
 
         expect($rows)->toHaveCount(3);

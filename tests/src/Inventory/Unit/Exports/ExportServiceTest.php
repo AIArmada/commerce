@@ -6,7 +6,7 @@ use AIArmada\Inventory\Exports\ExportableInterface;
 use AIArmada\Inventory\Exports\ExportService;
 
 beforeEach(function (): void {
-    $this->service = new ExportService();
+    $this->service = new ExportService;
 });
 
 describe('toCsv', function (): void {

@@ -40,7 +40,7 @@ class CartWithGiftCards
  */
 function createGiftCardCartWrapper(string $id = 'gc-test'): CartWithGiftCards
 {
-    $cart = new Cart(new InMemoryStorage(), $id);
+    $cart = new Cart(new InMemoryStorage, $id);
 
     return new CartWithGiftCards($cart);
 }

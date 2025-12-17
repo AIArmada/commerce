@@ -9,7 +9,7 @@ use AIArmada\Orders\States\Completed;
 describe('GenerateInvoice Action', function (): void {
     describe('Invoice Generation', function (): void {
         it('can be instantiated', function (): void {
-            $action = new GenerateInvoice();
+            $action = new GenerateInvoice;
             expect($action)->toBeInstanceOf(GenerateInvoice::class);
         });
 
@@ -22,7 +22,7 @@ describe('GenerateInvoice Action', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $action = new GenerateInvoice();
+            $action = new GenerateInvoice;
             $path = storage_path('app/test-invoice.pdf');
 
             // Mock the PDF facade to avoid actual file generation
@@ -40,7 +40,7 @@ describe('GenerateInvoice Action', function (): void {
         });
 
         it('has download method', function (): void {
-            $action = new GenerateInvoice();
+            $action = new GenerateInvoice;
             expect(method_exists($action, 'download'))->toBeTrue();
         });
     });

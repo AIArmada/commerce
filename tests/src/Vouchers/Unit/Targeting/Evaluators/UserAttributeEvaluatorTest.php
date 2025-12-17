@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Model;
 use Mockery;
 
 beforeEach(function (): void {
-    $this->evaluator = new UserAttributeEvaluator();
+    $this->evaluator = new UserAttributeEvaluator;
 });
 
 /**
@@ -21,7 +21,7 @@ beforeEach(function (): void {
  */
 function createCartForUserAttrTest(): Cart
 {
-    return new Cart(new InMemoryStorage(), 'user-attr-test');
+    return new Cart(new InMemoryStorage, 'user-attr-test');
 }
 
 /**

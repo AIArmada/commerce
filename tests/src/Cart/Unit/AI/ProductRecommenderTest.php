@@ -18,12 +18,12 @@ beforeEach(function (): void {
         'min_confidence' => 0.3,
     ]);
     Cache::flush();
-    $this->storage = new InMemoryStorage();
+    $this->storage = new InMemoryStorage;
 });
 
 describe('ProductRecommender', function (): void {
     it('can be instantiated', function (): void {
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
 
         expect($recommender)->toBeInstanceOf(ProductRecommender::class);
     });
@@ -32,7 +32,7 @@ describe('ProductRecommender', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
         $cart->add('item-1', 'Test Product', 1000, 1, ['category' => 'electronics']);
 
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
         $recommendations = $recommender->recommend($cart);
 
         expect($recommendations)->toBeInstanceOf(Collection::class);
@@ -42,7 +42,7 @@ describe('ProductRecommender', function (): void {
         $cart = new Cart($this->storage, 'cart-cache-test');
         $cart->add('item-1', 'Test Product', 1000, 1, ['category' => 'electronics']);
 
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
 
         $recommendations1 = $recommender->recommend($cart);
         $recommendations2 = $recommender->recommend($cart);
@@ -54,7 +54,7 @@ describe('ProductRecommender', function (): void {
         $cart = new Cart($this->storage, 'cart-personalized');
         $cart->add('item-1', 'Test Product', 1000, 1, ['category' => 'electronics']);
 
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
         $recommendations = $recommender->recommend($cart, 'user-123');
 
         expect($recommendations)->toBeInstanceOf(Collection::class);
@@ -64,7 +64,7 @@ describe('ProductRecommender', function (): void {
         $cart = new Cart($this->storage, 'cart-recovery');
         $cart->add('item-1', 'Test Product', 1000, 1, ['category' => 'electronics']);
 
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
         $recommendations = $recommender->recommendForRecovery($cart);
 
         expect($recommendations)->toBeInstanceOf(Collection::class)
@@ -72,7 +72,7 @@ describe('ProductRecommender', function (): void {
     });
 
     it('records recommendation clicks', function (): void {
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
 
         $recommender->recordClick('product-123', 'cart-456', 'frequently_bought');
 
@@ -83,7 +83,7 @@ describe('ProductRecommender', function (): void {
     });
 
     it('records recommendation conversions', function (): void {
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
 
         $recommender->recordConversion('product-123', 'cart-456', 'complementary');
 
@@ -93,7 +93,7 @@ describe('ProductRecommender', function (): void {
     });
 
     it('limits stored clicks to 1000', function (): void {
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
 
         for ($i = 0; $i < 1050; $i++) {
             $recommender->recordClick("product-{$i}", 'cart-123', 'trending');
@@ -104,7 +104,7 @@ describe('ProductRecommender', function (): void {
     });
 
     it('limits stored conversions to 1000', function (): void {
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
 
         for ($i = 0; $i < 1050; $i++) {
             $recommender->recordConversion("product-{$i}", 'cart-123', 'upsell');
@@ -115,7 +115,7 @@ describe('ProductRecommender', function (): void {
     });
 
     it('returns statistics for all recommendation types', function (): void {
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
 
         $recommender->recordClick('p1', 'c1', 'frequently_bought');
         $recommender->recordClick('p2', 'c2', 'frequently_bought');
@@ -133,7 +133,7 @@ describe('ProductRecommender', function (): void {
     it('handles empty cart for recommendations', function (): void {
         $cart = new Cart($this->storage, 'cart-empty');
 
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
         $recommendations = $recommender->recommend($cart);
 
         expect($recommendations)->toBeInstanceOf(Collection::class);
@@ -143,7 +143,7 @@ describe('ProductRecommender', function (): void {
         $cart = new Cart($this->storage, 'cart-upsell');
         $cart->add('item-basic', 'Basic Product', 5000, 1, ['category' => 'software', 'tier' => 'standard']);
 
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
         $recommendations = $recommender->recommend($cart);
 
         expect($recommendations)->toBeInstanceOf(Collection::class);
@@ -156,7 +156,7 @@ describe('ProductRecommender', function (): void {
         $cart = new Cart($this->storage, 'cart-high-confidence');
         $cart->add('item-1', 'Test Product', 1000, 1, ['category' => 'electronics']);
 
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
         $recommendations = $recommender->recommend($cart);
 
         foreach ($recommendations as $rec) {
@@ -171,7 +171,7 @@ describe('ProductRecommender', function (): void {
         $cart = new Cart($this->storage, 'cart-max-recs');
         $cart->add('item-1', 'Test Product', 1000, 1, ['category' => 'electronics']);
 
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
         $recommendations = $recommender->recommend($cart);
 
         expect($recommendations->count())->toBeLessThanOrEqual(3);
@@ -181,7 +181,7 @@ describe('ProductRecommender', function (): void {
         $cart = new Cart($this->storage, 'cart-no-cat');
         $cart->add('item-no-category', 'Uncategorized Product', 1000, 1);
 
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
         $recommendations = $recommender->recommend($cart);
 
         expect($recommendations)->toBeInstanceOf(Collection::class);
@@ -196,7 +196,7 @@ describe('ProductRecommender', function (): void {
         $cart = new Cart($this->storage, 'cart-trending');
         $cart->add('item-1', 'Test Product', 1000, 1, ['category' => 'electronics']);
 
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
         $recommendations = $recommender->recommend($cart);
 
         $trendingRecs = $recommendations->filter(fn (ProductRecommendation $r) => $r->type === 'trending');
@@ -212,7 +212,7 @@ describe('ProductRecommender', function (): void {
         $cart = new Cart($this->storage, 'cart-exclude');
         $cart->add('item-1', 'Test Product', 1000, 1, ['category' => 'electronics']);
 
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
         $recommendations = $recommender->recommend($cart);
 
         $inCartRecs = $recommendations->filter(fn (ProductRecommendation $r) => $r->productId === 'item-1');
@@ -227,7 +227,7 @@ describe('ProductRecommender', function (): void {
         $cart = new Cart($this->storage, 'cart-comp');
         $cart->add('item-1', 'Electronic Device', 10000, 1, ['category' => 'electronics']);
 
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
         $recommendations = $recommender->recommend($cart);
 
         $compRecs = $recommendations->filter(fn (ProductRecommendation $r) => $r->type === 'complementary');
@@ -242,7 +242,7 @@ describe('ProductRecommender', function (): void {
         $cart = new Cart($this->storage, 'cart-pers');
         $cart->add('item-1', 'Test Product', 1000, 1, ['category' => 'books']);
 
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
         $recommendations = $recommender->recommend($cart, 'user-123');
 
         $persRecs = $recommendations->filter(fn (ProductRecommendation $r) => $r->type === 'personalized');
@@ -250,7 +250,7 @@ describe('ProductRecommender', function (): void {
     });
 
     it('calculates zero conversion rate when no clicks', function (): void {
-        $recommender = new ProductRecommender();
+        $recommender = new ProductRecommender;
         $stats = $recommender->getStatistics();
 
         foreach ($stats as $data) {

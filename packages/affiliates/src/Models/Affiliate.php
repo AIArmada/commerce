@@ -20,8 +20,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
-use function class_exists;
-
 /**
  * @property string $id
  * @property string $code
@@ -215,7 +213,7 @@ final class Affiliate extends Model
      */
     public function vouchers(): HasMany
     {
-        if (class_exists(\AIArmada\Vouchers\Models\Voucher::class)) {
+        if (\class_exists(\AIArmada\Vouchers\Models\Voucher::class)) {
             return $this->hasMany(\AIArmada\Vouchers\Models\Voucher::class, 'affiliate_id');
         }
 

@@ -12,7 +12,7 @@ class TaxZoneNotFoundExceptionTest extends TaxTestCase
 {
     public function test_exception_creation_with_default_message(): void
     {
-        $exception = new TaxZoneNotFoundException();
+        $exception = new TaxZoneNotFoundException;
 
         $this->assertEquals('Tax zone not found', $exception->getMessage());
     }
@@ -27,7 +27,7 @@ class TaxZoneNotFoundExceptionTest extends TaxTestCase
 
     public function test_exception_is_instance_of_exception(): void
     {
-        $exception = new TaxZoneNotFoundException();
+        $exception = new TaxZoneNotFoundException;
 
         $this->assertInstanceOf(Exception::class, $exception);
         $this->assertInstanceOf(TaxZoneNotFoundException::class, $exception);

@@ -7,7 +7,7 @@ use AIArmada\Inventory\Strategies\AllocationContext;
 describe('AllocationContext', function (): void {
     describe('constructor', function (): void {
         it('creates with defaults', function (): void {
-            $context = new AllocationContext();
+            $context = new AllocationContext;
 
             expect($context->locationId)->toBeNull();
             expect($context->orderId)->toBeNull();
@@ -124,7 +124,7 @@ describe('AllocationContext', function (): void {
 
     describe('withLocation', function (): void {
         it('returns new instance with location', function (): void {
-            $original = new AllocationContext();
+            $original = new AllocationContext;
             $modified = $original->withLocation('loc-123');
 
             expect($modified)->not->toBe($original);
@@ -135,7 +135,7 @@ describe('AllocationContext', function (): void {
 
     describe('withOrder', function (): void {
         it('returns new instance with order', function (): void {
-            $original = new AllocationContext();
+            $original = new AllocationContext;
             $modified = $original->withOrder('order-123');
 
             expect($modified)->not->toBe($original);
@@ -146,7 +146,7 @@ describe('AllocationContext', function (): void {
 
     describe('withBackorderSupport', function (): void {
         it('returns new instance with backorder enabled', function (): void {
-            $original = new AllocationContext();
+            $original = new AllocationContext;
             $modified = $original->withBackorderSupport();
 
             expect($modified)->not->toBe($original);
@@ -157,7 +157,7 @@ describe('AllocationContext', function (): void {
 
     describe('withExpiryConstraint', function (): void {
         it('returns new instance with default expiry', function (): void {
-            $original = new AllocationContext();
+            $original = new AllocationContext;
             $modified = $original->withExpiryConstraint();
 
             expect($modified)->not->toBe($original);
@@ -166,7 +166,7 @@ describe('AllocationContext', function (): void {
         });
 
         it('returns new instance with custom expiry', function (): void {
-            $original = new AllocationContext();
+            $original = new AllocationContext;
             $modified = $original->withExpiryConstraint(21);
 
             expect($modified)->not->toBe($original);
@@ -177,7 +177,7 @@ describe('AllocationContext', function (): void {
 
     describe('withMaxLocations', function (): void {
         it('returns new instance with max locations', function (): void {
-            $original = new AllocationContext();
+            $original = new AllocationContext;
             $modified = $original->withMaxLocations(5);
 
             expect($modified)->not->toBe($original);
@@ -188,7 +188,7 @@ describe('AllocationContext', function (): void {
 
     describe('withPreferredZone', function (): void {
         it('returns new instance with preferred zone', function (): void {
-            $original = new AllocationContext();
+            $original = new AllocationContext;
             $modified = $original->withPreferredZone('zone-a');
 
             expect($modified)->not->toBe($original);
@@ -199,7 +199,7 @@ describe('AllocationContext', function (): void {
 
     describe('excludingZone', function (): void {
         it('returns new instance with excluded zone', function (): void {
-            $original = new AllocationContext();
+            $original = new AllocationContext;
             $modified = $original->excludingZone('zone-b');
 
             expect($modified)->not->toBe($original);
@@ -210,7 +210,7 @@ describe('AllocationContext', function (): void {
 
     describe('excludingLocations', function (): void {
         it('returns new instance with excluded locations', function (): void {
-            $original = new AllocationContext();
+            $original = new AllocationContext;
             $modified = $original->excludingLocations(['loc-1', 'loc-2']);
 
             expect($modified)->not->toBe($original);
@@ -221,7 +221,7 @@ describe('AllocationContext', function (): void {
 
     describe('preferringLocations', function (): void {
         it('returns new instance with preferred locations', function (): void {
-            $original = new AllocationContext();
+            $original = new AllocationContext;
             $modified = $original->preferringLocations(['loc-3', 'loc-4']);
 
             expect($modified)->not->toBe($original);
@@ -232,7 +232,7 @@ describe('AllocationContext', function (): void {
 
     describe('hasOriginCoordinates', function (): void {
         it('returns false when no coordinates', function (): void {
-            $context = new AllocationContext();
+            $context = new AllocationContext;
 
             expect($context->hasOriginCoordinates())->toBeFalse();
         });
@@ -264,7 +264,7 @@ describe('AllocationContext', function (): void {
 
     describe('method chaining', function (): void {
         it('supports fluent interface', function (): void {
-            $context = (new AllocationContext())
+            $context = (new AllocationContext)
                 ->withLocation('loc-123')
                 ->withOrder('order-456')
                 ->withBackorderSupport()

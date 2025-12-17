@@ -132,7 +132,7 @@ describe('HasResourceAuthz trait', function (): void {
 
         Filament::shouldReceive('auth')->andReturn($guard);
 
-        $record = new TestModelForResource();
+        $record = new TestModelForResource;
         $record->user_id = 1;
 
         // Owner should be able to view their own record
@@ -155,7 +155,7 @@ describe('HasResourceAuthz trait', function (): void {
         $aggregator->shouldReceive('userHasPermission')->andReturn(false);
         app()->instance(PermissionAggregator::class, $aggregator);
 
-        $record = new TestModelForResource();
+        $record = new TestModelForResource;
         $record->user_id = 1;
 
         // 'forceDelete' is not in owner abilities
@@ -180,7 +180,7 @@ describe('HasResourceAuthz trait', function (): void {
             ->andReturn(true);
         app()->instance(PermissionAggregator::class, $aggregator);
 
-        $record = new TestModelForResource();
+        $record = new TestModelForResource;
         $record->user_id = 1;
 
         $result = TestResourceWithAuthz::canPerform('view', $record);
@@ -239,7 +239,7 @@ describe('scopeEloquentQueryWithPermissions', function (): void {
         TestResourceWithAuthz::scopeResourceToTeam('team_id');
 
         // Create a minimal model instance for tenant
-        $tenant = new TestModelForResource();
+        $tenant = new TestModelForResource;
         // Use reflection to set id since we can't assign to model directly without table
         $reflection = new ReflectionProperty(Model::class, 'attributes');
         $reflection->setAccessible(true);

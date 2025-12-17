@@ -18,10 +18,10 @@ describe('Order Policies', function (): void {
             $user->shouldReceive('can')->with('view_any_order')->andReturn(true);
             $user->shouldReceive('can')->with('view_order')->andReturn(true);
 
-            $policy = new OrderPolicy();
+            $policy = new OrderPolicy;
 
             expect($policy->viewAny($user))->toBeTrue();
-            expect($policy->view($user, new Order()))->toBeTrue();
+            expect($policy->view($user, new Order))->toBeTrue();
         });
 
         it('denies viewing orders when user lacks permission', function (): void {
@@ -29,17 +29,17 @@ describe('Order Policies', function (): void {
             $user->shouldReceive('can')->with('view_any_order')->andReturn(false);
             $user->shouldReceive('can')->with('view_order')->andReturn(false);
 
-            $policy = new OrderPolicy();
+            $policy = new OrderPolicy;
 
             expect($policy->viewAny($user))->toBeFalse();
-            expect($policy->view($user, new Order()))->toBeFalse();
+            expect($policy->view($user, new Order))->toBeFalse();
         });
 
         it('allows creating orders when user has permission', function (): void {
             $user = Mockery::mock(User::class);
             $user->shouldReceive('can')->with('create_order')->andReturn(true);
 
-            $policy = new OrderPolicy();
+            $policy = new OrderPolicy;
 
             expect($policy->create($user))->toBeTrue();
         });
@@ -48,7 +48,7 @@ describe('Order Policies', function (): void {
             $user = Mockery::mock(User::class);
             $user->shouldReceive('can')->with('create_order')->andReturn(false);
 
-            $policy = new OrderPolicy();
+            $policy = new OrderPolicy;
 
             expect($policy->create($user))->toBeFalse();
         });
@@ -65,7 +65,7 @@ describe('Order Policies', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $policy = new OrderPolicy();
+            $policy = new OrderPolicy;
 
             expect($policy->update($user, $order))->toBeTrue();
         });
@@ -82,7 +82,7 @@ describe('Order Policies', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $policy = new OrderPolicy();
+            $policy = new OrderPolicy;
 
             expect($policy->update($user, $order))->toBeFalse();
         });
@@ -91,27 +91,27 @@ describe('Order Policies', function (): void {
             $user = Mockery::mock(User::class);
             $user->shouldReceive('can')->with('delete_order')->andReturn(true);
 
-            $policy = new OrderPolicy();
+            $policy = new OrderPolicy;
 
-            expect($policy->delete($user, new Order()))->toBeTrue();
+            expect($policy->delete($user, new Order))->toBeTrue();
         });
 
         it('allows restoring orders when user has permission', function (): void {
             $user = Mockery::mock(User::class);
             $user->shouldReceive('can')->with('restore_order')->andReturn(true);
 
-            $policy = new OrderPolicy();
+            $policy = new OrderPolicy;
 
-            expect($policy->restore($user, new Order()))->toBeTrue();
+            expect($policy->restore($user, new Order))->toBeTrue();
         });
 
         it('allows force deleting orders when user has permission', function (): void {
             $user = Mockery::mock(User::class);
             $user->shouldReceive('can')->with('force_delete_order')->andReturn(true);
 
-            $policy = new OrderPolicy();
+            $policy = new OrderPolicy;
 
-            expect($policy->forceDelete($user, new Order()))->toBeTrue();
+            expect($policy->forceDelete($user, new Order))->toBeTrue();
         });
 
         it('allows canceling cancellable orders when user has permission', function (): void {
@@ -126,7 +126,7 @@ describe('Order Policies', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $policy = new OrderPolicy();
+            $policy = new OrderPolicy;
 
             expect($policy->cancel($user, $order))->toBeTrue();
         });
@@ -143,7 +143,7 @@ describe('Order Policies', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $policy = new OrderPolicy();
+            $policy = new OrderPolicy;
 
             expect($policy->cancel($user, $order))->toBeFalse();
         });
@@ -160,7 +160,7 @@ describe('Order Policies', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $policy = new OrderPolicy();
+            $policy = new OrderPolicy;
 
             expect($policy->refund($user, $order))->toBeTrue();
         });
@@ -177,7 +177,7 @@ describe('Order Policies', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            $policy = new OrderPolicy();
+            $policy = new OrderPolicy;
 
             expect($policy->refund($user, $order))->toBeFalse();
         });
@@ -189,17 +189,17 @@ describe('Order Policies', function (): void {
             $user->shouldReceive('can')->with('view_any_order')->andReturn(true);
             $user->shouldReceive('can')->with('view_order')->andReturn(true);
 
-            $policy = new OrderItemPolicy();
+            $policy = new OrderItemPolicy;
 
             expect($policy->viewAny($user))->toBeTrue();
-            expect($policy->view($user, new OrderItem()))->toBeTrue();
+            expect($policy->view($user, new OrderItem))->toBeTrue();
         });
 
         it('allows creating order items when user has order create permission', function (): void {
             $user = Mockery::mock(User::class);
             $user->shouldReceive('can')->with('create_order')->andReturn(true);
 
-            $policy = new OrderItemPolicy();
+            $policy = new OrderItemPolicy;
 
             expect($policy->create($user))->toBeTrue();
         });
@@ -223,7 +223,7 @@ describe('Order Policies', function (): void {
                 'unit_price' => 10000,
             ]);
 
-            $policy = new OrderItemPolicy();
+            $policy = new OrderItemPolicy;
 
             expect($policy->update($user, $item))->toBeTrue();
         });
@@ -247,7 +247,7 @@ describe('Order Policies', function (): void {
                 'unit_price' => 10000,
             ]);
 
-            $policy = new OrderItemPolicy();
+            $policy = new OrderItemPolicy;
 
             expect($policy->update($user, $item))->toBeFalse();
         });
@@ -271,7 +271,7 @@ describe('Order Policies', function (): void {
                 'unit_price' => 10000,
             ]);
 
-            $policy = new OrderItemPolicy();
+            $policy = new OrderItemPolicy;
 
             expect($policy->delete($user, $item))->toBeTrue();
         });
@@ -295,7 +295,7 @@ describe('Order Policies', function (): void {
                 'unit_price' => 10000,
             ]);
 
-            $policy = new OrderItemPolicy();
+            $policy = new OrderItemPolicy;
 
             expect($policy->delete($user, $item))->toBeFalse();
         });

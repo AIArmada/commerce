@@ -9,14 +9,14 @@ use AIArmada\Customers\Models\CustomerGroup;
 describe('CustomerGroup Model', function (): void {
     describe('Table Name', function (): void {
         it('returns configured table name', function (): void {
-            $group = new CustomerGroup();
+            $group = new CustomerGroup;
             expect($group->getTable())->toBeString();
         });
     });
 
     describe('Casts', function (): void {
         it('has correct casts', function (): void {
-            $group = new CustomerGroup();
+            $group = new CustomerGroup;
             $casts = $group->getCasts();
 
             expect(array_key_exists('spending_limit', $casts))->toBeTrue()
@@ -29,24 +29,24 @@ describe('CustomerGroup Model', function (): void {
 
     describe('Default Attributes', function (): void {
         it('defaults to active', function (): void {
-            $group = new CustomerGroup();
+            $group = new CustomerGroup;
             expect($group->is_active)->toBeTrue();
         });
 
         it('defaults to requires approval', function (): void {
-            $group = new CustomerGroup();
+            $group = new CustomerGroup;
             expect($group->requires_approval)->toBeTrue();
         });
     });
 
     describe('Relationships', function (): void {
         it('has members relationship', function (): void {
-            $group = new CustomerGroup();
+            $group = new CustomerGroup;
             expect($group->members())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsToMany::class);
         });
 
         it('has admins relationship', function (): void {
-            $group = new CustomerGroup();
+            $group = new CustomerGroup;
             expect($group->admins())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsToMany::class);
         });
     });

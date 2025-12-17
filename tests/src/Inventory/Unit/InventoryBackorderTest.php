@@ -11,20 +11,20 @@ class InventoryBackorderTest extends InventoryTestCase
 {
     public function test_get_table_returns_correct_table_name(): void
     {
-        $backorder = new InventoryBackorder();
+        $backorder = new InventoryBackorder;
         expect($backorder->getTable())->toBe('inventory_backorders');
     }
 
     public function test_inventoryable_relationship(): void
     {
-        $backorder = new InventoryBackorder();
+        $backorder = new InventoryBackorder;
         $relation = $backorder->inventoryable();
         expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphTo::class);
     }
 
     public function test_location_relationship(): void
     {
-        $backorder = new InventoryBackorder();
+        $backorder = new InventoryBackorder;
         $relation = $backorder->location();
         expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
     }

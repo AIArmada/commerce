@@ -21,7 +21,7 @@ describe('UserResource Pages', function (): void {
         });
 
         it('has header actions including create', function (): void {
-            $page = new ListUsers();
+            $page = new ListUsers;
 
             $method = new ReflectionMethod(ListUsers::class, 'getHeaderActions');
             $method->setAccessible(true);

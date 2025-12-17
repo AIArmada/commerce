@@ -19,8 +19,8 @@ describe('Policy Registration', function (): void {
 
 describe('Category Policy', function (): void {
     beforeEach(function (): void {
-        $this->policy = new CategoryPolicy();
-        $this->user = new User();
+        $this->policy = new CategoryPolicy;
+        $this->user = new User;
     });
 
     describe('viewAny', function (): void {
@@ -74,8 +74,8 @@ describe('Category Policy', function (): void {
 
 describe('Product Policy', function (): void {
     beforeEach(function (): void {
-        $this->policy = new ProductPolicy();
-        $this->user = new User();
+        $this->policy = new ProductPolicy;
+        $this->user = new User;
     });
 
     describe('viewAny', function (): void {

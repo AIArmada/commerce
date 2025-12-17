@@ -35,7 +35,7 @@ class MoreListenersTest extends CashierChipTestCase
         $purchase = PurchaseData::from($purchaseData);
         $event = new PurchasePaymentFailure($purchase, $purchaseData);
 
-        $listener = new HandlePurchasePaymentFailure();
+        $listener = new HandlePurchasePaymentFailure;
         $listener->handle($event);
 
         Event::assertDispatched(PaymentFailed::class, function ($e) use ($user) {
@@ -55,7 +55,7 @@ class MoreListenersTest extends CashierChipTestCase
         $purchase = PurchaseData::from($purchaseData);
         $event = new PurchasePaymentFailure($purchase, $purchaseData);
 
-        $listener = new HandlePurchasePaymentFailure();
+        $listener = new HandlePurchasePaymentFailure;
         $listener->handle($event);
 
         Event::assertNotDispatched(PaymentFailed::class);
@@ -79,7 +79,7 @@ class MoreListenersTest extends CashierChipTestCase
         $purchase = PurchaseData::from($purchaseData);
         $event = new PurchasePaymentFailure($purchase, $purchaseData);
 
-        $listener = new HandlePurchasePaymentFailure();
+        $listener = new HandlePurchasePaymentFailure;
         $listener->handle($event);
 
         $this->assertEquals(Subscription::STATUS_PAST_DUE, $subscription->fresh()->chip_status);
@@ -101,7 +101,7 @@ class MoreListenersTest extends CashierChipTestCase
         $purchase = PurchaseData::from($purchaseData);
         $event = new PurchasePreauthorized($purchase, $purchaseData);
 
-        $listener = new HandlePurchasePreauthorized();
+        $listener = new HandlePurchasePreauthorized;
         $listener->handle($event);
 
         $user->refresh();
@@ -120,7 +120,7 @@ class MoreListenersTest extends CashierChipTestCase
         $purchase = PurchaseData::from($purchaseData);
         $event = new PurchasePreauthorized($purchase, $purchaseData);
 
-        $listener = new HandlePurchasePreauthorized();
+        $listener = new HandlePurchasePreauthorized;
         $listener->handle($event);
 
         // No exception means it returned early successfully
@@ -140,7 +140,7 @@ class MoreListenersTest extends CashierChipTestCase
         $purchase = PurchaseData::from($purchaseData);
         $event = new PurchasePreauthorized($purchase, $purchaseData);
 
-        $listener = new HandlePurchasePreauthorized();
+        $listener = new HandlePurchasePreauthorized;
         $listener->handle($event);
 
         $user->refresh();
@@ -168,7 +168,7 @@ class MoreListenersTest extends CashierChipTestCase
         $purchase = PurchaseData::from($purchaseData);
         $event = new PurchaseSubscriptionChargeFailure($purchase, $purchaseData);
 
-        $listener = new HandleSubscriptionChargeFailure();
+        $listener = new HandleSubscriptionChargeFailure;
         $listener->handle($event);
 
         Event::assertDispatched(SubscriptionRenewalFailed::class, function ($e) use ($subscription) {
@@ -194,7 +194,7 @@ class MoreListenersTest extends CashierChipTestCase
         $purchase = PurchaseData::from($purchaseData);
         $event = new PurchaseSubscriptionChargeFailure($purchase, $purchaseData);
 
-        $listener = new HandleSubscriptionChargeFailure();
+        $listener = new HandleSubscriptionChargeFailure;
         $listener->handle($event);
 
         $this->assertEquals(Subscription::STATUS_PAST_DUE, $subscription->fresh()->chip_status);
@@ -215,7 +215,7 @@ class MoreListenersTest extends CashierChipTestCase
         $purchase = PurchaseData::from($purchaseData);
         $event = new PurchaseSubscriptionChargeFailure($purchase, $purchaseData);
 
-        $listener = new HandleSubscriptionChargeFailure();
+        $listener = new HandleSubscriptionChargeFailure;
         $listener->handle($event);
 
         Event::assertNotDispatched(SubscriptionRenewalFailed::class);

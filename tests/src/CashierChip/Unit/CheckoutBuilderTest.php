@@ -11,7 +11,7 @@ class CheckoutBuilderTest extends CashierChipTestCase
 {
     public function test_can_create_guest_builder(): void
     {
-        $builder = new CheckoutBuilder();
+        $builder = new CheckoutBuilder;
 
         $this->assertInstanceOf(CheckoutBuilder::class, $builder);
     }
@@ -26,7 +26,7 @@ class CheckoutBuilderTest extends CashierChipTestCase
 
     public function test_recurring(): void
     {
-        $builder = new CheckoutBuilder();
+        $builder = new CheckoutBuilder;
 
         $result = $builder->recurring();
 
@@ -35,7 +35,7 @@ class CheckoutBuilderTest extends CashierChipTestCase
 
     public function test_recurring_with_false(): void
     {
-        $builder = new CheckoutBuilder();
+        $builder = new CheckoutBuilder;
         $builder->recurring();
 
         $result = $builder->recurring(false);
@@ -45,7 +45,7 @@ class CheckoutBuilderTest extends CashierChipTestCase
 
     public function test_success_url(): void
     {
-        $builder = new CheckoutBuilder();
+        $builder = new CheckoutBuilder;
 
         $result = $builder->successUrl('https://example.com/success');
 
@@ -54,7 +54,7 @@ class CheckoutBuilderTest extends CashierChipTestCase
 
     public function test_cancel_url(): void
     {
-        $builder = new CheckoutBuilder();
+        $builder = new CheckoutBuilder;
 
         $result = $builder->cancelUrl('https://example.com/cancel');
 
@@ -63,7 +63,7 @@ class CheckoutBuilderTest extends CashierChipTestCase
 
     public function test_webhook_url(): void
     {
-        $builder = new CheckoutBuilder();
+        $builder = new CheckoutBuilder;
 
         $result = $builder->webhookUrl('https://example.com/webhook');
 
@@ -72,7 +72,7 @@ class CheckoutBuilderTest extends CashierChipTestCase
 
     public function test_with_metadata(): void
     {
-        $builder = new CheckoutBuilder();
+        $builder = new CheckoutBuilder;
 
         $result = $builder->withMetadata(['key' => 'value']);
 
@@ -81,7 +81,7 @@ class CheckoutBuilderTest extends CashierChipTestCase
 
     public function test_add_product(): void
     {
-        $builder = new CheckoutBuilder();
+        $builder = new CheckoutBuilder;
 
         $result = $builder->addProduct('Test Product', 1000);
 
@@ -90,7 +90,7 @@ class CheckoutBuilderTest extends CashierChipTestCase
 
     public function test_add_product_with_quantity(): void
     {
-        $builder = new CheckoutBuilder();
+        $builder = new CheckoutBuilder;
 
         $result = $builder->addProduct('Test Product', 1000, 5);
 
@@ -99,7 +99,7 @@ class CheckoutBuilderTest extends CashierChipTestCase
 
     public function test_products(): void
     {
-        $builder = new CheckoutBuilder();
+        $builder = new CheckoutBuilder;
 
         $result = $builder->products([
             ['name' => 'Product 1', 'price' => 10.00, 'quantity' => 1],
@@ -110,7 +110,7 @@ class CheckoutBuilderTest extends CashierChipTestCase
 
     public function test_currency(): void
     {
-        $builder = new CheckoutBuilder();
+        $builder = new CheckoutBuilder;
 
         $result = $builder->currency('MYR');
 
@@ -119,7 +119,7 @@ class CheckoutBuilderTest extends CashierChipTestCase
 
     public function test_fluent_chaining(): void
     {
-        $builder = new CheckoutBuilder();
+        $builder = new CheckoutBuilder;
 
         $result = $builder
             ->recurring()

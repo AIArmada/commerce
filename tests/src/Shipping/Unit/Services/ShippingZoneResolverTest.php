@@ -8,7 +8,7 @@ use AIArmada\Shipping\Services\ShippingZoneResolver;
 
 describe('ShippingZoneResolver', function (): void {
     beforeEach(function (): void {
-        $this->resolver = new ShippingZoneResolver();
+        $this->resolver = new ShippingZoneResolver;
     });
 
     it('can resolve zone for matching address', function (): void {
@@ -324,7 +324,7 @@ describe('ShippingZoneResolver', function (): void {
         ]);
 
         // Create a fresh resolver to avoid cache issues
-        $resolver = new ShippingZoneResolver();
+        $resolver = new ShippingZoneResolver;
 
         $address = new AddressData(
             name: 'John Doe',

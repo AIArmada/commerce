@@ -199,7 +199,7 @@ class RoleInheritanceService
     public function getInheritedPermissions(Role $role): Collection
     {
         $ancestors = $this->getAncestors($role);
-        $permissions = new Collection();
+        $permissions = new Collection;
 
         foreach ($ancestors as $ancestor) {
             $permissions = $permissions->merge($ancestor->permissions);

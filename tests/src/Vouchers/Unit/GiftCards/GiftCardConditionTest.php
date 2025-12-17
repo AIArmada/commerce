@@ -38,7 +38,7 @@ function createTestGiftCard(array $attributes = []): GiftCard
  */
 function createTestCart(string $id = 'test-cart'): Cart
 {
-    return new Cart(new InMemoryStorage(), $id);
+    return new Cart(new InMemoryStorage, $id);
 }
 
 describe('GiftCardCondition Construction', function (): void {

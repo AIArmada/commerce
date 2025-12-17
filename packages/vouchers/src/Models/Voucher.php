@@ -19,7 +19,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 // Conditional import for affiliate integration
-use function class_exists;
 
 /**
  * @property string $id
@@ -158,7 +157,7 @@ class Voucher extends Model
      */
     public function affiliate(): BelongsTo
     {
-        if (class_exists(\AIArmada\Affiliates\Models\Affiliate::class)) {
+        if (\class_exists(\AIArmada\Affiliates\Models\Affiliate::class)) {
             return $this->belongsTo(\AIArmada\Affiliates\Models\Affiliate::class, 'affiliate_id');
         }
 

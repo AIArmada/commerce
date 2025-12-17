@@ -18,7 +18,7 @@ use AIArmada\Vouchers\Targeting\TargetingContext;
  */
 function createCartContextForEvaluators(int $totalValue = 0, int $totalQuantity = 0): TargetingContext
 {
-    $cart = new Cart(new InMemoryStorage(), 'evaluator-test-' . uniqid());
+    $cart = new Cart(new InMemoryStorage, 'evaluator-test-' . uniqid());
 
     if ($totalQuantity > 0) {
         $pricePerItem = $totalQuantity > 0 ? (int) ($totalValue / $totalQuantity) : $totalValue;
@@ -38,7 +38,7 @@ function createCartContextForEvaluators(int $totalValue = 0, int $totalQuantity 
 
 describe('CartValueEvaluator', function (): void {
     beforeEach(function (): void {
-        $this->evaluator = new CartValueEvaluator();
+        $this->evaluator = new CartValueEvaluator;
     });
 
     describe('supports', function (): void {
@@ -192,7 +192,7 @@ describe('CartValueEvaluator', function (): void {
 
 describe('CartQuantityEvaluator', function (): void {
     beforeEach(function (): void {
-        $this->evaluator = new CartQuantityEvaluator();
+        $this->evaluator = new CartQuantityEvaluator;
     });
 
     describe('supports', function (): void {

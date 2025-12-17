@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
-    $this->sequenceManager = new SequenceManager();
+    $this->sequenceManager = new SequenceManager;
     $this->service = new DocumentService($this->sequenceManager);
 });
 

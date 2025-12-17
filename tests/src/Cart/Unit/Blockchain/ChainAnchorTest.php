@@ -17,7 +17,7 @@ beforeEach(function (): void {
 
 describe('ChainAnchor', function (): void {
     it('can be instantiated', function (): void {
-        $anchor = new ChainAnchor();
+        $anchor = new ChainAnchor;
 
         expect($anchor)->toBeInstanceOf(ChainAnchor::class);
     });
@@ -26,7 +26,7 @@ describe('ChainAnchor', function (): void {
         it('anchors proof hash internally', function (): void {
             Config::set('cart.blockchain.provider', 'internal');
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->anchor('test-proof-hash');
 
             expect($result['success'])->toBeTrue()
@@ -40,7 +40,7 @@ describe('ChainAnchor', function (): void {
         it('verifies internal anchor', function (): void {
             Config::set('cart.blockchain.provider', 'internal');
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->verify('some-anchor-id');
 
             expect($result['verified'])->toBeTrue()
@@ -56,7 +56,7 @@ describe('ChainAnchor', function (): void {
             Config::set('cart.blockchain.ethereum_endpoint', null);
             Config::set('cart.blockchain.ethereum_contract', null);
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->anchor('test-proof-hash');
 
             expect($result['success'])->toBeFalse()
@@ -75,7 +75,7 @@ describe('ChainAnchor', function (): void {
                 ]),
             ]);
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->anchor('test-proof-hash');
 
             expect($result['success'])->toBeTrue()
@@ -92,7 +92,7 @@ describe('ChainAnchor', function (): void {
                 'https://eth.example.com/rpc' => Http::response('Internal Server Error', 500),
             ]);
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->anchor('test-proof-hash');
 
             expect($result['success'])->toBeFalse()
@@ -109,7 +109,7 @@ describe('ChainAnchor', function (): void {
                 throw new Exception('Network error');
             });
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->anchor('test-proof-hash');
 
             expect($result['success'])->toBeFalse()
@@ -119,7 +119,7 @@ describe('ChainAnchor', function (): void {
         it('verifies ethereum anchor returns false', function (): void {
             Config::set('cart.blockchain.provider', 'ethereum');
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->verify('0xanchorid');
 
             expect($result['verified'])->toBeFalse()
@@ -131,7 +131,7 @@ describe('ChainAnchor', function (): void {
         it('returns not implemented for bitcoin', function (): void {
             Config::set('cart.blockchain.provider', 'bitcoin');
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->anchor('test-proof-hash');
 
             expect($result['success'])->toBeFalse()
@@ -142,7 +142,7 @@ describe('ChainAnchor', function (): void {
         it('verifies bitcoin anchor returns false', function (): void {
             Config::set('cart.blockchain.provider', 'bitcoin');
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->verify('bitcoin-anchor-id');
 
             expect($result['verified'])->toBeFalse();
@@ -157,7 +157,7 @@ describe('ChainAnchor', function (): void {
                 'https://alice.btc.calendar.opentimestamps.org/digest' => Http::response('ots_proof_data'),
             ]);
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->anchor('test-proof-hash');
 
             expect($result['success'])->toBeTrue()
@@ -172,7 +172,7 @@ describe('ChainAnchor', function (): void {
                 'https://alice.btc.calendar.opentimestamps.org/digest' => Http::response('Error', 500),
             ]);
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->anchor('test-proof-hash');
 
             expect($result['success'])->toBeFalse()
@@ -186,7 +186,7 @@ describe('ChainAnchor', function (): void {
                 throw new Exception('Connection timeout');
             });
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->anchor('test-proof-hash');
 
             expect($result['success'])->toBeFalse()
@@ -196,7 +196,7 @@ describe('ChainAnchor', function (): void {
         it('verifies opentimestamps anchor returns false', function (): void {
             Config::set('cart.blockchain.provider', 'opentimestamps');
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->verify('ots-anchor-id');
 
             expect($result['verified'])->toBeFalse();
@@ -207,7 +207,7 @@ describe('ChainAnchor', function (): void {
         it('anchors batch of proof hashes', function (): void {
             Config::set('cart.blockchain.provider', 'internal');
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->anchorBatch(['hash1', 'hash2', 'hash3']);
 
             expect($result['success'])->toBeTrue()
@@ -222,7 +222,7 @@ describe('ChainAnchor', function (): void {
         it('handles empty batch', function (): void {
             Config::set('cart.blockchain.provider', 'internal');
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->anchorBatch([]);
 
             expect($result['success'])->toBeTrue()
@@ -233,7 +233,7 @@ describe('ChainAnchor', function (): void {
         it('computes consistent batch root', function (): void {
             Config::set('cart.blockchain.provider', 'internal');
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result1 = $anchor->anchorBatch(['a', 'b']);
             $result2 = $anchor->anchorBatch(['a', 'b']);
 
@@ -243,7 +243,7 @@ describe('ChainAnchor', function (): void {
         it('produces different roots for different batches', function (): void {
             Config::set('cart.blockchain.provider', 'internal');
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result1 = $anchor->anchorBatch(['a', 'b']);
             $result2 = $anchor->anchorBatch(['c', 'd']);
 
@@ -253,7 +253,7 @@ describe('ChainAnchor', function (): void {
 
     describe('status', function (): void {
         it('returns status metrics', function (): void {
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $status = $anchor->getStatus();
 
             expect($status)->toHaveKeys(['pending', 'anchored', 'failed', 'last_anchor_time'])
@@ -268,7 +268,7 @@ describe('ChainAnchor', function (): void {
         it('computes merkle root for single hash', function (): void {
             Config::set('cart.blockchain.provider', 'internal');
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->anchorBatch(['single_hash']);
 
             expect($result['batch_root'])->toBe('single_hash');
@@ -277,7 +277,7 @@ describe('ChainAnchor', function (): void {
         it('computes merkle root for two hashes', function (): void {
             Config::set('cart.blockchain.provider', 'internal');
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->anchorBatch(['hash1', 'hash2']);
 
             $expectedRoot = hash('sha256', 'hash1' . 'hash2');
@@ -287,7 +287,7 @@ describe('ChainAnchor', function (): void {
         it('computes merkle root for odd number of hashes', function (): void {
             Config::set('cart.blockchain.provider', 'internal');
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->anchorBatch(['h1', 'h2', 'h3']);
 
             expect($result['batch_root'])->toBeString();
@@ -298,7 +298,7 @@ describe('ChainAnchor', function (): void {
         it('falls back to internal for unknown provider', function (): void {
             Config::set('cart.blockchain.provider', 'unknown_blockchain');
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->anchor('test-proof-hash');
 
             expect($result['success'])->toBeTrue()
@@ -308,7 +308,7 @@ describe('ChainAnchor', function (): void {
         it('falls back to internal for verify on unknown provider', function (): void {
             Config::set('cart.blockchain.provider', 'unknown_blockchain');
 
-            $anchor = new ChainAnchor();
+            $anchor = new ChainAnchor;
             $result = $anchor->verify('anchor-id');
 
             expect($result['verified'])->toBeTrue();

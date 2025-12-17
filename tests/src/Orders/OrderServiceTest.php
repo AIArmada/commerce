@@ -16,7 +16,7 @@ use AIArmada\Orders\States\Shipped;
 describe('OrderService', function (): void {
     describe('Order Creation', function (): void {
         it('can create an order with items and addresses', function (): void {
-            $service = new OrderService();
+            $service = new OrderService;
 
             $orderData = [
                 'order_number' => 'ORD-SVC1-' . uniqid(),
@@ -74,7 +74,7 @@ describe('OrderService', function (): void {
         });
 
         it('can add items to an order', function (): void {
-            $service = new OrderService();
+            $service = new OrderService;
             $order = Order::create([
                 'order_number' => 'ORD-SVC2-' . uniqid(),
                 'status' => Created::class,
@@ -100,7 +100,7 @@ describe('OrderService', function (): void {
         });
 
         it('can add addresses to an order', function (): void {
-            $service = new OrderService();
+            $service = new OrderService;
             $order = Order::create([
                 'order_number' => 'ORD-SVC3-' . uniqid(),
                 'status' => Created::class,
@@ -131,7 +131,7 @@ describe('OrderService', function (): void {
 
     describe('Order Operations', function (): void {
         it('can recalculate order totals', function (): void {
-            $service = new OrderService();
+            $service = new OrderService;
             $order = Order::create([
                 'order_number' => 'ORD-SVC4-' . uniqid(),
                 'status' => Created::class,
@@ -167,7 +167,7 @@ describe('OrderService', function (): void {
         });
 
         it('can create order from cart object', function (): void {
-            $service = new OrderService();
+            $service = new OrderService;
 
             // Mock cart object
             $cart = (object) [
@@ -234,7 +234,7 @@ describe('OrderService', function (): void {
 
     describe('Order Operations', function (): void {
         it('can cancel an order', function (): void {
-            $service = new OrderService();
+            $service = new OrderService;
             $order = Order::create([
                 'order_number' => 'ORD-CANCEL-' . uniqid(),
                 'status' => PendingPayment::class,
@@ -252,7 +252,7 @@ describe('OrderService', function (): void {
         });
 
         it('can confirm payment for an order', function (): void {
-            $service = new OrderService();
+            $service = new OrderService;
             $order = Order::create([
                 'order_number' => 'ORD-PAY-CONFIRM-' . uniqid(),
                 'status' => PendingPayment::class,
@@ -270,7 +270,7 @@ describe('OrderService', function (): void {
         });
 
         it('can ship an order', function (): void {
-            $service = new OrderService();
+            $service = new OrderService;
             $order = Order::create([
                 'order_number' => 'ORD-SHIP-' . uniqid(),
                 'status' => Processing::class,
@@ -287,7 +287,7 @@ describe('OrderService', function (): void {
         });
 
         it('can confirm delivery', function (): void {
-            $service = new OrderService();
+            $service = new OrderService;
             $order = Order::create([
                 'order_number' => 'ORD-DELIVER-' . uniqid(),
                 'status' => Shipped::class,
@@ -304,7 +304,7 @@ describe('OrderService', function (): void {
         });
 
         it('can process refund', function (): void {
-            $service = new OrderService();
+            $service = new OrderService;
             $order = Order::create([
                 'order_number' => 'ORD-REFUND-' . uniqid(),
                 'status' => Returned::class,

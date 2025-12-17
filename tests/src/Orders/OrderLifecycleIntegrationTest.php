@@ -16,7 +16,7 @@ use AIArmada\Orders\States\Shipped;
 
 describe('Order Lifecycle Integration', function (): void {
     it('can handle complete order lifecycle from creation to completion', function (): void {
-        $service = new OrderService();
+        $service = new OrderService;
 
         // 1. Create order
         $orderData = [
@@ -89,7 +89,7 @@ describe('Order Lifecycle Integration', function (): void {
     });
 
     it('can handle order return and refund process', function (): void {
-        $service = new OrderService();
+        $service = new OrderService;
 
         // Create and process order to delivered state
         $order = Order::create([
@@ -124,7 +124,7 @@ describe('Order Lifecycle Integration', function (): void {
     });
 
     it('can handle order cancellation with refund', function (): void {
-        $service = new OrderService();
+        $service = new OrderService;
 
         // Create order in pending payment state
         $order = Order::create([

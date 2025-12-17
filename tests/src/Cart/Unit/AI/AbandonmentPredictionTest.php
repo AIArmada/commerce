@@ -7,7 +7,7 @@ use AIArmada\Cart\AI\Intervention;
 
 describe('AbandonmentPrediction', function (): void {
     it('can be instantiated with all parameters', function (): void {
-        $predictedAt = new DateTimeImmutable();
+        $predictedAt = new DateTimeImmutable;
         $intervention = new Intervention('email', 1, 'Send recovery email', ['delay_minutes' => 30]);
 
         $prediction = new AbandonmentPrediction(
@@ -34,7 +34,7 @@ describe('AbandonmentPrediction', function (): void {
             riskLevel: 'high',
             features: [],
             interventions: [],
-            predictedAt: new DateTimeImmutable()
+            predictedAt: new DateTimeImmutable
         );
 
         expect($prediction->isHighRisk())->toBeTrue();
@@ -47,7 +47,7 @@ describe('AbandonmentPrediction', function (): void {
             riskLevel: 'medium',
             features: [],
             interventions: [],
-            predictedAt: new DateTimeImmutable()
+            predictedAt: new DateTimeImmutable
         );
 
         expect($prediction->isHighRisk())->toBeFalse();
@@ -62,7 +62,7 @@ describe('AbandonmentPrediction', function (): void {
             riskLevel: 'high',
             features: [],
             interventions: [$intervention],
-            predictedAt: new DateTimeImmutable()
+            predictedAt: new DateTimeImmutable
         );
 
         expect($prediction->needsIntervention())->toBeTrue();
@@ -75,7 +75,7 @@ describe('AbandonmentPrediction', function (): void {
             riskLevel: 'low',
             features: [],
             interventions: [],
-            predictedAt: new DateTimeImmutable()
+            predictedAt: new DateTimeImmutable
         );
 
         expect($prediction->needsIntervention())->toBeFalse();
@@ -91,7 +91,7 @@ describe('AbandonmentPrediction', function (): void {
             riskLevel: 'high',
             features: [],
             interventions: [$intervention1, $intervention2],
-            predictedAt: new DateTimeImmutable()
+            predictedAt: new DateTimeImmutable
         );
 
         $topIntervention = $prediction->getTopIntervention();
@@ -105,7 +105,7 @@ describe('AbandonmentPrediction', function (): void {
             riskLevel: 'low',
             features: [],
             interventions: [],
-            predictedAt: new DateTimeImmutable()
+            predictedAt: new DateTimeImmutable
         );
 
         expect($prediction->getTopIntervention())->toBeNull();
@@ -122,7 +122,7 @@ describe('AbandonmentPrediction', function (): void {
             riskLevel: 'high',
             features: [],
             interventions: [$intervention1, $intervention2, $intervention3],
-            predictedAt: new DateTimeImmutable()
+            predictedAt: new DateTimeImmutable
         );
 
         $emailInterventions = $prediction->getInterventionsByType('email');
@@ -138,7 +138,7 @@ describe('AbandonmentPrediction', function (): void {
             riskLevel: 'high',
             features: [],
             interventions: [$intervention],
-            predictedAt: new DateTimeImmutable()
+            predictedAt: new DateTimeImmutable
         );
 
         $smsInterventions = $prediction->getInterventionsByType('sms');
@@ -152,7 +152,7 @@ describe('AbandonmentPrediction', function (): void {
             riskLevel: 'high',
             features: ['cart_age' => 0.6, 'item_count' => 0.3, 'cart_value' => 0.8],
             interventions: [],
-            predictedAt: new DateTimeImmutable()
+            predictedAt: new DateTimeImmutable
         );
 
         $mostSignificant = $prediction->getMostSignificantFeature();
@@ -166,7 +166,7 @@ describe('AbandonmentPrediction', function (): void {
             riskLevel: 'medium',
             features: [],
             interventions: [],
-            predictedAt: new DateTimeImmutable()
+            predictedAt: new DateTimeImmutable
         );
 
         expect($prediction->getMostSignificantFeature())->toBeNull();
@@ -179,7 +179,7 @@ describe('AbandonmentPrediction', function (): void {
             riskLevel: 'medium',
             features: ['cart_age' => 0.0, 'item_count' => 0.0],
             interventions: [],
-            predictedAt: new DateTimeImmutable()
+            predictedAt: new DateTimeImmutable
         );
 
         expect($prediction->getMostSignificantFeature())->toBeNull();

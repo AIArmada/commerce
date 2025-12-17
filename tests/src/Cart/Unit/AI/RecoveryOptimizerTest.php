@@ -22,7 +22,7 @@ beforeEach(function (): void {
     ]);
     Config::set('cart.database.table', 'carts');
     Cache::flush();
-    $this->storage = new InMemoryStorage();
+    $this->storage = new InMemoryStorage;
 });
 
 describe('RecoveryOptimizer', function (): void {

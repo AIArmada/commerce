@@ -48,7 +48,7 @@ describe('EditPermission Page', function (): void {
     });
 
     it('executes getHeaderActions', function (): void {
-        $page = new EditPermission();
+        $page = new EditPermission;
 
         $method = new ReflectionMethod(EditPermission::class, 'getHeaderActions');
         $method->setAccessible(true);
@@ -64,7 +64,7 @@ describe('EditPermission Page', function (): void {
         $registrar->shouldReceive('forgetCachedPermissions')->once();
         app()->instance(PermissionRegistrar::class, $registrar);
 
-        $page = new EditPermission();
+        $page = new EditPermission;
 
         $method = new ReflectionMethod(EditPermission::class, 'afterSave');
         $method->setAccessible(true);
@@ -91,7 +91,7 @@ describe('CreatePermission Page', function (): void {
         $registrar->shouldReceive('forgetCachedPermissions')->once();
         app()->instance(PermissionRegistrar::class, $registrar);
 
-        $page = new CreatePermission();
+        $page = new CreatePermission;
 
         $method = new ReflectionMethod(CreatePermission::class, 'afterCreate');
         $method->setAccessible(true);
@@ -121,7 +121,7 @@ describe('EditUser Page', function (): void {
     });
 
     it('executes getHeaderActions', function (): void {
-        $page = new EditUser();
+        $page = new EditUser;
 
         $method = new ReflectionMethod(EditUser::class, 'getHeaderActions');
         $method->setAccessible(true);

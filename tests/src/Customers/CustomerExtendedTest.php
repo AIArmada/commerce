@@ -11,34 +11,34 @@ use Illuminate\Support\Facades\Event;
 describe('Customer Model - Extended Coverage', function (): void {
     describe('Relationships', function (): void {
         it('has addresses relationship', function (): void {
-            $customer = new Customer();
+            $customer = new Customer;
             expect($customer->addresses())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
         });
 
         it('has segments relationship', function (): void {
-            $customer = new Customer();
+            $customer = new Customer;
             expect($customer->segments())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsToMany::class);
         });
 
         it('has wishlists relationship', function (): void {
-            $customer = new Customer();
+            $customer = new Customer;
             expect($customer->wishlists())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
         });
 
         it('has notes relationship', function (): void {
-            $customer = new Customer();
+            $customer = new Customer;
             expect($customer->notes())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
         });
 
         it('has groups relationship', function (): void {
-            $customer = new Customer();
+            $customer = new Customer;
             expect($customer->groups())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsToMany::class);
         });
     });
 
     describe('Casts', function (): void {
         it('has correct casts', function (): void {
-            $customer = new Customer();
+            $customer = new Customer;
             $casts = $customer->getCasts();
 
             expect(array_key_exists('status', $casts))->toBeTrue()

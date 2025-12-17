@@ -21,7 +21,7 @@ describe('RoleResource Pages', function (): void {
         });
 
         it('has header actions including create', function (): void {
-            $page = new ListRoles();
+            $page = new ListRoles;
 
             $method = new ReflectionMethod(ListRoles::class, 'getHeaderActions');
             $method->setAccessible(true);
@@ -45,12 +45,12 @@ describe('RoleResource Pages', function (): void {
             $reflection = new ReflectionProperty(CreateRole::class, 'permissionIds');
             $reflection->setAccessible(true);
 
-            $page = new CreateRole();
+            $page = new CreateRole;
             expect($reflection->getValue($page))->toBeArray();
         });
 
         it('mutates form data before create to extract permissions', function (): void {
-            $page = new CreateRole();
+            $page = new CreateRole;
 
             $method = new ReflectionMethod(CreateRole::class, 'mutateFormDataBeforeCreate');
             $method->setAccessible(true);

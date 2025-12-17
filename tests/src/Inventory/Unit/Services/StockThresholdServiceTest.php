@@ -17,7 +17,7 @@ use Illuminate\Support\Facades\Event;
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
     $this->location = InventoryLocation::factory()->create();
-    $this->service = new StockThresholdService();
+    $this->service = new StockThresholdService;
 });
 
 describe('StockThresholdService', function (): void {

@@ -21,7 +21,7 @@ describe('PermissionResource Pages', function (): void {
         });
 
         it('has header actions including create', function (): void {
-            $page = new ListPermissions();
+            $page = new ListPermissions;
 
             $method = new ReflectionMethod(ListPermissions::class, 'getHeaderActions');
             $method->setAccessible(true);

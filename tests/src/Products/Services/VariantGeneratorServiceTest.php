@@ -12,7 +12,7 @@ use AIArmada\Products\Services\VariantGeneratorService;
 
 describe('VariantGeneratorService', function (): void {
     beforeEach(function (): void {
-        $this->service = new VariantGeneratorService();
+        $this->service = new VariantGeneratorService;
     });
 
     describe('generate', function (): void {

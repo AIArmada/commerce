@@ -11,7 +11,7 @@ use AIArmada\Cart\Checkout\StageResult;
 use AIArmada\Cart\Testing\InMemoryStorage;
 
 beforeEach(function (): void {
-    $this->storage = new InMemoryStorage();
+    $this->storage = new InMemoryStorage;
 });
 
 describe('CheckoutPipeline', function (): void {

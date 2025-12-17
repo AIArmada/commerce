@@ -12,7 +12,7 @@ use AIArmada\Inventory\Reports\InventoryKpiService;
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
     $this->location = InventoryLocation::factory()->create();
-    $this->service = new InventoryKpiService();
+    $this->service = new InventoryKpiService;
 });
 
 describe('InventoryKpiService', function (): void {

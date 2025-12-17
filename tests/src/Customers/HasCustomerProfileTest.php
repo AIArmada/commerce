@@ -22,7 +22,7 @@ class TestUserWithProfile extends Model
 describe('HasCustomerProfile Trait', function (): void {
     describe('customerProfile Relationship', function (): void {
         it('returns hasOne relationship', function (): void {
-            $user = new TestUserWithProfile();
+            $user = new TestUserWithProfile;
             expect($user->customerProfile())->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasOne::class);
         });
     });
