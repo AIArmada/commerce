@@ -12,27 +12,40 @@ and Enterprise Code Quality Enforcer.
 
 🚦 NON-NEGOTIABLE DEFINITION OF DONE (DO NOT SHIP RED)
 
-Before you claim anything is "done", you MUST ensure ALL of the following are green for the affected scope:
+Before you claim anything is "done", you MUST ensure ALL of the following are green for the **affected packages only**.
 
-1) Rector (no diffs suggested):
+## Scope (Mandatory)
+- Never run repo-wide commands.
+- Treat scope as a wildcard by default: derive the affected packages from `git diff` and run checks only for those packages.
+
 ```bash
-./vendor/bin/rector --dry-run --no-progress-bar 2>&1 | tee /tmp/rector-output.txt
+# Determine affected packages (staged + unstaged)
+(
+  git diff --name-only --cached
+  git diff --name-only
+) | awk -F/ '/^packages\/[^/]+\//{print $2}' | sort -u
 ```
 
-2) Pint (style passes):
+## Verification (Per Affected Package)
+
+1) Rector (apply fixes; no dry-run):
 ```bash
-./vendor/bin/pint --test 2>&1 | tee /tmp/pint-output.txt
+./vendor/bin/rector process packages/<pkg>/src --no-progress-bar 2>&1 | tee /tmp/rector-output-<pkg>.txt
 ```
 
-3) PHPStan (level 6):
+2) Pint (apply formatting; no --test):
 ```bash
-./vendor/bin/phpstan analyse --level=6 2>&1 | tee /tmp/phpstan-output.txt
+./vendor/bin/pint packages/<pkg>/src 2>&1 | tee /tmp/pint-output-<pkg>.txt
 ```
 
-4) Pest tests (must pass):
-- Prefer targeted package tests first (fast feedback), then broaden only as required by the change surface.
+3) PHPStan (level 6, scoped):
 ```bash
-./vendor/bin/pest --parallel tests/src/PackageName 2>&1 | tee /tmp/pest-output.txt
+./vendor/bin/phpstan analyse packages/<pkg>/src --level=6 2>&1 | tee /tmp/phpstan-output-<pkg>.txt
+```
+
+4) Pest tests (targeted first; expand only within package):
+```bash
+./vendor/bin/pest --parallel tests/src/<PackageName> 2>&1 | tee /tmp/pest-output-<pkg>.txt
 ```
 
 Failure workflow (MANDATORY):
@@ -120,22 +133,34 @@ Fix:
 
 🔥🔥🔥 SECTION 2 — VERIFICATION COMMANDS (SMART APPROACH)
 
-### During Development (Targeted)
+### During Development (Targeted, Scoped)
 ```bash
-# Run specific test file
-./vendor/bin/pest tests/src/PackageName/Unit/MyTest.php
+# Run specific test file (save output when useful)
+./vendor/bin/pest tests/src/<PackageName>/Unit/MyTest.php
 
 # PHPStan for specific package (Level 6)
-./vendor/bin/phpstan analyse packages/package-name/src --level=6
+./vendor/bin/phpstan analyse packages/<pkg>/src --level=6
+
+# Apply Rector fixes (no dry-run)
+./vendor/bin/rector process packages/<pkg>/src --no-progress-bar
+
+# Apply Pint formatting
+./vendor/bin/pint packages/<pkg>/src
 ```
 
-### Final Verification (Full Suite)
+### Final Verification (Per Affected Package Only)
 ```bash
-# PHPStan
-./vendor/bin/phpstan analyse --level=6
+# Determine affected packages (staged + unstaged)
+(
+  git diff --name-only --cached
+  git diff --name-only
+) | awk -F/ '/^packages\/[^/]+\//{print $2}' | sort -u
 
-# Full Tests (Only when targeted tests pass)
-./vendor/bin/pest --parallel tests/src/PackageName
+# Then, for each <pkg>
+./vendor/bin/rector process packages/<pkg>/src --no-progress-bar 2>&1 | tee /tmp/rector-output-<pkg>.txt
+./vendor/bin/pint packages/<pkg>/src 2>&1 | tee /tmp/pint-output-<pkg>.txt
+./vendor/bin/phpstan analyse packages/<pkg>/src --level=6 2>&1 | tee /tmp/phpstan-output-<pkg>.txt
+./vendor/bin/pest --parallel tests/src/<PackageName> 2>&1 | tee /tmp/pest-output-<pkg>.txt
 ```
 
 �🔥🔥 SECTION 3 — ISSUE REPORTING TEMPLATE (MANDATORY)
