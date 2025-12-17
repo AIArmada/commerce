@@ -5,7 +5,12 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentShipping\Pages\ManifestPage;
 use AIArmada\FilamentShipping\Pages\ShippingDashboard;
+use AIArmada\Shipping\Enums\ShipmentStatus;
+use AIArmada\Shipping\Models\Shipment;
+use Filament\Schemas\Schema;
+use Filament\Tables\Table;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Support\Carbon;
 
 uses(TestCase::class);
 
@@ -42,6 +47,26 @@ describe('ShippingDashboard', function (): void {
 
         expect($reflection->getValue(null))->toBe('shipping-dashboard');
     });
+
+    it('returns title and widgets', function (): void {
+        $page = new ShippingDashboard();
+
+        expect($page->getTitle())->toBe('Shipping Dashboard');
+        expect($page->getHeaderWidgetsColumns())->toBe(5);
+
+        $getHeaderWidgets = new ReflectionMethod($page, 'getHeaderWidgets');
+        $getHeaderWidgets->setAccessible(true);
+        $getFooterWidgets = new ReflectionMethod($page, 'getFooterWidgets');
+        $getFooterWidgets->setAccessible(true);
+
+        /** @var array $headerWidgets */
+        $headerWidgets = $getHeaderWidgets->invoke($page);
+        /** @var array $footerWidgets */
+        $footerWidgets = $getFooterWidgets->invoke($page);
+
+        expect($headerWidgets)->not()->toBeEmpty();
+        expect($footerWidgets)->not()->toBeEmpty();
+    });
 });
 
 describe('ManifestPage', function (): void {
@@ -72,5 +97,76 @@ describe('ManifestPage', function (): void {
         $reflection->setAccessible(true);
 
         expect($reflection->getValue(null))->toBe('shipping-manifests');
+    });
+
+    it('mounts with today\'s manifest date', function (): void {
+        $page = new ManifestPage();
+        $page->mount();
+
+        expect($page->manifestDate)->toBe(Carbon::today()->toDateString());
+    });
+
+    it('builds manifest form schema and table definition', function (): void {
+        $page = new ManifestPage();
+        $page->mount();
+
+        $schema = $page->form(Schema::make());
+        expect($schema->getComponents())->not()->toBeEmpty();
+
+        $table = $page->table(Table::make($page));
+        expect($table->getColumns())->not()->toBeEmpty();
+        expect($table->getRecordActions())->not()->toBeEmpty();
+    });
+
+    it('filters manifest table query by carrier and date', function (): void {
+        $page = new ManifestPage();
+        $page->mount();
+
+        $date = Carbon::today()->toDateString();
+
+        Shipment::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'reference' => 'M-REF-1',
+            'carrier_code' => 'jnt',
+            'status' => ShipmentStatus::Shipped,
+            'shipped_at' => Carbon::parse($date)->startOfDay(),
+            'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+            'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+        ]);
+
+        Shipment::query()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'reference' => 'M-REF-2',
+            'carrier_code' => 'flat_rate',
+            'status' => ShipmentStatus::Shipped,
+            'shipped_at' => Carbon::parse($date)->startOfDay(),
+            'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+            'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
+        ]);
+
+        $page->manifestDate = $date;
+        $page->selectedCarrier = 'jnt';
+
+        $method = new ReflectionMethod($page, 'getTableQuery');
+        $method->setAccessible(true);
+
+        /** @var \Illuminate\Database\Eloquent\Builder $query */
+        $query = $method->invoke($page);
+
+        expect($query->count())->toBe(1);
+    });
+
+    it('defines header actions', function (): void {
+        $page = new ManifestPage();
+
+        $method = new ReflectionMethod($page, 'getHeaderActions');
+        $method->setAccessible(true);
+
+        /** @var array $actions */
+        $actions = $method->invoke($page);
+
+        expect($actions)->not()->toBeEmpty();
     });
 });
