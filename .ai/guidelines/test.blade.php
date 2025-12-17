@@ -8,8 +8,8 @@
   - [Actions](https://filamentphp.com/docs/4.x/testing/testing-actions)
   - [Notifications](https://filamentphp.com/docs/4.x/testing/testing-notifications)
 - **Exec**:
-- **Single**: `./vendor/bin/pest path/to/Test.php`.
-- **Dir**: `./vendor/bin/pest path/to/dir`.
+- **Single**: `./vendor/bin/pest --parallel path/to/Test.php`.
+- **Dir**: `./vendor/bin/pest --parallel path/to/dir`.
 - **Full**: `./vendor/bin/pest --parallel ...` (Final only).
 - **Coverage**:
 - Don't run full if `0% files > 10%`.
