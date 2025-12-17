@@ -10,10 +10,13 @@ use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\ShippingManager;
 use BackedEnum;
 use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
 use Filament\Forms;
-use Filament\Forms\Form;
+use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
 use Filament\Tables\Concerns\InteractsWithTable;
@@ -26,6 +29,7 @@ use UnitEnum;
 
 class ManifestPage extends Page implements HasTable
 {
+    use InteractsWithForms;
     use InteractsWithTable;
 
     public ?string $selectedCarrier = null;
@@ -60,11 +64,11 @@ class ManifestPage extends Page implements HasTable
         $this->manifestDate = Carbon::today()->toDateString();
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
-                Forms\Components\Grid::make()
+                Grid::make()
                     ->schema([
                         Forms\Components\Select::make('selectedCarrier')
                             ->label('Carrier')
@@ -128,7 +132,7 @@ class ManifestPage extends Page implements HasTable
                 //
             ])
             ->actions([
-                Tables\Actions\Action::make('mark_picked_up')
+                Action::make('mark_picked_up')
                     ->icon('heroicon-o-check')
                     ->color('success')
                     ->visible(fn (Shipment $record) => ! ($record->metadata['picked_up'] ?? false))
@@ -148,7 +152,7 @@ class ManifestPage extends Page implements HasTable
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkAction::make('bulk_mark_picked_up')
+                BulkAction::make('bulk_mark_picked_up')
                     ->label('Mark Picked Up')
                     ->icon('heroicon-o-check')
                     ->color('success')

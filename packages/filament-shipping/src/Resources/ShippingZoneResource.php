@@ -9,8 +9,14 @@ use AIArmada\FilamentShipping\Resources\ShippingZoneResource\Pages;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource\RelationManagers;
 use AIArmada\Shipping\Models\ShippingZone;
 use BackedEnum;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
@@ -52,7 +58,7 @@ class ShippingZoneResource extends Resource
     {
         return $schema
             ->schema([
-                Forms\Components\Section::make('Zone Details')
+                Section::make('Zone Details')
                     ->schema([
                         Forms\Components\TextInput::make('name')
                             ->required()
@@ -87,15 +93,15 @@ class ShippingZoneResource extends Resource
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Geographic Conditions')
+                Section::make('Geographic Conditions')
                     ->schema([
                         Forms\Components\TagsInput::make('countries')
                             ->placeholder('Add country codes (e.g., MYS, SGP)')
-                            ->visible(fn (Forms\Get $get) => in_array($get('type'), ['country', 'state'])),
+                            ->visible(fn (Get $get) => in_array($get('type'), ['country', 'state'])),
 
                         Forms\Components\TagsInput::make('states')
                             ->placeholder('Add state names')
-                            ->visible(fn (Forms\Get $get) => $get('type') === 'state'),
+                            ->visible(fn (Get $get) => $get('type') === 'state'),
 
                         Forms\Components\Repeater::make('postcode_ranges')
                             ->schema([
@@ -107,9 +113,9 @@ class ShippingZoneResource extends Resource
                                     ->maxLength(20),
                             ])
                             ->columns(2)
-                            ->visible(fn (Forms\Get $get) => $get('type') === 'postcode'),
+                            ->visible(fn (Get $get) => $get('type') === 'postcode'),
 
-                        Forms\Components\Grid::make()
+                        Grid::make()
                             ->schema([
                                 Forms\Components\TextInput::make('center_lat')
                                     ->label('Latitude')
@@ -122,9 +128,9 @@ class ShippingZoneResource extends Resource
                                     ->numeric(),
                             ])
                             ->columns(3)
-                            ->visible(fn (Forms\Get $get) => $get('type') === 'radius'),
+                            ->visible(fn (Get $get) => $get('type') === 'radius'),
                     ])
-                    ->visible(fn (Forms\Get $get) => $get('type') !== null),
+                    ->visible(fn (Get $get) => $get('type') !== null),
             ]);
     }
 
@@ -176,11 +182,11 @@ class ShippingZoneResource extends Resource
                 Tables\Filters\TernaryFilter::make('active'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
+                EditAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('priority', 'desc');

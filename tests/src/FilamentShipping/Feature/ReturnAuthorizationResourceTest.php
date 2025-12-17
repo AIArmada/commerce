@@ -5,6 +5,9 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource;
 use AIArmada\Shipping\Models\ReturnAuthorization;
+use Filament\Schemas\Schema;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 use Filament\Support\Icons\Heroicon;
 
 uses(TestCase::class);
@@ -36,4 +39,19 @@ it('has standard CRUD pages', function (): void {
     expect($pages)->toHaveKey('create');
     expect($pages)->toHaveKey('view');
     expect($pages)->toHaveKey('edit');
+});
+
+it('builds return authorization resource form schema', function (): void {
+    $schema = ReturnAuthorizationResource::form(Schema::make());
+
+    expect($schema->getComponents())->not()->toBeEmpty();
+});
+
+it('builds return authorization resource table definition', function (): void {
+    $livewire = Mockery::mock(HasTable::class);
+
+    $table = ReturnAuthorizationResource::table(Table::make($livewire));
+
+    expect($table->getColumns())->not()->toBeEmpty();
+    expect($table->getRecordActions())->not()->toBeEmpty();
 });

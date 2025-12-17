@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
+use Filament\Actions\Action;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -61,7 +62,7 @@ class PendingShipmentsWidget extends BaseWidget
                     ->sortable(),
             ])
             ->actions([
-                Tables\Actions\Action::make('view')
+                Action::make('view')
                     ->url(fn (Shipment $record) => ShipmentResource::getUrl('view', ['record' => $record])),
             ])
             ->paginated(false);

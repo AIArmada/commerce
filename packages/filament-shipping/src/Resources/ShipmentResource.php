@@ -12,8 +12,13 @@ use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\ShippingManager;
 use BackedEnum;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
@@ -58,7 +63,7 @@ class ShipmentResource extends Resource
 
         return $schema
             ->schema([
-                Forms\Components\Section::make('Shipment Details')
+                Section::make('Shipment Details')
                     ->schema([
                         Forms\Components\TextInput::make('reference')
                             ->required()
@@ -82,7 +87,7 @@ class ShipmentResource extends Resource
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Origin Address')
+                Section::make('Origin Address')
                     ->schema([
                         Forms\Components\KeyValue::make('origin_address')
                             ->keyLabel('Field')
@@ -90,7 +95,7 @@ class ShipmentResource extends Resource
                     ])
                     ->collapsible(),
 
-                Forms\Components\Section::make('Destination Address')
+                Section::make('Destination Address')
                     ->schema([
                         Forms\Components\KeyValue::make('destination_address')
                             ->keyLabel('Field')
@@ -98,7 +103,7 @@ class ShipmentResource extends Resource
                     ])
                     ->collapsible(),
 
-                Forms\Components\Section::make('Package Info')
+                Section::make('Package Info')
                     ->schema([
                         Forms\Components\TextInput::make('package_count')
                             ->numeric()
@@ -190,20 +195,20 @@ class ShipmentResource extends Resource
                     ->options(fn () => static::getCarrierOptions()),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                ViewAction::make(),
+                EditAction::make(),
                 Actions\ShipAction::make(),
                 Actions\PrintLabelAction::make(),
                 Actions\CancelShipmentAction::make(),
                 Actions\SyncTrackingAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
+                BulkActionGroup::make([
                     Actions\BulkShipAction::make(),
                     Actions\BulkPrintLabelsAction::make(),
                     Actions\BulkCancelAction::make(),
                     Actions\BulkSyncTrackingAction::make(),
-                    Tables\Actions\DeleteBulkAction::make(),
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

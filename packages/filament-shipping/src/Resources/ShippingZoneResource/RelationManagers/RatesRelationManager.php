@@ -5,8 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources\ShippingZoneResource\RelationManagers;
 
 use AIArmada\Shipping\Models\ShippingRate;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\CreateAction;
+use Filament\Actions\DeleteAction;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -60,7 +67,7 @@ class RatesRelationManager extends RelationManager
                     ->prefix('RM')
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                     ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : 0)
-                    ->visible(fn (Forms\Get $get) => in_array($get('calculation_type'), ['per_kg', 'per_item', 'percentage'])),
+                    ->visible(fn (Get $get) => in_array($get('calculation_type'), ['per_kg', 'per_item', 'percentage'])),
 
                 Forms\Components\TextInput::make('min_charge')
                     ->numeric()
@@ -99,9 +106,9 @@ class RatesRelationManager extends RelationManager
                             ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : 0),
                     ])
                     ->columns(3)
-                    ->visible(fn (Forms\Get $get) => $get('calculation_type') === 'table'),
+                    ->visible(fn (Get $get) => $get('calculation_type') === 'table'),
 
-                Forms\Components\Grid::make()
+                Grid::make()
                     ->schema([
                         Forms\Components\TextInput::make('estimated_days_min')
                             ->label('Min Days')
@@ -173,15 +180,15 @@ class RatesRelationManager extends RelationManager
                     ]),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                CreateAction::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                EditAction::make(),
+                DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ]);
     }
