@@ -2,9 +2,15 @@
 - **Safety**: NEVER "cleanup" or mass-revert without permission.
 - **Scope**: Run tools (Pint/PHPStan) ONLY on modified packages.
 
+## Monorepo Formatting
+- **Golden rule**: No style-only PRs.
+- If touching `packages/*/src/**`, run Pint only on changed files (or at least only the changed packages).
+- Never run Pint repo-wide “just to be safe” — it creates noisy diffs across unrelated packages.
+
 ## Best Practices
 - **Strict Laravel**: `Arr::get()`, `Collections`, `Service Container`.
 - **Modern PHP**: 8.2+ (readonly, match).
+- **Time**: Use `CarbonImmutable` (or immutable date/time objects) wherever possible; avoid mutable `Carbon` unless you have a strong reason.
 - **Logic**: Action Classes only. No logic in Controllers/Models.
 - **Structure**: SOLID, Repository for access, Factory for creation.
 

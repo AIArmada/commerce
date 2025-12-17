@@ -1,24 +1,11 @@
 <laravel-boost-guidelines>
-=== .ai/test rules ===
+=== .ai/filament rules ===
 
-# Testing Guidelines
-- **Goal**: ELIMINATE BUGS.
-- **Refs**:
-  - [Overview](https://filamentphp.com/docs/4.x/testing/overview)
-  - [Resources](https://filamentphp.com/docs/4.x/testing/testing-resources)
-  - [Tables](https://filamentphp.com/docs/4.x/testing/testing-tables)
-  - [Schemas](https://filamentphp.com/docs/4.x/testing/testing-schemas)
-  - [Actions](https://filamentphp.com/docs/4.x/testing/testing-actions)
-  - [Notifications](https://filamentphp.com/docs/4.x/testing/testing-notifications)
-- **Exec**:
-- **Single**: `./vendor/bin/pest path/to/Test.php`.
-- **Dir**: `./vendor/bin/pest path/to/dir`.
-- **Full**: `./vendor/bin/pest --parallel ...` (Final only).
-- **Coverage**:
-- Don't run full if `0% files > 10%`.
-- Command: `./vendor/bin/pest --coverage ...`.
-- Targets: Core ≥80%, Filament ≥70%, Support ≥80%.
-- **Output**: ALWAYS pipe: `2>&1 | tee /tmp/out.txt`.
+# Filament Guidelines
+- **Ver**: Filament v5 API Mandatory.
+- **Spatie**: MUST use official Filament plugins (Tags, Settings, Media, Fonts).
+- **Actions**: Use built-in `Import`/`Export` actions only.
+- **Verification**: Verify all signatures against v5 docs.
 
 
 === .ai/multitenancy rules ===
@@ -34,39 +21,21 @@
 - Global: `Model::globalOnly()->get()`.
 
 
-=== .ai/phpstan rules ===
-
-# PHPStan Guidelines
-- **Lvl**: 6.
-- **Scope**: Per package (`packages/pkg/src`).
-- **Rules**:
-- Respect `phpstan.neon`.
-- NO new `ignoreErrors` unless exhausted.
-- Fix root causes over suppression.
-
-
-=== .ai/spatie rules ===
-
-# Spatie Guidelines
-- **DTO**: `spatie/laravel-data`.
-- **Logs**: `activitylog` (Business), `auditing` (Compliance).
-- **Filament**: Official plugins MANDATORY.
-- **Webhooks**: `webhook-client` (Idempotent Job).
-- **Media**: `medialibrary`.
-- **Settings**: `laravel-settings`.
-- **Tags**: `laravel-tags`.
-- **States**: `model-states`.
-
-
 === .ai/development rules ===
 
 # Development Guidelines
 - **Safety**: NEVER "cleanup" or mass-revert without permission.
 - **Scope**: Run tools (Pint/PHPStan) ONLY on modified packages.
 
+## Monorepo Formatting
+- **Golden rule**: No style-only PRs.
+- If touching `packages/*/src/**`, run Pint only on changed files (or at least only the changed packages).
+- Never run Pint repo-wide “just to be safe” — it creates noisy diffs across unrelated packages.
+
 ## Best Practices
 - **Strict Laravel**: `Arr::get()`, `Collections`, `Service Container`.
 - **Modern PHP**: 8.2+ (readonly, match).
+- **Time**: Use `CarbonImmutable` (or immutable date/time objects) wherever possible; avoid mutable `Carbon` unless you have a strong reason.
 - **Logic**: Action Classes only. No logic in Controllers/Models.
 - **Structure**: SOLID, Repository for access, Factory for creation.
 
@@ -86,51 +55,6 @@
 - **Break Changes**: Allowed for improvement. No backward compatibility required.
 
 
-=== .ai/filament rules ===
-
-# Filament Guidelines
-- **Ver**: Filament v5 API Mandatory.
-- **Spatie**: MUST use official Filament plugins (Tags, Settings, Media, Fonts).
-- **Actions**: Use built-in `Import`/`Export` actions only.
-- **Verification**: Verify all signatures against v5 docs.
-
-
-=== .ai/config rules ===
-
-# Config Guidelines
-- **Keys**: Keep minimal, remove unused (verify via grep).
-- **Structure**:
-  - Core: DB -> Creds -> Defaults -> Features -> Integrations -> HTTP -> Webhooks -> Cache -> Logging.
-  - Filament: Nav -> Tables -> Features -> Resources.
-- **Rules**:
-  - Use `json_column_type` for JSON/Migration.
-  - Prefer defaults over excessive `env()`.
-  - Comments: Section headers only, inline for non-obvious.
-
-
-=== .ai/packages rules ===
-
-# Packages Guidelines
-- **Indep**: Must run standalone. `suggest` over `require`.
-- **Integ**: Auto-enable via `class_exists()` check in `boot()`.
-- **Code**: All DTOs via `spatie/laravel-data`.
-- **Deletes**: No soft deletes (`SoftDeletes`).
-- **Test**: Verify standalone install and integration.
-
-
-=== .ai/docs rules ===
-
-# Documentation Guidelines
-- **Loc**: `packages/<pkg>/docs/`.
-  - **Files**: `01-overview`, `02-install`, `03-config`, `04-usage`, `99-trouble`.
-  - **Fmt**: Markdown + YAML Frontmatter (`title:`).
-
-  ## Features
-  - **Components**: Use `import Aside from "@components/Aside.astro"`.
-  - **Variants**: `info`, `warning`, `tip`, `danger`.
-  - **Content**: Copy-paste ready code examples. `##` headers. Explains breaking changes.
-
-
 === .ai/model rules ===
 
 # Model Guidelines
@@ -148,6 +72,88 @@
 - **Cascades**: Handle in Application Logic (Model/Service).
 - **Schema**: No `down()` logic needed.
 - **Rules**: Ensure migrations are safe and idempotent.
+
+
+=== .ai/spatie rules ===
+
+# Spatie Guidelines
+- **DTO**: `spatie/laravel-data`.
+- **Logs**: `activitylog` (Business), `auditing` (Compliance).
+- **Filament**: Official plugins MANDATORY.
+- **Webhooks**: `webhook-client` (Idempotent Job).
+- **Media**: `medialibrary`.
+- **Settings**: `laravel-settings`.
+- **Tags**: `laravel-tags`.
+- **States**: `model-states`.
+
+
+=== .ai/docs rules ===
+
+# Documentation Guidelines
+- **Loc**: `packages/<pkg>/docs/`.
+  - **Files**: `01-overview`, `02-install`, `03-config`, `04-usage`, `99-trouble`.
+  - **Fmt**: Markdown + YAML Frontmatter (`title:`).
+
+  ## Features
+  - **Components**: Use `import Aside from "@components/Aside.astro"`.
+  - **Variants**: `info`, `warning`, `tip`, `danger`.
+  - **Content**: Copy-paste ready code examples. `##` headers. Explains breaking changes.
+
+
+=== .ai/phpstan rules ===
+
+# PHPStan Guidelines
+- **Lvl**: 6.
+- **Scope**: Per package (`packages/pkg/src`).
+- **Rules**:
+- Respect `phpstan.neon`.
+- NO new `ignoreErrors` unless exhausted.
+- Fix root causes over suppression.
+
+
+=== .ai/packages rules ===
+
+# Packages Guidelines
+- **Indep**: Must run standalone. `suggest` over `require`.
+- **Integ**: Auto-enable via `class_exists()` check in `boot()`.
+- **Code**: All DTOs via `spatie/laravel-data`.
+- **Deletes**: No soft deletes (`SoftDeletes`).
+- **Test**: Verify standalone install and integration.
+
+
+=== .ai/config rules ===
+
+# Config Guidelines
+- **Keys**: Keep minimal, remove unused (verify via grep).
+- **Structure**:
+  - Core: DB -> Creds -> Defaults -> Features -> Integrations -> HTTP -> Webhooks -> Cache -> Logging.
+  - Filament: Nav -> Tables -> Features -> Resources.
+- **Rules**:
+  - Use `json_column_type` for JSON/Migration.
+  - Prefer defaults over excessive `env()`.
+  - Comments: Section headers only, inline for non-obvious.
+
+
+=== .ai/test rules ===
+
+# Testing Guidelines
+- **Goal**: ELIMINATE BUGS.
+- **Refs**:
+  - [Overview](https://filamentphp.com/docs/4.x/testing/overview)
+  - [Resources](https://filamentphp.com/docs/4.x/testing/testing-resources)
+  - [Tables](https://filamentphp.com/docs/4.x/testing/testing-tables)
+  - [Schemas](https://filamentphp.com/docs/4.x/testing/testing-schemas)
+  - [Actions](https://filamentphp.com/docs/4.x/testing/testing-actions)
+  - [Notifications](https://filamentphp.com/docs/4.x/testing/testing-notifications)
+- **Exec**:
+- **Single**: `./vendor/bin/pest path/to/Test.php`.
+- **Dir**: `./vendor/bin/pest path/to/dir`.
+- **Full**: `./vendor/bin/pest --parallel ...` (Final only).
+- **Coverage**:
+- Don't run full if `0% files > 10%`.
+- Command: `./vendor/bin/pest --coverage --parallel`.
+- Targets: Core ≥80%, Filament ≥70%, Support ≥80%.
+- **Output**: ALWAYS pipe: `2>&1 | tee /tmp/out.txt`.
 
 
 === foundation rules ===
