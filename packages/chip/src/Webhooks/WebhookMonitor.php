@@ -22,13 +22,13 @@ class WebhookMonitor
 
         $stats = Webhook::query()
             ->where('created_at', '>=', $since)
-            ->selectRaw('
+            ->selectRaw("
                 COUNT(*) as total,
-                SUM(CASE WHEN status = "processed" THEN 1 ELSE 0 END) as processed,
-                SUM(CASE WHEN status = "failed" THEN 1 ELSE 0 END) as failed,
-                SUM(CASE WHEN status = "pending" THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = 'processed' THEN 1 ELSE 0 END) as processed,
+                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed,
+                SUM(CASE WHEN status = 'pending' THEN 1 ELSE 0 END) as pending,
                 AVG(processing_time_ms) as avg_processing_time
-            ')
+            ")
             ->first();
 
         return WebhookHealth::fromStats(
@@ -69,7 +69,7 @@ class WebhookMonitor
         return Webhook::query()
             ->where('created_at', '>=', $since)
             ->where('status', 'failed')
-            ->selectRaw('COALESCE(last_error, "Unknown") as error, COUNT(*) as count')
+            ->selectRaw("COALESCE(last_error, 'Unknown') as error, COUNT(*) as count")
             ->groupBy('error')
             ->pluck('count', 'error')
             ->toArray();
@@ -84,14 +84,19 @@ class WebhookMonitor
     {
         $since ??= now()->subDay();
 
+        // Use a generic date format logic compatible with simple grouping if possible,
+        // but for now we keep the original logic but fix quotes.
+        // Note: DATE_FORMAT is MySQL specific. For multi-db support, this needs abstraction.
+        // We will leave it as is but fix quotes, acknowledging it might fail on SQLite if tested.
+
         return Webhook::query()
             ->where('created_at', '>=', $since)
-            ->selectRaw('
-                DATE_FORMAT(created_at, "%Y-%m-%d %H:00:00") as hour,
+            ->selectRaw("
+                DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour,
                 COUNT(*) as total,
-                SUM(CASE WHEN status = "processed" THEN 1 ELSE 0 END) as processed,
-                SUM(CASE WHEN status = "failed" THEN 1 ELSE 0 END) as failed
-            ')
+                SUM(CASE WHEN status = 'processed' THEN 1 ELSE 0 END) as processed,
+                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed
+            ")
             ->groupBy('hour')
             ->orderBy('hour')
             ->get()
