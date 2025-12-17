@@ -1013,6 +1013,7 @@ abstract class TestCase extends Orchestra
 
         Schema::create('prices', function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->nullableUuidMorphs('owner');
             $table->uuid('price_list_id');
             $table->uuidMorphs('priceable');
             $table->integer('amount')->default(0);
@@ -1026,6 +1027,7 @@ abstract class TestCase extends Orchestra
 
         Schema::create('price_tiers', function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->nullableUuidMorphs('owner');
             $table->uuid('price_list_id')->nullable();
             $table->uuidMorphs('tierable');
             $table->integer('min_quantity')->default(1);
