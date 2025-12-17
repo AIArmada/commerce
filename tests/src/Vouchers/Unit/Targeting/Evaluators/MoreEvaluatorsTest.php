@@ -37,7 +37,7 @@ class TestCLVUser extends Model
  */
 function createCartWithCategories(array $categories): Cart
 {
-    $cart = new Cart(new InMemoryStorage(), 'test-' . uniqid());
+    $cart = new Cart(new InMemoryStorage, 'test-' . uniqid());
 
     foreach ($categories as $index => $category) {
         $cart->add([
@@ -57,7 +57,7 @@ function createCartWithCategories(array $categories): Cart
  */
 function createCLVContext(?int $lifetimeValue = null): TargetingContext
 {
-    $cart = new Cart(new InMemoryStorage(), 'test-' . uniqid());
+    $cart = new Cart(new InMemoryStorage, 'test-' . uniqid());
 
     $user = null;
     if ($lifetimeValue !== null) {
@@ -72,14 +72,14 @@ function createCLVContext(?int $lifetimeValue = null): TargetingContext
  */
 function createDateRangeContext(string $timezone = 'UTC'): TargetingContext
 {
-    $cart = new Cart(new InMemoryStorage(), 'test-' . uniqid());
+    $cart = new Cart(new InMemoryStorage, 'test-' . uniqid());
 
     return new TargetingContext($cart, null, null, ['timezone' => $timezone]);
 }
 
 describe('CategoryInCartEvaluator', function (): void {
     beforeEach(function (): void {
-        $this->evaluator = new CategoryInCartEvaluator();
+        $this->evaluator = new CategoryInCartEvaluator;
     });
 
     describe('supports', function (): void {
@@ -210,7 +210,7 @@ describe('CategoryInCartEvaluator', function (): void {
 
 describe('CustomerLifetimeValueEvaluator', function (): void {
     beforeEach(function (): void {
-        $this->evaluator = new CustomerLifetimeValueEvaluator();
+        $this->evaluator = new CustomerLifetimeValueEvaluator;
     });
 
     describe('supports', function (): void {
@@ -341,7 +341,7 @@ describe('CustomerLifetimeValueEvaluator', function (): void {
 
 describe('DateRangeEvaluator', function (): void {
     beforeEach(function (): void {
-        $this->evaluator = new DateRangeEvaluator();
+        $this->evaluator = new DateRangeEvaluator;
     });
 
     describe('supports', function (): void {

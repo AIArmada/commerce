@@ -9,7 +9,7 @@ use ReflectionProperty;
 
 describe('RecentActivityWidget', function (): void {
     it('can be instantiated', function (): void {
-        $widget = new RecentActivityWidget();
+        $widget = new RecentActivityWidget;
 
         expect($widget)->toBeInstanceOf(RecentActivityWidget::class);
     });
@@ -22,7 +22,7 @@ describe('RecentActivityWidget', function (): void {
     });
 
     it('spans full column', function (): void {
-        $widget = new RecentActivityWidget();
+        $widget = new RecentActivityWidget;
 
         $reflection = new ReflectionProperty(RecentActivityWidget::class, 'columnSpan');
         $reflection->setAccessible(true);

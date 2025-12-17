@@ -12,7 +12,7 @@ use AIArmada\Inventory\Services\BatchService;
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create();
     $this->product = InventoryItem::create(['name' => 'Test Product']);
-    $this->batchService = new BatchService();
+    $this->batchService = new BatchService;
     $this->service = new BatchAllocationService($this->batchService);
 });
 

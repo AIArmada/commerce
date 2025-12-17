@@ -16,7 +16,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     config()->set('docs.storage.disk', 'docs');
-    $this->numberRegistry = new NumberStrategyRegistry();
+    $this->numberRegistry = new NumberStrategyRegistry;
     $this->service = new DocService($this->numberRegistry);
 });
 

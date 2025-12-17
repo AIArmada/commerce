@@ -27,34 +27,34 @@ class InventoryBatchTest extends InventoryTestCase
 
     public function test_get_table_returns_correct_table_name(): void
     {
-        $batch = new InventoryBatch();
+        $batch = new InventoryBatch;
         expect($batch->getTable())->toBe('inventory_batches');
     }
 
     public function test_inventoryable_relationship(): void
     {
-        $batch = new InventoryBatch();
+        $batch = new InventoryBatch;
         $relation = $batch->inventoryable();
         expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\MorphTo::class);
     }
 
     public function test_location_relationship(): void
     {
-        $batch = new InventoryBatch();
+        $batch = new InventoryBatch;
         $relation = $batch->location();
         expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);
     }
 
     public function test_movements_relationship(): void
     {
-        $batch = new InventoryBatch();
+        $batch = new InventoryBatch;
         $relation = $batch->movements();
         expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
     }
 
     public function test_allocations_relationship(): void
     {
-        $batch = new InventoryBatch();
+        $batch = new InventoryBatch;
         $relation = $batch->allocations();
         expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\HasMany::class);
     }

@@ -16,7 +16,7 @@ uses(RefreshDatabase::class);
 
 beforeEach(function (): void {
     Model::unguard();
-    $this->analyzer = new CohortAnalyzer();
+    $this->analyzer = new CohortAnalyzer;
 
     // Set fixed time for consistent testing
     Carbon::setTestNow('2024-06-01 12:00:00');

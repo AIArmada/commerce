@@ -361,7 +361,7 @@ class TaxExemptionTest extends TaxTestCase
 
     public function test_get_table_method(): void
     {
-        $exemption = new TaxExemption();
+        $exemption = new TaxExemption;
 
         $this->assertEquals('tax_exemptions', $exemption->getTable());
     }
@@ -370,7 +370,7 @@ class TaxExemptionTest extends TaxTestCase
     {
         config(['tax.database.tables.tax_exemptions' => 'custom_tax_exemptions']);
 
-        $exemption = new TaxExemption();
+        $exemption = new TaxExemption;
 
         $this->assertEquals('custom_tax_exemptions', $exemption->getTable());
 
@@ -380,7 +380,7 @@ class TaxExemptionTest extends TaxTestCase
 
     public function test_exemptable_relationship_is_morph_to(): void
     {
-        $exemption = new TaxExemption();
+        $exemption = new TaxExemption;
 
         // Access the relationship builder
         $relation = $exemption->exemptable();

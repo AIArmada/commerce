@@ -13,7 +13,7 @@ use Carbon\CarbonImmutable;
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
     $this->location = InventoryLocation::factory()->create();
-    $this->report = new MovementAnalysisReport();
+    $this->report = new MovementAnalysisReport;
 });
 
 describe('MovementAnalysisReport', function (): void {

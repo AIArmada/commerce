@@ -14,8 +14,6 @@ use Illuminate\Support\Arr;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
-use function assert;
-
 final class NormalizedCartSynchronizer
 {
     public function syncFromCart(BaseCart $cart): void
@@ -89,7 +87,7 @@ final class NormalizedCartSynchronizer
         $storedItemIds = [];
 
         foreach ($items as $item) {
-            assert($item instanceof BaseCartItem);
+            \assert($item instanceof BaseCartItem);
 
             $attributes = $item->attributes->toArray();
             $conditions = $item->conditions->isEmpty() ? null : $item->conditions->toArray();
@@ -131,7 +129,7 @@ final class NormalizedCartSynchronizer
         $persistedKeys = [];
 
         foreach ($conditions as $condition) {
-            assert($condition instanceof BaseCartCondition);
+            \assert($condition instanceof BaseCartCondition);
             $persistedKeys[] = $this->persistCondition(
                 cartModel: $cartModel,
                 condition: $condition,
@@ -141,14 +139,14 @@ final class NormalizedCartSynchronizer
         }
 
         foreach ($originalItems as $item) {
-            assert($item instanceof BaseCartItem);
+            \assert($item instanceof BaseCartItem);
 
             if (! isset($itemModels[$item->id])) {
                 continue;
             }
 
             foreach ($item->conditions as $condition) {
-                assert($condition instanceof BaseCartCondition);
+                \assert($condition instanceof BaseCartCondition);
 
                 $persistedKeys[] = $this->persistCondition(
                     cartModel: $cartModel,

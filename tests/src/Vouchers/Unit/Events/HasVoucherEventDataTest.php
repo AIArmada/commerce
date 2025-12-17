@@ -60,7 +60,7 @@ function createEventTestVoucher(string $code = 'TEST10', float $value = 1000): V
 function createEventTestCart(?string $identifier = null): Cart
 {
     return new Cart(
-        new InMemoryStorage(),
+        new InMemoryStorage,
         $identifier ?? 'test-cart-' . uniqid()
     );
 }
@@ -81,9 +81,9 @@ describe('HasVoucherEventData', function (): void {
             $voucher = createEventTestVoucher();
             $cart = createEventTestCart();
 
-            $before = new DateTimeImmutable();
+            $before = new DateTimeImmutable;
             $event = new TestVoucherEvent($voucher, $cart);
-            $after = new DateTimeImmutable();
+            $after = new DateTimeImmutable;
 
             expect($event->getOccurredAt()->getTimestamp())
                 ->toBeGreaterThanOrEqual($before->getTimestamp())

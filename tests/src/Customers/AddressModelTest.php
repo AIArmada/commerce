@@ -19,20 +19,20 @@ describe('Address Model', function (): void {
 
     describe('Table Name', function (): void {
         it('returns configured table name', function (): void {
-            $address = new Address();
+            $address = new Address;
             expect($address->getTable())->toBeString();
         });
     });
 
     describe('Casts', function (): void {
         it('has type cast', function (): void {
-            $address = new Address();
+            $address = new Address;
             $casts = $address->getCasts();
             expect(array_key_exists('type', $casts))->toBeTrue();
         });
 
         it('has boolean casts', function (): void {
-            $address = new Address();
+            $address = new Address;
             $casts = $address->getCasts();
             expect(array_key_exists('is_default_billing', $casts))->toBeTrue()
                 ->and(array_key_exists('is_default_shipping', $casts))->toBeTrue()

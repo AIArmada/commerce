@@ -11,7 +11,7 @@ use Spatie\Health\Enums\Status;
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
     $this->location = InventoryLocation::factory()->create();
-    $this->check = new LowStockCheck();
+    $this->check = new LowStockCheck;
 });
 
 describe('LowStockCheck', function (): void {
@@ -83,7 +83,7 @@ describe('LowStockCheck', function (): void {
         expect($result->status->equals(Status::ok()))->toBeTrue();
 
         // With higher threshold (20), should warn - need fresh check instance
-        $check2 = new LowStockCheck();
+        $check2 = new LowStockCheck;
         $result = $check2->threshold(20)->run();
         expect($result->status->equals(Status::warning()))->toBeTrue();
     });

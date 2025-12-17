@@ -42,7 +42,7 @@ class MockSegmentWithOwnership extends Segment
 
 describe('CustomerPolicy', function (): void {
     beforeEach(function (): void {
-        $this->policy = new CustomerPolicy();
+        $this->policy = new CustomerPolicy;
         $this->user = new class
         {
             public int $id = 1;
@@ -80,14 +80,14 @@ describe('CustomerPolicy', function (): void {
         });
 
         it('delegates to isOwnedBy when method exists', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership();
+            $mockCustomer = new MockCustomerWithOwnership;
             $mockCustomer->setOwnedByResult(true);
 
             expect($this->policy->view($this->user, $mockCustomer))->toBeTrue();
         });
 
         it('returns false from isOwnedBy when not owner', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership();
+            $mockCustomer = new MockCustomerWithOwnership;
             $mockCustomer->setOwnedByResult(false);
 
             expect($this->policy->view($this->user, $mockCustomer))->toBeFalse();
@@ -106,14 +106,14 @@ describe('CustomerPolicy', function (): void {
         });
 
         it('delegates to isOwnedBy when method exists', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership();
+            $mockCustomer = new MockCustomerWithOwnership;
             $mockCustomer->setOwnedByResult(true);
 
             expect($this->policy->update($this->user, $mockCustomer))->toBeTrue();
         });
 
         it('returns false from isOwnedBy when not owner', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership();
+            $mockCustomer = new MockCustomerWithOwnership;
             $mockCustomer->setOwnedByResult(false);
 
             expect($this->policy->update($this->user, $mockCustomer))->toBeFalse();
@@ -126,14 +126,14 @@ describe('CustomerPolicy', function (): void {
         });
 
         it('delegates to isOwnedBy when method exists', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership();
+            $mockCustomer = new MockCustomerWithOwnership;
             $mockCustomer->setOwnedByResult(true);
 
             expect($this->policy->delete($this->user, $mockCustomer))->toBeTrue();
         });
 
         it('returns false from isOwnedBy when not owner', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership();
+            $mockCustomer = new MockCustomerWithOwnership;
             $mockCustomer->setOwnedByResult(false);
 
             expect($this->policy->delete($this->user, $mockCustomer))->toBeFalse();
@@ -146,14 +146,14 @@ describe('CustomerPolicy', function (): void {
         });
 
         it('delegates to isOwnedBy when method exists', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership();
+            $mockCustomer = new MockCustomerWithOwnership;
             $mockCustomer->setOwnedByResult(true);
 
             expect($this->policy->addCredit($this->user, $mockCustomer))->toBeTrue();
         });
 
         it('returns false from isOwnedBy when not owner', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership();
+            $mockCustomer = new MockCustomerWithOwnership;
             $mockCustomer->setOwnedByResult(false);
 
             expect($this->policy->addCredit($this->user, $mockCustomer))->toBeFalse();
@@ -166,14 +166,14 @@ describe('CustomerPolicy', function (): void {
         });
 
         it('delegates to isOwnedBy when method exists', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership();
+            $mockCustomer = new MockCustomerWithOwnership;
             $mockCustomer->setOwnedByResult(true);
 
             expect($this->policy->deductCredit($this->user, $mockCustomer))->toBeTrue();
         });
 
         it('returns false from isOwnedBy when not owner', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership();
+            $mockCustomer = new MockCustomerWithOwnership;
             $mockCustomer->setOwnedByResult(false);
 
             expect($this->policy->deductCredit($this->user, $mockCustomer))->toBeFalse();
@@ -183,7 +183,7 @@ describe('CustomerPolicy', function (): void {
 
 describe('SegmentPolicy', function (): void {
     beforeEach(function (): void {
-        $this->policy = new SegmentPolicy();
+        $this->policy = new SegmentPolicy;
         $this->user = new class
         {
             public int $id = 1;
@@ -208,14 +208,14 @@ describe('SegmentPolicy', function (): void {
         });
 
         it('delegates to isOwnedBy when method exists', function (): void {
-            $mockSegment = new MockSegmentWithOwnership();
+            $mockSegment = new MockSegmentWithOwnership;
             $mockSegment->setOwnedByResult(true);
 
             expect($this->policy->view($this->user, $mockSegment))->toBeTrue();
         });
 
         it('returns false from isOwnedBy when not owner', function (): void {
-            $mockSegment = new MockSegmentWithOwnership();
+            $mockSegment = new MockSegmentWithOwnership;
             $mockSegment->setOwnedByResult(false);
 
             expect($this->policy->view($this->user, $mockSegment))->toBeFalse();
@@ -234,14 +234,14 @@ describe('SegmentPolicy', function (): void {
         });
 
         it('delegates to isOwnedBy when method exists', function (): void {
-            $mockSegment = new MockSegmentWithOwnership();
+            $mockSegment = new MockSegmentWithOwnership;
             $mockSegment->setOwnedByResult(true);
 
             expect($this->policy->update($this->user, $mockSegment))->toBeTrue();
         });
 
         it('returns false from isOwnedBy when not owner', function (): void {
-            $mockSegment = new MockSegmentWithOwnership();
+            $mockSegment = new MockSegmentWithOwnership;
             $mockSegment->setOwnedByResult(false);
 
             expect($this->policy->update($this->user, $mockSegment))->toBeFalse();
@@ -254,14 +254,14 @@ describe('SegmentPolicy', function (): void {
         });
 
         it('delegates to isOwnedBy when method exists', function (): void {
-            $mockSegment = new MockSegmentWithOwnership();
+            $mockSegment = new MockSegmentWithOwnership;
             $mockSegment->setOwnedByResult(true);
 
             expect($this->policy->delete($this->user, $mockSegment))->toBeTrue();
         });
 
         it('returns false from isOwnedBy when not owner', function (): void {
-            $mockSegment = new MockSegmentWithOwnership();
+            $mockSegment = new MockSegmentWithOwnership;
             $mockSegment->setOwnedByResult(false);
 
             expect($this->policy->delete($this->user, $mockSegment))->toBeFalse();

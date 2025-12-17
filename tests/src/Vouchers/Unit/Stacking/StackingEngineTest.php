@@ -24,7 +24,7 @@ afterEach(function (): void {
  */
 function createStackingTestCart(int $total = 10000): Cart
 {
-    $cart = new Cart(new InMemoryStorage(), 'stacking-test-' . uniqid());
+    $cart = new Cart(new InMemoryStorage, 'stacking-test-' . uniqid());
 
     // Add items to get to the desired total (in cents)
     // Each item is 1000 cents = $10, so add total/1000 items

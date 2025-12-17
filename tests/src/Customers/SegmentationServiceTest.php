@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Event;
 
 describe('SegmentationService', function (): void {
     beforeEach(function (): void {
-        $this->service = new SegmentationService();
+        $this->service = new SegmentationService;
     });
 
     describe('Instantiation', function (): void {

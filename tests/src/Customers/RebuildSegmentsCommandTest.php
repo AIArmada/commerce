@@ -8,32 +8,32 @@ use AIArmada\Customers\Models\Segment;
 describe('RebuildSegmentsCommand', function (): void {
     describe('Instantiation', function (): void {
         it('can be instantiated', function (): void {
-            $command = new RebuildSegmentsCommand();
+            $command = new RebuildSegmentsCommand;
 
             expect($command)->toBeInstanceOf(RebuildSegmentsCommand::class);
         });
 
         it('has correct signature', function (): void {
-            $command = new RebuildSegmentsCommand();
+            $command = new RebuildSegmentsCommand;
 
             expect($command->getName())->toBe('customers:rebuild-segments');
         });
 
         it('has correct description', function (): void {
-            $command = new RebuildSegmentsCommand();
+            $command = new RebuildSegmentsCommand;
 
             expect($command->getDescription())->toBe('Rebuild automatic customer segment memberships');
         });
 
         it('has segment option defined', function (): void {
-            $command = new RebuildSegmentsCommand();
+            $command = new RebuildSegmentsCommand;
             $definition = $command->getDefinition();
 
             expect($definition->hasOption('segment'))->toBeTrue();
         });
 
         it('has dry-run option defined', function (): void {
-            $command = new RebuildSegmentsCommand();
+            $command = new RebuildSegmentsCommand;
             $definition = $command->getDefinition();
 
             expect($definition->hasOption('dry-run'))->toBeTrue();
@@ -47,7 +47,7 @@ describe('RebuildSegmentsCommand', function (): void {
 
             // Register command
             $this->app->make(Illuminate\Contracts\Console\Kernel::class)
-                ->registerCommand(new RebuildSegmentsCommand());
+                ->registerCommand(new RebuildSegmentsCommand);
 
             $this->artisan('customers:rebuild-segments')
                 ->assertExitCode(0);
@@ -63,7 +63,7 @@ describe('RebuildSegmentsCommand', function (): void {
             ]);
 
             $this->app->make(Illuminate\Contracts\Console\Kernel::class)
-                ->registerCommand(new RebuildSegmentsCommand());
+                ->registerCommand(new RebuildSegmentsCommand);
 
             $this->artisan('customers:rebuild-segments')
                 ->assertExitCode(0);
@@ -79,7 +79,7 @@ describe('RebuildSegmentsCommand', function (): void {
             ]);
 
             $this->app->make(Illuminate\Contracts\Console\Kernel::class)
-                ->registerCommand(new RebuildSegmentsCommand());
+                ->registerCommand(new RebuildSegmentsCommand);
 
             $this->artisan('customers:rebuild-segments', ['--segment' => $segment->id])
                 ->assertExitCode(0);
@@ -87,7 +87,7 @@ describe('RebuildSegmentsCommand', function (): void {
 
         it('handles non-existent segment', function (): void {
             $this->app->make(Illuminate\Contracts\Console\Kernel::class)
-                ->registerCommand(new RebuildSegmentsCommand());
+                ->registerCommand(new RebuildSegmentsCommand);
 
             $this->artisan('customers:rebuild-segments', ['--segment' => 'non-existent'])
                 ->assertExitCode(1); // FAILURE
@@ -102,7 +102,7 @@ describe('RebuildSegmentsCommand', function (): void {
             ]);
 
             $this->app->make(Illuminate\Contracts\Console\Kernel::class)
-                ->registerCommand(new RebuildSegmentsCommand());
+                ->registerCommand(new RebuildSegmentsCommand);
 
             $this->artisan('customers:rebuild-segments', ['--segment' => $segment->id])
                 ->assertExitCode(0);
@@ -118,7 +118,7 @@ describe('RebuildSegmentsCommand', function (): void {
             ]);
 
             $this->app->make(Illuminate\Contracts\Console\Kernel::class)
-                ->registerCommand(new RebuildSegmentsCommand());
+                ->registerCommand(new RebuildSegmentsCommand);
 
             $this->artisan('customers:rebuild-segments', ['--dry-run' => true])
                 ->assertExitCode(0);
@@ -134,7 +134,7 @@ describe('RebuildSegmentsCommand', function (): void {
             ]);
 
             $this->app->make(Illuminate\Contracts\Console\Kernel::class)
-                ->registerCommand(new RebuildSegmentsCommand());
+                ->registerCommand(new RebuildSegmentsCommand);
 
             $this->artisan('customers:rebuild-segments', [
                 '--segment' => $segment->id,

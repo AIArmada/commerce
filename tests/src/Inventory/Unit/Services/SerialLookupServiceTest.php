@@ -21,7 +21,7 @@ beforeEach(function (): void {
     )->create([
         'location_id' => $this->location->id,
     ]);
-    $this->service = new SerialLookupService();
+    $this->service = new SerialLookupService;
 });
 
 describe('SerialLookupService', function (): void {

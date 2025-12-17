@@ -98,7 +98,7 @@ class ExportService
     {
         $tempFile = tempnam(sys_get_temp_dir(), 'cart_analytics_') . '.xlsx';
 
-        $writer = new Writer();
+        $writer = new Writer;
         $writer->openToFile($tempFile);
 
         // Overview Sheet
@@ -146,7 +146,7 @@ class ExportService
     {
         $writer->getCurrentSheet()->setName('Overview');
 
-        $headerStyle = (new Style())
+        $headerStyle = (new Style)
             ->setFontBold()
             ->setCellAlignment(CellAlignment::CENTER);
 
@@ -222,7 +222,7 @@ class ExportService
         $sheet = $writer->addNewSheetAndMakeItCurrent();
         $sheet->setName('Daily Metrics');
 
-        $headerStyle = (new Style())
+        $headerStyle = (new Style)
             ->setFontBold()
             ->setCellAlignment(CellAlignment::CENTER);
 
@@ -277,7 +277,7 @@ class ExportService
 
         $analysis = $this->analyticsService->getAbandonmentAnalysis($from, $to);
 
-        $headerStyle = (new Style())
+        $headerStyle = (new Style)
             ->setFontBold()
             ->setCellAlignment(CellAlignment::CENTER);
 
@@ -368,7 +368,7 @@ class ExportService
 
         $recovery = $this->analyticsService->getRecoveryMetrics($from, $to);
 
-        $headerStyle = (new Style())
+        $headerStyle = (new Style)
             ->setFontBold()
             ->setCellAlignment(CellAlignment::CENTER);
 

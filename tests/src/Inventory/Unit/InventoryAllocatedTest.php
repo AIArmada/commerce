@@ -57,7 +57,7 @@ class InventoryAllocatedTest extends InventoryTestCase
 
     public function test_get_event_type_returns_correct_value(): void
     {
-        $allocations = new Collection();
+        $allocations = new Collection;
         $event = new InventoryAllocated($this->item, $allocations, 'cart-123');
 
         expect($event->getEventType())->toBe('inventory.allocated');

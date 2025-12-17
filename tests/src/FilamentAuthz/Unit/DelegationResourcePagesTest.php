@@ -40,7 +40,7 @@ describe('DelegationResource Pages', function (): void {
         });
 
         it('returns create header action', function (): void {
-            $page = new ListDelegations();
+            $page = new ListDelegations;
 
             $method = new ReflectionMethod(ListDelegations::class, 'getHeaderActions');
             $method->setAccessible(true);
@@ -73,7 +73,7 @@ describe('DelegationResource Pages', function (): void {
         });
 
         it('returns view and delete header actions', function (): void {
-            $page = new EditDelegation();
+            $page = new EditDelegation;
 
             $method = new ReflectionMethod(EditDelegation::class, 'getHeaderActions');
             $method->setAccessible(true);
@@ -107,7 +107,7 @@ describe('DelegationResource Pages', function (): void {
         });
 
         it('returns edit header action', function (): void {
-            $page = new ViewDelegation();
+            $page = new ViewDelegation;
 
             $method = new ReflectionMethod(ViewDelegation::class, 'getHeaderActions');
             $method->setAccessible(true);

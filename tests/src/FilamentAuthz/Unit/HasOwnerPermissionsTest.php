@@ -32,7 +32,7 @@ afterEach(function (): void {
 
 describe('HasOwnerPermissions::canUserPerform', function (): void {
     it('returns true when user has standard permission', function (): void {
-        $model = new TestModelWithOwnerPermissions();
+        $model = new TestModelWithOwnerPermissions;
         $model->user_id = 1;
 
         $user = Mockery::mock();
@@ -50,7 +50,7 @@ describe('HasOwnerPermissions::canUserPerform', function (): void {
     });
 
     it('returns true when owner has owner-specific permission', function (): void {
-        $model = new TestModelWithOwnerPermissions();
+        $model = new TestModelWithOwnerPermissions;
         $model->user_id = 1;
 
         $user = Mockery::mock();
@@ -74,7 +74,7 @@ describe('HasOwnerPermissions::canUserPerform', function (): void {
     });
 
     it('returns false when user has no permission', function (): void {
-        $model = new TestModelWithOwnerPermissions();
+        $model = new TestModelWithOwnerPermissions;
         $model->user_id = 1;
 
         $user = Mockery::mock();
@@ -92,7 +92,7 @@ describe('HasOwnerPermissions::canUserPerform', function (): void {
     });
 
     it('returns false when owner lacks owner-specific permission', function (): void {
-        $model = new TestModelWithOwnerPermissions();
+        $model = new TestModelWithOwnerPermissions;
         $model->user_id = 1;
 
         $user = Mockery::mock();
@@ -113,7 +113,7 @@ describe('HasOwnerPermissions::canUserPerform', function (): void {
 
 describe('HasOwnerPermissions::isOwnedBy', function (): void {
     it('returns true when user owns the model', function (): void {
-        $model = new TestModelWithOwnerPermissions();
+        $model = new TestModelWithOwnerPermissions;
         $model->user_id = 42;
 
         $user = Mockery::mock();
@@ -123,7 +123,7 @@ describe('HasOwnerPermissions::isOwnedBy', function (): void {
     });
 
     it('returns false when user does not own the model', function (): void {
-        $model = new TestModelWithOwnerPermissions();
+        $model = new TestModelWithOwnerPermissions;
         $model->user_id = 42;
 
         $user = Mockery::mock();
@@ -133,7 +133,7 @@ describe('HasOwnerPermissions::isOwnedBy', function (): void {
     });
 
     it('returns false when owner key is null', function (): void {
-        $model = new TestModelWithOwnerPermissions();
+        $model = new TestModelWithOwnerPermissions;
         $model->user_id = null;
 
         $user = Mockery::mock();
@@ -145,7 +145,7 @@ describe('HasOwnerPermissions::isOwnedBy', function (): void {
 
 describe('HasOwnerPermissions::scopeOwnedBy', function (): void {
     it('applies where clause for owner', function (): void {
-        $model = new TestModelWithOwnerPermissions();
+        $model = new TestModelWithOwnerPermissions;
 
         $user = Mockery::mock();
         $user->shouldReceive('getKey')->andReturn(5);
@@ -164,7 +164,7 @@ describe('HasOwnerPermissions::scopeOwnedBy', function (): void {
 
 describe('HasOwnerPermissions::scopeViewableBy', function (): void {
     it('returns all records when user has global viewAny permission', function (): void {
-        $model = new TestModelWithOwnerPermissions();
+        $model = new TestModelWithOwnerPermissions;
 
         $user = Mockery::mock();
         $user->shouldReceive('getKey')->andReturn(1);
@@ -184,7 +184,7 @@ describe('HasOwnerPermissions::scopeViewableBy', function (): void {
     });
 
     it('scopes to owned records when user lacks global viewAny', function (): void {
-        $model = new TestModelWithOwnerPermissions();
+        $model = new TestModelWithOwnerPermissions;
 
         $user = Mockery::mock();
         $user->shouldReceive('getKey')->andReturn(3);
@@ -210,7 +210,7 @@ describe('HasOwnerPermissions::scopeViewableBy', function (): void {
 
 describe('HasOwnerPermissions::getPermissionName', function (): void {
     it('generates permission name from table', function (): void {
-        $model = new TestModelWithOwnerPermissions();
+        $model = new TestModelWithOwnerPermissions;
 
         $reflection = new ReflectionMethod($model, 'getPermissionName');
         $reflection->setAccessible(true);
@@ -223,7 +223,7 @@ describe('HasOwnerPermissions::getPermissionName', function (): void {
 
 describe('HasOwnerPermissions::getOwnerPermissionName', function (): void {
     it('generates owner permission name with .own suffix', function (): void {
-        $model = new TestModelWithOwnerPermissions();
+        $model = new TestModelWithOwnerPermissions;
 
         $reflection = new ReflectionMethod($model, 'getOwnerPermissionName');
         $reflection->setAccessible(true);
@@ -236,7 +236,7 @@ describe('HasOwnerPermissions::getOwnerPermissionName', function (): void {
 
 describe('HasOwnerPermissions::getResourceName', function (): void {
     it('returns table name as resource name', function (): void {
-        $model = new TestModelWithOwnerPermissions();
+        $model = new TestModelWithOwnerPermissions;
 
         $reflection = new ReflectionMethod($model, 'getResourceName');
         $reflection->setAccessible(true);
@@ -297,7 +297,7 @@ describe('HasOwnerPermissions::getResourceName', function (): void {
 
 describe('HasOwnerPermissions::getOwnerKeyName', function (): void {
     it('returns user_id by default', function (): void {
-        $model = new TestModelWithOwnerPermissions();
+        $model = new TestModelWithOwnerPermissions;
 
         $reflection = new ReflectionMethod($model, 'getOwnerKeyName');
         $reflection->setAccessible(true);

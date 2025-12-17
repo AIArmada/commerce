@@ -18,7 +18,7 @@ use AIArmada\Vouchers\Stacking\StackingPolicy;
  */
 function createPolicyTestCart(): Cart
 {
-    $cart = new Cart(new InMemoryStorage(), 'policy-test-' . uniqid());
+    $cart = new Cart(new InMemoryStorage, 'policy-test-' . uniqid());
     $cart->add([
         'id' => 'product-1',
         'name' => 'Test Product',
@@ -134,7 +134,7 @@ describe('StackingPolicy', function (): void {
 
     describe('fluent builders', function (): void {
         it('adds rule with addRule', function (): void {
-            $policy = new StackingPolicy();
+            $policy = new StackingPolicy;
             $rule = ['type' => 'max_vouchers', 'value' => 5];
 
             $result = $policy->addRule($rule);
@@ -144,7 +144,7 @@ describe('StackingPolicy', function (): void {
         });
 
         it('sets mode with withMode', function (): void {
-            $policy = new StackingPolicy();
+            $policy = new StackingPolicy;
 
             $result = $policy->withMode(StackingMode::Parallel);
 
@@ -153,7 +153,7 @@ describe('StackingPolicy', function (): void {
         });
 
         it('sets auto optimize with withAutoOptimize', function (): void {
-            $policy = new StackingPolicy();
+            $policy = new StackingPolicy;
 
             $result = $policy->withAutoOptimize(true);
 

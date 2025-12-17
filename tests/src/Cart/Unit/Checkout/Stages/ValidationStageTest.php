@@ -10,12 +10,12 @@ use AIArmada\Cart\Contracts\CartValidatorInterface;
 use AIArmada\Cart\Testing\InMemoryStorage;
 
 beforeEach(function (): void {
-    $this->storage = new InMemoryStorage();
+    $this->storage = new InMemoryStorage;
 });
 
 describe('ValidationStage', function (): void {
     it('can be instantiated without validators', function (): void {
-        $stage = new ValidationStage();
+        $stage = new ValidationStage;
 
         expect($stage)->toBeInstanceOf(ValidationStage::class)
             ->and($stage->getName())->toBe('validation');
@@ -29,7 +29,7 @@ describe('ValidationStage', function (): void {
     });
 
     it('can add a validator', function (): void {
-        $stage = new ValidationStage();
+        $stage = new ValidationStage;
         $validator = Mockery::mock(CartValidatorInterface::class);
 
         $result = $stage->addValidator($validator);
@@ -38,14 +38,14 @@ describe('ValidationStage', function (): void {
     });
 
     it('always should execute', function (): void {
-        $stage = new ValidationStage();
+        $stage = new ValidationStage;
         $cart = new Cart($this->storage, 'cart-123');
 
         expect($stage->shouldExecute($cart, []))->toBeTrue();
     });
 
     it('fails validation for empty cart', function (): void {
-        $stage = new ValidationStage();
+        $stage = new ValidationStage;
         $cart = new Cart($this->storage, 'cart-123');
 
         $result = $stage->execute($cart, []);
@@ -56,7 +56,7 @@ describe('ValidationStage', function (): void {
     });
 
     it('passes validation for non-empty cart without validators', function (): void {
-        $stage = new ValidationStage();
+        $stage = new ValidationStage;
         $cart = new Cart($this->storage, 'cart-123');
         $cart->add('item-1', 'Product 1', 1000, 3);
         $cart->add('item-2', 'Product 2', 2000, 2);
@@ -154,13 +154,13 @@ describe('ValidationStage', function (): void {
     });
 
     it('does not support rollback', function (): void {
-        $stage = new ValidationStage();
+        $stage = new ValidationStage;
 
         expect($stage->supportsRollback())->toBeFalse();
     });
 
     it('rollback does nothing', function (): void {
-        $stage = new ValidationStage();
+        $stage = new ValidationStage;
         $cart = new Cart($this->storage, 'cart-123');
 
         $stage->rollback($cart, []);

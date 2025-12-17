@@ -11,7 +11,7 @@ uses(CashierTestCase::class);
 describe('Additional Exceptions', function (): void {
     describe('GatewayNotFoundException', function (): void {
         it('can be created with default message', function (): void {
-            $exception = new GatewayNotFoundException();
+            $exception = new GatewayNotFoundException;
 
             expect($exception->getMessage())->toBe('Gateway not found.');
         });

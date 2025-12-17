@@ -11,7 +11,7 @@ use AIArmada\Inventory\Services\DemandForecastService;
 beforeEach(function (): void {
     $this->location = InventoryLocation::factory()->create();
     $this->product = InventoryItem::create(['name' => 'Test Product']);
-    $this->service = new DemandForecastService();
+    $this->service = new DemandForecastService;
 });
 
 describe('recordDemand', function (): void {

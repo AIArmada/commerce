@@ -35,7 +35,7 @@ class HandleBillingCancelledTest extends CashierChipTestCase
 
         $event = new BillingCancelled($billingTemplateClientData, []);
 
-        $listener = new HandleBillingCancelled();
+        $listener = new HandleBillingCancelled;
         $listener->handle($event);
 
         $subscription->refresh();
@@ -60,7 +60,7 @@ class HandleBillingCancelledTest extends CashierChipTestCase
 
         $event = new BillingCancelled($billingTemplateClientData, []);
 
-        $listener = new HandleBillingCancelled();
+        $listener = new HandleBillingCancelled;
         $listener->handle($event);
 
         Event::assertNotDispatched(SubscriptionCanceled::class);
@@ -79,7 +79,7 @@ class HandleBillingCancelledTest extends CashierChipTestCase
 
         $event = new BillingCancelled($billingTemplateClientData, []);
 
-        $listener = new HandleBillingCancelled();
+        $listener = new HandleBillingCancelled;
         $listener->handle($event);
 
         Event::assertNotDispatched(SubscriptionCanceled::class);
@@ -100,7 +100,7 @@ class HandleBillingCancelledTest extends CashierChipTestCase
 
         $event = new BillingCancelled($billingTemplateClientData, []);
 
-        $listener = new HandleBillingCancelled();
+        $listener = new HandleBillingCancelled;
         $listener->handle($event);
 
         Event::assertNotDispatched(SubscriptionCanceled::class);

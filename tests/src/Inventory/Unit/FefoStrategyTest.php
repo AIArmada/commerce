@@ -22,7 +22,7 @@ class FefoStrategyTest extends InventoryTestCase
     {
         parent::setUp();
 
-        $this->strategy = new FefoStrategy();
+        $this->strategy = new FefoStrategy;
         $this->item = InventoryItem::create(['name' => 'Test Item']);
         $this->location = InventoryLocation::factory()->create([
             'name' => 'Test Location',
@@ -68,7 +68,7 @@ class FefoStrategyTest extends InventoryTestCase
 
     public function test_allocate_with_context_location_filter(): void
     {
-        $context = new AllocationContext();
+        $context = new AllocationContext;
         $context->locationId = $this->location->id;
 
         $allocations = $this->strategy->allocate($this->item, 10, $context);
@@ -78,7 +78,7 @@ class FefoStrategyTest extends InventoryTestCase
 
     public function test_can_fulfill_with_context_location_filter(): void
     {
-        $context = new AllocationContext();
+        $context = new AllocationContext;
         $context->locationId = $this->location->id;
 
         $canFulfill = $this->strategy->canFulfill($this->item, 10, $context);
@@ -88,7 +88,7 @@ class FefoStrategyTest extends InventoryTestCase
 
     public function test_get_recommended_order_with_context_location_filter(): void
     {
-        $context = new AllocationContext();
+        $context = new AllocationContext;
         $context->locationId = $this->location->id;
 
         $order = $this->strategy->getRecommendedOrder($this->item, $context);
@@ -126,7 +126,7 @@ class FefoStrategyTest extends InventoryTestCase
 
     public function test_context_default_values(): void
     {
-        $context = new AllocationContext();
+        $context = new AllocationContext;
 
         expect($context->locationId)->toBeNull();
         expect($context->excludeExpiringSoon)->toBeFalse();
@@ -135,7 +135,7 @@ class FefoStrategyTest extends InventoryTestCase
 
     public function test_context_can_set_location(): void
     {
-        $context = new AllocationContext();
+        $context = new AllocationContext;
         $context->locationId = 'test-location-id';
 
         expect($context->locationId)->toBe('test-location-id');
@@ -143,7 +143,7 @@ class FefoStrategyTest extends InventoryTestCase
 
     public function test_context_can_exclude_expiring_soon(): void
     {
-        $context = new AllocationContext();
+        $context = new AllocationContext;
         $context->excludeExpiringSoon = true;
         $context->minDaysToExpiry = 14;
 

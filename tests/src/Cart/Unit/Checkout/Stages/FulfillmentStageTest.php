@@ -7,40 +7,40 @@ use AIArmada\Cart\Checkout\Stages\FulfillmentStage;
 use AIArmada\Cart\Testing\InMemoryStorage;
 
 beforeEach(function (): void {
-    $this->storage = new InMemoryStorage();
+    $this->storage = new InMemoryStorage;
 });
 
 describe('FulfillmentStage', function (): void {
     it('can be instantiated', function (): void {
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
 
         expect($stage)->toBeInstanceOf(FulfillmentStage::class)
             ->and($stage->getName())->toBe('fulfillment');
     });
 
     it('can set create order callback', function (): void {
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
         $result = $stage->onCreateOrder(fn () => ['order_id' => 'order_123']);
 
         expect($result)->toBe($stage);
     });
 
     it('can set cancel order callback', function (): void {
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
         $result = $stage->onCancelOrder(fn () => null);
 
         expect($result)->toBe($stage);
     });
 
     it('should not execute without create order callback', function (): void {
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
         $cart = new Cart($this->storage, 'cart-123');
 
         expect($stage->shouldExecute($cart, []))->toBeFalse();
     });
 
     it('should execute with create order callback', function (): void {
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
         $stage->onCreateOrder(fn () => ['order_id' => 'order_123']);
 
         $cart = new Cart($this->storage, 'cart-123');
@@ -49,7 +49,7 @@ describe('FulfillmentStage', function (): void {
     });
 
     it('succeeds without callback configured', function (): void {
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
         $cart = new Cart($this->storage, 'cart-123');
 
         $result = $stage->execute($cart, []);
@@ -61,7 +61,7 @@ describe('FulfillmentStage', function (): void {
     it('creates order successfully', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
 
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
         $stage->onCreateOrder(fn ($cart, $context) => [
             'order_id' => 'order_abc123',
             'order_number' => 'ORD-001',
@@ -79,7 +79,7 @@ describe('FulfillmentStage', function (): void {
     it('creates order without order number', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
 
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
         $stage->onCreateOrder(fn ($cart, $context) => [
             'order_id' => 'order_xyz',
         ]);
@@ -94,7 +94,7 @@ describe('FulfillmentStage', function (): void {
     it('fails when order_id not returned', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
 
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
         $stage->onCreateOrder(fn ($cart, $context) => []);
 
         $result = $stage->execute($cart, []);
@@ -106,7 +106,7 @@ describe('FulfillmentStage', function (): void {
     it('handles exception during order creation', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
 
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
         $stage->onCreateOrder(function ($cart, $context): void {
             throw new Exception('Order service unavailable');
         });
@@ -119,7 +119,7 @@ describe('FulfillmentStage', function (): void {
     });
 
     it('supports rollback with cancel order callback', function (): void {
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
 
         expect($stage->supportsRollback())->toBeFalse();
 
@@ -133,7 +133,7 @@ describe('FulfillmentStage', function (): void {
 
         $cancelledOrderId = null;
 
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
         $stage->onCancelOrder(function ($orderId) use (&$cancelledOrderId): void {
             $cancelledOrderId = $orderId;
         });
@@ -149,7 +149,7 @@ describe('FulfillmentStage', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
         $cancelCalled = false;
 
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
         $stage->onCancelOrder(function () use (&$cancelCalled): void {
             $cancelCalled = true;
         });
@@ -162,7 +162,7 @@ describe('FulfillmentStage', function (): void {
     it('skips rollback without cancel order callback', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
 
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
 
         $context = ['order_id' => 'order_abc'];
 
@@ -174,7 +174,7 @@ describe('FulfillmentStage', function (): void {
     it('handles exception during order cancellation gracefully', function (): void {
         $cart = new Cart($this->storage, 'cart-123');
 
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
         $stage->onCancelOrder(function (): void {
             throw new Exception('Cancel service unavailable');
         });
@@ -191,7 +191,7 @@ describe('FulfillmentStage', function (): void {
 
         $receivedContext = null;
 
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
         $stage->onCreateOrder(function ($cart, $context) use (&$receivedContext) {
             $receivedContext = $context;
 
@@ -212,7 +212,7 @@ describe('FulfillmentStage', function (): void {
 
         $receivedCart = null;
 
-        $stage = new FulfillmentStage();
+        $stage = new FulfillmentStage;
         $stage->onCreateOrder(function ($cart, $context) use (&$receivedCart) {
             $receivedCart = $cart;
 

@@ -20,7 +20,7 @@ use AIArmada\Vouchers\Enums\VoucherType;
  */
 function createCompoundTestCart(array $items = []): Cart
 {
-    $cart = new Cart(new InMemoryStorage(), 'compound-test-' . uniqid());
+    $cart = new Cart(new InMemoryStorage, 'compound-test-' . uniqid());
 
     if (empty($items)) {
         $items = [

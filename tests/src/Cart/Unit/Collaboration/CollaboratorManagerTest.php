@@ -20,13 +20,13 @@ beforeEach(function (): void {
 
 describe('CollaboratorManager', function (): void {
     it('can be instantiated', function (): void {
-        $manager = new CollaboratorManager();
+        $manager = new CollaboratorManager;
 
         expect($manager)->toBeInstanceOf(CollaboratorManager::class);
     });
 
     it('creates invitation for collaborator', function (): void {
-        $manager = new CollaboratorManager();
+        $manager = new CollaboratorManager;
 
         $collaborator = $manager->createInvitation('cart-123', 'test@example.com', 'editor');
 
@@ -40,7 +40,7 @@ describe('CollaboratorManager', function (): void {
     });
 
     it('uses default role when creating invitation', function (): void {
-        $manager = new CollaboratorManager();
+        $manager = new CollaboratorManager;
 
         $collaborator = $manager->createInvitation('cart-123', 'test@example.com');
 
@@ -48,7 +48,7 @@ describe('CollaboratorManager', function (): void {
     });
 
     it('accepts invitation', function (): void {
-        $manager = new CollaboratorManager();
+        $manager = new CollaboratorManager;
 
         $collaborator = $manager->acceptInvitation('token-abc', 'user-456', 'cart-123');
 
@@ -59,7 +59,7 @@ describe('CollaboratorManager', function (): void {
     });
 
     it('revokes access', function (): void {
-        $manager = new CollaboratorManager();
+        $manager = new CollaboratorManager;
 
         $result = $manager->revokeAccess('cart-123', 'user-456');
 
@@ -67,7 +67,7 @@ describe('CollaboratorManager', function (): void {
     });
 
     it('updates collaborator role', function (): void {
-        $manager = new CollaboratorManager();
+        $manager = new CollaboratorManager;
 
         $result = $manager->updateRole('cart-123', 'user-456', 'admin');
 
@@ -75,14 +75,14 @@ describe('CollaboratorManager', function (): void {
     });
 
     it('throws exception for invalid role', function (): void {
-        $manager = new CollaboratorManager();
+        $manager = new CollaboratorManager;
 
         expect(fn () => $manager->updateRole('cart-123', 'user-456', 'invalid'))
             ->toThrow(InvalidArgumentException::class, 'Invalid role: invalid');
     });
 
     it('gets collaborators for cart', function (): void {
-        $manager = new CollaboratorManager();
+        $manager = new CollaboratorManager;
 
         $collaborators = $manager->getCollaborators('cart-123');
 
@@ -90,7 +90,7 @@ describe('CollaboratorManager', function (): void {
     });
 
     it('checks if collaboration is enabled', function (): void {
-        $manager = new CollaboratorManager();
+        $manager = new CollaboratorManager;
 
         expect($manager->isEnabled())->toBeTrue();
     });
@@ -98,13 +98,13 @@ describe('CollaboratorManager', function (): void {
     it('checks if collaboration is disabled', function (): void {
         Config::set('cart.collaboration.enabled', false);
 
-        $manager = new CollaboratorManager();
+        $manager = new CollaboratorManager;
 
         expect($manager->isEnabled())->toBeFalse();
     });
 
     it('gets max collaborators', function (): void {
-        $manager = new CollaboratorManager();
+        $manager = new CollaboratorManager;
 
         expect($manager->getMaxCollaborators())->toBe(10);
     });
@@ -112,7 +112,7 @@ describe('CollaboratorManager', function (): void {
     it('sends invitation email when mailable configured', function (): void {
         Config::set('cart.collaboration.invitation_mailable', null);
 
-        $manager = new CollaboratorManager();
+        $manager = new CollaboratorManager;
         $manager->createInvitation('cart-123', 'test@example.com');
 
         // No mailable configured, so no email sent
@@ -120,7 +120,7 @@ describe('CollaboratorManager', function (): void {
     });
 
     it('validates viewer role', function (): void {
-        $manager = new CollaboratorManager();
+        $manager = new CollaboratorManager;
 
         $result = $manager->updateRole('cart-123', 'user-456', 'viewer');
 
@@ -128,7 +128,7 @@ describe('CollaboratorManager', function (): void {
     });
 
     it('validates editor role', function (): void {
-        $manager = new CollaboratorManager();
+        $manager = new CollaboratorManager;
 
         $result = $manager->updateRole('cart-123', 'user-456', 'editor');
 
@@ -136,7 +136,7 @@ describe('CollaboratorManager', function (): void {
     });
 
     it('validates admin role', function (): void {
-        $manager = new CollaboratorManager();
+        $manager = new CollaboratorManager;
 
         $result = $manager->updateRole('cart-123', 'user-456', 'admin');
 

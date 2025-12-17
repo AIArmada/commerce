@@ -567,7 +567,7 @@ describe('SnapshotCommand execution', function (): void {
 
     it('lists snapshots with no rows', function (): void {
         $versioning = Mockery::mock(PermissionVersioningService::class);
-        $versioning->shouldReceive('listSnapshots')->once()->andReturn(new Collection());
+        $versioning->shouldReceive('listSnapshots')->once()->andReturn(new Collection);
         app()->instance(PermissionVersioningService::class, $versioning);
 
         $this->artisan('authz:snapshot', [
@@ -578,7 +578,7 @@ describe('SnapshotCommand execution', function (): void {
     });
 
     it('creates snapshot with provided name', function (): void {
-        $snapshot = new PermissionSnapshot();
+        $snapshot = new PermissionSnapshot;
         $snapshot->forceFill([
             'id' => 'test-snapshot-id',
             'name' => 'My Snapshot',
@@ -828,7 +828,7 @@ describe('RoleHierarchyCommand execution', function (): void {
 
     it('shows tree and succeeds when there are no root roles', function (): void {
         $service = Mockery::mock(RoleInheritanceService::class);
-        $service->shouldReceive('getRootRoles')->once()->andReturn(new Illuminate\Database\Eloquent\Collection());
+        $service->shouldReceive('getRootRoles')->once()->andReturn(new Illuminate\Database\Eloquent\Collection);
         app()->instance(RoleInheritanceService::class, $service);
 
         $this->artisan('authz:roles-hierarchy', [
@@ -840,7 +840,7 @@ describe('RoleHierarchyCommand execution', function (): void {
 describe('RoleTemplateCommand execution', function (): void {
     it('lists templates and succeeds when there are none', function (): void {
         $service = Mockery::mock(RoleTemplateService::class);
-        $service->shouldReceive('getActiveTemplates')->once()->andReturn(new Illuminate\Database\Eloquent\Collection());
+        $service->shouldReceive('getActiveTemplates')->once()->andReturn(new Illuminate\Database\Eloquent\Collection);
         app()->instance(RoleTemplateService::class, $service);
 
         $this->artisan('authz:templates', [

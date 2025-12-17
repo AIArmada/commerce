@@ -38,7 +38,7 @@ class TestEventWithAllocations
 
     public function __construct()
     {
-        $this->allocations = new Collection();
+        $this->allocations = new Collection;
         $this->initializeEventData();
     }
 
@@ -112,7 +112,7 @@ describe('HasInventoryEventData', function (): void {
         });
 
         it('returns empty string when no inventoryable', function (): void {
-            $event = new TestEventMinimal();
+            $event = new TestEventMinimal;
 
             expect($event->getInventoryableType())->toBe('');
         });
@@ -126,7 +126,7 @@ describe('HasInventoryEventData', function (): void {
         });
 
         it('returns empty string when no inventoryable', function (): void {
-            $event = new TestEventMinimal();
+            $event = new TestEventMinimal;
 
             expect($event->getInventoryableId())->toBe('');
         });
@@ -140,13 +140,13 @@ describe('HasInventoryEventData', function (): void {
         });
 
         it('calls getTotalQuantity for allocations events', function (): void {
-            $event = new TestEventWithAllocations();
+            $event = new TestEventWithAllocations;
 
             expect($event->getQuantity())->toBe(25);
         });
 
         it('returns 0 when no quantity available', function (): void {
-            $event = new TestEventMinimal();
+            $event = new TestEventMinimal;
 
             expect($event->getQuantity())->toBe(0);
         });
@@ -160,13 +160,13 @@ describe('HasInventoryEventData', function (): void {
         });
 
         it('returns location_id property', function (): void {
-            $event = new TestEventWithUnderscoreProperties();
+            $event = new TestEventWithUnderscoreProperties;
 
             expect($event->getLocationId())->toBe('loc-underscore');
         });
 
         it('returns null when no location', function (): void {
-            $event = new TestEventMinimal();
+            $event = new TestEventMinimal;
 
             expect($event->getLocationId())->toBeNull();
         });
@@ -180,13 +180,13 @@ describe('HasInventoryEventData', function (): void {
         });
 
         it('returns cart_id property', function (): void {
-            $event = new TestEventWithUnderscoreProperties();
+            $event = new TestEventWithUnderscoreProperties;
 
             expect($event->getCartId())->toBe('cart-underscore');
         });
 
         it('returns null when no cart', function (): void {
-            $event = new TestEventMinimal();
+            $event = new TestEventMinimal;
 
             expect($event->getCartId())->toBeNull();
         });

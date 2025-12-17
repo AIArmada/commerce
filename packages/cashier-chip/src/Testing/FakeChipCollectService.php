@@ -31,7 +31,7 @@ class FakeChipCollectService extends ChipCollectService
      */
     public function __construct(?FakeChipClient $fakeClient = null)
     {
-        $this->fakeClient = $fakeClient ?? new FakeChipClient();
+        $this->fakeClient = $fakeClient ?? new FakeChipClient;
 
         // Pass a dummy client to the parent constructor to satisfy requirements
         // The parent methods won't be used since we override everything

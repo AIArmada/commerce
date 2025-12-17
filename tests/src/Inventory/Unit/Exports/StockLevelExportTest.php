@@ -16,12 +16,12 @@ beforeEach(function (): void {
 
 describe('StockLevelExport', function (): void {
     it('implements ExportableInterface', function (): void {
-        $export = new StockLevelExport();
+        $export = new StockLevelExport;
         expect($export)->toBeInstanceOf(ExportableInterface::class);
     });
 
     it('returns correct headers', function (): void {
-        $export = new StockLevelExport();
+        $export = new StockLevelExport;
         $headers = $export->getHeaders();
 
         expect($headers)->toBeArray();
@@ -33,7 +33,7 @@ describe('StockLevelExport', function (): void {
     });
 
     it('generates filename with date', function (): void {
-        $export = new StockLevelExport();
+        $export = new StockLevelExport;
         $filename = $export->getFilename();
 
         expect($filename)->toStartWith('stock-levels-');
@@ -49,7 +49,7 @@ describe('StockLevelExport', function (): void {
             'quantity_reserved' => 10,
         ]);
 
-        $export = new StockLevelExport();
+        $export = new StockLevelExport;
         $rows = iterator_to_array($export->getRows());
 
         expect($rows)->toHaveCount(1);
@@ -155,7 +155,7 @@ describe('StockLevelExport', function (): void {
             'reorder_point' => 20,
         ]);
 
-        $export = new StockLevelExport();
+        $export = new StockLevelExport;
         $rows = iterator_to_array($export->getRows());
 
         expect($rows[0][9])->toBe('In Stock');
@@ -169,7 +169,7 @@ describe('StockLevelExport', function (): void {
             'quantity_on_hand' => 0,
         ]);
 
-        $export = new StockLevelExport();
+        $export = new StockLevelExport;
         $rows = iterator_to_array($export->getRows());
 
         expect($rows[0][9])->toBe('Out of Stock');
@@ -184,7 +184,7 @@ describe('StockLevelExport', function (): void {
             'safety_stock' => 20,
         ]);
 
-        $export = new StockLevelExport();
+        $export = new StockLevelExport;
         $rows = iterator_to_array($export->getRows());
 
         expect($rows[0][9])->toBe('Low Stock');
@@ -202,7 +202,7 @@ describe('StockLevelExport', function (): void {
             'reorder_point' => 25,
         ]);
 
-        $export = new StockLevelExport();
+        $export = new StockLevelExport;
         $rows = iterator_to_array($export->getRows());
 
         expect($rows[0][0])->toBe($this->item->getMorphClass()); // SKU Type

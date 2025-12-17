@@ -12,7 +12,7 @@ use AIArmada\Vouchers\Targeting\TargetingContext;
 use Illuminate\Http\Request;
 
 beforeEach(function (): void {
-    $this->evaluator = new ReferrerEvaluator();
+    $this->evaluator = new ReferrerEvaluator;
 });
 
 /**
@@ -20,7 +20,7 @@ beforeEach(function (): void {
  */
 function createCartForReferrerTest(): Cart
 {
-    return new Cart(new InMemoryStorage(), 'referrer-test');
+    return new Cart(new InMemoryStorage, 'referrer-test');
 }
 
 /**

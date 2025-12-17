@@ -22,7 +22,7 @@ class TaxCalculatorTest extends TaxTestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->calculator = new TaxCalculator();
+        $this->calculator = new TaxCalculator;
     }
 
     public function test_calculate_tax_with_explicit_zone(): void

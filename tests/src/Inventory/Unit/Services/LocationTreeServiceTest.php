@@ -7,7 +7,7 @@ use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\LocationTreeService;
 
 beforeEach(function (): void {
-    $this->service = new LocationTreeService();
+    $this->service = new LocationTreeService;
 });
 
 describe('getTree', function (): void {

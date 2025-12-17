@@ -15,7 +15,7 @@ use AIArmada\Inventory\Reports\StockLevelReport;
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Test Product']);
     $this->location = InventoryLocation::factory()->create();
-    $this->report = new StockLevelReport();
+    $this->report = new StockLevelReport;
 });
 
 describe('StockLevelReport', function (): void {

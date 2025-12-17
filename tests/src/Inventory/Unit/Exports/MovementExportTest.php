@@ -17,12 +17,12 @@ beforeEach(function (): void {
 
 describe('MovementExport', function (): void {
     it('implements ExportableInterface', function (): void {
-        $export = new MovementExport();
+        $export = new MovementExport;
         expect($export)->toBeInstanceOf(ExportableInterface::class);
     });
 
     it('returns correct headers', function (): void {
-        $export = new MovementExport();
+        $export = new MovementExport;
         $headers = $export->getHeaders();
 
         expect($headers)->toBeArray();
@@ -33,7 +33,7 @@ describe('MovementExport', function (): void {
     });
 
     it('generates filename with date', function (): void {
-        $export = new MovementExport();
+        $export = new MovementExport;
         $filename = $export->getFilename();
 
         expect($filename)->toStartWith('movements-');
@@ -161,7 +161,7 @@ describe('MovementExport', function (): void {
             'occurred_at' => CarbonImmutable::now(),
         ]);
 
-        $export = new MovementExport();
+        $export = new MovementExport;
         $rows = iterator_to_array($export->getRows());
 
         expect($rows)->toHaveCount(1);
@@ -170,7 +170,7 @@ describe('MovementExport', function (): void {
     });
 
     it('uses default date range when not specified', function (): void {
-        $export = new MovementExport();
+        $export = new MovementExport;
 
         // Create a movement now - should be included
         InventoryMovement::factory()->create([

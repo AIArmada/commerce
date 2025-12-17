@@ -31,7 +31,7 @@ class ListenersTest extends CashierChipTestCase
         $purchase = PurchaseData::from($purchaseData);
         $event = new PurchasePaid($purchase, $purchaseData);
 
-        $listener = new HandlePurchasePaid();
+        $listener = new HandlePurchasePaid;
         $listener->handle($event);
 
         Event::assertDispatched(PaymentSucceeded::class, function ($e) use ($user) {
@@ -61,7 +61,7 @@ class ListenersTest extends CashierChipTestCase
         $purchase = PurchaseData::from($purchaseData);
         $event = new PurchasePaid($purchase, $purchaseData);
 
-        $listener = new HandlePurchasePaid();
+        $listener = new HandlePurchasePaid;
         $listener->handle($event);
 
         $user->refresh();

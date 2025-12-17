@@ -19,7 +19,7 @@ use Mockery;
  */
 function createCartForListenerTest(array $metadata = []): Cart
 {
-    $cart = new Cart(new InMemoryStorage(), 'listener-test-' . uniqid());
+    $cart = new Cart(new InMemoryStorage, 'listener-test-' . uniqid());
 
     foreach ($metadata as $key => $value) {
         $cart->setMetadata($key, $value);

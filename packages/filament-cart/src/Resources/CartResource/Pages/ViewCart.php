@@ -15,8 +15,6 @@ use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 use Filament\Support\Icons\Heroicon;
 
-use function assert;
-
 final class ViewCart extends ViewRecord
 {
     protected static string $resource = CartResource::class;
@@ -59,7 +57,7 @@ final class ViewCart extends ViewRecord
 
     protected function getHeaderActions(): array
     {
-        assert($this->record instanceof Cart);
+        \assert($this->record instanceof Cart);
 
         $actions = [
             Actions\EditAction::make()

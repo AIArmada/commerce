@@ -40,7 +40,7 @@ describe('PermissionRequestResource Pages', function (): void {
         });
 
         it('returns create header action', function (): void {
-            $page = new ListPermissionRequests();
+            $page = new ListPermissionRequests;
 
             $method = new ReflectionMethod(ListPermissionRequests::class, 'getHeaderActions');
             $method->setAccessible(true);
@@ -73,7 +73,7 @@ describe('PermissionRequestResource Pages', function (): void {
         });
 
         it('returns view and delete header actions', function (): void {
-            $page = new EditPermissionRequest();
+            $page = new EditPermissionRequest;
 
             $method = new ReflectionMethod(EditPermissionRequest::class, 'getHeaderActions');
             $method->setAccessible(true);
@@ -107,7 +107,7 @@ describe('PermissionRequestResource Pages', function (): void {
         });
 
         it('returns edit header action', function (): void {
-            $page = new ViewPermissionRequest();
+            $page = new ViewPermissionRequest;
 
             $method = new ReflectionMethod(ViewPermissionRequest::class, 'getHeaderActions');
             $method->setAccessible(true);

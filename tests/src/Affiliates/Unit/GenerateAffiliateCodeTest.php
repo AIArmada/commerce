@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 describe('GenerateAffiliateCode', function (): void {
     describe('handle', function (): void {
         test('generates code with name prefix', function (): void {
-            $action = new GenerateAffiliateCode();
+            $action = new GenerateAffiliateCode;
 
             $code = $action->handle('John Smith');
 
@@ -20,7 +20,7 @@ describe('GenerateAffiliateCode', function (): void {
         });
 
         test('generates code with empty name uses AFF prefix', function (): void {
-            $action = new GenerateAffiliateCode();
+            $action = new GenerateAffiliateCode;
 
             $code = $action->handle('');
 
@@ -29,7 +29,7 @@ describe('GenerateAffiliateCode', function (): void {
         });
 
         test('generates code with no argument uses AFF prefix', function (): void {
-            $action = new GenerateAffiliateCode();
+            $action = new GenerateAffiliateCode;
 
             $code = $action->handle();
 
@@ -37,7 +37,7 @@ describe('GenerateAffiliateCode', function (): void {
         });
 
         test('generates code with only dashes uses AFF prefix', function (): void {
-            $action = new GenerateAffiliateCode();
+            $action = new GenerateAffiliateCode;
 
             // Dashes that slug() removes entirely
             $code = $action->handle('---');
@@ -47,7 +47,7 @@ describe('GenerateAffiliateCode', function (): void {
         });
 
         test('generates code with whitespace only uses AFF prefix', function (): void {
-            $action = new GenerateAffiliateCode();
+            $action = new GenerateAffiliateCode;
 
             $code = $action->handle('   ');
 
@@ -55,7 +55,7 @@ describe('GenerateAffiliateCode', function (): void {
         });
 
         test('truncates long names to 6 characters', function (): void {
-            $action = new GenerateAffiliateCode();
+            $action = new GenerateAffiliateCode;
 
             $code = $action->handle('Alexander The Great');
 
@@ -75,7 +75,7 @@ describe('GenerateAffiliateCode', function (): void {
                 'currency' => 'USD',
             ]);
 
-            $action = new GenerateAffiliateCode();
+            $action = new GenerateAffiliateCode;
 
             // Generate multiple codes - they should all be unique
             $codes = [];
@@ -92,7 +92,7 @@ describe('GenerateAffiliateCode', function (): void {
         });
 
         test('handles unicode characters in name', function (): void {
-            $action = new GenerateAffiliateCode();
+            $action = new GenerateAffiliateCode;
 
             $code = $action->handle('José García');
 
@@ -103,7 +103,7 @@ describe('GenerateAffiliateCode', function (): void {
         });
 
         test('handles numbers in name', function (): void {
-            $action = new GenerateAffiliateCode();
+            $action = new GenerateAffiliateCode;
 
             $code = $action->handle('Affiliate123');
 
@@ -112,7 +112,7 @@ describe('GenerateAffiliateCode', function (): void {
         });
 
         test('handles mixed case consistently', function (): void {
-            $action = new GenerateAffiliateCode();
+            $action = new GenerateAffiliateCode;
 
             $code = $action->handle('JoHn DoE');
 
@@ -123,7 +123,7 @@ describe('GenerateAffiliateCode', function (): void {
 
     describe('class structure', function (): void {
         test('can be instantiated', function (): void {
-            $action = new GenerateAffiliateCode();
+            $action = new GenerateAffiliateCode;
 
             expect($action)->toBeInstanceOf(GenerateAffiliateCode::class);
         });

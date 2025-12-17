@@ -649,7 +649,7 @@ describe('Order Model', function (): void {
 
     describe('Order Audit', function (): void {
         it('has audit include attributes', function (): void {
-            $order = new Order();
+            $order = new Order;
 
             $auditInclude = $order->getAuditInclude();
 

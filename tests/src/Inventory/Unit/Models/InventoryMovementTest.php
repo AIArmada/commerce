@@ -171,7 +171,7 @@ class InventoryMovementTest extends InventoryTestCase
 
     public function test_user_relationship(): void
     {
-        $movement = new InventoryMovement();
+        $movement = new InventoryMovement;
         $relation = $movement->user();
 
         expect($relation)->toBeInstanceOf(Illuminate\Database\Eloquent\Relations\BelongsTo::class);

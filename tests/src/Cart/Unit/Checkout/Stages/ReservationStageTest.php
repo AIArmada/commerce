@@ -7,40 +7,40 @@ use AIArmada\Cart\Checkout\Stages\ReservationStage;
 use AIArmada\Cart\Testing\InMemoryStorage;
 
 beforeEach(function (): void {
-    $this->storage = new InMemoryStorage();
+    $this->storage = new InMemoryStorage;
 });
 
 describe('ReservationStage', function (): void {
     it('can be instantiated', function (): void {
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
 
         expect($stage)->toBeInstanceOf(ReservationStage::class)
             ->and($stage->getName())->toBe('reservation');
     });
 
     it('can set reserve callback', function (): void {
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
         $result = $stage->onReserve(fn () => true);
 
         expect($result)->toBe($stage);
     });
 
     it('can set release callback', function (): void {
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
         $result = $stage->onRelease(fn () => null);
 
         expect($result)->toBe($stage);
     });
 
     it('should not execute without reserve callback', function (): void {
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
         $cart = new Cart($this->storage, 'user-123');
 
         expect($stage->shouldExecute($cart, []))->toBeFalse();
     });
 
     it('should execute with reserve callback', function (): void {
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
         $stage->onReserve(fn () => true);
 
         $cart = new Cart($this->storage, 'user-123');
@@ -49,7 +49,7 @@ describe('ReservationStage', function (): void {
     });
 
     it('succeeds without callback configured', function (): void {
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
         $cart = new Cart($this->storage, 'user-123');
 
         $result = $stage->execute($cart, []);
@@ -65,7 +65,7 @@ describe('ReservationStage', function (): void {
 
         $reservedItems = [];
 
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
         $stage->onReserve(function ($itemId, $quantity, $cart) use (&$reservedItems) {
             $reservedItems[$itemId] = $quantity;
 
@@ -85,7 +85,7 @@ describe('ReservationStage', function (): void {
         $cart->add('item-1', 'Product 1', 1000, 2);
         $cart->add('item-2', 'Out of Stock', 2000, 10);
 
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
         $stage->onReserve(function ($itemId, $quantity, $cart) {
             return $itemId !== 'item-2';
         });
@@ -104,7 +104,7 @@ describe('ReservationStage', function (): void {
 
         $released = [];
 
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
         $stage->onReserve(function ($itemId, $quantity, $cart) {
             return $itemId !== 'item-2';
         });
@@ -122,7 +122,7 @@ describe('ReservationStage', function (): void {
         $cart = new Cart($this->storage, 'user-123');
         $cart->add('item-1', 'Product 1', 1000, 1);
 
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
         $stage->onReserve(function ($itemId, $quantity, $cart): void {
             throw new Exception('Inventory service unavailable');
         });
@@ -134,7 +134,7 @@ describe('ReservationStage', function (): void {
     });
 
     it('supports rollback with release callback', function (): void {
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
 
         expect($stage->supportsRollback())->toBeFalse();
 
@@ -144,7 +144,7 @@ describe('ReservationStage', function (): void {
     });
 
     it('does not support rollback without release callback', function (): void {
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
         $stage->onReserve(fn () => true);
 
         expect($stage->supportsRollback())->toBeFalse();
@@ -155,7 +155,7 @@ describe('ReservationStage', function (): void {
 
         $released = [];
 
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
         $stage->onRelease(function ($itemId, $quantity, $cart) use (&$released): void {
             $released[$itemId] = $quantity;
         });
@@ -175,7 +175,7 @@ describe('ReservationStage', function (): void {
     it('handles exception during rollback gracefully', function (): void {
         $cart = new Cart($this->storage, 'user-123');
 
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
         $stage->onRelease(function ($itemId, $quantity, $cart): void {
             throw new Exception('Release failed');
         });
@@ -193,7 +193,7 @@ describe('ReservationStage', function (): void {
         $cart = new Cart($this->storage, 'user-123');
         $releaseCallCount = 0;
 
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
         $stage->onRelease(function () use (&$releaseCallCount): void {
             $releaseCallCount++;
         });
@@ -206,7 +206,7 @@ describe('ReservationStage', function (): void {
     it('does nothing on rollback without release callback', function (): void {
         $cart = new Cart($this->storage, 'user-123');
 
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
 
         $context = [
             'reserved_items' => ['item-1' => 2],
@@ -221,7 +221,7 @@ describe('ReservationStage', function (): void {
         $cart = new Cart($this->storage, 'user-123');
         $cart->add('item-1', 'Product', 1000, 1);
 
-        $stage = new ReservationStage();
+        $stage = new ReservationStage;
         $stage->onReserve(fn () => true);
 
         $result = $stage->execute($cart, []);
