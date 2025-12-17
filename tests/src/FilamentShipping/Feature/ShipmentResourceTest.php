@@ -5,6 +5,9 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Models\Shipment;
+use Filament\Schemas\Schema;
+use Filament\Tables\Contracts\HasTable;
+use Filament\Tables\Table;
 use Filament\Support\Icons\Heroicon;
 
 uses(TestCase::class);
@@ -38,4 +41,19 @@ it('has relation managers configured', function (): void {
     $relations = ShipmentResource::getRelations();
 
     expect($relations)->toHaveCount(2);
+});
+
+it('builds shipment resource form schema', function (): void {
+    $schema = ShipmentResource::form(Schema::make());
+
+    expect($schema->getComponents())->not()->toBeEmpty();
+});
+
+it('builds shipment resource table definition', function (): void {
+    $livewire = Mockery::mock(HasTable::class);
+
+    $table = ShipmentResource::table(Table::make($livewire));
+
+    expect($table->getColumns())->not()->toBeEmpty();
+    expect($table->getRecordActions())->not()->toBeEmpty();
 });

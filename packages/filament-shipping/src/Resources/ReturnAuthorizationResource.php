@@ -10,8 +10,14 @@ use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\RelationMana
 use AIArmada\Shipping\Enums\ReturnReason;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use BackedEnum;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
 use Filament\Forms;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
@@ -55,7 +61,7 @@ class ReturnAuthorizationResource extends Resource
     {
         return $schema
             ->schema([
-                Forms\Components\Section::make('Return Details')
+                Section::make('Return Details')
                     ->schema([
                         Forms\Components\TextInput::make('rma_number')
                             ->label('RMA Number')
@@ -94,7 +100,7 @@ class ReturnAuthorizationResource extends Resource
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Timeline')
+                Section::make('Timeline')
                     ->schema([
                         Forms\Components\DateTimePicker::make('approved_at')
                             ->disabled(),
@@ -168,10 +174,10 @@ class ReturnAuthorizationResource extends Resource
                     ]),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
+                ViewAction::make(),
+                EditAction::make(),
 
-                Tables\Actions\Action::make('approve')
+                Action::make('approve')
                     ->icon('heroicon-o-check')
                     ->color('success')
                     ->requiresConfirmation()
@@ -181,7 +187,7 @@ class ReturnAuthorizationResource extends Resource
                         'approved_at' => now(),
                     ])),
 
-                Tables\Actions\Action::make('reject')
+                Action::make('reject')
                     ->icon('heroicon-o-x-mark')
                     ->color('danger')
                     ->requiresConfirmation()
@@ -191,8 +197,8 @@ class ReturnAuthorizationResource extends Resource
                     ])),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');
