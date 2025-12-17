@@ -7,6 +7,8 @@ namespace AIArmada\Tax\Tests\Unit\Models;
 use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\Tax\Models\TaxClass;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class TaxClassTest extends TaxTestCase
 {
@@ -207,12 +209,18 @@ class TaxClassTest extends TaxTestCase
             'is_active' => true,
         ]);
 
-        TaxClass::create([
-            'name' => 'Owned Class',
-            'slug' => 'owned',
+        DB::table((new TaxClass)->getTable())->insert([
+            'id' => (string) Str::uuid(),
             'owner_type' => 'App\\Models\\Store',
             'owner_id' => '123',
+            'name' => 'Owned Class',
+            'slug' => 'owned',
+            'description' => null,
+            'is_default' => false,
             'is_active' => true,
+            'position' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         // When owner is null and includeGlobal=true (default), returns records where owner_id is null
@@ -271,20 +279,32 @@ class TaxClassTest extends TaxTestCase
             'is_active' => true,
         ]);
 
-        TaxClass::create([
-            'name' => 'Owned Class',
-            'slug' => 'owned',
+        DB::table((new TaxClass)->getTable())->insert([
+            'id' => (string) Str::uuid(),
             'owner_type' => 'App\\Models\\Store',
             'owner_id' => '123',
+            'name' => 'Owned Class',
+            'slug' => 'owned',
+            'description' => null,
+            'is_default' => false,
             'is_active' => true,
+            'position' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
-        TaxClass::create([
-            'name' => 'Other Owner Class',
-            'slug' => 'other',
+        DB::table((new TaxClass)->getTable())->insert([
+            'id' => (string) Str::uuid(),
             'owner_type' => 'App\\Models\\Store',
             'owner_id' => '456',
+            'name' => 'Other Owner Class',
+            'slug' => 'other',
+            'description' => null,
+            'is_default' => false,
             'is_active' => true,
+            'position' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         $classes = TaxClass::forOwner($owner, includeGlobal: true)->get();
@@ -324,12 +344,18 @@ class TaxClassTest extends TaxTestCase
             'is_active' => true,
         ]);
 
-        TaxClass::create([
-            'name' => 'Owned Class',
-            'slug' => 'owned',
+        DB::table((new TaxClass)->getTable())->insert([
+            'id' => (string) Str::uuid(),
             'owner_type' => 'App\\Models\\Store',
             'owner_id' => '123',
+            'name' => 'Owned Class',
+            'slug' => 'owned',
+            'description' => null,
+            'is_default' => false,
             'is_active' => true,
+            'position' => 0,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         $classes = TaxClass::forOwner($owner, includeGlobal: false)->get();

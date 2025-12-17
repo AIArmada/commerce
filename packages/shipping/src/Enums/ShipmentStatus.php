@@ -104,7 +104,7 @@ enum ShipmentStatus: string
 
     public function isPending(): bool
     {
-        return $this === self::Pending || $this === self::Draft;
+        return $this === self::Pending;
     }
 
     public function isInTransit(): bool

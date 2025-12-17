@@ -78,7 +78,7 @@ class NotesRelationManager extends RelationManager
                     ->label('Pinned'),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
+                \Filament\Actions\CreateAction::make()
                     ->mutateFormDataUsing(function (array $data): array {
                         $data['created_by'] = auth()->id();
 
@@ -86,21 +86,21 @@ class NotesRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                Tables\Actions\Action::make('pin')
+                \Filament\Actions\Action::make('pin')
                     ->icon('heroicon-o-star')
                     ->action(fn ($record) => $record->pin())
                     ->visible(fn ($record) => ! $record->is_pinned),
-                Tables\Actions\Action::make('unpin')
+                \Filament\Actions\Action::make('unpin')
                     ->icon('heroicon-s-star')
                     ->color('warning')
                     ->action(fn ($record) => $record->unpin())
                     ->visible(fn ($record) => $record->is_pinned),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

@@ -81,7 +81,11 @@ class TaxExemption extends Model
 
             $owner = TaxOwnerScope::resolveOwner();
 
-            if ($owner !== null) {
+            if ($owner === null) {
+                if ($exemption->owner_type !== null || $exemption->owner_id !== null) {
+                    throw new AuthorizationException('Cannot write owned tax exemptions without an owner context.');
+                }
+            } else {
                 if ($exemption->owner_type === null && $exemption->owner_id === null) {
                     $exemption->assignOwner($owner);
                 }
@@ -92,11 +96,7 @@ class TaxExemption extends Model
             }
 
             if ($exemption->tax_zone_id !== null) {
-                $zoneQuery = $owner === null
-                    ? TaxZone::query()
-                    : TaxOwnerScope::applyToOwnedQuery(TaxZone::query());
-
-                $zoneExists = $zoneQuery
+                $zoneExists = TaxOwnerScope::applyToOwnedQuery(TaxZone::query())
                     ->whereKey($exemption->tax_zone_id)
                     ->exists();
 
@@ -112,11 +112,7 @@ class TaxExemption extends Model
                     $usesHasOwner = in_array(HasOwner::class, class_uses_recursive($type), true);
 
                     if ($usesHasOwner) {
-                        $exemptableQuery = $type::query();
-
-                        if ($owner !== null) {
-                            $exemptableQuery = TaxOwnerScope::applyToOwnedQuery($exemptableQuery);
-                        }
+                        $exemptableQuery = TaxOwnerScope::applyToOwnedQuery($type::query());
 
                         $exemptableExists = $exemptableQuery
                             ->whereKey($exemption->exemptable_id)

@@ -8,8 +8,10 @@ use AIArmada\CommerceSupport\Traits\HasOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -98,6 +100,10 @@ class CustomerGroup extends Model
      */
     public function addMember(Customer $customer, string $role = 'member'): void
     {
+        if (! $this->isSameOwnerAsCustomer($customer)) {
+            throw new InvalidArgumentException('Group and customer must share the same owner context.');
+        }
+
         $this->members()->syncWithoutDetaching([
             $customer->id => [
                 'role' => $role,
@@ -111,6 +117,10 @@ class CustomerGroup extends Model
      */
     public function removeMember(Customer $customer): void
     {
+        if (! $this->isSameOwnerAsCustomer($customer)) {
+            throw new InvalidArgumentException('Group and customer must share the same owner context.');
+        }
+
         $this->members()->detach($customer->id);
     }
 
@@ -119,6 +129,10 @@ class CustomerGroup extends Model
      */
     public function promoteToAdmin(Customer $customer): void
     {
+        if (! $this->isSameOwnerAsCustomer($customer)) {
+            throw new InvalidArgumentException('Group and customer must share the same owner context.');
+        }
+
         $this->members()->updateExistingPivot($customer->id, ['role' => 'admin']);
     }
 
@@ -127,7 +141,21 @@ class CustomerGroup extends Model
      */
     public function demoteToMember(Customer $customer): void
     {
+        if (! $this->isSameOwnerAsCustomer($customer)) {
+            throw new InvalidArgumentException('Group and customer must share the same owner context.');
+        }
+
         $this->members()->updateExistingPivot($customer->id, ['role' => 'member']);
+    }
+
+    private function isSameOwnerAsCustomer(Customer $customer): bool
+    {
+        if ($this->owner_type === null && $this->owner_id === null) {
+            return $customer->owner_type === null && $customer->owner_id === null;
+        }
+
+        return $customer->owner_type === $this->owner_type
+            && $customer->owner_id === $this->owner_id;
     }
 
     /**
@@ -169,7 +197,11 @@ class CustomerGroup extends Model
     // SCOPES
     // =========================================================================
 
-    public function scopeActive($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }

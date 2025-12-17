@@ -7,6 +7,7 @@ namespace AIArmada\Customers\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
@@ -112,12 +113,20 @@ class WishlistItem extends Model
     // SCOPES
     // =========================================================================
 
-    public function scopeNeedsStockNotification($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeNeedsStockNotification(Builder $query): Builder
     {
         return $query->where('notified_in_stock', false);
     }
 
-    public function scopeNeedsSaleNotification($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeNeedsSaleNotification(Builder $query): Builder
     {
         return $query->where('notified_on_sale', false);
     }

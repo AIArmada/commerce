@@ -71,11 +71,11 @@ class WishlistsRelationManager extends RelationManager
                     ->label('Public'),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                \Filament\Actions\CreateAction::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('view_items')
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\Action::make('view_items')
                     ->label('Items')
                     ->icon('heroicon-o-list-bullet')
                     ->color('info')
@@ -89,7 +89,7 @@ class WishlistsRelationManager extends RelationManager
 
                         return view('filament-customers::wishlist-items', ['items' => $items]);
                     }),
-                Tables\Actions\Action::make('copy_link')
+                \Filament\Actions\Action::make('copy_link')
                     ->label('Copy Link')
                     ->icon('heroicon-o-link')
                     ->action(function ($record): void {
@@ -100,11 +100,11 @@ class WishlistsRelationManager extends RelationManager
                             ->send();
                     })
                     ->visible(fn ($record) => $record->is_public),
-                Tables\Actions\DeleteAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

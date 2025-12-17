@@ -404,10 +404,10 @@ describe('ShippingZoneResolver', function (): void {
         expect($rates)->toBeEmpty();
     });
 
-    it('resolves all zones without owner filter', function (): void {
+    it('resolves global zones when no owner is provided', function (): void {
         ShippingZone::create([
-            'owner_type' => 'Global',
-            'owner_id' => 'global-owner',
+            'owner_type' => null,
+            'owner_id' => null,
             'name' => 'Global US Zone',
             'code' => 'global-us',
             'type' => 'country',
@@ -430,5 +430,88 @@ describe('ShippingZoneResolver', function (): void {
 
         expect($zones)->toHaveCount(1);
         expect($zones->first()->name)->toBe('Global US Zone');
+    });
+
+    it('blocks cross-tenant zone reads when owner scoping is enabled', function (): void {
+        config()->set('shipping.features.owner.enabled', true);
+        config()->set('shipping.features.owner.include_global', true);
+
+        $ownerA = new class extends \Illuminate\Database\Eloquent\Model
+        {
+            use \Illuminate\Database\Eloquent\Concerns\HasUuids;
+
+            protected $table = 'test_shipping_owners';
+
+            protected $fillable = ['name'];
+        };
+
+        \Illuminate\Support\Facades\Schema::dropIfExists('test_shipping_owners');
+        \Illuminate\Support\Facades\Schema::create('test_shipping_owners', function (\Illuminate\Database\Schema\Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->string('name');
+            $table->timestamps();
+        });
+
+        $ownerA = $ownerA::query()->create(['name' => 'Owner A']);
+        $ownerB = $ownerA::query()->create(['name' => 'Owner B']);
+
+        ShippingZone::create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
+            'name' => 'Owner A Zone',
+            'code' => 'owner-a-us',
+            'type' => 'country',
+            'countries' => ['US'],
+            'priority' => 10,
+            'active' => true,
+        ]);
+
+        ShippingZone::create([
+            'owner_type' => $ownerB->getMorphClass(),
+            'owner_id' => $ownerB->getKey(),
+            'name' => 'Owner B Zone',
+            'code' => 'owner-b-us',
+            'type' => 'country',
+            'countries' => ['US'],
+            'priority' => 10,
+            'active' => true,
+        ]);
+
+        ShippingZone::create([
+            'owner_type' => null,
+            'owner_id' => null,
+            'name' => 'Global US Zone 2',
+            'code' => 'global-us-2',
+            'type' => 'country',
+            'countries' => ['US'],
+            'priority' => 1,
+            'active' => true,
+        ]);
+
+        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class($ownerA) implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        {
+            public function __construct(private readonly ?\Illuminate\Database\Eloquent\Model $owner) {}
+
+            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            {
+                return $this->owner;
+            }
+        });
+
+        $address = new \AIArmada\Shipping\Data\AddressData(
+            name: 'John Doe',
+            phone: '123-456-7890',
+            address: '123 Main St',
+            postCode: '10001',
+            countryCode: 'US',
+            city: 'New York',
+            state: 'NY'
+        );
+
+        $zones = $this->resolver->resolveAll($address);
+
+        expect($zones->pluck('name')->all())
+            ->toContain('Owner A Zone', 'Global US Zone 2')
+            ->not->toContain('Owner B Zone');
     });
 });

@@ -7,13 +7,14 @@ namespace AIArmada\Customers\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
 /**
  * @property string $id
  * @property string $customer_id
- * @property int|null $created_by
+ * @property string|null $created_by
  * @property string $content
  * @property bool $is_internal
  * @property bool $is_pinned
@@ -116,17 +117,29 @@ class CustomerNote extends Model
     // SCOPES
     // =========================================================================
 
-    public function scopeInternal($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeInternal(Builder $query): Builder
     {
         return $query->where('is_internal', true);
     }
 
-    public function scopeVisibleToCustomer($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeVisibleToCustomer(Builder $query): Builder
     {
         return $query->where('is_internal', false);
     }
 
-    public function scopePinned($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopePinned(Builder $query): Builder
     {
         return $query->where('is_pinned', true);
     }

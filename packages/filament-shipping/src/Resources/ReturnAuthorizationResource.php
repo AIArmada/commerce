@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping\Resources;
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\FilamentShipping\Actions\ApproveReturnAction;
+use AIArmada\FilamentShipping\Actions\RejectReturnAction;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Pages;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\RelationManagers;
 use AIArmada\Shipping\Enums\ReturnReason;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use BackedEnum;
-use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -177,24 +178,9 @@ class ReturnAuthorizationResource extends Resource
                 ViewAction::make(),
                 EditAction::make(),
 
-                Action::make('approve')
-                    ->icon('heroicon-o-check')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->visible(fn (ReturnAuthorization $record) => $record->isPending())
-                    ->action(fn (ReturnAuthorization $record) => $record->update([
-                        'status' => 'approved',
-                        'approved_at' => now(),
-                    ])),
+                ApproveReturnAction::make(),
 
-                Action::make('reject')
-                    ->icon('heroicon-o-x-mark')
-                    ->color('danger')
-                    ->requiresConfirmation()
-                    ->visible(fn (ReturnAuthorization $record) => $record->isPending())
-                    ->action(fn (ReturnAuthorization $record) => $record->update([
-                        'status' => 'rejected',
-                    ])),
+                RejectReturnAction::make(),
             ])
             ->bulkActions([
                 BulkActionGroup::make([

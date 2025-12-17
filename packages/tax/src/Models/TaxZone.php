@@ -250,6 +250,10 @@ class TaxZone extends Model
             $owner = TaxOwnerScope::resolveOwner();
 
             if ($owner === null) {
+                if ($zone->owner_type !== null || $zone->owner_id !== null) {
+                    throw new AuthorizationException('Cannot write owned tax zones without an owner context.');
+                }
+
                 return;
             }
 
@@ -263,6 +267,46 @@ class TaxZone extends Model
         });
 
         static::deleting(function (TaxZone $zone): void {
+            if (TaxOwnerScope::isEnabled()) {
+                $owner = TaxOwnerScope::resolveOwner();
+
+                if ($owner === null) {
+                    if ($zone->owner_type !== null || $zone->owner_id !== null) {
+                        throw new AuthorizationException('Cannot delete owned tax zones without an owner context.');
+                    }
+                } elseif (! $zone->belongsToOwner($owner)) {
+                    throw new AuthorizationException('Cannot delete tax zones outside the current owner scope.');
+                }
+
+                if ($zone->owner_type === null && $zone->owner_id === null) {
+                    $hasOwnedRates = TaxRate::query()
+                        ->where('zone_id', $zone->id)
+                        ->whereNotNull('owner_type')
+                        ->whereNotNull('owner_id')
+                        ->exists();
+
+                    if ($hasOwnedRates) {
+                        throw new AuthorizationException('Cannot delete a global tax zone while owned rates exist.');
+                    }
+
+                    TaxRate::query()
+                        ->where('zone_id', $zone->id)
+                        ->whereNull('owner_type')
+                        ->whereNull('owner_id')
+                        ->delete();
+
+                    return;
+                }
+
+                TaxRate::query()
+                    ->where('zone_id', $zone->id)
+                    ->where('owner_type', $zone->owner_type)
+                    ->where('owner_id', $zone->owner_id)
+                    ->delete();
+
+                return;
+            }
+
             $zone->rates()->delete();
         });
     }

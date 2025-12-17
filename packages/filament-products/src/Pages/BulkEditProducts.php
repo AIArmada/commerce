@@ -113,8 +113,8 @@ class BulkEditProducts extends Page implements HasForms, HasTable
                     ->options(\AIArmada\Products\Enums\ProductType::class),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('update_price')
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\BulkAction::make('update_price')
                         ->label('Update Price')
                         ->icon('heroicon-o-currency-dollar')
                         ->color('success')
@@ -170,7 +170,7 @@ class BulkEditProducts extends Page implements HasForms, HasTable
                         })
                         ->deselectRecordsAfterCompletion(),
 
-                    Tables\Actions\BulkAction::make('update_status')
+                    \Filament\Actions\BulkAction::make('update_status')
                         ->label('Change Status')
                         ->icon('heroicon-o-flag')
                         ->form([
@@ -191,7 +191,7 @@ class BulkEditProducts extends Page implements HasForms, HasTable
                         })
                         ->deselectRecordsAfterCompletion(),
 
-                    Tables\Actions\BulkAction::make('update_visibility')
+                    \Filament\Actions\BulkAction::make('update_visibility')
                         ->label('Change Visibility')
                         ->icon('heroicon-o-eye')
                         ->form([
@@ -212,7 +212,7 @@ class BulkEditProducts extends Page implements HasForms, HasTable
                         })
                         ->deselectRecordsAfterCompletion(),
 
-                    Tables\Actions\BulkAction::make('assign_categories')
+                    \Filament\Actions\BulkAction::make('assign_categories')
                         ->label('Assign Categories')
                         ->icon('heroicon-o-folder')
                         ->color('info')

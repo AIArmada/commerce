@@ -162,19 +162,19 @@ class AttributeSetResource extends Resource
                     ->label(__('filament-products::resources.attribute_sets.fields.is_default')),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('setDefault')
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\Action::make('setDefault')
                     ->label(__('filament-products::resources.attribute_sets.actions.set_default'))
                     ->icon('heroicon-o-star')
                     ->color('warning')
                     ->requiresConfirmation()
                     ->action(fn (AttributeSet $record) => $record->setAsDefault())
                     ->visible(fn (AttributeSet $record): bool => ! $record->is_default),
-                Tables\Actions\DeleteAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

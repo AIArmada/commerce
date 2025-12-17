@@ -37,7 +37,6 @@ final class TaxZonesTable
 
                 TextColumn::make('rates_count')
                     ->label('Rates')
-                    ->counts('rates')
                     ->alignEnd(),
 
                 TextColumn::make('priority')

@@ -7,6 +7,7 @@ namespace AIArmada\Customers\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
@@ -92,6 +93,10 @@ class Wishlist extends Model
      */
     public function addProduct(string $productType, string $productId, ?array $metadata = null): WishlistItem
     {
+        if (! config('customers.wishlists.enabled', true)) {
+            throw new RuntimeException('Wishlists are disabled.');
+        }
+
         $maxItems = config('customers.wishlists.max_items_per_wishlist', 100);
 
         if ($this->items()->count() >= $maxItems) {
@@ -162,6 +167,10 @@ class Wishlist extends Model
      */
     public function makePublic(): void
     {
+        if (! config('customers.wishlists.allow_public', true)) {
+            throw new RuntimeException('Public wishlists are disabled.');
+        }
+
         $this->update(['is_public' => true]);
     }
 
@@ -178,6 +187,10 @@ class Wishlist extends Model
      */
     public function regenerateShareToken(): void
     {
+        if (! config('customers.wishlists.allow_public', true)) {
+            throw new RuntimeException('Public wishlists are disabled.');
+        }
+
         $this->update(['share_token' => Str::random(32)]);
     }
 
@@ -202,12 +215,24 @@ class Wishlist extends Model
     // SCOPES
     // =========================================================================
 
-    public function scopePublic($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopePublic(Builder $query): Builder
     {
+        if (! config('customers.wishlists.allow_public', true)) {
+            return $query->whereRaw('1 = 0');
+        }
+
         return $query->where('is_public', true);
     }
 
-    public function scopeDefault($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeDefault(Builder $query): Builder
     {
         return $query->where('is_default', true);
     }

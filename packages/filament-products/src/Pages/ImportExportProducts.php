@@ -15,6 +15,7 @@ use Filament\Actions\Action;
 use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
 use League\Csv\Reader;
@@ -48,11 +49,11 @@ class ImportExportProducts extends Page
         return app(OwnerResolverInterface::class)->resolve();
     }
 
-    public function importForm(): Forms\Form
+    public function getImportFormProperty(): Schema
     {
-        return Forms\Form::make()
+        return Schema::make($this)
             ->schema([
-                Forms\Components\Section::make('Import Products')
+                \Filament\Schemas\Components\Section::make('Import Products')
                     ->schema([
                         Forms\Components\FileUpload::make('csv_file')
                             ->label('CSV File')
@@ -78,10 +79,17 @@ class ImportExportProducts extends Page
 
     public function import(): void
     {
-        $data = $this->importForm()->getState();
+        $data = $this->importData;
+
+        /** @var string|array<int, string>|null $csvFile */
+        $csvFile = $data['csv_file'] ?? null;
+
+        if (is_array($csvFile)) {
+            $csvFile = $csvFile[0] ?? null;
+        }
 
         try {
-            $filePath = Storage::disk('local')->path($data['csv_file']);
+            $filePath = Storage::disk('local')->path((string) $csvFile);
             $csv = Reader::createFromPath($filePath, 'r');
             $csv->setHeaderOffset(0);
 
@@ -141,7 +149,7 @@ class ImportExportProducts extends Page
             }
 
             // Clean up uploaded file
-            Storage::disk('local')->delete($data['csv_file']);
+            Storage::disk('local')->delete((string) $csvFile);
 
             Notification::make()
                 ->title('Import completed')

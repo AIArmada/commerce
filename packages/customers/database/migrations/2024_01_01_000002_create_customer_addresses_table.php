@@ -11,6 +11,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create(config('customers.tables.addresses', 'customer_addresses'), function (Blueprint $table): void {
+            $jsonColumnType = config('customers.json_column_type', 'json');
+
             $table->uuid('id')->primary();
 
             $table->foreignUuid('customer_id');
@@ -40,9 +42,9 @@ return new class extends Migration
 
             // Verification
             $table->boolean('is_verified')->default(false);
-            $table->json('coordinates')->nullable(); // lat/lng
+            $table->{$jsonColumnType}('coordinates')->nullable(); // lat/lng
 
-            $table->json('metadata')->nullable();
+            $table->{$jsonColumnType}('metadata')->nullable();
 
             $table->timestamps();
 

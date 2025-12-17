@@ -1,0 +1,150 @@
+<?php
+
+declare(strict_types=1);
+
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\FilamentOrders\Resources\OrderResource\Pages\ViewOrder;
+use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\OrdersServiceProvider;
+use AIArmada\Orders\Services\OrderService;
+use AIArmada\Orders\States\PendingPayment;
+use AIArmada\Orders\States\Processing;
+use Filament\Facades\Filament;
+use Illuminate\Contracts\Auth\Guard;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+use Spatie\Permission\Models\Permission;
+
+uses(TestCase::class);
+
+require_once __DIR__ . '/../Fixtures/TestOwner.php';
+
+beforeEach(function (): void {
+    Schema::dropIfExists('test_owners');
+
+    Schema::create('test_owners', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
+
+    config()->set('orders.owner.enabled', true);
+    config()->set('orders.owner.include_global', true);
+    config()->set('orders.owner.auto_assign_on_create', false);
+
+    app()->register(OrdersServiceProvider::class);
+
+    $user = User::query()->create([
+        'name' => 'QA',
+        'email' => 'qa-actions@example.com',
+        'password' => bcrypt('password'),
+    ]);
+
+    foreach (['view_order', 'update_order', 'cancel_order'] as $permission) {
+        Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
+    }
+
+    $user->givePermissionTo('view_order');
+    $user->givePermissionTo('update_order');
+    $user->givePermissionTo('cancel_order');
+
+    $guard = Mockery::mock(Guard::class);
+    $guard->shouldReceive('user')->andReturn($user);
+    $guard->shouldReceive('id')->andReturn($user->getKey());
+
+    Filament::shouldReceive('auth')->andReturn($guard);
+
+    app()->instance(OrderService::class, new class
+    {
+        public function confirmPayment(Order $order, string $transactionId, string $gateway, int $amount): void
+        {
+            throw new RuntimeException('fail confirmPayment');
+        }
+
+        public function ship(Order $order, string $carrier, string $trackingNumber): void
+        {
+            throw new RuntimeException('fail ship');
+        }
+
+        public function confirmDelivery(Order $order): void
+        {
+            throw new RuntimeException('fail confirmDelivery');
+        }
+
+        public function cancel(Order $order, string $reason, ?string $canceledBy = null): void
+        {
+            throw new RuntimeException('fail cancel');
+        }
+    });
+});
+
+afterEach(function (): void {
+    Mockery::close();
+});
+
+it('executes ViewOrder action handlers (error paths) without crashing', function (): void {
+    $owner = TestOwner::query()->create(['name' => 'Owner A']);
+
+    app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
+    {
+        public function __construct(private readonly ?Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    $pendingOrder = Order::query()->create([
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => $owner->getKey(),
+        'status' => PendingPayment::class,
+        'currency' => 'MYR',
+        'subtotal' => 10000,
+        'grand_total' => 10000,
+    ]);
+
+    $processingOrder = Order::query()->create([
+        'owner_type' => $owner->getMorphClass(),
+        'owner_id' => $owner->getKey(),
+        'status' => Processing::class,
+        'currency' => 'MYR',
+        'subtotal' => 10000,
+        'grand_total' => 10000,
+    ]);
+
+    $page = new class extends ViewOrder
+    {
+        public function headerActions(): array
+        {
+            return $this->getHeaderActions();
+        }
+
+        public function refreshFormData(array $attributes): void
+        {
+            // No Livewire context in these tests.
+        }
+    };
+
+    $actions = collect($page->headerActions());
+
+    $confirmPayment = $actions->firstWhere(fn ($action) => $action->getName() === 'confirm_payment');
+    $shipOrder = $actions->firstWhere(fn ($action) => $action->getName() === 'ship_order');
+
+    expect($confirmPayment)->not->toBeNull();
+    expect($shipOrder)->not->toBeNull();
+
+    $confirmPaymentHandler = $confirmPayment->record($pendingOrder)->getActionFunction();
+    $shipOrderHandler = $shipOrder->record($processingOrder)->getActionFunction();
+
+    expect($confirmPaymentHandler)->not->toBeNull();
+    expect($shipOrderHandler)->not->toBeNull();
+
+    $confirmPaymentHandler($pendingOrder, ['transaction_id' => 'txn', 'gateway' => 'manual']);
+    $shipOrderHandler($processingOrder, ['carrier' => 'dhl', 'tracking_number' => 'track']);
+
+    expect(true)->toBeTrue();
+});

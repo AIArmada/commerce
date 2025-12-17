@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCustomers\Widgets;
 
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -15,18 +16,20 @@ class CustomerStatsWidget extends BaseWidget
 
     protected function getStats(): array
     {
-        $totalCustomers = Customer::count();
-        $activeCustomers = Customer::where('status', CustomerStatus::Active)->count();
-        $newThisMonth = Customer::where('created_at', '>=', now()->startOfMonth())->count();
-        $acceptsMarketing = Customer::where('accepts_marketing', true)->count();
+        $baseQuery = CustomersOwnerScope::applyToOwnedQuery(Customer::query());
+
+        $totalCustomers = (clone $baseQuery)->count();
+        $activeCustomers = (clone $baseQuery)->where('status', CustomerStatus::Active)->count();
+        $newThisMonth = (clone $baseQuery)->where('created_at', '>=', now()->startOfMonth())->count();
+        $acceptsMarketing = (clone $baseQuery)->where('accepts_marketing', true)->count();
 
         // Calculate LTV
-        $totalLtv = Customer::sum('lifetime_value');
+        $totalLtv = (clone $baseQuery)->sum('lifetime_value');
         $avgLtv = $totalCustomers > 0 ? (int) ($totalLtv / $totalCustomers) : 0;
 
         // Trend - new customers this week vs last week
-        $thisWeek = Customer::where('created_at', '>=', now()->subWeek())->count();
-        $lastWeek = Customer::whereBetween('created_at', [now()->subWeeks(2), now()->subWeek()])->count();
+        $thisWeek = (clone $baseQuery)->where('created_at', '>=', now()->subWeek())->count();
+        $lastWeek = (clone $baseQuery)->whereBetween('created_at', [now()->subWeeks(2), now()->subWeek()])->count();
 
         $trend = $lastWeek > 0
             ? round((($thisWeek - $lastWeek) / $lastWeek) * 100)
@@ -47,6 +50,11 @@ class CustomerStatsWidget extends BaseWidget
                 ->description('Customers joined')
                 ->descriptionIcon('heroicon-m-user-plus')
                 ->color('info'),
+
+            Stat::make('Active Customers', number_format($activeCustomers))
+                ->description('Currently active')
+                ->descriptionIcon('heroicon-m-check-circle')
+                ->color('success'),
 
             Stat::make('Average LTV', 'RM ' . number_format($avgLtv / 100, 2))
                 ->description('Per customer')

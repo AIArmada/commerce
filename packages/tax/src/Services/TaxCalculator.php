@@ -216,9 +216,14 @@ class TaxCalculator
             return null;
         }
 
+        $exemptableType = $context['exemptable_type']
+            ?? $context['customer_type']
+            ?? config('tax.features.exemptions.customer_morph', 'App\\Models\\Customer');
+
         $zoneId = $context['zone_id'] ?? null;
 
         $query = TaxOwnerScope::applyToOwnedQuery(TaxExemption::query())
+            ->where('exemptable_type', (string) $exemptableType)
             ->where('exemptable_id', $customerId)
             ->active()
             ->forZone($zoneId);

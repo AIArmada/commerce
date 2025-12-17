@@ -8,6 +8,7 @@ use AIArmada\Customers\Enums\AddressType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
@@ -208,27 +209,47 @@ class Address extends Model
     // SCOPES
     // =========================================================================
 
-    public function scopeBilling($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeBilling(Builder $query): Builder
     {
         return $query->whereIn('type', [AddressType::Billing, AddressType::Both]);
     }
 
-    public function scopeShipping($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeShipping(Builder $query): Builder
     {
         return $query->whereIn('type', [AddressType::Shipping, AddressType::Both]);
     }
 
-    public function scopeDefaultBilling($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeDefaultBilling(Builder $query): Builder
     {
         return $query->where('is_default_billing', true);
     }
 
-    public function scopeDefaultShipping($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeDefaultShipping(Builder $query): Builder
     {
         return $query->where('is_default_shipping', true);
     }
 
-    public function scopeVerified($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeVerified(Builder $query): Builder
     {
         return $query->where('is_verified', true);
     }

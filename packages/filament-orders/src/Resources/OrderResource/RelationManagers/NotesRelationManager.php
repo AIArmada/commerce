@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers;
 
-use Filament\Forms;
 use Filament\Facades\Filament;
+use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use RuntimeException;
 
 class NotesRelationManager extends RelationManager
 {
@@ -60,12 +61,12 @@ class NotesRelationManager extends RelationManager
                     ->falseLabel('Internal Only'),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
+                \Filament\Actions\CreateAction::make()
                     ->mutateFormDataUsing(function (array $data): array {
                         $userId = Filament::auth()->id();
 
                         if (! $userId) {
-                            throw new \RuntimeException('You must be authenticated to add a note.');
+                            throw new RuntimeException('You must be authenticated to add a note.');
                         }
 
                         $data['user_id'] = (string) $userId;
@@ -74,12 +75,12 @@ class NotesRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\DeleteAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ])
             ->defaultSort('created_at', 'desc');

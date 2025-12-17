@@ -76,7 +76,11 @@ class TaxRate extends Model
 
             $owner = TaxOwnerScope::resolveOwner();
 
-            if ($owner !== null) {
+            if ($owner === null) {
+                if ($rate->owner_type !== null || $rate->owner_id !== null) {
+                    throw new AuthorizationException('Cannot write owned tax rates without an owner context.');
+                }
+            } else {
                 if ($rate->owner_type === null && $rate->owner_id === null) {
                     $rate->assignOwner($owner);
                 }
@@ -86,11 +90,7 @@ class TaxRate extends Model
                 }
             }
 
-            $zoneQuery = $owner === null
-                ? TaxZone::query()
-                : TaxOwnerScope::applyToOwnedQuery(TaxZone::query());
-
-            $zoneExists = $zoneQuery
+            $zoneExists = TaxOwnerScope::applyToOwnedQuery(TaxZone::query())
                 ->whereKey($rate->zone_id)
                 ->exists();
 

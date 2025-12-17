@@ -360,9 +360,9 @@ class ProductResource extends Resource
                     ->preload(),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('duplicate')
+                \Filament\Actions\ViewAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\Action::make('duplicate')
                     ->label('Duplicate')
                     ->icon('heroicon-o-document-duplicate')
                     ->authorize(fn (Product $record): bool => auth()->user()?->can('duplicate', $record) ?? false)
@@ -378,15 +378,15 @@ class ProductResource extends Resource
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\BulkAction::make('activate')
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
+                    \Filament\Actions\BulkAction::make('activate')
                         ->label('Activate')
                         ->icon('heroicon-o-check-circle')
                         ->action(
                             fn (\Illuminate\Support\Collection $records) => $records->each->update(['status' => ProductStatus::Active])
                         ),
-                    Tables\Actions\BulkAction::make('draft')
+                    \Filament\Actions\BulkAction::make('draft')
                         ->label('Set to Draft')
                         ->icon('heroicon-o-pencil')
                         ->action(

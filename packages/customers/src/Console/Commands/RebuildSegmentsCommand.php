@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Console\Commands;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\Customers\Services\SegmentationService;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\Relation;
 
 /**
  * Artisan command to rebuild automatic customer segments.
@@ -19,6 +22,9 @@ class RebuildSegmentsCommand extends Command
 {
     protected $signature = 'customers:rebuild-segments
                             {--segment= : Specific segment UUID to rebuild}
+                            {--owner-type= : Owner morph type (from morph map) for scoping}
+                            {--owner-id= : Owner ID for scoping}
+                            {--all-owners : Rebuild segments for every distinct owner (and global)}
                             {--dry-run : Show what would be done without making changes}';
 
     protected $description = 'Rebuild automatic customer segment memberships';
@@ -27,19 +33,22 @@ class RebuildSegmentsCommand extends Command
     {
         $segmentId = $this->option('segment');
         $dryRun = $this->option('dry-run');
+        $allOwners = (bool) $this->option('all-owners');
+
+        $owner = $this->resolveOwnerFromContextOrOptions();
 
         if ($dryRun) {
             $this->components->warn('Running in dry-run mode. No changes will be made.');
         }
 
         if ($segmentId) {
-            return $this->rebuildSingleSegment($service, $segmentId, $dryRun);
+            return $this->rebuildSingleSegment($service, $segmentId, $dryRun, $owner);
         }
 
-        return $this->rebuildAllSegments($service, $dryRun);
+        return $this->rebuildAllSegments($service, $dryRun, $owner, $allOwners);
     }
 
-    protected function rebuildSingleSegment(SegmentationService $service, string $segmentId, bool $dryRun): int
+    protected function rebuildSingleSegment(SegmentationService $service, string $segmentId, bool $dryRun, ?Model $owner): int
     {
         $segment = Segment::find($segmentId);
 
@@ -53,6 +62,19 @@ class RebuildSegmentsCommand extends Command
             $this->components->warn("Segment '{$segment->name}' is manual and cannot be rebuilt automatically.");
 
             return self::SUCCESS;
+        }
+
+        if ($owner === null && $segment->owner_type !== null && $segment->owner_id !== null) {
+            $this->components->error('Refusing to rebuild an owner-scoped segment without an owner context.');
+            $this->components->warn('Pass --owner-type and --owner-id, or use --all-owners.');
+
+            return self::FAILURE;
+        }
+
+        if ($owner !== null && ! $segment->belongsToOwner($owner)) {
+            $this->components->error('Refusing to rebuild a segment outside the resolved owner context.');
+
+            return self::FAILURE;
         }
 
         $this->components->info("Rebuilding segment: {$segment->name}");
@@ -72,9 +94,17 @@ class RebuildSegmentsCommand extends Command
         return self::SUCCESS;
     }
 
-    protected function rebuildAllSegments(SegmentationService $service, bool $dryRun): int
+    protected function rebuildAllSegments(SegmentationService $service, bool $dryRun, ?Model $owner, bool $allOwners): int
     {
-        $segments = Segment::query()->active()->automatic()->get();
+        if ($allOwners) {
+            return $this->rebuildAllOwners($service, $dryRun);
+        }
+
+        $segments = Segment::query()
+            ->active()
+            ->automatic()
+            ->forOwner($owner, includeGlobal: false)
+            ->get();
 
         if ($segments->isEmpty()) {
             $this->components->info('No automatic segments found.');
@@ -108,5 +138,113 @@ class RebuildSegmentsCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    private function rebuildAllOwners(SegmentationService $service, bool $dryRun): int
+    {
+        $owners = Segment::query()
+            ->active()
+            ->automatic()
+            ->select(['owner_type', 'owner_id'])
+            ->distinct()
+            ->get();
+
+        if ($owners->isEmpty()) {
+            $this->components->info('No automatic segments found.');
+
+            return self::SUCCESS;
+        }
+
+        $results = [];
+
+        foreach ($owners as $row) {
+            /** @var string|null $ownerType */
+            $ownerType = $row->getAttribute('owner_type');
+            /** @var string|int|null $ownerId */
+            $ownerId = $row->getAttribute('owner_id');
+
+            $owner = null;
+
+            if ($ownerType !== null && $ownerId !== null) {
+                $owner = $this->resolveOwnerFromTypeAndId($ownerType, (string) $ownerId);
+            }
+
+            if ($dryRun) {
+                $counts = Segment::query()
+                    ->active()
+                    ->automatic()
+                    ->forOwner($owner, includeGlobal: false)
+                    ->count();
+                $results[$this->ownerLabel($ownerType, $ownerId)] = "{$counts} segment(s)";
+
+                continue;
+            }
+
+            $rebuilt = $service->rebuildAllSegments($owner);
+            $results[$this->ownerLabel($ownerType, $ownerId)] = (string) array_sum($rebuilt);
+        }
+
+        $this->newLine();
+        $this->components->bulletList(
+            collect($results)->map(fn ($count, $name) => "{$name}: {$count}")->toArray()
+        );
+        $this->newLine();
+
+        if (! $dryRun) {
+            $this->components->success('All segments rebuilt successfully.');
+        }
+
+        return self::SUCCESS;
+    }
+
+    private function resolveOwnerFromContextOrOptions(): ?Model
+    {
+        if (app()->bound(OwnerResolverInterface::class)) {
+            /** @var OwnerResolverInterface $resolver */
+            $resolver = app(OwnerResolverInterface::class);
+
+            $owner = $resolver->resolve();
+            if ($owner !== null) {
+                return $owner;
+            }
+        }
+
+        $ownerType = $this->option('owner-type');
+        $ownerId = $this->option('owner-id');
+
+        if (! $ownerType || ! $ownerId) {
+            return null;
+        }
+
+        return $this->resolveOwnerFromTypeAndId((string) $ownerType, (string) $ownerId);
+    }
+
+    private function resolveOwnerFromTypeAndId(string $ownerType, string $ownerId): ?Model
+    {
+        $class = Relation::getMorphedModel($ownerType) ?? (class_exists($ownerType) ? $ownerType : null);
+
+        if ($class === null || ! is_subclass_of($class, Model::class)) {
+            $this->components->warn("Unknown owner type: {$ownerType}");
+
+            return null;
+        }
+
+        /** @var Model|null $owner */
+        $owner = $class::query()->find($ownerId);
+
+        if ($owner === null) {
+            $this->components->warn("Owner not found: {$ownerType}:{$ownerId}");
+        }
+
+        return $owner;
+    }
+
+    private function ownerLabel(?string $ownerType, string|int|null $ownerId): string
+    {
+        if ($ownerType === null || $ownerId === null) {
+            return 'global';
+        }
+
+        return "{$ownerType}:{$ownerId}";
     }
 }

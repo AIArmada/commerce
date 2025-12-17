@@ -39,7 +39,7 @@ class PriceSimulator extends Page
 
     public function mount(): void
     {
-        $this->form->fill();
+        $this->getSchema('form')?->fill();
     }
 
     private function resolveOwner(): ?Model
@@ -213,7 +213,14 @@ class PriceSimulator extends Page
 
     public function calculate(): void
     {
-        $data = $this->form->getState();
+        /** @var array<string, mixed> $data */
+        $data = $this->data ?? [];
+
+        if ($data === []) {
+            $this->result = null;
+
+            return;
+        }
 
         $owner = $this->resolveOwner();
 
@@ -278,7 +285,7 @@ class PriceSimulator extends Page
     public function clear(): void
     {
         $this->result = null;
-        $this->form->fill();
+        $this->getSchema('form')?->fill();
     }
 
     public function resultInfolist(Schema $schema): Schema

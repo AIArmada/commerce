@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Policies;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Shipping\Models\Shipment;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Policy for Shipment model authorization.
@@ -131,8 +133,7 @@ class ShipmentPolicy
             return $user->can($permission);
         }
 
-        // Default to true if no permission system is configured
-        return true;
+        return false;
     }
 
     /**
@@ -140,11 +141,20 @@ class ShipmentPolicy
      */
     protected function isOwner(Authenticatable $user, Shipment $shipment): bool
     {
-        if ($shipment->owner_type === null || $shipment->owner_id === null) {
+        if (! app()->bound(OwnerResolverInterface::class)) {
             return false;
         }
 
-        return $shipment->owner_type === get_class($user)
-            && $shipment->owner_id === $user->getAuthIdentifier();
+        /** @var OwnerResolverInterface $resolver */
+        $resolver = app(OwnerResolverInterface::class);
+
+        /** @var Model|null $owner */
+        $owner = $resolver->resolve();
+
+        if ($owner === null) {
+            return false;
+        }
+
+        return $shipment->belongsToOwner($owner);
     }
 }

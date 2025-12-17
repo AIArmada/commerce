@@ -7,10 +7,9 @@ namespace AIArmada\FilamentOrders\Pages;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\States\Processing;
-use AIArmada\Orders\States\Shipped;
 use BackedEnum;
-use Filament\Forms;
 use Filament\Facades\Filament;
+use Filament\Forms;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Tables;
@@ -144,7 +143,7 @@ class FulfillmentQueue extends Page implements HasTable
                     ]),
             ])
             ->actions([
-                Tables\Actions\Action::make('fulfill')
+                \Filament\Actions\Action::make('fulfill')
                     ->label('Ship')
                     ->icon('heroicon-o-truck')
                     ->color('success')
@@ -195,7 +194,7 @@ class FulfillmentQueue extends Page implements HasTable
                     ->modalHeading('Ship Order')
                     ->modalDescription(fn ($record) => "Complete shipment for order {$record->order_number}"),
 
-                Tables\Actions\Action::make('view')
+                \Filament\Actions\Action::make('view')
                     ->label('View')
                     ->icon('heroicon-o-eye')
                     ->url(fn ($record) => \AIArmada\FilamentOrders\Resources\OrderResource::getUrl('view', ['record' => $record]))

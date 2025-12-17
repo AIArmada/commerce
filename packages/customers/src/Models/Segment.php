@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Collection;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -91,13 +93,15 @@ class Segment extends Model
     /**
      * Get customers matching the segment conditions.
      */
-    public function getMatchingCustomers(): \Illuminate\Support\Collection
+    public function getMatchingCustomers(): Collection
     {
         if (! $this->is_automatic || empty($this->conditions)) {
             return $this->customers;
         }
 
-        $query = Customer::query()->active();
+        $query = Customer::query()
+            ->active()
+            ->forOwner($this->owner, includeGlobal: false);
         $this->applyConditions($query, $this->conditions);
 
         return $query->get();
@@ -137,6 +141,10 @@ class Segment extends Model
      */
     public function addCustomer(Customer $customer): void
     {
+        if (! $this->isSameOwnerAsCustomer($customer)) {
+            throw new InvalidArgumentException('Segment and customer must share the same owner context.');
+        }
+
         $this->customers()->syncWithoutDetaching([$customer->id]);
     }
 
@@ -145,34 +153,68 @@ class Segment extends Model
      */
     public function removeCustomer(Customer $customer): void
     {
+        if (! $this->isSameOwnerAsCustomer($customer)) {
+            throw new InvalidArgumentException('Segment and customer must share the same owner context.');
+        }
+
         $this->customers()->detach($customer->id);
+    }
+
+    private function isSameOwnerAsCustomer(Customer $customer): bool
+    {
+        if ($this->owner_type === null && $this->owner_id === null) {
+            return $customer->owner_type === null && $customer->owner_id === null;
+        }
+
+        return $customer->owner_type === $this->owner_type
+            && $customer->owner_id === $this->owner_id;
     }
 
     // =========================================================================
     // SCOPES
     // =========================================================================
 
-    public function scopeActive($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('is_active', true);
     }
 
-    public function scopeAutomatic($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeAutomatic(Builder $query): Builder
     {
         return $query->where('is_automatic', true);
     }
 
-    public function scopeManual($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeManual(Builder $query): Builder
     {
         return $query->where('is_automatic', false);
     }
 
-    public function scopeByPriority($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeByPriority(Builder $query): Builder
     {
         return $query->orderBy('priority', 'desc');
     }
 
-    public function scopeOfType($query, SegmentType $type)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeOfType(Builder $query, SegmentType $type): Builder
     {
         return $query->where('type', $type);
     }
@@ -197,24 +239,40 @@ class Segment extends Model
     {
         foreach ($conditions as $condition) {
             $field = $condition['field'] ?? null;
-            $operator = $condition['operator'] ?? '=';
             $value = $condition['value'] ?? null;
 
             if (! $field || $value === null) {
                 continue;
             }
 
-            match ($field) {
-                'lifetime_value_min' => $query->where('lifetime_value', '>=', $value),
-                'lifetime_value_max' => $query->where('lifetime_value', '<=', $value),
-                'total_orders_min' => $query->where('total_orders', '>=', $value),
-                'total_orders_max' => $query->where('total_orders', '<=', $value),
-                'last_order_days' => $query->where('last_order_at', '>=', now()->subDays($value)),
-                'no_order_days' => $query->where('last_order_at', '<=', now()->subDays($value)),
-                'accepts_marketing' => $query->where('accepts_marketing', (bool) $value),
-                'is_tax_exempt' => $query->where('is_tax_exempt', (bool) $value),
-                default => $query->where($field, $operator, $value),
-            };
+            switch ($field) {
+                case 'lifetime_value_min':
+                    $query->where('lifetime_value', '>=', (int) $value);
+                    break;
+                case 'lifetime_value_max':
+                    $query->where('lifetime_value', '<=', (int) $value);
+                    break;
+                case 'total_orders_min':
+                    $query->where('total_orders', '>=', (int) $value);
+                    break;
+                case 'total_orders_max':
+                    $query->where('total_orders', '<=', (int) $value);
+                    break;
+                case 'last_order_days':
+                    $query->where('last_order_at', '>=', now()->subDays((int) $value));
+                    break;
+                case 'no_order_days':
+                    $query->where('last_order_at', '<=', now()->subDays((int) $value));
+                    break;
+                case 'accepts_marketing':
+                    $query->where('accepts_marketing', (bool) $value);
+                    break;
+                case 'is_tax_exempt':
+                    $query->where('is_tax_exempt', (bool) $value);
+                    break;
+                default:
+                    continue 2;
+            }
         }
     }
 }

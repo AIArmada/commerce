@@ -280,9 +280,9 @@ class CollectionResource extends Resource
                     ->label('Featured'),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('rebuild')
+                \Filament\Actions\ViewAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\Action::make('rebuild')
                     ->label('Rebuild')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
@@ -299,8 +299,8 @@ class CollectionResource extends Resource
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

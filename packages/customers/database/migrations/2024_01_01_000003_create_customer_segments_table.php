@@ -11,6 +11,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create(config('customers.tables.segments', 'customer_segments'), function (Blueprint $table): void {
+            $jsonColumnType = config('customers.json_column_type', 'json');
+
             $table->uuid('id')->primary();
 
             // Owner (for multi-tenancy)
@@ -24,7 +26,7 @@ return new class extends Migration
             $table->string('type')->default('custom'); // loyalty, behavior, demographic, custom
 
             // Automatic segment conditions (JSON rules)
-            $table->json('conditions')->nullable();
+            $table->{$jsonColumnType}('conditions')->nullable();
             $table->boolean('is_automatic')->default(true);
 
             // Priority for pricing (higher = more important)
@@ -33,7 +35,7 @@ return new class extends Migration
             // Status
             $table->boolean('is_active')->default(true);
 
-            $table->json('metadata')->nullable();
+            $table->{$jsonColumnType}('metadata')->nullable();
 
             $table->timestamps();
 
