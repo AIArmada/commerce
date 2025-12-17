@@ -4,9 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Resources\RoleResource;
-use AIArmada\FilamentAuthz\Resources\RoleResource\Pages\CreateRole;
-use AIArmada\FilamentAuthz\Resources\RoleResource\Pages\EditRole;
-use AIArmada\FilamentAuthz\Resources\RoleResource\Pages\ListRoles;
 use AIArmada\FilamentAuthz\Resources\RoleResource\RelationManagers\PermissionsRelationManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;

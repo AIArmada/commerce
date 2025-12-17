@@ -11,7 +11,7 @@ use Spatie\Permission\Models\Role;
 uses(RefreshDatabase::class);
 
 afterEach(function (): void {
-    \Mockery::close();
+    Mockery::close();
 });
 
 test('role resource does not register navigation when unauthenticated', function (): void {

@@ -87,7 +87,7 @@ beforeEach(function (): void {
     }
 
     // Clear permission cache
-    app()[\Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
+    app()[Spatie\Permission\PermissionRegistrar::class]->forgetCachedPermissions();
 
     $this->auditLogger = Mockery::mock(AuditLogger::class);
     $this->auditLogger->shouldReceive('log')->andReturn(null);

@@ -6,16 +6,16 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Models\PermissionGroup;
 use AIArmada\FilamentAuthz\Models\PermissionSnapshot;
 use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
-use AIArmada\FilamentAuthz\Services\PolicyGeneratorService;
+use AIArmada\FilamentAuthz\Services\PermissionGroupService;
 use AIArmada\FilamentAuthz\Services\PermissionVersioningService;
-use AIArmada\FilamentAuthz\Services\RollbackResult;
+use AIArmada\FilamentAuthz\Services\PolicyGeneratorService;
 use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
 use AIArmada\FilamentAuthz\Services\RoleTemplateService;
-use AIArmada\FilamentAuthz\Services\PermissionGroupService;
+use AIArmada\FilamentAuthz\Services\RollbackResult;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
+use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
-use Illuminate\Filesystem\Filesystem;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -23,12 +23,12 @@ use Spatie\Permission\PermissionRegistrar;
 uses(RefreshDatabase::class);
 
 afterEach(function (): void {
-    \Mockery::close();
+    Mockery::close();
 });
 
 describe('GeneratePoliciesCommand execution', function (): void {
     it('warns and succeeds when no resources are discovered', function (): void {
-        $discovery = \Mockery::mock(EntityDiscoveryService::class);
+        $discovery = Mockery::mock(EntityDiscoveryService::class);
         $discovery->shouldReceive('discoverResources')->once()->andReturn(collect());
         app()->instance(EntityDiscoveryService::class, $discovery);
 
@@ -48,26 +48,27 @@ describe('GeneratePoliciesCommand execution', function (): void {
             metadata: [],
         );
 
-        $discovery = \Mockery::mock(EntityDiscoveryService::class);
+        $discovery = Mockery::mock(EntityDiscoveryService::class);
         $discovery->shouldReceive('discoverResources')->once()->andReturn(collect([$resource]));
         app()->instance(EntityDiscoveryService::class, $discovery);
 
         $tmpPolicyPath = storage_path('testing/policies/UserPolicy.php');
         @mkdir(dirname($tmpPolicyPath), 0755, true);
 
-        $generator = new class($tmpPolicyPath) extends PolicyGeneratorService {
+        $generator = new class($tmpPolicyPath) extends PolicyGeneratorService
+        {
             public int $calls = 0;
 
             public function __construct(private readonly string $path) {}
 
             public function generate(
                 string $modelClass,
-                \AIArmada\FilamentAuthz\Enums\PolicyType $type = \AIArmada\FilamentAuthz\Enums\PolicyType::Basic,
+                AIArmada\FilamentAuthz\Enums\PolicyType $type = AIArmada\FilamentAuthz\Enums\PolicyType::Basic,
                 array $options = []
-            ): \AIArmada\FilamentAuthz\Services\GeneratedPolicy {
+            ): AIArmada\FilamentAuthz\Services\GeneratedPolicy {
                 $this->calls++;
 
-                return new \AIArmada\FilamentAuthz\Services\GeneratedPolicy(
+                return new AIArmada\FilamentAuthz\Services\GeneratedPolicy(
                     path: $this->path,
                     content: '<?php',
                     metadata: [],
@@ -97,7 +98,7 @@ describe('GeneratePoliciesCommand execution', function (): void {
             metadata: [],
         );
 
-        $discovery = \Mockery::mock(EntityDiscoveryService::class);
+        $discovery = Mockery::mock(EntityDiscoveryService::class);
         $discovery->shouldReceive('discoverResources')->once()->andReturn(collect([$resource]));
         app()->instance(EntityDiscoveryService::class, $discovery);
 
@@ -105,19 +106,20 @@ describe('GeneratePoliciesCommand execution', function (): void {
         @mkdir(dirname($tmpPolicyPath), 0755, true);
         file_put_contents($tmpPolicyPath, "<?php\n// existing");
 
-        $generator = new class($tmpPolicyPath) extends PolicyGeneratorService {
+        $generator = new class($tmpPolicyPath) extends PolicyGeneratorService
+        {
             public int $calls = 0;
 
             public function __construct(private readonly string $path) {}
 
             public function generate(
                 string $modelClass,
-                \AIArmada\FilamentAuthz\Enums\PolicyType $type = \AIArmada\FilamentAuthz\Enums\PolicyType::Basic,
+                AIArmada\FilamentAuthz\Enums\PolicyType $type = AIArmada\FilamentAuthz\Enums\PolicyType::Basic,
                 array $options = []
-            ): \AIArmada\FilamentAuthz\Services\GeneratedPolicy {
+            ): AIArmada\FilamentAuthz\Services\GeneratedPolicy {
                 $this->calls++;
 
-                return new \AIArmada\FilamentAuthz\Services\GeneratedPolicy(
+                return new AIArmada\FilamentAuthz\Services\GeneratedPolicy(
                     path: $this->path,
                     content: "<?php\n// new",
                     metadata: [],
@@ -144,7 +146,7 @@ describe('GeneratePoliciesCommand execution', function (): void {
             metadata: [],
         );
 
-        $discovery = \Mockery::mock(EntityDiscoveryService::class);
+        $discovery = Mockery::mock(EntityDiscoveryService::class);
         $discovery->shouldReceive('discoverResources')->once()->andReturn(collect([$resource]));
         app()->instance(EntityDiscoveryService::class, $discovery);
 
@@ -152,19 +154,20 @@ describe('GeneratePoliciesCommand execution', function (): void {
         @mkdir(dirname($tmpPolicyPath), 0755, true);
         file_put_contents($tmpPolicyPath, "<?php\n// existing");
 
-        $generator = new class($tmpPolicyPath) extends PolicyGeneratorService {
+        $generator = new class($tmpPolicyPath) extends PolicyGeneratorService
+        {
             public int $calls = 0;
 
             public function __construct(private readonly string $path) {}
 
             public function generate(
                 string $modelClass,
-                \AIArmada\FilamentAuthz\Enums\PolicyType $type = \AIArmada\FilamentAuthz\Enums\PolicyType::Basic,
+                AIArmada\FilamentAuthz\Enums\PolicyType $type = AIArmada\FilamentAuthz\Enums\PolicyType::Basic,
                 array $options = []
-            ): \AIArmada\FilamentAuthz\Services\GeneratedPolicy {
+            ): AIArmada\FilamentAuthz\Services\GeneratedPolicy {
                 $this->calls++;
 
-                return new \AIArmada\FilamentAuthz\Services\GeneratedPolicy(
+                return new AIArmada\FilamentAuthz\Services\GeneratedPolicy(
                     path: $this->path,
                     content: "<?php\n// overwritten",
                     metadata: [],
@@ -201,23 +204,24 @@ describe('GeneratePoliciesCommand execution', function (): void {
             metadata: [],
         );
 
-        $discovery = \Mockery::mock(EntityDiscoveryService::class);
+        $discovery = Mockery::mock(EntityDiscoveryService::class);
         $discovery->shouldReceive('discoverResources')->once()->andReturn(collect([$resourceA, $resourceB]));
         app()->instance(EntityDiscoveryService::class, $discovery);
 
-        $generator = new class extends PolicyGeneratorService {
+        $generator = new class extends PolicyGeneratorService
+        {
             public int $calls = 0;
 
             public function __construct() {}
 
             public function generate(
                 string $modelClass,
-                \AIArmada\FilamentAuthz\Enums\PolicyType $type = \AIArmada\FilamentAuthz\Enums\PolicyType::Basic,
+                AIArmada\FilamentAuthz\Enums\PolicyType $type = AIArmada\FilamentAuthz\Enums\PolicyType::Basic,
                 array $options = []
-            ): \AIArmada\FilamentAuthz\Services\GeneratedPolicy {
+            ): AIArmada\FilamentAuthz\Services\GeneratedPolicy {
                 $this->calls++;
 
-                return new \AIArmada\FilamentAuthz\Services\GeneratedPolicy(
+                return new AIArmada\FilamentAuthz\Services\GeneratedPolicy(
                     path: storage_path('testing/policies/DummyPolicy.php'),
                     content: '<?php',
                     metadata: [],
@@ -237,9 +241,9 @@ describe('GeneratePoliciesCommand execution', function (): void {
 
 describe('AuthzCacheCommand execution', function (): void {
     it('flushes caches when confirmed', function (): void {
-        $cacheService = \Mockery::mock(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class);
+        $cacheService = Mockery::mock(AIArmada\FilamentAuthz\Services\PermissionCacheService::class);
         $cacheService->shouldReceive('flush')->once();
-        app()->instance(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class, $cacheService);
+        app()->instance(AIArmada\FilamentAuthz\Services\PermissionCacheService::class, $cacheService);
 
         $this->artisan('authz:cache', ['action' => 'flush'])
             ->expectsConfirmation('This will flush all permission caches. Continue?', 'yes')
@@ -248,9 +252,9 @@ describe('AuthzCacheCommand execution', function (): void {
     });
 
     it('does not flush caches when not confirmed', function (): void {
-        $cacheService = \Mockery::mock(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class);
+        $cacheService = Mockery::mock(AIArmada\FilamentAuthz\Services\PermissionCacheService::class);
         $cacheService->shouldNotReceive('flush');
-        app()->instance(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class, $cacheService);
+        app()->instance(AIArmada\FilamentAuthz\Services\PermissionCacheService::class, $cacheService);
 
         $this->artisan('authz:cache', ['action' => 'flush'])
             ->expectsConfirmation('This will flush all permission caches. Continue?', 'no')
@@ -258,9 +262,9 @@ describe('AuthzCacheCommand execution', function (): void {
     });
 
     it('warms role cache', function (): void {
-        $cacheService = \Mockery::mock(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class);
+        $cacheService = Mockery::mock(AIArmada\FilamentAuthz\Services\PermissionCacheService::class);
         $cacheService->shouldReceive('warmRoleCache')->once();
-        app()->instance(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class, $cacheService);
+        app()->instance(AIArmada\FilamentAuthz\Services\PermissionCacheService::class, $cacheService);
 
         $this->artisan('authz:cache', ['action' => 'warm'])
             ->expectsOutputToContain('Cache warming complete')
@@ -268,13 +272,13 @@ describe('AuthzCacheCommand execution', function (): void {
     });
 
     it('shows cache stats table', function (): void {
-        $cacheService = \Mockery::mock(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class);
+        $cacheService = Mockery::mock(AIArmada\FilamentAuthz\Services\PermissionCacheService::class);
         $cacheService->shouldReceive('getStats')->once()->andReturn([
             'enabled' => true,
             'store' => 'array',
             'ttl' => 60,
         ]);
-        app()->instance(\AIArmada\FilamentAuthz\Services\PermissionCacheService::class, $cacheService);
+        app()->instance(AIArmada\FilamentAuthz\Services\PermissionCacheService::class, $cacheService);
 
         $this->artisan('authz:cache', ['action' => 'stats'])
             ->assertSuccessful();
@@ -306,7 +310,8 @@ describe('SyncAuthzCommand execution', function (): void {
     });
 
     it('flushes spatie permission cache when option is set', function (): void {
-        $registrar = new class(app(\Illuminate\Cache\CacheManager::class)) extends PermissionRegistrar {
+        $registrar = new class(app(Illuminate\Cache\CacheManager::class)) extends PermissionRegistrar
+        {
             public bool $forgotCache = false;
 
             public function forgetCachedPermissions()
@@ -423,7 +428,8 @@ describe('ImportAuthzCommand execution', function (): void {
             ],
         ], JSON_PRETTY_PRINT));
 
-        $registrar = new class(app(\Illuminate\Cache\CacheManager::class)) extends PermissionRegistrar {
+        $registrar = new class(app(Illuminate\Cache\CacheManager::class)) extends PermissionRegistrar
+        {
             public bool $forgotCache = false;
 
             public function forgetCachedPermissions()
@@ -549,7 +555,7 @@ PHP);
 
 describe('SnapshotCommand execution', function (): void {
     it('returns failure for invalid action', function (): void {
-        $versioning = \Mockery::mock(PermissionVersioningService::class);
+        $versioning = Mockery::mock(PermissionVersioningService::class);
         app()->instance(PermissionVersioningService::class, $versioning);
 
         $this->artisan('authz:snapshot', [
@@ -560,7 +566,7 @@ describe('SnapshotCommand execution', function (): void {
     });
 
     it('lists snapshots with no rows', function (): void {
-        $versioning = \Mockery::mock(PermissionVersioningService::class);
+        $versioning = Mockery::mock(PermissionVersioningService::class);
         $versioning->shouldReceive('listSnapshots')->once()->andReturn(new Collection());
         app()->instance(PermissionVersioningService::class, $versioning);
 
@@ -581,7 +587,7 @@ describe('SnapshotCommand execution', function (): void {
             'hash' => 'hash',
         ]);
 
-        $versioning = \Mockery::mock(PermissionVersioningService::class);
+        $versioning = Mockery::mock(PermissionVersioningService::class);
         $versioning->shouldReceive('createSnapshot')->once()->with('My Snapshot', null)->andReturn($snapshot);
         app()->instance(PermissionVersioningService::class, $versioning);
 
@@ -594,7 +600,7 @@ describe('SnapshotCommand execution', function (): void {
     });
 
     it('fails compare when ids are missing', function (): void {
-        $versioning = \Mockery::mock(PermissionVersioningService::class);
+        $versioning = Mockery::mock(PermissionVersioningService::class);
         app()->instance(PermissionVersioningService::class, $versioning);
 
         $this->artisan('authz:snapshot', [
@@ -621,7 +627,7 @@ describe('SnapshotCommand execution', function (): void {
             'hash' => 'to',
         ]);
 
-        $versioning = \Mockery::mock(PermissionVersioningService::class);
+        $versioning = Mockery::mock(PermissionVersioningService::class);
         $versioning->shouldReceive('compare')->once()->andReturn([
             'roles' => ['added' => ['Admin'], 'removed' => []],
             'permissions' => ['added' => [], 'removed' => ['orders.delete']],
@@ -647,7 +653,7 @@ describe('SnapshotCommand execution', function (): void {
             'hash' => 't',
         ]);
 
-        $versioning = \Mockery::mock(PermissionVersioningService::class);
+        $versioning = Mockery::mock(PermissionVersioningService::class);
         $versioning->shouldReceive('previewRollback')->once()->andReturn([
             'roles' => ['added' => ['Admin'], 'removed' => []],
             'permissions' => ['added' => ['orders.view'], 'removed' => []],
@@ -673,7 +679,7 @@ describe('SnapshotCommand execution', function (): void {
             'hash' => 'rb',
         ]);
 
-        $versioning = \Mockery::mock(PermissionVersioningService::class);
+        $versioning = Mockery::mock(PermissionVersioningService::class);
         $versioning->shouldReceive('rollback')->once()->andReturn(new RollbackResult(
             success: true,
             snapshot: $snapshot,
@@ -695,7 +701,7 @@ describe('SnapshotCommand execution', function (): void {
 
 describe('PermissionGroupsCommand execution', function (): void {
     it('returns failure on unknown action', function (): void {
-        app()->instance(PermissionGroupService::class, \Mockery::mock(PermissionGroupService::class));
+        app()->instance(PermissionGroupService::class, Mockery::mock(PermissionGroupService::class));
 
         $this->artisan('authz:groups', [
             'action' => 'nope',
@@ -705,7 +711,7 @@ describe('PermissionGroupsCommand execution', function (): void {
     });
 
     it('lists groups successfully when there are none', function (): void {
-        app()->instance(PermissionGroupService::class, \Mockery::mock(PermissionGroupService::class));
+        app()->instance(PermissionGroupService::class, Mockery::mock(PermissionGroupService::class));
 
         $this->artisan('authz:groups', [
             'action' => 'list',
@@ -715,7 +721,7 @@ describe('PermissionGroupsCommand execution', function (): void {
     });
 
     it('shows error when group is not found', function (): void {
-        $service = \Mockery::mock(PermissionGroupService::class);
+        $service = Mockery::mock(PermissionGroupService::class);
         $service->shouldReceive('findBySlug')->once()->with('missing')->andReturn(null);
         app()->instance(PermissionGroupService::class, $service);
 
@@ -751,7 +757,7 @@ describe('PermissionGroupsCommand execution', function (): void {
         $parent->permissions()->attach($perm);
         $parent->load('permissions', 'children', 'parent');
 
-        $service = \Mockery::mock(PermissionGroupService::class);
+        $service = Mockery::mock(PermissionGroupService::class);
         $service->shouldReceive('findBySlug')->once()->with('parent')->andReturn($parent);
         app()->instance(PermissionGroupService::class, $service);
 
@@ -775,7 +781,7 @@ describe('PermissionGroupsCommand execution', function (): void {
             'is_system' => true,
         ]);
 
-        $service = \Mockery::mock(PermissionGroupService::class);
+        $service = Mockery::mock(PermissionGroupService::class);
         $service->shouldReceive('findBySlug')->once()->with('system')->andReturn($group);
         app()->instance(PermissionGroupService::class, $service);
 
@@ -797,7 +803,7 @@ describe('PermissionGroupsCommand execution', function (): void {
             'is_system' => false,
         ]);
 
-        $service = \Mockery::mock(PermissionGroupService::class);
+        $service = Mockery::mock(PermissionGroupService::class);
         $service->shouldReceive('findBySlug')->once()->with('normal')->andReturn($group);
         app()->instance(PermissionGroupService::class, $service);
 
@@ -812,7 +818,7 @@ describe('PermissionGroupsCommand execution', function (): void {
 
 describe('RoleHierarchyCommand execution', function (): void {
     it('lists roles and succeeds when there are none', function (): void {
-        $service = \Mockery::mock(RoleInheritanceService::class);
+        $service = Mockery::mock(RoleInheritanceService::class);
         app()->instance(RoleInheritanceService::class, $service);
 
         $this->artisan('authz:roles-hierarchy', [
@@ -821,8 +827,8 @@ describe('RoleHierarchyCommand execution', function (): void {
     });
 
     it('shows tree and succeeds when there are no root roles', function (): void {
-        $service = \Mockery::mock(RoleInheritanceService::class);
-        $service->shouldReceive('getRootRoles')->once()->andReturn(new \Illuminate\Database\Eloquent\Collection());
+        $service = Mockery::mock(RoleInheritanceService::class);
+        $service->shouldReceive('getRootRoles')->once()->andReturn(new Illuminate\Database\Eloquent\Collection());
         app()->instance(RoleInheritanceService::class, $service);
 
         $this->artisan('authz:roles-hierarchy', [
@@ -833,8 +839,8 @@ describe('RoleHierarchyCommand execution', function (): void {
 
 describe('RoleTemplateCommand execution', function (): void {
     it('lists templates and succeeds when there are none', function (): void {
-        $service = \Mockery::mock(RoleTemplateService::class);
-        $service->shouldReceive('getActiveTemplates')->once()->andReturn(new \Illuminate\Database\Eloquent\Collection());
+        $service = Mockery::mock(RoleTemplateService::class);
+        $service->shouldReceive('getActiveTemplates')->once()->andReturn(new Illuminate\Database\Eloquent\Collection());
         app()->instance(RoleTemplateService::class, $service);
 
         $this->artisan('authz:templates', [
@@ -843,7 +849,7 @@ describe('RoleTemplateCommand execution', function (): void {
     });
 
     it('fails create-role when template is not found', function (): void {
-        $service = \Mockery::mock(RoleTemplateService::class);
+        $service = Mockery::mock(RoleTemplateService::class);
         $service->shouldReceive('findBySlug')->once()->with('missing')->andReturn(null);
         app()->instance(RoleTemplateService::class, $service);
 
@@ -857,7 +863,7 @@ describe('RoleTemplateCommand execution', function (): void {
     it('fails sync when role is not linked to any template', function (): void {
         Role::create(['name' => 'LinkedRole', 'guard_name' => 'web']);
 
-        $service = \Mockery::mock(RoleTemplateService::class);
+        $service = Mockery::mock(RoleTemplateService::class);
         $service->shouldReceive('syncRoleWithTemplate')->once()->andReturn(null);
         app()->instance(RoleTemplateService::class, $service);
 

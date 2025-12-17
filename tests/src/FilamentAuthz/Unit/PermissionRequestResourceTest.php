@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 afterEach(function (): void {
-    \Mockery::close();
+    Mockery::close();
 });
 
 describe('PermissionRequestResource', function (): void {
@@ -29,7 +29,7 @@ describe('PermissionRequestResource', function (): void {
     });
 
     it('builds form schema', function (): void {
-        $form = \Mockery::mock(Schema::class);
+        $form = Mockery::mock(Schema::class);
         $form->shouldReceive('schema')->once()->andReturnSelf();
 
         $result = PermissionRequestResource::form($form);
@@ -38,7 +38,7 @@ describe('PermissionRequestResource', function (): void {
     });
 
     it('builds table with columns, filters, actions, bulk actions, and sort', function (): void {
-        $table = \Mockery::mock(Table::class);
+        $table = Mockery::mock(Table::class);
         $table->shouldReceive('columns')->once()->andReturnSelf();
         $table->shouldReceive('filters')->once()->andReturnSelf();
         $table->shouldReceive('actions')->once()->andReturnSelf();

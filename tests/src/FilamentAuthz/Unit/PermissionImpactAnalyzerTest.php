@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests\FilamentAuthz\Unit;
 
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Enums\ImpactLevel;
 use AIArmada\FilamentAuthz\Services\PermissionImpactAnalyzer;
 use AIArmada\FilamentAuthz\Services\RoleInheritanceService;

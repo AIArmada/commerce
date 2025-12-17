@@ -13,19 +13,6 @@ use Illuminate\Support\Facades\DB;
 
 class ComplianceReportService
 {
-    private function hourExpressionSql(): string
-    {
-        return match (DB::getDriverName()) {
-            'pgsql' => 'EXTRACT(HOUR FROM created_at)',
-            'sqlite' => "CAST(strftime('%H', created_at) AS INTEGER)",
-            default => 'HOUR(created_at)',
-        };
-    }
-
-    private function dateExpressionSql(): string
-    {
-        return 'DATE(created_at)';
-    }
     /**
      * Generate a compliance report for a date range.
      *
@@ -154,7 +141,7 @@ class ComplianceReportService
 
         $hourlyDistribution = PermissionAuditLog::query()
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->selectRaw($hourExpression.' as hour, count(*) as count')
+            ->selectRaw($hourExpression . ' as hour, count(*) as count')
             ->groupByRaw($hourExpression)
             ->pluck('count', 'hour')
             ->toArray();
@@ -164,7 +151,7 @@ class ComplianceReportService
 
         $dailyDistribution = PermissionAuditLog::query()
             ->whereBetween('created_at', [$startDate, $endDate])
-            ->selectRaw($dateExpression.' as date, count(*) as count')
+            ->selectRaw($dateExpression . ' as date, count(*) as count')
             ->groupByRaw($dateExpression)
             ->pluck('count', 'date')
             ->toArray();
@@ -342,5 +329,19 @@ class ComplianceReportService
         fclose($output);
 
         return $csv !== false ? $csv : '';
+    }
+
+    private function hourExpressionSql(): string
+    {
+        return match (DB::getDriverName()) {
+            'pgsql' => 'EXTRACT(HOUR FROM created_at)',
+            'sqlite' => "CAST(strftime('%H', created_at) AS INTEGER)",
+            default => 'HOUR(created_at)',
+        };
+    }
+
+    private function dateExpressionSql(): string
+    {
+        return 'DATE(created_at)';
     }
 }

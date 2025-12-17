@@ -8,12 +8,13 @@ use AIArmada\FilamentAuthz\Resources\RoleResource;
 use AIArmada\FilamentAuthz\Resources\RoleResource\Pages\CreateRole;
 use AIArmada\FilamentAuthz\Resources\RoleResource\Pages\EditRole;
 use AIArmada\FilamentAuthz\Resources\RoleResource\Pages\ListRoles;
-use Filament\Actions\CreateAction;
+use ReflectionMethod;
+use ReflectionProperty;
 
 describe('RoleResource Pages', function (): void {
     describe('ListRoles', function (): void {
         it('uses correct resource', function (): void {
-            $reflection = new \ReflectionProperty(ListRoles::class, 'resource');
+            $reflection = new ReflectionProperty(ListRoles::class, 'resource');
             $reflection->setAccessible(true);
 
             expect($reflection->getValue())->toBe(RoleResource::class);
@@ -22,7 +23,7 @@ describe('RoleResource Pages', function (): void {
         it('has header actions including create', function (): void {
             $page = new ListRoles();
 
-            $method = new \ReflectionMethod(ListRoles::class, 'getHeaderActions');
+            $method = new ReflectionMethod(ListRoles::class, 'getHeaderActions');
             $method->setAccessible(true);
 
             $actions = $method->invoke($page);
@@ -34,14 +35,14 @@ describe('RoleResource Pages', function (): void {
 
     describe('CreateRole', function (): void {
         it('uses correct resource', function (): void {
-            $reflection = new \ReflectionProperty(CreateRole::class, 'resource');
+            $reflection = new ReflectionProperty(CreateRole::class, 'resource');
             $reflection->setAccessible(true);
 
             expect($reflection->getValue())->toBe(RoleResource::class);
         });
 
         it('has permissionIds property', function (): void {
-            $reflection = new \ReflectionProperty(CreateRole::class, 'permissionIds');
+            $reflection = new ReflectionProperty(CreateRole::class, 'permissionIds');
             $reflection->setAccessible(true);
 
             $page = new CreateRole();
@@ -51,7 +52,7 @@ describe('RoleResource Pages', function (): void {
         it('mutates form data before create to extract permissions', function (): void {
             $page = new CreateRole();
 
-            $method = new \ReflectionMethod(CreateRole::class, 'mutateFormDataBeforeCreate');
+            $method = new ReflectionMethod(CreateRole::class, 'mutateFormDataBeforeCreate');
             $method->setAccessible(true);
 
             $data = [
@@ -67,7 +68,7 @@ describe('RoleResource Pages', function (): void {
                 ->and($result['name'])->toBe('test-role');
 
             // Check permissionIds was set
-            $permissionIds = new \ReflectionProperty(CreateRole::class, 'permissionIds');
+            $permissionIds = new ReflectionProperty(CreateRole::class, 'permissionIds');
             $permissionIds->setAccessible(true);
             expect($permissionIds->getValue($page))->toEqual(['1', '2', '3']);
         });
@@ -75,7 +76,7 @@ describe('RoleResource Pages', function (): void {
 
     describe('EditRole', function (): void {
         it('uses correct resource', function (): void {
-            $reflection = new \ReflectionProperty(EditRole::class, 'resource');
+            $reflection = new ReflectionProperty(EditRole::class, 'resource');
             $reflection->setAccessible(true);
 
             expect($reflection->getValue())->toBe(RoleResource::class);

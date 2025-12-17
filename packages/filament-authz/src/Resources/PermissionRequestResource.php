@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources;
 
-use Filament\Actions;
 use AIArmada\FilamentAuthz\Models\PermissionRequest;
 use AIArmada\FilamentAuthz\Resources\PermissionRequestResource\Pages;
 use BackedEnum;
+use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;

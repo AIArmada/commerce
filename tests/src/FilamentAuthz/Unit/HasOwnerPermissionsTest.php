@@ -10,6 +10,7 @@ use AIArmada\FilamentAuthz\Services\ContextualAuthorizationService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Mockery;
+use ReflectionMethod;
 
 // Create a concrete test model using the trait
 class TestModelWithOwnerPermissions extends Model
@@ -211,7 +212,7 @@ describe('HasOwnerPermissions::getPermissionName', function (): void {
     it('generates permission name from table', function (): void {
         $model = new TestModelWithOwnerPermissions();
 
-        $reflection = new \ReflectionMethod($model, 'getPermissionName');
+        $reflection = new ReflectionMethod($model, 'getPermissionName');
         $reflection->setAccessible(true);
 
         $permission = $reflection->invoke($model, 'create');
@@ -224,7 +225,7 @@ describe('HasOwnerPermissions::getOwnerPermissionName', function (): void {
     it('generates owner permission name with .own suffix', function (): void {
         $model = new TestModelWithOwnerPermissions();
 
-        $reflection = new \ReflectionMethod($model, 'getOwnerPermissionName');
+        $reflection = new ReflectionMethod($model, 'getOwnerPermissionName');
         $reflection->setAccessible(true);
 
         $permission = $reflection->invoke($model, 'update');
@@ -237,7 +238,7 @@ describe('HasOwnerPermissions::getResourceName', function (): void {
     it('returns table name as resource name', function (): void {
         $model = new TestModelWithOwnerPermissions();
 
-        $reflection = new \ReflectionMethod($model, 'getResourceName');
+        $reflection = new ReflectionMethod($model, 'getResourceName');
         $reflection->setAccessible(true);
 
         $name = $reflection->invoke($model);
@@ -246,13 +247,14 @@ describe('HasOwnerPermissions::getResourceName', function (): void {
     });
 
     it('strips authz_ prefix from table name', function (): void {
-        $model = new class extends Model {
+        $model = new class extends Model
+        {
             use HasOwnerPermissions;
 
             protected $table = 'authz_roles';
         };
 
-        $reflection = new \ReflectionMethod($model, 'getResourceName');
+        $reflection = new ReflectionMethod($model, 'getResourceName');
         $reflection->setAccessible(true);
 
         $name = $reflection->invoke($model);
@@ -261,13 +263,14 @@ describe('HasOwnerPermissions::getResourceName', function (): void {
     });
 
     it('strips inv_ prefix from table name', function (): void {
-        $model = new class extends Model {
+        $model = new class extends Model
+        {
             use HasOwnerPermissions;
 
             protected $table = 'inv_stock_items';
         };
 
-        $reflection = new \ReflectionMethod($model, 'getResourceName');
+        $reflection = new ReflectionMethod($model, 'getResourceName');
         $reflection->setAccessible(true);
 
         $name = $reflection->invoke($model);
@@ -276,13 +279,14 @@ describe('HasOwnerPermissions::getResourceName', function (): void {
     });
 
     it('strips vou_ prefix from table name', function (): void {
-        $model = new class extends Model {
+        $model = new class extends Model
+        {
             use HasOwnerPermissions;
 
             protected $table = 'vou_vouchers';
         };
 
-        $reflection = new \ReflectionMethod($model, 'getResourceName');
+        $reflection = new ReflectionMethod($model, 'getResourceName');
         $reflection->setAccessible(true);
 
         $name = $reflection->invoke($model);
@@ -295,7 +299,7 @@ describe('HasOwnerPermissions::getOwnerKeyName', function (): void {
     it('returns user_id by default', function (): void {
         $model = new TestModelWithOwnerPermissions();
 
-        $reflection = new \ReflectionMethod($model, 'getOwnerKeyName');
+        $reflection = new ReflectionMethod($model, 'getOwnerKeyName');
         $reflection->setAccessible(true);
 
         $key = $reflection->invoke($model);

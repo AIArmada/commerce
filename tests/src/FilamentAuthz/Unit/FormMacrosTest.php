@@ -6,16 +6,17 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Services\PermissionAggregator;
 use AIArmada\FilamentAuthz\Support\Macros\FormMacros;
 use Filament\Forms\Components\TextInput;
-use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
 use Livewire\Component as LivewireComponent;
 use Spatie\Permission\Models\Role;
 
-function filamentAuthz_makeSchemaLivewire(): LivewireComponent&HasSchemas
+function filamentAuthz_makeSchemaLivewire(): LivewireComponent & HasSchemas
 {
-    return new class extends LivewireComponent implements HasSchemas {
+    return new class extends LivewireComponent implements HasSchemas
+    {
         public function makeFilamentTranslatableContentDriver(): ?TranslatableContentDriver
         {
             return null;
@@ -26,7 +27,7 @@ function filamentAuthz_makeSchemaLivewire(): LivewireComponent&HasSchemas
             return null;
         }
 
-        public function getSchemaComponent(string $key, bool $withHidden = false, array $skipComponentsChildContainersWhileSearching = []): \Filament\Schemas\Components\Component | \Filament\Actions\Action | \Filament\Actions\ActionGroup | null
+        public function getSchemaComponent(string $key, bool $withHidden = false, array $skipComponentsChildContainersWhileSearching = []): Filament\Schemas\Components\Component | Filament\Actions\Action | Filament\Actions\ActionGroup | null
         {
             return null;
         }
@@ -36,9 +37,7 @@ function filamentAuthz_makeSchemaLivewire(): LivewireComponent&HasSchemas
             return null;
         }
 
-        public function currentlyValidatingSchema(?Schema $schema): void
-        {
-        }
+        public function currentlyValidatingSchema(?Schema $schema): void {}
 
         public function getDefaultTestingSchemaName(): ?string
         {
@@ -47,7 +46,7 @@ function filamentAuthz_makeSchemaLivewire(): LivewireComponent&HasSchemas
     };
 }
 
-function filamentAuthz_attachComponentToSchema(\Filament\Schemas\Components\Component $component): void
+function filamentAuthz_attachComponentToSchema(Filament\Schemas\Components\Component $component): void
 {
     $schema = Schema::make(filamentAuthz_makeSchemaLivewire())->components([$component]);
 
@@ -56,7 +55,7 @@ function filamentAuthz_attachComponentToSchema(\Filament\Schemas\Components\Comp
 }
 
 afterEach(function (): void {
-    \Mockery::close();
+    Mockery::close();
 });
 
 beforeEach(function (): void {
@@ -78,7 +77,7 @@ test('visibleForPermission shows field when aggregator grants permission', funct
 
     $this->actingAs($user);
 
-    $aggregator = \Mockery::mock(PermissionAggregator::class);
+    $aggregator = Mockery::mock(PermissionAggregator::class);
     $aggregator->shouldReceive('userHasPermission')
         ->withArgs(fn (object $passedUser, string $permission): bool => ($passedUser->getKey() === $user->getKey()) && ($permission === 'orders.view'))
         ->andReturn(true);
@@ -125,7 +124,7 @@ test('disabledWithoutPermission enables field when aggregator grants permission'
 
     $this->actingAs($user);
 
-    $aggregator = \Mockery::mock(PermissionAggregator::class);
+    $aggregator = Mockery::mock(PermissionAggregator::class);
     $aggregator->shouldReceive('userHasPermission')
         ->withArgs(fn (object $passedUser, string $permission): bool => ($passedUser->getKey() === $user->getKey()) && ($permission === 'orders.view'))
         ->andReturn(true);
@@ -154,7 +153,7 @@ test('section collapsedWithoutPermission collapses when aggregator denies permis
 
     $this->actingAs($user);
 
-    $aggregator = \Mockery::mock(PermissionAggregator::class);
+    $aggregator = Mockery::mock(PermissionAggregator::class);
     $aggregator->shouldReceive('userHasPermission')
         ->withArgs(fn (object $passedUser, string $permission): bool => ($passedUser->getKey() === $user->getKey()) && ($permission === 'orders.view'))
         ->andReturn(false);
@@ -175,7 +174,7 @@ test('section collapsedWithoutPermission is not collapsed when aggregator grants
 
     $this->actingAs($user);
 
-    $aggregator = \Mockery::mock(PermissionAggregator::class);
+    $aggregator = Mockery::mock(PermissionAggregator::class);
     $aggregator->shouldReceive('userHasPermission')
         ->withArgs(fn (object $passedUser, string $permission): bool => ($passedUser->getKey() === $user->getKey()) && ($permission === 'orders.view'))
         ->andReturn(true);

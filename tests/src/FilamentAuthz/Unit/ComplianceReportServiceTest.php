@@ -262,7 +262,7 @@ describe('ComplianceReportService', function (): void {
             $csv = $this->service->exportToCsv($start, $end);
 
             // Should only have the header line
-            $lines = explode("\n", trim($csv));
+            $lines = explode("\n", mb_trim($csv));
             expect(count($lines))->toBe(1);
         });
     });

@@ -11,8 +11,7 @@ use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Mockery;
-use Mockery\MockInterface;
-use Spatie\Permission\Models\Role;
+use ReflectionProperty;
 
 // Create a concrete test class using the trait
 class TestResourceWithAuthz
@@ -29,9 +28,9 @@ class TestResourceWithAuthz
 
 class TestModelForResource extends Model
 {
-    protected $table = 'test_resources';
-
     public int $user_id = 1;
+
+    protected $table = 'test_resources';
 }
 
 beforeEach(function (): void {
@@ -81,7 +80,7 @@ describe('HasResourceAuthz trait', function (): void {
 
     it('uses model snake case for prefix when not set explicitly', function (): void {
         // Reset to use auto-detected prefix
-        $reflection = new \ReflectionProperty(TestResourceWithAuthz::class, 'permissionPrefix');
+        $reflection = new ReflectionProperty(TestResourceWithAuthz::class, 'permissionPrefix');
         $reflection->setAccessible(true);
         $reflection->setValue(null, null);
 
@@ -105,7 +104,8 @@ describe('HasResourceAuthz trait', function (): void {
         config(['filament-authz.super_admin_role' => 'super_admin']);
 
         // Create a mock that handles hasRole
-        $user = new class {
+        $user = new class
+        {
             public function hasRole(string $role): bool
             {
                 return $role === 'super_admin';
@@ -200,7 +200,7 @@ describe('HasResourceAuthz trait', function (): void {
         TestResourceWithAuthz::restrictToOwned(true);
 
         // Verify via reflection
-        $reflection = new \ReflectionProperty(TestResourceWithAuthz::class, 'restrictToOwned');
+        $reflection = new ReflectionProperty(TestResourceWithAuthz::class, 'restrictToOwned');
         $reflection->setAccessible(true);
 
         expect($reflection->getValue())->toBeTrue();
@@ -209,7 +209,7 @@ describe('HasResourceAuthz trait', function (): void {
     it('can set owner column', function (): void {
         TestResourceWithAuthz::setOwnerColumn('created_by');
 
-        $reflection = new \ReflectionProperty(TestResourceWithAuthz::class, 'ownerColumn');
+        $reflection = new ReflectionProperty(TestResourceWithAuthz::class, 'ownerColumn');
         $reflection->setAccessible(true);
 
         expect($reflection->getValue())->toBe('created_by');
@@ -218,7 +218,7 @@ describe('HasResourceAuthz trait', function (): void {
     it('can set owner abilities', function (): void {
         TestResourceWithAuthz::setOwnerAbilities(['view', 'edit']);
 
-        $reflection = new \ReflectionProperty(TestResourceWithAuthz::class, 'ownerAbilities');
+        $reflection = new ReflectionProperty(TestResourceWithAuthz::class, 'ownerAbilities');
         $reflection->setAccessible(true);
 
         expect($reflection->getValue())->toEqual(['view', 'edit']);
@@ -227,7 +227,7 @@ describe('HasResourceAuthz trait', function (): void {
     it('can scope resource to team', function (): void {
         TestResourceWithAuthz::scopeResourceToTeam('organization_id');
 
-        $reflection = new \ReflectionProperty(TestResourceWithAuthz::class, 'resourceTeamScope');
+        $reflection = new ReflectionProperty(TestResourceWithAuthz::class, 'resourceTeamScope');
         $reflection->setAccessible(true);
 
         expect($reflection->getValue())->toBe('organization_id');
@@ -241,7 +241,7 @@ describe('scopeEloquentQueryWithPermissions', function (): void {
         // Create a minimal model instance for tenant
         $tenant = new TestModelForResource();
         // Use reflection to set id since we can't assign to model directly without table
-        $reflection = new \ReflectionProperty(Model::class, 'attributes');
+        $reflection = new ReflectionProperty(Model::class, 'attributes');
         $reflection->setAccessible(true);
         $reflection->setValue($tenant, ['id' => 123]);
 
@@ -262,7 +262,7 @@ describe('scopeEloquentQueryWithPermissions', function (): void {
         TestResourceWithAuthz::restrictToOwned(true);
 
         // Reset team scope
-        $reflection = new \ReflectionProperty(TestResourceWithAuthz::class, 'resourceTeamScope');
+        $reflection = new ReflectionProperty(TestResourceWithAuthz::class, 'resourceTeamScope');
         $reflection->setAccessible(true);
         $reflection->setValue(null, null);
 
@@ -297,7 +297,7 @@ describe('scopeEloquentQueryWithPermissions', function (): void {
         TestResourceWithAuthz::restrictToOwned(true);
 
         // Reset team scope
-        $reflection = new \ReflectionProperty(TestResourceWithAuthz::class, 'resourceTeamScope');
+        $reflection = new ReflectionProperty(TestResourceWithAuthz::class, 'resourceTeamScope');
         $reflection->setAccessible(true);
         $reflection->setValue(null, null);
 
@@ -329,7 +329,7 @@ describe('scopeEloquentQueryWithPermissions', function (): void {
         TestResourceWithAuthz::restrictToOwned(false);
 
         // Reset team scope
-        $reflection = new \ReflectionProperty(TestResourceWithAuthz::class, 'resourceTeamScope');
+        $reflection = new ReflectionProperty(TestResourceWithAuthz::class, 'resourceTeamScope');
         $reflection->setAccessible(true);
         $reflection->setValue(null, null);
 

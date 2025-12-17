@@ -6,7 +6,7 @@ use AIArmada\FilamentAuthz\Services\PermissionBuilder;
 use AIArmada\FilamentAuthz\Services\PermissionRegistry;
 
 afterEach(function (): void {
-    \Mockery::close();
+    Mockery::close();
 });
 
 describe('PermissionBuilder', function (): void {
@@ -219,7 +219,7 @@ describe('PermissionBuilder', function (): void {
 
             expect($permissions)->toHaveCount(5);
 
-            foreach ($permissions as $name => $definition) {
+            foreach ($permissions as $definition) {
                 expect($definition)->toHaveKeys(['name', 'description', 'group', 'resource', 'guard_name'])
                     ->and($definition['resource'])->toBe('posts')
                     ->and($definition['group'])->toBe('Content')
@@ -288,7 +288,7 @@ describe('PermissionBuilder', function (): void {
 
     describe('register', function (): void {
         it('builds and registers permissions with registry', function (): void {
-            $registry = \Mockery::mock(PermissionRegistry::class);
+            $registry = Mockery::mock(PermissionRegistry::class);
             $registry->shouldReceive('register')
                 ->times(3) // viewAny, view, create
                 ->andReturnSelf();

@@ -10,7 +10,7 @@ use Filament\Actions\Action;
 use Illuminate\Database\Eloquent\Model;
 
 afterEach(function (): void {
-    \Mockery::close();
+    Mockery::close();
 });
 
 beforeEach(function (): void {
@@ -33,7 +33,7 @@ test('requiresPermission allows when aggregator grants permission', function ():
 
     $this->actingAs($user);
 
-    $aggregator = \Mockery::mock(PermissionAggregator::class);
+    $aggregator = Mockery::mock(PermissionAggregator::class);
     $aggregator->shouldReceive('userHasPermission')
         ->withArgs(fn (object $passedUser, string $permission): bool => ($passedUser->getKey() === $user->getKey()) && ($permission === 'orders.view'))
         ->andReturn(true);
@@ -55,16 +55,17 @@ test('requiresResourcePermission delegates to contextual service when resource p
 
     $this->actingAs($user);
 
-    $resource = new class extends Model {
+    $resource = new class extends Model
+    {
         public $timestamps = false;
 
         protected $guarded = [];
     };
 
-    $contextAuth = \Mockery::mock(ContextualAuthorizationService::class);
+    $contextAuth = Mockery::mock(ContextualAuthorizationService::class);
     $contextAuth->shouldReceive('canForResource')
-        ->withArgs(fn (object $passedUser, string $permission, Model $passedResource): bool =>
-            ($passedUser->getKey() === $user->getKey()) &&
+        ->withArgs(
+            fn (object $passedUser, string $permission, Model $passedResource): bool => ($passedUser->getKey() === $user->getKey()) &&
             ($permission === 'orders.view') &&
             ($passedResource === $resource)
         )
@@ -87,7 +88,8 @@ test('requiresOwnership only allows when user owns resource', function (): void 
 
     $this->actingAs($user);
 
-    $resource = new class extends Model {
+    $resource = new class extends Model
+    {
         public $timestamps = false;
 
         protected $guarded = [];
@@ -112,7 +114,7 @@ test('requiresAnyPermission allows when aggregator grants any permission', funct
 
     $permissions = ['orders.view', 'orders.update'];
 
-    $aggregator = \Mockery::mock(PermissionAggregator::class);
+    $aggregator = Mockery::mock(PermissionAggregator::class);
     $aggregator->shouldReceive('userHasAnyPermission')
         ->withArgs(fn (object $passedUser, array $passedPermissions): bool => ($passedUser->getKey() === $user->getKey()) && ($passedPermissions === $permissions))
         ->andReturn(true);
@@ -136,7 +138,7 @@ test('requiresAllPermissions denies when aggregator does not grant all permissio
 
     $permissions = ['orders.view', 'orders.update'];
 
-    $aggregator = \Mockery::mock(PermissionAggregator::class);
+    $aggregator = Mockery::mock(PermissionAggregator::class);
     $aggregator->shouldReceive('userHasAllPermissions')
         ->withArgs(fn (object $passedUser, array $passedPermissions): bool => ($passedUser->getKey() === $user->getKey()) && ($passedPermissions === $permissions))
         ->andReturn(false);
@@ -158,10 +160,10 @@ test('requiresTeamPermission delegates to contextual service', function (): void
 
     $this->actingAs($user);
 
-    $contextAuth = \Mockery::mock(ContextualAuthorizationService::class);
+    $contextAuth = Mockery::mock(ContextualAuthorizationService::class);
     $contextAuth->shouldReceive('canInTeam')
-        ->withArgs(fn (object $passedUser, string $permission, string|int $teamId): bool =>
-            ($passedUser->getKey() === $user->getKey()) && ($permission === 'orders.view') && ((string) $teamId === '123')
+        ->withArgs(
+            fn (object $passedUser, string $permission, string | int $teamId): bool => ($passedUser->getKey() === $user->getKey()) && ($permission === 'orders.view') && ((string) $teamId === '123')
         )
         ->andReturn(true);
 
@@ -182,7 +184,7 @@ test('requiresResourcePermission falls back to aggregator when resource is null'
 
     $this->actingAs($user);
 
-    $aggregator = \Mockery::mock(PermissionAggregator::class);
+    $aggregator = Mockery::mock(PermissionAggregator::class);
     $aggregator->shouldReceive('userHasPermission')
         ->withArgs(fn (object $passedUser, string $permission): bool => ($passedUser->getKey() === $user->getKey()) && ($permission === 'orders.view'))
         ->andReturn(true);
@@ -204,7 +206,7 @@ test('requiresRole allows when user has any of the roles', function (): void {
 
     $this->actingAs($user);
 
-    \Spatie\Permission\Models\Role::create(['name' => 'Admin', 'guard_name' => 'web']);
+    Spatie\Permission\Models\Role::create(['name' => 'Admin', 'guard_name' => 'web']);
     $user->assignRole('Admin');
 
     $action = Action::make('test')->requiresRole(['Admin', 'Manager']);

@@ -8,7 +8,7 @@ use AIArmada\FilamentAuthz\Support\Macros\ColumnMacros;
 use Filament\Tables\Columns\TextColumn;
 
 afterEach(function (): void {
-    \Mockery::close();
+    Mockery::close();
 });
 
 beforeEach(function (): void {
@@ -30,7 +30,7 @@ test('visibleForPermission shows column when aggregator grants permission', func
 
     $this->actingAs($user);
 
-    $aggregator = \Mockery::mock(PermissionAggregator::class);
+    $aggregator = Mockery::mock(PermissionAggregator::class);
     $aggregator->shouldReceive('userHasPermission')
         ->withArgs(fn (object $passedUser, string $permission): bool => ($passedUser->getKey() === $user->getKey()) && ($permission === 'orders.view'))
         ->andReturn(true);
@@ -53,7 +53,7 @@ test('visibleForAnyPermission shows column when aggregator grants any permission
 
     $permissions = ['orders.view', 'orders.update'];
 
-    $aggregator = \Mockery::mock(PermissionAggregator::class);
+    $aggregator = Mockery::mock(PermissionAggregator::class);
     $aggregator->shouldReceive('userHasAnyPermission')
         ->withArgs(fn (object $passedUser, array $passedPermissions): bool => ($passedUser->getKey() === $user->getKey()) && ($passedPermissions === $permissions))
         ->andReturn(true);

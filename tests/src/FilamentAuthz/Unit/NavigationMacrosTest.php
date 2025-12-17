@@ -14,7 +14,7 @@ use Spatie\Permission\Models\Role;
 uses(RefreshDatabase::class);
 
 afterEach(function (): void {
-    \Mockery::close();
+    Mockery::close();
 });
 
 beforeEach(function (): void {
@@ -43,7 +43,7 @@ test('visibleForPermission uses the permission aggregator', function (): void {
 
     $this->actingAs($user);
 
-    $aggregator = \Mockery::mock(PermissionAggregator::class);
+    $aggregator = Mockery::mock(PermissionAggregator::class);
     $aggregator->shouldReceive('userHasPermission')
         ->once()
         ->withArgs(fn (object $passedUser, string $permission): bool => ($passedUser->getKey() === $user->getKey()) && ($permission === 'orders.view'))
@@ -65,7 +65,7 @@ test('visibleForAnyPermission and visibleForAllPermissions delegate to the aggre
 
     $this->actingAs($user);
 
-    $aggregator = \Mockery::mock(PermissionAggregator::class);
+    $aggregator = Mockery::mock(PermissionAggregator::class);
     $aggregator->shouldReceive('userHasAnyPermission')
         ->once()
         ->andReturnTrue();
