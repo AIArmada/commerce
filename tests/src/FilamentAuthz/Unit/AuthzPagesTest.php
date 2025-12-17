@@ -9,8 +9,6 @@ use AIArmada\FilamentAuthz\Pages\RoleHierarchyPage;
 use Filament\Pages\Page;
 use ReflectionClass;
 use ReflectionMethod;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 
 describe('PermissionMatrixPage', function (): void {
     it('extends Page', function (): void {

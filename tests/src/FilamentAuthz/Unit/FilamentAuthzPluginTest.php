@@ -14,7 +14,6 @@ use AIArmada\FilamentAuthz\Resources\PermissionResource;
 use AIArmada\FilamentAuthz\Resources\RoleResource;
 use AIArmada\FilamentAuthz\Resources\UserResource;
 use AIArmada\FilamentAuthz\Services\PermissionRegistry;
-use AIArmada\FilamentAuthz\Support\ResourcePermissionDiscovery;
 use AIArmada\FilamentAuthz\Widgets\ImpersonationBannerWidget;
 use AIArmada\FilamentAuthz\Widgets\PermissionsDiffWidget;
 use AIArmada\FilamentAuthz\Widgets\PermissionStatsWidget;
@@ -22,6 +21,7 @@ use AIArmada\FilamentAuthz\Widgets\RecentActivityWidget;
 use AIArmada\FilamentAuthz\Widgets\RoleHierarchyWidget;
 use Filament\Panel;
 use Mockery;
+use ReflectionProperty;
 
 beforeEach(function (): void {
     // Reset config before each test
@@ -61,7 +61,7 @@ describe('FilamentAuthzPlugin', function (): void {
         $plugin = FilamentAuthzPlugin::make()->discoverPermissions();
 
         // Use reflection to check internal state
-        $reflection = new \ReflectionProperty(FilamentAuthzPlugin::class, 'autoDiscoverPermissions');
+        $reflection = new ReflectionProperty(FilamentAuthzPlugin::class, 'autoDiscoverPermissions');
         $reflection->setAccessible(true);
 
         expect($reflection->getValue($plugin))->toBeTrue();
@@ -70,7 +70,7 @@ describe('FilamentAuthzPlugin', function (): void {
     it('can disable permission discovery', function (): void {
         $plugin = FilamentAuthzPlugin::make()->discoverPermissions(false);
 
-        $reflection = new \ReflectionProperty(FilamentAuthzPlugin::class, 'autoDiscoverPermissions');
+        $reflection = new ReflectionProperty(FilamentAuthzPlugin::class, 'autoDiscoverPermissions');
         $reflection->setAccessible(true);
 
         expect($reflection->getValue($plugin))->toBeFalse();
@@ -80,7 +80,7 @@ describe('FilamentAuthzPlugin', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->discoverPermissionsFrom(['App\\Filament\\Resources', 'App\\Custom']);
 
-        $reflection = new \ReflectionProperty(FilamentAuthzPlugin::class, 'discoveryNamespaces');
+        $reflection = new ReflectionProperty(FilamentAuthzPlugin::class, 'discoveryNamespaces');
         $reflection->setAccessible(true);
 
         expect($reflection->getValue($plugin))
@@ -92,7 +92,7 @@ describe('FilamentAuthzPlugin', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->discoverPermissionsFrom(['App\\Resources']);
 
-        $reflection = new \ReflectionProperty(FilamentAuthzPlugin::class, 'autoDiscoverPermissions');
+        $reflection = new ReflectionProperty(FilamentAuthzPlugin::class, 'autoDiscoverPermissions');
         $reflection->setAccessible(true);
 
         expect($reflection->getValue($plugin))->toBeTrue();

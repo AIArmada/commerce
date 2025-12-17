@@ -16,12 +16,13 @@ use Spatie\Permission\Models\Role;
 uses(RefreshDatabase::class);
 
 afterEach(function (): void {
-    \Mockery::close();
+    Mockery::close();
 });
 
 function filamentAuthz_makeRoleResourceSchema(): Schema
 {
-    $livewire = new class extends LivewireComponent implements HasSchemas {
+    $livewire = new class extends LivewireComponent implements HasSchemas
+    {
         public function makeFilamentTranslatableContentDriver(): ?TranslatableContentDriver
         {
             return null;
@@ -32,7 +33,7 @@ function filamentAuthz_makeRoleResourceSchema(): Schema
             return null;
         }
 
-        public function getSchemaComponent(string $key, bool $withHidden = false, array $skipComponentsChildContainersWhileSearching = []): \Filament\Schemas\Components\Component | \Filament\Actions\Action | \Filament\Actions\ActionGroup | null
+        public function getSchemaComponent(string $key, bool $withHidden = false, array $skipComponentsChildContainersWhileSearching = []): Filament\Schemas\Components\Component | Filament\Actions\Action | Filament\Actions\ActionGroup | null
         {
             return null;
         }
@@ -42,9 +43,7 @@ function filamentAuthz_makeRoleResourceSchema(): Schema
             return null;
         }
 
-        public function currentlyValidatingSchema(?Schema $schema): void
-        {
-        }
+        public function currentlyValidatingSchema(?Schema $schema): void {}
 
         public function getDefaultTestingSchemaName(): ?string
         {
@@ -57,13 +56,13 @@ function filamentAuthz_makeRoleResourceSchema(): Schema
 
 function filamentAuthz_reflectProtectedProperty(object $object, string $property): mixed
 {
-    $reflection = new \ReflectionClass($object);
+    $reflection = new ReflectionClass($object);
 
     while (! $reflection->hasProperty($property)) {
         $reflection = $reflection->getParentClass();
 
         if (! $reflection) {
-            throw new \RuntimeException("Property [{$property}] not found.");
+            throw new RuntimeException("Property [{$property}] not found.");
         }
     }
 
@@ -91,7 +90,7 @@ test('role resource form permission options are grouped and guard-filtered', fun
 
     expect($permissions)->toBeInstanceOf(CheckboxList::class);
 
-    /** @var \Closure $options */
+    /** @var Closure $options */
     $options = filamentAuthz_reflectProtectedProperty($permissions, 'options');
 
     $grouped = $options(fn (string $key): mixed => $key === 'guard_name' ? 'web' : null);
@@ -129,7 +128,7 @@ test('role resource permissions checkbox list hydrates state from record', funct
 
     expect($permissions)->toBeInstanceOf(CheckboxList::class);
 
-    /** @var \Closure|null $afterStateHydrated */
+    /** @var Closure|null $afterStateHydrated */
     $afterStateHydrated = filamentAuthz_reflectProtectedProperty($permissions, 'afterStateHydrated');
 
     expect($afterStateHydrated)->not()->toBeNull();

@@ -7,7 +7,6 @@ use AIArmada\FilamentAuthz\Enums\AuditEventType;
 use AIArmada\FilamentAuthz\Enums\AuditSeverity;
 use AIArmada\FilamentAuthz\Models\PermissionAuditLog;
 use AIArmada\FilamentAuthz\Widgets\RecentActivityWidget;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;

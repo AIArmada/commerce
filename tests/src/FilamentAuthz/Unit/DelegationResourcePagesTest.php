@@ -17,6 +17,7 @@ use Filament\Resources\Pages\EditRecord;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Resources\Pages\ViewRecord;
 use ReflectionClass;
+use ReflectionMethod;
 
 describe('DelegationResource Pages', function (): void {
     describe('ListDelegations', function (): void {
@@ -32,7 +33,7 @@ describe('DelegationResource Pages', function (): void {
         });
 
         it('has getHeaderActions method', function (): void {
-            $method = new \ReflectionMethod(ListDelegations::class, 'getHeaderActions');
+            $method = new ReflectionMethod(ListDelegations::class, 'getHeaderActions');
 
             expect($method->isProtected())->toBeTrue();
             expect($method->getReturnType()->getName())->toBe('array');
@@ -41,7 +42,7 @@ describe('DelegationResource Pages', function (): void {
         it('returns create header action', function (): void {
             $page = new ListDelegations();
 
-            $method = new \ReflectionMethod(ListDelegations::class, 'getHeaderActions');
+            $method = new ReflectionMethod(ListDelegations::class, 'getHeaderActions');
             $method->setAccessible(true);
 
             /** @var array<int, Action> $actions */
@@ -65,7 +66,7 @@ describe('DelegationResource Pages', function (): void {
         });
 
         it('has getHeaderActions method', function (): void {
-            $method = new \ReflectionMethod(EditDelegation::class, 'getHeaderActions');
+            $method = new ReflectionMethod(EditDelegation::class, 'getHeaderActions');
 
             expect($method->isProtected())->toBeTrue();
             expect($method->getReturnType()->getName())->toBe('array');
@@ -74,7 +75,7 @@ describe('DelegationResource Pages', function (): void {
         it('returns view and delete header actions', function (): void {
             $page = new EditDelegation();
 
-            $method = new \ReflectionMethod(EditDelegation::class, 'getHeaderActions');
+            $method = new ReflectionMethod(EditDelegation::class, 'getHeaderActions');
             $method->setAccessible(true);
 
             /** @var array<int, Action> $actions */
@@ -99,7 +100,7 @@ describe('DelegationResource Pages', function (): void {
         });
 
         it('has getHeaderActions method', function (): void {
-            $method = new \ReflectionMethod(ViewDelegation::class, 'getHeaderActions');
+            $method = new ReflectionMethod(ViewDelegation::class, 'getHeaderActions');
 
             expect($method->isProtected())->toBeTrue();
             expect($method->getReturnType()->getName())->toBe('array');
@@ -108,7 +109,7 @@ describe('DelegationResource Pages', function (): void {
         it('returns edit header action', function (): void {
             $page = new ViewDelegation();
 
-            $method = new \ReflectionMethod(ViewDelegation::class, 'getHeaderActions');
+            $method = new ReflectionMethod(ViewDelegation::class, 'getHeaderActions');
             $method->setAccessible(true);
 
             /** @var array<int, Action> $actions */

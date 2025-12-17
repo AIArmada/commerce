@@ -11,7 +11,7 @@ use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
 afterEach(function (): void {
-    \Mockery::close();
+    Mockery::close();
 });
 
 beforeEach(function (): void {
@@ -33,7 +33,7 @@ test('visibleForPermission shows filter when aggregator grants permission', func
 
     $this->actingAs($user);
 
-    $aggregator = \Mockery::mock(PermissionAggregator::class);
+    $aggregator = Mockery::mock(PermissionAggregator::class);
     $aggregator->shouldReceive('userHasPermission')
         ->withArgs(fn (object $passedUser, string $permission): bool => ($passedUser->getKey() === $user->getKey()) && ($permission === 'orders.view'))
         ->andReturn(true);

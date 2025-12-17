@@ -7,6 +7,7 @@ namespace Tests\FilamentAuthz\Unit;
 use AIArmada\FilamentAuthz\Services\IdentityProviderSync;
 use Illuminate\Support\Collection;
 use Mockery;
+use ReflectionClass;
 use Spatie\Permission\Models\Role;
 
 afterEach(function (): void {
@@ -18,7 +19,7 @@ describe('IdentityProviderSync', function (): void {
         it('initializes with default values', function (): void {
             $service = new IdentityProviderSync;
 
-            $reflection = new \ReflectionClass($service);
+            $reflection = new ReflectionClass($service);
             $typeProperty = $reflection->getProperty('providerType');
             $nameProperty = $reflection->getProperty('providerName');
 
@@ -32,7 +33,7 @@ describe('IdentityProviderSync', function (): void {
             $service = new IdentityProviderSync;
             $result = $service->setProviderType('saml');
 
-            $reflection = new \ReflectionClass($service);
+            $reflection = new ReflectionClass($service);
             $property = $reflection->getProperty('providerType');
 
             expect($property->getValue($service))->toBe('saml');
@@ -52,7 +53,7 @@ describe('IdentityProviderSync', function (): void {
             $service = new IdentityProviderSync;
             $result = $service->setProviderName('corporate-ad');
 
-            $reflection = new \ReflectionClass($service);
+            $reflection = new ReflectionClass($service);
             $property = $reflection->getProperty('providerName');
 
             expect($property->getValue($service))->toBe('corporate-ad');
@@ -74,7 +75,7 @@ describe('IdentityProviderSync', function (): void {
 
             $result = $service->setMapping($mapping);
 
-            $reflection = new \ReflectionClass($service);
+            $reflection = new ReflectionClass($service);
             $property = $reflection->getProperty('groupToRoleMapping');
 
             expect($property->getValue($service))->toBe($mapping);
@@ -367,7 +368,7 @@ describe('IdentityProviderSync', function (): void {
 
             expect($result)->toBeInstanceOf(IdentityProviderSync::class);
 
-            $reflection = new \ReflectionClass($result);
+            $reflection = new ReflectionClass($result);
             expect($reflection->getProperty('providerType')->getValue($result))->toBe('saml');
             expect($reflection->getProperty('providerName')->getValue($result))->toBe('corporate');
             expect($reflection->getProperty('groupToRoleMapping')->getValue($result))->toBe(['Admin' => 'admin']);

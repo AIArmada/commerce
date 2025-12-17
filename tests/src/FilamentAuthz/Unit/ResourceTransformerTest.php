@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Tests\FilamentAuthz\Unit;
 
 use AIArmada\FilamentAuthz\Services\Discovery\ResourceTransformer;
-use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use Filament\Resources\Resource;
 use InvalidArgumentException;
+use ReflectionClass;
+use stdClass;
 
 describe('ResourceTransformer', function (): void {
     describe('constructor', function (): void {
@@ -19,7 +20,7 @@ describe('ResourceTransformer', function (): void {
 
         it('has basePermissions property', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $property = $reflection->getProperty('basePermissions');
 
             $permissions = $property->getValue($transformer);
@@ -42,14 +43,14 @@ describe('ResourceTransformer', function (): void {
         it('throws exception for non-resource class', function (): void {
             $transformer = new ResourceTransformer;
 
-            $transformer->transform(\stdClass::class);
+            $transformer->transform(stdClass::class);
         })->throws(InvalidArgumentException::class);
     });
 
     describe('generatePermissions', function (): void {
         it('generates base permissions', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('generatePermissions');
 
             // Create a mock resource class name
@@ -61,7 +62,7 @@ describe('ResourceTransformer', function (): void {
     describe('detectBulkActions', function (): void {
         it('is a protected method', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('detectBulkActions');
 
             expect($method->isProtected())->toBeTrue();
@@ -69,7 +70,7 @@ describe('ResourceTransformer', function (): void {
 
         it('returns empty array for non-existent class', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('detectBulkActions');
 
             $result = $method->invoke($transformer, 'NonExistentClass');
@@ -81,7 +82,7 @@ describe('ResourceTransformer', function (): void {
     describe('detectTableActions', function (): void {
         it('is a protected method', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('detectTableActions');
 
             expect($method->isProtected())->toBeTrue();
@@ -89,7 +90,7 @@ describe('ResourceTransformer', function (): void {
 
         it('returns empty array for non-existent class', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('detectTableActions');
 
             $result = $method->invoke($transformer, 'NonExistentClass');
@@ -101,7 +102,7 @@ describe('ResourceTransformer', function (): void {
     describe('detectRelationManagers', function (): void {
         it('is a protected method', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('detectRelationManagers');
 
             expect($method->isProtected())->toBeTrue();
@@ -109,7 +110,7 @@ describe('ResourceTransformer', function (): void {
 
         it('returns empty array for non-existent class', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('detectRelationManagers');
 
             $result = $method->invoke($transformer, 'NonExistentClass');
@@ -121,7 +122,7 @@ describe('ResourceTransformer', function (): void {
     describe('isCustomAction', function (): void {
         it('is a protected method', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('isCustomAction');
 
             expect($method->isProtected())->toBeTrue();
@@ -129,7 +130,7 @@ describe('ResourceTransformer', function (): void {
 
         it('returns false for view action', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('isCustomAction');
 
             expect($method->invoke($transformer, 'view'))->toBeFalse();
@@ -137,7 +138,7 @@ describe('ResourceTransformer', function (): void {
 
         it('returns false for edit action', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('isCustomAction');
 
             expect($method->invoke($transformer, 'edit'))->toBeFalse();
@@ -145,7 +146,7 @@ describe('ResourceTransformer', function (): void {
 
         it('returns false for delete action', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('isCustomAction');
 
             expect($method->invoke($transformer, 'delete'))->toBeFalse();
@@ -153,7 +154,7 @@ describe('ResourceTransformer', function (): void {
 
         it('returns false for replicate action', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('isCustomAction');
 
             expect($method->invoke($transformer, 'replicate'))->toBeFalse();
@@ -161,7 +162,7 @@ describe('ResourceTransformer', function (): void {
 
         it('returns true for custom action', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('isCustomAction');
 
             expect($method->invoke($transformer, 'approve'))->toBeTrue();
@@ -169,7 +170,7 @@ describe('ResourceTransformer', function (): void {
 
         it('returns true for export action', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('isCustomAction');
 
             expect($method->invoke($transformer, 'export'))->toBeTrue();
@@ -177,7 +178,7 @@ describe('ResourceTransformer', function (): void {
 
         it('returns true for import action', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('isCustomAction');
 
             expect($method->invoke($transformer, 'import'))->toBeTrue();
@@ -185,7 +186,7 @@ describe('ResourceTransformer', function (): void {
 
         it('is case insensitive for standard actions', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('isCustomAction');
 
             expect($method->invoke($transformer, 'VIEW'))->toBeFalse();
@@ -197,7 +198,7 @@ describe('ResourceTransformer', function (): void {
     describe('extractMetadata', function (): void {
         it('is a protected method', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('extractMetadata');
 
             expect($method->isProtected())->toBeTrue();
@@ -205,7 +206,7 @@ describe('ResourceTransformer', function (): void {
 
         it('returns default metadata for non-existent class', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('extractMetadata');
 
             $result = $method->invoke($transformer, 'NonExistentClass');
@@ -220,7 +221,7 @@ describe('ResourceTransformer', function (): void {
 
         it('returns false for all metadata keys when class does not exist', function (): void {
             $transformer = new ResourceTransformer;
-            $reflection = new \ReflectionClass($transformer);
+            $reflection = new ReflectionClass($transformer);
             $method = $reflection->getMethod('extractMetadata');
 
             $result = $method->invoke($transformer, 'NonExistentClass');

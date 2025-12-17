@@ -4,23 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\FilamentAuthz\Unit;
 
+use AIArmada\FilamentAuthz\Resources\PermissionResource\RelationManagers\RolesRelationManager as PermissionRolesRelationManager;
 use AIArmada\FilamentAuthz\Resources\RoleResource\RelationManagers\PermissionsRelationManager;
 use AIArmada\FilamentAuthz\Resources\UserResource\RelationManagers\PermissionsRelationManager as UserPermissionsRelationManager;
 use AIArmada\FilamentAuthz\Resources\UserResource\RelationManagers\RolesRelationManager;
-use AIArmada\FilamentAuthz\Resources\PermissionResource\RelationManagers\RolesRelationManager as PermissionRolesRelationManager;
-use Filament\Actions\AttachAction;
-use Filament\Actions\BulkActionGroup;
-use Filament\Actions\DetachAction;
-use Filament\Actions\DetachBulkAction;
-use Filament\Forms\Components\Select;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
-use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Mockery;
 use ReflectionClass;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use ReflectionMethod;
 
 afterEach(function (): void {
     Mockery::close();
@@ -114,14 +107,14 @@ describe('PermissionsRelationManager (RoleResource)', function (): void {
     });
 
     it('has table method that configures columns', function (): void {
-        $method = new \ReflectionMethod(PermissionsRelationManager::class, 'table');
+        $method = new ReflectionMethod(PermissionsRelationManager::class, 'table');
 
         expect($method->isPublic())->toBeTrue();
         expect($method->getReturnType()->getName())->toBe(Table::class);
     });
 
     it('has form method that configures schema', function (): void {
-        $method = new \ReflectionMethod(PermissionsRelationManager::class, 'form');
+        $method = new ReflectionMethod(PermissionsRelationManager::class, 'form');
 
         expect($method->isPublic())->toBeTrue();
         expect($method->getReturnType()->getName())->toBe(Schema::class);
@@ -148,14 +141,14 @@ describe('RolesRelationManager (UserResource)', function (): void {
     });
 
     it('has table method that configures columns', function (): void {
-        $method = new \ReflectionMethod(RolesRelationManager::class, 'table');
+        $method = new ReflectionMethod(RolesRelationManager::class, 'table');
 
         expect($method->isPublic())->toBeTrue();
         expect($method->getReturnType()->getName())->toBe(Table::class);
     });
 
     it('has form method that configures schema', function (): void {
-        $method = new \ReflectionMethod(RolesRelationManager::class, 'form');
+        $method = new ReflectionMethod(RolesRelationManager::class, 'form');
 
         expect($method->isPublic())->toBeTrue();
         expect($method->getReturnType()->getName())->toBe(Schema::class);
@@ -182,14 +175,14 @@ describe('PermissionsRelationManager (UserResource)', function (): void {
     });
 
     it('has table method that configures columns', function (): void {
-        $method = new \ReflectionMethod(UserPermissionsRelationManager::class, 'table');
+        $method = new ReflectionMethod(UserPermissionsRelationManager::class, 'table');
 
         expect($method->isPublic())->toBeTrue();
         expect($method->getReturnType()->getName())->toBe(Table::class);
     });
 
     it('has form method that configures schema', function (): void {
-        $method = new \ReflectionMethod(UserPermissionsRelationManager::class, 'form');
+        $method = new ReflectionMethod(UserPermissionsRelationManager::class, 'form');
 
         expect($method->isPublic())->toBeTrue();
         expect($method->getReturnType()->getName())->toBe(Schema::class);

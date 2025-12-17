@@ -29,7 +29,7 @@ test('permission matrix can select role, toggle, and save permissions', function
     $page->mount();
 
     $headerActions = (function () use ($page): array {
-        $method = new \ReflectionMethod($page, 'getHeaderActions');
+        $method = new ReflectionMethod($page, 'getHeaderActions');
         $method->setAccessible(true);
         /** @var array<int, Action> $actions */
         $actions = $method->invoke($page);
@@ -64,7 +64,6 @@ test('permission matrix can select role, toggle, and save permissions', function
         ->and($role->fresh()->hasPermissionTo('orders.view'))->toBeTrue()
         ->and($role->fresh()->hasPermissionTo('products.view'))->toBeFalse();
 });
-
 
 test('permission matrix returns null selected role name when unset', function (): void {
     $user = User::create([

@@ -9,7 +9,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
-beforeEach(function () {
+beforeEach(function (): void {
     config()->set('filament-authz.super_admin_role', 'super-admin');
     config()->set('filament-authz.panel_user_role', 'panel-user');
     config()->set('filament-authz.panel_roles', []);
@@ -43,8 +43,8 @@ class TestUserWithPanelAuthz
     }
 }
 
-describe('HasPanelAuthz', function () {
-    it('allows panel access for super admin', function () {
+describe('HasPanelAuthz', function (): void {
+    it('allows panel access for super admin', function (): void {
         $user = new TestUserWithPanelAuthz;
         $user->rolesForCheck = ['super-admin'];
 
@@ -54,7 +54,7 @@ describe('HasPanelAuthz', function () {
         expect($user->canAccessPanel($panel))->toBeTrue();
     });
 
-    it('allows panel access when user has panel-specific role', function () {
+    it('allows panel access when user has panel-specific role', function (): void {
         config()->set('filament-authz.panel_roles.admin', ['admin', 'editor']);
 
         $user = new TestUserWithPanelAuthz;
@@ -66,7 +66,7 @@ describe('HasPanelAuthz', function () {
         expect($user->canAccessPanel($panel))->toBeTrue();
     });
 
-    it('denies panel access when user lacks panel-specific role', function () {
+    it('denies panel access when user lacks panel-specific role', function (): void {
         config()->set('filament-authz.panel_roles.admin', ['admin', 'editor']);
 
         $user = new TestUserWithPanelAuthz;
@@ -78,7 +78,7 @@ describe('HasPanelAuthz', function () {
         expect($user->canAccessPanel($panel))->toBeFalse();
     });
 
-    it('falls back to panel user role when no panel-specific roles configured', function () {
+    it('falls back to panel user role when no panel-specific roles configured', function (): void {
         config()->set('filament-authz.panel_roles', []);
 
         $user = new TestUserWithPanelAuthz;
@@ -90,7 +90,7 @@ describe('HasPanelAuthz', function () {
         expect($user->canAccessPanel($panel))->toBeTrue();
     });
 
-    it('denies access when user lacks panel user role', function () {
+    it('denies access when user lacks panel user role', function (): void {
         config()->set('filament-authz.panel_roles', []);
 
         $user = new TestUserWithPanelAuthz;
@@ -102,7 +102,7 @@ describe('HasPanelAuthz', function () {
         expect($user->canAccessPanel($panel))->toBeFalse();
     });
 
-    it('returns accessible panels', function () {
+    it('returns accessible panels', function (): void {
         $panel1 = Mockery::mock(Panel::class);
         $panel1->shouldReceive('getId')->andReturn('admin');
 
@@ -126,7 +126,7 @@ describe('HasPanelAuthz', function () {
         expect($accessiblePanels->first())->toBe($panel2);
     });
 
-    it('returns true for hasAnyPanelAccess when user has panel access', function () {
+    it('returns true for hasAnyPanelAccess when user has panel access', function (): void {
         $panel = Mockery::mock(Panel::class);
         $panel->shouldReceive('getId')->andReturn('admin');
 
@@ -138,7 +138,7 @@ describe('HasPanelAuthz', function () {
         expect($user->hasAnyPanelAccess())->toBeTrue();
     });
 
-    it('returns false for hasAnyPanelAccess when user has no panel access', function () {
+    it('returns false for hasAnyPanelAccess when user has no panel access', function (): void {
         $panel = Mockery::mock(Panel::class);
         $panel->shouldReceive('getId')->andReturn('admin');
 
@@ -152,7 +152,7 @@ describe('HasPanelAuthz', function () {
         expect($user->hasAnyPanelAccess())->toBeFalse();
     });
 
-    it('returns default panel as first accessible panel', function () {
+    it('returns default panel as first accessible panel', function (): void {
         $panel1 = Mockery::mock(Panel::class);
         $panel1->shouldReceive('getId')->andReturn('admin');
 
@@ -172,7 +172,7 @@ describe('HasPanelAuthz', function () {
         expect($defaultPanel)->toBe($panel1);
     });
 
-    it('returns null for default panel when no panels accessible', function () {
+    it('returns null for default panel when no panels accessible', function (): void {
         $panel = Mockery::mock(Panel::class);
         $panel->shouldReceive('getId')->andReturn('admin');
 

@@ -330,7 +330,7 @@ test('getApplicablePolicies caches results', function (): void {
 
     // Verify cache key exists
     $cacheKey = 'permissions:policies:applicable:orders.view:orders';
-    $hasKey = Cache::getStore() instanceof \Illuminate\Cache\TaggableStore
+    $hasKey = Cache::getStore() instanceof Illuminate\Cache\TaggableStore
         ? Cache::tags(['filament-authz', 'policies'])->has($cacheKey)
         : Cache::has($cacheKey);
 
@@ -356,7 +356,7 @@ test('clearCache removes cached policies', function (): void {
 
     // Cache should be cleared
     $cacheKey = 'permissions:policies:applicable:orders.view:orders';
-    $hasKey = Cache::getStore() instanceof \Illuminate\Cache\TaggableStore
+    $hasKey = Cache::getStore() instanceof Illuminate\Cache\TaggableStore
         ? Cache::tags(['filament-authz', 'policies'])->has($cacheKey)
         : Cache::has($cacheKey);
 

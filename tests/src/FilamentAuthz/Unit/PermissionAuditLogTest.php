@@ -379,5 +379,5 @@ test('casts work correctly', function (): void {
     expect($log->old_value)->toBeArray()
         ->and($log->new_value)->toBeArray()
         ->and($log->context)->toBeArray()
-        ->and($log->occurred_at)->toBeInstanceOf(\Illuminate\Support\Carbon::class);
+        ->and($log->occurred_at)->toBeInstanceOf(Illuminate\Support\Carbon::class);
 });

@@ -25,7 +25,7 @@ test('role hierarchy actions work end-to-end', function (): void {
     $parent = Role::create(['name' => 'Parent', 'guard_name' => 'web']);
 
     $headerActions = (function () use ($page): array {
-        $method = new \ReflectionMethod($page, 'getHeaderActions');
+        $method = new ReflectionMethod($page, 'getHeaderActions');
         $method->setAccessible(true);
         /** @var array<int, Action> $actions */
         $actions = $method->invoke($page);

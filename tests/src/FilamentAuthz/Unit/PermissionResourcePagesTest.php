@@ -8,11 +8,13 @@ use AIArmada\FilamentAuthz\Resources\PermissionResource;
 use AIArmada\FilamentAuthz\Resources\PermissionResource\Pages\CreatePermission;
 use AIArmada\FilamentAuthz\Resources\PermissionResource\Pages\EditPermission;
 use AIArmada\FilamentAuthz\Resources\PermissionResource\Pages\ListPermissions;
+use ReflectionMethod;
+use ReflectionProperty;
 
 describe('PermissionResource Pages', function (): void {
     describe('ListPermissions', function (): void {
         it('uses correct resource', function (): void {
-            $reflection = new \ReflectionProperty(ListPermissions::class, 'resource');
+            $reflection = new ReflectionProperty(ListPermissions::class, 'resource');
             $reflection->setAccessible(true);
 
             expect($reflection->getValue())->toBe(PermissionResource::class);
@@ -21,7 +23,7 @@ describe('PermissionResource Pages', function (): void {
         it('has header actions including create', function (): void {
             $page = new ListPermissions();
 
-            $method = new \ReflectionMethod(ListPermissions::class, 'getHeaderActions');
+            $method = new ReflectionMethod(ListPermissions::class, 'getHeaderActions');
             $method->setAccessible(true);
 
             $actions = $method->invoke($page);
@@ -33,7 +35,7 @@ describe('PermissionResource Pages', function (): void {
 
     describe('CreatePermission', function (): void {
         it('uses correct resource', function (): void {
-            $reflection = new \ReflectionProperty(CreatePermission::class, 'resource');
+            $reflection = new ReflectionProperty(CreatePermission::class, 'resource');
             $reflection->setAccessible(true);
 
             expect($reflection->getValue())->toBe(PermissionResource::class);
@@ -42,7 +44,7 @@ describe('PermissionResource Pages', function (): void {
 
     describe('EditPermission', function (): void {
         it('uses correct resource', function (): void {
-            $reflection = new \ReflectionProperty(EditPermission::class, 'resource');
+            $reflection = new ReflectionProperty(EditPermission::class, 'resource');
             $reflection->setAccessible(true);
 
             expect($reflection->getValue())->toBe(PermissionResource::class);

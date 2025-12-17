@@ -62,7 +62,7 @@ describe('AuthzCacheCommand', function (): void {
 describe('GeneratePoliciesCommand', function (): void {
     it('has correct signature', function (): void {
         $command = new GeneratePoliciesCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
         $property = $reflection->getProperty('signature');
 
         $signature = $property->getValue($command);
@@ -80,7 +80,7 @@ describe('GeneratePoliciesCommand', function (): void {
 
     it('has correct description', function (): void {
         $command = new GeneratePoliciesCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
         $property = $reflection->getProperty('description');
 
         expect($property->getValue($command))->toBe('Generate Laravel policies for Filament resources');
@@ -92,7 +92,7 @@ describe('GeneratePoliciesCommand', function (): void {
 
     it('has getPolicyType method', function (): void {
         $command = new GeneratePoliciesCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('getPolicyType'))->toBeTrue();
         expect($reflection->getMethod('getPolicyType')->isProtected())->toBeTrue();
@@ -100,7 +100,7 @@ describe('GeneratePoliciesCommand', function (): void {
 
     it('has getResources method', function (): void {
         $command = new GeneratePoliciesCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('getResources'))->toBeTrue();
         expect($reflection->getMethod('getResources')->isProtected())->toBeTrue();
@@ -110,7 +110,7 @@ describe('GeneratePoliciesCommand', function (): void {
 describe('InstallTraitCommand', function (): void {
     it('has correct signature', function (): void {
         $command = new InstallTraitCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
         $property = $reflection->getProperty('signature');
 
         $signature = $property->getValue($command);
@@ -124,7 +124,7 @@ describe('InstallTraitCommand', function (): void {
 
     it('has correct description', function (): void {
         $command = new InstallTraitCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
         $property = $reflection->getProperty('description');
 
         expect($property->getValue($command))->toBe('Install authorization traits into your classes');
@@ -132,7 +132,7 @@ describe('InstallTraitCommand', function (): void {
 
     it('defines available traits', function (): void {
         $command = new InstallTraitCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
         $property = $reflection->getProperty('availableTraits');
 
         $traits = $property->getValue($command);
@@ -152,7 +152,7 @@ describe('InstallTraitCommand', function (): void {
 describe('RoleHierarchyCommand', function (): void {
     it('has correct signature', function (): void {
         $command = new RoleHierarchyCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
         $property = $reflection->getProperty('signature');
 
         $signature = $property->getValue($command);
@@ -165,7 +165,7 @@ describe('RoleHierarchyCommand', function (): void {
 
     it('has correct description', function (): void {
         $command = new RoleHierarchyCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
         $property = $reflection->getProperty('description');
 
         expect($property->getValue($command))->toBe('Manage role hierarchy');
@@ -177,7 +177,7 @@ describe('RoleHierarchyCommand', function (): void {
 
     it('has listRoles method', function (): void {
         $command = new RoleHierarchyCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('listRoles'))->toBeTrue();
         expect($reflection->getMethod('listRoles')->isProtected())->toBeTrue();
@@ -185,7 +185,7 @@ describe('RoleHierarchyCommand', function (): void {
 
     it('has showTree method', function (): void {
         $command = new RoleHierarchyCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('showTree'))->toBeTrue();
         expect($reflection->getMethod('showTree')->isProtected())->toBeTrue();
@@ -193,7 +193,7 @@ describe('RoleHierarchyCommand', function (): void {
 
     it('has setParent method', function (): void {
         $command = new RoleHierarchyCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('setParent'))->toBeTrue();
         expect($reflection->getMethod('setParent')->isProtected())->toBeTrue();
@@ -201,7 +201,7 @@ describe('RoleHierarchyCommand', function (): void {
 
     it('has detachFromParent method', function (): void {
         $command = new RoleHierarchyCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('detachFromParent'))->toBeTrue();
         expect($reflection->getMethod('detachFromParent')->isProtected())->toBeTrue();
@@ -209,7 +209,7 @@ describe('RoleHierarchyCommand', function (): void {
 
     it('has printRoleTree method', function (): void {
         $command = new RoleHierarchyCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('printRoleTree'))->toBeTrue();
         expect($reflection->getMethod('printRoleTree')->isProtected())->toBeTrue();
@@ -219,7 +219,7 @@ describe('RoleHierarchyCommand', function (): void {
 describe('RoleTemplateCommand', function (): void {
     it('has correct signature', function (): void {
         $command = new RoleTemplateCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
         $property = $reflection->getProperty('signature');
 
         $signature = $property->getValue($command);
@@ -232,7 +232,7 @@ describe('RoleTemplateCommand', function (): void {
 
     it('has correct description', function (): void {
         $command = new RoleTemplateCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
         $property = $reflection->getProperty('description');
 
         expect($property->getValue($command))->toBe('Manage role templates');
@@ -244,42 +244,42 @@ describe('RoleTemplateCommand', function (): void {
 
     it('has listTemplates method', function (): void {
         $command = new RoleTemplateCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('listTemplates'))->toBeTrue();
     });
 
     it('has createTemplate method', function (): void {
         $command = new RoleTemplateCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('createTemplate'))->toBeTrue();
     });
 
     it('has createRoleFromTemplate method', function (): void {
         $command = new RoleTemplateCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('createRoleFromTemplate'))->toBeTrue();
     });
 
     it('has syncRole method', function (): void {
         $command = new RoleTemplateCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('syncRole'))->toBeTrue();
     });
 
     it('has syncAllRoles method', function (): void {
         $command = new RoleTemplateCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('syncAllRoles'))->toBeTrue();
     });
 
     it('has deleteTemplate method', function (): void {
         $command = new RoleTemplateCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('deleteTemplate'))->toBeTrue();
     });
@@ -288,7 +288,7 @@ describe('RoleTemplateCommand', function (): void {
 describe('SnapshotCommand', function (): void {
     it('has correct signature', function (): void {
         $command = new SnapshotCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
         $property = $reflection->getProperty('signature');
 
         $signature = $property->getValue($command);
@@ -306,7 +306,7 @@ describe('SnapshotCommand', function (): void {
 
     it('has correct description', function (): void {
         $command = new SnapshotCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
         $property = $reflection->getProperty('description');
 
         expect($property->getValue($command))->toBe('Manage permission snapshots');
@@ -318,7 +318,7 @@ describe('SnapshotCommand', function (): void {
 
     it('has createSnapshot method', function (): void {
         $command = new SnapshotCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('createSnapshot'))->toBeTrue();
         expect($reflection->getMethod('createSnapshot')->isProtected())->toBeTrue();
@@ -326,7 +326,7 @@ describe('SnapshotCommand', function (): void {
 
     it('has listSnapshots method', function (): void {
         $command = new SnapshotCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('listSnapshots'))->toBeTrue();
         expect($reflection->getMethod('listSnapshots')->isProtected())->toBeTrue();
@@ -334,7 +334,7 @@ describe('SnapshotCommand', function (): void {
 
     it('has compareSnapshots method', function (): void {
         $command = new SnapshotCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('compareSnapshots'))->toBeTrue();
         expect($reflection->getMethod('compareSnapshots')->isProtected())->toBeTrue();
@@ -342,7 +342,7 @@ describe('SnapshotCommand', function (): void {
 
     it('has rollbackSnapshot method', function (): void {
         $command = new SnapshotCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('rollbackSnapshot'))->toBeTrue();
         expect($reflection->getMethod('rollbackSnapshot')->isProtected())->toBeTrue();
@@ -350,7 +350,7 @@ describe('SnapshotCommand', function (): void {
 
     it('has invalidAction method', function (): void {
         $command = new SnapshotCommand;
-        $reflection = new \ReflectionClass($command);
+        $reflection = new ReflectionClass($command);
 
         expect($reflection->hasMethod('invalidAction'))->toBeTrue();
         expect($reflection->getMethod('invalidAction')->isProtected())->toBeTrue();

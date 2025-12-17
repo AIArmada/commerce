@@ -8,9 +8,7 @@ use AIArmada\FilamentAuthz\Support\ResourcePermissionDiscovery;
 use Filament\Panel;
 use Filament\Resources\Resource;
 
-class ResourcePermissionDiscoveryTestResourceWithoutInterface extends Resource
-{
-}
+class ResourcePermissionDiscoveryTestResourceWithoutInterface extends Resource {}
 
 class ResourcePermissionDiscoveryTestResourceWithWildcard extends Resource implements RegistersPermissions
 {
@@ -59,12 +57,12 @@ class ResourcePermissionDiscoveryTestResourceNoWildcard extends Resource impleme
 }
 
 afterEach(function (): void {
-    \Mockery::close();
+    Mockery::close();
 });
 
 describe('ResourcePermissionDiscovery', function (): void {
     it('discovers and registers permissions from a panel', function (): void {
-        $registry = \Mockery::mock(PermissionRegistry::class);
+        $registry = Mockery::mock(PermissionRegistry::class);
         $registry->shouldReceive('registerResource')
             ->once()
             ->with('posts', ['viewAny', 'view', 'create'], 'content');
@@ -72,7 +70,7 @@ describe('ResourcePermissionDiscovery', function (): void {
             ->once()
             ->with('posts', null, 'content');
 
-        $panel = \Mockery::mock(Panel::class);
+        $panel = Mockery::mock(Panel::class);
         $panel->shouldReceive('getResources')->once()->andReturn([
             ResourcePermissionDiscoveryTestResourceWithoutInterface::class,
             ResourcePermissionDiscoveryTestResourceWithWildcard::class,
@@ -87,7 +85,7 @@ describe('ResourcePermissionDiscovery', function (): void {
     });
 
     it('registers resource permissions without wildcard when disabled', function (): void {
-        $registry = \Mockery::mock(PermissionRegistry::class);
+        $registry = Mockery::mock(PermissionRegistry::class);
         $registry->shouldReceive('registerResource')
             ->once()
             ->with('comments', ['viewAny', 'delete'], null);
@@ -101,7 +99,7 @@ describe('ResourcePermissionDiscovery', function (): void {
     });
 
     it('returns the permission abilities for a resource', function (): void {
-        $registry = \Mockery::mock(PermissionRegistry::class);
+        $registry = Mockery::mock(PermissionRegistry::class);
         $service = new ResourcePermissionDiscovery($registry);
 
         expect($service->getPermissionsForResource(ResourcePermissionDiscoveryTestResourceWithWildcard::class))
