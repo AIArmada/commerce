@@ -5,14 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrders\Widgets;
 
 use AIArmada\Orders\Models\Order;
+use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
+use Throwable;
 
 class OrderTimelineWidget extends Widget implements HasForms
 {
@@ -75,7 +76,7 @@ class OrderTimelineWidget extends Widget implements HasForms
                         'causer' => $activity->causer?->name ?? 'System',
                     ]);
                 }
-            } catch (\Throwable) {
+            } catch (Throwable) {
                 // Ignore activity log if not configured.
             }
         }
@@ -139,7 +140,7 @@ class OrderTimelineWidget extends Widget implements HasForms
                     ->rows(2)
                     ->placeholder('Add a note to this order timeline...'),
 
-        Forms\Components\Toggle::make('is_customer_visible')
+                Forms\Components\Toggle::make('is_customer_visible')
                     ->label('Visible to Customer')
                     ->default(false)
                     ->helperText('Customer will see this note in their order history'),

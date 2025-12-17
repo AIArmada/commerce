@@ -2,15 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\FilamentInventory\Services\InventoryStatsAggregator;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
-
-uses(InventoryTestCase::class);
 
 beforeEach(function (): void {
     config()->set('filament-inventory.cache.stats_ttl', 0);

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Policies;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Contracts\Auth\Authenticatable;
+use Illuminate\Database\Eloquent\Model;
 
 /**
  * Policy for ReturnAuthorization model authorization.
@@ -127,7 +129,7 @@ class ReturnAuthorizationPolicy
             return $user->can($permission);
         }
 
-        return true;
+        return false;
     }
 
     /**
@@ -135,11 +137,20 @@ class ReturnAuthorizationPolicy
      */
     protected function isOwner(Authenticatable $user, ReturnAuthorization $rma): bool
     {
-        if ($rma->owner_type === null || $rma->owner_id === null) {
+        if (! app()->bound(OwnerResolverInterface::class)) {
             return false;
         }
 
-        return $rma->owner_type === get_class($user)
-            && $rma->owner_id === $user->getAuthIdentifier();
+        /** @var OwnerResolverInterface $resolver */
+        $resolver = app(OwnerResolverInterface::class);
+
+        /** @var Model|null $owner */
+        $owner = $resolver->resolve();
+
+        if ($owner === null) {
+            return false;
+        }
+
+        return $rma->belongsToOwner($owner);
     }
 }

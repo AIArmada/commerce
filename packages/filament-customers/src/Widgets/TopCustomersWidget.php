@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCustomers\Widgets;
 
 use AIArmada\Customers\Models\Customer;
+use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -21,7 +22,7 @@ class TopCustomersWidget extends BaseWidget
     {
         return $table
             ->query(
-                Customer::query()
+                CustomersOwnerScope::applyToOwnedQuery(Customer::query())
                     ->where('lifetime_value', '>', 0)
                     ->orderByDesc('lifetime_value')
                     ->limit(10)

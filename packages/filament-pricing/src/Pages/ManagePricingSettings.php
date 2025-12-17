@@ -55,7 +55,7 @@ class ManagePricingSettings extends Page
             'customerGroupPricingEnabled' => isset($settings->customerGroupPricingEnabled) ? $settings->customerGroupPricingEnabled : false,
         ];
 
-        $this->form->fill($this->data);
+        $this->getSchema('form')?->fill($this->data);
     }
 
     public function form(Schema $schema): Schema
@@ -140,7 +140,7 @@ class ManagePricingSettings extends Page
     public function save(): void
     {
         /** @var array<string, mixed> $state */
-        $state = $this->form->getState();
+        $state = $this->data ?? [];
 
         $settings = app(PricingSettings::class);
 

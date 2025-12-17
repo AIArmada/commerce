@@ -11,6 +11,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create(config('customers.tables.wishlist_items', 'wishlist_items'), function (Blueprint $table): void {
+            $jsonColumnType = config('customers.json_column_type', 'json');
+
             $table->uuid('id')->primary();
 
             $table->foreignUuid('wishlist_id');
@@ -25,7 +27,7 @@ return new class extends Migration
             $table->boolean('notified_on_sale')->default(false);
             $table->boolean('notified_in_stock')->default(false);
 
-            $table->json('metadata')->nullable();
+            $table->{$jsonColumnType}('metadata')->nullable();
 
             $table->timestamps();
 

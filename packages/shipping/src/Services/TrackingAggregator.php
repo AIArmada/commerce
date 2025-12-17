@@ -15,6 +15,7 @@ use AIArmada\Shipping\Events\TrackingUpdated;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShipmentEvent;
 use AIArmada\Shipping\ShippingManager;
+use AIArmada\Shipping\Support\ShippingOwnerScope;
 use Illuminate\Support\Collection;
 use Throwable;
 
@@ -112,7 +113,7 @@ class TrackingAggregator
         $maxAge = config('shipping.tracking.max_tracking_age', 30);
         $syncInterval = config('shipping.tracking.sync_interval', 3600);
 
-        return Shipment::query()
+        return ShippingOwnerScope::applyToOwnedQuery(Shipment::query())
             ->whereNotNull('tracking_number')
             ->whereNotIn('status', [
                 ShipmentStatus::Delivered,

@@ -18,7 +18,7 @@ return new class extends Migration
             $table->nullableUuidMorphs('owner');
 
             $table->string('name');
-            $table->string('code', 50)->unique();
+            $table->string('code', 50);
             $table->string('type', 20);
 
             $table->{$jsonType}('countries')->nullable();
@@ -35,6 +35,7 @@ return new class extends Migration
 
             $table->timestamps();
 
+            $table->unique(['owner_type', 'owner_id', 'code'], $tableName . '_owner_code_unique');
             $table->index(['owner_id', 'owner_type', 'active'], $tableName . '_owner_active');
             $table->index('priority', $tableName . '_priority');
         });

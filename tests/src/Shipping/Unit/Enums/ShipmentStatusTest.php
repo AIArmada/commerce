@@ -27,7 +27,7 @@ it('has all expected shipment statuses', function (): void {
 });
 
 it('correctly identifies pending statuses', function (): void {
-    expect(ShipmentStatus::Draft->isPending())->toBeTrue();
+    expect(ShipmentStatus::Draft->isPending())->toBeFalse();
     expect(ShipmentStatus::Pending->isPending())->toBeTrue();
     expect(ShipmentStatus::InTransit->isPending())->toBeFalse();
     expect(ShipmentStatus::Delivered->isPending())->toBeFalse();

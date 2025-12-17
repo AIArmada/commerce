@@ -124,7 +124,7 @@ class VariantsRelationManager extends RelationManager
                     ->label('Enabled'),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make()
+                \Filament\Actions\CreateAction::make()
                     ->mutateFormDataUsing(function (array $data): array {
                         // Convert prices to cents
                         if (isset($data['price']) && is_numeric($data['price'])) {
@@ -139,7 +139,7 @@ class VariantsRelationManager extends RelationManager
 
                         return $data;
                     }),
-                Tables\Actions\Action::make('generate_variants')
+                \Filament\Actions\Action::make('generate_variants')
                     ->label('Generate All Variants')
                     ->icon('heroicon-o-sparkles')
                     ->color('success')
@@ -160,7 +160,7 @@ class VariantsRelationManager extends RelationManager
                     }),
             ])
             ->actions([
-                Tables\Actions\EditAction::make()
+                \Filament\Actions\EditAction::make()
                     ->mutateRecordDataUsing(function (array $data): array {
                         // Convert cents to display values
                         if (isset($data['price'])) {
@@ -189,18 +189,18 @@ class VariantsRelationManager extends RelationManager
 
                         return $data;
                     }),
-                Tables\Actions\DeleteAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\BulkAction::make('enable')
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
+                    \Filament\Actions\BulkAction::make('enable')
                         ->label('Enable')
                         ->icon('heroicon-o-check-circle')
                         ->action(
                             fn (\Illuminate\Support\Collection $records) => $records->each->update(['is_enabled' => true])
                         ),
-                    Tables\Actions\BulkAction::make('disable')
+                    \Filament\Actions\BulkAction::make('disable')
                         ->label('Disable')
                         ->icon('heroicon-o-x-circle')
                         ->action(

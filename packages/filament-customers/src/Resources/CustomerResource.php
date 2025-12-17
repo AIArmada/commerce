@@ -8,6 +8,7 @@ use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Pages;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
+use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
 use BackedEnum;
 use Filament\Forms;
 use Filament\Infolists\Components\TextEntry;
@@ -19,6 +20,7 @@ use Filament\Schemas\Schema;
 use Filament\Support\Enums\TextSize;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class CustomerResource extends Resource
@@ -35,7 +37,22 @@ class CustomerResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::where('status', CustomerStatus::Active)->count() ?: null;
+        $count = CustomersOwnerScope::applyToOwnedQuery(static::getModel()::query())
+            ->where('status', CustomerStatus::Active)
+            ->count();
+
+        return $count ?: null;
+    }
+
+    /**
+     * @return Builder<Customer>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        /** @var Builder<Customer> $query */
+        $query = parent::getEloquentQuery();
+
+        return CustomersOwnerScope::applyToOwnedQuery($query);
     }
 
     public static function form(Schema $schema): Schema
@@ -122,7 +139,11 @@ class CustomerResource extends Resource
                             ->schema([
                                 Forms\Components\Select::make('segments')
                                     ->label('Segments')
-                                    ->relationship('segments', 'name')
+                                    ->relationship(
+                                        name: 'segments',
+                                        titleAttribute: 'name',
+                                        modifyQueryUsing: fn (Builder $query): Builder => CustomersOwnerScope::applyToOwnedQuery($query),
+                                    )
                                     ->multiple()
                                     ->preload()
                                     ->searchable()
@@ -205,7 +226,11 @@ class CustomerResource extends Resource
                     ->label('Tax Exempt'),
 
                 Tables\Filters\SelectFilter::make('segments')
-                    ->relationship('segments', 'name')
+                    ->relationship(
+                        name: 'segments',
+                        titleAttribute: 'name',
+                        modifyQueryUsing: fn (Builder $query): Builder => CustomersOwnerScope::applyToOwnedQuery($query),
+                    )
                     ->multiple()
                     ->preload(),
 
@@ -218,9 +243,9 @@ class CustomerResource extends Resource
                     ->query(fn ($query) => $query->where('last_login_at', '>=', now()->subDays(30))),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('add_credit')
+                \Filament\Actions\ViewAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\Action::make('add_credit')
                     ->label('Add Credit')
                     ->icon('heroicon-o-plus-circle')
                     ->color('success')
@@ -249,15 +274,15 @@ class CustomerResource extends Resource
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\BulkAction::make('opt_in_marketing')
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
+                    \Filament\Actions\BulkAction::make('opt_in_marketing')
                         ->label('Opt-In Marketing')
                         ->icon('heroicon-o-bell')
                         ->action(
                             fn (\Illuminate\Support\Collection $records) => $records->each->optInMarketing()
                         ),
-                    Tables\Actions\BulkAction::make('opt_out_marketing')
+                    \Filament\Actions\BulkAction::make('opt_out_marketing')
                         ->label('Opt-Out Marketing')
                         ->icon('heroicon-o-bell-slash')
                         ->action(

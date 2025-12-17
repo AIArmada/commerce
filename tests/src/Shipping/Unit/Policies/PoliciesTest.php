@@ -166,9 +166,9 @@ describe('ShipmentPolicy', function (): void {
         expect($this->policy->viewAny($user))->toBeFalse();
     });
 
-    it('allows viewAny when no permission system exists (fallback)', function (): void {
+    it('denies viewAny when no permission system exists', function (): void {
         $user = createUserWithoutPermissions();
-        expect($this->policy->viewAny($user))->toBeTrue();
+        expect($this->policy->viewAny($user))->toBeFalse();
     });
 
     it('uses can() method as fallback for viewAny', function (): void {
@@ -183,17 +183,29 @@ describe('ShipmentPolicy', function (): void {
         expect($this->policy->view($user, $shipment))->toBeTrue();
     });
 
-    it('allows view when user is owner even without permission', function (): void {
+    it('allows view when record belongs to the resolved owner even without permission', function (): void {
         $user = createUserWithPermissions([]);
+
+        $owner = Mockery::mock(\Illuminate\Database\Eloquent\Model::class);
+        $owner->shouldReceive('getMorphClass')->andReturn('TestOwner');
+        $owner->shouldReceive('getKey')->andReturn('owner-123');
+
+        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class($owner) implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        {
+            public function __construct(private readonly ?\Illuminate\Database\Eloquent\Model $owner) {}
+
+            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            {
+                return $this->owner;
+            }
+        });
+
         $shipment = Mockery::mock(Shipment::class)->makePartial();
-        $shipment->shouldReceive('getAttribute')
-            ->with('owner_type')
-            ->andReturn(get_class($user));
-        $shipment->shouldReceive('getAttribute')
-            ->with('owner_id')
-            ->andReturn('user-123');
+        $shipment->shouldReceive('belongsToOwner')->with($owner)->andReturnTrue();
 
         expect($this->policy->view($user, $shipment))->toBeTrue();
+
+        app()->forgetInstance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class);
     });
 
     it('denies view when neither owner nor has permission', function (): void {
@@ -464,17 +476,29 @@ describe('ReturnAuthorizationPolicy', function (): void {
         expect($this->policy->view($user, $rma))->toBeTrue();
     });
 
-    it('allows view when user is owner even without permission', function (): void {
+    it('allows view when record belongs to the resolved owner even without permission', function (): void {
         $user = createUserWithPermissions([]);
+
+        $owner = Mockery::mock(\Illuminate\Database\Eloquent\Model::class);
+        $owner->shouldReceive('getMorphClass')->andReturn('TestOwner');
+        $owner->shouldReceive('getKey')->andReturn('owner-123');
+
+        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class($owner) implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        {
+            public function __construct(private readonly ?\Illuminate\Database\Eloquent\Model $owner) {}
+
+            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            {
+                return $this->owner;
+            }
+        });
+
         $rma = Mockery::mock(ReturnAuthorization::class)->makePartial();
-        $rma->shouldReceive('getAttribute')
-            ->with('owner_type')
-            ->andReturn(get_class($user));
-        $rma->shouldReceive('getAttribute')
-            ->with('owner_id')
-            ->andReturn('user-123');
+        $rma->shouldReceive('belongsToOwner')->with($owner)->andReturnTrue();
 
         expect($this->policy->view($user, $rma))->toBeTrue();
+
+        app()->forgetInstance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class);
     });
 
     it('denies view when neither owner nor has permission', function (): void {

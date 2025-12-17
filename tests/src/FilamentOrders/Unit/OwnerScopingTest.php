@@ -7,12 +7,13 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentOrders\Resources\OrderResource;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 uses(TestCase::class);
+
+require_once __DIR__ . '/../Fixtures/TestOwner.php';
 
 beforeEach(function (): void {
     Schema::dropIfExists('test_owners');
@@ -80,12 +81,3 @@ it('scopes OrderResource to current owner plus global', function (): void {
         ->toContain($orderGlobal->id)
         ->not->toContain($orderB->id);
 });
-
-class TestOwner extends Model
-{
-    use HasUuids;
-
-    protected $table = 'test_owners';
-
-    protected $fillable = ['name'];
-}

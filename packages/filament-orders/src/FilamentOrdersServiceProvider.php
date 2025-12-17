@@ -6,8 +6,8 @@ namespace AIArmada\FilamentOrders;
 
 use AIArmada\Orders\Actions\GenerateInvoice;
 use AIArmada\Orders\Models\Order;
-use Filament\Http\Middleware\Authenticate as FilamentAuthenticate;
 use Filament\Facades\Filament;
+use Filament\Http\Middleware\Authenticate as FilamentAuthenticate;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;

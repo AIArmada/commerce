@@ -52,6 +52,7 @@ return [
 
         'exemptions' => [
             'enabled' => true,
+            'customer_morph' => 'App\\Models\\Customer',
         ],
     ],
 ];

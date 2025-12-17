@@ -34,7 +34,11 @@ final class TaxZoneResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
-        return TaxOwnerScope::applyToOwnedQuery(parent::getEloquentQuery());
+        $query = TaxOwnerScope::applyToOwnedQuery(parent::getEloquentQuery());
+
+        return $query->withCount([
+            'rates as rates_count' => fn (Builder $builder) => TaxOwnerScope::applyToOwnedQuery($builder),
+        ]);
     }
 
     public static function form(Schema $schema): Schema

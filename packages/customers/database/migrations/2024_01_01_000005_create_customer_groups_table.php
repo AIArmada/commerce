@@ -11,6 +11,8 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create(config('customers.tables.groups', 'customer_groups'), function (Blueprint $table): void {
+            $jsonColumnType = config('customers.json_column_type', 'json');
+
             $table->uuid('id')->primary();
 
             // Owner (for multi-tenancy)
@@ -27,8 +29,8 @@ return new class extends Migration
             $table->boolean('requires_approval')->default(true);
 
             // Settings
-            $table->json('settings')->nullable();
-            $table->json('metadata')->nullable();
+            $table->{$jsonColumnType}('settings')->nullable();
+            $table->{$jsonColumnType}('metadata')->nullable();
 
             $table->timestamps();
 

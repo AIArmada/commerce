@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCustomers\Resources;
 use AIArmada\Customers\Enums\SegmentType;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\FilamentCustomers\Resources\SegmentResource\Pages;
+use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
 use BackedEnum;
 use Filament\Forms;
 use Filament\Resources\Resource;
@@ -17,6 +18,7 @@ use Filament\Schemas\Components\Utilities\Set;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 class SegmentResource extends Resource
@@ -33,7 +35,22 @@ class SegmentResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getModel()::where('is_active', true)->count() ?: null;
+        $count = CustomersOwnerScope::applyToOwnedQuery(static::getModel()::query())
+            ->where('is_active', true)
+            ->count();
+
+        return $count ?: null;
+    }
+
+    /**
+     * @return Builder<Segment>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        /** @var Builder<Segment> $query */
+        $query = parent::getEloquentQuery();
+
+        return CustomersOwnerScope::applyToOwnedQuery($query);
     }
 
     public static function form(Schema $schema): Schema
@@ -136,7 +153,11 @@ class SegmentResource extends Resource
                             ->schema([
                                 Forms\Components\Select::make('customers')
                                     ->label('Customers')
-                                    ->relationship('customers', 'email')
+                                    ->relationship(
+                                        name: 'customers',
+                                        titleAttribute: 'email',
+                                        modifyQueryUsing: fn (Builder $query): Builder => CustomersOwnerScope::applyToOwnedQuery($query),
+                                    )
                                     ->multiple()
                                     ->preload()
                                     ->searchable()
@@ -207,9 +228,9 @@ class SegmentResource extends Resource
                     ->label('Active'),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('rebuild')
+                \Filament\Actions\ViewAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\Action::make('rebuild')
                     ->label('Rebuild')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
@@ -226,8 +247,8 @@ class SegmentResource extends Resource
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

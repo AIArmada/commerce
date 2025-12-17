@@ -11,12 +11,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create(config('customers.tables.notes', 'customer_notes'), function (Blueprint $table): void {
+            $jsonColumnType = config('customers.json_column_type', 'json');
+
             $table->uuid('id')->primary();
 
             $table->foreignUuid('customer_id');
 
             // Who created the note
-            $table->foreignId('created_by')->nullable();
+            $table->foreignUuid('created_by')->nullable();
 
             // Note content
             $table->text('content');
@@ -25,7 +27,7 @@ return new class extends Migration
             $table->boolean('is_internal')->default(true);
             $table->boolean('is_pinned')->default(false);
 
-            $table->json('metadata')->nullable();
+            $table->{$jsonColumnType}('metadata')->nullable();
 
             $table->timestamps();
 

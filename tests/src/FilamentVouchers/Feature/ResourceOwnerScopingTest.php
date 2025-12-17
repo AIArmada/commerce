@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentVouchers\Models\Voucher as FilamentVoucher;
 use AIArmada\FilamentVouchers\Resources\CampaignResource;
 use AIArmada\FilamentVouchers\Resources\FraudSignalResource;
@@ -30,9 +30,7 @@ uses(TestCase::class);
 
 final class TestOwnerResolver implements OwnerResolverInterface
 {
-    public function __construct(private ?Model $owner)
-    {
-    }
+    public function __construct(private ?Model $owner) {}
 
     public function resolve(): ?Model
     {

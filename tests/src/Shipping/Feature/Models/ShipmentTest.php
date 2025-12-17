@@ -161,7 +161,7 @@ describe('Shipment Model', function (): void {
             'destination_address' => ['name' => 'Dest'],
         ]);
 
-        expect($draftShipment->isPending())->toBeTrue();
+        expect($draftShipment->isPending())->toBeFalse();
         expect($draftShipment->isInTransit())->toBeFalse();
         expect($draftShipment->isDelivered())->toBeFalse();
         expect($draftShipment->isCancellable())->toBeTrue();

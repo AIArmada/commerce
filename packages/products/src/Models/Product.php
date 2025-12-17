@@ -6,6 +6,7 @@ namespace AIArmada\Products\Models;
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\Pricing\Contracts\Priceable as PricingPriceable;
 use AIArmada\Products\Contracts\Buyable;
 use AIArmada\Products\Contracts\Inventoryable;
 use AIArmada\Products\Contracts\Priceable;
@@ -15,8 +16,8 @@ use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
 use AIArmada\Products\Traits\HasAttributes;
 use Akaunting\Money\Money;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -67,7 +68,7 @@ use Spatie\Tags\HasTags;
  * @property-read \Illuminate\Database\Eloquent\Collection<int, Collection> $collections
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AttributeValue> $attributeValues
  */
-class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceable
+class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceable, PricingPriceable
 {
     use HasAttributes;
     use HasFactory;

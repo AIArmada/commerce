@@ -12,8 +12,7 @@ final class TaxOwnerScope
 {
     public static function isEnabled(): bool
     {
-        return (bool) config('tax.features.owner.enabled', false)
-            && app()->bound(OwnerResolverInterface::class);
+        return (bool) config('tax.features.owner.enabled', false);
     }
 
     public static function includeGlobal(): bool

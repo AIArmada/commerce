@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Cart\Conditions\ConditionTarget;
+use AIArmada\Commerce\Tests\FilamentInventory\FilamentInventoryTestCase;
 use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Commerce\Tests\TestCase;
 
@@ -29,12 +30,15 @@ pest()->extend(TestCase::class)->in(
     'src/Customers',
     'src/Orders',
     'src/Pricing',
+        'src/FilamentCustomers',
     'src/Tax',
     'src/Shipping',
     'src/Support',
 );
 
 pest()->extend(InventoryTestCase::class)->in('src/Inventory');
+
+pest()->extend(FilamentInventoryTestCase::class)->in('src/FilamentInventory');
 
 // CashierChip tests use their own CashierChipTestCase via uses() in each test file
 // Cashier (unified) tests use their own CashierTestCase via uses() in each test file

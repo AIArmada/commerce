@@ -83,6 +83,6 @@ class ShippingZonePolicy
             return $user->can($permission);
         }
 
-        return true;
+        return false;
     }
 }

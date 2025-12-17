@@ -11,13 +11,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create(config('customers.tables.customers', 'customers'), function (Blueprint $table): void {
+            $jsonColumnType = config('customers.json_column_type', 'json');
+
             $table->uuid('id')->primary();
 
             // Owner (for multi-tenancy)
             $table->nullableUuidMorphs('owner');
 
             // Link to User model
-            $table->foreignId('user_id')->nullable();
+            $table->foreignUuid('user_id')->nullable();
 
             // Basic info
             $table->string('first_name');
@@ -47,7 +49,7 @@ return new class extends Migration
             $table->timestamp('last_login_at')->nullable();
 
             // Metadata
-            $table->json('metadata')->nullable();
+            $table->{$jsonColumnType}('metadata')->nullable();
 
             $table->timestamps();
 

@@ -72,6 +72,10 @@ class TaxClass extends Model
             $owner = TaxOwnerScope::resolveOwner();
 
             if ($owner === null) {
+                if ($class->owner_type !== null || $class->owner_id !== null) {
+                    throw new AuthorizationException('Cannot write owned tax classes without an owner context.');
+                }
+
                 return;
             }
 
@@ -94,7 +98,12 @@ class TaxClass extends Model
      */
     public static function getDefault(): ?self
     {
-        return static::default()->first();
+        /** @var self|null $class */
+        $class = TaxOwnerScope::applyToOwnedQuery(static::query())
+            ->default()
+            ->first();
+
+        return $class;
     }
 
     /**
@@ -102,7 +111,12 @@ class TaxClass extends Model
      */
     public static function findBySlug(string $slug): ?self
     {
-        return static::where('slug', $slug)->first();
+        /** @var self|null $class */
+        $class = TaxOwnerScope::applyToOwnedQuery(static::query())
+            ->where('slug', $slug)
+            ->first();
+
+        return $class;
     }
 
     public function getTable(): string

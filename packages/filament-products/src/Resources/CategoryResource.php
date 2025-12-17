@@ -218,23 +218,23 @@ class CategoryResource extends Resource
                     ->options(fn () => ['0' => 'Root Categories'] + Category::query()->forOwner()->whereNull('parent_id')->pluck('name', 'id')->toArray()),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('add_child')
+                \Filament\Actions\ViewAction::make(),
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\Action::make('add_child')
                     ->label('Add Child')
                     ->icon('heroicon-o-plus')
                     ->url(fn ($record) => static::getUrl('create', ['parent' => $record->id])),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\BulkAction::make('show')
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
+                    \Filament\Actions\BulkAction::make('show')
                         ->label('Make Visible')
                         ->icon('heroicon-o-eye')
                         ->action(
                             fn (\Illuminate\Support\Collection $records) => $records->each->update(['is_visible' => true])
                         ),
-                    Tables\Actions\BulkAction::make('hide')
+                    \Filament\Actions\BulkAction::make('hide')
                         ->label('Make Hidden')
                         ->icon('heroicon-o-eye-slash')
                         ->action(

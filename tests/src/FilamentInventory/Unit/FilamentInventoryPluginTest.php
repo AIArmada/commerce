@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\FilamentInventory\FilamentInventoryPlugin;
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource;
@@ -14,7 +13,7 @@ use AIArmada\FilamentInventory\Widgets\InventoryStatsWidget;
 use AIArmada\FilamentInventory\Widgets\LowInventoryAlertsWidget;
 use Filament\Panel;
 
-uses(InventoryTestCase::class);
+
 
 it('exposes a stable plugin id', function (): void {
     expect((new FilamentInventoryPlugin)->getId())->toBe('filament-inventory');

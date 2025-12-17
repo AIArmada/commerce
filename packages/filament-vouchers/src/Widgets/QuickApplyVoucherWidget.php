@@ -57,8 +57,7 @@ final class QuickApplyVoucherWidget extends Widget implements HasForms
                     )
                     ->hint('Press Enter or click Apply')
                     ->live(onBlur: false),
-            ])
-            ->statePath('data');
+            ]);
     }
 
     public function applyVoucher(): void

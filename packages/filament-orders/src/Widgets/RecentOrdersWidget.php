@@ -62,7 +62,7 @@ class RecentOrdersWidget extends BaseWidget
                     ->sortable(),
             ])
             ->actions([
-                Tables\Actions\Action::make('view')
+                \Filament\Actions\Action::make('view')
                     ->label('View')
                     ->icon('heroicon-o-eye')
                     ->url(fn (Order $record) => OrderResource::getUrl('view', ['record' => $record]))

@@ -7,6 +7,8 @@ namespace AIArmada\Shipping\Services;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Models\ShippingRate;
 use AIArmada\Shipping\Models\ShippingZone;
+use AIArmada\Shipping\Support\ShippingOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
 
 /**
@@ -59,10 +61,7 @@ class ShippingZoneResolver
             ->active()
             ->ordered();
 
-        if ($ownerId !== null && $ownerType !== null) {
-            $query->where('owner_id', $ownerId)
-                ->where('owner_type', $ownerType);
-        }
+        $query = $this->applyOwnerScope($query, $ownerId, $ownerType);
 
         return $query->get()
             ->filter(fn (ShippingZone $zone) => $zone->matchesAddress($address) || $zone->is_default);
@@ -136,10 +135,7 @@ class ShippingZoneResolver
             ->active()
             ->ordered();
 
-        if ($ownerId !== null && $ownerType !== null) {
-            $query->where('owner_id', $ownerId)
-                ->where('owner_type', $ownerType);
-        }
+        $query = $this->applyOwnerScope($query, $ownerId, $ownerType);
 
         $zones = $query->get();
 
@@ -156,8 +152,45 @@ class ShippingZoneResolver
     /**
      * Build a cache key from address and owner parameters.
      */
+    /**
+     * @param  \Illuminate\Database\Eloquent\Builder<ShippingZone>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<ShippingZone>
+     */
+    private function applyOwnerScope(\Illuminate\Database\Eloquent\Builder $query, ?string $ownerId, ?string $ownerType): \Illuminate\Database\Eloquent\Builder
+    {
+        if (! ShippingOwnerScope::isEnabled()) {
+            if ($ownerId !== null && $ownerType !== null) {
+                $query->where('owner_id', $ownerId)
+                    ->where('owner_type', $ownerType);
+            }
+
+            return $query;
+        }
+
+        $owner = ShippingOwnerScope::resolveOwner();
+
+        if ($ownerId !== null || $ownerType !== null) {
+            if ($owner === null) {
+                throw new AuthorizationException('Cannot scope shipping zones to an owner without an owner context.');
+            }
+
+            if ($ownerId !== $owner->getKey() || $ownerType !== $owner->getMorphClass()) {
+                throw new AuthorizationException('Cannot scope shipping zones outside the current owner context.');
+            }
+        }
+
+        return ShippingOwnerScope::applyToOwnedQuery($query);
+    }
+
     private function buildCacheKey(AddressData $address, ?string $ownerId, ?string $ownerType): string
     {
+        if (ShippingOwnerScope::isEnabled()) {
+            $owner = ShippingOwnerScope::resolveOwner();
+
+            $ownerId = $owner?->getKey();
+            $ownerType = $owner?->getMorphClass();
+        }
+
         return md5(serialize([
             'country' => $address->countryCode,
             'state' => $address->state,

@@ -15,8 +15,6 @@ describe('CreateShipment Action', function (): void {
             'carrier_code' => 'test-carrier',
             'origin_address' => ['name' => 'Origin'],
             'destination_address' => ['name' => 'Dest'],
-            'owner_type' => 'TestOwner',
-            'owner_id' => 'test-owner-123',
         ];
 
         $shipment = $action->handle($data);
@@ -46,8 +44,6 @@ describe('CreateShipment Action', function (): void {
             'metadata' => ['test' => 'data'],
             'shippable_type' => 'Order',
             'shippable_id' => 123,
-            'owner_type' => 'TestOwner',
-            'owner_id' => 'test-owner-123',
         ];
 
         $shipment = $action->handle($data);
@@ -74,8 +70,6 @@ describe('CreateShipment Action', function (): void {
             'carrier_code' => 'test-carrier',
             'origin_address' => ['name' => 'Origin'],
             'destination_address' => ['name' => 'Dest'],
-            'owner_type' => 'TestOwner',
-            'owner_id' => 'test-owner-123',
         ];
 
         $shipment = $action->handle($data);
@@ -93,8 +87,6 @@ describe('CreateShipment Action', function (): void {
             'status' => 'shipped',
             'origin_address' => ['name' => 'Origin'],
             'destination_address' => ['name' => 'Dest'],
-            'owner_type' => 'TestOwner',
-            'owner_id' => 'test-owner-123',
         ];
 
         $shipment = $action->handle($data);
@@ -111,8 +103,6 @@ describe('CreateShipment Action', function (): void {
             'status' => 'invalid-status',
             'origin_address' => ['name' => 'Origin'],
             'destination_address' => ['name' => 'Dest'],
-            'owner_type' => 'TestOwner',
-            'owner_id' => 'test-owner-123',
         ];
 
         $shipment = $action->handle($data);

@@ -6,7 +6,10 @@ namespace AIArmada\Shipping\Actions;
 
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Support\ShippingOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -24,7 +27,28 @@ final class CreateShipment
      */
     public function handle(array $data): Shipment
     {
+        Validator::make($data, [
+            'carrier_code' => ['required', 'string'],
+            'origin_address' => ['required', 'array'],
+            'destination_address' => ['required', 'array'],
+        ])->validate();
+
         return DB::transaction(function () use ($data): Shipment {
+            $owner = ShippingOwnerScope::resolveOwner();
+
+            if (array_key_exists('owner_id', $data) || array_key_exists('owner_type', $data)) {
+                $providedOwnerId = $data['owner_id'] ?? null;
+                $providedOwnerType = $data['owner_type'] ?? null;
+
+                if ($owner === null) {
+                    if ($providedOwnerId !== null || $providedOwnerType !== null) {
+                        throw new AuthorizationException('Cannot assign an owner without an owner context.');
+                    }
+                } elseif ($providedOwnerId !== $owner->getKey() || $providedOwnerType !== $owner->getMorphClass()) {
+                    throw new AuthorizationException('Cannot assign an owner outside the current owner context.');
+                }
+            }
+
             $status = $data['status'] ?? ShipmentStatus::Draft;
 
             if (is_string($status)) {
@@ -49,8 +73,8 @@ final class CreateShipment
                 'metadata' => $data['metadata'] ?? null,
                 'shippable_type' => $data['shippable_type'] ?? null,
                 'shippable_id' => $data['shippable_id'] ?? null,
-                'owner_type' => $data['owner_type'] ?? null,
-                'owner_id' => $data['owner_id'] ?? null,
+                'owner_type' => $owner?->getMorphClass(),
+                'owner_id' => $owner?->getKey(),
             ]);
 
             return $shipment;
@@ -59,7 +83,7 @@ final class CreateShipment
 
     private function generateReference(): string
     {
-        $prefix = config('shipping.defaults.reference_prefix', config('shipping.reference_prefix', 'SHP-'));
+        $prefix = config('shipping.defaults.reference_prefix', 'SHP-');
 
         return $prefix . Str::upper(Str::random(10));
     }

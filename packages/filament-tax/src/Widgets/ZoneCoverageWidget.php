@@ -23,7 +23,15 @@ class ZoneCoverageWidget extends Widget
     protected function getViewData(): array
     {
         $zones = TaxOwnerScope::applyToOwnedQuery(TaxZone::query())
-            ->with('rates')
+            ->with([
+                'rates' => function ($query): void {
+                    $builder = $query instanceof \Illuminate\Database\Eloquent\Relations\Relation
+                        ? $query->getQuery()
+                        : $query;
+
+                    TaxOwnerScope::applyToOwnedQuery($builder);
+                },
+            ])
             ->active()
             ->orderBy('priority', 'desc')
             ->get();

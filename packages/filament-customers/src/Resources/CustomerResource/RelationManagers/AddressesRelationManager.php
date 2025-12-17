@@ -132,25 +132,25 @@ class AddressesRelationManager extends RelationManager
                     ),
             ])
             ->headerActions([
-                Tables\Actions\CreateAction::make(),
+                \Filament\Actions\CreateAction::make(),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('set_billing')
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\Action::make('set_billing')
                     ->label('Set as Billing')
                     ->icon('heroicon-o-credit-card')
                     ->action(fn ($record) => $record->setAsDefaultBilling())
                     ->visible(fn ($record) => ! $record->is_default_billing),
-                Tables\Actions\Action::make('set_shipping')
+                \Filament\Actions\Action::make('set_shipping')
                     ->label('Set as Shipping')
                     ->icon('heroicon-o-truck')
                     ->action(fn ($record) => $record->setAsDefaultShipping())
                     ->visible(fn ($record) => ! $record->is_default_shipping),
-                Tables\Actions\DeleteAction::make(),
+                \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

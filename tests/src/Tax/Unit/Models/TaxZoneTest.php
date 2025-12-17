@@ -8,6 +8,8 @@ use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 class TaxZoneTest extends TaxTestCase
 {
@@ -317,12 +319,22 @@ class TaxZoneTest extends TaxTestCase
             'is_active' => true,
         ]);
 
-        TaxZone::create([
-            'name' => 'Owned Zone',
-            'code' => 'OWNED',
+        DB::table((new TaxZone)->getTable())->insert([
+            'id' => (string) Str::uuid(),
             'owner_type' => 'App\\Models\\Store',
             'owner_id' => '123',
+            'name' => 'Owned Zone',
+            'code' => 'OWNED',
+            'description' => null,
+            'type' => 'country',
+            'countries' => null,
+            'states' => null,
+            'postcodes' => null,
+            'priority' => 0,
+            'is_default' => false,
             'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         // When owner is null and includeGlobal=true (default), returns records where owner_id is null
@@ -380,20 +392,40 @@ class TaxZoneTest extends TaxTestCase
             'is_active' => true,
         ]);
 
-        TaxZone::create([
-            'name' => 'Owned Zone',
-            'code' => 'OWNED',
+        DB::table((new TaxZone)->getTable())->insert([
+            'id' => (string) Str::uuid(),
             'owner_type' => 'App\\Models\\Store',
             'owner_id' => '123',
+            'name' => 'Owned Zone',
+            'code' => 'OWNED',
+            'description' => null,
+            'type' => 'country',
+            'countries' => null,
+            'states' => null,
+            'postcodes' => null,
+            'priority' => 0,
+            'is_default' => false,
             'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
-        TaxZone::create([
-            'name' => 'Other Owner Zone',
-            'code' => 'OTHER',
+        DB::table((new TaxZone)->getTable())->insert([
+            'id' => (string) Str::uuid(),
             'owner_type' => 'App\\Models\\Store',
             'owner_id' => '456',
+            'name' => 'Other Owner Zone',
+            'code' => 'OTHER',
+            'description' => null,
+            'type' => 'country',
+            'countries' => null,
+            'states' => null,
+            'postcodes' => null,
+            'priority' => 0,
+            'is_default' => false,
             'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         $zones = TaxZone::forOwner($owner, includeGlobal: true)->get();
@@ -433,12 +465,22 @@ class TaxZoneTest extends TaxTestCase
             'is_active' => true,
         ]);
 
-        TaxZone::create([
-            'name' => 'Owned Zone',
-            'code' => 'OWNED',
+        DB::table((new TaxZone)->getTable())->insert([
+            'id' => (string) Str::uuid(),
             'owner_type' => 'App\\Models\\Store',
             'owner_id' => '123',
+            'name' => 'Owned Zone',
+            'code' => 'OWNED',
+            'description' => null,
+            'type' => 'country',
+            'countries' => null,
+            'states' => null,
+            'postcodes' => null,
+            'priority' => 0,
+            'is_default' => false,
             'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
         ]);
 
         $zones = TaxZone::forOwner($owner, includeGlobal: false)->get();

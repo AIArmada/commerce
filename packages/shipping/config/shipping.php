@@ -34,6 +34,7 @@ return [
     */
     'defaults' => [
         'currency' => 'MYR',
+        'weight_unit' => 'g',
         'reference_prefix' => env('SHIPPING_REFERENCE_PREFIX', 'SHP-'),
         'origin' => [
             'name' => env('SHIPPING_ORIGIN_NAME', env('APP_NAME', 'Store')),
@@ -43,6 +44,18 @@ return [
             'country_code' => env('SHIPPING_ORIGIN_COUNTRY_CODE', 'MYS'),
             'state' => env('SHIPPING_ORIGIN_STATE'),
             'city' => env('SHIPPING_ORIGIN_CITY'),
+        ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Features
+    |--------------------------------------------------------------------------
+    */
+    'features' => [
+        'owner' => [
+            'enabled' => env('SHIPPING_OWNER_ENABLED', false),
+            'include_global' => true,
         ],
     ],
 

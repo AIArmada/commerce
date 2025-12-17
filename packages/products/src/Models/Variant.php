@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Models;
 
+use AIArmada\Pricing\Contracts\Priceable;
 use AIArmada\Products\Traits\HasAttributes;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -37,7 +38,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Collection<int, \Spatie\MediaLibrary\MediaCollections\Models\Media> $display_images
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AttributeValue> $attributeValues
  */
-class Variant extends Model implements HasMedia
+class Variant extends Model implements HasMedia, Priceable
 {
     use HasAttributes;
     use HasFactory;
@@ -168,6 +169,43 @@ class Variant extends Model implements HasMedia
     public function getEffectiveComparePrice(): ?int
     {
         return $this->compare_price ?? $this->product->compare_price;
+    }
+
+    public function getBuyableIdentifier(): string
+    {
+        return (string) $this->getKey();
+    }
+
+    public function getBasePrice(): int
+    {
+        return $this->getEffectivePrice();
+    }
+
+    public function getComparePrice(): ?int
+    {
+        return $this->getEffectiveComparePrice();
+    }
+
+    public function isOnSale(): bool
+    {
+        $comparePrice = $this->getComparePrice();
+
+        if ($comparePrice === null) {
+            return false;
+        }
+
+        return $comparePrice > $this->getBasePrice();
+    }
+
+    public function getDiscountPercentage(): ?float
+    {
+        $comparePrice = $this->getComparePrice();
+
+        if (! $this->isOnSale() || $comparePrice === null || $comparePrice === 0) {
+            return null;
+        }
+
+        return (1 - ($this->getBasePrice() / $comparePrice)) * 100;
     }
 
     /**

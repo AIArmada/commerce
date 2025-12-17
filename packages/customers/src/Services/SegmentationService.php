@@ -29,9 +29,7 @@ class SegmentationService
     {
         $query = Segment::query()->active()->automatic();
 
-        if ($owner) {
-            $query->forOwner($owner);
-        }
+        $query->forOwner($owner, includeGlobal: false);
 
         $results = [];
 
@@ -63,17 +61,24 @@ class SegmentationService
         // Sync the segment
         $segment->customers()->sync($newCustomerIds);
 
-        // Fire events for changes
+        // Fire events for changes (batch-loaded)
+        $customersById = Customer::query()
+            ->whereIn('id', array_values(array_unique(array_merge($addedIds, $removedIds))))
+            ->get()
+            ->keyBy('id');
+
         foreach ($addedIds as $customerId) {
-            $customer = Customer::find($customerId);
-            if ($customer) {
+            /** @var Customer|null $customer */
+            $customer = $customersById->get($customerId);
+            if ($customer !== null) {
                 event(new CustomerSegmentChanged($customer, $segment, 'added'));
             }
         }
 
         foreach ($removedIds as $customerId) {
-            $customer = Customer::find($customerId);
-            if ($customer) {
+            /** @var Customer|null $customer */
+            $customer = $customersById->get($customerId);
+            if ($customer !== null) {
                 event(new CustomerSegmentChanged($customer, $segment, 'removed'));
             }
         }
@@ -88,10 +93,14 @@ class SegmentationService
      */
     public function evaluateCustomer(Customer $customer): Collection
     {
+        if (! config('customers.segments.auto_assign', true)) {
+            return collect();
+        }
+
         $automaticSegments = Segment::query()
             ->active()
             ->automatic()
-            ->forOwner($customer->owner)
+            ->forOwner($customer->owner, includeGlobal: false)
             ->get();
 
         $matchingSegments = collect();
@@ -123,16 +132,24 @@ class SegmentationService
         $addedIds = array_diff($newAutoSegmentIds, $currentAutoSegmentIds);
         $removedIds = array_diff($currentAutoSegmentIds, $newAutoSegmentIds);
 
+        $segmentsById = Segment::query()
+            ->forOwner($customer->owner, includeGlobal: false)
+            ->whereIn('id', array_values(array_unique(array_merge($addedIds, $removedIds))))
+            ->get()
+            ->keyBy('id');
+
         foreach ($addedIds as $segmentId) {
-            $segment = Segment::find($segmentId);
-            if ($segment) {
+            /** @var Segment|null $segment */
+            $segment = $segmentsById->get($segmentId);
+            if ($segment !== null) {
                 event(new CustomerSegmentChanged($customer, $segment, 'added'));
             }
         }
 
         foreach ($removedIds as $segmentId) {
-            $segment = Segment::find($segmentId);
-            if ($segment) {
+            /** @var Segment|null $segment */
+            $segment = $segmentsById->get($segmentId);
+            if ($segment !== null) {
                 event(new CustomerSegmentChanged($customer, $segment, 'removed'));
             }
         }
@@ -165,6 +182,10 @@ class SegmentationService
      */
     public function addToSegment(Customer $customer, Segment $segment): bool
     {
+        if (! $this->customerAndSegmentShareOwner($customer, $segment)) {
+            return false;
+        }
+
         if ($customer->segments()->where('segment_id', $segment->id)->exists()) {
             return false;
         }
@@ -180,6 +201,10 @@ class SegmentationService
      */
     public function removeFromSegment(Customer $customer, Segment $segment): bool
     {
+        if (! $this->customerAndSegmentShareOwner($customer, $segment)) {
+            return false;
+        }
+
         if (! $customer->segments()->where('segment_id', $segment->id)->exists()) {
             return false;
         }
@@ -250,7 +275,17 @@ class SegmentationService
             'accepts_marketing' => $customer->accepts_marketing === (bool) $value,
             'is_tax_exempt' => $customer->is_tax_exempt === (bool) $value,
             'status' => $customer->status->value === $value,
-            default => data_get($customer, $field) === $value,
+            default => false,
         };
+    }
+
+    private function customerAndSegmentShareOwner(Customer $customer, Segment $segment): bool
+    {
+        if ($segment->owner_type === null && $segment->owner_id === null) {
+            return $customer->owner_type === null && $customer->owner_id === null;
+        }
+
+        return $customer->owner_type === $segment->owner_type
+            && $customer->owner_id === $segment->owner_id;
     }
 }

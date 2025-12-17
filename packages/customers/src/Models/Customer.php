@@ -12,6 +12,7 @@ use AIArmada\Customers\Events\CustomerUpdated;
 use AIArmada\Customers\Events\WalletCreditAdded;
 use AIArmada\Customers\Events\WalletCreditDeducted;
 use Akaunting\Money\Money;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -27,7 +28,7 @@ use Spatie\Tags\HasTags;
  * @property string $id
  * @property string|null $owner_type
  * @property string|null $owner_id
- * @property int|null $user_id
+ * @property string|null $user_id
  * @property string $first_name
  * @property string $last_name
  * @property string $email
@@ -224,6 +225,19 @@ class Customer extends Model implements HasMedia
      */
     public function addCredit(int $amountInCents, ?string $reason = null): bool
     {
+        if (! config('customers.wallet.enabled', true)) {
+            return false;
+        }
+
+        if ($amountInCents <= 0) {
+            return false;
+        }
+
+        $minTopup = (int) config('customers.wallet.min_topup', 0);
+        if ($minTopup > 0 && $amountInCents < $minTopup) {
+            return false;
+        }
+
         $maxBalance = config('customers.wallet.max_balance', 100000_00);
 
         if (($this->wallet_balance + $amountInCents) > $maxBalance) {
@@ -242,6 +256,14 @@ class Customer extends Model implements HasMedia
      */
     public function deductCredit(int $amountInCents, ?string $reason = null): bool
     {
+        if (! config('customers.wallet.enabled', true)) {
+            return false;
+        }
+
+        if ($amountInCents <= 0) {
+            return false;
+        }
+
         if ($this->wallet_balance < $amountInCents) {
             return false;
         }
@@ -348,29 +370,49 @@ class Customer extends Model implements HasMedia
     // SCOPES
     // =========================================================================
 
-    public function scopeActive($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeActive(Builder $query): Builder
     {
         return $query->where('status', CustomerStatus::Active);
     }
 
-    public function scopeAcceptsMarketing($query)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeAcceptsMarketing(Builder $query): Builder
     {
         return $query->where('accepts_marketing', true);
     }
 
-    public function scopeHighValue($query, int $minLifetimeValue = 1000_00)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeHighValue(Builder $query, int $minLifetimeValue = 1000_00): Builder
     {
         return $query->where('lifetime_value', '>=', $minLifetimeValue);
     }
 
-    public function scopeInSegment($query, string | Segment $segment)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeInSegment(Builder $query, string | Segment $segment): Builder
     {
         $segmentId = $segment instanceof Segment ? $segment->id : $segment;
 
         return $query->whereHas('segments', fn ($q) => $q->where('segment_id', $segmentId));
     }
 
-    public function scopeRecentlyActive($query, int $days = 30)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeRecentlyActive(Builder $query, int $days = 30): Builder
     {
         return $query->where('last_login_at', '>=', now()->subDays($days));
     }
@@ -423,7 +465,11 @@ class Customer extends Model implements HasMedia
      * @param  \Illuminate\Database\Eloquent\Builder<self>  $query
      * @return \Illuminate\Database\Eloquent\Builder<self>
      */
-    public function scopeWithSegmentTag($query, string $tag)
+    /**
+     * @param  Builder<self>  $query
+     * @return Builder<self>
+     */
+    public function scopeWithSegmentTag(Builder $query, string $tag): Builder
     {
         return $query->withAnyTags([$tag], 'segments');
     }
