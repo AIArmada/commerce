@@ -41,14 +41,17 @@ class PriceListResource extends Resource
         /** @var Builder<PriceList> $query */
         $query = parent::getEloquentQuery();
 
-        if (! (bool) config('pricing.owner.enabled', false)) {
+        if (! (bool) config('pricing.features.owner.enabled', false)) {
             return $query;
         }
 
         $owner = self::resolveOwner();
 
         /** @var Builder<PriceList> $scoped */
-        $scoped = $query->forOwner($owner);
+        $scoped = $query->forOwner(
+            $owner,
+            (bool) config('pricing.features.owner.include_global', true),
+        );
 
         return $scoped;
     }

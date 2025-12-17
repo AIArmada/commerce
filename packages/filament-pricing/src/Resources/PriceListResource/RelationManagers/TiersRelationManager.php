@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Resources\PriceListResource\RelationManagers;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -13,6 +14,8 @@ use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 
 class TiersRelationManager extends RelationManager
 {
@@ -28,37 +31,92 @@ class TiersRelationManager extends RelationManager
             ->schema([
                 Section::make('Tier Configuration')
                     ->schema([
-                        Forms\Components\Select::make('priceable_type')
+                        Forms\Components\Select::make('tierable_type')
                             ->label('Apply To')
                             ->options([
-                                'AIArmada\\Products\\Models\\Product' => 'Product',
-                                'AIArmada\\Products\\Models\\Variant' => 'Variant',
+                                \AIArmada\Products\Models\Product::class => 'Product',
+                                \AIArmada\Products\Models\Variant::class => 'Variant',
                             ])
                             ->required()
                             ->live()
-                            ->default('AIArmada\\Products\\Models\\Product'),
+                            ->default(\AIArmada\Products\Models\Product::class),
 
-                        Forms\Components\Select::make('priceable_id')
+                        Forms\Components\Select::make('tierable_id')
                             ->label('Product/Variant')
                             ->searchable()
                             ->required()
-                            ->options(function (Get $get) {
-                                $type = $get('priceable_type');
+                            ->getSearchResultsUsing(function (string $search, Get $get): array {
+                                $type = $get('tierable_type');
 
-                                if ($type === 'AIArmada\\Products\\Models\\Product') {
-                                    return \AIArmada\Products\Models\Product::pluck('name', 'id');
+                                /** @var Model|null $owner */
+                                $owner = app(OwnerResolverInterface::class)->resolve();
+
+                                if ($type === \AIArmada\Products\Models\Product::class) {
+                                    return \AIArmada\Products\Models\Product::query()
+                                        /** @phpstan-ignore-next-line */
+                                        ->forOwner($owner)
+                                        ->where('name', 'like', "%{$search}%")
+                                        ->limit(50)
+                                        ->pluck('name', 'id')
+                                        ->toArray();
                                 }
 
-                                if ($type === 'AIArmada\\Products\\Models\\Variant') {
-                                    return \AIArmada\Products\Models\Variant::with('product')
+                                if ($type === \AIArmada\Products\Models\Variant::class) {
+                                    return \AIArmada\Products\Models\Variant::query()
+                                        ->with('product')
+                                        ->whereHas('product', function (Builder $query) use ($owner): void {
+                                            /** @phpstan-ignore-next-line */
+                                            $query->forOwner($owner);
+                                        })
+                                        ->where(function (Builder $query) use ($search): void {
+                                            $query->where('sku', 'like', "%{$search}%")
+                                                ->orWhereHas('product', fn (Builder $inner) => $inner->where('name', 'like', "%{$search}%"));
+                                        })
+                                        ->limit(50)
                                         ->get()
-                                        ->mapWithKeys(fn ($v) => [
-                                            $v->id => $v->product->name . ' - ' . $v->sku,
-                                        ]);
+                                        ->mapWithKeys(fn ($v): array => [$v->id => $v->product->name . ' - ' . $v->sku])
+                                        ->toArray();
                                 }
 
                                 return [];
-                            }),
+                            })
+                            ->getOptionLabelUsing(function ($value, Get $get): ?string {
+                                if ($value === null) {
+                                    return null;
+                                }
+
+                                $type = $get('tierable_type');
+
+                                /** @var Model|null $owner */
+                                $owner = app(OwnerResolverInterface::class)->resolve();
+
+                                if (! is_string($type) || ! class_exists($type) || ! is_a($type, Model::class, true)) {
+                                    return null;
+                                }
+
+                                /** @var Builder<Model> $query */
+                                $query = $type::query();
+
+                                if (method_exists($type, 'scopeForOwner')) {
+                                    /** @phpstan-ignore-next-line */
+                                    $query = $query->forOwner($owner);
+                                }
+
+                                $record = $query->whereKey($value)->first();
+
+                                if (! $record) {
+                                    return null;
+                                }
+
+                                if ($record instanceof \AIArmada\Products\Models\Variant) {
+                                    $record->loadMissing('product');
+
+                                    return $record->product->name . ' - ' . $record->sku;
+                                }
+
+                                return (string) ($record->name ?? $record->sku ?? $record->getKey());
+                            })
+                            ->columnSpanFull(),
 
                         Grid::make(3)
                             ->schema([
@@ -67,14 +125,12 @@ class TiersRelationManager extends RelationManager
                                     ->numeric()
                                     ->required()
                                     ->minValue(1)
-                                    ->default(1)
-                                    ->helperText('Start of this tier range'),
+                                    ->default(1),
 
                                 Forms\Components\TextInput::make('max_quantity')
                                     ->label('Maximum Quantity')
                                     ->numeric()
                                     ->minValue(1)
-                                    ->helperText('Leave empty for unlimited')
                                     ->nullable(),
 
                                 Forms\Components\Placeholder::make('range_display')
@@ -91,51 +147,32 @@ class TiersRelationManager extends RelationManager
 
                 Section::make('Pricing')
                     ->schema([
-                        Forms\Components\Radio::make('pricing_type')
-                            ->label('Pricing Type')
+                        Forms\Components\TextInput::make('amount')
+                            ->label('Amount (cents)')
+                            ->numeric()
+                            ->required(),
+
+                        Forms\Components\Select::make('discount_type')
+                            ->label('Discount Type')
                             ->options([
-                                'fixed_price' => 'Fixed Price',
-                                'percentage_discount' => 'Percentage Discount',
-                                'fixed_discount' => 'Fixed Discount',
+                                'percentage' => 'Percentage',
+                                'fixed' => 'Fixed (cents)',
                             ])
-                            ->required()
-                            ->live()
-                            ->default('fixed_price')
-                            ->inline()
-                            ->columnSpanFull(),
+                            ->nullable(),
 
-                        Forms\Components\TextInput::make('price')
-                            ->label('Price per Unit')
+                        Forms\Components\TextInput::make('discount_value')
+                            ->label('Discount Value')
                             ->numeric()
-                            ->prefix('RM')
-                            ->required()
-                            ->visible(fn (Get $get) => $get('pricing_type') === 'fixed_price')
-                            ->helperText('Price for each unit in this tier'),
+                            ->nullable()
+                            ->helperText('Optional: describes the discount used to compute the tier amount.'),
 
-                        Forms\Components\TextInput::make('discount_percentage')
-                            ->label('Discount Percentage')
-                            ->numeric()
-                            ->suffix('%')
-                            ->required()
-                            ->minValue(0)
-                            ->maxValue(100)
-                            ->visible(fn (Get $get) => $get('pricing_type') === 'percentage_discount')
-                            ->helperText('Percentage off the original price'),
-
-                        Forms\Components\TextInput::make('discount_amount')
-                            ->label('Discount Amount')
-                            ->numeric()
-                            ->prefix('RM')
-                            ->required()
-                            ->minValue(0)
-                            ->visible(fn (Get $get) => $get('pricing_type') === 'fixed_discount')
-                            ->helperText('Fixed amount off per unit'),
-
-                        Forms\Components\Textarea::make('description')
-                            ->label('Tier Description')
-                            ->rows(2)
-                            ->placeholder('e.g., Bulk discount for large orders')
-                            ->columnSpanFull(),
+                        Forms\Components\Select::make('currency')
+                            ->options([
+                                'MYR' => 'MYR',
+                                'USD' => 'USD',
+                                'SGD' => 'SGD',
+                            ])
+                            ->default('MYR'),
                     ])
                     ->columns(2),
             ]);
@@ -146,19 +183,28 @@ class TiersRelationManager extends RelationManager
         return $table
             ->recordTitleAttribute('min_quantity')
             ->columns([
-                Tables\Columns\TextColumn::make('priceable.name')
-                    ->label('Product')
-                    ->searchable()
-                    ->sortable()
-                    ->description(
-                        fn ($record) => $record->priceable_type === 'AIArmada\\Products\\Models\\Variant'
-                        ? 'Variant: ' . $record->priceable->sku
-                        : null
-                    ),
+                Tables\Columns\TextColumn::make('tierable_type')
+                    ->label('Type')
+                    ->formatStateUsing(fn (string $state): string => class_basename($state)),
+
+                Tables\Columns\TextColumn::make('tierable_label')
+                    ->label('Item')
+                    ->state(function ($record): string {
+                        $record->loadMissing('tierable');
+
+                        if ($record->tierable_type === \AIArmada\Products\Models\Variant::class) {
+                            $record->tierable?->loadMissing('product');
+
+                            return ($record->tierable?->product?->name ?? 'Variant') . ' - ' . ($record->tierable?->sku ?? $record->tierable_id);
+                        }
+
+                        return (string) ($record->tierable?->name ?? $record->tierable_id);
+                    })
+                    ->wrap(),
 
                 Tables\Columns\TextColumn::make('quantity_range')
                     ->label('Quantity Range')
-                    ->state(function ($record) {
+                    ->state(function ($record): string {
                         return $record->max_quantity
                             ? "{$record->min_quantity} - {$record->max_quantity}"
                             : "{$record->min_quantity}+";
@@ -168,83 +214,48 @@ class TiersRelationManager extends RelationManager
 
                 Tables\Columns\TextColumn::make('pricing_type')
                     ->label('Type')
-                    ->formatStateUsing(fn (string $state): string => match ($state) {
-                        'fixed_price' => 'Fixed Price',
-                        'percentage_discount' => '% Discount',
-                        'fixed_discount' => 'Fixed Discount',
-                        default => $state,
+                    ->state(function ($record): string {
+                        if ($record->discount_type === 'percentage') {
+                            return 'Discount (%)';
+                        }
+
+                        if ($record->discount_type === 'fixed') {
+                            return 'Discount (fixed)';
+                        }
+
+                        return 'Fixed Price';
                     })
-                    ->badge()
-                    ->color(fn (string $state): string => match ($state) {
-                        'fixed_price' => 'success',
-                        'percentage_discount' => 'warning',
-                        'fixed_discount' => 'danger',
-                        default => 'gray',
-                    }),
+                    ->badge(),
 
-                Tables\Columns\TextColumn::make('price')
-                    ->label('Price')
-                    ->money('MYR')
-                    ->visible(fn ($record) => $record->pricing_type === 'fixed_price'),
+                Tables\Columns\TextColumn::make('amount')
+                    ->label('Amount')
+                    ->money('MYR', divideBy: 100)
+                    ->sortable(),
 
-                Tables\Columns\TextColumn::make('discount_percentage')
+                Tables\Columns\TextColumn::make('discount_value')
                     ->label('Discount')
-                    ->suffix('%')
-                    ->visible(fn ($record) => $record->pricing_type === 'percentage_discount'),
+                    ->state(function ($record): ?string {
+                        if ($record->discount_type === 'percentage' && $record->discount_value !== null) {
+                            return (string) $record->discount_value . '%';
+                        }
 
-                Tables\Columns\TextColumn::make('discount_amount')
-                    ->label('Discount')
-                    ->money('MYR')
-                    ->visible(fn ($record) => $record->pricing_type === 'fixed_discount'),
+                        if ($record->discount_type === 'fixed' && $record->discount_value !== null) {
+                            return 'RM ' . number_format($record->discount_value / 100, 2);
+                        }
 
-                Tables\Columns\TextColumn::make('description')
-                    ->label('Description')
-                    ->limit(30)
-                    ->tooltip(fn ($record) => $record->description)
-                    ->toggleable(),
+                        return null;
+                    })
+                    ->placeholder('-'),
             ])
             ->defaultSort('min_quantity', 'asc')
             ->filters([
                 //
             ])
             ->headerActions([
-                Actions\CreateAction::make()
-                    ->mutateFormDataUsing(function (array $data): array {
-                        // Convert cents to display format if needed
-                        if (isset($data['price'])) {
-                            $data['price'] *= 100;
-                        }
-                        if (isset($data['discount_amount'])) {
-                            $data['discount_amount'] *= 100;
-                        }
-
-                        return $data;
-                    }),
+                Actions\CreateAction::make(),
             ])
             ->actions([
-                Actions\EditAction::make()
-                    ->mutateFormDataUsing(function (array $data): array {
-                        // Convert to cents
-                        if (isset($data['price'])) {
-                            $data['price'] *= 100;
-                        }
-                        if (isset($data['discount_amount'])) {
-                            $data['discount_amount'] *= 100;
-                        }
-
-                        return $data;
-                    })
-                    ->mutateRecordDataUsing(function (array $data): array {
-                        // Convert from cents for display
-                        if (isset($data['price'])) {
-                            $data['price'] /= 100;
-                        }
-                        if (isset($data['discount_amount'])) {
-                            $data['discount_amount'] /= 100;
-                        }
-
-                        return $data;
-                    }),
+                Actions\EditAction::make(),
                 Actions\DeleteAction::make(),
             ])
             ->bulkActions([

@@ -10,14 +10,14 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table(config('pricing.tables.promotions', 'promotions'), function (Blueprint $table): void {
+        Schema::table(config('pricing.database.tables.promotions', 'promotions'), function (Blueprint $table): void {
             $table->nullableMorphs('owner');
         });
     }
 
     public function down(): void
     {
-        Schema::table(config('pricing.tables.promotions', 'promotions'), function (Blueprint $table): void {
+        Schema::table(config('pricing.database.tables.promotions', 'promotions'), function (Blueprint $table): void {
             $table->dropMorphs('owner');
         });
     }

@@ -8,7 +8,7 @@ use AIArmada\Pricing\Models\Promotion;
 
 describe('Pricing owner scoping', function (): void {
     beforeEach(function (): void {
-        config()->set('pricing.owner.enabled', true);
+        config()->set('pricing.features.owner.enabled', true);
     });
 
     it('scopes PriceList owner=null to global-only records', function (): void {

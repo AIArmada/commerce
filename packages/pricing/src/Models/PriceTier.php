@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\Pricing\Support\PricingOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -28,6 +32,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class PriceTier extends Model
 {
+    use HasOwner;
     use HasUuids;
     use LogsActivity;
 
@@ -53,7 +58,61 @@ class PriceTier extends Model
 
     public function getTable(): string
     {
-        return config('pricing.tables.price_tiers', 'price_tiers');
+        return config('pricing.database.tables.price_tiers', 'price_tiers');
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $tier): void {
+            if (! PricingOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $owner = PricingOwnerScope::resolveOwner();
+
+            if ($owner !== null) {
+                if ($tier->owner_type === null && $tier->owner_id === null) {
+                    $tier->assignOwner($owner);
+                }
+
+                if (! $tier->belongsToOwner($owner)) {
+                    throw new AuthorizationException('Cannot write price tiers outside the current owner scope.');
+                }
+            }
+
+            if ($tier->price_list_id !== null) {
+                $priceListQuery = $owner === null
+                    ? PriceList::query()
+                    : PricingOwnerScope::applyToOwnedQuery(PriceList::query());
+
+                $priceListExists = $priceListQuery
+                    ->whereKey($tier->price_list_id)
+                    ->exists();
+
+                if (! $priceListExists) {
+                    throw new AuthorizationException('Price list is not accessible in the current owner scope.');
+                }
+            }
+
+            $type = $tier->tierable_type;
+
+            if ($owner !== null && is_string($type) && class_exists($type) && is_a($type, Model::class, true)) {
+                $usesHasOwner = in_array(HasOwner::class, class_uses_recursive($type), true);
+
+                if ($usesHasOwner) {
+                    /** @var Builder<Model> $query */
+                    $query = $type::query();
+
+                    $exists = PricingOwnerScope::applyToOwnedQuery($query)
+                        ->whereKey($tier->tierable_id)
+                        ->exists();
+
+                    if (! $exists) {
+                        throw new AuthorizationException('Tierable entity is not accessible in the current owner scope.');
+                    }
+                }
+            }
+        });
     }
 
     // =========================================================================

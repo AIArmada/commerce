@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('pricing.tables.price_lists', 'price_lists'), function (Blueprint $table): void {
+        Schema::create(config('pricing.database.tables.price_lists', 'price_lists'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->string('name');
             $table->string('slug')->unique();
@@ -40,6 +40,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('pricing.tables.price_lists', 'price_lists'));
+        Schema::dropIfExists(config('pricing.database.tables.price_lists', 'price_lists'));
     }
 };
