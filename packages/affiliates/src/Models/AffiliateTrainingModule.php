@@ -59,7 +59,7 @@ class AffiliateTrainingModule extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.training_modules', 'affiliate_training_modules');
+        return config('affiliates.database.tables.training_modules', 'affiliate_training_modules');
     }
 
     /**

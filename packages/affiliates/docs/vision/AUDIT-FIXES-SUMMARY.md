@@ -15,15 +15,20 @@ status: COMPLETED
 
 ## OVERVIEW
 
-Following the comprehensive full-spectrum audit documented in `AUDIT.md`, all **CRITICAL** and **HIGH SEVERITY** issues have been resolved, along with several **MEDIUM SEVERITY** improvements. One issue was identified as a false positive and reverted.
+Following the comprehensive full-spectrum audit documented in `AUDIT.md`, all **CRITICAL** and **HIGH SEVERITY** issues have been resolved, along with **MEDIUM SEVERITY** improvements. One config duplication issue required a complete refactoring of 94 references across the codebase.
 
-### Issues Fixed: 5 / 9 total issues
+### Issues Fixed: 6 / 9 total issues
 - ✅ **HIGH Severity:** 2 issues fixed
-- ✅ **MEDIUM Severity:** 3 issues fixed
-- ⚠️ **MEDIUM Severity:** 1 false positive (reverted)
+- ✅ **MEDIUM Severity:** 4 issues fixed (including complete config refactoring)
 - ⏭️ **LOW Severity:** 3 issues deferred (non-blocking)
 
 ### Production Readiness: 95% → 100% ✅
+
+### Files Modified: 59 files
+- 1 config file
+- 28 model files
+- 29 migration files
+- 1 controller file
 
 ---
 
@@ -85,34 +90,63 @@ protected static function booted(): void
 
 ---
 
-### Fix #3: Duplicate Config Key (REVERTED - FALSE POSITIVE)
-**Issue:** MEDIUM Severity - Maintainability → **NOT AN ISSUE**
-**File:** `config/affiliates.php`  
-**Status:** ⚠️ REVERTED (Restored to original state)
+### Fix #3: Removed Duplicate Config Key (Complete Refactor)
+**Issue:** MEDIUM Severity - Maintainability
+**Files:** `config/affiliates.php`, 28 models, 29 migrations, 1 controller
+**Status:** ✅ FIXED (Properly completed)
 
 **Problem:**
-Config file appeared to have duplicate `table_names` key at line 65:
-- `config('affiliates.database.tables')` - New structured approach
-- `config('affiliates.table_names')` - Legacy/compatibility key
+Config file had duplicate `table_names` key at line 65:
+- `config('affiliates.database.tables')` - Structured approach in database section
+- `config('affiliates.table_names')` - Root-level duplicate
 
-**Initial Action Taken:**
-Removed the `table_names` key thinking it was a duplicate.
+All 28 models, 29 migrations, and 1 controller referenced `config('affiliates.table_names.{table}')`.
 
-**Critical Issue Discovered:**
-ALL 28 models in the package reference `config('affiliates.table_names.{table}', ...)` in their `getTable()` methods. Removing this key broke ALL table name resolution throughout the package, causing runtime errors.
+**Initial Incomplete Fix:**
+First attempt removed only the config key without updating 94 references throughout the codebase, breaking all table name resolution.
 
-**Resolution:**
-Restored the `table_names` key:
+**Complete Solution:**
+Since this is a new package not yet in production (no backward compatibility needed), performed complete refactoring:
+
+1. **Updated all 28 models** - Changed `getTable()` methods and relationship pivot tables:
 ```php
-'table_names' => $tables,
+// Before:
+return config('affiliates.table_names.affiliates', parent::getTable());
+
+// After:
+return config('affiliates.database.tables.affiliates', parent::getTable());
 ```
 
-**Lesson Learned:**
-The "duplication" is intentional - both keys serve different purposes:
-- `database.tables` - Structured config for database-related settings
-- `table_names` - Backward-compatible direct access used by all models
+2. **Updated all 29 migrations** - Changed table name references:
+```php
+// Before:
+$tableName = config('affiliates.table_names.affiliates', 'affiliates');
 
-**Status:** ✅ CONFIG RESTORED - No action needed. Both keys are required.
+// After:
+$tableName = config('affiliates.database.tables.affiliates', 'affiliates');
+```
+
+3. **Updated LinkController** - Changed validation rules:
+```php
+// Before:
+Rule::exists(config('affiliates.table_names.programs', 'affiliate_programs'), 'id')
+
+// After:
+Rule::exists(config('affiliates.database.tables.programs', 'affiliate_programs'), 'id')
+```
+
+4. **Removed duplicate config key** from `config/affiliates.php`:
+```php
+// REMOVED: 'table_names' => $tables,
+```
+
+**Impact:**
+- Single source of truth: All references now use `database.tables`
+- Cleaner config structure
+- No backward compatibility concerns (package not in production)
+- 94 total references updated across the codebase
+
+**Status:** ✅ COMPLETE - Proper refactoring with all references updated
 
 ---
 

@@ -52,7 +52,7 @@ class AffiliateTrainingProgress extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.training_progress', 'affiliate_training_progress');
+        return config('affiliates.database.tables.training_progress', 'affiliate_training_progress');
     }
 
     /**

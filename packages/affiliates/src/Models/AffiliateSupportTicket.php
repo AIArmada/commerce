@@ -37,7 +37,7 @@ class AffiliateSupportTicket extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.support_tickets', 'affiliate_support_tickets');
+        return config('affiliates.database.tables.support_tickets', 'affiliate_support_tickets');
     }
 
     /**

@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $tableName = config('affiliates.table_names.touchpoints', 'affiliate_touchpoints');
+        $tableName = config('affiliates.database.tables.touchpoints', 'affiliate_touchpoints');
 
         Schema::table($tableName, function (Blueprint $table): void {
             $table->string('ip_address', 45)->nullable()->after('content')->index();
@@ -20,7 +20,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        $tableName = config('affiliates.table_names.touchpoints', 'affiliate_touchpoints');
+        $tableName = config('affiliates.database.tables.touchpoints', 'affiliate_touchpoints');
 
         Schema::table($tableName, function (Blueprint $table): void {
             $table->dropIndex(['ip_address']);

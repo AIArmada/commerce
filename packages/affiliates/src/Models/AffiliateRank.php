@@ -56,7 +56,7 @@ class AffiliateRank extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.ranks', 'affiliate_ranks');
+        return config('affiliates.database.tables.ranks', 'affiliate_ranks');
     }
 
     /**

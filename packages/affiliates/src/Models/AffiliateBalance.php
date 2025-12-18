@@ -36,7 +36,7 @@ class AffiliateBalance extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.balances', 'affiliate_balances');
+        return config('affiliates.database.tables.balances', 'affiliate_balances');
     }
 
     /**

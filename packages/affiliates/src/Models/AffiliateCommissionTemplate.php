@@ -151,7 +151,7 @@ class AffiliateCommissionTemplate extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.commission_templates', 'affiliate_commission_templates');
+        return config('affiliates.database.tables.commission_templates', 'affiliate_commission_templates');
     }
 
     /**
