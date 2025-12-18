@@ -93,7 +93,7 @@ class SegmentationService
      */
     public function evaluateCustomer(Customer $customer): Collection
     {
-        if (! config('customers.segments.auto_assign', true)) {
+        if (! config('customers.features.segments.auto_assign', true)) {
             return collect();
         }
 

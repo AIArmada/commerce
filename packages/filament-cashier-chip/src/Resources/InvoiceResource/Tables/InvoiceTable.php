@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\InvoiceResource\Tables;
 
 use AIArmada\Chip\Models\Purchase;
+use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
 use Filament\Support\Enums\FontWeight;
-use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\IconColumn;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Enums\FiltersLayout;

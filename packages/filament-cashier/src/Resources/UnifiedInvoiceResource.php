@@ -11,6 +11,9 @@ use AIArmada\FilamentCashier\Support\InvoiceStatus;
 use AIArmada\FilamentCashier\Support\UnifiedInvoice;
 use BackedEnum;
 use Closure;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
@@ -105,14 +108,14 @@ final class UnifiedInvoiceResource extends Resource
                     ),
             ])
             ->actions([
-                Tables\Actions\Action::make('download')
+                Action::make('download')
                     ->label(__('filament-cashier::invoices.actions.download'))
                     ->icon('heroicon-o-arrow-down-tray')
                     ->url(fn (UnifiedInvoice $record): ?string => $record->pdfUrl)
                     ->openUrlInNewTab()
                     ->visible(fn (UnifiedInvoice $record): bool => $record->pdfUrl !== null),
 
-                Tables\Actions\Action::make('view_external')
+                Action::make('view_external')
                     ->label(fn (UnifiedInvoice $record): string => __('filament-cashier::invoices.actions.view_external', [
                         'gateway' => $record->gatewayConfig()['label'],
                     ]))
@@ -121,8 +124,8 @@ final class UnifiedInvoiceResource extends Resource
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('export')
+                BulkActionGroup::make([
+                    BulkAction::make('export')
                         ->label(__('filament-cashier::subscriptions.bulk.export'))
                         ->icon('heroicon-o-arrow-down-tray')
                         ->action(function (Collection $records): StreamedResponse {

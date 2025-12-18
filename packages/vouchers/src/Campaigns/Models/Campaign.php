@@ -82,7 +82,7 @@ class Campaign extends Model
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
 
-        return $tables['campaigns'] ?? $prefix.'voucher_campaigns';
+        return $tables['campaigns'] ?? $prefix . 'voucher_campaigns';
     }
 
     /**

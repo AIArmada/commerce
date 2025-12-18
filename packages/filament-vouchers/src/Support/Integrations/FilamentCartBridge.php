@@ -6,6 +6,7 @@ namespace AIArmada\FilamentVouchers\Support\Integrations;
 
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Resources\CartResource;
+use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use Illuminate\Database\Eloquent\Model;
 
 final class FilamentCartBridge
@@ -76,8 +77,14 @@ final class FilamentCartBridge
             return null;
         }
 
+        $query = $model::query();
+
+        if (OwnerScopedQueries::isEnabled()) {
+            $query = OwnerScopedQueries::scopeVoucherLike($query);
+        }
+
         /** @var Model|null $cart */
-        $cart = $model::query()
+        $cart = $query
             ->where('identifier', $identifier)
             ->latest('created_at')
             ->first();

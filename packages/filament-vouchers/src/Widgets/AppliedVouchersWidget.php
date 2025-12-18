@@ -6,6 +6,7 @@ namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
+use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use Akaunting\Money\Money;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Columns\TextColumn;
@@ -96,6 +97,16 @@ final class AppliedVouchersWidget extends BaseWidget
     {
         if (! $this->record instanceof Cart) {
             return collect([]);
+        }
+
+        if (OwnerScopedQueries::isEnabled()) {
+            $isVisible = OwnerScopedQueries::scopeVoucherLike(Cart::query())
+                ->whereKey($this->record->getKey())
+                ->exists();
+
+            if (! $isVisible) {
+                return collect([]);
+            }
         }
 
         try {

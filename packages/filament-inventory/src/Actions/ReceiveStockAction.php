@@ -69,6 +69,22 @@ final class ReceiveStockAction
                     ->placeholder('Quality notes, inspection results, etc...'),
             ])
             ->action(function (Model $record, array $data): void {
+                $locationId = (string) $data['location_id'];
+
+                $isAllowed = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                    ->whereKey($locationId)
+                    ->exists();
+
+                if (! $isAllowed) {
+                    Notification::make()
+                        ->title('Invalid Location')
+                        ->body('This location is not available for the current owner context.')
+                        ->danger()
+                        ->send();
+
+                    return;
+                }
+
                 $inventoryService = app(InventoryService::class);
 
                 $reason = null;
@@ -82,7 +98,7 @@ final class ReceiveStockAction
 
                 $movement = $inventoryService->receive(
                     model: $record,
-                    locationId: $data['location_id'],
+                    locationId: $locationId,
                     quantity: (int) $data['quantity'],
                     reason: $reason,
                     note: $data['notes'] ?? null,

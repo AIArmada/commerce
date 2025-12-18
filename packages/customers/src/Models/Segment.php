@@ -64,7 +64,7 @@ class Segment extends Model
 
     public function getTable(): string
     {
-        return config('customers.tables.segments', 'customer_segments');
+        return config('customers.database.tables.segments', 'customer_segments');
     }
 
     // =========================================================================
@@ -80,7 +80,7 @@ class Segment extends Model
     {
         return $this->belongsToMany(
             Customer::class,
-            config('customers.tables.segment_customer', 'customer_segment_customer'),
+            config('customers.database.tables.segment_customer', 'customer_segment_customer'),
             'segment_id',
             'customer_id'
         )->withTimestamps();
@@ -248,27 +248,35 @@ class Segment extends Model
             switch ($field) {
                 case 'lifetime_value_min':
                     $query->where('lifetime_value', '>=', (int) $value);
+
                     break;
                 case 'lifetime_value_max':
                     $query->where('lifetime_value', '<=', (int) $value);
+
                     break;
                 case 'total_orders_min':
                     $query->where('total_orders', '>=', (int) $value);
+
                     break;
                 case 'total_orders_max':
                     $query->where('total_orders', '<=', (int) $value);
+
                     break;
                 case 'last_order_days':
                     $query->where('last_order_at', '>=', now()->subDays((int) $value));
+
                     break;
                 case 'no_order_days':
                     $query->where('last_order_at', '<=', now()->subDays((int) $value));
+
                     break;
                 case 'accepts_marketing':
                     $query->where('accepts_marketing', (bool) $value);
+
                     break;
                 case 'is_tax_exempt':
                     $query->where('is_tax_exempt', (bool) $value);
+
                     break;
                 default:
                     continue 2;

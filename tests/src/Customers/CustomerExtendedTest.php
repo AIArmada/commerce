@@ -92,7 +92,7 @@ describe('Customer Model - Extended Coverage', function (): void {
         });
 
         it('rejects credit addition exceeding max balance', function (): void {
-            config(['customers.wallet.max_balance' => 50000]);
+            config(['customers.defaults.wallet.max_balance' => 50000]);
 
             $customer = Customer::create([
                 'first_name' => 'Max',

@@ -131,9 +131,7 @@ final class StockLevelReport
         $now = CarbonImmutable::now();
 
         $batchesQuery = InventoryBatch::query()
-            ->whereNotNull('manufactured_at')
-
-            ;
+            ->whereNotNull('manufactured_at');
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToQueryByLocationRelation($batchesQuery, 'location');
@@ -286,8 +284,7 @@ final class StockLevelReport
             ->groupBy('inventoryable_type', 'inventoryable_id')
             ->having('location_count', '>', 1)
             ->orderByDesc('total_quantity')
-            ->limit($limit)
-            ;
+            ->limit($limit);
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');
@@ -335,9 +332,7 @@ final class StockLevelReport
             ->where("{$tableName}.quantity_on_hand", '>', 0)
             ->where("{$tableName}.updated_at", '<', $cutoffDate)
             ->orderBy("{$tableName}.updated_at")
-            ->limit($limit)
-
-            ;
+            ->limit($limit);
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');

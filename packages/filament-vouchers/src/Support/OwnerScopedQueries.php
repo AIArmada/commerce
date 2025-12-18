@@ -48,19 +48,6 @@ final class OwnerScopedQueries
         $owner = self::owner();
         $includeGlobal = self::includeGlobal();
 
-        /** @var TModel $model */
-        $model = $query->getModel();
-
-        if (method_exists($model, 'scopeForOwner')) {
-            /** @var callable $callable */
-            $callable = [$model, 'scopeForOwner'];
-
-            /** @var Builder<TModel> $scoped */
-            $scoped = $callable($query, $owner, $includeGlobal);
-
-            return $scoped;
-        }
-
         return self::scopeOwnerColumns($query, $owner, $includeGlobal);
     }
 
@@ -77,9 +64,7 @@ final class OwnerScopedQueries
         }
 
         if ($owner === null) {
-            return $includeGlobal
-                ? $query->whereNull('owner_type')->whereNull('owner_id')
-                : $query;
+            return $query->whereNull('owner_type')->whereNull('owner_id');
         }
 
         return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {

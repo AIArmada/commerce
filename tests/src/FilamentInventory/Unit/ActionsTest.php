@@ -11,11 +11,26 @@ use AIArmada\FilamentInventory\Actions\TransferStockAction;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use Illuminate\Database\Eloquent\Model;
 
 beforeEach(function (): void {
     config()->set('inventory.owner.enabled', false);
     config()->set('filament-inventory.cache.stats_ttl', 0);
 });
+
+function setFilamentInventoryOwnerResolver(?Model $owner): void
+{
+    app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
+    {
+        public function __construct(private readonly ?Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+}
 
 it('executes receive stock action and creates inventory', function (): void {
     $item = InventoryItem::create(['name' => 'Widget']);
@@ -148,4 +163,85 @@ it('executes cycle count action for both no-variance and variance cases', functi
 
     $level = InventoryLevel::query()->where('location_id', $location->id)->first();
     expect((int) $level?->quantity_on_hand)->toBe(8);
+});
+
+it('prevents forged cross-tenant location IDs in stock actions when owner scoping is enabled', function (): void {
+    config()->set('inventory.owner.enabled', true);
+    config()->set('inventory.owner.include_global', true);
+
+    $ownerA = InventoryItem::create(['name' => 'Owner A']);
+    $ownerB = InventoryItem::create(['name' => 'Owner B']);
+
+    setFilamentInventoryOwnerResolver($ownerA);
+
+    $item = InventoryItem::create(['name' => 'Widget']);
+
+    $locationA = InventoryLocation::factory()->create([
+        'owner_type' => $ownerA->getMorphClass(),
+        'owner_id' => $ownerA->getKey(),
+    ]);
+
+    setFilamentInventoryOwnerResolver($ownerB);
+    $locationB = InventoryLocation::factory()->create([
+        'owner_type' => $ownerB->getMorphClass(),
+        'owner_id' => $ownerB->getKey(),
+    ]);
+
+    setFilamentInventoryOwnerResolver($ownerA);
+
+    $receive = ReceiveStockAction::make()->getActionFunction();
+    expect($receive)->not()->toBeNull();
+
+    $receive($item, [
+        'location_id' => $locationB->id,
+        'quantity' => 5,
+        'received_at' => now(),
+    ]);
+
+    $levelB = InventoryLevel::query()
+        ->where('inventoryable_type', $item->getMorphClass())
+        ->where('inventoryable_id', $item->getKey())
+        ->where('location_id', $locationB->id)
+        ->first();
+
+    expect($levelB)->toBeNull();
+
+    $inventory = app(InventoryService::class);
+    $inventory->receive(model: $item, locationId: $locationA->id, quantity: 10);
+
+    $ship = ShipStockAction::make()->getActionFunction();
+    expect($ship)->not()->toBeNull();
+
+    $ship($item, [
+        'location_id' => $locationB->id,
+        'quantity' => 1,
+        'shipped_at' => now(),
+    ]);
+
+    $levelAAfter = InventoryLevel::query()->where('location_id', $locationA->id)->first();
+    expect((int) $levelAAfter?->quantity_on_hand)->toBe(10);
+
+    $adjust = AdjustStockAction::make()->getActionFunction();
+    expect($adjust)->not()->toBeNull();
+
+    $adjust($item, [
+        'location_id' => $locationB->id,
+        'new_quantity' => 1,
+        'reason' => 'correction',
+    ]);
+
+    $levelAAfterAdjust = InventoryLevel::query()->where('location_id', $locationA->id)->first();
+    expect((int) $levelAAfterAdjust?->quantity_on_hand)->toBe(10);
+
+    $transfer = TransferStockAction::make()->getActionFunction();
+    expect($transfer)->not()->toBeNull();
+
+    $transfer($item, [
+        'from_location_id' => $locationA->id,
+        'to_location_id' => $locationB->id,
+        'quantity' => 3,
+    ]);
+
+    $levelATransfer = InventoryLevel::query()->where('location_id', $locationA->id)->first();
+    expect((int) $levelATransfer?->quantity_on_hand)->toBe(10);
 });

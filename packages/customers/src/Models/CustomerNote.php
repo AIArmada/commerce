@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
@@ -50,7 +50,7 @@ class CustomerNote extends Model
 
     public function getTable(): string
     {
-        return config('customers.tables.notes', 'customer_notes');
+        return config('customers.database.tables.notes', 'customer_notes');
     }
 
     // =========================================================================
@@ -74,7 +74,7 @@ class CustomerNote extends Model
      */
     public function createdBy(): BelongsTo
     {
-        return $this->belongsTo(config('customers.user_model', \App\Models\User::class), 'created_by');
+        return $this->belongsTo(config('customers.integrations.user_model', \App\Models\User::class), 'created_by');
     }
 
     // =========================================================================

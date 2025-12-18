@@ -10,8 +10,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('customers.tables.wishlists', 'wishlists'), function (Blueprint $table): void {
-            $jsonColumnType = config('customers.json_column_type', 'json');
+        Schema::create(config('customers.database.tables.wishlists', 'wishlists'), function (Blueprint $table): void {
+            $jsonColumnType = config('customers.database.json_column_type', 'json');
 
             $table->uuid('id')->primary();
 
@@ -38,6 +38,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('customers.tables.wishlists', 'wishlists'));
+        Schema::dropIfExists(config('customers.database.tables.wishlists', 'wishlists'));
     }
 };

@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Inventory\Database\Factories\InventoryLocationFactory;
 use AIArmada\Inventory\Enums\TemperatureZone;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
 use AIArmada\Inventory\Traits\HasLocationHierarchy;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -364,6 +367,52 @@ final class InventoryLocation extends Model
      */
     protected static function booted(): void
     {
+        static::addGlobalScope('owner', function (Builder $query): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
+        });
+
+        static::saving(function (InventoryLocation $location): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $owner = InventoryOwnerScope::resolveOwner();
+
+            if ($location->owner_type === null xor $location->owner_id === null) {
+                throw new AuthorizationException('Owner fields must be both set or both null.');
+            }
+
+            if ($owner === null) {
+                if ($location->owner_type !== null || $location->owner_id !== null) {
+                    throw new AuthorizationException('Cannot write owned inventory locations without an owner context.');
+                }
+
+                return;
+            }
+
+            if ($location->owner_type !== null || $location->owner_id !== null) {
+                if ($location->owner_type !== $owner->getMorphClass() || $location->owner_id !== $owner->getKey()) {
+                    throw new AuthorizationException('Cannot write inventory locations for a different owner context.');
+                }
+
+                return;
+            }
+
+            if (! (bool) config('inventory.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            if (! app()->bound(OwnerResolverInterface::class)) {
+                return;
+            }
+
+            $location->assignOwner($owner);
+        });
+
         self::deleting(function (InventoryLocation $location): void {
             $location->inventoryLevels()->delete();
             $location->allocations()->delete();

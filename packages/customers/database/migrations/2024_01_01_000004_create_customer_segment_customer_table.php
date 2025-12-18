@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('customers.tables.segment_customer', 'customer_segment_customer'), function (Blueprint $table): void {
+        Schema::create(config('customers.database.tables.segment_customer', 'customer_segment_customer'), function (Blueprint $table): void {
             $table->foreignUuid('segment_id');
             $table->foreignUuid('customer_id');
 
@@ -22,6 +22,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('customers.tables.segment_customer', 'customer_segment_customer'));
+        Schema::dropIfExists(config('customers.database.tables.segment_customer', 'customer_segment_customer'));
     }
 };

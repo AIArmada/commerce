@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
@@ -54,7 +54,7 @@ class Wishlist extends Model
 
     public function getTable(): string
     {
-        return config('customers.tables.wishlists', 'wishlists');
+        return config('customers.database.tables.wishlists', 'wishlists');
     }
 
     // =========================================================================
@@ -93,11 +93,11 @@ class Wishlist extends Model
      */
     public function addProduct(string $productType, string $productId, ?array $metadata = null): WishlistItem
     {
-        if (! config('customers.wishlists.enabled', true)) {
+        if (! config('customers.features.wishlists.enabled', true)) {
             throw new RuntimeException('Wishlists are disabled.');
         }
 
-        $maxItems = config('customers.wishlists.max_items_per_wishlist', 100);
+        $maxItems = config('customers.defaults.wishlists.max_items_per_wishlist', 100);
 
         if ($this->items()->count() >= $maxItems) {
             throw new RuntimeException("Maximum wishlist items ({$maxItems}) reached.");
@@ -167,7 +167,7 @@ class Wishlist extends Model
      */
     public function makePublic(): void
     {
-        if (! config('customers.wishlists.allow_public', true)) {
+        if (! config('customers.features.wishlists.allow_public', true)) {
             throw new RuntimeException('Public wishlists are disabled.');
         }
 
@@ -187,7 +187,7 @@ class Wishlist extends Model
      */
     public function regenerateShareToken(): void
     {
-        if (! config('customers.wishlists.allow_public', true)) {
+        if (! config('customers.features.wishlists.allow_public', true)) {
             throw new RuntimeException('Public wishlists are disabled.');
         }
 
@@ -221,7 +221,7 @@ class Wishlist extends Model
      */
     public function scopePublic(Builder $query): Builder
     {
-        if (! config('customers.wishlists.allow_public', true)) {
+        if (! config('customers.features.wishlists.allow_public', true)) {
             return $query->whereRaw('1 = 0');
         }
 

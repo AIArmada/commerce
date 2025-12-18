@@ -38,7 +38,7 @@ final class MRRWidget extends BaseWidget
     {
         $subscriptionModel = Cashier::$subscriptionModel;
 
-        return $subscriptionModel::active()
+        return $subscriptionModel::query()->active()
             ->with('items')
             ->get()
             ->sum(function (Subscription $subscription): int {

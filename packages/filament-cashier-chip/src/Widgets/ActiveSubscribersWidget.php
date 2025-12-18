@@ -40,14 +40,14 @@ final class ActiveSubscribersWidget extends BaseWidget
     {
         $subscriptionModel = Cashier::$subscriptionModel;
 
-        return $subscriptionModel::active()->count();
+        return $subscriptionModel::query()->active()->count();
     }
 
     private function getTrialingCount(): int
     {
         $subscriptionModel = Cashier::$subscriptionModel;
 
-        return $subscriptionModel::onTrial()->count();
+        return $subscriptionModel::query()->onTrial()->count();
     }
 
     private function getPreviousActiveCount(): int

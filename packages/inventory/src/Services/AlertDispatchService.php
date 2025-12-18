@@ -128,9 +128,7 @@ final class AlertDispatchService
                 AlertStatus::criticalStatuses()
             ))
             ->with(['location', 'inventoryable'])
-            ->orderByDesc('last_alert_at')
-
-            ;
+            ->orderByDesc('last_alert_at');
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');

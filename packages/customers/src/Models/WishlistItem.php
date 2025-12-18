@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Models;
 
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
@@ -53,7 +53,7 @@ class WishlistItem extends Model
 
     public function getTable(): string
     {
-        return config('customers.tables.wishlist_items', 'wishlist_items');
+        return config('customers.database.tables.wishlist_items', 'wishlist_items');
     }
 
     // =========================================================================

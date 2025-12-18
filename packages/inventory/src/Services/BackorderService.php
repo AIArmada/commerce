@@ -84,8 +84,7 @@ final class BackorderService
             ->forModel($model)
             ->open()
             ->byPriority()
-            ->orderBy('requested_at')
-            ;
+            ->orderBy('requested_at');
 
         $this->applyOwnerScopeToBackorderQuery($query);
 
@@ -102,8 +101,7 @@ final class BackorderService
         $query = InventoryBackorder::query()
             ->open()
             ->byPriority()
-            ->orderBy('requested_at')
-            ;
+            ->orderBy('requested_at');
 
         $this->applyOwnerScopeToBackorderQuery($query);
 
@@ -119,8 +117,7 @@ final class BackorderService
     {
         $query = InventoryBackorder::query()
             ->overdue()
-            ->byPriority()
-            ;
+            ->byPriority();
 
         $this->applyOwnerScopeToBackorderQuery($query);
 
@@ -136,8 +133,7 @@ final class BackorderService
     {
         $query = InventoryBackorder::query()
             ->dueWithin($days)
-            ->byPriority()
-            ;
+            ->byPriority();
 
         $this->applyOwnerScopeToBackorderQuery($query);
 
@@ -230,8 +226,7 @@ final class BackorderService
 
         $oldBackordersQuery = InventoryBackorder::query()
             ->open()
-            ->where('requested_at', '<', $cutoff)
-            ;
+            ->where('requested_at', '<', $cutoff);
 
         $this->applyOwnerScopeToBackorderQuery($oldBackordersQuery);
 
@@ -325,8 +320,7 @@ final class BackorderService
         $query = InventoryBackorder::query()
             ->forModel($model)
             ->open()
-            ->selectRaw('SUM(quantity_requested - quantity_fulfilled - quantity_cancelled) as total')
-            ;
+            ->selectRaw('SUM(quantity_requested - quantity_fulfilled - quantity_cancelled) as total');
 
         $this->applyOwnerScopeToBackorderQuery($query);
 

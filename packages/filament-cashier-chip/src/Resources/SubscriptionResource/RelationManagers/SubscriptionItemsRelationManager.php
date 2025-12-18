@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\RelationManagers;
 
 use AIArmada\CashierChip\SubscriptionItem;
+use Filament\Actions\Action;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
-use Filament\Tables\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Models;
 
 use AIArmada\Customers\Enums\AddressType;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
 
@@ -66,7 +66,7 @@ class Address extends Model
 
     public function getTable(): string
     {
-        return config('customers.tables.addresses', 'customer_addresses');
+        return config('customers.database.tables.addresses', 'customer_addresses');
     }
 
     // =========================================================================

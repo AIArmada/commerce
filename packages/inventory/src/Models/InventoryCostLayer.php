@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Inventory\Enums\CostingMethod;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $inventoryable_id
  * @property string|null $location_id
  * @property string|null $batch_id
+ * @property string|null $owner_type
+ * @property int|string|null $owner_id
  * @property int $quantity
  * @property int $remaining_quantity
  * @property int $unit_cost_minor
@@ -36,6 +42,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class InventoryCostLayer extends Model
 {
     use HasFactory;
+    use HasOwner;
     use HasUuids;
 
     protected $fillable = [
@@ -43,6 +50,8 @@ class InventoryCostLayer extends Model
         'inventoryable_id',
         'location_id',
         'batch_id',
+        'owner_type',
+        'owner_id',
         'quantity',
         'remaining_quantity',
         'unit_cost_minor',
@@ -52,6 +61,102 @@ class InventoryCostLayer extends Model
         'costing_method',
         'layer_date',
     ];
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('owner', function (Builder $query): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
+        });
+
+        static::saving(function (InventoryCostLayer $layer): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $resolvedOwnerType = null;
+            $resolvedOwnerId = null;
+            $ownerResolvedFromRelation = false;
+
+            if ($layer->location_id !== null) {
+                $location = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                    ->whereKey($layer->location_id)
+                    ->first();
+
+                if ($location === null) {
+                    throw new AuthorizationException('Invalid location for current owner context.');
+                }
+
+                $resolvedOwnerType = $location->owner_type;
+                $resolvedOwnerId = $location->owner_id;
+                $ownerResolvedFromRelation = true;
+            }
+
+            if ($layer->batch_id !== null) {
+                $batch = InventoryBatch::query()
+                    ->whereKey($layer->batch_id)
+                    ->first();
+
+                if ($batch === null) {
+                    throw new AuthorizationException('Invalid batch for current owner context.');
+                }
+
+                if ($layer->location_id !== null && $batch->location_id !== $layer->location_id) {
+                    throw new AuthorizationException('Batch location does not match cost layer location.');
+                }
+
+                if (($resolvedOwnerType !== null || $resolvedOwnerId !== null)
+                    && ($resolvedOwnerType !== $batch->owner_type || $resolvedOwnerId !== $batch->owner_id)) {
+                    throw new AuthorizationException('Owner mismatch between cost layer location and batch.');
+                }
+
+                $resolvedOwnerType = $batch->owner_type;
+                $resolvedOwnerId = $batch->owner_id;
+                $ownerResolvedFromRelation = true;
+            }
+
+            if ($ownerResolvedFromRelation && $resolvedOwnerType === null && $resolvedOwnerId === null) {
+                if ($layer->owner_type !== null || $layer->owner_id !== null) {
+                    throw new AuthorizationException('Owner mismatch for inventory cost layer.');
+                }
+
+                $layer->removeOwner();
+
+                return;
+            }
+
+            if (! $ownerResolvedFromRelation && $resolvedOwnerType === null && $resolvedOwnerId === null) {
+                if ($layer->owner_type !== null || $layer->owner_id !== null) {
+                    return;
+                }
+
+                if (! (bool) config('inventory.owner.auto_assign_on_create', true)) {
+                    return;
+                }
+
+                $owner = InventoryOwnerScope::resolveOwner();
+
+                if ($owner === null) {
+                    return;
+                }
+
+                $layer->assignOwner($owner);
+
+                return;
+            }
+
+            if (($layer->owner_type !== null || $layer->owner_id !== null)
+                && ($layer->owner_type !== $resolvedOwnerType || $layer->owner_id !== $resolvedOwnerId)) {
+                throw new AuthorizationException('Owner mismatch for inventory cost layer.');
+            }
+
+            $layer->owner_type = $resolvedOwnerType;
+            $layer->owner_id = $resolvedOwnerId;
+        });
+    }
 
     public function getTable(): string
     {

@@ -261,8 +261,7 @@ final class SerialLookupService
             ->where('inventoryable_type', $model->getMorphClass())
             ->where('inventoryable_id', $model->getKey())
             ->selectRaw('status, count(*) as count')
-            ->groupBy('status')
-            ;
+            ->groupBy('status');
 
         InventoryOwnerScope::applyToQueryByLocationRelation($countsQuery, 'location');
 
@@ -287,8 +286,7 @@ final class SerialLookupService
             ->where('inventoryable_type', $model->getMorphClass())
             ->where('inventoryable_id', $model->getKey())
             ->selectRaw('`condition`, count(*) as count')
-            ->groupBy('condition')
-            ;
+            ->groupBy('condition');
 
         InventoryOwnerScope::applyToQueryByLocationRelation($countsQuery, 'location');
 
@@ -308,8 +306,7 @@ final class SerialLookupService
     public function getTotalValue(string $locationId): int
     {
         $query = InventorySerial::query()
-            ->atLocation($locationId)
-            ;
+            ->atLocation($locationId);
 
         InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');
 

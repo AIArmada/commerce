@@ -209,9 +209,7 @@ class Voucher extends Model
         }
 
         if ($owner === null) {
-            return $includeGlobal
-                ? $query->whereNull('owner_type')->whereNull('owner_id')
-                : $query;
+            return $query->whereNull('owner_type')->whereNull('owner_id');
         }
 
         return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {

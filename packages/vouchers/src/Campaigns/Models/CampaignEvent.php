@@ -198,7 +198,7 @@ class CampaignEvent extends Model
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
 
-        return $tables['campaign_events'] ?? $prefix.'voucher_campaign_events';
+        return $tables['campaign_events'] ?? $prefix . 'voucher_campaign_events';
     }
 
     /**

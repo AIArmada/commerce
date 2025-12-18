@@ -83,7 +83,9 @@ final class AgingReportPage extends Page implements HasTable
                             return 0;
                         }
 
-                        return max(0, (int) now()->diffInDays($record->due_date, false));
+                        return $record->due_date->isPast()
+                            ? $record->due_date->diffInDays(now())
+                            : 0;
                     })
                     ->badge()
                     ->color(function (int $state): string {
@@ -107,7 +109,9 @@ final class AgingReportPage extends Page implements HasTable
                             return 'Current';
                         }
 
-                        $days = max(0, (int) now()->diffInDays($record->due_date, false));
+                        $days = $record->due_date->isPast()
+                            ? $record->due_date->diffInDays(now())
+                            : 0;
 
                         if ($days === 0) {
                             return 'Current';
@@ -199,7 +203,9 @@ final class AgingReportPage extends Page implements HasTable
         ];
 
         foreach ($docs as $doc) {
-            $days = max(0, (int) now()->diffInDays($doc->due_date, false));
+            $days = $doc->due_date->isPast()
+                ? $doc->due_date->diffInDays(now())
+                : 0;
             $bucket = match (true) {
                 $days === 0 => 'current',
                 $days <= 30 => '1-30',

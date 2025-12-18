@@ -35,8 +35,7 @@ final class ExpiryMonitorService
             ->active()
             ->whereNotNull('expires_at')
             ->whereBetween('expires_at', [now(), now()->addDays($days)])
-            ->orderBy('expires_at')
-            ;
+            ->orderBy('expires_at');
 
         InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');
 
@@ -77,8 +76,7 @@ final class ExpiryMonitorService
     {
         $criticalQuery = InventoryBatch::query()
             ->active()
-            ->expiringSoon(7)
-            ;
+            ->expiringSoon(7);
 
         InventoryOwnerScope::applyToQueryByLocationRelation($criticalQuery, 'location');
 
@@ -87,8 +85,7 @@ final class ExpiryMonitorService
         $warningQuery = InventoryBatch::query()
             ->active()
             ->whereNotNull('expires_at')
-            ->whereBetween('expires_at', [now()->addDays(8), now()->addDays(30)])
-            ;
+            ->whereBetween('expires_at', [now()->addDays(8), now()->addDays(30)]);
 
         InventoryOwnerScope::applyToQueryByLocationRelation($warningQuery, 'location');
 
@@ -97,8 +94,7 @@ final class ExpiryMonitorService
         $attentionQuery = InventoryBatch::query()
             ->active()
             ->whereNotNull('expires_at')
-            ->whereBetween('expires_at', [now()->addDays(31), now()->addDays(90)])
-            ;
+            ->whereBetween('expires_at', [now()->addDays(31), now()->addDays(90)]);
 
         InventoryOwnerScope::applyToQueryByLocationRelation($attentionQuery, 'location');
 
@@ -126,8 +122,7 @@ final class ExpiryMonitorService
         $query = InventoryBatch::query()
             ->active()
             ->whereNotNull('expires_at')
-            ->where('expires_at', '>', now())
-            ;
+            ->where('expires_at', '>', now());
 
         InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');
 
@@ -163,8 +158,7 @@ final class ExpiryMonitorService
                             ->where('quantity_on_hand', '>', 0);
                     });
             })
-            ->where('quantity_reserved', 0)
-            ;
+            ->where('quantity_reserved', 0);
 
         InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');
 
@@ -219,8 +213,7 @@ final class ExpiryMonitorService
         $warningQuery = InventoryBatch::query()
             ->active()
             ->whereNotNull('expires_at')
-            ->whereBetween('expires_at', [now()->addDays(8), now()->addDays(30)])
-            ;
+            ->whereBetween('expires_at', [now()->addDays(8), now()->addDays(30)]);
 
         InventoryOwnerScope::applyToQueryByLocationRelation($warningQuery, 'location');
 

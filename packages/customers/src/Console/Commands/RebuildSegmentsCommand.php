@@ -239,7 +239,7 @@ class RebuildSegmentsCommand extends Command
         return $owner;
     }
 
-    private function ownerLabel(?string $ownerType, string|int|null $ownerId): string
+    private function ownerLabel(?string $ownerType, string | int | null $ownerId): string
     {
         if ($ownerType === null || $ownerId === null) {
             return 'global';

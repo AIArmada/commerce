@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
@@ -59,7 +59,7 @@ class CustomerGroup extends Model
 
     public function getTable(): string
     {
-        return config('customers.tables.groups', 'customer_groups');
+        return config('customers.database.tables.groups', 'customer_groups');
     }
 
     // =========================================================================
@@ -75,7 +75,7 @@ class CustomerGroup extends Model
     {
         return $this->belongsToMany(
             Customer::class,
-            config('customers.tables.group_members', 'customer_group_members'),
+            config('customers.database.tables.group_members', 'customer_group_members'),
             'group_id',
             'customer_id'
         )->withPivot(['role', 'joined_at'])->withTimestamps();
@@ -83,8 +83,6 @@ class CustomerGroup extends Model
 
     /**
      * Get group admins.
-     *
-     * @return BelongsToMany<Customer, $this>
      */
     public function admins(): BelongsToMany
     {

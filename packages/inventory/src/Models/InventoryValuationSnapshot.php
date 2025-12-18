@@ -31,8 +31,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class InventoryValuationSnapshot extends Model
 {
     use HasFactory;
-    use HasUuids;
     use HasOwner;
+    use HasUuids;
 
     protected $fillable = [
         'owner_type',

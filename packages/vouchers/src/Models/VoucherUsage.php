@@ -60,7 +60,7 @@ final class VoucherUsage extends Model
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
 
-        return $tables['voucher_usage'] ?? $prefix.'voucher_usage';
+        return $tables['voucher_usage'] ?? $prefix . 'voucher_usage';
     }
 
     /**

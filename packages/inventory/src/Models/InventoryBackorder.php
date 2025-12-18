@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Inventory\Enums\BackorderPriority;
 use AIArmada\Inventory\Enums\BackorderStatus;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $inventoryable_type
  * @property string $inventoryable_id
  * @property string|null $location_id
+ * @property string|null $owner_type
+ * @property int|string|null $owner_id
  * @property string|null $order_id
  * @property string|null $customer_id
  * @property int $quantity_requested
@@ -38,12 +44,15 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class InventoryBackorder extends Model
 {
     use HasFactory;
+    use HasOwner;
     use HasUuids;
 
     protected $fillable = [
         'inventoryable_type',
         'inventoryable_id',
         'location_id',
+        'owner_type',
+        'owner_id',
         'order_id',
         'customer_id',
         'quantity_requested',
@@ -58,6 +67,74 @@ class InventoryBackorder extends Model
         'notes',
         'metadata',
     ];
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('owner', function (Builder $query): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
+        });
+
+        static::creating(function (InventoryBackorder $backorder): void {
+            if ($backorder->requested_at === null) {
+                $backorder->requested_at = now();
+            }
+        });
+
+        static::saving(function (InventoryBackorder $backorder): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $owner = InventoryOwnerScope::resolveOwner();
+
+            if ($backorder->owner_type === null xor $backorder->owner_id === null) {
+                throw new AuthorizationException('Owner fields must be both set or both null.');
+            }
+
+            if ($owner === null) {
+                if ($backorder->owner_type !== null || $backorder->owner_id !== null) {
+                    throw new AuthorizationException('Cannot write owned backorders without an owner context.');
+                }
+
+                return;
+            }
+
+            if ($backorder->location_id !== null) {
+                $location = InventoryLocation::query()
+                    ->select(['id', 'owner_type', 'owner_id'])
+                    ->find($backorder->location_id);
+
+                if (! $location instanceof InventoryLocation) {
+                    throw new AuthorizationException('Invalid location for backorder in current owner context.');
+                }
+
+                if ($location->owner_type === null || $location->owner_id === null) {
+                    $backorder->removeOwner();
+
+                    return;
+                }
+
+                $backorder->owner_type = $location->owner_type;
+                $backorder->owner_id = $location->owner_id;
+
+                return;
+            }
+
+            if (! (bool) config('inventory.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            if ($backorder->owner_type !== null || $backorder->owner_id !== null) {
+                return;
+            }
+
+            $backorder->assignOwner($owner);
+        });
+    }
 
     public function getTable(): string
     {
@@ -250,15 +327,6 @@ class InventoryBackorder extends Model
         };
 
         return $this->update(['priority' => $newPriority]);
-    }
-
-    protected static function booted(): void
-    {
-        static::creating(function (InventoryBackorder $backorder): void {
-            if ($backorder->requested_at === null) {
-                $backorder->requested_at = now();
-            }
-        });
     }
 
     protected function casts(): array

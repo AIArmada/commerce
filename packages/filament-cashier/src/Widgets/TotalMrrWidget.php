@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Widgets;
 
+use AIArmada\CashierChip\Cashier as CashierChip;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Widgets\StatsOverviewWidget;
@@ -81,8 +82,9 @@ final class TotalMrrWidget extends StatsOverviewWidget
                 $subscriptions = $subscriptions->merge($stripeSubscriptions);
             }
 
-            if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
-                $chipSubscriptions = \AIArmada\CashierChip\Models\Subscription::query()
+            if ($detector->isAvailable('chip')) {
+                $subscriptionModel = CashierChip::$subscriptionModel;
+                $chipSubscriptions = $subscriptionModel::query()
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')
                             ->orWhere('ends_at', '>', now());

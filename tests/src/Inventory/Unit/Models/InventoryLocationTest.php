@@ -511,6 +511,16 @@ class InventoryLocationTest extends InventoryTestCase
 
         $owner = InventoryItem::create(['name' => 'Owner Item']);
 
+        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class($owner) implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        {
+            public function __construct(private readonly ?\Illuminate\Database\Eloquent\Model $owner) {}
+
+            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            {
+                return $this->owner;
+            }
+        });
+
         // Create owned location
         $ownedLocation = InventoryLocation::factory()->create([
             'owner_type' => $owner->getMorphClass(),
@@ -518,6 +528,13 @@ class InventoryLocationTest extends InventoryTestCase
         ]);
 
         // Create global location
+        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        {
+            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            {
+                return null;
+            }
+        });
         $globalLocation = InventoryLocation::factory()->create([
             'owner_type' => null,
             'owner_id' => null,
@@ -525,13 +542,22 @@ class InventoryLocationTest extends InventoryTestCase
 
         // Create location owned by different owner
         $otherOwner = InventoryItem::create(['name' => 'Other Owner']);
+        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class($otherOwner) implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        {
+            public function __construct(private readonly ?\Illuminate\Database\Eloquent\Model $owner) {}
+
+            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            {
+                return $this->owner;
+            }
+        });
         $otherLocation = InventoryLocation::factory()->create([
             'owner_type' => $otherOwner->getMorphClass(),
             'owner_id' => $otherOwner->getKey(),
         ]);
 
         // With includeGlobal true, should get owner's + global
-        $result = InventoryLocation::forOwner($owner, true)->get();
+        $result = InventoryLocation::withoutGlobalScopes()->forOwner($owner, true)->get();
 
         expect($result->pluck('id')->toArray())->toContain($ownedLocation->id);
         expect($result->pluck('id')->toArray())->toContain($globalLocation->id);
@@ -544,6 +570,16 @@ class InventoryLocationTest extends InventoryTestCase
 
         $owner = InventoryItem::create(['name' => 'Owner Item']);
 
+        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class($owner) implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        {
+            public function __construct(private readonly ?\Illuminate\Database\Eloquent\Model $owner) {}
+
+            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            {
+                return $this->owner;
+            }
+        });
+
         // Create owned location
         $ownedLocation = InventoryLocation::factory()->create([
             'owner_type' => $owner->getMorphClass(),
@@ -551,13 +587,20 @@ class InventoryLocationTest extends InventoryTestCase
         ]);
 
         // Create global location
+        app()->instance(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, new class implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+        {
+            public function resolve(): ?\Illuminate\Database\Eloquent\Model
+            {
+                return null;
+            }
+        });
         $globalLocation = InventoryLocation::factory()->create([
             'owner_type' => null,
             'owner_id' => null,
         ]);
 
         // With includeGlobal false, should only get owner's
-        $result = InventoryLocation::forOwner($owner, false)->get();
+        $result = InventoryLocation::withoutGlobalScopes()->forOwner($owner, false)->get();
 
         expect($result->pluck('id')->toArray())->toContain($ownedLocation->id);
         expect($result->pluck('id')->toArray())->not->toContain($globalLocation->id);

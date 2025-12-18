@@ -93,9 +93,7 @@ final class StockThresholdService
                 AlertStatus::SafetyBreached->value,
                 AlertStatus::OutOfStock->value,
             ])
-            ->with('location')
-
-            ;
+            ->with('location');
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');

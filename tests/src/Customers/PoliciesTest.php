@@ -2,58 +2,53 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\Customers\Policies\CustomerPolicy;
 use AIArmada\Customers\Policies\SegmentPolicy;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
 
-// Create a mock customer with isOwnedBy method
-class MockCustomerWithOwnership extends Customer
+require_once __DIR__ . '/Fixtures/CustomersTestOwner.php';
+
+function bindCustomersOwnerResolver(?Model $owner): void
 {
-    private bool $ownedByResult = true;
-
-    public function setOwnedByResult(bool $result): void
+    app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
     {
-        $this->ownedByResult = $result;
-    }
+        public function __construct(private readonly ?Model $owner) {}
 
-    public function isOwnedBy($user): bool
-    {
-        return $this->ownedByResult;
-    }
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
 }
 
-// Create a mock segment with isOwnedBy method
-class MockSegmentWithOwnership extends Segment
-{
-    private bool $ownedByResult = true;
+beforeEach(function (): void {
+    Schema::dropIfExists('test_owners');
 
-    public function setOwnedByResult(bool $result): void
-    {
-        $this->ownedByResult = $result;
-    }
+    Schema::create('test_owners', function (Blueprint $table): void {
+        $table->uuid('id')->primary();
+        $table->string('name');
+        $table->timestamps();
+    });
 
-    public function isOwnedBy($user): bool
-    {
-        return $this->ownedByResult;
+    if (app()->bound(OwnerResolverInterface::class)) {
+        app()->forgetInstance(OwnerResolverInterface::class);
+        app()->offsetUnset(OwnerResolverInterface::class);
     }
-}
+});
 
 describe('CustomerPolicy', function (): void {
     beforeEach(function (): void {
         $this->policy = new CustomerPolicy;
         $this->user = new class
         {
-            public int $id = 1;
+            public string $id = 'user-a';
         };
-        $this->customer = Customer::create([
-            'first_name' => 'Policy',
-            'last_name' => 'Test',
-            'email' => 'policy-' . uniqid() . '@example.com',
-            'status' => CustomerStatus::Active,
-            'user_id' => 1,
-        ]);
     });
 
     describe('viewAny', function (): void {
@@ -63,34 +58,70 @@ describe('CustomerPolicy', function (): void {
     });
 
     describe('view', function (): void {
-        it('allows viewing customer with matching user_id', function (): void {
-            expect($this->policy->view($this->user, $this->customer))->toBeTrue();
-        });
-
-        it('allows viewing other customers by default', function (): void {
-            $otherCustomer = Customer::create([
-                'first_name' => 'Other',
+        it('allows viewing global customer without owner resolver', function (): void {
+            $globalCustomer = Customer::query()->create([
+                'first_name' => 'Global',
                 'last_name' => 'Customer',
-                'email' => 'other-' . uniqid() . '@example.com',
+                'email' => 'global-' . uniqid() . '@example.com',
                 'status' => CustomerStatus::Active,
-                'user_id' => 999,
+                'owner_type' => null,
+                'owner_id' => null,
+                'user_id' => null,
             ]);
 
-            expect($this->policy->view($this->user, $otherCustomer))->toBeTrue();
+            expect($this->policy->view($this->user, $globalCustomer))->toBeTrue();
         });
 
-        it('delegates to isOwnedBy when method exists', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership;
-            $mockCustomer->setOwnedByResult(true);
+        it('denies viewing owner-scoped customer without owner resolver (unless user_id matches)', function (): void {
+            $owner = CustomersTestOwner::query()->create(['name' => 'Owner A']);
 
-            expect($this->policy->view($this->user, $mockCustomer))->toBeTrue();
+            $customer = Customer::query()->create([
+                'first_name' => 'Owned',
+                'last_name' => 'Customer',
+                'email' => 'owned-' . uniqid() . '@example.com',
+                'status' => CustomerStatus::Active,
+                'owner_type' => $owner->getMorphClass(),
+                'owner_id' => $owner->getKey(),
+                'user_id' => null,
+            ]);
+
+            expect($this->policy->view($this->user, $customer))->toBeFalse();
+
+            $customer->update(['user_id' => $this->user->id]);
+
+            expect($this->policy->view($this->user, $customer))->toBeTrue();
         });
 
-        it('returns false from isOwnedBy when not owner', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership;
-            $mockCustomer->setOwnedByResult(false);
+        it('denies cross-tenant customer access when owner resolver is set', function (): void {
+            $ownerA = CustomersTestOwner::query()->create(['name' => 'Owner A']);
+            $ownerB = CustomersTestOwner::query()->create(['name' => 'Owner B']);
 
-            expect($this->policy->view($this->user, $mockCustomer))->toBeFalse();
+            $customerA = Customer::query()->create([
+                'first_name' => 'A',
+                'last_name' => 'Customer',
+                'email' => 'a-' . uniqid() . '@example.com',
+                'status' => CustomerStatus::Active,
+                'owner_type' => $ownerA->getMorphClass(),
+                'owner_id' => $ownerA->getKey(),
+                'user_id' => null,
+            ]);
+
+            $customerB = Customer::query()->create([
+                'first_name' => 'B',
+                'last_name' => 'Customer',
+                'email' => 'b-' . uniqid() . '@example.com',
+                'status' => CustomerStatus::Active,
+                'owner_type' => $ownerB->getMorphClass(),
+                'owner_id' => $ownerB->getKey(),
+                'user_id' => null,
+            ]);
+
+            bindCustomersOwnerResolver($ownerA);
+
+            expect($this->policy->view($this->user, $customerA))->toBeTrue()
+                ->and($this->policy->update($this->user, $customerA))->toBeTrue()
+                ->and($this->policy->view($this->user, $customerB))->toBeFalse()
+                ->and($this->policy->update($this->user, $customerB))->toBeFalse();
         });
     });
 
@@ -101,82 +132,62 @@ describe('CustomerPolicy', function (): void {
     });
 
     describe('update', function (): void {
-        it('allows updating customers', function (): void {
-            expect($this->policy->update($this->user, $this->customer))->toBeTrue();
-        });
+        it('allows updating global customer without owner resolver', function (): void {
+            $globalCustomer = Customer::query()->create([
+                'first_name' => 'Global',
+                'last_name' => 'Customer',
+                'email' => 'global-update-' . uniqid() . '@example.com',
+                'status' => CustomerStatus::Active,
+                'owner_type' => null,
+                'owner_id' => null,
+            ]);
 
-        it('delegates to isOwnedBy when method exists', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership;
-            $mockCustomer->setOwnedByResult(true);
-
-            expect($this->policy->update($this->user, $mockCustomer))->toBeTrue();
-        });
-
-        it('returns false from isOwnedBy when not owner', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership;
-            $mockCustomer->setOwnedByResult(false);
-
-            expect($this->policy->update($this->user, $mockCustomer))->toBeFalse();
+            expect($this->policy->update($this->user, $globalCustomer))->toBeTrue();
         });
     });
 
     describe('delete', function (): void {
-        it('allows deleting customers', function (): void {
-            expect($this->policy->delete($this->user, $this->customer))->toBeTrue();
-        });
+        it('allows deleting global customer without owner resolver', function (): void {
+            $globalCustomer = Customer::query()->create([
+                'first_name' => 'Global',
+                'last_name' => 'Customer',
+                'email' => 'global-delete-' . uniqid() . '@example.com',
+                'status' => CustomerStatus::Active,
+                'owner_type' => null,
+                'owner_id' => null,
+            ]);
 
-        it('delegates to isOwnedBy when method exists', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership;
-            $mockCustomer->setOwnedByResult(true);
-
-            expect($this->policy->delete($this->user, $mockCustomer))->toBeTrue();
-        });
-
-        it('returns false from isOwnedBy when not owner', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership;
-            $mockCustomer->setOwnedByResult(false);
-
-            expect($this->policy->delete($this->user, $mockCustomer))->toBeFalse();
+            expect($this->policy->delete($this->user, $globalCustomer))->toBeTrue();
         });
     });
 
     describe('addCredit', function (): void {
         it('allows adding credit', function (): void {
-            expect($this->policy->addCredit($this->user, $this->customer))->toBeTrue();
-        });
+            $globalCustomer = Customer::query()->create([
+                'first_name' => 'Global',
+                'last_name' => 'Customer',
+                'email' => 'global-credit-' . uniqid() . '@example.com',
+                'status' => CustomerStatus::Active,
+                'owner_type' => null,
+                'owner_id' => null,
+            ]);
 
-        it('delegates to isOwnedBy when method exists', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership;
-            $mockCustomer->setOwnedByResult(true);
-
-            expect($this->policy->addCredit($this->user, $mockCustomer))->toBeTrue();
-        });
-
-        it('returns false from isOwnedBy when not owner', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership;
-            $mockCustomer->setOwnedByResult(false);
-
-            expect($this->policy->addCredit($this->user, $mockCustomer))->toBeFalse();
+            expect($this->policy->addCredit($this->user, $globalCustomer))->toBeTrue();
         });
     });
 
     describe('deductCredit', function (): void {
         it('allows deducting credit', function (): void {
-            expect($this->policy->deductCredit($this->user, $this->customer))->toBeTrue();
-        });
+            $globalCustomer = Customer::query()->create([
+                'first_name' => 'Global',
+                'last_name' => 'Customer',
+                'email' => 'global-debit-' . uniqid() . '@example.com',
+                'status' => CustomerStatus::Active,
+                'owner_type' => null,
+                'owner_id' => null,
+            ]);
 
-        it('delegates to isOwnedBy when method exists', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership;
-            $mockCustomer->setOwnedByResult(true);
-
-            expect($this->policy->deductCredit($this->user, $mockCustomer))->toBeTrue();
-        });
-
-        it('returns false from isOwnedBy when not owner', function (): void {
-            $mockCustomer = new MockCustomerWithOwnership;
-            $mockCustomer->setOwnedByResult(false);
-
-            expect($this->policy->deductCredit($this->user, $mockCustomer))->toBeFalse();
+            expect($this->policy->deductCredit($this->user, $globalCustomer))->toBeTrue();
         });
     });
 });
@@ -186,14 +197,8 @@ describe('SegmentPolicy', function (): void {
         $this->policy = new SegmentPolicy;
         $this->user = new class
         {
-            public int $id = 1;
+            public string $id = 'user-a';
         };
-        $this->segment = Segment::create([
-            'name' => 'Policy Segment',
-            'slug' => 'policy-segment-' . uniqid(),
-            'is_active' => true,
-            'is_automatic' => true,
-        ]);
     });
 
     describe('viewAny', function (): void {
@@ -203,22 +208,47 @@ describe('SegmentPolicy', function (): void {
     });
 
     describe('view', function (): void {
-        it('allows viewing segments', function (): void {
-            expect($this->policy->view($this->user, $this->segment))->toBeTrue();
+        it('allows viewing global segments without owner resolver', function (): void {
+            $segment = Segment::query()->create([
+                'name' => 'Global Segment',
+                'slug' => 'global-segment-' . uniqid(),
+                'is_active' => true,
+                'is_automatic' => true,
+                'owner_type' => null,
+                'owner_id' => null,
+            ]);
+
+            expect($this->policy->view($this->user, $segment))->toBeTrue();
         });
 
-        it('delegates to isOwnedBy when method exists', function (): void {
-            $mockSegment = new MockSegmentWithOwnership;
-            $mockSegment->setOwnedByResult(true);
+        it('denies cross-tenant segment access when owner resolver is set', function (): void {
+            $ownerA = CustomersTestOwner::query()->create(['name' => 'Owner A']);
+            $ownerB = CustomersTestOwner::query()->create(['name' => 'Owner B']);
 
-            expect($this->policy->view($this->user, $mockSegment))->toBeTrue();
-        });
+            $segmentA = Segment::query()->create([
+                'name' => 'A Segment',
+                'slug' => 'a-segment-' . uniqid(),
+                'is_active' => true,
+                'is_automatic' => true,
+                'owner_type' => $ownerA->getMorphClass(),
+                'owner_id' => $ownerA->getKey(),
+            ]);
 
-        it('returns false from isOwnedBy when not owner', function (): void {
-            $mockSegment = new MockSegmentWithOwnership;
-            $mockSegment->setOwnedByResult(false);
+            $segmentB = Segment::query()->create([
+                'name' => 'B Segment',
+                'slug' => 'b-segment-' . uniqid(),
+                'is_active' => true,
+                'is_automatic' => true,
+                'owner_type' => $ownerB->getMorphClass(),
+                'owner_id' => $ownerB->getKey(),
+            ]);
 
-            expect($this->policy->view($this->user, $mockSegment))->toBeFalse();
+            bindCustomersOwnerResolver($ownerA);
+
+            expect($this->policy->view($this->user, $segmentA))->toBeTrue()
+                ->and($this->policy->update($this->user, $segmentA))->toBeTrue()
+                ->and($this->policy->view($this->user, $segmentB))->toBeFalse()
+                ->and($this->policy->update($this->user, $segmentB))->toBeFalse();
         });
     });
 
@@ -229,48 +259,46 @@ describe('SegmentPolicy', function (): void {
     });
 
     describe('update', function (): void {
-        it('allows updating segments', function (): void {
-            expect($this->policy->update($this->user, $this->segment))->toBeTrue();
-        });
+        it('allows updating global segments without owner resolver', function (): void {
+            $segment = Segment::query()->create([
+                'name' => 'Global Update Segment',
+                'slug' => 'global-update-segment-' . uniqid(),
+                'is_active' => true,
+                'is_automatic' => true,
+                'owner_type' => null,
+                'owner_id' => null,
+            ]);
 
-        it('delegates to isOwnedBy when method exists', function (): void {
-            $mockSegment = new MockSegmentWithOwnership;
-            $mockSegment->setOwnedByResult(true);
-
-            expect($this->policy->update($this->user, $mockSegment))->toBeTrue();
-        });
-
-        it('returns false from isOwnedBy when not owner', function (): void {
-            $mockSegment = new MockSegmentWithOwnership;
-            $mockSegment->setOwnedByResult(false);
-
-            expect($this->policy->update($this->user, $mockSegment))->toBeFalse();
+            expect($this->policy->update($this->user, $segment))->toBeTrue();
         });
     });
 
     describe('delete', function (): void {
-        it('allows deleting segments', function (): void {
-            expect($this->policy->delete($this->user, $this->segment))->toBeTrue();
-        });
+        it('allows deleting global segments without owner resolver', function (): void {
+            $segment = Segment::query()->create([
+                'name' => 'Global Delete Segment',
+                'slug' => 'global-delete-segment-' . uniqid(),
+                'is_active' => true,
+                'is_automatic' => true,
+                'owner_type' => null,
+                'owner_id' => null,
+            ]);
 
-        it('delegates to isOwnedBy when method exists', function (): void {
-            $mockSegment = new MockSegmentWithOwnership;
-            $mockSegment->setOwnedByResult(true);
-
-            expect($this->policy->delete($this->user, $mockSegment))->toBeTrue();
-        });
-
-        it('returns false from isOwnedBy when not owner', function (): void {
-            $mockSegment = new MockSegmentWithOwnership;
-            $mockSegment->setOwnedByResult(false);
-
-            expect($this->policy->delete($this->user, $mockSegment))->toBeFalse();
+            expect($this->policy->delete($this->user, $segment))->toBeTrue();
         });
     });
 
     describe('rebuild', function (): void {
         it('allows rebuilding automatic segments', function (): void {
-            expect($this->policy->rebuild($this->user, $this->segment))->toBeTrue();
+            $segment = Segment::query()->create([
+                'name' => 'Rebuild Segment',
+                'slug' => 'rebuild-segment-' . uniqid(),
+                'is_automatic' => true,
+                'owner_type' => null,
+                'owner_id' => null,
+            ]);
+
+            expect($this->policy->rebuild($this->user, $segment))->toBeTrue();
         });
 
         it('denies rebuilding manual segments', function (): void {
@@ -278,6 +306,8 @@ describe('SegmentPolicy', function (): void {
                 'name' => 'Manual',
                 'slug' => 'manual-' . uniqid(),
                 'is_automatic' => false,
+                'owner_type' => null,
+                'owner_id' => null,
             ]);
 
             expect($this->policy->rebuild($this->user, $manualSegment))->toBeFalse();

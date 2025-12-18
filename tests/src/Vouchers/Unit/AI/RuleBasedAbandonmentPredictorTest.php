@@ -5,10 +5,13 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\AI\AbandonmentRisk;
+use AIArmada\Vouchers\AI\CartFeatureExtractor;
+use AIArmada\Vouchers\AI\Contracts\CartFeatureExtractorInterface;
 use AIArmada\Vouchers\AI\Enums\AbandonmentRiskLevel;
 use AIArmada\Vouchers\AI\Enums\InterventionType;
 use AIArmada\Vouchers\AI\Predictors\RuleBasedAbandonmentPredictor;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Http\Request;
 
 function createCartForAbandonmentTest(int $subtotalCents = 10000): Cart
 {
@@ -126,15 +129,14 @@ describe('RuleBasedAbandonmentPredictor', function (): void {
             $cart = createCartForAbandonmentTest(7500);
             $user = createUserForAbandonmentTest([
                 'id' => 1,
-                'order_count' => 5,
+                'orders_count' => 5,
             ]);
 
             $result = $this->predictor->predictAbandonment($cart, $user);
 
             // Low risk should not require aggressive intervention
-            if ($result->riskScore < 0.3) {
-                expect($result->suggestedIntervention)->toBe(InterventionType::None);
-            }
+            expect($result->riskScore)->toBeLessThan(0.3)
+                ->and($result->suggestedIntervention)->toBe(InterventionType::None);
         });
 
         it('recommends appropriate intervention based on risk', function (): void {
@@ -181,6 +183,8 @@ describe('RuleBasedAbandonmentPredictor', function (): void {
             // Use a high threshold to filter
             $results = iterator_to_array($this->predictor->getHighRiskCarts($carts, 0.9));
 
+            expect($results)->toBeArray();
+
             // Results should only contain high-risk carts (if any)
             foreach ($results as $result) {
                 expect($result['risk']->riskScore)->toBeGreaterThanOrEqual(0.9);
@@ -193,12 +197,11 @@ describe('RuleBasedAbandonmentPredictor', function (): void {
             // Use low threshold to ensure we get results
             $results = iterator_to_array($this->predictor->getHighRiskCarts($carts, 0.0));
 
-            if (! empty($results)) {
-                expect($results[0])->toHaveKey('cart')
-                    ->and($results[0])->toHaveKey('risk')
-                    ->and($results[0]['cart'])->toBeInstanceOf(Cart::class)
-                    ->and($results[0]['risk'])->toBeInstanceOf(AbandonmentRisk::class);
-            }
+            expect($results)->toHaveCount(1)
+                ->and($results[0])->toHaveKey('cart')
+                ->and($results[0])->toHaveKey('risk')
+                ->and($results[0]['cart'])->toBeInstanceOf(Cart::class)
+                ->and($results[0]['risk'])->toBeInstanceOf(AbandonmentRisk::class);
         });
 
         it('uses default threshold of 0.6', function (): void {
@@ -208,6 +211,8 @@ describe('RuleBasedAbandonmentPredictor', function (): void {
 
             // If risk is >= 0.6, it should be included with default threshold
             $highRisk = iterator_to_array($this->predictor->getHighRiskCarts([$cart]));
+
+            expect($highRisk)->toBeArray();
 
             if ($result->riskScore >= 0.6) {
                 expect($highRisk)->not->toBeEmpty();
@@ -243,10 +248,8 @@ describe('RuleBasedAbandonmentPredictor', function (): void {
 
             $result = $this->predictor->predictAbandonment($cart);
 
-            // Micro carts may have price sensitivity risk
-            if (isset($result->riskFactors['price_sensitivity'])) {
-                expect($result->riskFactors['price_sensitivity']['bucket'])->toBe('micro');
-            }
+            expect($result->riskFactors)->toHaveKey('price_sensitivity')
+                ->and($result->riskFactors['price_sensitivity']['bucket'])->toBe('micro');
         });
     });
 
@@ -254,12 +257,48 @@ describe('RuleBasedAbandonmentPredictor', function (): void {
         it('identifies device type in risk factors', function (): void {
             $cart = createCartForAbandonmentTest(10000);
 
-            $result = $this->predictor->predictAbandonment($cart);
+            $featureExtractor = new class(new CartFeatureExtractor) implements CartFeatureExtractorInterface
+            {
+                public function __construct(private readonly CartFeatureExtractor $base) {}
 
-            // Device type should be tracked
-            if (isset($result->riskFactors['device_type'])) {
-                expect($result->riskFactors['device_type'])->toHaveKey('device');
-            }
+                public function extract(Cart $cart, ?Model $user = null, ?Request $request = null): array
+                {
+                    return array_merge(
+                        $this->base->extract($cart, $user, $request),
+                        ['device_type' => 'mobile', 'is_mobile' => true],
+                    );
+                }
+
+                public function extractCartFeatures(Cart $cart): array
+                {
+                    return $this->base->extractCartFeatures($cart);
+                }
+
+                public function extractUserFeatures(?Model $user): array
+                {
+                    return $this->base->extractUserFeatures($user);
+                }
+
+                public function extractSessionFeatures(?Request $request): array
+                {
+                    return array_merge(
+                        $this->base->extractSessionFeatures($request),
+                        ['device_type' => 'mobile', 'is_mobile' => true],
+                    );
+                }
+
+                public function extractTimeFeatures(): array
+                {
+                    return $this->base->extractTimeFeatures();
+                }
+            };
+
+            $predictor = new RuleBasedAbandonmentPredictor($featureExtractor);
+            $result = $predictor->predictAbandonment($cart);
+
+            expect($result->riskFactors)->toHaveKey('device_type')
+                ->and($result->riskFactors['device_type'])->toHaveKey('device')
+                ->and($result->riskFactors['device_type']['device'])->toBe('mobile');
         });
     });
 
@@ -267,12 +306,44 @@ describe('RuleBasedAbandonmentPredictor', function (): void {
         it('identifies time patterns in risk factors', function (): void {
             $cart = createCartForAbandonmentTest(10000);
 
-            $result = $this->predictor->predictAbandonment($cart);
+            $featureExtractor = new class(new CartFeatureExtractor) implements CartFeatureExtractorInterface
+            {
+                public function __construct(private readonly CartFeatureExtractor $base) {}
 
-            // Time pattern should be analyzed
-            if (isset($result->riskFactors['time_pattern'])) {
-                expect($result->riskFactors['time_pattern'])->toHaveKey('reason');
-            }
+                public function extract(Cart $cart, ?Model $user = null, ?Request $request = null): array
+                {
+                    return array_merge(
+                        $this->base->extract($cart, $user, $request),
+                        ['hour_of_day' => 2],
+                    );
+                }
+
+                public function extractCartFeatures(Cart $cart): array
+                {
+                    return $this->base->extractCartFeatures($cart);
+                }
+
+                public function extractUserFeatures(?Model $user): array
+                {
+                    return $this->base->extractUserFeatures($user);
+                }
+
+                public function extractSessionFeatures(?Request $request): array
+                {
+                    return $this->base->extractSessionFeatures($request);
+                }
+
+                public function extractTimeFeatures(): array
+                {
+                    return array_merge($this->base->extractTimeFeatures(), ['hour_of_day' => 2]);
+                }
+            };
+
+            $predictor = new RuleBasedAbandonmentPredictor($featureExtractor);
+            $result = $predictor->predictAbandonment($cart);
+
+            expect($result->riskFactors)->toHaveKey('time_pattern')
+                ->and($result->riskFactors['time_pattern'])->toHaveKey('reason');
         });
     });
 
@@ -281,40 +352,39 @@ describe('RuleBasedAbandonmentPredictor', function (): void {
             $cart = createCartForAbandonmentTest(10000);
             $user = createUserForAbandonmentTest([
                 'id' => 1,
-                'voucher_usage_rate' => 0.8, // High voucher dependency
+                'orders_count' => 10,
+                'voucher_orders_count' => 8, // High voucher dependency
             ]);
 
             $result = $this->predictor->predictAbandonment($cart, $user);
 
             // Behavior risk should be analyzed
-            if (isset($result->riskFactors['behavior'])) {
-                expect($result->riskFactors['behavior'])->toHaveKey('reason');
-            }
+            expect($result->riskFactors)->toHaveKey('behavior')
+                ->and($result->riskFactors['behavior'])->toHaveKey('reason');
         });
     });
 
     describe('predicted abandonment time', function (): void {
         it('returns null for low risk', function (): void {
             $cart = createCartForAbandonmentTest(7500);
-            $user = createUserForAbandonmentTest(['id' => 1, 'order_count' => 5]);
+            $user = createUserForAbandonmentTest(['id' => 1, 'orders_count' => 5]);
 
             $result = $this->predictor->predictAbandonment($cart, $user);
 
             // Low risk carts don't have predicted abandonment time
-            if ($result->riskScore < 0.3) {
-                expect($result->predictedAbandonmentTime)->toBeNull();
-            }
+            expect($result->riskScore)->toBeLessThan(0.3)
+                ->and($result->predictedAbandonmentTime)->toBeNull();
         });
 
         it('returns Carbon instance for medium+ risk', function (): void {
             $cart = createCartForAbandonmentTest(10000);
+            $cart->setMetadata('created_at', now()->subMinutes(120));
 
             $result = $this->predictor->predictAbandonment($cart);
 
             // Medium+ risk should have predicted time
-            if ($result->riskScore >= 0.3) {
-                expect($result->predictedAbandonmentTime)->not->toBeNull();
-            }
+            expect($result->riskScore)->toBeGreaterThanOrEqual(0.3)
+                ->and($result->predictedAbandonmentTime)->toBeInstanceOf(\Carbon\Carbon::class);
         });
     });
 });

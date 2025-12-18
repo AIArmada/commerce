@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Inventory\Enums\SerialEventType;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -26,6 +29,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $user_id
  * @property string|null $actor_name
  * @property string|null $notes
+ * @property string|null $owner_type
+ * @property int|string|null $owner_id
  * @property array<string, mixed>|null $metadata
  * @property Carbon $occurred_at
  * @property Carbon $created_at
@@ -37,6 +42,7 @@ use Illuminate\Support\Carbon;
  */
 final class InventorySerialHistory extends Model
 {
+    use HasOwner;
     use HasUuids;
 
     /**
@@ -51,6 +57,8 @@ final class InventorySerialHistory extends Model
         'new_status',
         'from_location_id',
         'to_location_id',
+        'owner_type',
+        'owner_id',
         'related_to_type',
         'related_to_id',
         'reference',
@@ -135,6 +143,67 @@ final class InventorySerialHistory extends Model
     public function scopeBetweenDates(Builder $query, Carbon $start, Carbon $end): Builder
     {
         return $query->whereBetween('occurred_at', [$start, $end]);
+    }
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('owner', function (Builder $query): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
+        });
+
+        static::saving(function (InventorySerialHistory $history): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $serial = InventorySerial::query()
+                ->whereKey($history->serial_id)
+                ->first();
+
+            if ($serial === null) {
+                throw new AuthorizationException('Invalid serial for current owner context.');
+            }
+
+            if ($history->from_location_id !== null) {
+                $from = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                    ->whereKey($history->from_location_id)
+                    ->first();
+
+                if ($from === null) {
+                    throw new AuthorizationException('Invalid from_location_id for current owner context.');
+                }
+
+                if ($serial->owner_type !== $from->owner_type || $serial->owner_id !== $from->owner_id) {
+                    throw new AuthorizationException('Serial owner does not match from location owner.');
+                }
+            }
+
+            if ($history->to_location_id !== null) {
+                $to = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                    ->whereKey($history->to_location_id)
+                    ->first();
+
+                if ($to === null) {
+                    throw new AuthorizationException('Invalid to_location_id for current owner context.');
+                }
+
+                if ($serial->owner_type !== $to->owner_type || $serial->owner_id !== $to->owner_id) {
+                    throw new AuthorizationException('Serial owner does not match to location owner.');
+                }
+            }
+
+            if (($history->owner_type !== null || $history->owner_id !== null)
+                && ($history->owner_type !== $serial->owner_type || $history->owner_id !== $serial->owner_id)) {
+                throw new AuthorizationException('Owner mismatch for inventory serial history.');
+            }
+
+            $history->owner_type = $serial->owner_type;
+            $history->owner_id = $serial->owner_id;
+        });
     }
 
     /**

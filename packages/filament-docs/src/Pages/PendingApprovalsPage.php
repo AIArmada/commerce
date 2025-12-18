@@ -11,7 +11,6 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Tables\Actions\Action as TableAction;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
@@ -124,7 +123,7 @@ class PendingApprovalsPage extends Page implements HasTable
                         ->toArray()),
             ])
             ->actions([
-                TableAction::make('approve')
+                Action::make('approve')
                     ->label(__('Approve'))
                     ->icon('heroicon-o-check-circle')
                     ->color('success')
@@ -147,7 +146,7 @@ class PendingApprovalsPage extends Page implements HasTable
                             ->send();
                     }),
 
-                TableAction::make('reject')
+                Action::make('reject')
                     ->label(__('Reject'))
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
@@ -171,7 +170,7 @@ class PendingApprovalsPage extends Page implements HasTable
                             ->send();
                     }),
 
-                TableAction::make('view_document')
+                Action::make('view_document')
                     ->label(__('View'))
                     ->icon('heroicon-o-eye')
                     ->url(fn (DocApproval $record): string => route('filament.admin.resources.docs.view', $record->doc_id)),

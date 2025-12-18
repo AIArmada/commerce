@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Fraud\Detectors;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Vouchers\Fraud\Enums\FraudSignalType;
 use AIArmada\Vouchers\Fraud\FraudSignal;
 use AIArmada\Vouchers\Models\Voucher;
@@ -292,7 +293,10 @@ class CodeAbuseDetector extends AbstractFraudDetector
         $since = Carbon::now()->subHours($this->analysisWindowHours);
 
         return VoucherRedemption::query()
-            ->whereHas('voucher', fn ($query) => $query->where('code', $code))
+            ->whereHas('voucher', function ($query) use ($code): void {
+                $query->where('code', $code);
+                $this->scopeVoucherOwner($query);
+            })
             ->where('created_at', '>=', $since)
             ->whereNotNull('ip_address')
             ->distinct('ip_address')
@@ -311,11 +315,34 @@ class CodeAbuseDetector extends AbstractFraudDetector
         $since = Carbon::now()->subHours($this->analysisWindowHours);
 
         return VoucherRedemption::query()
-            ->whereHas('voucher', fn ($query) => $query->where('code', $code))
+            ->whereHas('voucher', function ($query) use ($code): void {
+                $query->where('code', $code);
+                $this->scopeVoucherOwner($query);
+            })
             ->where('created_at', '>=', $since)
             ->whereNotNull('device_fingerprint')
             ->distinct('device_fingerprint')
             ->count('device_fingerprint');
+    }
+
+    private function scopeVoucherOwner($query): void
+    {
+        if (! config('vouchers.owner.enabled', false)) {
+            return;
+        }
+
+        if (! app()->bound(OwnerResolverInterface::class)) {
+            return;
+        }
+
+        /** @var OwnerResolverInterface $resolver */
+        $resolver = app(OwnerResolverInterface::class);
+        $owner = $resolver->resolve();
+        $includeGlobal = (bool) config('vouchers.owner.include_global', true);
+
+        if (method_exists($query, 'forOwner')) {
+            $query->forOwner($owner, $includeGlobal);
+        }
     }
 
     /**

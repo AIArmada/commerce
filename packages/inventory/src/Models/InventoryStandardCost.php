@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $id
  * @property string $inventoryable_type
  * @property string $inventoryable_id
+ * @property string|null $owner_type
+ * @property int|string|null $owner_id
  * @property int $standard_cost_minor
  * @property string $currency
  * @property \Illuminate\Support\Carbon $effective_from
@@ -27,11 +33,14 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class InventoryStandardCost extends Model
 {
     use HasFactory;
+    use HasOwner;
     use HasUuids;
 
     protected $fillable = [
         'inventoryable_type',
         'inventoryable_id',
+        'owner_type',
+        'owner_id',
         'standard_cost_minor',
         'currency',
         'effective_from',
@@ -40,6 +49,43 @@ class InventoryStandardCost extends Model
         'notes',
         'metadata',
     ];
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('owner', function (Builder $query): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
+        });
+
+        static::saving(function (InventoryStandardCost $cost): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $owner = InventoryOwnerScope::resolveOwner();
+
+            if ($owner === null) {
+                if ($cost->owner_type !== null || $cost->owner_id !== null) {
+                    throw new AuthorizationException('Cannot write owned inventory standard costs without an owner context.');
+                }
+
+                return;
+            }
+
+            if (! (bool) config('inventory.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            if ($cost->owner_type !== null || $cost->owner_id !== null) {
+                return;
+            }
+
+            $cost->assignOwner($owner);
+        });
+    }
 
     public function getTable(): string
     {

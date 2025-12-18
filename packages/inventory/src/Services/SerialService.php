@@ -97,8 +97,7 @@ final class SerialService
         $query = InventorySerial::query()
             ->where('inventoryable_type', $model->getMorphClass())
             ->where('inventoryable_id', $model->getKey())
-            ->orderBy('created_at')
-            ;
+            ->orderBy('created_at');
 
         $query = InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');
 

@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +17,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $id
  * @property string $inventoryable_type
  * @property string $inventoryable_id
+ * @property string|null $owner_type
+ * @property int|string|null $owner_id
  * @property string|null $supplier_id
  * @property string|null $supplier_name
  * @property int $lead_time_days
@@ -33,11 +39,14 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class InventorySupplierLeadtime extends Model
 {
     use HasFactory;
+    use HasOwner;
     use HasUuids;
 
     protected $fillable = [
         'inventoryable_type',
         'inventoryable_id',
+        'owner_type',
+        'owner_id',
         'supplier_id',
         'supplier_name',
         'lead_time_days',
@@ -52,6 +61,62 @@ class InventorySupplierLeadtime extends Model
         'last_received_at',
         'metadata',
     ];
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('owner', function (Builder $query): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
+        });
+
+        static::saving(function (InventorySupplierLeadtime $leadtime): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $owner = InventoryOwnerScope::resolveOwner();
+
+            if ($leadtime->owner_type === null xor $leadtime->owner_id === null) {
+                throw new AuthorizationException('Owner fields must be both set or both null.');
+            }
+
+            if ($owner === null) {
+                if ($leadtime->owner_type !== null || $leadtime->owner_id !== null) {
+                    throw new AuthorizationException('Cannot write owned supplier leadtimes without an owner context.');
+                }
+
+                return;
+            }
+
+            $inventoryable = $leadtime->inventoryable;
+            if ($inventoryable instanceof Model) {
+                /** @var string|null $inventoryableOwnerType */
+                $inventoryableOwnerType = $inventoryable->getAttribute('owner_type');
+                /** @var int|string|null $inventoryableOwnerId */
+                $inventoryableOwnerId = $inventoryable->getAttribute('owner_id');
+
+                if ($inventoryableOwnerType !== null && $inventoryableOwnerId !== null) {
+                    $leadtime->owner_type = $inventoryableOwnerType;
+                    $leadtime->owner_id = $inventoryableOwnerId;
+
+                    return;
+                }
+            }
+
+            if (! (bool) config('inventory.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            if ($leadtime->owner_type !== null || $leadtime->owner_id !== null) {
+                return;
+            }
+
+            $leadtime->assignOwner($owner);
+        });
+    }
 
     public function getTable(): string
     {
@@ -158,6 +223,11 @@ class InventorySupplierLeadtime extends Model
             ->where('inventoryable_type', $this->inventoryable_type)
             ->where('inventoryable_id', $this->inventoryable_id)
             ->where('id', '!=', $this->id)
+            ->when(
+                $this->owner_type === null || $this->owner_id === null,
+                fn (Builder $query): Builder => $query->whereNull('owner_type')->whereNull('owner_id'),
+                fn (Builder $query): Builder => $query->where('owner_type', $this->owner_type)->where('owner_id', $this->owner_id),
+            )
             ->update(['is_primary' => false]);
 
         return $this->update(['is_primary' => true]);

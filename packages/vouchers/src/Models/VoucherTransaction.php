@@ -51,7 +51,7 @@ final class VoucherTransaction extends Model
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
 
-        return $tables['voucher_transactions'] ?? $prefix.'voucher_transactions';
+        return $tables['voucher_transactions'] ?? $prefix . 'voucher_transactions';
     }
 
     /**

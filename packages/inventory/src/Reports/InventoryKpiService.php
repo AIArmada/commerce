@@ -99,9 +99,7 @@ final class InventoryKpiService
             ->where('inventoryable_type', $inventoryableType)
             ->where('inventoryable_id', $inventoryableId)
             ->where('type', MovementType::Shipment->value)
-            ->whereBetween('occurred_at', [$startDate, $endDate])
-
-            ;
+            ->whereBetween('occurred_at', [$startDate, $endDate]);
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToMovementQuery($totalShipmentsQuery);
@@ -161,9 +159,7 @@ final class InventoryKpiService
             ->where('inventoryable_id', $inventoryableId)
             ->when($locationId, fn ($q) => $q->where('from_location_id', $locationId))
             ->where('type', MovementType::Shipment->value)
-            ->whereBetween('occurred_at', [$startDate, $endDate])
-
-            ;
+            ->whereBetween('occurred_at', [$startDate, $endDate]);
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToMovementQuery($stockoutEventsQuery);
@@ -189,9 +185,7 @@ final class InventoryKpiService
         $totalCountsQuery = InventoryMovement::query()
             ->where('type', MovementType::Adjustment->value)
             ->where('reason', 'cycle_count')
-            ->whereBetween('occurred_at', [$startDate, $endDate])
-
-            ;
+            ->whereBetween('occurred_at', [$startDate, $endDate]);
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToMovementQuery($totalCountsQuery);
@@ -208,9 +202,7 @@ final class InventoryKpiService
             ->where('type', MovementType::Adjustment->value)
             ->where('reason', 'cycle_count')
             ->whereBetween('occurred_at', [$startDate, $endDate])
-            ->where('quantity', 0)
-
-            ;
+            ->where('quantity', 0);
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToMovementQuery($accurateCountsQuery);
@@ -362,9 +354,7 @@ final class InventoryKpiService
         // Get current stock level as approximation
         $query = InventoryLevel::query()
             ->where('inventoryable_type', $inventoryableType)
-            ->where('inventoryable_id', $inventoryableId)
-
-            ;
+            ->where('inventoryable_id', $inventoryableId);
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');
@@ -438,9 +428,7 @@ final class InventoryKpiService
 
         $totalShipmentsQuery = InventoryMovement::query()
             ->where('type', MovementType::Shipment->value)
-            ->whereBetween('occurred_at', [$startDate, $endDate])
-
-            ;
+            ->whereBetween('occurred_at', [$startDate, $endDate]);
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToMovementQuery($totalShipmentsQuery);
@@ -459,9 +447,7 @@ final class InventoryKpiService
             ->where(function ($query): void {
                 $query->whereNull('reason')
                     ->orWhere('reason', '!=', 'partial');
-            })
-
-            ;
+            });
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToMovementQuery($fulfilledShipmentsQuery);
