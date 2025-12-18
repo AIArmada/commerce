@@ -11,8 +11,6 @@ use Filament\Forms;
 use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Filament\Schemas\Components\Section;
-use Illuminate\Support\Str;
 
 class PolicyDesignerPage extends Page
 {
@@ -124,7 +122,7 @@ class PolicyDesignerPage extends Page
     {
         return $form
             ->schema([
-                Section::make('Policy Details')
+                Forms\Components\Section::make('Policy Details')
                     ->schema([
                         Forms\Components\TextInput::make('policyName')
                             ->label('Policy Name')
@@ -271,18 +269,17 @@ PHP;
             return;
         }
 
-        $policySlug = Str::slug($this->policyName);
+        // Generate slug from policy name
+        $slug = \Illuminate\Support\Str::slug($this->policyName);
 
         // Create or update the policy
         AccessPolicy::updateOrCreate(
-            ['slug' => $policySlug],
+            ['name' => $this->policyName],
             [
-                'name' => $this->policyName,
-                'slug' => $policySlug,
+                'slug' => $slug,
                 'description' => $this->policyDescription,
                 'effect' => $this->effect,
                 'target_action' => '*',
-                'target_resource' => null,
                 'priority' => $this->priority,
                 'conditions' => json_encode($this->buildPolicyData()),
                 'is_active' => true,

@@ -2,262 +2,302 @@
 
 declare(strict_types=1);
 
-namespace Tests\FilamentAuthz\Unit;
-
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Enums\PermissionScope;
 use AIArmada\FilamentAuthz\Models\ScopedPermission;
 use AIArmada\FilamentAuthz\Services\ContextualAuthorizationService;
+use AIArmada\FilamentAuthz\Services\PermissionAggregator;
 use AIArmada\FilamentAuthz\Services\TeamPermissionService;
-use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Collection;
-use Mockery;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
-afterEach(function (): void {
-    Mockery::close();
+beforeEach(function (): void {
+    // Clear data
+    ScopedPermission::query()->delete();
+    Permission::query()->delete();
+    Role::query()->delete();
+    User::query()->delete();
+
+    // Create and authenticate a user
+    $user = User::create([
+        'name' => 'System User',
+        'email' => 'system@example.com',
+        'password' => bcrypt('password'),
+    ]);
+    test()->actingAs($user);
 });
 
 describe('TeamPermissionService', function (): void {
-    describe('hasTeamPermission', function (): void {
-        it('checks team permission via contextual auth service', function (): void {
-            $user = new class
-            {
-                public function getKey(): int
-                {
-                    return 1;
-                }
-            };
+    test('can be instantiated', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TeamPermissionService($contextualAuth);
 
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $contextualAuth->shouldReceive('canInTeam')
-                ->with($user, 'edit-posts', 'team-123')
-                ->once()
-                ->andReturn(true);
-
-            $service = new TeamPermissionService($contextualAuth);
-            $result = $service->hasTeamPermission($user, 'edit-posts', 'team-123');
-
-            expect($result)->toBeTrue();
-        });
-
-        it('returns false when user lacks team permission', function (): void {
-            $user = new class
-            {
-                public function getKey(): int
-                {
-                    return 1;
-                }
-            };
-
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $contextualAuth->shouldReceive('canInTeam')
-                ->with($user, 'edit-posts', 'team-456')
-                ->once()
-                ->andReturn(false);
-
-            $service = new TeamPermissionService($contextualAuth);
-            $result = $service->hasTeamPermission($user, 'edit-posts', 'team-456');
-
-            expect($result)->toBeFalse();
-        });
+        expect($service)->toBeInstanceOf(TeamPermissionService::class);
     });
 
-    describe('grantTeamPermission', function (): void {
-        it('grants team permission with all options', function (): void {
-            $user = new class
-            {
-                public function getKey(): int
-                {
-                    return 1;
-                }
-            };
+    test('grantTeamPermission creates scoped permission for team', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TeamPermissionService($contextualAuth);
 
-            $expiresAt = Carbon::now()->addDays(7);
-            $scopedPermission = Mockery::mock(ScopedPermission::class);
+        $user = User::create([
+            'name' => 'Test User',
+            'email' => 'test@example.com',
+            'password' => bcrypt('password'),
+        ]);
 
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $contextualAuth->shouldReceive('grantScopedPermission')
-                ->withArgs(function ($u, $perm, $scope, $scopeVal, $cond, $exp) use ($user, $expiresAt) {
-                    return $u === $user
-                        && $perm === 'edit-posts'
-                        && $scope === PermissionScope::Team
-                        && $scopeVal === 'team-123'
-                        && $cond === ['condition' => 'value']
-                        && $exp === $expiresAt;
-                })
-                ->once()
-                ->andReturn($scopedPermission);
+        $scopedPermission = $service->grantTeamPermission(
+            user: $user,
+            permission: 'posts.view',
+            teamId: 'team-123'
+        );
 
-            $service = new TeamPermissionService($contextualAuth);
-            $result = $service->grantTeamPermission(
-                $user,
-                'edit-posts',
-                'team-123',
-                ['condition' => 'value'],
-                $expiresAt
-            );
-
-            expect($result)->toBe($scopedPermission);
-        });
-
-        it('grants team permission without expiry', function (): void {
-            $user = new class
-            {
-                public function getKey(): int
-                {
-                    return 1;
-                }
-            };
-
-            $scopedPermission = Mockery::mock(ScopedPermission::class);
-
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $contextualAuth->shouldReceive('grantScopedPermission')
-                ->withArgs(function ($u, $perm, $scope, $scopeVal, $cond, $exp) {
-                    return $perm === 'view-reports'
-                        && $scope === PermissionScope::Team
-                        && $scopeVal === 'team-999'
-                        && $cond === []
-                        && $exp === null;
-                })
-                ->once()
-                ->andReturn($scopedPermission);
-
-            $service = new TeamPermissionService($contextualAuth);
-            $result = $service->grantTeamPermission($user, 'view-reports', 'team-999');
-
-            expect($result)->toBe($scopedPermission);
-        });
-
-        it('converts integer team id to string', function (): void {
-            $user = new class
-            {
-                public function getKey(): int
-                {
-                    return 1;
-                }
-            };
-
-            $scopedPermission = Mockery::mock(ScopedPermission::class);
-
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $contextualAuth->shouldReceive('grantScopedPermission')
-                ->withArgs(function ($u, $perm, $scope, $scopeVal, $cond, $exp) {
-                    return $scopeVal === '42';
-                })
-                ->once()
-                ->andReturn($scopedPermission);
-
-            $service = new TeamPermissionService($contextualAuth);
-            $result = $service->grantTeamPermission($user, 'manage-team', 42);
-
-            expect($result)->toBe($scopedPermission);
-        });
+        expect($scopedPermission)->toBeInstanceOf(ScopedPermission::class);
+        expect($scopedPermission->scope_type)->toBe(PermissionScope::Team);
+        expect($scopedPermission->scope_id)->toBe('team-123');
+        expect($scopedPermission->permissionable_type)->toBe(User::class);
+        expect($scopedPermission->permissionable_id)->toBe($user->id);
     });
 
-    describe('revokeTeamPermission', function (): void {
-        it('revokes team permission', function (): void {
-            $user = new class
-            {
-                public function getKey(): int
-                {
-                    return 1;
-                }
-            };
+    test('grantTeamPermission supports conditions', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TeamPermissionService($contextualAuth);
 
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $contextualAuth->shouldReceive('revokeScopedPermission')
-                ->withArgs(function ($u, $perm, $scope, $scopeVal) use ($user) {
-                    return $u === $user
-                        && $perm === 'delete-posts'
-                        && $scope === PermissionScope::Team
-                        && $scopeVal === 'team-123';
-                })
-                ->once()
-                ->andReturn(1);
+        $user = User::create([
+            'name' => 'Conditional User',
+            'email' => 'conditional@example.com',
+            'password' => bcrypt('password'),
+        ]);
 
-            $service = new TeamPermissionService($contextualAuth);
-            $result = $service->revokeTeamPermission($user, 'delete-posts', 'team-123');
+        $scopedPermission = $service->grantTeamPermission(
+            user: $user,
+            permission: 'posts.edit',
+            teamId: 'team-456',
+            conditions: ['status' => 'draft']
+        );
 
-            expect($result)->toBe(1);
-        });
+        expect($scopedPermission->conditions)->toBe(['status' => 'draft']);
     });
 
-    describe('getTeamPermissions', function (): void {
-        it('returns empty collection when no permissions exist', function (): void {
-            Permission::create(['name' => 'edit-posts', 'guard_name' => 'web']);
+    test('grantTeamPermission supports expiration', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TeamPermissionService($contextualAuth);
 
-            $user = new class
-            {
-                public function getKey(): string
-                {
-                    return 'user-uuid';
-                }
-            };
+        $user = User::create([
+            'name' => 'Expiring User',
+            'email' => 'expiring@example.com',
+            'password' => bcrypt('password'),
+        ]);
 
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $service = new TeamPermissionService($contextualAuth);
-            $permissions = $service->getTeamPermissions($user, 'team-123');
+        $expiresAt = now()->addDays(30);
 
-            expect($permissions)->toBeInstanceOf(Collection::class);
-            expect($permissions)->toBeEmpty();
-        });
+        $scopedPermission = $service->grantTeamPermission(
+            user: $user,
+            permission: 'posts.delete',
+            teamId: 'team-789',
+            expiresAt: $expiresAt
+        );
+
+        expect($scopedPermission->expires_at->format('Y-m-d'))->toBe($expiresAt->format('Y-m-d'));
     });
 
-    describe('getTeamsWithPermission', function (): void {
-        it('returns empty collection when no teams have permission', function (): void {
-            Permission::create(['name' => 'edit-posts', 'guard_name' => 'web']);
+    test('revokeTeamPermission removes permission from team', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TeamPermissionService($contextualAuth);
 
-            $user = new class
-            {
-                public function getKey(): string
-                {
-                    return 'user-uuid';
-                }
-            };
+        $user = User::create([
+            'name' => 'Revoke User',
+            'email' => 'revoke@example.com',
+            'password' => bcrypt('password'),
+        ]);
 
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $service = new TeamPermissionService($contextualAuth);
-            $teams = $service->getTeamsWithPermission($user, 'edit-posts');
+        // Grant permission first
+        $service->grantTeamPermission($user, 'posts.view', 'team-123');
 
-            expect($teams)->toBeInstanceOf(\Illuminate\Support\Collection::class);
-            expect($teams)->toBeEmpty();
-        });
+        // Verify it exists
+        expect(ScopedPermission::count())->toBe(1);
+
+        // Revoke permission
+        $deleted = $service->revokeTeamPermission($user, 'posts.view', 'team-123');
+
+        expect($deleted)->toBe(1);
+        expect(ScopedPermission::count())->toBe(0);
     });
 
-    describe('revokeAllTeamPermissions', function (): void {
-        it('returns zero when no permissions to revoke', function (): void {
-            $user = new class
-            {
-                public function getKey(): string
-                {
-                    return 'user-uuid';
-                }
-            };
+    test('getTeamPermissions returns all permissions for user in team', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TeamPermissionService($contextualAuth);
 
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $service = new TeamPermissionService($contextualAuth);
-            $count = $service->revokeAllTeamPermissions($user, 'team-123');
+        $user = User::create([
+            'name' => 'Multi Permission User',
+            'email' => 'multi@example.com',
+            'password' => bcrypt('password'),
+        ]);
 
-            expect($count)->toBe(0);
-        });
+        // Grant multiple permissions
+        $service->grantTeamPermission($user, 'posts.view', 'team-123');
+        $service->grantTeamPermission($user, 'posts.edit', 'team-123');
+        $service->grantTeamPermission($user, 'posts.delete', 'team-123');
+
+        // Also grant permission in different team
+        $service->grantTeamPermission($user, 'posts.view', 'team-456');
+
+        $permissions = $service->getTeamPermissions($user, 'team-123');
+
+        expect($permissions)->toHaveCount(3);
+        expect($permissions->pluck('permission.name')->toArray())
+            ->toContain('posts.view')
+            ->toContain('posts.edit')
+            ->toContain('posts.delete');
     });
 
-    describe('copyTeamPermissions', function (): void {
-        it('returns zero when no permissions to copy', function (): void {
-            $user = new class
-            {
-                public function getKey(): string
-                {
-                    return 'user-uuid';
-                }
-            };
+    test('getTeamsWithPermission returns all teams where user has permission', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TeamPermissionService($contextualAuth);
 
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $service = new TeamPermissionService($contextualAuth);
-            $count = $service->copyTeamPermissions($user, 'team-1', 'team-2');
+        $user = User::create([
+            'name' => 'Multi Team User',
+            'email' => 'multiteam@example.com',
+            'password' => bcrypt('password'),
+        ]);
 
-            expect($count)->toBe(0);
-        });
+        // Grant same permission in multiple teams
+        $service->grantTeamPermission($user, 'posts.view', 'team-123');
+        $service->grantTeamPermission($user, 'posts.view', 'team-456');
+        $service->grantTeamPermission($user, 'posts.view', 'team-789');
+
+        // Grant different permission in another team
+        $service->grantTeamPermission($user, 'posts.edit', 'team-999');
+
+        $teams = $service->getTeamsWithPermission($user, 'posts.view');
+
+        expect($teams)->toHaveCount(3);
+        expect($teams->toArray())
+            ->toContain('team-123')
+            ->toContain('team-456')
+            ->toContain('team-789');
+    });
+
+    test('revokeAllTeamPermissions removes all permissions from team', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TeamPermissionService($contextualAuth);
+
+        $user = User::create([
+            'name' => 'Revoke All User',
+            'email' => 'revokeall@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        // Grant multiple permissions
+        $service->grantTeamPermission($user, 'posts.view', 'team-123');
+        $service->grantTeamPermission($user, 'posts.edit', 'team-123');
+        $service->grantTeamPermission($user, 'posts.delete', 'team-123');
+
+        // Also grant permission in different team (should not be revoked)
+        $service->grantTeamPermission($user, 'posts.view', 'team-456');
+
+        expect(ScopedPermission::count())->toBe(4);
+
+        // Revoke all permissions from team-123
+        $deleted = $service->revokeAllTeamPermissions($user, 'team-123');
+
+        expect($deleted)->toBe(3);
+        expect(ScopedPermission::count())->toBe(1);
+
+        // Verify team-456 permission still exists
+        $remaining = $service->getTeamPermissions($user, 'team-456');
+        expect($remaining)->toHaveCount(1);
+    });
+
+    test('copyTeamPermissions copies all permissions to new team', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TeamPermissionService($contextualAuth);
+
+        $user = User::create([
+            'name' => 'Copy User',
+            'email' => 'copy@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        // Grant permissions in source team
+        $service->grantTeamPermission($user, 'posts.view', 'team-source');
+        $service->grantTeamPermission($user, 'posts.edit', 'team-source');
+        $service->grantTeamPermission($user, 'posts.delete', 'team-source', ['status' => 'draft']);
+
+        // Copy to new team
+        $count = $service->copyTeamPermissions($user, 'team-source', 'team-dest');
+
+        expect($count)->toBe(3);
+
+        // Verify permissions copied
+        $destPermissions = $service->getTeamPermissions($user, 'team-dest');
+        expect($destPermissions)->toHaveCount(3);
+
+        // Verify source permissions still exist
+        $sourcePermissions = $service->getTeamPermissions($user, 'team-source');
+        expect($sourcePermissions)->toHaveCount(3);
+
+        // Verify conditions were copied
+        $deletePermission = $destPermissions->first(
+            fn ($p) => $p->permission->name === 'posts.delete'
+        );
+        expect($deletePermission->conditions)->toBe(['status' => 'draft']);
+    });
+
+    test('hasTeamPermission delegates to contextual auth', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TeamPermissionService($contextualAuth);
+
+        $user = User::create([
+            'name' => 'Check User',
+            'email' => 'check@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        // Initially should not have permission
+        expect($service->hasTeamPermission($user, 'posts.view', 'team-123'))->toBeFalse();
+
+        // Grant permission
+        $service->grantTeamPermission($user, 'posts.view', 'team-123');
+
+        // Now should have permission
+        expect($service->hasTeamPermission($user, 'posts.view', 'team-123'))->toBeTrue();
+
+        // Should not have permission in other team
+        expect($service->hasTeamPermission($user, 'posts.view', 'team-456'))->toBeFalse();
+    });
+
+    test('integer team ids are converted to string', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TeamPermissionService($contextualAuth);
+
+        $user = User::create([
+            'name' => 'Integer Team User',
+            'email' => 'intteam@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        // Grant with integer team id
+        $scopedPermission = $service->grantTeamPermission($user, 'posts.view', 123);
+
+        expect($scopedPermission->scope_id)->toBe('123');
+
+        // Get with integer team id
+        $permissions = $service->getTeamPermissions($user, 123);
+        expect($permissions)->toHaveCount(1);
+
+        // Revoke with integer team id
+        $deleted = $service->revokeTeamPermission($user, 'posts.view', 123);
+        expect($deleted)->toBe(1);
     });
 });
