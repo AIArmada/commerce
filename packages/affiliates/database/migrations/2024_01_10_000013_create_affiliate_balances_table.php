@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $tableName = config('affiliates.table_names.balances', 'affiliate_balances');
+        $tableName = config('affiliates.database.tables.balances', 'affiliate_balances');
 
         Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
@@ -26,7 +26,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        $tableName = config('affiliates.table_names.balances', 'affiliate_balances');
+        $tableName = config('affiliates.database.tables.balances', 'affiliate_balances');
         Schema::dropIfExists($tableName);
     }
 };

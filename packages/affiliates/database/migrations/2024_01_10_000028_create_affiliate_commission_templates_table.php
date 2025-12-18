@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $tableName = config('affiliates.table_names.commission_templates', 'affiliate_commission_templates');
+        $tableName = config('affiliates.database.tables.commission_templates', 'affiliate_commission_templates');
         $jsonType = commerce_json_column_type('affiliates');
 
         Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
@@ -30,6 +30,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('affiliates.table_names.commission_templates', 'affiliate_commission_templates'));
+        Schema::dropIfExists(config('affiliates.database.tables.commission_templates', 'affiliate_commission_templates'));
     }
 };

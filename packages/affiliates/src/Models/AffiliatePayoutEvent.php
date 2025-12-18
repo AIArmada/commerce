@@ -39,7 +39,7 @@ class AffiliatePayoutEvent extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.payout_events', parent::getTable());
+        return config('affiliates.database.tables.payout_events', parent::getTable());
     }
 
     public function payout(): BelongsTo

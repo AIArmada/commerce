@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $affiliatesTable = config('affiliates.table_names.affiliates', 'affiliates');
+        $affiliatesTable = config('affiliates.database.tables.affiliates', 'affiliates');
 
         Schema::table($affiliatesTable, function (Blueprint $table): void {
             $table->foreignUuid('rank_id')->nullable()->after('parent_affiliate_id');
@@ -22,7 +22,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        $affiliatesTable = config('affiliates.table_names.affiliates', 'affiliates');
+        $affiliatesTable = config('affiliates.database.tables.affiliates', 'affiliates');
 
         Schema::table($affiliatesTable, function (Blueprint $table): void {
             $table->dropColumn(['rank_id', 'network_depth', 'direct_downline_count', 'total_downline_count']);

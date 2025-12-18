@@ -10,8 +10,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $modulesTable = config('affiliates.table_names.training_modules', 'affiliate_training_modules');
-        $progressTable = config('affiliates.table_names.training_progress', 'affiliate_training_progress');
+        $modulesTable = config('affiliates.database.tables.training_modules', 'affiliate_training_modules');
+        $progressTable = config('affiliates.database.tables.training_progress', 'affiliate_training_progress');
         $jsonType = commerce_json_column_type('affiliates');
 
         Schema::create($modulesTable, function (Blueprint $table) use ($jsonType): void {
@@ -50,7 +50,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('affiliates.table_names.training_progress', 'affiliate_training_progress'));
-        Schema::dropIfExists(config('affiliates.table_names.training_modules', 'affiliate_training_modules'));
+        Schema::dropIfExists(config('affiliates.database.tables.training_progress', 'affiliate_training_progress'));
+        Schema::dropIfExists(config('affiliates.database.tables.training_modules', 'affiliate_training_modules'));
     }
 };

@@ -44,7 +44,7 @@ class AffiliateVolumeTier extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.volume_tiers', 'affiliate_volume_tiers');
+        return config('affiliates.database.tables.volume_tiers', 'affiliate_volume_tiers');
     }
 
     public function program(): BelongsTo

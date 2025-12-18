@@ -74,7 +74,7 @@ class AffiliateProgram extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.programs', 'affiliate_programs');
+        return config('affiliates.database.tables.programs', 'affiliate_programs');
     }
 
     /**
@@ -90,7 +90,7 @@ class AffiliateProgram extends Model
      */
     public function affiliates(): BelongsToMany
     {
-        $membershipTable = config('affiliates.table_names.program_memberships', 'affiliate_program_memberships');
+        $membershipTable = config('affiliates.database.tables.program_memberships', 'affiliate_program_memberships');
 
         return $this->belongsToMany(Affiliate::class, $membershipTable, 'program_id', 'affiliate_id')
             ->using(AffiliateProgramMembership::class)

@@ -21,7 +21,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Affiliate $affiliate
  */
-final class AffiliateBalance extends Model
+class AffiliateBalance extends Model
 {
     use HasUuids;
 
@@ -36,7 +36,7 @@ final class AffiliateBalance extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.balances', 'affiliate_balances');
+        return config('affiliates.database.tables.balances', 'affiliate_balances');
     }
 
     /**

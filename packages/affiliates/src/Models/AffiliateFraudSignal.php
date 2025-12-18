@@ -62,7 +62,7 @@ class AffiliateFraudSignal extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.fraud_signals', 'affiliate_fraud_signals');
+        return config('affiliates.database.tables.fraud_signals', 'affiliate_fraud_signals');
     }
 
     public function affiliate(): BelongsTo

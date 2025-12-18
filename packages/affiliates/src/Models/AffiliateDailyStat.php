@@ -67,7 +67,7 @@ class AffiliateDailyStat extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.daily_stats', 'affiliate_daily_stats');
+        return config('affiliates.database.tables.daily_stats', 'affiliate_daily_stats');
     }
 
     public function affiliate(): BelongsTo

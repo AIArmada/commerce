@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $jsonType = commerce_json_column_type('affiliates');
 
-        Schema::create(config('affiliates.table_names.payouts', 'affiliate_payouts'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create(config('affiliates.database.tables.payouts', 'affiliate_payouts'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('reference')->unique();
             $table->string('status', 32)->default('draft')->index();
@@ -33,6 +33,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('affiliates.table_names.payouts', 'affiliate_payouts'));
+        Schema::dropIfExists(config('affiliates.database.tables.payouts', 'affiliate_payouts'));
     }
 };

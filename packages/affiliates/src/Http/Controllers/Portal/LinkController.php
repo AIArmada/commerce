@@ -64,7 +64,7 @@ final class LinkController extends Controller
             'program_id' => [
                 'nullable',
                 'uuid',
-                Rule::exists(config('affiliates.table_names.programs', 'affiliate_programs'), 'id'),
+                Rule::exists(config('affiliates.database.tables.programs', 'affiliate_programs'), 'id'),
             ],
             'campaign' => 'nullable|string|max:100',
             'sub_id' => 'nullable|string|max:100',
@@ -74,7 +74,7 @@ final class LinkController extends Controller
                 'nullable',
                 'string',
                 'max:50',
-                Rule::unique(config('affiliates.table_names.links', 'affiliate_links'), 'custom_slug'),
+                Rule::unique(config('affiliates.database.tables.links', 'affiliate_links'), 'custom_slug'),
             ],
         ]);
 

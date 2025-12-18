@@ -59,7 +59,7 @@ class AffiliateLink extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.links', 'affiliate_links');
+        return config('affiliates.database.tables.links', 'affiliate_links');
     }
 
     public function affiliate(): BelongsTo

@@ -21,7 +21,7 @@ use Illuminate\Support\Carbon;
  * @property-read AffiliateSupportTicket $ticket
  * @property-read Affiliate|null $affiliate
  */
-final class AffiliateSupportMessage extends Model
+class AffiliateSupportMessage extends Model
 {
     use HasUuids;
 
@@ -39,7 +39,7 @@ final class AffiliateSupportMessage extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.support_messages', 'affiliate_support_messages');
+        return config('affiliates.database.tables.support_messages', 'affiliate_support_messages');
     }
 
     /**

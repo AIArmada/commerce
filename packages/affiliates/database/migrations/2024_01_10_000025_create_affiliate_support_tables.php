@@ -10,8 +10,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $ticketsTable = config('affiliates.table_names.support_tickets', 'affiliate_support_tickets');
-        $messagesTable = config('affiliates.table_names.support_messages', 'affiliate_support_messages');
+        $ticketsTable = config('affiliates.database.tables.support_tickets', 'affiliate_support_tickets');
+        $messagesTable = config('affiliates.database.tables.support_messages', 'affiliate_support_messages');
 
         Schema::create($ticketsTable, function (Blueprint $table): void {
             $table->uuid('id')->primary();
@@ -36,7 +36,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('affiliates.table_names.support_messages', 'affiliate_support_messages'));
-        Schema::dropIfExists(config('affiliates.table_names.support_tickets', 'affiliate_support_tickets'));
+        Schema::dropIfExists(config('affiliates.database.tables.support_messages', 'affiliate_support_messages'));
+        Schema::dropIfExists(config('affiliates.database.tables.support_tickets', 'affiliate_support_tickets'));
     }
 };

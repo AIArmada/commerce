@@ -28,7 +28,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Collection<int, AffiliateTrainingProgress> $progress
  */
-final class AffiliateTrainingModule extends Model
+class AffiliateTrainingModule extends Model
 {
     use HasUuids;
 
@@ -59,7 +59,7 @@ final class AffiliateTrainingModule extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.training_modules', 'affiliate_training_modules');
+        return config('affiliates.database.tables.training_modules', 'affiliate_training_modules');
     }
 
     /**

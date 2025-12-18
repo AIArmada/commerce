@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $tableName = config('affiliates.table_names.commission_rules', 'affiliate_commission_rules');
+        $tableName = config('affiliates.database.tables.commission_rules', 'affiliate_commission_rules');
 
         Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
@@ -39,7 +39,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        $tableName = config('affiliates.table_names.commission_rules', 'affiliate_commission_rules');
+        $tableName = config('affiliates.database.tables.commission_rules', 'affiliate_commission_rules');
         Schema::dropIfExists($tableName);
     }
 };

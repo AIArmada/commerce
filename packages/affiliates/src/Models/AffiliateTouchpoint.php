@@ -53,7 +53,7 @@ class AffiliateTouchpoint extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.touchpoints', parent::getTable());
+        return config('affiliates.database.tables.touchpoints', parent::getTable());
     }
 
     /**

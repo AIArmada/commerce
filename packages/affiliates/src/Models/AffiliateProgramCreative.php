@@ -50,7 +50,7 @@ class AffiliateProgramCreative extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.program_creatives', 'affiliate_program_creatives');
+        return config('affiliates.database.tables.program_creatives', 'affiliate_program_creatives');
     }
 
     public function program(): BelongsTo
