@@ -205,7 +205,8 @@ class RoleInheritanceService
             $permissions = $permissions->merge($ancestor->permissions);
         }
 
-        return $permissions->unique('id');
+        // Return as Eloquent Collection
+        return new Collection($permissions->unique('id')->values()->all());
     }
 
     /**

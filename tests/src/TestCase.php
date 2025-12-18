@@ -23,6 +23,8 @@ use AIArmada\Shipping\Facades\Shipping;
 use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\VoucherServiceProvider;
 use BackedEnum;
+use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
+use BladeUI\Icons\BladeIconsServiceProvider;
 use DateInterval;
 use DateTimeInterface;
 use Filament\FilamentServiceProvider;
@@ -43,7 +45,6 @@ use Illuminate\Translation\TranslationServiceProvider;
 use Illuminate\Validation\ValidationServiceProvider;
 use Illuminate\View\ViewServiceProvider;
 use Livewire\LivewireServiceProvider;
-use Livewire\Mechanisms\DataStore;
 use Orchestra\Testbench\TestCase as Orchestra;
 use Spatie\LaravelData\Casts\DateTimeInterfaceCast;
 use Spatie\LaravelData\Casts\EnumCast;
@@ -70,9 +71,6 @@ abstract class TestCase extends Orchestra
         // Start session for Livewire/Filament tests
         $this->app['session']->start();
 
-        // Livewire v4 relies on a singleton DataStore. Ensure it is registered in Testbench.
-        $this->app->make(DataStore::class)->register();
-
         // Share an empty error bag so Blade always receives the expected variable
         $this->app['view']->share('errors', tap(new ViewErrorBag, static function (ViewErrorBag $bag): void {
             $bag->put('default', new MessageBag);
@@ -89,15 +87,17 @@ abstract class TestCase extends Orchestra
             EventServiceProvider::class,
             SessionServiceProvider::class,
             ViewServiceProvider::class,
+            BladeIconsServiceProvider::class,
+            BladeHeroiconsServiceProvider::class,
             HashServiceProvider::class,
             CacheServiceProvider::class,
             DatabaseServiceProvider::class,
             TranslationServiceProvider::class,
             ValidationServiceProvider::class,
+            LivewireTestingServiceProvider::class,
             LivewireServiceProvider::class,
             \Filament\Support\SupportServiceProvider::class,
             \Filament\Actions\ActionsServiceProvider::class,
-            \Filament\Notifications\NotificationsServiceProvider::class,
             \Filament\Schemas\SchemasServiceProvider::class,
             \Filament\Forms\FormsServiceProvider::class,
             \Filament\Tables\TablesServiceProvider::class,
@@ -911,7 +911,6 @@ abstract class TestCase extends Orchestra
         Schema::create('order_items', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('order_id');
-            $table->nullableUuidMorphs('owner');
             $table->nullableUuidMorphs('purchasable');
             $table->string('name');
             $table->string('sku')->nullable();
@@ -929,7 +928,6 @@ abstract class TestCase extends Orchestra
         Schema::create('order_addresses', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('order_id');
-            $table->nullableUuidMorphs('owner');
             $table->string('type')->default('shipping');
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();
@@ -949,7 +947,6 @@ abstract class TestCase extends Orchestra
         Schema::create('order_payments', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('order_id');
-            $table->nullableUuidMorphs('owner');
             $table->string('gateway', 50);
             $table->string('transaction_id')->nullable();
             $table->integer('amount')->default(0);
@@ -964,7 +961,6 @@ abstract class TestCase extends Orchestra
         Schema::create('order_refunds', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('order_id');
-            $table->nullableUuidMorphs('owner');
             $table->uuid('payment_id')->nullable();
             $table->string('gateway', 50);
             $table->string('transaction_id')->nullable();
@@ -981,7 +977,6 @@ abstract class TestCase extends Orchestra
         Schema::create('order_notes', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('order_id');
-            $table->nullableUuidMorphs('owner');
             $table->foreignUuid('user_id')->nullable();
             $table->text('content');
             $table->boolean('is_customer_visible')->default(false);
@@ -1018,7 +1013,6 @@ abstract class TestCase extends Orchestra
 
         Schema::create('prices', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->nullableUuidMorphs('owner');
             $table->uuid('price_list_id');
             $table->uuidMorphs('priceable');
             $table->integer('amount')->default(0);
@@ -1032,7 +1026,6 @@ abstract class TestCase extends Orchestra
 
         Schema::create('price_tiers', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->nullableUuidMorphs('owner');
             $table->uuid('price_list_id')->nullable();
             $table->uuidMorphs('tierable');
             $table->integer('min_quantity')->default(1);
@@ -1113,15 +1106,12 @@ abstract class TestCase extends Orchestra
 
         Schema::create('tax_rates', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->nullableUuidMorphs('owner');
             $table->uuid('zone_id');
             $table->string('tax_class')->default('standard');
             $table->string('name');
-            $table->text('description')->nullable();
             $table->integer('rate')->default(0);
             $table->integer('priority')->default(0);
             $table->boolean('is_compound')->default(false);
-            $table->boolean('is_shipping')->default(true);
             $table->boolean('is_active')->default(true);
             $table->timestamps();
             $table->softDeletes();
@@ -1129,7 +1119,6 @@ abstract class TestCase extends Orchestra
 
         Schema::create('tax_exemptions', function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->nullableUuidMorphs('owner');
             $table->uuidMorphs('exemptable');
             $table->foreignUuid('tax_zone_id')->nullable();
             $table->string('reason');
@@ -1143,21 +1132,6 @@ abstract class TestCase extends Orchestra
             $table->timestamp('expires_at')->nullable();
             $table->timestamps();
             $table->softDeletes();
-        });
-
-        // =========================================================================
-        // SPATIE WEBHOOK CLIENT TABLE
-        // =========================================================================
-        Schema::dropIfExists('webhook_calls');
-        Schema::create('webhook_calls', function (Blueprint $table): void {
-            $table->bigIncrements('id');
-            $table->string('name');
-            $table->string('url')->nullable();
-            $table->json('headers')->nullable();
-            $table->json('payload')->nullable();
-            $table->text('exception')->nullable();
-            $table->timestamp('processed_at')->nullable();
-            $table->timestamps();
         });
     }
 }

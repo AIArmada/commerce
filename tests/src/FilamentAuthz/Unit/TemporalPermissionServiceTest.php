@@ -2,367 +2,376 @@
 
 declare(strict_types=1);
 
-namespace Tests\FilamentAuthz\Unit;
-
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Enums\PermissionScope;
 use AIArmada\FilamentAuthz\Models\ScopedPermission;
 use AIArmada\FilamentAuthz\Services\ContextualAuthorizationService;
+use AIArmada\FilamentAuthz\Services\PermissionAggregator;
 use AIArmada\FilamentAuthz\Services\TemporalPermissionService;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Collection;
-use Mockery;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 
-afterEach(function (): void {
-    Mockery::close();
+beforeEach(function (): void {
+    // Clear data
+    ScopedPermission::query()->delete();
+    Permission::query()->delete();
+    Role::query()->delete();
+    User::query()->delete();
+
+    // Create and authenticate a user
+    $user = User::create([
+        'name' => 'System User',
+        'email' => 'system@example.com',
+        'password' => bcrypt('password'),
+    ]);
+    test()->actingAs($user);
 });
 
 describe('TemporalPermissionService', function (): void {
-    describe('grantTemporaryPermission', function (): void {
-        it('grants temporary permission with default scope', function (): void {
-            $user = new class
-            {
-                public function getKey(): int
-                {
-                    return 1;
-                }
-            };
+    test('can be instantiated', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TemporalPermissionService($contextualAuth);
 
-            $expiresAt = Carbon::now()->addHours(2);
-            $scopedPermission = Mockery::mock(ScopedPermission::class);
-
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $contextualAuth->shouldReceive('grantScopedPermission')
-                ->withArgs(function ($u, $perm, $scope, $scopeVal, $cond, $exp) use ($expiresAt) {
-                    return $perm === 'edit-posts'
-                        && $scope === PermissionScope::Temporal
-                        && $scopeVal === 'temporary'
-                        && $cond === []
-                        && $exp === $expiresAt;
-                })
-                ->once()
-                ->andReturn($scopedPermission);
-
-            $service = new TemporalPermissionService($contextualAuth);
-            $result = $service->grantTemporaryPermission($user, 'edit-posts', $expiresAt);
-
-            expect($result)->toBe($scopedPermission);
-        });
-
-        it('grants temporary permission with custom scope', function (): void {
-            $user = new class
-            {
-                public function getKey(): int
-                {
-                    return 1;
-                }
-            };
-
-            $expiresAt = Carbon::now()->addDays(1);
-            $scopedPermission = Mockery::mock(ScopedPermission::class);
-
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $contextualAuth->shouldReceive('grantScopedPermission')
-                ->withArgs(function ($u, $perm, $scope, $scopeVal, $cond, $exp) {
-                    return $scope === PermissionScope::Team
-                        && $scopeVal === 'team-123'
-                        && $cond === ['reason' => 'emergency'];
-                })
-                ->once()
-                ->andReturn($scopedPermission);
-
-            $service = new TemporalPermissionService($contextualAuth);
-            $result = $service->grantTemporaryPermission(
-                $user,
-                'admin-access',
-                $expiresAt,
-                PermissionScope::Team,
-                'team-123',
-                ['reason' => 'emergency']
-            );
-
-            expect($result)->toBe($scopedPermission);
-        });
+        expect($service)->toBeInstanceOf(TemporalPermissionService::class);
     });
 
-    describe('grantForDuration', function (): void {
-        it('grants permission for specified minutes', function (): void {
-            $user = new class
-            {
-                public function getKey(): int
-                {
-                    return 1;
-                }
-            };
+    test('grantTemporaryPermission creates scoped permission with expiration', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TemporalPermissionService($contextualAuth);
 
-            $scopedPermission = Mockery::mock(ScopedPermission::class);
+        $user = User::create([
+            'name' => 'Temp User',
+            'email' => 'temp@example.com',
+            'password' => bcrypt('password'),
+        ]);
 
-            Carbon::setTestNow(Carbon::create(2024, 1, 15, 10, 0, 0));
+        $expiresAt = Carbon::now()->addHours(2);
 
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $contextualAuth->shouldReceive('grantScopedPermission')
-                ->withArgs(function ($u, $perm, $scope, $scopeVal, $cond, $exp) {
-                    return $perm === 'emergency-access'
-                        && $scope === PermissionScope::Temporal
-                        && $scopeVal === 'temporary'
-                        && $exp->format('Y-m-d H:i:s') === '2024-01-15 10:30:00';
-                })
-                ->once()
-                ->andReturn($scopedPermission);
+        $scopedPermission = $service->grantTemporaryPermission(
+            user: $user,
+            permission: 'posts.edit',
+            expiresAt: $expiresAt
+        );
 
-            $service = new TemporalPermissionService($contextualAuth);
-            $result = $service->grantForDuration($user, 'emergency-access', 30);
-
-            expect($result)->toBe($scopedPermission);
-
-            Carbon::setTestNow();
-        });
-
-        it('grants permission with custom scope for duration', function (): void {
-            $user = new class
-            {
-                public function getKey(): int
-                {
-                    return 1;
-                }
-            };
-
-            $scopedPermission = Mockery::mock(ScopedPermission::class);
-
-            Carbon::setTestNow(Carbon::create(2024, 1, 15, 10, 0, 0));
-
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $contextualAuth->shouldReceive('grantScopedPermission')
-                ->withArgs(function ($u, $perm, $scope, $scopeVal, $cond, $exp) {
-                    return $scope === PermissionScope::Team
-                        && $scopeVal === 'team-999';
-                })
-                ->once()
-                ->andReturn($scopedPermission);
-
-            $service = new TemporalPermissionService($contextualAuth);
-            $result = $service->grantForDuration(
-                $user,
-                'team-admin',
-                60,
-                PermissionScope::Team,
-                'team-999'
-            );
-
-            expect($result)->toBe($scopedPermission);
-
-            Carbon::setTestNow();
-        });
+        expect($scopedPermission)->toBeInstanceOf(ScopedPermission::class);
+        // scope_type may be string or enum depending on Laravel version
+        $scopeType = $scopedPermission->scope_type;
+        $expectedScope = $scopeType instanceof PermissionScope ? $scopeType : PermissionScope::tryFrom($scopeType);
+        expect($expectedScope)->toBe(PermissionScope::Temporal);
+        expect($scopedPermission->scope_id)->toBe('temporary');
+        expect($scopedPermission->expires_at->format('Y-m-d H'))->toBe($expiresAt->format('Y-m-d H'));
     });
 
-    describe('grantDuringHours', function (): void {
-        it('grants permission valid during specific hours', function (): void {
-            $user = new class
-            {
-                public function getKey(): int
-                {
-                    return 1;
-                }
-            };
+    test('grantTemporaryPermission supports custom scope', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TemporalPermissionService($contextualAuth);
 
-            $scopedPermission = Mockery::mock(ScopedPermission::class);
+        $user = User::create([
+            'name' => 'Scoped User',
+            'email' => 'scoped@example.com',
+            'password' => bcrypt('password'),
+        ]);
 
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $contextualAuth->shouldReceive('grantScopedPermission')
-                ->withArgs(function ($u, $perm, $scope, $scopeVal, $cond, $exp) {
-                    return $perm === 'office-access'
-                        && $scope === PermissionScope::Temporal
-                        && $scopeVal === 'hours:9-17'
-                        && $cond === [
-                            'time_range' => [
-                                'start_hour' => 9,
-                                'end_hour' => 17,
-                            ],
-                        ]
-                        && $exp === null;
-                })
-                ->once()
-                ->andReturn($scopedPermission);
+        $scopedPermission = $service->grantTemporaryPermission(
+            user: $user,
+            permission: 'posts.delete',
+            expiresAt: Carbon::now()->addHours(1),
+            scope: PermissionScope::Team,
+            scopeValue: 'team-123'
+        );
 
-            $service = new TemporalPermissionService($contextualAuth);
-            $result = $service->grantDuringHours($user, 'office-access', 9, 17);
-
-            expect($result)->toBe($scopedPermission);
-        });
-
-        it('grants permission during hours with expiration', function (): void {
-            $user = new class
-            {
-                public function getKey(): int
-                {
-                    return 1;
-                }
-            };
-
-            $expiresAt = Carbon::now()->addWeek();
-            $scopedPermission = Mockery::mock(ScopedPermission::class);
-
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $contextualAuth->shouldReceive('grantScopedPermission')
-                ->withArgs(function ($u, $perm, $scope, $scopeVal, $cond, $exp) use ($expiresAt) {
-                    return $scopeVal === 'hours:22-6'
-                        && $exp === $expiresAt;
-                })
-                ->once()
-                ->andReturn($scopedPermission);
-
-            $service = new TemporalPermissionService($contextualAuth);
-            $result = $service->grantDuringHours($user, 'night-shift', 22, 6, $expiresAt);
-
-            expect($result)->toBe($scopedPermission);
-        });
+        // scope_type may be string or enum depending on Laravel version
+        $scopeType = $scopedPermission->scope_type;
+        $expectedScope = $scopeType instanceof PermissionScope ? $scopeType : PermissionScope::tryFrom($scopeType);
+        expect($expectedScope)->toBe(PermissionScope::Team);
+        expect($scopedPermission->scope_id)->toBe('team-123');
     });
 
-    describe('grantOnDays', function (): void {
-        it('grants permission valid on specific days', function (): void {
-            $user = new class
-            {
-                public function getKey(): int
-                {
-                    return 1;
-                }
-            };
+    test('grantForDuration creates permission that expires after duration', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TemporalPermissionService($contextualAuth);
 
-            $scopedPermission = Mockery::mock(ScopedPermission::class);
+        $user = User::create([
+            'name' => 'Duration User',
+            'email' => 'duration@example.com',
+            'password' => bcrypt('password'),
+        ]);
 
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $contextualAuth->shouldReceive('grantScopedPermission')
-                ->withArgs(function ($u, $perm, $scope, $scopeVal, $cond, $exp) {
-                    return $perm === 'weekend-access'
-                        && $scope === PermissionScope::Temporal
-                        && $scopeVal === 'days:0,6'
-                        && $cond === [
-                            'allowed_days' => [0, 6],
-                        ]
-                        && $exp === null;
-                })
-                ->once()
-                ->andReturn($scopedPermission);
+        Carbon::setTestNow(Carbon::parse('2024-01-15 10:00:00'));
 
-            $service = new TemporalPermissionService($contextualAuth);
-            $result = $service->grantOnDays($user, 'weekend-access', [0, 6]); // Sunday, Saturday
+        $scopedPermission = $service->grantForDuration(
+            user: $user,
+            permission: 'reports.view',
+            minutes: 30
+        );
 
-            expect($result)->toBe($scopedPermission);
-        });
+        expect($scopedPermission->expires_at->format('Y-m-d H:i'))->toBe('2024-01-15 10:30');
 
-        it('grants permission on days with expiration', function (): void {
-            $user = new class
-            {
-                public function getKey(): int
-                {
-                    return 1;
-                }
-            };
-
-            $expiresAt = Carbon::now()->addMonth();
-            $scopedPermission = Mockery::mock(ScopedPermission::class);
-
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $contextualAuth->shouldReceive('grantScopedPermission')
-                ->withArgs(function ($u, $perm, $scope, $scopeVal, $cond, $exp) use ($expiresAt) {
-                    return $scopeVal === 'days:1,2,3,4,5'
-                        && $cond === [
-                            'allowed_days' => [1, 2, 3, 4, 5],
-                        ]
-                        && $exp === $expiresAt;
-                })
-                ->once()
-                ->andReturn($scopedPermission);
-
-            $service = new TemporalPermissionService($contextualAuth);
-            $result = $service->grantOnDays($user, 'weekday-access', [1, 2, 3, 4, 5], $expiresAt);
-
-            expect($result)->toBe($scopedPermission);
-        });
+        Carbon::setTestNow();
     });
 
-    describe('hasActiveTemporaryPermission', function (): void {
-        it('returns false when no permissions exist', function (): void {
-            Permission::create(['name' => 'temp-access', 'guard_name' => 'web']);
+    test('grantDuringHours creates permission with time range condition', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TemporalPermissionService($contextualAuth);
 
-            $user = new class
-            {
-                public function getKey(): string
-                {
-                    return 'user-uuid';
-                }
-            };
+        $user = User::create([
+            'name' => 'Hours User',
+            'email' => 'hours@example.com',
+            'password' => bcrypt('password'),
+        ]);
 
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $service = new TemporalPermissionService($contextualAuth);
-            $result = $service->hasActiveTemporaryPermission($user, 'temp-access');
+        $scopedPermission = $service->grantDuringHours(
+            user: $user,
+            permission: 'system.access',
+            startHour: 9,
+            endHour: 17
+        );
 
-            expect($result)->toBeFalse();
-        });
+        expect($scopedPermission->scope_id)->toBe('hours:9-17');
+        expect($scopedPermission->conditions)->toHaveKey('time_range');
+        expect($scopedPermission->conditions['time_range']['start_hour'])->toBe(9);
+        expect($scopedPermission->conditions['time_range']['end_hour'])->toBe(17);
     });
 
-    describe('getExpiringPermissions', function (): void {
-        it('returns empty collection when no permissions expiring', function (): void {
-            $user = new class
-            {
-                public function getKey(): string
-                {
-                    return 'user-uuid';
-                }
-            };
+    test('grantOnDays creates permission with allowed days condition', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TemporalPermissionService($contextualAuth);
 
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $service = new TemporalPermissionService($contextualAuth);
-            $result = $service->getExpiringPermissions($user, 60);
+        $user = User::create([
+            'name' => 'Days User',
+            'email' => 'days@example.com',
+            'password' => bcrypt('password'),
+        ]);
 
-            expect($result)->toBeInstanceOf(Collection::class);
-            expect($result)->toBeEmpty();
-        });
+        $weekdays = [1, 2, 3, 4, 5]; // Monday to Friday
 
-        it('uses custom timeframe for expiring permissions', function (): void {
-            $user = new class
-            {
-                public function getKey(): string
-                {
-                    return 'user-uuid';
-                }
-            };
+        $scopedPermission = $service->grantOnDays(
+            user: $user,
+            permission: 'attendance.mark',
+            days: $weekdays
+        );
 
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $service = new TemporalPermissionService($contextualAuth);
-            $result = $service->getExpiringPermissions($user, 120);
-
-            expect($result)->toBeEmpty();
-        });
+        expect($scopedPermission->scope_id)->toBe('days:1,2,3,4,5');
+        expect($scopedPermission->conditions)->toHaveKey('allowed_days');
+        expect($scopedPermission->conditions['allowed_days'])->toBe($weekdays);
     });
 
-    describe('extendPermission', function (): void {
-        it('returns null when no permission exists to extend', function (): void {
-            Permission::create(['name' => 'extend-test', 'guard_name' => 'web']);
+    test('hasActiveTemporaryPermission returns true for active permission', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TemporalPermissionService($contextualAuth);
 
-            $user = new class
-            {
-                public function getKey(): string
-                {
-                    return 'user-uuid';
-                }
-            };
+        $user = User::create([
+            'name' => 'Active User',
+            'email' => 'active@example.com',
+            'password' => bcrypt('password'),
+        ]);
 
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $service = new TemporalPermissionService($contextualAuth);
-            $result = $service->extendPermission($user, 'extend-test', 30);
+        // Grant permission that expires in future
+        $service->grantTemporaryPermission(
+            user: $user,
+            permission: 'posts.view',
+            expiresAt: Carbon::now()->addHours(1)
+        );
 
-            expect($result)->toBeNull();
-        });
+        expect($service->hasActiveTemporaryPermission($user, 'posts.view'))->toBeTrue();
     });
 
-    describe('revokeExpired', function (): void {
-        it('returns zero when no expired permissions', function (): void {
-            $contextualAuth = Mockery::mock(ContextualAuthorizationService::class);
-            $service = new TemporalPermissionService($contextualAuth);
-            $result = $service->revokeExpired();
+    test('hasActiveTemporaryPermission returns false for expired permission', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TemporalPermissionService($contextualAuth);
 
-            expect($result)->toBe(0);
-        });
+        $user = User::create([
+            'name' => 'Expired User',
+            'email' => 'expired@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        // Grant permission that expired in past
+        $service->grantTemporaryPermission(
+            user: $user,
+            permission: 'posts.view',
+            expiresAt: Carbon::now()->subHours(1)
+        );
+
+        expect($service->hasActiveTemporaryPermission($user, 'posts.view'))->toBeFalse();
+    });
+
+    test('hasActiveTemporaryPermission respects time range', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TemporalPermissionService($contextualAuth);
+
+        $user = User::create([
+            'name' => 'Time Range User',
+            'email' => 'timerange@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        // Grant permission valid 9am-5pm
+        $service->grantDuringHours($user, 'office.access', 9, 17);
+
+        // Test during valid hours (noon)
+        Carbon::setTestNow(Carbon::parse('2024-01-15 12:00:00'));
+        expect($service->hasActiveTemporaryPermission($user, 'office.access'))->toBeTrue();
+
+        // Test outside valid hours (8pm)
+        Carbon::setTestNow(Carbon::parse('2024-01-15 20:00:00'));
+        expect($service->hasActiveTemporaryPermission($user, 'office.access'))->toBeFalse();
+
+        Carbon::setTestNow();
+    });
+
+    test('hasActiveTemporaryPermission respects allowed days', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TemporalPermissionService($contextualAuth);
+
+        $user = User::create([
+            'name' => 'Days Check User',
+            'email' => 'dayscheck@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        // Grant permission valid Monday to Friday (1-5)
+        $service->grantOnDays($user, 'work.access', [1, 2, 3, 4, 5]);
+
+        // Test on Wednesday (day 3)
+        Carbon::setTestNow(Carbon::parse('2024-01-17 10:00:00')); // Wednesday
+        expect($service->hasActiveTemporaryPermission($user, 'work.access'))->toBeTrue();
+
+        // Test on Saturday (day 6)
+        Carbon::setTestNow(Carbon::parse('2024-01-20 10:00:00')); // Saturday
+        expect($service->hasActiveTemporaryPermission($user, 'work.access'))->toBeFalse();
+
+        Carbon::setTestNow();
+    });
+
+    test('getExpiringPermissions returns permissions expiring soon', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TemporalPermissionService($contextualAuth);
+
+        $user = User::create([
+            'name' => 'Expiring User',
+            'email' => 'expiring@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        // Grant permissions with different expiration times
+        $service->grantTemporaryPermission($user, 'perm1', Carbon::now()->addMinutes(30)); // Within 60 min
+        $service->grantTemporaryPermission($user, 'perm2', Carbon::now()->addMinutes(45)); // Within 60 min
+        $service->grantTemporaryPermission($user, 'perm3', Carbon::now()->addHours(2)); // After 60 min
+
+        $expiring = $service->getExpiringPermissions($user, 60);
+
+        expect($expiring)->toHaveCount(2);
+        expect($expiring->pluck('permission.name')->toArray())->toContain('perm1', 'perm2');
+    });
+
+    test('extendPermission extends expiration time', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TemporalPermissionService($contextualAuth);
+
+        $user = User::create([
+            'name' => 'Extend User',
+            'email' => 'extend@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        Carbon::setTestNow(Carbon::parse('2024-01-15 10:00:00'));
+
+        // Grant permission expiring in 30 minutes
+        $service->grantTemporaryPermission($user, 'extend.test', Carbon::now()->addMinutes(30));
+
+        // Extend by 30 more minutes
+        $extended = $service->extendPermission($user, 'extend.test', 30);
+
+        expect($extended)->not->toBeNull();
+        expect($extended->expires_at->format('Y-m-d H:i'))->toBe('2024-01-15 11:00');
+
+        Carbon::setTestNow();
+    });
+
+    test('extendPermission returns null for non-existent permission', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TemporalPermissionService($contextualAuth);
+
+        $user = User::create([
+            'name' => 'No Perm User',
+            'email' => 'noperm@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        $extended = $service->extendPermission($user, 'nonexistent.perm', 30);
+
+        expect($extended)->toBeNull();
+    });
+
+    test('revokeExpired removes only expired permissions', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TemporalPermissionService($contextualAuth);
+
+        $user = User::create([
+            'name' => 'Revoke User',
+            'email' => 'revoke@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        // Create expired permission
+        $service->grantTemporaryPermission($user, 'expired.perm', Carbon::now()->subHours(1));
+
+        // Create active permission
+        $service->grantTemporaryPermission($user, 'active.perm', Carbon::now()->addHours(1));
+
+        expect(ScopedPermission::count())->toBe(2);
+
+        $deleted = $service->revokeExpired();
+
+        expect($deleted)->toBe(1);
+        expect(ScopedPermission::count())->toBe(1);
+
+        // Verify active permission still exists
+        expect(ScopedPermission::whereHas('permission', fn ($q) => $q->where('name', 'active.perm'))->exists())->toBeTrue();
+    });
+
+    test('overnight time range works correctly', function (): void {
+        $aggregator = app(PermissionAggregator::class);
+        $contextualAuth = new ContextualAuthorizationService($aggregator);
+        $service = new TemporalPermissionService($contextualAuth);
+
+        $user = User::create([
+            'name' => 'Overnight User',
+            'email' => 'overnight@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        // Grant permission valid 22:00-06:00 (overnight shift)
+        $service->grantDuringHours($user, 'night.access', 22, 6);
+
+        // Test at 23:00 (valid)
+        Carbon::setTestNow(Carbon::parse('2024-01-15 23:00:00'));
+        expect($service->hasActiveTemporaryPermission($user, 'night.access'))->toBeTrue();
+
+        // Test at 03:00 (valid, after midnight)
+        Carbon::setTestNow(Carbon::parse('2024-01-16 03:00:00'));
+        expect($service->hasActiveTemporaryPermission($user, 'night.access'))->toBeTrue();
+
+        // Test at 12:00 (invalid, during day)
+        Carbon::setTestNow(Carbon::parse('2024-01-15 12:00:00'));
+        expect($service->hasActiveTemporaryPermission($user, 'night.access'))->toBeFalse();
+
+        Carbon::setTestNow();
     });
 });

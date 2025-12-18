@@ -2,222 +2,236 @@
 
 declare(strict_types=1);
 
-namespace Tests\FilamentAuthz\Unit;
-
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Models\PermissionSnapshot;
-use AIArmada\FilamentAuthz\Services\AuditLogger;
 use AIArmada\FilamentAuthz\Services\PermissionVersioningService;
-use Illuminate\Database\Eloquent\Collection;
-use Mockery;
+use AIArmada\FilamentAuthz\Services\RollbackResult;
+use Illuminate\Support\Collection;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
-afterEach(function (): void {
-    Mockery::close();
+beforeEach(function (): void {
+    PermissionSnapshot::query()->delete();
+    Role::query()->delete();
+    Permission::query()->delete();
+    User::query()->delete();
+
+    // Create test user and authenticate
+    $user = User::create([
+        'name' => 'Test User',
+        'email' => 'test@example.com',
+        'password' => bcrypt('password'),
+    ]);
+    test()->actingAs($user);
+
+    // Create some test roles and permissions
+    $permissions = ['orders.view', 'orders.create', 'products.view', 'products.create'];
+    foreach ($permissions as $perm) {
+        Permission::create(['name' => $perm, 'guard_name' => 'web']);
+    }
+
+    $adminRole = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+    $adminRole->givePermissionTo(['orders.view', 'orders.create', 'products.view', 'products.create']);
+
+    $editorRole = Role::create(['name' => 'editor', 'guard_name' => 'web']);
+    $editorRole->givePermissionTo(['orders.view', 'products.view']);
+
+    test()->service = app(PermissionVersioningService::class);
 });
 
-describe('PermissionVersioningService', function (): void {
-    describe('createSnapshot', function (): void {
-        it('creates a snapshot with name and description', function (): void {
-            $auditLogger = Mockery::mock(AuditLogger::class);
-            $auditLogger->shouldReceive('log')->once();
+describe('PermissionVersioningService → createSnapshot', function (): void {
+    it('creates a snapshot with basic info', function (): void {
+        $snapshot = test()->service->createSnapshot('Initial State');
 
-            $service = new PermissionVersioningService($auditLogger);
-
-            $snapshot = $service->createSnapshot('Test Snapshot', 'A test description');
-
-            expect($snapshot)->toBeInstanceOf(PermissionSnapshot::class);
-            expect($snapshot->name)->toBe('Test Snapshot');
-            expect($snapshot->description)->toBe('A test description');
-            expect($snapshot->state)->toBeArray();
-            expect($snapshot->hash)->not->toBeEmpty();
-        });
-
-        it('creates a snapshot without description', function (): void {
-            $auditLogger = Mockery::mock(AuditLogger::class);
-            $auditLogger->shouldReceive('log')->once();
-
-            $service = new PermissionVersioningService($auditLogger);
-
-            $snapshot = $service->createSnapshot('Minimal Snapshot');
-
-            expect($snapshot->name)->toBe('Minimal Snapshot');
-            expect($snapshot->description)->toBeNull();
-        });
-
-        it('includes roles in snapshot state', function (): void {
-            Role::create(['name' => 'test-role', 'guard_name' => 'web']);
-
-            $auditLogger = Mockery::mock(AuditLogger::class);
-            $auditLogger->shouldReceive('log')->once();
-
-            $service = new PermissionVersioningService($auditLogger);
-            $snapshot = $service->createSnapshot('With Roles');
-
-            expect($snapshot->state)->toHaveKey('roles');
-            expect($snapshot->state['roles'])->toBeArray();
-        });
-
-        it('includes permissions in snapshot state', function (): void {
-            Permission::create(['name' => 'test-permission', 'guard_name' => 'web']);
-
-            $auditLogger = Mockery::mock(AuditLogger::class);
-            $auditLogger->shouldReceive('log')->once();
-
-            $service = new PermissionVersioningService($auditLogger);
-            $snapshot = $service->createSnapshot('With Permissions');
-
-            expect($snapshot->state)->toHaveKey('permissions');
-            expect($snapshot->state['permissions'])->toBeArray();
-        });
-
-        it('includes assignments in snapshot state', function (): void {
-            $auditLogger = Mockery::mock(AuditLogger::class);
-            $auditLogger->shouldReceive('log')->once();
-
-            $service = new PermissionVersioningService($auditLogger);
-            $snapshot = $service->createSnapshot('With Assignments');
-
-            expect($snapshot->state)->toHaveKey('assignments');
-        });
+        expect($snapshot)->toBeInstanceOf(PermissionSnapshot::class)
+            ->and($snapshot->name)->toBe('Initial State')
+            ->and($snapshot->hash)->not->toBeEmpty();
     });
 
-    describe('compare', function (): void {
-        it('compares two snapshots and returns differences', function (): void {
-            $auditLogger = Mockery::mock(AuditLogger::class);
-            $auditLogger->shouldReceive('log')->once();
+    it('creates a snapshot with description', function (): void {
+        $snapshot = test()->service->createSnapshot('Backup', 'Before major changes');
 
-            $service = new PermissionVersioningService($auditLogger);
-
-            // Create first snapshot
-            $snapshot1 = $service->createSnapshot('Snapshot 1');
-
-            // Add a role
-            Role::create(['name' => 'new-role', 'guard_name' => 'web']);
-
-            // Create second snapshot
-            $auditLogger->shouldReceive('log')->once();
-            $snapshot2 = $service->createSnapshot('Snapshot 2');
-
-            // Compare
-            $diff = $service->compare($snapshot1, $snapshot2);
-
-            expect($diff)->toHaveKeys(['roles', 'permissions', 'assignments_changed']);
-            expect($diff['roles'])->toHaveKeys(['added', 'removed']);
-            expect($diff['permissions'])->toHaveKeys(['added', 'removed']);
-        });
-
-        it('detects added roles', function (): void {
-            $auditLogger = Mockery::mock(AuditLogger::class);
-            $auditLogger->shouldReceive('log')->twice();
-
-            $service = new PermissionVersioningService($auditLogger);
-
-            $snapshot1 = $service->createSnapshot('Before');
-            Role::create(['name' => 'added-role', 'guard_name' => 'web']);
-            $snapshot2 = $service->createSnapshot('After');
-
-            $diff = $service->compare($snapshot1, $snapshot2);
-
-            expect($diff['roles']['added'])->toContain('added-role');
-        });
-
-        it('detects removed roles', function (): void {
-            Role::create(['name' => 'removed-role', 'guard_name' => 'web']);
-
-            $auditLogger = Mockery::mock(AuditLogger::class);
-            $auditLogger->shouldReceive('log')->twice();
-
-            $service = new PermissionVersioningService($auditLogger);
-
-            $snapshot1 = $service->createSnapshot('Before');
-            Role::findByName('removed-role', 'web')->delete();
-            $snapshot2 = $service->createSnapshot('After');
-
-            $diff = $service->compare($snapshot1, $snapshot2);
-
-            expect($diff['roles']['removed'])->toContain('removed-role');
-        });
+        expect($snapshot->description)->toBe('Before major changes');
     });
 
-    describe('listSnapshots', function (): void {
-        it('returns collection of snapshots', function (): void {
-            $auditLogger = Mockery::mock(AuditLogger::class);
-            $auditLogger->shouldReceive('log')->twice();
+    it('captures roles in state', function (): void {
+        $snapshot = test()->service->createSnapshot('Roles Test');
 
-            $service = new PermissionVersioningService($auditLogger);
+        $roles = $snapshot->getRoles();
 
-            $service->createSnapshot('Snapshot 1');
-            $service->createSnapshot('Snapshot 2');
-
-            $snapshots = $service->listSnapshots();
-
-            expect($snapshots)->toBeInstanceOf(Collection::class);
-            expect($snapshots->count())->toBeGreaterThanOrEqual(2);
-        });
-
-        it('orders snapshots by created_at desc', function (): void {
-            $auditLogger = Mockery::mock(AuditLogger::class);
-            $auditLogger->shouldReceive('log')->twice();
-
-            $service = new PermissionVersioningService($auditLogger);
-
-            $first = $service->createSnapshot('First');
-            $second = $service->createSnapshot('Second');
-
-            $snapshots = $service->listSnapshots();
-
-            // Most recent should be first
-            expect($snapshots->first()->name)->toBe('Second');
-        });
+        expect($roles)->toBeArray()
+            ->and(collect($roles)->pluck('name')->toArray())->toContain('admin')
+            ->and(collect($roles)->pluck('name')->toArray())->toContain('editor');
     });
 
-    describe('previewRollback', function (): void {
-        it('returns preview without making changes', function (): void {
-            $auditLogger = Mockery::mock(AuditLogger::class);
-            $auditLogger->shouldReceive('log')->once();
+    it('captures permissions in state', function (): void {
+        $snapshot = test()->service->createSnapshot('Permissions Test');
 
-            $service = new PermissionVersioningService($auditLogger);
+        $permissions = $snapshot->getPermissions();
 
-            $snapshot = $service->createSnapshot('Original');
-            Role::create(['name' => 'after-snapshot-role', 'guard_name' => 'web']);
-
-            $preview = $service->previewRollback($snapshot);
-
-            expect($preview)->toBeArray();
-            expect($preview)->toHaveKey('roles');
-
-            // Verify the role still exists (no actual rollback)
-            expect(Role::where('name', 'after-snapshot-role')->exists())->toBeTrue();
-        });
+        expect($permissions)->toBeArray()
+            ->and(collect($permissions)->pluck('name')->toArray())->toContain('orders.view')
+            ->and(collect($permissions)->pluck('name')->toArray())->toContain('products.create');
     });
 
-    describe('deleteSnapshot', function (): void {
-        it('deletes a snapshot', function (): void {
-            $auditLogger = Mockery::mock(AuditLogger::class);
-            $auditLogger->shouldReceive('log')->once(); // Only for createSnapshot
+    it('captures assignments in state', function (): void {
+        $snapshot = test()->service->createSnapshot('Assignments Test');
 
-            $service = new PermissionVersioningService($auditLogger);
+        $assignments = $snapshot->getAssignments();
 
-            $snapshot = $service->createSnapshot('To Delete');
-            $id = $snapshot->id;
+        expect($assignments)->toBeArray()
+            ->and($assignments)->not->toBeEmpty();
+    });
+});
 
-            $result = $service->deleteSnapshot($snapshot);
+describe('PermissionVersioningService → compare', function (): void {
+    it('compares two snapshots with no changes', function (): void {
+        $snapshot1 = test()->service->createSnapshot('First');
+        $snapshot2 = test()->service->createSnapshot('Second');
 
-            expect($result)->toBeTrue();
-            expect(PermissionSnapshot::find($id))->toBeNull();
-        });
+        $diff = test()->service->compare($snapshot1, $snapshot2);
 
-        it('returns true on successful deletion', function (): void {
-            $auditLogger = Mockery::mock(AuditLogger::class);
-            $auditLogger->shouldReceive('log')->once();
+        expect($diff['roles']['added'])->toBeEmpty()
+            ->and($diff['roles']['removed'])->toBeEmpty()
+            ->and($diff['permissions']['added'])->toBeEmpty()
+            ->and($diff['permissions']['removed'])->toBeEmpty();
+    });
 
-            $service = new PermissionVersioningService($auditLogger);
+    it('detects added roles', function (): void {
+        $snapshot1 = test()->service->createSnapshot('Before');
 
-            $snapshot = $service->createSnapshot('Delete Test');
-            $result = $service->deleteSnapshot($snapshot);
+        Role::create(['name' => 'moderator', 'guard_name' => 'web']);
 
-            expect($result)->toBeTrue();
-        });
+        $snapshot2 = test()->service->createSnapshot('After');
+
+        $diff = test()->service->compare($snapshot1, $snapshot2);
+
+        expect($diff['roles']['added'])->toContain('moderator');
+    });
+
+    it('detects removed roles', function (): void {
+        $snapshot1 = test()->service->createSnapshot('Before');
+
+        Role::where('name', 'editor')->delete();
+
+        $snapshot2 = test()->service->createSnapshot('After');
+
+        $diff = test()->service->compare($snapshot1, $snapshot2);
+
+        expect($diff['roles']['removed'])->toContain('editor');
+    });
+
+    it('detects added permissions', function (): void {
+        $snapshot1 = test()->service->createSnapshot('Before');
+
+        Permission::create(['name' => 'users.view', 'guard_name' => 'web']);
+
+        $snapshot2 = test()->service->createSnapshot('After');
+
+        $diff = test()->service->compare($snapshot1, $snapshot2);
+
+        expect($diff['permissions']['added'])->toContain('users.view');
+    });
+
+    it('detects removed permissions', function (): void {
+        $snapshot1 = test()->service->createSnapshot('Before');
+
+        Permission::where('name', 'products.create')->delete();
+
+        $snapshot2 = test()->service->createSnapshot('After');
+
+        $diff = test()->service->compare($snapshot1, $snapshot2);
+
+        expect($diff['permissions']['removed'])->toContain('products.create');
+    });
+});
+
+describe('PermissionVersioningService → previewRollback', function (): void {
+    it('previews rollback changes', function (): void {
+        $snapshot = test()->service->createSnapshot('Original');
+
+        // Make changes
+        Permission::create(['name' => 'users.view', 'guard_name' => 'web']);
+        Role::create(['name' => 'moderator', 'guard_name' => 'web']);
+
+        $preview = test()->service->previewRollback($snapshot);
+
+        expect($preview)->toBeArray()
+            ->and($preview['roles'])->toHaveKey('added')
+            ->and($preview['permissions'])->toHaveKey('added');
+    });
+});
+
+describe('PermissionVersioningService → rollback', function (): void {
+    it('performs dry run without making changes', function (): void {
+        $snapshot = test()->service->createSnapshot('Original');
+
+        Permission::create(['name' => 'users.view', 'guard_name' => 'web']);
+
+        $result = test()->service->rollback($snapshot, dryRun: true);
+
+        expect($result)->toBeInstanceOf(RollbackResult::class)
+            ->and($result->success)->toBeTrue()
+            ->and($result->isDryRun)->toBeTrue()
+            ->and($result->preview)->not->toBeNull();
+
+        // Permission should still exist after dry run
+        expect(Permission::where('name', 'users.view')->exists())->toBeTrue();
+    });
+});
+
+describe('PermissionVersioningService → listSnapshots', function (): void {
+    it('returns all snapshots', function (): void {
+        test()->service->createSnapshot('First');
+        test()->service->createSnapshot('Second');
+        test()->service->createSnapshot('Third');
+
+        $snapshots = test()->service->listSnapshots();
+
+        expect($snapshots)->toBeInstanceOf(Collection::class)
+            ->and($snapshots->count())->toBe(3);
+    });
+
+    it('returns snapshots ordered by created_at descending', function (): void {
+        test()->service->createSnapshot('First');
+        sleep(1);
+        test()->service->createSnapshot('Second');
+        sleep(1);
+        test()->service->createSnapshot('Third');
+
+        $snapshots = test()->service->listSnapshots();
+
+        expect($snapshots->first()->name)->toBe('Third')
+            ->and($snapshots->last()->name)->toBe('First');
+    });
+});
+
+describe('PermissionVersioningService → deleteSnapshot', function (): void {
+    it('deletes a snapshot', function (): void {
+        $snapshot = test()->service->createSnapshot('To Delete');
+
+        $result = test()->service->deleteSnapshot($snapshot);
+
+        expect($result)->toBeTrue()
+            ->and(PermissionSnapshot::find($snapshot->id))->toBeNull();
+    });
+});
+
+describe('RollbackResult value object', function (): void {
+    it('creates with all properties', function (): void {
+        $snapshot = test()->service->createSnapshot('Test');
+
+        $result = new RollbackResult(
+            success: true,
+            snapshot: $snapshot,
+            preview: ['roles' => ['added' => []]],
+            restoredAt: now(),
+            isDryRun: false
+        );
+
+        expect($result->success)->toBeTrue()
+            ->and($result->snapshot)->toBe($snapshot)
+            ->and($result->preview)->toBeArray()
+            ->and($result->isDryRun)->toBeFalse();
     });
 });

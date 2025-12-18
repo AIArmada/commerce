@@ -2,362 +2,374 @@
 
 declare(strict_types=1);
 
-namespace AIArmada\Commerce\Tests\FilamentAuthz\Unit;
-
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Models\RoleTemplate;
 use AIArmada\FilamentAuthz\Services\RoleTemplateService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
+use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
-uses(RefreshDatabase::class);
-
 beforeEach(function (): void {
-    $this->service = new RoleTemplateService;
+    RoleTemplate::query()->delete();
+    Role::query()->delete();
+    Permission::query()->delete();
+    User::query()->delete();
+
+    // Create test user
+    $user = User::create([
+        'name' => 'Test User',
+        'email' => 'test@example.com',
+        'password' => bcrypt('password'),
+    ]);
+    test()->actingAs($user);
+
+    // Create permissions
+    $permissions = ['orders.view', 'orders.create', 'products.view', 'products.create'];
+    foreach ($permissions as $permission) {
+        Permission::create(['name' => $permission, 'guard_name' => 'web']);
+    }
+
+    test()->service = app(RoleTemplateService::class);
 });
 
-describe('RoleTemplateService', function (): void {
-    describe('createTemplate', function (): void {
-        it('creates a basic template', function (): void {
-            $template = $this->service->createTemplate('Manager');
+describe('RoleTemplateService → createTemplate', function (): void {
+    it('creates a basic template', function (): void {
+        $template = test()->service->createTemplate(
+            name: 'Admin Template',
+            guardName: 'web',
+        );
 
-            expect($template)->toBeInstanceOf(RoleTemplate::class)
-                ->and($template->name)->toBe('Manager')
-                ->and($template->slug)->toBe('manager')
-                ->and($template->guard_name)->toBe('web')
-                ->and($template->is_active)->toBeTrue();
-        });
-
-        it('creates a template with description', function (): void {
-            $template = $this->service->createTemplate('Editor', 'web', 'Can edit content');
-
-            expect($template->description)->toBe('Can edit content');
-        });
-
-        it('creates a template with parent', function (): void {
-            $parent = RoleTemplate::create([
-                'name' => 'Parent',
-                'slug' => 'parent',
-                'guard_name' => 'web',
-            ]);
-
-            $child = $this->service->createTemplate('Child', 'web', null, $parent->id);
-
-            expect($child->parent_id)->toBe($parent->id);
-        });
-
-        it('creates a template with default permissions', function (): void {
-            $template = $this->service->createTemplate(
-                'Editor',
-                'web',
-                null,
-                null,
-                ['posts.view', 'posts.edit']
-            );
-
-            expect($template->default_permissions)->toBe(['posts.view', 'posts.edit']);
-        });
-
-        it('creates a template with metadata', function (): void {
-            $template = $this->service->createTemplate(
-                'Custom',
-                'web',
-                null,
-                null,
-                [],
-                ['created_by' => 'admin']
-            );
-
-            expect($template->metadata)->toBe(['created_by' => 'admin']);
-        });
-
-        it('creates a system template', function (): void {
-            $template = $this->service->createTemplate(
-                'System Template',
-                'web',
-                null,
-                null,
-                [],
-                null,
-                true
-            );
-
-            expect($template->is_system)->toBeTrue();
-        });
-
-        it('clears cache after creation', function (): void {
-            Cache::shouldReceive('forget')
-                ->once()
-                ->with('permissions:templates:hierarchy_tree');
-
-            $this->service->createTemplate('Test');
-        });
+        expect($template)->toBeInstanceOf(RoleTemplate::class)
+            ->and($template->name)->toBe('Admin Template')
+            ->and($template->slug)->toBe('admin-template')
+            ->and($template->guard_name)->toBe('web')
+            ->and($template->is_active)->toBeTrue();
     });
 
-    describe('updateTemplate', function (): void {
-        it('updates template name and generates slug', function (): void {
-            $template = RoleTemplate::create([
-                'name' => 'Old Name',
-                'slug' => 'old-name',
-                'guard_name' => 'web',
-            ]);
+    it('creates a template with description', function (): void {
+        $template = test()->service->createTemplate(
+            name: 'Admin',
+            description: 'Full administrative access',
+        );
 
-            $updated = $this->service->updateTemplate($template, ['name' => 'New Name']);
-
-            expect($updated->name)->toBe('New Name')
-                ->and($updated->slug)->toBe('new-name');
-        });
-
-        it('updates template with custom slug', function (): void {
-            $template = RoleTemplate::create([
-                'name' => 'Test',
-                'slug' => 'test',
-                'guard_name' => 'web',
-            ]);
-
-            $updated = $this->service->updateTemplate($template, [
-                'name' => 'New Name',
-                'slug' => 'custom-slug',
-            ]);
-
-            expect($updated->slug)->toBe('custom-slug');
-        });
-
-        it('updates default permissions', function (): void {
-            $template = RoleTemplate::create([
-                'name' => 'Test',
-                'slug' => 'test',
-                'guard_name' => 'web',
-                'default_permissions' => ['posts.view'],
-            ]);
-
-            $updated = $this->service->updateTemplate($template, [
-                'default_permissions' => ['posts.view', 'posts.edit'],
-            ]);
-
-            expect($updated->default_permissions)->toBe(['posts.view', 'posts.edit']);
-        });
+        expect($template->description)->toBe('Full administrative access');
     });
 
-    describe('deleteTemplate', function (): void {
-        it('deletes a template', function (): void {
-            $template = RoleTemplate::create([
-                'name' => 'Delete Me',
-                'slug' => 'delete-me',
-                'guard_name' => 'web',
-            ]);
-            $id = $template->id;
+    it('creates a template with default permissions', function (): void {
+        $template = test()->service->createTemplate(
+            name: 'Editor',
+            defaultPermissions: ['orders.view', 'products.view'],
+        );
 
-            $result = $this->service->deleteTemplate($template);
-
-            expect($result)->toBeTrue()
-                ->and(RoleTemplate::find($id))->toBeNull();
-        });
+        expect($template->default_permissions)->toBe(['orders.view', 'products.view']);
     });
 
-    describe('createRoleFromTemplate', function (): void {
-        it('creates a role from template', function (): void {
-            $template = RoleTemplate::create([
-                'name' => 'Editor Template',
-                'slug' => 'editor-template',
-                'guard_name' => 'web',
-                'default_permissions' => [],
-            ]);
+    it('creates a template with metadata', function (): void {
+        $metadata = ['color' => 'blue', 'icon' => 'shield'];
+        $template = test()->service->createTemplate(
+            name: 'Custom',
+            metadata: $metadata,
+        );
 
-            $role = $this->service->createRoleFromTemplate($template, 'content-editor');
-
-            expect($role)->toBeInstanceOf(Role::class)
-                ->and($role->name)->toBe('content-editor');
-        });
+        expect($template->metadata)->toBe($metadata);
     });
 
-    describe('syncRoleWithTemplate', function (): void {
-        it('returns null for role without template_id', function (): void {
-            $role = Role::create(['name' => 'standalone', 'guard_name' => 'web']);
+    it('creates a system template', function (): void {
+        $template = test()->service->createTemplate(
+            name: 'System Template',
+            isSystem: true,
+        );
 
-            $result = $this->service->syncRoleWithTemplate($role);
+        expect($template->is_system)->toBeTrue();
+    });
+});
 
-            expect($result)->toBeNull();
-        });
+describe('RoleTemplateService → updateTemplate', function (): void {
+    it('updates template name and regenerates slug', function (): void {
+        $template = test()->service->createTemplate(name: 'Original Name');
 
-        it('returns null when template not found', function (): void {
-            $role = Role::create([
-                'name' => 'orphan',
-                'guard_name' => 'web',
-            ]);
-            // Manually set a non-existent template_id
-            $role->template_id = 'non-existent-uuid';
-            $role->save();
+        $updated = test()->service->updateTemplate($template, [
+            'name' => 'Updated Name',
+        ]);
 
-            $result = $this->service->syncRoleWithTemplate($role);
-
-            expect($result)->toBeNull();
-        });
+        expect($updated->name)->toBe('Updated Name')
+            ->and($updated->slug)->toBe('updated-name');
     });
 
-    describe('syncAllRolesFromTemplate', function (): void {
-        it('syncs all roles from template', function (): void {
-            $template = RoleTemplate::create([
-                'name' => 'Test Template',
-                'slug' => 'test-template',
-                'guard_name' => 'web',
-                'default_permissions' => [],
-            ]);
+    it('updates template permissions', function (): void {
+        $template = test()->service->createTemplate(
+            name: 'Editor',
+            defaultPermissions: ['orders.view'],
+        );
 
-            // Create roles with template_id
-            $role1 = Role::create(['name' => 'role1', 'guard_name' => 'web']);
-            $role1->template_id = $template->id;
-            $role1->save();
+        $updated = test()->service->updateTemplate($template, [
+            'default_permissions' => ['orders.view', 'orders.create'],
+        ]);
 
-            $role2 = Role::create(['name' => 'role2', 'guard_name' => 'web']);
-            $role2->template_id = $template->id;
-            $role2->save();
-
-            $result = $this->service->syncAllRolesFromTemplate($template);
-
-            expect($result['synced'])->toBe(2)
-                ->and($result['failed'])->toBe(0);
-        });
-
-        it('reports failed syncs', function (): void {
-            $template = RoleTemplate::create([
-                'name' => 'Test Template',
-                'slug' => 'test-template',
-                'guard_name' => 'web',
-                'default_permissions' => [],
-            ]);
-
-            $result = $this->service->syncAllRolesFromTemplate($template);
-
-            expect($result['synced'])->toBe(0);
-        });
+        expect($updated->default_permissions)->toBe(['orders.view', 'orders.create']);
     });
 
-    describe('getRootTemplates', function (): void {
-        it('returns only root templates', function (): void {
-            $root1 = RoleTemplate::create(['name' => 'Root 1', 'slug' => 'root-1', 'guard_name' => 'web', 'is_active' => true]);
-            $root2 = RoleTemplate::create(['name' => 'Root 2', 'slug' => 'root-2', 'guard_name' => 'web', 'is_active' => true]);
-            RoleTemplate::create(['name' => 'Child', 'slug' => 'child', 'guard_name' => 'web', 'parent_id' => $root1->id, 'is_active' => true]);
+    it('updates template description', function (): void {
+        $template = test()->service->createTemplate(name: 'Test');
 
-            $roots = $this->service->getRootTemplates();
+        $updated = test()->service->updateTemplate($template, [
+            'description' => 'New description',
+        ]);
 
-            expect($roots)->toHaveCount(2);
-        });
+        expect($updated->description)->toBe('New description');
+    });
+});
 
-        it('excludes inactive templates', function (): void {
-            RoleTemplate::create(['name' => 'Active', 'slug' => 'active', 'guard_name' => 'web', 'is_active' => true]);
-            RoleTemplate::create(['name' => 'Inactive', 'slug' => 'inactive', 'guard_name' => 'web', 'is_active' => false]);
+describe('RoleTemplateService → deleteTemplate', function (): void {
+    it('deletes a template', function (): void {
+        $template = test()->service->createTemplate(name: 'To Delete');
 
-            $roots = $this->service->getRootTemplates();
+        $result = test()->service->deleteTemplate($template);
 
-            expect($roots)->toHaveCount(1)
-                ->and($roots->first()->name)->toBe('Active');
-        });
+        expect($result)->toBeTrue()
+            ->and(RoleTemplate::find($template->id))->toBeNull();
+    });
+});
+
+describe('RoleTemplateService → getRootTemplates', function (): void {
+    it('returns templates without parent', function (): void {
+        test()->service->createTemplate(name: 'Root 1');
+        test()->service->createTemplate(name: 'Root 2');
+
+        $roots = test()->service->getRootTemplates();
+
+        expect($roots)->toBeInstanceOf(Collection::class)
+            ->and($roots->count())->toBe(2);
     });
 
-    describe('getHierarchyTree', function (): void {
-        it('returns hierarchy with children', function (): void {
-            $root = RoleTemplate::create(['name' => 'Root', 'slug' => 'root', 'guard_name' => 'web', 'is_active' => true]);
-            RoleTemplate::create(['name' => 'Child', 'slug' => 'child', 'guard_name' => 'web', 'parent_id' => $root->id, 'is_active' => true]);
+    it('excludes inactive templates', function (): void {
+        $active = test()->service->createTemplate(name: 'Active');
+        $inactive = test()->service->createTemplate(name: 'Inactive');
+        test()->service->updateTemplate($inactive, ['is_active' => false]);
 
-            Cache::flush();
-            $tree = $this->service->getHierarchyTree();
+        $roots = test()->service->getRootTemplates();
 
-            expect($tree)->toHaveCount(1)
-                ->and($tree->first()->children)->toHaveCount(1);
-        });
+        expect($roots->count())->toBe(1)
+            ->and($roots->first()->name)->toBe('Active');
+    });
+});
+
+describe('RoleTemplateService → findBySlug', function (): void {
+    it('finds template by slug', function (): void {
+        test()->service->createTemplate(name: 'Admin Template');
+
+        $template = test()->service->findBySlug('admin-template');
+
+        expect($template)->not->toBeNull()
+            ->and($template->name)->toBe('Admin Template');
     });
 
-    describe('findBySlug', function (): void {
-        it('finds template by slug', function (): void {
-            RoleTemplate::create(['name' => 'Test Template', 'slug' => 'test-template', 'guard_name' => 'web']);
+    it('returns null for non-existent slug', function (): void {
+        $template = test()->service->findBySlug('nonexistent');
 
-            $found = $this->service->findBySlug('test-template');
+        expect($template)->toBeNull();
+    });
+});
 
-            expect($found)->not->toBeNull()
-                ->and($found->name)->toBe('Test Template');
-        });
+describe('RoleTemplateService → getActiveTemplates', function (): void {
+    it('returns only active templates', function (): void {
+        test()->service->createTemplate(name: 'Active 1');
+        test()->service->createTemplate(name: 'Active 2');
+        $inactive = test()->service->createTemplate(name: 'Inactive');
+        test()->service->updateTemplate($inactive, ['is_active' => false]);
 
-        it('returns null for non-existent slug', function (): void {
-            $found = $this->service->findBySlug('non-existent');
+        $templates = test()->service->getActiveTemplates();
 
-            expect($found)->toBeNull();
-        });
+        expect($templates->count())->toBe(2);
+    });
+});
+
+describe('RoleTemplateService → getByGuard', function (): void {
+    it('returns templates filtered by guard', function (): void {
+        test()->service->createTemplate(name: 'Web Template', guardName: 'web');
+        test()->service->createTemplate(name: 'API Template', guardName: 'api');
+
+        $webTemplates = test()->service->getByGuard('web');
+        $apiTemplates = test()->service->getByGuard('api');
+
+        expect($webTemplates->count())->toBe(1)
+            ->and($webTemplates->first()->name)->toBe('Web Template')
+            ->and($apiTemplates->count())->toBe(1)
+            ->and($apiTemplates->first()->name)->toBe('API Template');
+    });
+});
+
+describe('RoleTemplateService → cloneTemplate', function (): void {
+    it('creates a copy of a template with new name', function (): void {
+        $original = test()->service->createTemplate(
+            name: 'Original',
+            description: 'Original description',
+            defaultPermissions: ['orders.view'],
+            metadata: ['key' => 'value'],
+        );
+
+        $clone = test()->service->cloneTemplate($original, 'Clone');
+
+        expect($clone->name)->toBe('Clone')
+            ->and($clone->slug)->toBe('clone')
+            ->and($clone->description)->toBe('Original description')
+            ->and($clone->default_permissions)->toBe(['orders.view'])
+            ->and($clone->metadata)->toBe(['key' => 'value'])
+            ->and($clone->is_system)->toBeFalse(); // Clone is never system
+    });
+});
+
+describe('RoleTemplateService → clearCache', function (): void {
+    it('clears hierarchy tree cache', function (): void {
+        Cache::shouldReceive('forget')
+            ->once()
+            ->with('permissions:templates:hierarchy_tree');
+
+        test()->service->clearCache();
+    });
+});
+
+describe('RoleTemplateService → getHierarchyTree', function (): void {
+    it('returns root templates with children loaded', function (): void {
+        test()->service->createTemplate(name: 'Root 1');
+        test()->service->createTemplate(name: 'Root 2');
+
+        // Clear cache to force fresh query
+        Cache::forget('permissions:templates:hierarchy_tree');
+
+        $tree = test()->service->getHierarchyTree();
+
+        expect($tree)->toBeInstanceOf(Collection::class)
+            ->and($tree->count())->toBe(2);
+    });
+});
+
+describe('RoleTemplateService → createRoleFromTemplate', function (): void {
+    it('creates a role from template with default permissions', function (): void {
+        $template = test()->service->createTemplate(
+            name: 'Admin Template',
+            defaultPermissions: ['orders.view', 'products.view'],
+        );
+
+        $role = test()->service->createRoleFromTemplate($template, 'Admin');
+
+        expect($role)->toBeInstanceOf(Role::class)
+            ->and($role->name)->toBe('Admin')
+            ->and($role->guard_name)->toBe('web')
+            ->and($role->template_id)->toBe($template->id)
+            ->and($role->permissions->pluck('name')->toArray())->toContain('orders.view', 'products.view');
     });
 
-    describe('getActiveTemplates', function (): void {
-        it('returns only active templates', function (): void {
-            RoleTemplate::create(['name' => 'Active', 'slug' => 'active', 'guard_name' => 'web', 'is_active' => true]);
-            RoleTemplate::create(['name' => 'Inactive', 'slug' => 'inactive', 'guard_name' => 'web', 'is_active' => false]);
+    it('creates a role with overrides', function (): void {
+        $template = test()->service->createTemplate(
+            name: 'Template',
+            description: 'Default description',
+        );
 
-            $active = $this->service->getActiveTemplates();
+        $role = test()->service->createRoleFromTemplate($template, 'Custom Role', [
+            'description' => 'Custom description',
+        ]);
 
-            expect($active)->toHaveCount(1);
-        });
+        expect($role->description)->toBe('Custom description');
+    });
+});
+
+describe('RoleTemplateService → syncRoleWithTemplate', function (): void {
+    it('syncs role permissions with template', function (): void {
+        $template = test()->service->createTemplate(
+            name: 'Editor Template',
+            defaultPermissions: ['orders.view', 'orders.create'],
+        );
+
+        // Create role manually with template_id
+        $role = Role::create([
+            'name' => 'Editor',
+            'guard_name' => 'web',
+            'template_id' => $template->id,
+        ]);
+
+        // Give role different permissions
+        $role->syncPermissions(['products.view']);
+
+        // Sync with template
+        $syncedRole = test()->service->syncRoleWithTemplate($role);
+
+        expect($syncedRole)->not->toBeNull()
+            ->and($syncedRole->permissions->pluck('name')->toArray())->toContain('orders.view', 'orders.create')
+            ->and($syncedRole->permissions->pluck('name')->toArray())->not->toContain('products.view');
     });
 
-    describe('getByGuard', function (): void {
-        it('returns templates by guard name', function (): void {
-            RoleTemplate::create(['name' => 'Web', 'slug' => 'web', 'guard_name' => 'web', 'is_active' => true]);
-            RoleTemplate::create(['name' => 'API', 'slug' => 'api', 'guard_name' => 'api', 'is_active' => true]);
+    it('returns null for role without template_id', function (): void {
+        $role = Role::create([
+            'name' => 'Standalone',
+            'guard_name' => 'web',
+        ]);
 
-            $webTemplates = $this->service->getByGuard('web');
+        $result = test()->service->syncRoleWithTemplate($role);
 
-            expect($webTemplates)->toHaveCount(1)
-                ->and($webTemplates->first()->name)->toBe('Web');
-        });
+        expect($result)->toBeNull();
     });
 
-    describe('getRolesFromTemplate', function (): void {
-        it('returns roles created from template', function (): void {
-            $template = RoleTemplate::create([
-                'name' => 'Test Template',
-                'slug' => 'test-template',
-                'guard_name' => 'web',
-            ]);
+    it('returns null for role with non-existent template_id', function (): void {
+        $role = Role::create([
+            'name' => 'Orphan',
+            'guard_name' => 'web',
+            'template_id' => '00000000-0000-0000-0000-000000000000',
+        ]);
 
-            $role1 = Role::create(['name' => 'role1', 'guard_name' => 'web']);
-            $role1->template_id = $template->id;
-            $role1->save();
+        $result = test()->service->syncRoleWithTemplate($role);
 
-            $role2 = Role::create(['name' => 'role2', 'guard_name' => 'web']);
-            $role2->template_id = $template->id;
-            $role2->save();
+        expect($result)->toBeNull();
+    });
+});
 
-            $roles = $this->service->getRolesFromTemplate($template);
+describe('RoleTemplateService → syncAllRolesFromTemplate', function (): void {
+    it('syncs all roles using the template', function (): void {
+        $template = test()->service->createTemplate(
+            name: 'Base Template',
+            defaultPermissions: ['orders.view'],
+        );
 
-            expect($roles)->toHaveCount(2);
-        });
+        // Create multiple roles from template
+        Role::create(['name' => 'Role1', 'guard_name' => 'web', 'template_id' => $template->id]);
+        Role::create(['name' => 'Role2', 'guard_name' => 'web', 'template_id' => $template->id]);
+
+        $result = test()->service->syncAllRolesFromTemplate($template);
+
+        expect($result)->toBe(['synced' => 2, 'failed' => 0]);
     });
 
-    describe('cloneTemplate', function (): void {
-        it('clones a template with new name', function (): void {
-            $original = RoleTemplate::create([
-                'name' => 'Original',
-                'slug' => 'original',
-                'guard_name' => 'web',
-                'description' => 'Original description',
-                'default_permissions' => ['posts.view'],
-                'is_system' => true,
-            ]);
+    it('returns zero counts when no roles use template', function (): void {
+        $template = test()->service->createTemplate(name: 'Unused Template');
 
-            $clone = $this->service->cloneTemplate($original, 'Clone');
+        $result = test()->service->syncAllRolesFromTemplate($template);
 
-            expect($clone->name)->toBe('Clone')
-                ->and($clone->slug)->toBe('clone')
-                ->and($clone->description)->toBe('Original description')
-                ->and($clone->default_permissions)->toBe(['posts.view'])
-                ->and($clone->is_system)->toBeFalse(); // Clones are not system templates
-        });
+        expect($result)->toBe(['synced' => 0, 'failed' => 0]);
+    });
+});
+
+describe('RoleTemplateService → getRolesFromTemplate', function (): void {
+    it('returns all roles created from a template', function (): void {
+        $template = test()->service->createTemplate(name: 'Template');
+
+        Role::create(['name' => 'Role1', 'guard_name' => 'web', 'template_id' => $template->id]);
+        Role::create(['name' => 'Role2', 'guard_name' => 'web', 'template_id' => $template->id]);
+        Role::create(['name' => 'Other', 'guard_name' => 'web']); // Not from template
+
+        $roles = test()->service->getRolesFromTemplate($template);
+
+        expect($roles->count())->toBe(2)
+            ->and($roles->pluck('name')->toArray())->toContain('Role1', 'Role2')
+            ->and($roles->pluck('name')->toArray())->not->toContain('Other');
     });
 
-    describe('clearCache', function (): void {
-        it('clears hierarchy tree cache', function (): void {
-            Cache::shouldReceive('forget')
-                ->once()
-                ->with('permissions:templates:hierarchy_tree');
+    it('returns empty collection when no roles use template', function (): void {
+        $template = test()->service->createTemplate(name: 'Empty Template');
 
-            $this->service->clearCache();
-        });
+        $roles = test()->service->getRolesFromTemplate($template);
+
+        expect($roles)->toBeInstanceOf(Collection::class)
+            ->and($roles->count())->toBe(0);
     });
 });

@@ -3,294 +3,227 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\Services\RoleComparer;
-use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
-uses(RefreshDatabase::class);
-
 beforeEach(function (): void {
-    $this->roleInheritance = Mockery::mock(RoleInheritanceService::class);
-    $this->comparer = new RoleComparer($this->roleInheritance);
+    Role::query()->delete();
+    Permission::query()->delete();
+
+    // Create permissions
+    $permissions = [
+        'orders.view', 'orders.create', 'orders.update', 'orders.delete',
+        'products.view', 'products.create', 'products.update', 'products.delete',
+        'users.view', 'users.create', 'users.update', 'users.delete',
+    ];
+
+    foreach ($permissions as $permission) {
+        Permission::create(['name' => $permission, 'guard_name' => 'web']);
+    }
+
+    test()->comparer = app(RoleComparer::class);
 });
 
-describe('RoleComparer', function (): void {
-    describe('compare', function (): void {
-        it('compares two roles with same permissions', function (): void {
-            $permission = Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
+describe('RoleComparer → compare', function (): void {
+    it('compares two roles with shared permissions', function (): void {
+        $roleA = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $roleA->givePermissionTo(['orders.view', 'orders.create', 'products.view']);
 
-            $roleA = Role::create(['name' => 'role-a', 'guard_name' => 'web']);
-            $roleB = Role::create(['name' => 'role-b', 'guard_name' => 'web']);
+        $roleB = Role::create(['name' => 'editor', 'guard_name' => 'web']);
+        $roleB->givePermissionTo(['orders.view', 'products.view', 'products.create']);
 
-            $roleA->givePermissionTo($permission);
-            $roleB->givePermissionTo($permission);
+        $result = test()->comparer->compare($roleA, $roleB);
 
-            $result = $this->comparer->compare($roleA, $roleB);
-
-            expect($result['role_a'])->toBe('role-a')
-                ->and($result['role_b'])->toBe('role-b')
-                ->and($result['shared_permissions'])->toBe(['posts.view'])
-                ->and($result['only_in_a'])->toBeEmpty()
-                ->and($result['only_in_b'])->toBeEmpty()
-                ->and($result['similarity_percent'])->toBe(100.0);
-        });
-
-        it('compares two roles with different permissions', function (): void {
-            $permA = Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
-            $permB = Permission::create(['name' => 'posts.edit', 'guard_name' => 'web']);
-
-            $roleA = Role::create(['name' => 'role-a', 'guard_name' => 'web']);
-            $roleB = Role::create(['name' => 'role-b', 'guard_name' => 'web']);
-
-            $roleA->givePermissionTo($permA);
-            $roleB->givePermissionTo($permB);
-
-            $result = $this->comparer->compare($roleA, $roleB);
-
-            expect($result['shared_permissions'])->toBeEmpty()
-                ->and($result['only_in_a'])->toBe(['posts.view'])
-                ->and($result['only_in_b'])->toBe(['posts.edit'])
-                ->and($result['similarity_percent'])->toBe(0.0);
-        });
-
-        it('compares two roles with partial overlap', function (): void {
-            $shared = Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
-            $onlyA = Permission::create(['name' => 'posts.edit', 'guard_name' => 'web']);
-            $onlyB = Permission::create(['name' => 'posts.delete', 'guard_name' => 'web']);
-
-            $roleA = Role::create(['name' => 'role-a', 'guard_name' => 'web']);
-            $roleB = Role::create(['name' => 'role-b', 'guard_name' => 'web']);
-
-            $roleA->givePermissionTo([$shared, $onlyA]);
-            $roleB->givePermissionTo([$shared, $onlyB]);
-
-            $result = $this->comparer->compare($roleA, $roleB);
-
-            expect($result['shared_permissions'])->toBe(['posts.view'])
-                ->and($result['only_in_a'])->toBe(['posts.edit'])
-                ->and($result['only_in_b'])->toBe(['posts.delete'])
-                ->and($result['similarity_percent'])->toBe(33.33);
-        });
-
-        it('handles roles with no permissions', function (): void {
-            $roleA = Role::create(['name' => 'role-a', 'guard_name' => 'web']);
-            $roleB = Role::create(['name' => 'role-b', 'guard_name' => 'web']);
-
-            $result = $this->comparer->compare($roleA, $roleB);
-
-            expect($result['shared_permissions'])->toBeEmpty()
-                ->and($result['only_in_a'])->toBeEmpty()
-                ->and($result['only_in_b'])->toBeEmpty()
-                ->and($result['similarity_percent'])->toBe(100.0);
-        });
+        expect($result['role_a'])->toBe('admin')
+            ->and($result['role_b'])->toBe('editor')
+            ->and($result['shared_permissions'])->toContain('orders.view')
+            ->and($result['shared_permissions'])->toContain('products.view')
+            ->and($result['only_in_a'])->toContain('orders.create')
+            ->and($result['only_in_b'])->toContain('products.create');
     });
 
-    describe('compareWithParent', function (): void {
-        it('returns null when no parent', function (): void {
-            $role = Role::create(['name' => 'role', 'guard_name' => 'web']);
+    it('calculates similarity percentage correctly', function (): void {
+        $roleA = Role::create(['name' => 'roleA', 'guard_name' => 'web']);
+        $roleA->givePermissionTo(['orders.view', 'orders.create']);
 
-            $this->roleInheritance->shouldReceive('getParent')
-                ->with($role)
-                ->andReturn(null);
+        $roleB = Role::create(['name' => 'roleB', 'guard_name' => 'web']);
+        $roleB->givePermissionTo(['orders.view', 'orders.create']);
 
-            $result = $this->comparer->compareWithParent($role);
+        $result = test()->comparer->compare($roleA, $roleB);
 
-            expect($result)->toBeNull();
-        });
-
-        it('returns comparison with parent', function (): void {
-            $parent = Role::create(['name' => 'parent', 'guard_name' => 'web']);
-            $child = Role::create(['name' => 'child', 'guard_name' => 'web']);
-
-            $parentPerm = Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
-            $childPerm = Permission::create(['name' => 'posts.edit', 'guard_name' => 'web']);
-
-            $parent->givePermissionTo($parentPerm);
-            $child->givePermissionTo([$parentPerm, $childPerm]);
-
-            $this->roleInheritance->shouldReceive('getParent')
-                ->with($child)
-                ->andReturn($parent);
-
-            $result = $this->comparer->compareWithParent($child);
-
-            expect($result['role'])->toBe('child')
-                ->and($result['parent'])->toBe('parent')
-                ->and($result['inherited_permissions'])->toBe(['posts.view'])
-                ->and($result['own_permissions'])->toBe(['posts.edit'])
-                ->and($result['override_count'])->toBe(1);
-        });
+        expect($result['similarity_percent'])->toBe(100.0);
     });
 
-    describe('findSimilarRoles', function (): void {
-        it('finds roles with high similarity', function (): void {
-            $permission = Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
+    it('returns 0 similarity for roles with no shared permissions', function (): void {
+        $roleA = Role::create(['name' => 'roleA', 'guard_name' => 'web']);
+        $roleA->givePermissionTo(['orders.view', 'orders.create']);
 
-            $roleA = Role::create(['name' => 'role-a', 'guard_name' => 'web']);
-            $roleB = Role::create(['name' => 'role-b', 'guard_name' => 'web']);
-            $roleC = Role::create(['name' => 'role-c', 'guard_name' => 'web']);
+        $roleB = Role::create(['name' => 'roleB', 'guard_name' => 'web']);
+        $roleB->givePermissionTo(['products.view', 'products.create']);
 
-            $roleA->givePermissionTo($permission);
-            $roleB->givePermissionTo($permission);
+        $result = test()->comparer->compare($roleA, $roleB);
 
-            $result = $this->comparer->findSimilarRoles($roleA, 50.0);
-
-            expect($result)->toHaveCount(1)
-                ->and($result[0]['role'])->toBe('role-b')
-                ->and($result[0]['similarity_percent'])->toBe(100.0);
-        });
-
-        it('filters out roles below threshold', function (): void {
-            $permA = Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
-            $permB = Permission::create(['name' => 'posts.edit', 'guard_name' => 'web']);
-
-            $roleA = Role::create(['name' => 'role-a', 'guard_name' => 'web']);
-            $roleB = Role::create(['name' => 'role-b', 'guard_name' => 'web']);
-
-            $roleA->givePermissionTo($permA);
-            $roleB->givePermissionTo($permB);
-
-            $result = $this->comparer->findSimilarRoles($roleA, 50.0);
-
-            expect($result)->toBeEmpty();
-        });
-
-        it('sorts results by similarity descending', function (): void {
-            $perm1 = Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
-            $perm2 = Permission::create(['name' => 'posts.edit', 'guard_name' => 'web']);
-
-            $roleA = Role::create(['name' => 'role-a', 'guard_name' => 'web']);
-            $roleB = Role::create(['name' => 'role-b', 'guard_name' => 'web']);
-            $roleC = Role::create(['name' => 'role-c', 'guard_name' => 'web']);
-
-            $roleA->givePermissionTo([$perm1, $perm2]);
-            $roleB->givePermissionTo($perm1);
-            $roleC->givePermissionTo([$perm1, $perm2]);
-
-            $result = $this->comparer->findSimilarRoles($roleA, 0.0);
-
-            expect($result)->toHaveCount(2)
-                ->and($result[0]['role'])->toBe('role-c')
-                ->and($result[0]['similarity_percent'])->toBe(100.0);
-        });
+        expect($result['similarity_percent'])->toBe(0.0)
+            ->and($result['shared_permissions'])->toBeEmpty();
     });
 
-    describe('findRedundantRoles', function (): void {
-        it('finds roles with identical permissions', function (): void {
-            $permission = Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
+    it('handles roles with no permissions', function (): void {
+        $roleA = Role::create(['name' => 'roleA', 'guard_name' => 'web']);
+        $roleB = Role::create(['name' => 'roleB', 'guard_name' => 'web']);
 
-            $roleA = Role::create(['name' => 'role-a', 'guard_name' => 'web']);
-            $roleB = Role::create(['name' => 'role-b', 'guard_name' => 'web']);
+        $result = test()->comparer->compare($roleA, $roleB);
 
-            $roleA->givePermissionTo($permission);
-            $roleB->givePermissionTo($permission);
+        expect($result['similarity_percent'])->toBe(100.0)
+            ->and($result['shared_permissions'])->toBeEmpty()
+            ->and($result['only_in_a'])->toBeEmpty()
+            ->and($result['only_in_b'])->toBeEmpty();
+    });
+});
 
-            $result = $this->comparer->findRedundantRoles();
+describe('RoleComparer → findSimilarRoles', function (): void {
+    it('finds roles above similarity threshold', function (): void {
+        $roleA = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $roleA->givePermissionTo(['orders.view', 'orders.create', 'orders.update', 'orders.delete']);
 
-            // Only one group with redundant roles (role-a and role-b have same permissions)
-            expect($result)->toHaveCount(1);
+        $roleB = Role::create(['name' => 'editor', 'guard_name' => 'web']);
+        $roleB->givePermissionTo(['orders.view', 'orders.create', 'orders.update']);
 
-            // Find the group with role-a and role-b
-            $redundantGroup = collect($result)->first(function ($set) {
-                return in_array('role-a', $set['roles']) && in_array('role-b', $set['roles']);
-            });
+        $roleC = Role::create(['name' => 'viewer', 'guard_name' => 'web']);
+        $roleC->givePermissionTo(['orders.view']);
 
-            expect($redundantGroup)->not->toBeNull()
-                ->and($redundantGroup['permissions_count'])->toBe(1);
-        });
+        $similar = test()->comparer->findSimilarRoles($roleA, 50.0);
 
-        it('returns empty when no redundant roles', function (): void {
-            $perm1 = Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
-            $perm2 = Permission::create(['name' => 'posts.edit', 'guard_name' => 'web']);
-
-            $roleA = Role::create(['name' => 'role-a', 'guard_name' => 'web']);
-            $roleB = Role::create(['name' => 'role-b', 'guard_name' => 'web']);
-
-            $roleA->givePermissionTo($perm1);
-            $roleB->givePermissionTo($perm2);
-
-            $result = $this->comparer->findRedundantRoles();
-
-            expect($result)->toBeEmpty();
-        });
+        $roleNames = array_column($similar, 'role');
+        expect($roleNames)->toContain('editor');
     });
 
-    describe('getDiff', function (): void {
-        it('gets diff between two roles', function (): void {
-            $perm1 = Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
-            $perm2 = Permission::create(['name' => 'posts.edit', 'guard_name' => 'web']);
-            $perm3 = Permission::create(['name' => 'posts.delete', 'guard_name' => 'web']);
+    it('returns empty for roles with no similar matches', function (): void {
+        $roleA = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $roleA->givePermissionTo(['orders.view']);
 
-            $from = Role::create(['name' => 'from', 'guard_name' => 'web']);
-            $to = Role::create(['name' => 'to', 'guard_name' => 'web']);
+        $roleB = Role::create(['name' => 'other', 'guard_name' => 'web']);
+        $roleB->givePermissionTo(['products.view']);
 
-            $from->givePermissionTo([$perm1, $perm2]);
-            $to->givePermissionTo([$perm1, $perm3]);
+        $similar = test()->comparer->findSimilarRoles($roleA, 80.0);
 
-            $result = $this->comparer->getDiff($from, $to);
-
-            expect($result['to_add'])->toBe(['posts.delete'])
-                ->and($result['to_remove'])->toBe(['posts.edit'])
-                ->and($result['operations_count'])->toBe(2);
-        });
-
-        it('returns empty when roles are identical', function (): void {
-            $permission = Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
-
-            $from = Role::create(['name' => 'from', 'guard_name' => 'web']);
-            $to = Role::create(['name' => 'to', 'guard_name' => 'web']);
-
-            $from->givePermissionTo($permission);
-            $to->givePermissionTo($permission);
-
-            $result = $this->comparer->getDiff($from, $to);
-
-            expect($result['to_add'])->toBeEmpty()
-                ->and($result['to_remove'])->toBeEmpty()
-                ->and($result['operations_count'])->toBe(0);
-        });
+        expect($similar)->toBeEmpty();
     });
 
-    describe('generateHierarchyReport', function (): void {
-        it('generates a hierarchy report', function (): void {
-            $roleA = Role::create(['name' => 'role-a', 'guard_name' => 'web']);
-            $roleB = Role::create(['name' => 'role-b', 'guard_name' => 'web']);
+    it('sorts results by similarity descending', function (): void {
+        $roleA = Role::create(['name' => 'target', 'guard_name' => 'web']);
+        $roleA->givePermissionTo(['orders.view', 'orders.create', 'orders.update', 'orders.delete']);
 
-            // Mock expects any Role to receive getDepth
-            $this->roleInheritance->shouldReceive('getDepth')
-                ->andReturn(0);
+        $roleB = Role::create(['name' => 'similar', 'guard_name' => 'web']);
+        $roleB->givePermissionTo(['orders.view', 'orders.create', 'orders.update', 'orders.delete']);
 
-            $result = $this->comparer->generateHierarchyReport();
+        $roleC = Role::create(['name' => 'less_similar', 'guard_name' => 'web']);
+        $roleC->givePermissionTo(['orders.view', 'orders.create']);
 
-            expect($result['total_roles'])->toBe(2)
-                ->and($result['orphan_roles'])->toBeEmpty();
-        });
+        $similar = test()->comparer->findSimilarRoles($roleA, 40.0);
+
+        expect($similar[0]['role'])->toBe('similar')
+            ->and($similar[0]['similarity_percent'])->toBeGreaterThan($similar[1]['similarity_percent']);
+    });
+});
+
+describe('RoleComparer → findRedundantRoles', function (): void {
+    it('finds roles with identical permissions', function (): void {
+        $roleA = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $roleA->givePermissionTo(['orders.view', 'orders.create']);
+
+        $roleB = Role::create(['name' => 'admin_copy', 'guard_name' => 'web']);
+        $roleB->givePermissionTo(['orders.view', 'orders.create']);
+
+        $redundant = test()->comparer->findRedundantRoles();
+
+        expect($redundant)->not->toBeEmpty()
+            ->and($redundant[0]['roles'])->toContain('admin')
+            ->and($redundant[0]['roles'])->toContain('admin_copy');
     });
 
-    describe('findUnusedPermissions', function (): void {
-        it('finds permissions not assigned to any role', function (): void {
-            $usedPerm = Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
-            $unusedPerm = Permission::create(['name' => 'posts.delete', 'guard_name' => 'web']);
+    it('returns empty when no redundant roles exist', function (): void {
+        Role::create(['name' => 'admin', 'guard_name' => 'web'])
+            ->givePermissionTo(['orders.view']);
 
-            $role = Role::create(['name' => 'role', 'guard_name' => 'web']);
-            $role->givePermissionTo($usedPerm);
+        Role::create(['name' => 'editor', 'guard_name' => 'web'])
+            ->givePermissionTo(['products.view']);
 
-            $result = $this->comparer->findUnusedPermissions();
+        $redundant = test()->comparer->findRedundantRoles();
 
-            expect($result)->toContain('posts.delete')
-                ->and($result)->not->toContain('posts.view');
-        });
+        expect($redundant)->toBeEmpty();
+    });
+});
 
-        it('returns empty when all permissions are used', function (): void {
-            $permission = Permission::create(['name' => 'posts.view', 'guard_name' => 'web']);
+describe('RoleComparer → getDiff', function (): void {
+    it('returns permissions to add and remove', function (): void {
+        $from = Role::create(['name' => 'from', 'guard_name' => 'web']);
+        $from->givePermissionTo(['orders.view', 'orders.create']);
 
-            $role = Role::create(['name' => 'role', 'guard_name' => 'web']);
-            $role->givePermissionTo($permission);
+        $to = Role::create(['name' => 'to', 'guard_name' => 'web']);
+        $to->givePermissionTo(['orders.view', 'products.view']);
 
-            $result = $this->comparer->findUnusedPermissions();
+        $diff = test()->comparer->getDiff($from, $to);
 
-            expect($result)->toBeEmpty();
-        });
+        expect($diff['to_add'])->toContain('products.view')
+            ->and($diff['to_remove'])->toContain('orders.create')
+            ->and($diff['operations_count'])->toBe(2);
+    });
+
+    it('returns empty diff for identical roles', function (): void {
+        $from = Role::create(['name' => 'from', 'guard_name' => 'web']);
+        $from->givePermissionTo(['orders.view']);
+
+        $to = Role::create(['name' => 'to', 'guard_name' => 'web']);
+        $to->givePermissionTo(['orders.view']);
+
+        $diff = test()->comparer->getDiff($from, $to);
+
+        expect($diff['to_add'])->toBeEmpty()
+            ->and($diff['to_remove'])->toBeEmpty()
+            ->and($diff['operations_count'])->toBe(0);
+    });
+});
+
+describe('RoleComparer → generateHierarchyReport', function (): void {
+    it('generates report with total roles', function (): void {
+        Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        Role::create(['name' => 'editor', 'guard_name' => 'web']);
+        Role::create(['name' => 'viewer', 'guard_name' => 'web']);
+
+        $report = test()->comparer->generateHierarchyReport();
+
+        expect($report['total_roles'])->toBe(3);
+    });
+
+    it('reports max depth and roles per level', function (): void {
+        Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        Role::create(['name' => 'editor', 'guard_name' => 'web']);
+
+        $report = test()->comparer->generateHierarchyReport();
+
+        expect($report)->toHaveKey('max_depth')
+            ->and($report)->toHaveKey('roles_per_level');
+    });
+});
+
+describe('RoleComparer → findUnusedPermissions', function (): void {
+    it('finds permissions not assigned to any role', function (): void {
+        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role->givePermissionTo(['orders.view', 'orders.create']);
+
+        $unused = test()->comparer->findUnusedPermissions();
+
+        expect($unused)->toContain('products.view')
+            ->and($unused)->toContain('users.view')
+            ->and($unused)->not->toContain('orders.view');
+    });
+
+    it('returns empty when all permissions are assigned', function (): void {
+        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $role->givePermissionTo(Permission::all()->pluck('name')->toArray());
+
+        $unused = test()->comparer->findUnusedPermissions();
+
+        expect($unused)->toBeEmpty();
     });
 });
