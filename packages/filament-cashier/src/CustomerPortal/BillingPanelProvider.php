@@ -28,14 +28,13 @@ final class BillingPanelProvider extends PanelProvider
     {
         $config = config('filament-cashier.billing_portal', []);
 
-        return $panel
+        $panel = $panel
             ->id($config['panel_id'] ?? 'billing')
             ->path($config['path'] ?? 'billing')
             ->brandName($config['brand_name'] ?? 'Billing Portal')
             ->colors([
                 'primary' => $this->parsePrimaryColor($config['primary_color'] ?? '#6366f1'),
             ])
-            ->login($config['login_enabled'] ?? true)
             ->authGuard($config['auth_guard'] ?? 'web')
             ->pages([
                 BillingOverview::class,
@@ -57,6 +56,12 @@ final class BillingPanelProvider extends PanelProvider
             ->authMiddleware([
                 Authenticate::class,
             ]);
+
+        if ($config['login_enabled'] ?? true) {
+            $panel = $panel->login();
+        }
+
+        return $panel;
     }
 
     /**

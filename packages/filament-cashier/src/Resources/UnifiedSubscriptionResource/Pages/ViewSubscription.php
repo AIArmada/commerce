@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 
+use AIArmada\CashierChip\Cashier as CashierChip;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
@@ -152,8 +153,9 @@ final class ViewSubscription extends ViewRecord
             }
         }
 
-        if ($gateway === 'chip' && $detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
-            $sub = \AIArmada\CashierChip\Models\Subscription::find($id);
+        if ($gateway === 'chip' && $detector->isAvailable('chip')) {
+            $subscriptionModel = CashierChip::$subscriptionModel;
+            $sub = $subscriptionModel::find($id);
             if ($sub) {
                 return UnifiedSubscription::fromChip($sub);
             }

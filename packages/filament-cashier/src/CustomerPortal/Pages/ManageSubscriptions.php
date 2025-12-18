@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\CustomerPortal\Pages;
 
+use AIArmada\CashierChip\Cashier as CashierChip;
 use AIArmada\FilamentCashier\Policies\SubscriptionPolicy;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
@@ -59,8 +60,9 @@ final class ManageSubscriptions extends Page
         }
 
         // Get CHIP subscriptions for this user
-        if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
-            $chipSubscriptions = \AIArmada\CashierChip\Models\Subscription::query()
+        if ($detector->isAvailable('chip')) {
+            $subscriptionModel = CashierChip::$subscriptionModel;
+            $chipSubscriptions = $subscriptionModel::query()
                 ->where('user_id', $user->getAuthIdentifier())
                 ->orderByDesc('created_at')
                 ->get()
@@ -190,8 +192,9 @@ final class ManageSubscriptions extends Page
             }
         }
 
-        if ($gateway === 'chip' && $detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
-            $sub = \AIArmada\CashierChip\Models\Subscription::query()
+        if ($gateway === 'chip' && $detector->isAvailable('chip')) {
+            $subscriptionModel = CashierChip::$subscriptionModel;
+            $sub = $subscriptionModel::query()
                 ->where('user_id', $userId)
                 ->where('id', $id)
                 ->first();

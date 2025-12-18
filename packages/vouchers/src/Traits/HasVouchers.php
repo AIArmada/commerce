@@ -28,7 +28,7 @@ trait HasVouchers
         return $this->morphToMany(
             Voucher::class,
             'assignee',
-            $tables['voucher_assignments'] ?? $prefix.'voucher_assignments'
+            $tables['voucher_assignments'] ?? $prefix . 'voucher_assignments'
         )
             ->withPivot('assigned_at', 'expires_at')
             ->withTimestamps();

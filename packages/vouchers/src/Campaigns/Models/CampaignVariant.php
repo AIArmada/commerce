@@ -60,7 +60,7 @@ class CampaignVariant extends Model
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
 
-        return $tables['campaign_variants'] ?? $prefix.'voucher_campaign_variants';
+        return $tables['campaign_variants'] ?? $prefix . 'voucher_campaign_variants';
     }
 
     /**

@@ -9,6 +9,21 @@ use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\BatchService;
 use Illuminate\Database\Eloquent\Model;
 
+function setBatchServiceOwnerResolver(?Model $owner): void
+{
+    app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
+    {
+        public function __construct(
+            private readonly ?Model $owner,
+        ) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+}
+
 /**
  * @return array{
  *     ownerA: InventoryItem,
@@ -28,17 +43,7 @@ function makeOwnerScopedBatchServiceFixture(): array
     $ownerA = InventoryItem::create(['name' => 'Owner A']);
     $ownerB = InventoryItem::create(['name' => 'Owner B']);
 
-    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
-    {
-        public function __construct(
-            private readonly ?Model $owner,
-        ) {}
-
-        public function resolve(): ?Model
-        {
-            return $this->owner;
-        }
-    });
+    setBatchServiceOwnerResolver($ownerA);
 
     $sku = InventoryItem::create(['name' => 'SKU']);
 
@@ -48,17 +53,21 @@ function makeOwnerScopedBatchServiceFixture(): array
         'owner_id' => $ownerA->getKey(),
     ]);
 
+    setBatchServiceOwnerResolver($ownerB);
     $locationB = InventoryLocation::factory()->create([
         'code' => 'LOC-B',
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]);
 
+    setBatchServiceOwnerResolver(null);
     $locationGlobal = InventoryLocation::factory()->create([
         'code' => 'LOC-G',
         'owner_type' => null,
         'owner_id' => null,
     ]);
+
+    setBatchServiceOwnerResolver($ownerA);
 
     $service = new BatchService;
 
@@ -88,6 +97,7 @@ it('scopes BatchService::findByBatchNumber to current owner (and global when ena
         'location_id' => $locationA->id,
     ]);
 
+    setBatchServiceOwnerResolver($fixture['ownerB']);
     InventoryBatch::factory()->create([
         'inventoryable_type' => $sku->getMorphClass(),
         'inventoryable_id' => $sku->getKey(),
@@ -95,12 +105,17 @@ it('scopes BatchService::findByBatchNumber to current owner (and global when ena
         'location_id' => $locationB->id,
     ]);
 
+    setBatchServiceOwnerResolver($fixture['ownerA']);
+
+    setBatchServiceOwnerResolver(null);
     InventoryBatch::factory()->create([
         'inventoryable_type' => $sku->getMorphClass(),
         'inventoryable_id' => $sku->getKey(),
         'batch_number' => 'BATCH-G',
         'location_id' => $locationGlobal->id,
     ]);
+
+    setBatchServiceOwnerResolver($fixture['ownerA']);
 
     expect($service->findByBatchNumber('BATCH-A'))
         ->not->toBeNull();
@@ -120,12 +135,15 @@ it('can exclude global batches when include_global is false', function (): void 
 
     config()->set('inventory.owner.include_global', false);
 
+    setBatchServiceOwnerResolver(null);
     InventoryBatch::factory()->create([
         'inventoryable_type' => $sku->getMorphClass(),
         'inventoryable_id' => $sku->getKey(),
         'batch_number' => 'BATCH-G2',
         'location_id' => $locationGlobal->id,
     ]);
+
+    setBatchServiceOwnerResolver($fixture['ownerA']);
 
     expect($service->findByBatchNumber('BATCH-G2'))
         ->toBeNull();
@@ -146,6 +164,7 @@ it('scopes BatchService::getBatchesForModel to current owner (and global when en
         'location_id' => $locationA->id,
     ]);
 
+    setBatchServiceOwnerResolver($fixture['ownerB']);
     InventoryBatch::factory()->create([
         'inventoryable_type' => $sku->getMorphClass(),
         'inventoryable_id' => $sku->getKey(),
@@ -153,12 +172,17 @@ it('scopes BatchService::getBatchesForModel to current owner (and global when en
         'location_id' => $locationB->id,
     ]);
 
+    setBatchServiceOwnerResolver($fixture['ownerA']);
+
+    setBatchServiceOwnerResolver(null);
     InventoryBatch::factory()->create([
         'inventoryable_type' => $sku->getMorphClass(),
         'inventoryable_id' => $sku->getKey(),
         'batch_number' => 'BATCH-G1',
         'location_id' => $locationGlobal->id,
     ]);
+
+    setBatchServiceOwnerResolver($fixture['ownerA']);
 
     $batches = $service->getBatchesForModel($sku);
 

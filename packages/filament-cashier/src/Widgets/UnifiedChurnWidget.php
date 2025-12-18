@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Widgets;
 
+use AIArmada\CashierChip\Cashier as CashierChip;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -39,13 +40,14 @@ final class UnifiedChurnWidget extends StatsOverviewWidget
         }
 
         // Count CHIP cancellations
-        if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
-            $canceledThisMonth += \AIArmada\CashierChip\Models\Subscription::query()
+        if ($detector->isAvailable('chip')) {
+            $subscriptionModel = CashierChip::$subscriptionModel;
+            $canceledThisMonth += $subscriptionModel::query()
                 ->whereNotNull('ends_at')
                 ->where('ends_at', '>=', $startOfMonth)
                 ->count();
 
-            $canceledLastMonth += \AIArmada\CashierChip\Models\Subscription::query()
+            $canceledLastMonth += $subscriptionModel::query()
                 ->whereNotNull('ends_at')
                 ->whereBetween('ends_at', [$startOfLastMonth, $endOfLastMonth])
                 ->count();

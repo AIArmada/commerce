@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Enums\SerialStatus;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -24,6 +27,8 @@ use InvalidArgumentException;
  * @property string|null $sku
  * @property string|null $location_id
  * @property string|null $batch_id
+ * @property string|null $owner_type
+ * @property int|string|null $owner_id
  * @property string $status
  * @property string $condition
  * @property int|null $unit_cost_minor
@@ -56,6 +61,7 @@ final class InventorySerial extends Model
     /** @use HasFactory<\AIArmada\Inventory\Database\Factories\InventorySerialFactory> */
     use HasFactory;
 
+    use HasOwner;
     use HasUuids;
 
     /**
@@ -70,6 +76,8 @@ final class InventorySerial extends Model
         'sku',
         'location_id',
         'batch_id',
+        'owner_type',
+        'owner_id',
         'status',
         'condition',
         'unit_cost_minor',
@@ -340,6 +348,99 @@ final class InventorySerial extends Model
      */
     protected static function booted(): void
     {
+        static::addGlobalScope('owner', function (Builder $query): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
+        });
+
+        static::saving(function (InventorySerial $serial): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $resolvedOwnerType = null;
+            $resolvedOwnerId = null;
+            $ownerResolvedFromRelation = false;
+
+            if ($serial->location_id !== null) {
+                $location = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                    ->whereKey($serial->location_id)
+                    ->first();
+
+                if ($location === null) {
+                    throw new AuthorizationException('Invalid location for current owner context.');
+                }
+
+                $resolvedOwnerType = $location->owner_type;
+                $resolvedOwnerId = $location->owner_id;
+                $ownerResolvedFromRelation = true;
+            }
+
+            if ($serial->batch_id !== null) {
+                $batch = InventoryBatch::query()
+                    ->whereKey($serial->batch_id)
+                    ->first();
+
+                if ($batch === null) {
+                    throw new AuthorizationException('Invalid batch for current owner context.');
+                }
+
+                if ($serial->location_id !== null && $batch->location_id !== $serial->location_id) {
+                    throw new AuthorizationException('Batch location does not match serial location.');
+                }
+
+                if (($resolvedOwnerType !== null || $resolvedOwnerId !== null)
+                    && ($resolvedOwnerType !== $batch->owner_type || $resolvedOwnerId !== $batch->owner_id)) {
+                    throw new AuthorizationException('Owner mismatch between serial location and batch.');
+                }
+
+                $resolvedOwnerType = $batch->owner_type;
+                $resolvedOwnerId = $batch->owner_id;
+                $ownerResolvedFromRelation = true;
+            }
+
+            if ($ownerResolvedFromRelation && $resolvedOwnerType === null && $resolvedOwnerId === null) {
+                if ($serial->owner_type !== null || $serial->owner_id !== null) {
+                    throw new AuthorizationException('Owner mismatch for inventory serial.');
+                }
+
+                $serial->removeOwner();
+
+                return;
+            }
+
+            if (! $ownerResolvedFromRelation && $resolvedOwnerType === null && $resolvedOwnerId === null) {
+                if ($serial->owner_type !== null || $serial->owner_id !== null) {
+                    return;
+                }
+
+                if (! (bool) config('inventory.owner.auto_assign_on_create', true)) {
+                    return;
+                }
+
+                $owner = InventoryOwnerScope::resolveOwner();
+
+                if ($owner === null) {
+                    return;
+                }
+
+                $serial->assignOwner($owner);
+
+                return;
+            }
+
+            if (($serial->owner_type !== null || $serial->owner_id !== null)
+                && ($serial->owner_type !== $resolvedOwnerType || $serial->owner_id !== $resolvedOwnerId)) {
+                throw new AuthorizationException('Owner mismatch for inventory serial.');
+            }
+
+            $serial->owner_type = $resolvedOwnerType;
+            $serial->owner_id = $resolvedOwnerId;
+        });
+
         self::deleting(function (InventorySerial $serial): void {
             $serial->history()->delete();
         });

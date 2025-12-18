@@ -97,8 +97,7 @@ final class NearestLocationStrategy implements AllocationStrategyInterface
         $locationsQuery = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
             ->where('is_active', true)
             ->whereNotNull('coordinate_x')
-            ->whereNotNull('coordinate_y')
-            ;
+            ->whereNotNull('coordinate_y');
 
         $locations = $locationsQuery->get();
 

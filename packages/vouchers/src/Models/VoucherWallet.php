@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -13,8 +14,8 @@ use Illuminate\Support\Carbon;
 /**
  * @property string $id
  * @property string $voucher_id
- * @property string $owner_type
- * @property string $owner_id
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property bool $is_claimed
  * @property Carbon|null $claimed_at
  * @property bool $is_redeemed
@@ -27,6 +28,7 @@ use Illuminate\Support\Carbon;
  */
 final class VoucherWallet extends Model
 {
+    use HasOwner;
     use HasUuids;
 
     protected $fillable = [
@@ -51,7 +53,7 @@ final class VoucherWallet extends Model
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
 
-        return $tables['voucher_wallets'] ?? $prefix.'voucher_wallets';
+        return $tables['voucher_wallets'] ?? $prefix . 'voucher_wallets';
     }
 
     /**

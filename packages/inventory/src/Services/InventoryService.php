@@ -16,6 +16,7 @@ use AIArmada\Inventory\Exceptions\InsufficientStockException;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
@@ -53,7 +54,7 @@ final class InventoryService
         ?string $reason = null,
         ?string $note = null,
         ?string $userId = null,
-        ?\DateTimeInterface $occurredAt = null,
+        ?DateTimeInterface $occurredAt = null,
     ): InventoryMovement {
         if ($quantity <= 0) {
             throw new InvalidArgumentException('Quantity must be positive');
@@ -93,7 +94,7 @@ final class InventoryService
         ?string $reference = null,
         ?string $note = null,
         ?string $userId = null,
-        ?\DateTimeInterface $occurredAt = null,
+        ?DateTimeInterface $occurredAt = null,
     ): InventoryMovement {
         if ($quantity <= 0) {
             throw new InvalidArgumentException('Quantity must be positive');
@@ -155,7 +156,7 @@ final class InventoryService
         int $quantity,
         ?string $note = null,
         ?string $userId = null,
-        ?\DateTimeInterface $occurredAt = null,
+        ?DateTimeInterface $occurredAt = null,
     ): InventoryMovement {
         if ($quantity <= 0) {
             throw new InvalidArgumentException('Quantity must be positive');
@@ -223,7 +224,7 @@ final class InventoryService
         ?string $reason = null,
         ?string $note = null,
         ?string $userId = null,
-        ?\DateTimeInterface $occurredAt = null,
+        ?DateTimeInterface $occurredAt = null,
     ): InventoryMovement {
         if ($newQuantity < 0) {
             throw new InvalidArgumentException('New quantity cannot be negative');

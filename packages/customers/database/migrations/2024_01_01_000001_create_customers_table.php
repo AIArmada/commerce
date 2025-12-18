@@ -10,8 +10,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('customers.tables.customers', 'customers'), function (Blueprint $table): void {
-            $jsonColumnType = config('customers.json_column_type', 'json');
+        Schema::create(config('customers.database.tables.customers', 'customers'), function (Blueprint $table): void {
+            $jsonColumnType = config('customers.database.json_column_type', 'json');
 
             $table->uuid('id')->primary();
 
@@ -62,6 +62,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('customers.tables.customers', 'customers'));
+        Schema::dropIfExists(config('customers.database.tables.customers', 'customers'));
     }
 };

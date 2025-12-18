@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\GiftCards\Models;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardStatus;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardTransactionType;
@@ -97,7 +98,7 @@ class GiftCard extends Model
     public static function findByCode(string $code): ?static
     {
         /** @var static|null */
-        return static::query()->where('code', mb_strtoupper($code))->first();
+        return self::scopedQuery()->where('code', mb_strtoupper($code))->first();
     }
 
     /**
@@ -114,13 +115,66 @@ class GiftCard extends Model
         return $giftCard;
     }
 
+    /**
+     * Scope query to the specified owner.
+     *
+     * @param  Builder<GiftCard>  $query
+     * @return Builder<GiftCard>
+     */
+    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
+    {
+        if (! config('vouchers.owner.enabled', false)) {
+            return $query;
+        }
+
+        if ($owner === null) {
+            return $query->whereNull('owner_type')->whereNull('owner_id');
+        }
+
+        return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
+            $builder->where('owner_type', $owner->getMorphClass())
+                ->where('owner_id', $owner->getKey());
+
+            if ($includeGlobal) {
+                $builder->orWhere(function (Builder $inner): void {
+                    $inner->whereNull('owner_type')->whereNull('owner_id');
+                });
+            }
+        });
+    }
+
+    /**
+     * @return Builder<GiftCard>
+     */
+    private static function scopedQuery(): Builder
+    {
+        /** @var Builder<GiftCard> $query */
+        $query = static::query();
+
+        if (! config('vouchers.owner.enabled', false)) {
+            return $query;
+        }
+
+        $owner = null;
+
+        if (app()->bound(OwnerResolverInterface::class)) {
+            /** @var OwnerResolverInterface $resolver */
+            $resolver = app(OwnerResolverInterface::class);
+            $owner = $resolver->resolve();
+        }
+
+        $includeGlobal = (bool) config('vouchers.owner.include_global', true);
+
+        return $query->forOwner($owner, $includeGlobal);
+    }
+
     public function getTable(): string
     {
         /** @var array<string, string> $tables */
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
 
-        return $tables['gift_cards'] ?? $prefix.'gift_cards';
+        return $tables['gift_cards'] ?? $prefix . 'gift_cards';
     }
 
     /**

@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Models;
 
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Inventory\Database\Factories\InventoryMovementFactory;
 use AIArmada\Inventory\Enums\MovementType;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,6 +25,9 @@ use Illuminate\Support\Carbon;
  * @property string $inventoryable_id
  * @property string|null $from_location_id
  * @property string|null $to_location_id
+ * @property string|null $batch_id
+ * @property string|null $owner_type
+ * @property int|string|null $owner_id
  * @property int $quantity
  * @property string $type
  * @property string|null $reason
@@ -47,6 +53,7 @@ final class InventoryMovement extends Model
     /** @use HasFactory<\AIArmada\Inventory\Database\Factories\InventoryMovementFactory> */
     use HasFactory;
 
+    use HasOwner;
     use HasUuids;
     use LogsCommerceActivity;
 
@@ -60,6 +67,9 @@ final class InventoryMovement extends Model
         'inventoryable_id',
         'from_location_id',
         'to_location_id',
+        'batch_id',
+        'owner_type',
+        'owner_id',
         'quantity',
         'type',
         'reason',
@@ -103,6 +113,14 @@ final class InventoryMovement extends Model
     public function toLocation(): BelongsTo
     {
         return $this->belongsTo(InventoryLocation::class, 'to_location_id');
+    }
+
+    /**
+     * @return BelongsTo<InventoryBatch, $this>
+     */
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(InventoryBatch::class, 'batch_id');
     }
 
     /**
@@ -202,6 +220,78 @@ final class InventoryMovement extends Model
         return InventoryMovementFactory::new();
     }
 
+    protected static function booted(): void
+    {
+        static::addGlobalScope('owner', function (Builder $query): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
+        });
+
+        static::saving(function (InventoryMovement $movement): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $fromOwnerType = null;
+            $fromOwnerId = null;
+            if ($movement->from_location_id !== null) {
+                $fromLocation = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                    ->whereKey($movement->from_location_id)
+                    ->first();
+
+                if ($fromLocation === null) {
+                    throw new AuthorizationException('Invalid from_location_id for current owner context.');
+                }
+
+                $fromOwnerType = $fromLocation->owner_type;
+                $fromOwnerId = $fromLocation->owner_id;
+            }
+
+            $toOwnerType = null;
+            $toOwnerId = null;
+            if ($movement->to_location_id !== null) {
+                $toLocation = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                    ->whereKey($movement->to_location_id)
+                    ->first();
+
+                if ($toLocation === null) {
+                    throw new AuthorizationException('Invalid to_location_id for current owner context.');
+                }
+
+                $toOwnerType = $toLocation->owner_type;
+                $toOwnerId = $toLocation->owner_id;
+            }
+
+            $resolvedOwnerType = null;
+            $resolvedOwnerId = null;
+
+            if ($fromOwnerType !== null || $fromOwnerId !== null) {
+                $resolvedOwnerType = $fromOwnerType;
+                $resolvedOwnerId = $fromOwnerId;
+            }
+
+            if ($toOwnerType !== null || $toOwnerId !== null) {
+                if ($resolvedOwnerType === null && $resolvedOwnerId === null) {
+                    $resolvedOwnerType = $toOwnerType;
+                    $resolvedOwnerId = $toOwnerId;
+                } elseif ($resolvedOwnerType !== $toOwnerType || $resolvedOwnerId !== $toOwnerId) {
+                    throw new AuthorizationException('Cross-owner inventory movements are not allowed.');
+                }
+            }
+
+            if (($movement->owner_type !== null || $movement->owner_id !== null)
+                && ($movement->owner_type !== $resolvedOwnerType || $movement->owner_id !== $resolvedOwnerId)) {
+                throw new AuthorizationException('Owner mismatch for inventory movement.');
+            }
+
+            $movement->owner_type = $resolvedOwnerType;
+            $movement->owner_id = $resolvedOwnerId;
+        });
+    }
+
     /**
      * Get the attributes that should be cast.
      *
@@ -227,6 +317,7 @@ final class InventoryMovement extends Model
             'inventoryable_id',
             'from_location_id',
             'to_location_id',
+            'batch_id',
             'quantity',
             'type',
             'reason',
