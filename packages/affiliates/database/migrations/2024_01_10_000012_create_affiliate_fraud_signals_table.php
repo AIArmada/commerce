@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $tableName = config('affiliates.table_names.fraud_signals', 'affiliate_fraud_signals');
+        $tableName = config('affiliates.database.tables.fraud_signals', 'affiliate_fraud_signals');
 
         Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
@@ -39,7 +39,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        $tableName = config('affiliates.table_names.fraud_signals', 'affiliate_fraud_signals');
+        $tableName = config('affiliates.database.tables.fraud_signals', 'affiliate_fraud_signals');
         Schema::dropIfExists($tableName);
     }
 };

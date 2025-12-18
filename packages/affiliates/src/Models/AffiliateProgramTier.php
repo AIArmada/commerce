@@ -49,7 +49,7 @@ class AffiliateProgramTier extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.program_tiers', 'affiliate_program_tiers');
+        return config('affiliates.database.tables.program_tiers', 'affiliate_program_tiers');
     }
 
     public function program(): BelongsTo
@@ -93,5 +93,13 @@ class AffiliateProgramTier extends Model
     public function getCommissionRatePercentage(): float
     {
         return $this->commission_rate_basis_points / 100;
+    }
+
+    protected static function booted(): void
+    {
+        static::deleting(function (self $tier): void {
+            // Set tier_id to null on memberships when tier is deleted
+            $tier->memberships()->update(['tier_id' => null]);
+        });
     }
 }

@@ -249,7 +249,7 @@ class AffiliateNetwork extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.network', 'affiliate_network');
+        return config('affiliates.database.tables.network', 'affiliate_network');
     }
 
     /**

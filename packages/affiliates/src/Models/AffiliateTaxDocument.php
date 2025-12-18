@@ -25,7 +25,7 @@ use Illuminate\Support\Carbon;
  * @property Carbon|null $updated_at
  * @property-read Affiliate $affiliate
  */
-final class AffiliateTaxDocument extends Model
+class AffiliateTaxDocument extends Model
 {
     use HasUuids;
 
@@ -51,7 +51,7 @@ final class AffiliateTaxDocument extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.tax_documents', 'affiliate_tax_documents');
+        return config('affiliates.database.tables.tax_documents', 'affiliate_tax_documents');
     }
 
     /**
