@@ -61,7 +61,7 @@ class AffiliatePayout extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.payouts', parent::getTable());
+        return config('affiliates.database.tables.payouts', parent::getTable());
     }
 
     /**

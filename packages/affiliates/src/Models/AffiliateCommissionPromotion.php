@@ -59,7 +59,7 @@ class AffiliateCommissionPromotion extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.commission_promotions', 'affiliate_commission_promotions');
+        return config('affiliates.database.tables.commission_promotions', 'affiliate_commission_promotions');
     }
 
     public function program(): BelongsTo

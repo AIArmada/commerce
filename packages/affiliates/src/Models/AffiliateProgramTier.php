@@ -49,7 +49,7 @@ class AffiliateProgramTier extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.program_tiers', 'affiliate_program_tiers');
+        return config('affiliates.database.tables.program_tiers', 'affiliate_program_tiers');
     }
 
     public function program(): BelongsTo

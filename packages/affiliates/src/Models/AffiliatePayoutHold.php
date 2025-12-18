@@ -41,7 +41,7 @@ class AffiliatePayoutHold extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.payout_holds', 'affiliate_payout_holds');
+        return config('affiliates.database.tables.payout_holds', 'affiliate_payout_holds');
     }
 
     public function affiliate(): BelongsTo

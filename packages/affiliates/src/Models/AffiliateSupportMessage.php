@@ -39,7 +39,7 @@ class AffiliateSupportMessage extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.support_messages', 'affiliate_support_messages');
+        return config('affiliates.database.tables.support_messages', 'affiliate_support_messages');
     }
 
     /**

@@ -94,7 +94,7 @@ class Affiliate extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.affiliates', parent::getTable());
+        return config('affiliates.database.tables.affiliates', parent::getTable());
     }
 
     /**
@@ -136,7 +136,7 @@ class Affiliate extends Model
     {
         return $this->belongsToMany(
             AffiliateProgram::class,
-            config('affiliates.table_names.program_memberships', 'affiliate_program_memberships'),
+            config('affiliates.database.tables.program_memberships', 'affiliate_program_memberships'),
             'affiliate_id',
             'program_id'
         );

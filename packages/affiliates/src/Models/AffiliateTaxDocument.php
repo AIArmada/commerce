@@ -51,7 +51,7 @@ class AffiliateTaxDocument extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.tax_documents', 'affiliate_tax_documents');
+        return config('affiliates.database.tables.tax_documents', 'affiliate_tax_documents');
     }
 
     /**
