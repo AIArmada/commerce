@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('status', 50)->default('created')->index();
 
             // Customer relationship (polymorphic)
-            $table->uuidMorphs('customer');
+            $table->nullableUuidMorphs('customer');
 
             // Owner relationship (polymorphic - for multi-tenancy)
             $table->nullableUuidMorphs('owner');

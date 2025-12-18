@@ -35,6 +35,18 @@ class FulfillmentQueue extends Page implements HasTable
 
     protected static ?string $title = 'Fulfillment Queue';
 
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user !== null && Gate::forUser($user)->allows('viewAny', Order::class);
+    }
+
+    public static function shouldRegisterNavigation(): bool
+    {
+        return static::canAccess() && parent::shouldRegisterNavigation();
+    }
+
     public static function getNavigationBadge(): ?string
     {
         $count = Order::query()

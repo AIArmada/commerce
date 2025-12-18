@@ -4,15 +4,21 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Models;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 /**
  * @property string $id
  * @property string $order_id
  * @property string|null $payment_id
+ * @property string|null $owner_id
+ * @property string|null $owner_type
  * @property string $gateway
  * @property string|null $transaction_id
  * @property int $amount
@@ -29,6 +35,9 @@ use Illuminate\Support\Carbon;
  */
 class OrderRefund extends Model
 {
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
     use HasUuids;
 
     public $incrementing = false;
@@ -37,6 +46,8 @@ class OrderRefund extends Model
 
     protected $fillable = [
         'order_id',
+        'owner_id',
+        'owner_type',
         'payment_id',
         'gateway',
         'transaction_id',
@@ -60,6 +71,28 @@ class OrderRefund extends Model
     public function getTable(): string
     {
         return config('orders.database.tables.order_refunds', 'order_refunds');
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
+    {
+        if (! (bool) config('orders.owner.enabled', true)) {
+            return $query;
+        }
+
+        if ($owner === null && app()->bound(OwnerResolverInterface::class)) {
+            $owner = app(OwnerResolverInterface::class)->resolve();
+        }
+
+        $includeGlobal = $includeGlobal && (bool) config('orders.owner.include_global', true);
+
+        /** @var Builder<static> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
+
+        return $scoped;
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -148,5 +181,33 @@ class OrderRefund extends Model
             'metadata' => 'array',
             'refunded_at' => 'datetime',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (OrderRefund $refund): void {
+            if (! (bool) config('orders.owner.enabled', true)) {
+                return;
+            }
+
+            if (blank($refund->order_id)) {
+                throw new InvalidArgumentException('order_id is required.');
+            }
+
+            $orderQuery = Order::query();
+            if (app()->bound(OwnerResolverInterface::class)) {
+                $orderQuery->forOwner();
+            }
+
+            $order = $orderQuery->findOrFail($refund->order_id);
+
+            if ($order->owner_type !== null && $order->owner_id !== null) {
+                $refund->owner_type = $order->owner_type;
+                $refund->owner_id = $order->owner_id;
+            } else {
+                $refund->owner_type = null;
+                $refund->owner_id = null;
+            }
+        });
     }
 }

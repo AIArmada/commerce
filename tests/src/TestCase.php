@@ -911,6 +911,7 @@ abstract class TestCase extends Orchestra
         Schema::create('order_items', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('order_id');
+            $table->nullableUuidMorphs('owner');
             $table->nullableUuidMorphs('purchasable');
             $table->string('name');
             $table->string('sku')->nullable();
@@ -928,6 +929,7 @@ abstract class TestCase extends Orchestra
         Schema::create('order_addresses', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('order_id');
+            $table->nullableUuidMorphs('owner');
             $table->string('type')->default('shipping');
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();
@@ -947,6 +949,7 @@ abstract class TestCase extends Orchestra
         Schema::create('order_payments', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('order_id');
+            $table->nullableUuidMorphs('owner');
             $table->string('gateway', 50);
             $table->string('transaction_id')->nullable();
             $table->integer('amount')->default(0);
@@ -961,6 +964,7 @@ abstract class TestCase extends Orchestra
         Schema::create('order_refunds', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('order_id');
+            $table->nullableUuidMorphs('owner');
             $table->uuid('payment_id')->nullable();
             $table->string('gateway', 50);
             $table->string('transaction_id')->nullable();
@@ -977,6 +981,7 @@ abstract class TestCase extends Orchestra
         Schema::create('order_notes', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('order_id');
+            $table->nullableUuidMorphs('owner');
             $table->foreignUuid('user_id')->nullable();
             $table->text('content');
             $table->boolean('is_customer_visible')->default(false);

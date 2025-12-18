@@ -6,9 +6,11 @@ namespace AIArmada\FilamentOrders\Widgets;
 
 use AIArmada\FilamentOrders\Resources\OrderResource;
 use AIArmada\Orders\Models\Order;
+use Filament\Facades\Filament;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Support\Facades\Gate;
 
 class RecentOrdersWidget extends BaseWidget
 {
@@ -17,6 +19,13 @@ class RecentOrdersWidget extends BaseWidget
     protected int | string | array $columnSpan = 'full';
 
     protected static ?string $heading = 'Recent Orders';
+
+    public static function canView(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user !== null && Gate::forUser($user)->allows('viewAny', Order::class);
+    }
 
     public function table(Table $table): Table
     {

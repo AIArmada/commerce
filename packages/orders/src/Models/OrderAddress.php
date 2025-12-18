@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Models;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -22,6 +26,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $state
  * @property string $postcode
  * @property string $country_code
+ * @property string|null $owner_id
+ * @property string|null $owner_type
  * @property string|null $phone
  * @property string|null $email
  * @property array|null $metadata
@@ -31,6 +37,9 @@ use Illuminate\Support\Carbon;
  */
 class OrderAddress extends Model
 {
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
     use HasUuids;
 
     public $incrementing = false;
@@ -39,6 +48,8 @@ class OrderAddress extends Model
 
     protected $fillable = [
         'order_id',
+        'owner_id',
+        'owner_type',
         'type',
         'first_name',
         'last_name',
@@ -65,6 +76,28 @@ class OrderAddress extends Model
     public function getTable(): string
     {
         return config('orders.database.tables.order_addresses', 'order_addresses');
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
+    {
+        if (! (bool) config('orders.owner.enabled', true)) {
+            return $query;
+        }
+
+        if ($owner === null && app()->bound(OwnerResolverInterface::class)) {
+            $owner = app(OwnerResolverInterface::class)->resolve();
+        }
+
+        $includeGlobal = $includeGlobal && (bool) config('orders.owner.include_global', true);
+
+        /** @var Builder<static> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
+
+        return $scoped;
     }
 
     // ─────────────────────────────────────────────────────────────
@@ -158,5 +191,33 @@ class OrderAddress extends Model
         return [
             'metadata' => 'array',
         ];
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (OrderAddress $address): void {
+            if (! (bool) config('orders.owner.enabled', true)) {
+                return;
+            }
+
+            if (blank($address->order_id)) {
+                throw new InvalidArgumentException('order_id is required.');
+            }
+
+            $orderQuery = Order::query();
+            if (app()->bound(OwnerResolverInterface::class)) {
+                $orderQuery->forOwner();
+            }
+
+            $order = $orderQuery->findOrFail($address->order_id);
+
+            if ($order->owner_type !== null && $order->owner_id !== null) {
+                $address->owner_type = $order->owner_type;
+                $address->owner_id = $order->owner_id;
+            } else {
+                $address->owner_type = null;
+                $address->owner_id = null;
+            }
+        });
     }
 }

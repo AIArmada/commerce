@@ -5,14 +5,23 @@ declare(strict_types=1);
 namespace AIArmada\FilamentOrders\Widgets;
 
 use AIArmada\Orders\Models\Order;
+use Filament\Facades\Filament;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Gate;
 
 class OrderStatusDistributionWidget extends ChartWidget
 {
     protected ?string $heading = 'Order Status Distribution';
 
     protected static ?int $sort = 3;
+
+    public static function canView(): bool
+    {
+        $user = Filament::auth()->user();
+
+        return $user !== null && Gate::forUser($user)->allows('viewAny', Order::class);
+    }
 
     protected function getData(): array
     {
