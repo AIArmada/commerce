@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $tableName = config('affiliates.table_names.affiliates', 'affiliates');
+        $tableName = config('affiliates.database.tables.affiliates', 'affiliates');
 
         Schema::table($tableName, function (Blueprint $table): void {
             $table->string('api_token', 64)->nullable()->unique();
@@ -19,7 +19,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        $tableName = config('affiliates.table_names.affiliates', 'affiliates');
+        $tableName = config('affiliates.database.tables.affiliates', 'affiliates');
 
         Schema::table($tableName, function (Blueprint $table): void {
             $table->dropUnique(['api_token']);

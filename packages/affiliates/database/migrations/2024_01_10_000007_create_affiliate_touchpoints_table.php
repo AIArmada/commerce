@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $jsonType = commerce_json_column_type('affiliates');
 
-        Schema::create(config('affiliates.table_names.touchpoints', 'affiliate_touchpoints'), function (Blueprint $table) use ($jsonType): void {
+        Schema::create(config('affiliates.database.tables.touchpoints', 'affiliate_touchpoints'), function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('affiliate_attribution_id')->index();
             $table->foreignUuid('affiliate_id')->index();
@@ -30,6 +30,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('affiliates.table_names.touchpoints', 'affiliate_touchpoints'));
+        Schema::dropIfExists(config('affiliates.database.tables.touchpoints', 'affiliate_touchpoints'));
     }
 };
