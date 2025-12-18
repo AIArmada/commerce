@@ -35,6 +35,16 @@ it('builds a timeline from payments, notes and shipment state', function (): voi
 
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
 
+    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
+    {
+        public function __construct(private readonly ?Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
     $order = Order::query()->create([
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
@@ -65,16 +75,6 @@ it('builds a timeline from payments, notes and shipment state', function (): voi
     ]);
 
     $note->forceFill(['created_at' => now()->subMinutes(30), 'updated_at' => now()->subMinutes(30)])->save();
-
-    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
-    {
-        public function __construct(private readonly ?Model $owner) {}
-
-        public function resolve(): ?Model
-        {
-            return $this->owner;
-        }
-    });
 
     $widget = app(OrderTimelineWidget::class);
     $widget->mount($order);
