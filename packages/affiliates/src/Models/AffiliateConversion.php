@@ -42,7 +42,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property-read AffiliateAttribution|null $attribution
  * @property-read AffiliatePayout|null $payout
  */
-final class AffiliateConversion extends Model
+class AffiliateConversion extends Model
 {
     use HasOwner;
     use HasUuids;
@@ -71,7 +71,7 @@ final class AffiliateConversion extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.conversions', parent::getTable());
+        return config('affiliates.database.tables.conversions', parent::getTable());
     }
 
     /**

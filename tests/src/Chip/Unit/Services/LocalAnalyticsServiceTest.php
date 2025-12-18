@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Services\LocalAnalyticsService;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->service = new LocalAnalyticsService;
 });
 
@@ -26,7 +26,7 @@ function createPurchase(array $attributes): Purchase
     ], $attributes));
 }
 
-it('calculates revenue metrics', function () {
+it('calculates revenue metrics', function (): void {
     $now = now();
 
     // Current period purchase (Paid)
@@ -60,7 +60,7 @@ it('calculates revenue metrics', function () {
     expect($metrics->averageTransaction)->toBe(10000.0);
 });
 
-it('calculates transaction metrics', function () {
+it('calculates transaction metrics', function (): void {
     $now = now();
 
     createPurchase(['status' => 'paid', 'created_at' => $now]);
@@ -78,7 +78,7 @@ it('calculates transaction metrics', function () {
     expect($metrics->successRate)->toBe(25.0);
 });
 
-it('calculates payment method breakdown', function () {
+it('calculates payment method breakdown', function (): void {
     $now = now();
 
     createPurchase(['status' => 'paid', 'payment_method' => 'card', 'total_minor' => 1000, 'created_at' => $now]);
@@ -105,7 +105,7 @@ it('calculates payment method breakdown', function () {
     expect($fpx['success_rate'])->toBe(100.0);
 });
 
-it('calculates failure analysis', function () {
+it('calculates failure analysis', function (): void {
     $now = now();
 
     createPurchase([
@@ -142,7 +142,7 @@ it('calculates failure analysis', function () {
     expect($timeout['lost_revenue'])->toBe(1500);
 });
 
-it('gets dashboard metrics', function () {
+it('gets dashboard metrics', function (): void {
     $now = now();
     createPurchase(['status' => 'paid', 'total_minor' => 1000, 'created_at' => $now]);
 

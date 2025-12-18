@@ -42,7 +42,7 @@ class AffiliateRankHistory extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.rank_histories', 'affiliate_rank_histories');
+        return config('affiliates.database.tables.rank_histories', 'affiliate_rank_histories');
     }
 
     public function affiliate(): BelongsTo
