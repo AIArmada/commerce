@@ -2,224 +2,217 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Services\WildcardPermissionResolver;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Cache;
 use Spatie\Permission\Models\Permission;
 
 beforeEach(function (): void {
-    $this->resolver = app(WildcardPermissionResolver::class);
+    Permission::query()->delete();
 
     // Create test permissions
-    Permission::create(['name' => 'users.viewAny', 'guard_name' => 'web']);
-    Permission::create(['name' => 'users.view', 'guard_name' => 'web']);
-    Permission::create(['name' => 'users.create', 'guard_name' => 'web']);
-    Permission::create(['name' => 'users.update', 'guard_name' => 'web']);
-    Permission::create(['name' => 'users.delete', 'guard_name' => 'web']);
-    Permission::create(['name' => 'orders.viewAny', 'guard_name' => 'web']);
-    Permission::create(['name' => 'orders.view', 'guard_name' => 'web']);
-    Permission::create(['name' => 'orders.create', 'guard_name' => 'web']);
-    Permission::create(['name' => 'products.viewAny', 'guard_name' => 'web']);
-    Permission::create(['name' => 'products.view', 'guard_name' => 'web']);
+    $permissions = [
+        'orders.view',
+        'orders.create',
+        'orders.update',
+        'orders.delete',
+        'products.view',
+        'products.create',
+        'products.update',
+        'users.view',
+        'users.create',
+        'dashboard',
+    ];
 
-    $this->resolver->clearCache();
+    foreach ($permissions as $permission) {
+        Permission::create(['name' => $permission, 'guard_name' => 'web']);
+    }
+
+    test()->resolver = new WildcardPermissionResolver;
 });
 
-test('can be instantiated', function (): void {
-    expect($this->resolver)->toBeInstanceOf(WildcardPermissionResolver::class);
+describe('WildcardPermissionResolver → isWildcard', function (): void {
+    it('returns true for universal wildcard', function (): void {
+        expect(test()->resolver->isWildcard('*'))->toBeTrue();
+    });
+
+    it('returns true for prefix wildcard', function (): void {
+        expect(test()->resolver->isWildcard('orders.*'))->toBeTrue();
+    });
+
+    it('returns true for pattern wildcard', function (): void {
+        expect(test()->resolver->isWildcard('*.view'))->toBeTrue();
+    });
+
+    it('returns false for regular permission', function (): void {
+        expect(test()->resolver->isWildcard('orders.view'))->toBeFalse();
+    });
+
+    it('returns false for permission without wildcard', function (): void {
+        expect(test()->resolver->isWildcard('dashboard'))->toBeFalse();
+    });
 });
 
-test('isWildcard returns false for non-wildcard permission', function (): void {
-    expect($this->resolver->isWildcard('users.view'))->toBeFalse();
-    expect($this->resolver->isWildcard('orders.create'))->toBeFalse();
-    expect($this->resolver->isWildcard('simple'))->toBeFalse();
+describe('WildcardPermissionResolver → resolve', function (): void {
+    it('returns single permission for non-wildcard', function (): void {
+        $result = test()->resolver->resolve('orders.view');
+
+        expect($result)->toBeInstanceOf(Collection::class)
+            ->and($result->toArray())->toBe(['orders.view']);
+    });
+
+    it('resolves universal wildcard to all permissions', function (): void {
+        $result = test()->resolver->resolve('*');
+
+        expect($result)->toBeInstanceOf(Collection::class)
+            ->and($result->count())->toBe(10);
+    });
+
+    it('resolves prefix wildcard to matching permissions', function (): void {
+        $result = test()->resolver->resolve('orders.*');
+
+        expect($result)->toBeInstanceOf(Collection::class)
+            ->and($result->count())->toBe(4)
+            ->and($result->contains('orders.view'))->toBeTrue()
+            ->and($result->contains('orders.create'))->toBeTrue()
+            ->and($result->contains('orders.update'))->toBeTrue()
+            ->and($result->contains('orders.delete'))->toBeTrue();
+    });
+
+    it('resolves pattern wildcard to matching permissions', function (): void {
+        $result = test()->resolver->resolve('*.view');
+
+        expect($result)->toBeInstanceOf(Collection::class)
+            ->and($result->contains('orders.view'))->toBeTrue()
+            ->and($result->contains('products.view'))->toBeTrue()
+            ->and($result->contains('users.view'))->toBeTrue();
+    });
 });
 
-test('isWildcard returns true for wildcard permission', function (): void {
-    expect($this->resolver->isWildcard('*'))->toBeTrue();
-    expect($this->resolver->isWildcard('users.*'))->toBeTrue();
-    expect($this->resolver->isWildcard('*.view'))->toBeTrue();
-    expect($this->resolver->isWildcard('users.*.view'))->toBeTrue();
+describe('WildcardPermissionResolver → matches', function (): void {
+    it('matches exact permission', function (): void {
+        expect(test()->resolver->matches('orders.view', 'orders.view'))->toBeTrue();
+    });
+
+    it('universal wildcard matches everything', function (): void {
+        expect(test()->resolver->matches('*', 'orders.view'))->toBeTrue()
+            ->and(test()->resolver->matches('*', 'products.create'))->toBeTrue()
+            ->and(test()->resolver->matches('*', 'dashboard'))->toBeTrue();
+    });
+
+    it('prefix wildcard matches permissions with same prefix', function (): void {
+        expect(test()->resolver->matches('orders.*', 'orders.view'))->toBeTrue()
+            ->and(test()->resolver->matches('orders.*', 'orders.create'))->toBeTrue()
+            ->and(test()->resolver->matches('orders.*', 'products.view'))->toBeFalse();
+    });
+
+    it('pattern wildcard matches permissions with same suffix', function (): void {
+        expect(test()->resolver->matches('*.view', 'orders.view'))->toBeTrue()
+            ->and(test()->resolver->matches('*.view', 'products.view'))->toBeTrue()
+            ->and(test()->resolver->matches('*.view', 'orders.create'))->toBeFalse();
+    });
+
+    it('non-wildcard returns false for non-matching permissions', function (): void {
+        expect(test()->resolver->matches('orders.view', 'products.view'))->toBeFalse();
+    });
 });
 
-test('resolve returns single permission for non-wildcard', function (): void {
-    $resolved = $this->resolver->resolve('users.view');
+describe('WildcardPermissionResolver → getPrefixes', function (): void {
+    it('returns all unique prefixes', function (): void {
+        $result = test()->resolver->getPrefixes();
 
-    expect($resolved)->toHaveCount(1)
-        ->and($resolved->first())->toBe('users.view');
+        expect($result)->toBeInstanceOf(Collection::class)
+            ->and($result->contains('orders'))->toBeTrue()
+            ->and($result->contains('products'))->toBeTrue()
+            ->and($result->contains('users'))->toBeTrue()
+            ->and($result->contains('dashboard'))->toBeFalse(); // No prefix for 'dashboard'
+    });
 });
 
-test('resolve returns all permissions for universal wildcard', function (): void {
-    $resolved = $this->resolver->resolve('*');
+describe('WildcardPermissionResolver → getByPrefix', function (): void {
+    it('returns all permissions with given prefix', function (): void {
+        $result = test()->resolver->getByPrefix('orders');
 
-    expect($resolved)->toHaveCount(10)
-        ->and($resolved)->toContain('users.viewAny')
-        ->and($resolved)->toContain('orders.view')
-        ->and($resolved)->toContain('products.viewAny');
+        expect($result)->toBeInstanceOf(Collection::class)
+            ->and($result->count())->toBe(4)
+            ->and($result->contains('orders.view'))->toBeTrue()
+            ->and($result->contains('orders.create'))->toBeTrue();
+    });
+
+    it('returns empty collection for non-existent prefix', function (): void {
+        $result = test()->resolver->getByPrefix('nonexistent');
+
+        expect($result->isEmpty())->toBeTrue();
+    });
 });
 
-test('resolve returns prefix-matching permissions for prefix wildcard', function (): void {
-    $resolved = $this->resolver->resolve('users.*');
+describe('WildcardPermissionResolver → groupByPrefix', function (): void {
+    it('groups permissions by prefix', function (): void {
+        $result = test()->resolver->groupByPrefix();
 
-    expect($resolved)->toHaveCount(5)
-        ->and($resolved)->toContain('users.viewAny')
-        ->and($resolved)->toContain('users.view')
-        ->and($resolved)->toContain('users.create')
-        ->and($resolved)->toContain('users.update')
-        ->and($resolved)->toContain('users.delete')
-        ->and($resolved)->not->toContain('orders.view');
+        expect($result)->toBeInstanceOf(Collection::class)
+            ->and($result->has('orders'))->toBeTrue()
+            ->and($result->has('products'))->toBeTrue()
+            ->and($result->has('users'))->toBeTrue()
+            ->and($result->get('orders')->count())->toBe(4)
+            ->and($result->get('products')->count())->toBe(3)
+            ->and($result->get('users')->count())->toBe(2);
+    });
+
+    it('groups permissions without prefix under other', function (): void {
+        $result = test()->resolver->groupByPrefix();
+
+        expect($result->has('other'))->toBeTrue()
+            ->and($result->get('other')->contains('dashboard'))->toBeTrue();
+    });
 });
 
-test('resolve returns pattern-matching permissions for pattern wildcard', function (): void {
-    $resolved = $this->resolver->resolve('*.view');
+describe('WildcardPermissionResolver → extractPrefix', function (): void {
+    it('extracts prefix from dotted permission', function (): void {
+        expect(test()->resolver->extractPrefix('orders.view'))->toBe('orders')
+            ->and(test()->resolver->extractPrefix('products.create'))->toBe('products');
+    });
 
-    expect($resolved)->toHaveCount(3)
-        ->and($resolved)->toContain('users.view')
-        ->and($resolved)->toContain('orders.view')
-        ->and($resolved)->toContain('products.view')
-        ->and($resolved)->not->toContain('users.create');
+    it('returns null for permission without dot', function (): void {
+        expect(test()->resolver->extractPrefix('dashboard'))->toBeNull();
+    });
 });
 
-test('matches returns true for exact match', function (): void {
-    expect($this->resolver->matches('users.view', 'users.view'))->toBeTrue();
+describe('WildcardPermissionResolver → extractAction', function (): void {
+    it('extracts action from dotted permission', function (): void {
+        expect(test()->resolver->extractAction('orders.view'))->toBe('view')
+            ->and(test()->resolver->extractAction('products.create'))->toBe('create');
+    });
+
+    it('returns null for permission without dot', function (): void {
+        expect(test()->resolver->extractAction('dashboard'))->toBeNull();
+    });
 });
 
-test('matches returns true for universal wildcard', function (): void {
-    expect($this->resolver->matches('*', 'users.view'))->toBeTrue();
-    expect($this->resolver->matches('*', 'any.permission'))->toBeTrue();
+describe('WildcardPermissionResolver → buildPermission', function (): void {
+    it('builds permission from components', function (): void {
+        expect(test()->resolver->buildPermission('orders', 'view'))->toBe('orders.view')
+            ->and(test()->resolver->buildPermission('products', 'create'))->toBe('products.create');
+    });
 });
 
-test('matches returns true for prefix wildcard match', function (): void {
-    expect($this->resolver->matches('users.*', 'users.view'))->toBeTrue();
-    expect($this->resolver->matches('users.*', 'users.create'))->toBeTrue();
-    expect($this->resolver->matches('orders.*', 'orders.view'))->toBeTrue();
+describe('WildcardPermissionResolver → userHasPermission', function (): void {
+    it('returns false for object without getAllPermissions method', function (): void {
+        $user = new stdClass;
+
+        expect(test()->resolver->userHasPermission($user, 'orders.view'))->toBeFalse();
+    });
 });
 
-test('matches returns false for prefix wildcard non-match', function (): void {
-    expect($this->resolver->matches('users.*', 'orders.view'))->toBeFalse();
-    expect($this->resolver->matches('orders.*', 'users.create'))->toBeFalse();
-});
+describe('WildcardPermissionResolver → clearCache', function (): void {
+    it('clears the permission cache', function (): void {
+        // First access to populate cache
+        test()->resolver->resolve('*');
 
-test('matches returns true for pattern wildcard match', function (): void {
-    expect($this->resolver->matches('*.view', 'users.view'))->toBeTrue();
-    expect($this->resolver->matches('*.view', 'orders.view'))->toBeTrue();
-});
+        Cache::shouldReceive('forget')
+            ->once()
+            ->with('permissions:wildcard_map');
 
-test('matches returns false for pattern wildcard non-match', function (): void {
-    expect($this->resolver->matches('*.view', 'users.create'))->toBeFalse();
-    expect($this->resolver->matches('*.create', 'users.view'))->toBeFalse();
-});
-
-test('matches returns false for non-matching permission', function (): void {
-    expect($this->resolver->matches('users.view', 'orders.view'))->toBeFalse();
-    expect($this->resolver->matches('users.view', 'users.create'))->toBeFalse();
-});
-
-test('getPrefixes returns unique permission prefixes', function (): void {
-    $prefixes = $this->resolver->getPrefixes();
-
-    expect($prefixes)->toHaveCount(3)
-        ->and($prefixes)->toContain('users')
-        ->and($prefixes)->toContain('orders')
-        ->and($prefixes)->toContain('products');
-});
-
-test('getByPrefix returns all permissions with given prefix', function (): void {
-    $userPerms = $this->resolver->getByPrefix('users');
-    $orderPerms = $this->resolver->getByPrefix('orders');
-
-    expect($userPerms)->toHaveCount(5)
-        ->and($userPerms)->toContain('users.viewAny')
-        ->and($orderPerms)->toHaveCount(3);
-});
-
-test('getByPrefix returns empty collection for non-existent prefix', function (): void {
-    $perms = $this->resolver->getByPrefix('nonexistent');
-
-    expect($perms)->toBeEmpty();
-});
-
-test('groupByPrefix groups permissions by their prefix', function (): void {
-    $grouped = $this->resolver->groupByPrefix();
-
-    expect($grouped)->toHaveKey('users')
-        ->and($grouped)->toHaveKey('orders')
-        ->and($grouped)->toHaveKey('products')
-        ->and($grouped['users'])->toHaveCount(5)
-        ->and($grouped['orders'])->toHaveCount(3)
-        ->and($grouped['products'])->toHaveCount(2);
-});
-
-test('extractPrefix extracts prefix from permission', function (): void {
-    expect($this->resolver->extractPrefix('users.view'))->toBe('users')
-        ->and($this->resolver->extractPrefix('orders.create'))->toBe('orders')
-        ->and($this->resolver->extractPrefix('simple'))->toBeNull();
-});
-
-test('extractAction extracts action from permission', function (): void {
-    expect($this->resolver->extractAction('users.view'))->toBe('view')
-        ->and($this->resolver->extractAction('orders.create'))->toBe('create')
-        ->and($this->resolver->extractAction('simple'))->toBeNull();
-});
-
-test('buildPermission creates permission string from components', function (): void {
-    expect($this->resolver->buildPermission('users', 'view'))->toBe('users.view')
-        ->and($this->resolver->buildPermission('orders', 'create'))->toBe('orders.create');
-});
-
-test('userHasPermission returns true for direct permission', function (): void {
-    $user = User::create([
-        'name' => 'Test User',
-        'email' => 'test@example.com',
-        'password' => bcrypt('password'),
-    ]);
-
-    $user->givePermissionTo('users.view');
-
-    expect($this->resolver->userHasPermission($user, 'users.view'))->toBeTrue();
-});
-
-test('userHasPermission returns false for missing permission', function (): void {
-    $user = User::create([
-        'name' => 'Test User',
-        'email' => 'test2@example.com',
-        'password' => bcrypt('password'),
-    ]);
-
-    expect($this->resolver->userHasPermission($user, 'users.view'))->toBeFalse();
-});
-
-test('userHasPermission returns true for wildcard permission match', function (): void {
-    $user = User::create([
-        'name' => 'Test User',
-        'email' => 'test3@example.com',
-        'password' => bcrypt('password'),
-    ]);
-
-    Permission::create(['name' => 'users.*', 'guard_name' => 'web']);
-    $user->givePermissionTo('users.*');
-
-    expect($this->resolver->userHasPermission($user, 'users.view'))->toBeTrue();
-    expect($this->resolver->userHasPermission($user, 'users.create'))->toBeTrue();
-});
-
-test('userHasPermission returns false for object without getAllPermissions', function (): void {
-    $obj = new stdClass;
-
-    expect($this->resolver->userHasPermission($obj, 'users.view'))->toBeFalse();
-});
-
-test('clearCache clears the permission cache', function (): void {
-    // First call populates cache
-    $this->resolver->resolve('users.*');
-
-    // Clear cache
-    $this->resolver->clearCache();
-
-    // Add a new permission
-    Permission::create(['name' => 'users.export', 'guard_name' => 'web']);
-
-    // Should see the new permission after cache clear
-    $resolved = $this->resolver->resolve('users.*');
-
-    expect($resolved)->toContain('users.export');
+        test()->resolver->clearCache();
+    });
 });

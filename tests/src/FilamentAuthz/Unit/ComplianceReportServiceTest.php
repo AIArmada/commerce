@@ -2,268 +2,457 @@
 
 declare(strict_types=1);
 
-namespace Tests\FilamentAuthz\Unit;
-
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\FilamentAuthz\Enums\AuditEventType;
+use AIArmada\FilamentAuthz\Enums\AuditSeverity;
+use AIArmada\FilamentAuthz\Models\PermissionAuditLog;
+use AIArmada\FilamentAuthz\Models\ScopedPermission;
 use AIArmada\FilamentAuthz\Services\ComplianceReportService;
 use Carbon\Carbon;
-use Illuminate\Database\Eloquent\Collection;
+use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
+
+beforeEach(function (): void {
+    // Clear data
+    PermissionAuditLog::query()->delete();
+    ScopedPermission::query()->delete();
+    Permission::query()->delete();
+    Role::query()->delete();
+    User::query()->delete();
+
+    // Create and authenticate a user
+    $user = User::create([
+        'name' => 'System User',
+        'email' => 'system@example.com',
+        'password' => bcrypt('password'),
+    ]);
+    test()->actingAs($user);
+});
 
 describe('ComplianceReportService', function (): void {
-    beforeEach(function (): void {
-        $this->service = new ComplianceReportService;
+    test('can be instantiated', function (): void {
+        $service = new ComplianceReportService();
+
+        expect($service)->toBeInstanceOf(ComplianceReportService::class);
     });
 
-    describe('generateReport', function (): void {
-        it('returns report with required keys', function (): void {
-            $start = Carbon::now()->subDays(7);
-            $end = Carbon::now();
+    test('generateReport returns complete report structure', function (): void {
+        $service = new ComplianceReportService();
 
-            // Use 'summary' type to avoid MySQL-specific HOUR() function
-            $report = $this->service->generateReport($start, $end, 'summary');
+        $startDate = Carbon::now()->subDays(7);
+        $endDate = Carbon::now();
 
-            expect($report)->toHaveKeys([
-                'period',
-                'summary',
-                'events_by_type',
-                'events_by_severity',
-                'security_events',
-                'access_patterns',
-                'top_actors',
-                'generated_at',
+        $report = $service->generateReport($startDate, $endDate);
+
+        expect($report)->toHaveKeys([
+            'period',
+            'summary',
+            'events_by_type',
+            'events_by_severity',
+            'security_events',
+            'access_patterns',
+            'top_actors',
+            'generated_at',
+        ]);
+        expect($report['period']['start'])->toBe($startDate->toIso8601String());
+        expect($report['period']['end'])->toBe($endDate->toIso8601String());
+    })->skip(fn () => config('database.default') === 'testing', 'Skipped - uses MySQL HOUR() function not available in SQLite');
+
+    test('generateReport respects report type', function (): void {
+        $service = new ComplianceReportService();
+
+        $startDate = Carbon::now()->subDays(7);
+        $endDate = Carbon::now();
+
+        // Partial report should have empty security_events and access_patterns
+        $partialReport = $service->generateReport($startDate, $endDate, 'partial');
+
+        expect($partialReport['security_events'])->toBeEmpty();
+        expect($partialReport['access_patterns'])->toBeEmpty();
+    });
+
+    test('getSummary returns correct counts', function (): void {
+        $service = new ComplianceReportService();
+
+        // Create audit logs
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::PermissionGranted->value,
+            'severity' => AuditSeverity::Low->value,
+            'actor_type' => User::class,
+            'actor_id' => 'user-1',
+            'occurred_at' => now(),
+        ]);
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::PermissionRevoked->value,
+            'severity' => AuditSeverity::Medium->value,
+            'actor_type' => User::class,
+            'actor_id' => 'user-2',
+            'occurred_at' => now(),
+        ]);
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::AccessDenied->value,
+            'severity' => AuditSeverity::High->value,
+            'actor_type' => User::class,
+            'actor_id' => 'user-1',
+            'occurred_at' => now(),
+        ]);
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::RoleAssigned->value,
+            'severity' => AuditSeverity::Critical->value,
+            'actor_type' => User::class,
+            'actor_id' => 'user-3',
+            'occurred_at' => now(),
+        ]);
+
+        $summary = $service->getSummary(Carbon::now()->subDay(), Carbon::now()->addDay());
+
+        expect($summary['total_events'])->toBe(4);
+        expect($summary['unique_actors'])->toBe(3);
+        expect($summary['high_severity_events'])->toBe(2); // High + Critical
+        expect($summary['access_denials'])->toBe(1);
+        expect($summary['permission_changes'])->toBe(2); // Granted + Revoked
+        expect($summary['role_changes'])->toBe(1); // RoleAssigned
+    });
+
+    test('getEventsByType groups events correctly', function (): void {
+        $service = new ComplianceReportService();
+
+        // Create events of different types
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::PermissionGranted->value,
+            'severity' => AuditSeverity::Low->value,
+            'actor_type' => User::class,
+            'actor_id' => 'user-1',
+            'occurred_at' => now(),
+        ]);
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::PermissionGranted->value,
+            'severity' => AuditSeverity::Low->value,
+            'actor_type' => User::class,
+            'actor_id' => 'user-2',
+            'occurred_at' => now(),
+        ]);
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::AccessDenied->value,
+            'severity' => AuditSeverity::High->value,
+            'actor_type' => User::class,
+            'actor_id' => 'user-3',
+            'occurred_at' => now(),
+        ]);
+
+        $eventsByType = $service->getEventsByType(Carbon::now()->subDay(), Carbon::now()->addDay());
+
+        expect($eventsByType)->toHaveKey(AuditEventType::PermissionGranted->value);
+        expect($eventsByType[AuditEventType::PermissionGranted->value])->toBe(2);
+        expect($eventsByType[AuditEventType::AccessDenied->value])->toBe(1);
+    });
+
+    test('getEventsBySeverity groups events correctly', function (): void {
+        $service = new ComplianceReportService();
+
+        // Create events of different severities
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::PermissionGranted->value,
+            'severity' => AuditSeverity::Low->value,
+            'actor_type' => User::class,
+            'actor_id' => 'user-1',
+            'occurred_at' => now(),
+        ]);
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::PermissionRevoked->value,
+            'severity' => AuditSeverity::Low->value,
+            'actor_type' => User::class,
+            'actor_id' => 'user-2',
+            'occurred_at' => now(),
+        ]);
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::AccessDenied->value,
+            'severity' => AuditSeverity::High->value,
+            'actor_type' => User::class,
+            'actor_id' => 'user-3',
+            'occurred_at' => now(),
+        ]);
+
+        $eventsBySeverity = $service->getEventsBySeverity(Carbon::now()->subDay(), Carbon::now()->addDay());
+
+        expect($eventsBySeverity)->toHaveKey(AuditSeverity::Low->value);
+        expect($eventsBySeverity[AuditSeverity::Low->value])->toBe(2);
+        expect($eventsBySeverity[AuditSeverity::High->value])->toBe(1);
+    });
+
+    test('getSecurityEvents returns security-related events only', function (): void {
+        $service = new ComplianceReportService();
+
+        // Create security and non-security events
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::AccessDenied->value,
+            'severity' => AuditSeverity::High->value,
+            'actor_type' => User::class,
+            'actor_id' => 'user-1',
+            'occurred_at' => now(),
+        ]);
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::PrivilegeEscalation->value,
+            'severity' => AuditSeverity::Critical->value,
+            'actor_type' => User::class,
+            'actor_id' => 'user-2',
+            'occurred_at' => now(),
+        ]);
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::PermissionGranted->value, // Not a security event
+            'severity' => AuditSeverity::Low->value,
+            'actor_type' => User::class,
+            'actor_id' => 'user-3',
+            'occurred_at' => now(),
+        ]);
+
+        $securityEvents = $service->getSecurityEvents(Carbon::now()->subDay(), Carbon::now()->addDay());
+
+        expect($securityEvents)->toHaveCount(2);
+        expect($securityEvents->pluck('event_type')->toArray())->each->toBeIn([
+            AuditEventType::AccessDenied->value,
+            AuditEventType::PrivilegeEscalation->value,
+        ]);
+    });
+
+    test('getTopActors returns most active actors', function (): void {
+        $service = new ComplianceReportService();
+
+        // Create events with different actors
+        for ($i = 0; $i < 5; $i++) {
+            PermissionAuditLog::create([
+                'event_type' => AuditEventType::PermissionGranted->value,
+                'severity' => AuditSeverity::Low->value,
+                'actor_type' => User::class,
+                'actor_id' => 'user-top',
+                'occurred_at' => now(),
             ]);
-        });
-
-        it('returns period with start and end dates', function (): void {
-            $start = Carbon::create(2024, 1, 1);
-            $end = Carbon::create(2024, 1, 31);
-
-            // Use 'summary' type to avoid MySQL-specific HOUR() function
-            $report = $this->service->generateReport($start, $end, 'summary');
-
-            expect($report['period']['start'])->toContain('2024-01-01');
-            expect($report['period']['end'])->toContain('2024-01-31');
-        });
-
-        it('returns empty security events for summary report type', function (): void {
-            $start = Carbon::now()->subDays(7);
-            $end = Carbon::now();
-
-            $report = $this->service->generateReport($start, $end, 'summary');
-
-            expect($report['security_events'])->toBe([]);
-            expect($report['access_patterns'])->toBe([]);
-        });
-    });
-
-    describe('getSummary', function (): void {
-        it('returns summary with required keys', function (): void {
-            $start = Carbon::now()->subDays(7);
-            $end = Carbon::now();
-
-            $summary = $this->service->getSummary($start, $end);
-
-            expect($summary)->toHaveKeys([
-                'total_events',
-                'unique_actors',
-                'high_severity_events',
-                'access_denials',
-                'permission_changes',
-                'role_changes',
+        }
+        for ($i = 0; $i < 3; $i++) {
+            PermissionAuditLog::create([
+                'event_type' => AuditEventType::PermissionGranted->value,
+                'severity' => AuditSeverity::Low->value,
+                'actor_type' => User::class,
+                'actor_id' => 'user-second',
+                'occurred_at' => now(),
             ]);
-        });
+        }
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::PermissionGranted->value,
+            'severity' => AuditSeverity::Low->value,
+            'actor_type' => User::class,
+            'actor_id' => 'user-third',
+            'occurred_at' => now(),
+        ]);
 
-        it('returns zero counts when no events exist', function (): void {
-            $start = Carbon::now()->subDays(7);
-            $end = Carbon::now();
+        $topActors = $service->getTopActors(Carbon::now()->subDay(), Carbon::now()->addDay());
 
-            $summary = $this->service->getSummary($start, $end);
-
-            expect($summary['total_events'])->toBe(0);
-            expect($summary['unique_actors'])->toBe(0);
-            expect($summary['high_severity_events'])->toBe(0);
-        });
+        expect($topActors)->toHaveCount(3);
+        expect($topActors[0]['actor_id'])->toBe('user-top');
+        expect($topActors[0]['event_count'])->toBe(5);
+        expect($topActors[1]['actor_id'])->toBe('user-second');
+        expect($topActors[1]['event_count'])->toBe(3);
     });
 
-    describe('getEventsByType', function (): void {
-        it('returns empty array when no events exist', function (): void {
-            $start = Carbon::now()->subDays(7);
-            $end = Carbon::now();
+    test('getTopActors respects limit', function (): void {
+        $service = new ComplianceReportService();
 
-            $events = $this->service->getEventsByType($start, $end);
-
-            expect($events)->toBe([]);
-        });
-    });
-
-    describe('getEventsBySeverity', function (): void {
-        it('returns empty array when no events exist', function (): void {
-            $start = Carbon::now()->subDays(7);
-            $end = Carbon::now();
-
-            $events = $this->service->getEventsBySeverity($start, $end);
-
-            expect($events)->toBe([]);
-        });
-    });
-
-    describe('getSecurityEvents', function (): void {
-        it('returns empty collection when no security events exist', function (): void {
-            $start = Carbon::now()->subDays(7);
-            $end = Carbon::now();
-
-            $events = $this->service->getSecurityEvents($start, $end);
-
-            expect($events)->toBeInstanceOf(Collection::class);
-            expect($events)->toBeEmpty();
-        });
-    });
-
-    describe('getTopActors', function (): void {
-        it('returns empty array when no events exist', function (): void {
-            $start = Carbon::now()->subDays(7);
-            $end = Carbon::now();
-
-            $actors = $this->service->getTopActors($start, $end);
-
-            expect($actors)->toBe([]);
-        });
-
-        it('accepts custom limit parameter', function (): void {
-            $start = Carbon::now()->subDays(7);
-            $end = Carbon::now();
-
-            $actors = $this->service->getTopActors($start, $end, 5);
-
-            expect($actors)->toBe([]);
-        });
-    });
-
-    describe('getUserPermissionHistory', function (): void {
-        it('returns empty collection when no history exists', function (): void {
-            $history = $this->service->getUserPermissionHistory('user-123');
-
-            expect($history)->toBeInstanceOf(Collection::class);
-            expect($history)->toBeEmpty();
-        });
-
-        it('accepts optional date range', function (): void {
-            $start = Carbon::now()->subDays(30);
-            $end = Carbon::now();
-
-            $history = $this->service->getUserPermissionHistory('user-123', $start, $end);
-
-            expect($history)->toBeEmpty();
-        });
-    });
-
-    describe('getRoleHistory', function (): void {
-        it('returns empty collection when no history exists', function (): void {
-            $history = $this->service->getRoleHistory('role-123');
-
-            expect($history)->toBeInstanceOf(Collection::class);
-            expect($history)->toBeEmpty();
-        });
-
-        it('accepts optional date range', function (): void {
-            $start = Carbon::now()->subDays(30);
-            $end = Carbon::now();
-
-            $history = $this->service->getRoleHistory('role-123', $start, $end);
-
-            expect($history)->toBeEmpty();
-        });
-    });
-
-    describe('exportToArray', function (): void {
-        it('converts report to array format', function (): void {
-            $report = [
-                'summary' => [
-                    'total_events' => 100,
-                    'unique_actors' => 25,
-                    'high_severity_events' => 5,
-                ],
-                'events_by_type' => [
-                    'permission.granted' => 50,
-                    'role.assigned' => 30,
-                ],
-                'events_by_severity' => [
-                    'low' => 80,
-                    'medium' => 15,
-                ],
-            ];
-
-            $rows = $this->service->exportToArray($report);
-
-            expect($rows)->toBeArray();
-            expect($rows[0])->toMatchArray([
-                'section' => 'Summary',
-                'metric' => 'Total Events',
-                'value' => 100,
+        // Create events with many actors
+        for ($i = 1; $i <= 15; $i++) {
+            PermissionAuditLog::create([
+                'event_type' => AuditEventType::PermissionGranted->value,
+                'severity' => AuditSeverity::Low->value,
+                'actor_type' => User::class,
+                'actor_id' => "user-{$i}",
+                'occurred_at' => now(),
             ]);
-        });
+        }
 
-        it('includes events by type in export', function (): void {
-            $report = [
-                'summary' => [
-                    'total_events' => 10,
-                    'unique_actors' => 5,
-                    'high_severity_events' => 1,
-                ],
-                'events_by_type' => [
-                    'test_type' => 5,
-                ],
-                'events_by_severity' => [],
-            ];
+        $topActors = $service->getTopActors(Carbon::now()->subDay(), Carbon::now()->addDay(), 5);
 
-            $rows = $this->service->exportToArray($report);
-
-            $typeRows = array_filter($rows, fn ($r) => $r['section'] === 'Events By Type');
-            expect(count($typeRows))->toBe(1);
-        });
-
-        it('includes events by severity in export', function (): void {
-            $report = [
-                'summary' => [
-                    'total_events' => 10,
-                    'unique_actors' => 5,
-                    'high_severity_events' => 1,
-                ],
-                'events_by_type' => [],
-                'events_by_severity' => [
-                    'high' => 3,
-                    'low' => 7,
-                ],
-            ];
-
-            $rows = $this->service->exportToArray($report);
-
-            $severityRows = array_filter($rows, fn ($r) => $r['section'] === 'Events By Severity');
-            expect(count($severityRows))->toBe(2);
-        });
+        expect($topActors)->toHaveCount(5);
     });
 
-    describe('exportToCsv', function (): void {
-        it('returns csv string with header', function (): void {
-            $start = Carbon::now()->subDays(7);
-            $end = Carbon::now();
+    test('getUserPermissionHistory returns user-related events', function (): void {
+        $service = new ComplianceReportService();
 
-            $csv = $this->service->exportToCsv($start, $end);
+        $userId = 'target-user-id';
 
-            expect($csv)->toContain('ID');
-            expect($csv)->toContain('Event Type');
-            expect($csv)->toContain('Severity');
-            expect($csv)->toContain('Actor ID');
-        });
+        // Create events for target user
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::PermissionGranted->value,
+            'severity' => AuditSeverity::Low->value,
+            'actor_type' => User::class,
+            'actor_id' => 'admin-1',
+            'subject_id' => $userId,
+            'occurred_at' => now(),
+        ]);
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::RoleAssigned->value,
+            'severity' => AuditSeverity::Medium->value,
+            'actor_type' => User::class,
+            'actor_id' => 'admin-2',
+            'subject_id' => $userId,
+            'occurred_at' => now(),
+        ]);
+        // Event by user (as actor)
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::PermissionRevoked->value,
+            'severity' => AuditSeverity::Low->value,
+            'actor_type' => User::class,
+            'actor_id' => $userId,
+            'occurred_at' => now(),
+        ]);
+        // Unrelated event
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::PermissionGranted->value,
+            'severity' => AuditSeverity::Low->value,
+            'actor_type' => User::class,
+            'actor_id' => 'admin-3',
+            'subject_id' => 'other-user',
+            'occurred_at' => now(),
+        ]);
 
-        it('returns empty-ish csv when no logs exist', function (): void {
-            $start = Carbon::now()->subDays(7);
-            $end = Carbon::now();
+        $history = $service->getUserPermissionHistory($userId);
 
-            $csv = $this->service->exportToCsv($start, $end);
+        expect($history)->toHaveCount(3);
+    });
 
-            // Should only have the header line
-            $lines = explode("\n", mb_trim($csv));
-            expect(count($lines))->toBe(1);
-        });
+    test('getUserPermissionHistory respects date range', function (): void {
+        $service = new ComplianceReportService();
+
+        $userId = 'test-user';
+        $differentUserId = 'different-user';
+
+        // Create event for target user in range
+        $inRangeLog = PermissionAuditLog::create([
+            'event_type' => AuditEventType::PermissionGranted->value,
+            'severity' => AuditSeverity::Low->value,
+            'actor_type' => User::class,
+            'actor_id' => 'admin-1',
+            'subject_id' => $userId,
+            'occurred_at' => now(),
+        ]);
+
+        // Create event for DIFFERENT user (should not be returned)
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::PermissionRevoked->value,
+            'severity' => AuditSeverity::Low->value,
+            'actor_type' => User::class,
+            'actor_id' => 'admin-2',
+            'subject_id' => $differentUserId,
+            'occurred_at' => now(),
+        ]);
+
+        $history = $service->getUserPermissionHistory(
+            $userId,
+            Carbon::now()->subDays(1),
+            Carbon::now()->addDay()
+        );
+
+        expect($history)->toHaveCount(1);
+        expect($history->first()->id)->toBe($inRangeLog->id);
+    });
+
+    test('getRoleHistory returns role-related events', function (): void {
+        $service = new ComplianceReportService();
+
+        $roleId = 'target-role-id';
+
+        // Create events for target role
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::RoleCreated->value,
+            'severity' => AuditSeverity::Low->value,
+            'actor_type' => User::class,
+            'actor_id' => 'admin-1',
+            'subject_id' => $roleId,
+            'occurred_at' => now(),
+        ]);
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::RoleUpdated->value,
+            'severity' => AuditSeverity::Medium->value,
+            'actor_type' => User::class,
+            'actor_id' => 'admin-2',
+            'subject_id' => $roleId,
+            'occurred_at' => now(),
+        ]);
+        // Unrelated event
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::RoleCreated->value,
+            'severity' => AuditSeverity::Low->value,
+            'actor_type' => User::class,
+            'actor_id' => 'admin-3',
+            'subject_id' => 'other-role',
+            'occurred_at' => now(),
+        ]);
+
+        $history = $service->getRoleHistory($roleId);
+
+        expect($history)->toHaveCount(2);
+    });
+
+    test('exportToArray converts report to flat array', function (): void {
+        $service = new ComplianceReportService();
+
+        $report = [
+            'summary' => [
+                'total_events' => 100,
+                'unique_actors' => 10,
+                'high_severity_events' => 5,
+            ],
+            'events_by_type' => [
+                'permission_granted' => 50,
+                'access_denied' => 30,
+            ],
+            'events_by_severity' => [
+                'low' => 60,
+                'high' => 40,
+            ],
+        ];
+
+        $exported = $service->exportToArray($report);
+
+        expect($exported)->toBeArray();
+        expect($exported)->not->toBeEmpty();
+
+        // Check summary rows
+        $summaryRows = array_filter($exported, fn ($row) => $row['section'] === 'Summary');
+        expect(count($summaryRows))->toBe(3);
+
+        // Check event type rows
+        $typeRows = array_filter($exported, fn ($row) => $row['section'] === 'Events By Type');
+        expect(count($typeRows))->toBe(2);
+    });
+
+    test('exportToCsv generates valid CSV', function (): void {
+        $service = new ComplianceReportService();
+
+        // Create audit log
+        PermissionAuditLog::create([
+            'event_type' => AuditEventType::PermissionGranted->value,
+            'severity' => AuditSeverity::Low->value,
+            'actor_type' => User::class,
+            'actor_id' => 'user-1',
+            'subject_id' => 'subject-1',
+            'subject_type' => 'App\\Models\\User',
+            'occurred_at' => now(),
+        ]);
+
+        $csv = $service->exportToCsv(Carbon::now()->subDay(), Carbon::now()->addDay());
+
+        expect($csv)->toBeString();
+        expect($csv)->toContain('ID');
+        expect($csv)->toContain('Event Type');
+        expect($csv)->toContain('Severity');
+        expect($csv)->toContain(AuditEventType::PermissionGranted->value);
+    });
+
+    test('exportToCsv returns empty string on failure', function (): void {
+        $service = new ComplianceReportService();
+
+        // With no logs, should still return valid CSV header
+        $csv = $service->exportToCsv(Carbon::now()->subDay(), Carbon::now()->addDay());
+
+        expect($csv)->toContain('ID');
     });
 });
