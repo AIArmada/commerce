@@ -15,11 +15,12 @@ status: COMPLETED
 
 ## OVERVIEW
 
-Following the comprehensive full-spectrum audit documented in `AUDIT.md`, all **CRITICAL** and **HIGH SEVERITY** issues have been resolved, along with several **MEDIUM SEVERITY** improvements.
+Following the comprehensive full-spectrum audit documented in `AUDIT.md`, all **CRITICAL** and **HIGH SEVERITY** issues have been resolved, along with several **MEDIUM SEVERITY** improvements. One issue was identified as a false positive and reverted.
 
-### Issues Fixed: 6 / 9 total issues
+### Issues Fixed: 5 / 9 total issues
 - ✅ **HIGH Severity:** 2 issues fixed
-- ✅ **MEDIUM Severity:** 4 issues fixed
+- ✅ **MEDIUM Severity:** 3 issues fixed
+- ⚠️ **MEDIUM Severity:** 1 false positive (reverted)
 - ⏭️ **LOW Severity:** 3 issues deferred (non-blocking)
 
 ### Production Readiness: 95% → 100% ✅
@@ -84,26 +85,34 @@ protected static function booted(): void
 
 ---
 
-### Fix #3: Removed Duplicate Config Key
-**Issue:** MEDIUM Severity - Maintainability  
+### Fix #3: Duplicate Config Key (REVERTED - FALSE POSITIVE)
+**Issue:** MEDIUM Severity - Maintainability → **NOT AN ISSUE**
 **File:** `config/affiliates.php`  
-**Status:** ✅ FIXED
+**Status:** ⚠️ REVERTED (Restored to original state)
 
 **Problem:**
-Config file had duplicate `table_names` key at line 65, creating confusion about which key to use:
-- Correct: `config('affiliates.database.tables')`
-- Duplicate: `config('affiliates.table_names')` ← REMOVED
+Config file appeared to have duplicate `table_names` key at line 65:
+- `config('affiliates.database.tables')` - New structured approach
+- `config('affiliates.table_names')` - Legacy/compatibility key
 
-**Solution:**
-Removed the duplicate line 65:
+**Initial Action Taken:**
+Removed the `table_names` key thinking it was a duplicate.
+
+**Critical Issue Discovered:**
+ALL 28 models in the package reference `config('affiliates.table_names.{table}', ...)` in their `getTable()` methods. Removing this key broke ALL table name resolution throughout the package, causing runtime errors.
+
+**Resolution:**
+Restored the `table_names` key:
 ```php
-// REMOVED: 'table_names' => $tables,
+'table_names' => $tables,
 ```
 
-**Impact:**
-- Single source of truth for table names
-- Reduces confusion in codebase
-- Aligns with config organization standards
+**Lesson Learned:**
+The "duplication" is intentional - both keys serve different purposes:
+- `database.tables` - Structured config for database-related settings
+- `table_names` - Backward-compatible direct access used by all models
+
+**Status:** ✅ CONFIG RESTORED - No action needed. Both keys are required.
 
 ---
 

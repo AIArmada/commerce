@@ -28,18 +28,19 @@ The `packages/affiliates` package demonstrates **solid architecture** and **Lara
 - ✅ **CRITICAL:** All models implement `getTable()` method
 - ✅ **CRITICAL:** No SQL injection vulnerabilities detected
 - ✅ **CRITICAL:** No hardcoded secrets found
-- ⚠️ **HIGH:** Missing cascade deletion handling in 2 models
-- ⚠️ **MEDIUM:** Inconsistent use of `final` keyword on models
-- ⚠️ **MEDIUM:** Config file has duplicate `table_names` definition
+- ⚠️ **HIGH:** Missing cascade deletion handling in 2 models (FIXED)
+- ⚠️ **MEDIUM:** Inconsistent use of `final` keyword on models (FIXED)
+- ~~⚠️ **MEDIUM:** Config file has duplicate `table_names` definition~~ (NOT AN ISSUE - Required for backward compatibility)
 - ⚠️ **LOW:** Minor type safety improvements needed in services
 - ⚠️ **LOW:** Missing PHPDoc return type generics in a few places
 
 ### Statistics:
 - **Critical Issues:** 0
-- **High Severity Issues:** 2
-- **Medium Severity Issues:** 2
-- **Low Severity Issues:** 5
-- **Total Issues:** 9
+- **High Severity Issues:** 2 (All Fixed ✅)
+- **Medium Severity Issues:** 1 (Fixed ✅) + 1 False Positive
+- **Low Severity Issues:** 5 (Deferred)
+- **Total Issues Fixed:** 3
+- **Total False Positives:** 1
 
 ---
 
@@ -402,8 +403,8 @@ public function applyToAffiliate(Affiliate $affiliate): void
 
 ## SECTION 7: CONSISTENCY & MAINTAINABILITY
 
-### Issue #6: Config File Duplication
-**Severity:** MEDIUM  
+### Issue #6: Config File Duplication (REVERTED)
+**Severity:** MEDIUM → RESOLVED (KEPT AS-IS)
 **Impact:** Maintainability - duplicate definitions
 
 **File:** `config/affiliates.php`
@@ -425,15 +426,17 @@ return [
     ],
     // ...
     
-    // Line 65: DUPLICATE
-    'table_names' => $tables, // ← DUPLICATE, should be removed
+    // Line 65: DUPLICATE (BUT REQUIRED)
+    'table_names' => $tables, // ← All 28 models reference config('affiliates.table_names.*')
     // ...
 ];
 ```
 
-**Impact:** Confusing - two ways to access tables (`database.tables` vs `table_names`)
+**Impact:** Appears confusing - two ways to access tables (`database.tables` vs `table_names`)
 
-**Action:** MUST remove duplicate `table_names` key
+**Resolution:** The `table_names` key MUST be kept because all 28 models use `config('affiliates.table_names.{table}', ...)` in their `getTable()` methods. Removing this key breaks ALL table name resolution throughout the package. The duplication is intentional for backward compatibility and different access patterns.
+
+**Status:** ✅ NO ACTION TAKEN - Configuration is correct as-is
 
 ---
 

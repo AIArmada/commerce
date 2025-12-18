@@ -62,6 +62,8 @@ return [
         'percentage_scale' => env('AFFILIATES_PERCENTAGE_SCALE', 100), // basis points (100 = 1%)
     ],
 
+    'table_names' => $tables,
+
     /*
     |--------------------------------------------------------------------------
     | Ownership (Multi-Tenancy)
