@@ -6,6 +6,8 @@ namespace AIArmada\Pricing\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Pricing\Enums\PromotionType;
+use AIArmada\Pricing\Support\PricingOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -78,7 +80,7 @@ class Promotion extends Model
 
     public function getTable(): string
     {
-        return config('pricing.tables.promotions', 'promotions');
+        return config('pricing.database.tables.promotions', 'promotions');
     }
 
     // =========================================================================
@@ -93,9 +95,9 @@ class Promotion extends Model
     public function products(): MorphToMany
     {
         return $this->morphedByMany(
-            config('products.model', \AIArmada\Products\Models\Product::class),
+            \AIArmada\Products\Models\Product::class,
             'promotionable',
-            config('pricing.tables.promotionables', 'promotionables')
+            config('pricing.database.tables.promotionables', 'promotionables')
         );
     }
 
@@ -107,9 +109,9 @@ class Promotion extends Model
     public function categories(): MorphToMany
     {
         return $this->morphedByMany(
-            config('products.models.category', \AIArmada\Products\Models\Category::class),
+            \AIArmada\Products\Models\Category::class,
             'promotionable',
-            config('pricing.tables.promotionables', 'promotionables')
+            config('pricing.database.tables.promotionables', 'promotionables')
         );
     }
 
@@ -142,26 +144,29 @@ class Promotion extends Model
      * @param  bool  $includeGlobal  Whether to include global (ownerless) records
      * @return Builder<static>
      */
-    public function scopeForOwner(Builder $query, ?EloquentModel $owner, bool $includeGlobal = true): Builder
+    public function scopeForOwner(Builder $query, ?EloquentModel $owner = null, bool $includeGlobal = true): Builder
     {
-        if (! config('pricing.owner.enabled', false)) {
+        if (! PricingOwnerScope::isEnabled()) {
             return $query;
         }
 
-        if (! $owner) {
+        if ($owner === null) {
             return $query->whereNull('owner_type')->whereNull('owner_id');
         }
 
-        return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
-            $builder->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
-
-            if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
+        if ($includeGlobal) {
+            return $query->where(function (Builder $builder) use ($owner): void {
+                $builder->where(function (Builder $q) use ($owner): void {
+                    $q->where('owner_type', $owner->getMorphClass())
+                        ->where('owner_id', $owner->getKey());
+                })->orWhere(function (Builder $q): void {
+                    $q->whereNull('owner_type')->whereNull('owner_id');
                 });
-            }
-        });
+            });
+        }
+
+        return $query->where('owner_type', $owner->getMorphClass())
+            ->where('owner_id', $owner->getKey());
     }
 
     // =========================================================================
@@ -240,8 +245,28 @@ class Promotion extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (Promotion $promotion): void {
+            if (! PricingOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $owner = PricingOwnerScope::resolveOwner();
+
+            if ($owner === null) {
+                return;
+            }
+
+            if ($promotion->owner_type === null && $promotion->owner_id === null) {
+                $promotion->assignOwner($owner);
+            }
+
+            if (! $promotion->belongsToOwner($owner)) {
+                throw new AuthorizationException('Cannot write promotions outside the current owner scope.');
+            }
+        });
+
         static::deleting(function (Promotion $promotion): void {
-            DB::table(config('pricing.tables.promotionables', 'promotionables'))
+            DB::table(config('pricing.database.tables.promotionables', 'promotionables'))
                 ->where('promotion_id', $promotion->id)
                 ->delete();
         });

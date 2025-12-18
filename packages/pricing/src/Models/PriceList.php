@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Pricing\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\Pricing\Support\PricingOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -59,7 +61,7 @@ class PriceList extends Model
 
     public function getTable(): string
     {
-        return config('pricing.tables.price_lists', 'price_lists');
+        return config('pricing.database.tables.price_lists', 'price_lists');
     }
 
     // =========================================================================
@@ -114,26 +116,29 @@ class PriceList extends Model
      * @param  bool  $includeGlobal  Whether to include global (ownerless) records
      * @return Builder<static>
      */
-    public function scopeForOwner(Builder $query, ?EloquentModel $owner, bool $includeGlobal = true): Builder
+    public function scopeForOwner(Builder $query, ?EloquentModel $owner = null, bool $includeGlobal = true): Builder
     {
-        if (! config('pricing.owner.enabled', false)) {
+        if (! PricingOwnerScope::isEnabled()) {
             return $query;
         }
 
-        if (! $owner) {
+        if ($owner === null) {
             return $query->whereNull('owner_type')->whereNull('owner_id');
         }
 
-        return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
-            $builder->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
-
-            if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
+        if ($includeGlobal) {
+            return $query->where(function (Builder $builder) use ($owner): void {
+                $builder->where(function (Builder $q) use ($owner): void {
+                    $q->where('owner_type', $owner->getMorphClass())
+                        ->where('owner_id', $owner->getKey());
+                })->orWhere(function (Builder $q): void {
+                    $q->whereNull('owner_type')->whereNull('owner_id');
                 });
-            }
-        });
+            });
+        }
+
+        return $query->where('owner_type', $owner->getMorphClass())
+            ->where('owner_id', $owner->getKey());
     }
 
     // =========================================================================
@@ -177,6 +182,26 @@ class PriceList extends Model
 
     protected static function booted(): void
     {
+        static::saving(function (PriceList $priceList): void {
+            if (! PricingOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $owner = PricingOwnerScope::resolveOwner();
+
+            if ($owner === null) {
+                return;
+            }
+
+            if ($priceList->owner_type === null && $priceList->owner_id === null) {
+                $priceList->assignOwner($owner);
+            }
+
+            if (! $priceList->belongsToOwner($owner)) {
+                throw new AuthorizationException('Cannot write price lists outside the current owner scope.');
+            }
+        });
+
         static::deleting(function (PriceList $priceList): void {
             $priceList->prices()->delete();
             $priceList->tiers()->delete();
