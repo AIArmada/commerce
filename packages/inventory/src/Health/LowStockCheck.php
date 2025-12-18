@@ -53,9 +53,7 @@ class LowStockCheck extends CommerceHealthCheck
     {
         $lowStockQuery = InventoryLevel::query()
             ->where('quantity_on_hand', '<=', $this->threshold)
-            ->where('quantity_on_hand', '>', 0)
-
-            ;
+            ->where('quantity_on_hand', '>', 0);
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToQueryByLocationRelation($lowStockQuery, 'location');
@@ -64,9 +62,7 @@ class LowStockCheck extends CommerceHealthCheck
         $lowStockCount = $lowStockQuery->count();
 
         $outOfStockQuery = InventoryLevel::query()
-            ->where('quantity_on_hand', '<=', 0)
-
-            ;
+            ->where('quantity_on_hand', '<=', 0);
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToQueryByLocationRelation($outOfStockQuery, 'location');

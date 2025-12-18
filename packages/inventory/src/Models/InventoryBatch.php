@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Inventory\Enums\BatchStatus;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -22,6 +25,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $lot_number
  * @property string|null $supplier_batch_number
  * @property string $location_id
+ * @property string|null $owner_type
+ * @property int|string|null $owner_id
  * @property int $quantity_received
  * @property int $quantity_on_hand
  * @property int $quantity_reserved
@@ -58,6 +63,7 @@ final class InventoryBatch extends Model
     /** @use HasFactory<\AIArmada\Inventory\Database\Factories\InventoryBatchFactory> */
     use HasFactory;
 
+    use HasOwner;
     use HasUuids;
 
     /**
@@ -72,6 +78,8 @@ final class InventoryBatch extends Model
         'lot_number',
         'supplier_batch_number',
         'location_id',
+        'owner_type',
+        'owner_id',
         'quantity_received',
         'quantity_on_hand',
         'quantity_reserved',
@@ -420,6 +428,36 @@ final class InventoryBatch extends Model
      */
     protected static function booted(): void
     {
+        static::addGlobalScope('owner', function (Builder $query): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
+        });
+
+        static::saving(function (InventoryBatch $batch): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $location = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                ->whereKey($batch->location_id)
+                ->first();
+
+            if ($location === null) {
+                throw new AuthorizationException('Invalid location for current owner context.');
+            }
+
+            if (($batch->owner_type !== null || $batch->owner_id !== null)
+                && ($batch->owner_type !== $location->owner_type || $batch->owner_id !== $location->owner_id)) {
+                throw new AuthorizationException('Owner mismatch between inventory batch and location.');
+            }
+
+            $batch->owner_type = $location->owner_type;
+            $batch->owner_id = $location->owner_id;
+        });
+
         self::deleting(function (InventoryBatch $batch): void {
             $batch->allocations()->delete();
         });

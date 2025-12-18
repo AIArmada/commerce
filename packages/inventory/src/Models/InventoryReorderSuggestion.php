@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Inventory\Enums\ReorderSuggestionStatus;
 use AIArmada\Inventory\Enums\ReorderUrgency;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -18,6 +22,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property string $inventoryable_id
  * @property string|null $location_id
  * @property string|null $supplier_leadtime_id
+ * @property string|null $owner_type
+ * @property int|string|null $owner_id
  * @property ReorderSuggestionStatus $status
  * @property int $current_stock
  * @property int $reorder_point
@@ -43,6 +49,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class InventoryReorderSuggestion extends Model
 {
     use HasFactory;
+    use HasOwner;
     use HasUuids;
 
     protected $fillable = [
@@ -50,6 +57,8 @@ class InventoryReorderSuggestion extends Model
         'inventoryable_id',
         'location_id',
         'supplier_leadtime_id',
+        'owner_type',
+        'owner_id',
         'status',
         'current_stock',
         'reorder_point',
@@ -67,6 +76,78 @@ class InventoryReorderSuggestion extends Model
         'calculation_details',
         'metadata',
     ];
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('owner', function (Builder $query): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
+        });
+
+        static::saving(function (InventoryReorderSuggestion $suggestion): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $owner = InventoryOwnerScope::resolveOwner();
+
+            if ($suggestion->owner_type === null xor $suggestion->owner_id === null) {
+                throw new AuthorizationException('Owner fields must be both set or both null.');
+            }
+
+            if ($owner === null) {
+                if ($suggestion->owner_type !== null || $suggestion->owner_id !== null) {
+                    throw new AuthorizationException('Cannot write owned reorder suggestions without an owner context.');
+                }
+
+                return;
+            }
+
+            if ($suggestion->location_id !== null) {
+                $location = InventoryLocation::query()
+                    ->select(['id', 'owner_type', 'owner_id'])
+                    ->find($suggestion->location_id);
+
+                if (! $location instanceof InventoryLocation) {
+                    throw new AuthorizationException('Invalid location for reorder suggestion in current owner context.');
+                }
+
+                if ($location->owner_type === null || $location->owner_id === null) {
+                    $suggestion->removeOwner();
+                } else {
+                    $suggestion->owner_type = $location->owner_type;
+                    $suggestion->owner_id = $location->owner_id;
+                }
+            }
+
+            if ($suggestion->supplier_leadtime_id !== null) {
+                $supplierLeadtime = InventorySupplierLeadtime::query()
+                    ->select(['id', 'owner_type', 'owner_id'])
+                    ->find($suggestion->supplier_leadtime_id);
+
+                if (! $supplierLeadtime instanceof InventorySupplierLeadtime) {
+                    throw new AuthorizationException('Invalid supplier leadtime for reorder suggestion in current owner context.');
+                }
+
+                if ($suggestion->owner_type !== $supplierLeadtime->owner_type || $suggestion->owner_id !== $supplierLeadtime->owner_id) {
+                    throw new AuthorizationException('Reorder suggestion supplier leadtime must belong to the same owner context.');
+                }
+            }
+
+            if ($suggestion->owner_type !== null || $suggestion->owner_id !== null) {
+                return;
+            }
+
+            if (! (bool) config('inventory.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            $suggestion->assignOwner($owner);
+        });
+    }
 
     public function getTable(): string
     {

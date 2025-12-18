@@ -153,9 +153,7 @@ final class MovementAnalysisReport
             ->whereBetween('occurred_at', [$startDate, $endDate])
             ->groupBy('inventoryable_type', 'inventoryable_id')
             ->orderByDesc('movement_count')
-            ->limit($limit)
-
-            ;
+            ->limit($limit);
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToMovementQuery($query);
@@ -223,9 +221,7 @@ final class MovementAnalysisReport
                 DB::raw('SUM(quantity_on_hand) as current_quantity'),
             ])
             ->where('quantity_on_hand', '>', 0)
-            ->groupBy('inventoryable_type', 'inventoryable_id')
-
-            ;
+            ->groupBy('inventoryable_type', 'inventoryable_id');
 
         if (InventoryOwnerScope::isEnabled()) {
             InventoryOwnerScope::applyToQueryByLocationRelation($levelsQuery, 'location');

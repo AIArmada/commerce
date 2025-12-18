@@ -137,7 +137,7 @@ class GiftCardTransaction extends Model
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
 
-        return $tables['gift_card_transactions'] ?? $prefix.'gift_card_transactions';
+        return $tables['gift_card_transactions'] ?? $prefix . 'gift_card_transactions';
     }
 
     /**

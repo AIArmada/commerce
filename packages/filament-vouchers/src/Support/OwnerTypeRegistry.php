@@ -81,6 +81,31 @@ final class OwnerTypeRegistry
             return [];
         }
 
+        if (OwnerScopedQueries::isEnabled()) {
+            $owner = OwnerScopedQueries::owner();
+
+            if (! $owner instanceof Model) {
+                return [];
+            }
+
+            if ($owner::class !== $modelClass) {
+                return [];
+            }
+
+            $label = $this->formatLabel($owner, $definition);
+
+            $search = $search ? mb_trim($search) : null;
+            if ($search === null || $search === '') {
+                return [$owner->getKey() => $label];
+            }
+
+            if (mb_stripos($label, $search) === false && mb_stripos((string) $owner->getKey(), $search) === false) {
+                return [];
+            }
+
+            return [$owner->getKey() => $label];
+        }
+
         /** @var class-string<Model> $modelClass */
         $query = $modelClass::query()->limit($limit);
 
@@ -123,6 +148,24 @@ final class OwnerTypeRegistry
 
         if (! $definition) {
             return null;
+        }
+
+        if (OwnerScopedQueries::isEnabled()) {
+            $owner = OwnerScopedQueries::owner();
+
+            if (! $owner instanceof Model) {
+                return null;
+            }
+
+            if ($owner::class !== $modelClass) {
+                return null;
+            }
+
+            if ((string) $owner->getKey() !== (string) $key) {
+                return null;
+            }
+
+            return $this->formatLabel($owner, $definition);
         }
 
         /** @var class-string<Model> $modelClass */

@@ -168,3 +168,57 @@ it('can be void', function (): void {
 
     expect($invoice->status)->toBe(InvoiceStatus::Void);
 });
+
+it('formats non-USD currencies with correct symbols', function (): void {
+    $original = new stdClass;
+    $original->id = 'inv_999';
+
+    $eur = new UnifiedInvoice(
+        id: 'inv_999',
+        gateway: 'stripe',
+        userId: 'user_456',
+        number: 'INV-9999',
+        amount: 1234,
+        currency: 'EUR',
+        status: InvoiceStatus::Paid,
+        date: Carbon::now(),
+        dueDate: null,
+        paidAt: null,
+        pdfUrl: null,
+        original: $original
+    );
+
+    $gbp = new UnifiedInvoice(
+        id: 'inv_999',
+        gateway: 'stripe',
+        userId: 'user_456',
+        number: 'INV-9999',
+        amount: 1234,
+        currency: 'GBP',
+        status: InvoiceStatus::Paid,
+        date: Carbon::now(),
+        dueDate: null,
+        paidAt: null,
+        pdfUrl: null,
+        original: $original
+    );
+
+    $unknown = new UnifiedInvoice(
+        id: 'inv_999',
+        gateway: 'stripe',
+        userId: 'user_456',
+        number: 'INV-9999',
+        amount: 1234,
+        currency: 'JPY',
+        status: InvoiceStatus::Paid,
+        date: Carbon::now(),
+        dueDate: null,
+        paidAt: null,
+        pdfUrl: null,
+        original: $original
+    );
+
+    expect($eur->formattedAmount())->toBe('€12.34');
+    expect($gbp->formattedAmount())->toBe('£12.34');
+    expect($unknown->formattedAmount())->toBe('JPY 12.34');
+});

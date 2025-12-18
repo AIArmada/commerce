@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Widgets;
 
 use AIArmada\FilamentCart\Models\Cart;
+use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
 use AIArmada\Vouchers\Models\Voucher;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -83,7 +84,13 @@ final class VoucherCartStatsWidget extends BaseWidget
             $connection = $cartModel::query()->getConnection();
             $driver = $connection->getDriverName();
 
-            return $cartModel::query()
+            $cartQuery = $cartModel::query();
+
+            if (OwnerScopedQueries::isEnabled()) {
+                $cartQuery = OwnerScopedQueries::scopeVoucherLike($cartQuery);
+            }
+
+            return $cartQuery
                 ->whereNotNull('conditions')
                 ->where(function ($query) use ($voucher, $escapedCode, $driver): void {
                     $query->whereJsonContains('conditions', ['voucher' => $voucher->code]);

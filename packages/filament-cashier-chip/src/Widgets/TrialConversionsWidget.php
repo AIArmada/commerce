@@ -93,7 +93,7 @@ final class TrialConversionsWidget extends BaseWidget
     {
         $subscriptionModel = Cashier::$subscriptionModel;
 
-        return $subscriptionModel::onTrial()->count();
+        return $subscriptionModel::query()->onTrial()->count();
     }
 
     private function getTrendDescription(float $current, float $previous): string

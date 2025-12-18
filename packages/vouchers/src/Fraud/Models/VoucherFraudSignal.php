@@ -66,7 +66,7 @@ class VoucherFraudSignal extends Model
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
 
-        return $tables['voucher_fraud_signals'] ?? $prefix.'voucher_fraud_signals';
+        return $tables['voucher_fraud_signals'] ?? $prefix . 'voucher_fraud_signals';
     }
 
     /**

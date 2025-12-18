@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Inventory\Database\Factories\InventoryAllocationFactory;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -19,6 +22,9 @@ use Illuminate\Support\Carbon;
  * @property string $inventoryable_id
  * @property string $location_id
  * @property string $level_id
+ * @property string|null $batch_id
+ * @property string|null $owner_type
+ * @property int|string|null $owner_id
  * @property string $cart_id
  * @property int $quantity
  * @property Carbon $expires_at
@@ -33,6 +39,7 @@ final class InventoryAllocation extends Model
     /** @use HasFactory<\AIArmada\Inventory\Database\Factories\InventoryAllocationFactory> */
     use HasFactory;
 
+    use HasOwner;
     use HasUuids;
 
     /**
@@ -45,6 +52,9 @@ final class InventoryAllocation extends Model
         'inventoryable_id',
         'location_id',
         'level_id',
+        'batch_id',
+        'owner_type',
+        'owner_id',
         'cart_id',
         'quantity',
         'expires_at',
@@ -84,6 +94,14 @@ final class InventoryAllocation extends Model
     public function level(): BelongsTo
     {
         return $this->belongsTo(InventoryLevel::class, 'level_id');
+    }
+
+    /**
+     * @return BelongsTo<InventoryBatch, $this>
+     */
+    public function batch(): BelongsTo
+    {
+        return $this->belongsTo(InventoryBatch::class, 'batch_id');
     }
 
     /**
@@ -164,6 +182,65 @@ final class InventoryAllocation extends Model
     protected static function newFactory(): InventoryAllocationFactory
     {
         return InventoryAllocationFactory::new();
+    }
+
+    protected static function booted(): void
+    {
+        static::addGlobalScope('owner', function (Builder $query): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
+        });
+
+        static::saving(function (InventoryAllocation $allocation): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $location = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                ->whereKey($allocation->location_id)
+                ->first();
+
+            if ($location === null) {
+                throw new AuthorizationException('Invalid location for current owner context.');
+            }
+
+            $level = InventoryLevel::query()
+                ->whereKey($allocation->level_id)
+                ->first();
+
+            if ($level === null) {
+                throw new AuthorizationException('Invalid inventory level for current owner context.');
+            }
+
+            if ($level->location_id !== $allocation->location_id) {
+                throw new AuthorizationException('Inventory allocation location does not match inventory level location.');
+            }
+
+            if ($allocation->batch_id !== null) {
+                $batch = InventoryBatch::query()
+                    ->whereKey($allocation->batch_id)
+                    ->first();
+
+                if ($batch === null) {
+                    throw new AuthorizationException('Invalid inventory batch for current owner context.');
+                }
+
+                if ($batch->location_id !== $allocation->location_id) {
+                    throw new AuthorizationException('Inventory allocation batch does not match allocation location.');
+                }
+            }
+
+            if (($allocation->owner_type !== null || $allocation->owner_id !== null)
+                && ($allocation->owner_type !== $location->owner_type || $allocation->owner_id !== $location->owner_id)) {
+                throw new AuthorizationException('Owner mismatch between inventory allocation and location.');
+            }
+
+            $allocation->owner_type = $location->owner_type;
+            $allocation->owner_id = $location->owner_id;
+        });
     }
 
     /**

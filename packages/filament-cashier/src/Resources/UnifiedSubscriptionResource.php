@@ -11,6 +11,10 @@ use AIArmada\FilamentCashier\Support\SubscriptionStatus;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use BackedEnum;
 use Closure;
+use Filament\Actions\Action;
+use Filament\Actions\BulkAction;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\ViewAction;
 use Filament\Resources\Resource;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables;
@@ -127,9 +131,9 @@ final class UnifiedSubscriptionResource extends Resource
                     ->query(fn (Builder $query, array $data): Builder => $query), // Handled in list page
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
+                ViewAction::make(),
 
-                Tables\Actions\Action::make('cancel')
+                Action::make('cancel')
                     ->label(__('filament-cashier::subscriptions.actions.cancel'))
                     ->icon('heroicon-o-x-circle')
                     ->color('danger')
@@ -146,7 +150,7 @@ final class UnifiedSubscriptionResource extends Resource
                     })
                     ->successNotificationTitle(__('filament-cashier::subscriptions.actions.cancel_success')),
 
-                Tables\Actions\Action::make('resume')
+                Action::make('resume')
                     ->label(__('filament-cashier::subscriptions.actions.resume'))
                     ->icon('heroicon-o-play')
                     ->color('success')
@@ -159,7 +163,7 @@ final class UnifiedSubscriptionResource extends Resource
                     })
                     ->successNotificationTitle(__('filament-cashier::subscriptions.actions.resume_success')),
 
-                Tables\Actions\Action::make('view_external')
+                Action::make('view_external')
                     ->label(fn (UnifiedSubscription $record): string => __('filament-cashier::subscriptions.actions.view_external', [
                         'gateway' => $record->gatewayConfig()['label'],
                     ]))
@@ -168,8 +172,8 @@ final class UnifiedSubscriptionResource extends Resource
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('cancel')
+                BulkActionGroup::make([
+                    BulkAction::make('cancel')
                         ->label(__('filament-cashier::subscriptions.bulk.cancel'))
                         ->icon('heroicon-o-x-circle')
                         ->color('danger')

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages;
 
-use AIArmada\CashierChip\Models\Purchase;
+use AIArmada\Chip\Models\Purchase;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedInvoice;
@@ -56,9 +56,8 @@ final class ListInvoices extends ListRecords
     /**
      * Get table record key.
      */
-    public function getTableRecordKey(Model | array $record): string
+    public function getTableRecordKey(Model | array | UnifiedInvoice $record): string
     {
-        // @phpstan-ignore instanceof.alwaysFalse
         if ($record instanceof UnifiedInvoice) {
             return $record->gateway . '-' . $record->id;
         }

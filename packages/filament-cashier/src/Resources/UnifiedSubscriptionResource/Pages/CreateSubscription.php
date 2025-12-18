@@ -227,10 +227,14 @@ final class CreateSubscription extends CreateRecord
             }
 
             if (! empty($data['payment_method'])) {
-                return $builder->create($data['payment_method']);
+                $builder->create($data['payment_method']);
+
+                return $user;
             }
 
-            return $builder->create();
+            $builder->create();
+
+            return $user;
         }
 
         // Fallback for direct gateway usage

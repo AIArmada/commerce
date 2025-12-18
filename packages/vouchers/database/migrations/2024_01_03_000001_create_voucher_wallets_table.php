@@ -20,7 +20,7 @@ return new class extends Migration
 
             $table->uuid('id')->primary();
             $table->foreignUuid('voucher_id');
-            $table->uuidMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->boolean('is_claimed')->default(false);
             $table->timestamp('claimed_at')->nullable();
             $table->boolean('is_redeemed')->default(false);
@@ -30,7 +30,7 @@ return new class extends Migration
 
             // Indexes for common queries
             $table->index('voucher_id'); // For querying wallet entries by voucher
-            // Note: uuidMorphs('owner') already creates index on ['owner_type', 'owner_id']
+            // Note: nullableUuidMorphs('owner') already creates index on ['owner_type', 'owner_id']
             $table->index('is_claimed'); // For filtering claimed status
             $table->index('is_redeemed'); // For filtering redeemed status
             $table->index(['is_redeemed', 'is_claimed']); // For available vouchers queries

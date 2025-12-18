@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\GiftCards\Services;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardStatus;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardTransactionType;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardType;
 use AIArmada\Vouchers\GiftCards\Models\GiftCard;
 use AIArmada\Vouchers\GiftCards\Models\GiftCardTransaction;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use InvalidArgumentException;
@@ -17,6 +19,10 @@ use RuntimeException;
 
 class GiftCardService
 {
+    public function __construct(
+        private ?OwnerResolverInterface $ownerResolver = null,
+    ) {}
+
     /**
      * Issue a new gift card.
      *
@@ -28,6 +34,18 @@ class GiftCardService
         $data['status'] = $data['status'] ?? GiftCardStatus::Inactive;
         $data['currency'] = $data['currency'] ?? config('vouchers.default_currency', 'MYR');
         $data['current_balance'] = $data['initial_balance'];
+
+        if ((bool) config('vouchers.owner.enabled', false)
+            && (bool) config('vouchers.owner.auto_assign_on_create', true)
+            && ! isset($data['owner_type'], $data['owner_id'])
+        ) {
+            $owner = $this->currentOwner();
+
+            if ($owner !== null) {
+                $data['owner_type'] = $owner->getMorphClass();
+                $data['owner_id'] = (string) $owner->getKey();
+            }
+        }
 
         if (! isset($data['code'])) {
             $data['code'] = GiftCard::generateCode();
@@ -96,7 +114,7 @@ class GiftCardService
      */
     public function activate(string $code): GiftCard
     {
-        $giftCard = GiftCard::findByCodeOrFail($code);
+        $giftCard = $this->findByCodeOrFail($code);
 
         return $giftCard->activate();
     }
@@ -106,7 +124,7 @@ class GiftCardService
      */
     public function activateWithDelay(string $code, Carbon $activateAt): GiftCard
     {
-        $giftCard = GiftCard::findByCodeOrFail($code);
+        $giftCard = $this->findByCodeOrFail($code);
 
         if ($activateAt->isPast()) {
             return $giftCard->activate();
@@ -126,7 +144,7 @@ class GiftCardService
      */
     public function checkBalance(string $code): int
     {
-        $giftCard = GiftCard::findByCodeOrFail($code);
+        $giftCard = $this->findByCodeOrFail($code);
 
         return $giftCard->current_balance;
     }
@@ -136,7 +154,7 @@ class GiftCardService
      */
     public function topUp(string $code, int $amount, Model $actor): GiftCard
     {
-        $giftCard = GiftCard::findByCodeOrFail($code);
+        $giftCard = $this->findByCodeOrFail($code);
         $giftCard->topUp($amount, null, null, $actor);
 
         return $giftCard->refresh();
@@ -147,7 +165,7 @@ class GiftCardService
      */
     public function transfer(string $code, Model $newRecipient, Model $actor): GiftCard
     {
-        $giftCard = GiftCard::findByCodeOrFail($code);
+        $giftCard = $this->findByCodeOrFail($code);
 
         return $giftCard->transferTo($newRecipient, $actor);
     }
@@ -163,7 +181,7 @@ class GiftCardService
             throw new InvalidArgumentException('At least 2 gift cards required for merge');
         }
 
-        $giftCards = collect($codes)->map(fn ($code) => GiftCard::findByCodeOrFail($code));
+        $giftCards = collect($codes)->map(fn ($code) => $this->findByCodeOrFail($code));
 
         // Validate all cards can be merged
         foreach ($giftCards as $giftCard) {
@@ -216,7 +234,7 @@ class GiftCardService
      */
     public function redeem(string $code, int $amount, Model $reference): GiftCardTransaction
     {
-        $giftCard = GiftCard::findByCodeOrFail($code);
+        $giftCard = $this->findByCodeOrFail($code);
 
         return $giftCard->redeem($amount, $reference);
     }
@@ -226,7 +244,7 @@ class GiftCardService
      */
     public function refund(string $code, int $amount, Model $reference): GiftCardTransaction
     {
-        $giftCard = GiftCard::findByCodeOrFail($code);
+        $giftCard = $this->findByCodeOrFail($code);
 
         return $giftCard->refund($amount, $reference);
     }
@@ -236,7 +254,7 @@ class GiftCardService
      */
     public function findByCode(string $code): ?GiftCard
     {
-        return GiftCard::findByCode($code);
+        return $this->giftCardsQuery()->where('code', mb_strtoupper($code))->first();
     }
 
     /**
@@ -246,7 +264,7 @@ class GiftCardService
      */
     public function getByRecipient(Model $recipient): Collection
     {
-        return GiftCard::query()
+        return $this->giftCardsQuery()
             ->forRecipient($recipient)
             ->orderByDesc('created_at')
             ->get();
@@ -259,7 +277,7 @@ class GiftCardService
      */
     public function getExpiring(int $days = 30): Collection
     {
-        return GiftCard::query()
+        return $this->giftCardsQuery()
             ->active()
             ->expiringWithin($days)
             ->orderBy('expires_at')
@@ -273,7 +291,7 @@ class GiftCardService
      */
     public function getActiveWithBalance(): Collection
     {
-        return GiftCard::query()
+        return $this->giftCardsQuery()
             ->active()
             ->withBalance()
             ->orderByDesc('created_at')
@@ -285,7 +303,7 @@ class GiftCardService
      */
     public function suspend(string $code): GiftCard
     {
-        $giftCard = GiftCard::findByCodeOrFail($code);
+        $giftCard = $this->findByCodeOrFail($code);
 
         return $giftCard->suspend();
     }
@@ -295,7 +313,7 @@ class GiftCardService
      */
     public function cancel(string $code): GiftCard
     {
-        $giftCard = GiftCard::findByCodeOrFail($code);
+        $giftCard = $this->findByCodeOrFail($code);
 
         return $giftCard->cancel();
     }
@@ -305,7 +323,7 @@ class GiftCardService
      */
     public function expire(string $code, ?Model $actor = null): GiftCard
     {
-        $giftCard = GiftCard::findByCodeOrFail($code);
+        $giftCard = $this->findByCodeOrFail($code);
 
         return $giftCard->expire($actor);
     }
@@ -313,11 +331,13 @@ class GiftCardService
     /**
      * Process scheduled activations.
      */
-    public function processScheduledActivations(): int
+    public function processScheduledActivations(?Model $owner = null): int
     {
         $count = 0;
 
-        $giftCards = GiftCard::query()
+        $owner = $this->enforceOwnerContext($owner);
+
+        $giftCards = $this->giftCardsQuery($owner)
             ->where('status', GiftCardStatus::Inactive)
             ->whereNotNull('metadata->scheduled_activation_at')
             ->get();
@@ -337,11 +357,13 @@ class GiftCardService
     /**
      * Process expired gift cards.
      */
-    public function processExpired(): int
+    public function processExpired(?Model $owner = null): int
     {
         $count = 0;
 
-        $giftCards = GiftCard::query()
+        $owner = $this->enforceOwnerContext($owner);
+
+        $giftCards = $this->giftCardsQuery($owner)
             ->where('status', GiftCardStatus::Active)
             ->whereNotNull('expires_at')
             ->where('expires_at', '<', now())
@@ -362,12 +384,9 @@ class GiftCardService
      */
     public function getStatistics(?Model $owner = null): array
     {
-        $query = GiftCard::query();
+        $owner = $this->enforceOwnerContext($owner);
 
-        if ($owner) {
-            $query->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
-        }
+        $query = $this->giftCardsQuery($owner);
 
         $total = (clone $query)->count();
         $active = (clone $query)->where('status', GiftCardStatus::Active)->count();
@@ -396,7 +415,7 @@ class GiftCardService
      */
     public function validate(string $code, ?string $pin = null): array
     {
-        $giftCard = GiftCard::findByCode($code);
+        $giftCard = $this->findByCode($code);
 
         if (! $giftCard) {
             return [
@@ -434,5 +453,83 @@ class GiftCardService
             'message' => null,
             'available_balance' => $giftCard->current_balance,
         ];
+    }
+
+    private function isOwnerScopingEnabled(): bool
+    {
+        return (bool) config('vouchers.owner.enabled', false);
+    }
+
+    private function includeGlobal(): bool
+    {
+        return (bool) config('vouchers.owner.include_global', true);
+    }
+
+    private function currentOwner(): ?Model
+    {
+        if (! $this->isOwnerScopingEnabled()) {
+            return null;
+        }
+
+        $resolver = $this->ownerResolver;
+
+        if ($resolver === null && app()->bound(OwnerResolverInterface::class)) {
+            /** @var OwnerResolverInterface $resolver */
+            $resolver = app(OwnerResolverInterface::class);
+        }
+
+        return $resolver?->resolve();
+    }
+
+    private function enforceOwnerContext(?Model $owner): ?Model
+    {
+        if (! $this->isOwnerScopingEnabled()) {
+            return $owner;
+        }
+
+        $currentOwner = $this->currentOwner();
+
+        if ($currentOwner === null) {
+            return $owner;
+        }
+
+        if ($owner === null) {
+            return $currentOwner;
+        }
+
+        if ($owner->getMorphClass() !== $currentOwner->getMorphClass() || (string) $owner->getKey() !== (string) $currentOwner->getKey()) {
+            throw new RuntimeException('Cross-tenant access blocked: owner mismatch.');
+        }
+
+        return $owner;
+    }
+
+    /**
+     * @return Builder<GiftCard>
+     */
+    private function giftCardsQuery(?Model $owner = null): Builder
+    {
+        /** @var Builder<GiftCard> $query */
+        $query = GiftCard::query();
+
+        if (! $this->isOwnerScopingEnabled()) {
+            return $query;
+        }
+
+        $owner = $this->enforceOwnerContext($owner);
+
+        return $query->forOwner($owner, $this->includeGlobal());
+    }
+
+    private function findByCodeOrFail(string $code): GiftCard
+    {
+        /** @var GiftCard|null $giftCard */
+        $giftCard = $this->giftCardsQuery()->where('code', mb_strtoupper($code))->first();
+
+        if ($giftCard === null) {
+            throw new RuntimeException("Gift card not found: {$code}");
+        }
+
+        return $giftCard;
     }
 }

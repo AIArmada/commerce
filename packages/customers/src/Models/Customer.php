@@ -105,7 +105,7 @@ class Customer extends Model implements HasMedia
 
     public function getTable(): string
     {
-        return config('customers.tables.customers', 'customers');
+        return config('customers.database.tables.customers', 'customers');
     }
 
     // =========================================================================
@@ -119,7 +119,7 @@ class Customer extends Model implements HasMedia
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(config('customers.user_model', \App\Models\User::class), 'user_id');
+        return $this->belongsTo(config('customers.integrations.user_model', \App\Models\User::class), 'user_id');
     }
 
     /**
@@ -141,7 +141,7 @@ class Customer extends Model implements HasMedia
     {
         return $this->belongsToMany(
             Segment::class,
-            config('customers.tables.segment_customer', 'customer_segment_customer'),
+            config('customers.database.tables.segment_customer', 'customer_segment_customer'),
             'customer_id',
             'segment_id'
         )->withTimestamps();
@@ -176,7 +176,7 @@ class Customer extends Model implements HasMedia
     {
         return $this->belongsToMany(
             CustomerGroup::class,
-            config('customers.tables.group_members', 'customer_group_members'),
+            config('customers.database.tables.group_members', 'customer_group_members'),
             'customer_id',
             'group_id'
         )->withPivot(['role', 'joined_at'])->withTimestamps();
@@ -215,7 +215,7 @@ class Customer extends Model implements HasMedia
      */
     public function getFormattedWalletBalance(): string
     {
-        $currency = config('customers.wallet.currency', 'MYR');
+        $currency = config('customers.defaults.wallet.currency', 'MYR');
 
         return Money::$currency($this->wallet_balance, true)->format();
     }
@@ -225,7 +225,7 @@ class Customer extends Model implements HasMedia
      */
     public function addCredit(int $amountInCents, ?string $reason = null): bool
     {
-        if (! config('customers.wallet.enabled', true)) {
+        if (! config('customers.features.wallet.enabled', true)) {
             return false;
         }
 
@@ -233,12 +233,12 @@ class Customer extends Model implements HasMedia
             return false;
         }
 
-        $minTopup = (int) config('customers.wallet.min_topup', 0);
+        $minTopup = (int) config('customers.defaults.wallet.min_topup', 0);
         if ($minTopup > 0 && $amountInCents < $minTopup) {
             return false;
         }
 
-        $maxBalance = config('customers.wallet.max_balance', 100000_00);
+        $maxBalance = config('customers.defaults.wallet.max_balance', 100000_00);
 
         if (($this->wallet_balance + $amountInCents) > $maxBalance) {
             return false;
@@ -256,7 +256,7 @@ class Customer extends Model implements HasMedia
      */
     public function deductCredit(int $amountInCents, ?string $reason = null): bool
     {
-        if (! config('customers.wallet.enabled', true)) {
+        if (! config('customers.features.wallet.enabled', true)) {
             return false;
         }
 
@@ -292,7 +292,7 @@ class Customer extends Model implements HasMedia
      */
     public function getFormattedLifetimeValue(): string
     {
-        $currency = config('customers.wallet.currency', 'MYR');
+        $currency = config('customers.defaults.wallet.currency', 'MYR');
 
         return Money::$currency($this->lifetime_value, true)->format();
     }

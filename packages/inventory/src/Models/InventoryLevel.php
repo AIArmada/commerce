@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\Inventory\Database\Factories\InventoryLevelFactory;
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Enums\AllocationStrategy;
+use AIArmada\Inventory\Support\InventoryOwnerScope;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -22,6 +25,8 @@ use Illuminate\Support\Carbon;
  * @property string $inventoryable_type
  * @property string $inventoryable_id
  * @property string $location_id
+ * @property string|null $owner_type
+ * @property int|string|null $owner_id
  * @property int $quantity_on_hand
  * @property int $quantity_reserved
  * @property float|null $quantity_on_hand_decimal
@@ -57,6 +62,7 @@ final class InventoryLevel extends Model
     /** @use HasFactory<\AIArmada\Inventory\Database\Factories\InventoryLevelFactory> */
     use HasFactory;
 
+    use HasOwner;
     use HasUuids;
 
     /**
@@ -68,6 +74,8 @@ final class InventoryLevel extends Model
         'inventoryable_type',
         'inventoryable_id',
         'location_id',
+        'owner_type',
+        'owner_id',
         'quantity_on_hand',
         'quantity_reserved',
         'quantity_on_hand_decimal',
@@ -344,6 +352,36 @@ final class InventoryLevel extends Model
      */
     protected static function booted(): void
     {
+        static::addGlobalScope('owner', function (Builder $query): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
+        });
+
+        static::saving(function (InventoryLevel $level): void {
+            if (! InventoryOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $location = InventoryOwnerScope::applyToLocationQuery(InventoryLocation::query())
+                ->whereKey($level->location_id)
+                ->first();
+
+            if ($location === null) {
+                throw new AuthorizationException('Invalid location for current owner context.');
+            }
+
+            if (($level->owner_type !== null || $level->owner_id !== null)
+                && ($level->owner_type !== $location->owner_type || $level->owner_id !== $location->owner_id)) {
+                throw new AuthorizationException('Owner mismatch between inventory level and location.');
+            }
+
+            $level->owner_type = $location->owner_type;
+            $level->owner_id = $location->owner_id;
+        });
+
         self::deleting(function (InventoryLevel $level): void {
             $level->allocations()->delete();
         });

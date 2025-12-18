@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 
+use AIArmada\CashierChip\Cashier as CashierChip;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\SubscriptionStatus;
@@ -72,9 +73,8 @@ final class ListSubscriptions extends ListRecords
     /**
      * Get table record key.
      */
-    public function getTableRecordKey(Model | array $record): string
+    public function getTableRecordKey(Model | array | UnifiedSubscription $record): string
     {
-        // @phpstan-ignore instanceof.alwaysFalse
         if ($record instanceof UnifiedSubscription) {
             return $record->gateway . '-' . $record->id;
         }
@@ -119,8 +119,9 @@ final class ListSubscriptions extends ListRecords
         }
 
         // Collect from CHIP if available
-        if ($detector->isAvailable('chip') && class_exists(\AIArmada\CashierChip\Models\Subscription::class)) {
-            $chipSubscriptions = \AIArmada\CashierChip\Models\Subscription::query()
+        if ($detector->isAvailable('chip')) {
+            $subscriptionModel = CashierChip::$subscriptionModel;
+            $chipSubscriptions = $subscriptionModel::query()
                 ->with('user')
                 ->orderByDesc('created_at')
                 ->get()
