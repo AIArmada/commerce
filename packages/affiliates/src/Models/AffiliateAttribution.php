@@ -86,7 +86,7 @@ class AffiliateAttribution extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.attributions', parent::getTable());
+        return config('affiliates.database.tables.attributions', parent::getTable());
     }
 
     public function affiliate(): BelongsTo

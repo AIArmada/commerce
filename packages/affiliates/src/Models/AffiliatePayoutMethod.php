@@ -50,7 +50,7 @@ class AffiliatePayoutMethod extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.payout_methods', 'affiliate_payout_methods');
+        return config('affiliates.database.tables.payout_methods', 'affiliate_payout_methods');
     }
 
     /**

@@ -57,7 +57,7 @@ class AffiliateProgramMembership extends Pivot
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.program_memberships', 'affiliate_program_memberships');
+        return config('affiliates.database.tables.program_memberships', 'affiliate_program_memberships');
     }
 
     public function affiliate(): BelongsTo

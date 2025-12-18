@@ -61,7 +61,7 @@ class AffiliateCommissionRule extends Model
 
     public function getTable(): string
     {
-        return config('affiliates.table_names.commission_rules', 'affiliate_commission_rules');
+        return config('affiliates.database.tables.commission_rules', 'affiliate_commission_rules');
     }
 
     public function program(): BelongsTo
