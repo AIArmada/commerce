@@ -20,6 +20,18 @@ class PricesRelationManager extends RelationManager
 
     protected static ?string $title = 'Prices';
 
+    private function resolveOwner(): ?Model
+    {
+        if (! app()->bound(OwnerResolverInterface::class)) {
+            return null;
+        }
+
+        /** @var OwnerResolverInterface $resolver */
+        $resolver = app(OwnerResolverInterface::class);
+
+        return $resolver->resolve();
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema
@@ -41,8 +53,7 @@ class PricesRelationManager extends RelationManager
                     ->getSearchResultsUsing(function (string $search, Forms\Get $get): array {
                         $type = $get('priceable_type');
 
-                        /** @var Model|null $owner */
-                        $owner = app(OwnerResolverInterface::class)->resolve();
+                        $owner = $this->resolveOwner();
 
                         if ($type === \AIArmada\Products\Models\Product::class) {
                             return \AIArmada\Products\Models\Product::query()
@@ -80,8 +91,7 @@ class PricesRelationManager extends RelationManager
 
                         $type = $get('priceable_type');
 
-                        /** @var Model|null $owner */
-                        $owner = app(OwnerResolverInterface::class)->resolve();
+                        $owner = $this->resolveOwner();
 
                         if (! is_string($type) || ! class_exists($type) || ! is_a($type, Model::class, true)) {
                             return null;
