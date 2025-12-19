@@ -20,13 +20,13 @@ class CategoryDistributionChart extends ChartWidget
 
     protected function getData(): array
     {
-        $pivotTable = config('products.tables.category_product', 'category_product');
+        $pivotTable = config('products.database.tables.category_product', 'category_product');
         $categoriesTable = (new Category)->getTable();
         $productsTable = (new \AIArmada\Products\Models\Product)->getTable();
 
         $query = Category::query();
 
-        if ((bool) config('products.owner.enabled', true)) {
+        if ((bool) config('products.features.owner.enabled', true)) {
             $owner = null;
 
             if (app()->bound(OwnerResolverInterface::class)) {
@@ -34,7 +34,7 @@ class CategoryDistributionChart extends ChartWidget
             }
 
             if ($owner instanceof Model) {
-                $includeGlobal = (bool) config('products.owner.include_global', true);
+                $includeGlobal = (bool) config('products.features.owner.include_global', true);
 
                 $query->where(function (Builder $builder) use ($categoriesTable, $owner, $includeGlobal): void {
                     $builder->where($categoriesTable . '.owner_type', $owner->getMorphClass())

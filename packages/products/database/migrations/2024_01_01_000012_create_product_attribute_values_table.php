@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('products.tables.attribute_values', 'product_attribute_values'), function (Blueprint $table): void {
+        Schema::create(config('products.database.tables.attribute_values', 'product_attribute_values'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
 
             // The attribute this value belongs to
@@ -36,6 +36,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('products.tables.attribute_values', 'product_attribute_values'));
+        Schema::dropIfExists(config('products.database.tables.attribute_values', 'product_attribute_values'));
     }
 };

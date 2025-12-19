@@ -10,7 +10,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('products.tables.option_values', 'product_option_values'), function (Blueprint $table): void {
+        Schema::create(config('products.database.tables.option_values', 'product_option_values'), function (Blueprint $table): void {
+            $jsonColumnType = config('products.database.json_column_type', 'json');
+
             $table->uuid('id')->primary();
 
             $table->foreignUuid('option_id');
@@ -22,7 +24,7 @@ return new class extends Migration
             $table->string('swatch_color', 7)->nullable(); // Hex color
             $table->string('swatch_image')->nullable(); // URL or path
 
-            $table->json('metadata')->nullable();
+            $table->{$jsonColumnType}('metadata')->nullable();
 
             $table->timestamps();
 
@@ -32,6 +34,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('products.tables.option_values', 'product_option_values'));
+        Schema::dropIfExists(config('products.database.tables.option_values', 'product_option_values'));
     }
 };

@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('products.tables.attribute_sets', 'product_attribute_sets'), function (Blueprint $table): void {
+        Schema::create(config('products.database.tables.attribute_sets', 'product_attribute_sets'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
 
             // Owner (for multi-tenancy)
@@ -30,6 +30,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('products.tables.attribute_sets', 'product_attribute_sets'));
+        Schema::dropIfExists(config('products.database.tables.attribute_sets', 'product_attribute_sets'));
     }
 };

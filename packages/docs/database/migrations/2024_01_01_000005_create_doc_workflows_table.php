@@ -10,12 +10,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $prefix = config('docs.database.table_prefix', 'docs_');
-        $jsonColumnType = config('docs.database.json_column_type', 'json');
+        $database = config('docs.database', []);
+        $prefix = $database['table_prefix'] ?? 'docs_';
+        $tables = $database['tables'] ?? [];
+        $jsonColumnType = $database['json_column_type'] ?? 'json';
 
-        Schema::create($prefix . 'workflows', function (Blueprint $table) use ($jsonColumnType): void {
+        $workflowsTable = $tables['doc_workflows'] ?? $prefix . 'workflows';
+        $workflowStepsTable = $tables['doc_workflow_steps'] ?? $prefix . 'workflow_steps';
+
+        Schema::create($workflowsTable, function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->string('name');
             $table->string('doc_type')->nullable();
             $table->boolean('is_active')->default(true);
@@ -26,7 +31,7 @@ return new class extends Migration
             $table->index(['is_active', 'doc_type', 'priority']);
         });
 
-        Schema::create($prefix . 'workflow_steps', function (Blueprint $table) use ($jsonColumnType): void {
+        Schema::create($workflowStepsTable, function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('workflow_id');
             $table->string('name');
@@ -44,9 +49,14 @@ return new class extends Migration
 
     public function down(): void
     {
-        $prefix = config('docs.database.table_prefix', 'docs_');
+        $database = config('docs.database', []);
+        $prefix = $database['table_prefix'] ?? 'docs_';
+        $tables = $database['tables'] ?? [];
 
-        Schema::dropIfExists($prefix . 'workflow_steps');
-        Schema::dropIfExists($prefix . 'workflows');
+        $workflowsTable = $tables['doc_workflows'] ?? $prefix . 'workflows';
+        $workflowStepsTable = $tables['doc_workflow_steps'] ?? $prefix . 'workflow_steps';
+
+        Schema::dropIfExists($workflowStepsTable);
+        Schema::dropIfExists($workflowsTable);
     }
 };

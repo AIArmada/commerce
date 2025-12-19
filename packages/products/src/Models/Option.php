@@ -47,7 +47,10 @@ class Option extends Model
 
     public function getTable(): string
     {
-        return config('products.tables.options', 'product_options');
+        $tables = config('products.database.tables', []);
+        $prefix = config('products.database.table_prefix', 'product_');
+
+        return $tables['options'] ?? $prefix . 'options';
     }
 
     // =========================================================================

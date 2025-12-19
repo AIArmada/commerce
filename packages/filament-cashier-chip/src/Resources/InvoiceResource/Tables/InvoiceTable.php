@@ -163,6 +163,6 @@ final class InvoiceTable
             ->bulkActions([])
             ->defaultSort('created_on', 'desc')
             ->paginated([25, 50, 100])
-            ->poll(config('filament-cashier-chip.polling_interval', '45s'));
+            ->poll(config('filament-cashier-chip.tables.polling_interval', '45s'));
     }
 }

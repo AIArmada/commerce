@@ -70,7 +70,10 @@ class Variant extends Model implements HasMedia, Priceable
 
     public function getTable(): string
     {
-        return config('products.tables.variants', 'product_variants');
+        $tables = config('products.database.tables', []);
+        $prefix = config('products.database.table_prefix', 'product_');
+
+        return $tables['variants'] ?? $prefix . 'variants';
     }
 
     // =========================================================================
@@ -96,7 +99,7 @@ class Variant extends Model implements HasMedia, Priceable
     {
         return $this->belongsToMany(
             OptionValue::class,
-            config('products.tables.variant_options', 'product_variant_options'),
+            config('products.database.tables.variant_options', 'product_variant_options'),
             'variant_id',
             'option_value_id'
         );
@@ -108,8 +111,11 @@ class Variant extends Model implements HasMedia, Priceable
 
     public function registerMediaCollections(): void
     {
+        /** @var array{mimes?:array<int,string>} $variantImages */
+        $variantImages = config('products.media.collections.variant_images', []);
+
         $this->addMediaCollection('variant_images')
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
+            ->acceptsMimeTypes($variantImages['mimes'] ?? ['image/jpeg', 'image/png', 'image/webp']);
     }
 
     // =========================================================================
@@ -157,8 +163,8 @@ class Variant extends Model implements HasMedia, Priceable
      */
     public function getFormattedPrice(): string
     {
-        $currency = mb_strtoupper($this->product?->currency ?: config('products.currency.default', 'MYR'));
-        $asMajorUnits = ! (bool) config('products.currency.store_in_cents', true);
+        $currency = mb_strtoupper($this->product?->currency ?: config('products.defaults.currency', 'MYR'));
+        $asMajorUnits = ! (bool) config('products.defaults.store_money_in_cents', true);
 
         return Money::$currency($this->getEffectivePrice(), $asMajorUnits)->format();
     }
@@ -219,8 +225,8 @@ class Variant extends Model implements HasMedia, Priceable
             return null;
         }
 
-        $currency = mb_strtoupper($this->product?->currency ?: config('products.currency.default', 'MYR'));
-        $asMajorUnits = ! (bool) config('products.currency.store_in_cents', true);
+        $currency = mb_strtoupper($this->product?->currency ?: config('products.defaults.currency', 'MYR'));
+        $asMajorUnits = ! (bool) config('products.defaults.store_money_in_cents', true);
 
         return Money::$currency($comparePrice, $asMajorUnits)->format();
     }
@@ -281,7 +287,7 @@ class Variant extends Model implements HasMedia, Priceable
      */
     public function generateSku(): string
     {
-        $pattern = config('products.variants.sku_pattern', '{parent_sku}-{option_codes}');
+        $pattern = config('products.features.variants.sku_pattern', '{parent_sku}-{option_codes}');
 
         $optionCodes = $this->optionValues()
             ->with('option')

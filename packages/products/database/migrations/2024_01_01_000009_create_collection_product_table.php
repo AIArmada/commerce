@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('products.tables.collection_product', 'collection_product'), function (Blueprint $table): void {
+        Schema::create(config('products.database.tables.collection_product', 'collection_product'), function (Blueprint $table): void {
             $table->foreignUuid('collection_id');
 
             $table->foreignUuid('product_id');
@@ -27,6 +27,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('products.tables.collection_product', 'collection_product'));
+        Schema::dropIfExists(config('products.database.tables.collection_product', 'collection_product'));
     }
 };

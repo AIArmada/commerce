@@ -11,7 +11,7 @@ use AIArmada\FilamentDocs\Resources\DocResource\Pages\CreateDoc;
 uses(TestCase::class);
 
 it('delegates document creation to DocService and defaults generate_pdf from config', function (): void {
-    config()->set('filament-docs.auto_generate_pdf', true);
+    config()->set('filament-docs.features.auto_generate_pdf', true);
 
     $createdDoc = Doc::factory()->create();
 

@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashierChip\Widgets;
 
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
+use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -38,23 +39,31 @@ final class ActiveSubscribersWidget extends BaseWidget
 
     private function getActiveSubscribersCount(): int
     {
+        /** @var class-string<Subscription> $subscriptionModel */
         $subscriptionModel = Cashier::$subscriptionModel;
 
-        return $subscriptionModel::query()->active()->count();
+        return CashierChipOwnerScope::apply($subscriptionModel::query())
+            ->active()
+            ->count();
     }
 
     private function getTrialingCount(): int
     {
+        /** @var class-string<Subscription> $subscriptionModel */
         $subscriptionModel = Cashier::$subscriptionModel;
 
-        return $subscriptionModel::query()->onTrial()->count();
+        return CashierChipOwnerScope::apply($subscriptionModel::query())
+            ->onTrial()
+            ->count();
     }
 
     private function getPreviousActiveCount(): int
     {
+        /** @var class-string<Subscription> $subscriptionModel */
         $subscriptionModel = Cashier::$subscriptionModel;
 
-        return $subscriptionModel::where('chip_status', Subscription::STATUS_ACTIVE)
+        return CashierChipOwnerScope::apply($subscriptionModel::query())
+            ->where('chip_status', Subscription::STATUS_ACTIVE)
             ->where('created_at', '<', now()->subMonth())
             ->count();
     }
@@ -95,13 +104,15 @@ final class ActiveSubscribersWidget extends BaseWidget
     private function getSubscriberChart(): array
     {
         $chart = [];
+        /** @var class-string<Subscription> $subscriptionModel */
         $subscriptionModel = Cashier::$subscriptionModel;
 
         for ($i = 5; $i >= 0; $i--) {
             $date = now()->subMonths($i);
             $endOfMonth = $date->copy()->endOfMonth();
 
-            $count = $subscriptionModel::where('created_at', '<=', $endOfMonth)
+            $count = CashierChipOwnerScope::apply($subscriptionModel::query())
+                ->where('created_at', '<=', $endOfMonth)
                 ->where(function ($query) use ($endOfMonth): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>=', $endOfMonth);

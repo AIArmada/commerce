@@ -12,9 +12,10 @@ return new class extends Migration
     {
         $database = config('docs.database', []);
         $tablePrefix = $database['table_prefix'] ?? 'docs_';
+        $tables = $database['tables'] ?? [];
 
-        $sequencesTable = $tablePrefix . 'sequences';
-        $numbersTable = $tablePrefix . 'sequence_numbers';
+        $sequencesTable = $tables['doc_sequences'] ?? $tablePrefix . 'sequences';
+        $numbersTable = $tables['sequence_numbers'] ?? $tablePrefix . 'sequence_numbers';
 
         Schema::create($sequencesTable, function (Blueprint $table) use ($sequencesTable): void {
             $table->uuid('id')->primary();
@@ -27,7 +28,7 @@ return new class extends Migration
             $table->unsignedInteger('increment')->default(1);
             $table->unsignedTinyInteger('padding')->default(6);
             $table->boolean('is_active')->default(true);
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
             $table->index(['doc_type', 'is_active'], $sequencesTable . '_type_active_index');
@@ -53,8 +54,12 @@ return new class extends Migration
     {
         $database = config('docs.database', []);
         $tablePrefix = $database['table_prefix'] ?? 'docs_';
+        $tables = $database['tables'] ?? [];
 
-        Schema::dropIfExists($tablePrefix . 'sequence_numbers');
-        Schema::dropIfExists($tablePrefix . 'sequences');
+        $sequencesTable = $tables['doc_sequences'] ?? $tablePrefix . 'sequences';
+        $numbersTable = $tables['sequence_numbers'] ?? $tablePrefix . 'sequence_numbers';
+
+        Schema::dropIfExists($numbersTable);
+        Schema::dropIfExists($sequencesTable);
     }
 };

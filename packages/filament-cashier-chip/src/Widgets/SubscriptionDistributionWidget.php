@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashierChip\Widgets;
 
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
+use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
 use Filament\Widgets\ChartWidget;
 
 final class SubscriptionDistributionWidget extends ChartWidget
@@ -61,6 +62,7 @@ final class SubscriptionDistributionWidget extends ChartWidget
      */
     private function getDistributionData(): array
     {
+        /** @var class-string<Subscription> $subscriptionModel */
         $subscriptionModel = Cashier::$subscriptionModel;
 
         $statuses = [
@@ -76,7 +78,9 @@ final class SubscriptionDistributionWidget extends ChartWidget
         $counts = [];
 
         foreach ($statuses as $status => $label) {
-            $count = $subscriptionModel::where('chip_status', $status)->count();
+            $count = CashierChipOwnerScope::apply($subscriptionModel::query())
+                ->where('chip_status', $status)
+                ->count();
 
             if ($count > 0) {
                 $labels[] = $label;

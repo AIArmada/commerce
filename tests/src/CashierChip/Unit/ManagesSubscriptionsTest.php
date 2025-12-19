@@ -136,7 +136,7 @@ class ManagesSubscriptionsTest extends CashierChipTestCase
     public function test_subscribed_with_active_subscription(): void
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        Subscription::factory()->for($user, 'owner')->create([
+        Subscription::factory()->for($user, 'customer')->create([
             'type' => 'default',
             'chip_status' => Subscription::STATUS_ACTIVE,
         ]);
@@ -147,7 +147,7 @@ class ManagesSubscriptionsTest extends CashierChipTestCase
     public function test_has_incomplete_payment_with_past_due_subscription(): void
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        Subscription::factory()->for($user, 'owner')->create([
+        Subscription::factory()->for($user, 'customer')->create([
             'type' => 'default',
             'chip_status' => Subscription::STATUS_PAST_DUE,
         ]);

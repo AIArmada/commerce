@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocTemplate;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -50,7 +51,7 @@ test('doc template set as default respects owner', function (): void {
 
     // Owned default (simulate owner)
     $ownerType = 'App\\Models\\User';
-    $ownerId = '1';
+    $ownerId = (string) Str::uuid();
 
     $ownedDefault = DocTemplate::factory()->create([
         'doc_type' => 'invoice',
@@ -93,6 +94,6 @@ test('doc template default scope', function (): void {
         'is_default' => false,
     ]);
 
-    $found = DocTemplate::default('invoice');
+    $found = DocTemplate::query()->default('invoice')->first();
     expect($found->id)->toBe($default->id);
 });

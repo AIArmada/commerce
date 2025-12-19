@@ -6,6 +6,7 @@ namespace AIArmada\FilamentDocs\Resources;
 
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\DocEmailTemplate;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkActionGroup;
@@ -26,11 +27,14 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 final class DocEmailTemplateResource extends Resource
 {
     protected static ?string $model = DocEmailTemplate::class;
+
+    protected static ?string $tenantOwnershipRelationshipName = 'owner';
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedEnvelope;
 
@@ -194,11 +198,25 @@ final class DocEmailTemplateResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-docs.navigation_group');
+        return config('filament-docs.navigation.group');
     }
 
     public static function getNavigationSort(): ?int
     {
         return config('filament-docs.resources.navigation_sort.email_templates', 91);
+    }
+
+    /**
+     * @return Builder<DocEmailTemplate>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        /** @var Builder<DocEmailTemplate> $query */
+        $query = parent::getEloquentQuery();
+
+        /** @var Builder<DocEmailTemplate> $query */
+        $query = DocsOwnerScope::apply($query);
+
+        return $query;
     }
 }

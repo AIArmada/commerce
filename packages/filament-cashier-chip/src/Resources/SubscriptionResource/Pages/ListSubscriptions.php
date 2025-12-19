@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Pages;
 
 use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
+use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ListRecords;
@@ -39,7 +40,7 @@ final class ListSubscriptions extends ListRecords
                 ->modalHeading('Pause All Active Subscriptions')
                 ->modalDescription('Are you sure you want to pause all active subscriptions? This action will prevent billing for all subscribers.')
                 ->action(function (): void {
-                    $count = Subscription::query()
+                    $count = CashierChipOwnerScope::apply(Subscription::query())
                         ->where('chip_status', Subscription::STATUS_ACTIVE)
                         ->update(['chip_status' => Subscription::STATUS_PAUSED]);
 
@@ -58,7 +59,7 @@ final class ListSubscriptions extends ListRecords
                 ->modalHeading('Resume All Paused Subscriptions')
                 ->modalDescription('Are you sure you want to resume all paused subscriptions? This will re-enable billing for all paused subscribers.')
                 ->action(function (): void {
-                    $count = Subscription::query()
+                    $count = CashierChipOwnerScope::apply(Subscription::query())
                         ->where('chip_status', Subscription::STATUS_PAUSED)
                         ->update(['chip_status' => Subscription::STATUS_ACTIVE]);
 

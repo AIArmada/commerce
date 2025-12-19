@@ -31,7 +31,7 @@ final class SubscriptionTable
                     ->sortable()
                     ->weight(FontWeight::SemiBold),
 
-                TextColumn::make('owner.name')
+                TextColumn::make('customer.name')
                     ->label('Customer')
                     ->searchable()
                     ->sortable()
@@ -149,6 +149,6 @@ final class SubscriptionTable
             ->bulkActions([])
             ->defaultSort('created_at', 'desc')
             ->paginated([25, 50, 100])
-            ->poll(config('filament-cashier-chip.polling_interval', '45s'));
+            ->poll(config('filament-cashier-chip.tables.polling_interval', '45s'));
     }
 }

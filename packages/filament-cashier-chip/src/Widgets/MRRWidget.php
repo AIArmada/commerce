@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashierChip\Widgets;
 
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
+use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -36,9 +37,11 @@ final class MRRWidget extends BaseWidget
 
     private function calculateMRR(): int
     {
+        /** @var class-string<Subscription> $subscriptionModel */
         $subscriptionModel = Cashier::$subscriptionModel;
 
-        return $subscriptionModel::query()->active()
+        return CashierChipOwnerScope::apply($subscriptionModel::query())
+            ->active()
             ->with('items')
             ->get()
             ->sum(function (Subscription $subscription): int {
@@ -59,9 +62,11 @@ final class MRRWidget extends BaseWidget
 
     private function calculatePreviousMRR(): int
     {
+        /** @var class-string<Subscription> $subscriptionModel */
         $subscriptionModel = Cashier::$subscriptionModel;
 
-        return $subscriptionModel::where('chip_status', Subscription::STATUS_ACTIVE)
+        return CashierChipOwnerScope::apply($subscriptionModel::query())
+            ->where('chip_status', Subscription::STATUS_ACTIVE)
             ->where('created_at', '<', now()->subMonth())
             ->with('items')
             ->get()
@@ -131,6 +136,7 @@ final class MRRWidget extends BaseWidget
     private function getMRRChart(): array
     {
         $chart = [];
+        /** @var class-string<Subscription> $subscriptionModel */
         $subscriptionModel = Cashier::$subscriptionModel;
 
         for ($i = 5; $i >= 0; $i--) {
@@ -138,7 +144,8 @@ final class MRRWidget extends BaseWidget
             $startOfMonth = $date->copy()->startOfMonth();
             $endOfMonth = $date->copy()->endOfMonth();
 
-            $monthMrr = $subscriptionModel::where('chip_status', Subscription::STATUS_ACTIVE)
+            $monthMrr = CashierChipOwnerScope::apply($subscriptionModel::query())
+                ->where('chip_status', Subscription::STATUS_ACTIVE)
                 ->where('created_at', '<=', $endOfMonth)
                 ->where(function ($query) use ($startOfMonth): void {
                     $query->whereNull('ends_at')
@@ -162,8 +169,9 @@ final class MRRWidget extends BaseWidget
 
     private function formatCurrency(int $amount): string
     {
-        $currency = config('filament-cashier-chip.currency', 'MYR');
+        $currency = config('cashier-chip.currency', 'MYR');
+        $precision = (int) config('filament-cashier-chip.tables.amount_precision', 2);
 
-        return mb_strtoupper($currency) . ' ' . number_format($amount / 100, 2);
+        return mb_strtoupper($currency) . ' ' . number_format($amount / 100, $precision);
     }
 }

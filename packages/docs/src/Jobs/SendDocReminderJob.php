@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Jobs;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocEmailService;
 use Exception;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
@@ -59,7 +62,7 @@ class SendDocReminderJob implements ShouldQueue
 
     protected function sendReminderForDoc(DocEmailService $emailService, string $docId): void
     {
-        $doc = Doc::find($docId);
+        $doc = $this->getScopedDocsQuery()->find($docId);
         $recipientEmail = $this->getRecipientEmail($doc);
 
         if (! $doc || ! $recipientEmail) {
@@ -109,7 +112,7 @@ class SendDocReminderJob implements ShouldQueue
                     doc: $doc,
                     recipientEmail: $recipientEmail,
                     recipientName: $recipientName,
-                    template: $emailService->findTemplate($doc->doc_type, 'due_soon'),
+                    template: $emailService->findTemplate($doc, 'due_soon'),
                     variables: [
                         'days_until_due' => $doc->due_date?->diffInDays(now()),
                     ],
@@ -164,7 +167,7 @@ class SendDocReminderJob implements ShouldQueue
     {
         $dueDate = now()->addDays($this->daysBeforeDue);
 
-        return Doc::query()
+        return $this->getScopedDocsQuery()
             ->whereIn('status', [DocStatus::SENT, DocStatus::PENDING])
             ->whereNotNull('due_date')
             ->whereDate('due_date', '=', $dueDate->toDateString())
@@ -179,12 +182,30 @@ class SendDocReminderJob implements ShouldQueue
     {
         $overdueDate = now()->subDays($this->daysAfterOverdue);
 
-        return Doc::query()
+        return $this->getScopedDocsQuery()
             ->where('status', DocStatus::OVERDUE)
             ->whereNotNull('due_date')
             ->whereDate('due_date', '=', $overdueDate->toDateString())
             ->whereJsonContainsKey('customer_data->email')
             ->get();
+    }
+
+    /**
+     * @return Builder<Doc>
+     */
+    protected function getScopedDocsQuery(): Builder
+    {
+        $query = Doc::query();
+
+        if (! config('docs.owner.enabled', false)) {
+            return $query;
+        }
+
+        /** @var Model|null $owner */
+        $owner = app(OwnerResolverInterface::class)->resolve();
+        $includeGlobal = (bool) config('docs.owner.include_global', true);
+
+        return $query->forOwner($owner, $includeGlobal);
     }
 
     protected function shouldSendReminder(Doc $doc): bool

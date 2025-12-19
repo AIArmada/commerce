@@ -10,7 +10,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('products.tables.categories', 'product_categories'), function (Blueprint $table): void {
+        Schema::create(config('products.database.tables.categories', 'product_categories'), function (Blueprint $table): void {
+            $jsonColumnType = config('products.database.json_column_type', 'json');
+
             $table->uuid('id')->primary();
 
             // Owner (for multi-tenancy)
@@ -32,7 +34,7 @@ return new class extends Migration
             $table->string('meta_title')->nullable();
             $table->text('meta_description')->nullable();
 
-            $table->json('metadata')->nullable();
+            $table->{$jsonColumnType}('metadata')->nullable();
 
             $table->timestamps();
 
@@ -45,6 +47,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('products.tables.categories', 'product_categories'));
+        Schema::dropIfExists(config('products.database.tables.categories', 'product_categories'));
     }
 };

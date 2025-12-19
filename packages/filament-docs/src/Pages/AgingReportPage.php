@@ -6,6 +6,7 @@ namespace AIArmada\FilamentDocs\Pages;
 
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Pages\Page;
@@ -24,11 +25,7 @@ final class AgingReportPage extends Page implements HasTable
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedChartBar;
 
-    protected static string | UnitEnum | null $navigationGroup = 'Documents';
-
     protected static ?string $navigationLabel = 'Aging Report';
-
-    protected static ?int $navigationSort = 100;
 
     protected string $view = 'filament-docs::pages.aging-report';
 
@@ -41,7 +38,7 @@ final class AgingReportPage extends Page implements HasTable
     {
         return $table
             ->query(
-                Doc::query()
+                DocsOwnerScope::applyToDocs(Doc::query())
                     ->whereIn('status', [
                         DocStatus::PENDING,
                         DocStatus::SENT,
@@ -184,7 +181,8 @@ final class AgingReportPage extends Page implements HasTable
      */
     public function getAgingSummary(): array
     {
-        $docs = Doc::query()
+        $docs = DocsOwnerScope::applyToDocs(Doc::query())
+            ->select(['id', 'due_date', 'total'])
             ->whereIn('status', [
                 DocStatus::PENDING,
                 DocStatus::SENT,
@@ -219,5 +217,15 @@ final class AgingReportPage extends Page implements HasTable
         }
 
         return $summary;
+    }
+
+    public static function getNavigationGroup(): string | UnitEnum | null
+    {
+        return config('filament-docs.navigation.group');
+    }
+
+    public static function getNavigationSort(): ?int
+    {
+        return config('filament-docs.resources.navigation_sort.aging_report', 100);
     }
 }

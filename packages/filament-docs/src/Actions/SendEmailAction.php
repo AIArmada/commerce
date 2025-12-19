@@ -5,12 +5,15 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Actions;
 
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\Docs\Services\DocEmailService;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
+use Illuminate\Database\Eloquent\Builder;
 use Throwable;
 
 final class SendEmailAction
@@ -40,17 +43,22 @@ final class SendEmailAction
 
                 Select::make('template_id')
                     ->label(__('Email Template'))
-                    ->options(function (): array {
-                        $templateClass = config('docs.models.email_template');
+                    ->options(function (?Doc $record = null): array {
+                        /** @var Builder<DocEmailTemplate> $query */
+                        $query = DocEmailTemplate::query();
 
-                        if (! $templateClass || ! class_exists($templateClass)) {
-                            return [];
+                        /** @var Builder<DocEmailTemplate> $query */
+                        $query = DocsOwnerScope::apply($query);
+
+                        $query
+                            ->where('is_active', true)
+                            ->orderBy('name');
+
+                        if ($record !== null) {
+                            $query->where('doc_type', $record->doc_type);
                         }
 
-                        return $templateClass::query()
-                            ->where('is_active', true)
-                            ->pluck('name', 'id')
-                            ->toArray();
+                        return $query->pluck('name', 'id')->toArray();
                     })
                     ->nullable()
                     ->searchable(),
@@ -78,10 +86,32 @@ final class SendEmailAction
     {
         try {
             $emailService = app(DocEmailService::class);
+
+            $template = null;
+            if (! empty($data['template_id'])) {
+                /** @var Builder<DocEmailTemplate> $query */
+                $query = DocEmailTemplate::query();
+
+                /** @var Builder<DocEmailTemplate> $query */
+                $query = DocsOwnerScope::apply($query);
+
+                $template = $query
+                    ->where('is_active', true)
+                    ->where('doc_type', $record->doc_type)
+                    ->find($data['template_id']);
+
+                if ($template === null) {
+                    throw \Illuminate\Validation\ValidationException::withMessages([
+                        'template_id' => __('Invalid email template selection.'),
+                    ]);
+                }
+            }
+
             $emailService->send(
                 doc: $record,
                 recipientEmail: $data['to'],
                 recipientName: self::getRecipientName($record),
+                template: $template,
             );
 
             Notification::make()

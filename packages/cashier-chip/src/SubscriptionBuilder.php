@@ -9,6 +9,7 @@ use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Contracts\BillableContract;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
@@ -321,8 +322,11 @@ class SubscriptionBuilder
         $isSinglePrice = count($this->items) === 1;
 
         return DB::transaction(function () use ($status, $trialEndsAt, $nextBillingAt, $recurringToken, $firstItem, $isSinglePrice, $couponId, $couponDiscount, $couponDuration): Subscription {
+            $ownerAttributes = $this->resolveTenantOwnerAttributes();
+
             /** @var Subscription $subscription */
             $subscription = $this->owner->subscriptions()->create([
+                ...$ownerAttributes,
                 'type' => $this->type,
                 'chip_id' => Str::uuid()->toString(),
                 'chip_status' => $status,
@@ -343,6 +347,7 @@ class SubscriptionBuilder
             // Create subscription items
             foreach ($this->items as $item) {
                 $subscription->items()->create([
+                    ...$ownerAttributes,
                     'chip_id' => Str::uuid()->toString(),
                     'chip_product' => $item['product'] ?? null,
                     'chip_price' => $item['price'] ?? null,
@@ -358,6 +363,31 @@ class SubscriptionBuilder
 
             return $subscription;
         });
+    }
+
+    /**
+     * @return array{owner_type?: string, owner_id?: string}
+     */
+    private function resolveTenantOwnerAttributes(): array
+    {
+        if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+            return [];
+        }
+
+        if (! app()->bound(OwnerResolverInterface::class)) {
+            return [];
+        }
+
+        $owner = app(OwnerResolverInterface::class)->resolve();
+
+        if ($owner === null) {
+            return [];
+        }
+
+        return [
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => (string) $owner->getKey(),
+        ];
     }
 
     /**

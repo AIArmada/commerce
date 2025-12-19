@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashierChip\Widgets;
 
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
+use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Carbon;
 
@@ -51,7 +52,7 @@ final class RevenueChartWidget extends ChartWidget
 
     protected function getOptions(): array
     {
-        $currency = config('filament-cashier-chip.currency', 'MYR');
+        $currency = config('cashier-chip.currency', 'MYR');
 
         return [
             'plugins' => [
@@ -79,6 +80,7 @@ final class RevenueChartWidget extends ChartWidget
         $mrr = [];
         $newRevenue = [];
 
+        /** @var class-string<Subscription> $subscriptionModel */
         $subscriptionModel = Cashier::$subscriptionModel;
 
         for ($i = 11; $i >= 0; $i--) {
@@ -89,7 +91,8 @@ final class RevenueChartWidget extends ChartWidget
             $endOfMonth = $date->copy()->endOfMonth();
 
             // Calculate MRR for the month
-            $monthMrr = $subscriptionModel::where('chip_status', Subscription::STATUS_ACTIVE)
+            $monthMrr = CashierChipOwnerScope::apply($subscriptionModel::query())
+                ->where('chip_status', Subscription::STATUS_ACTIVE)
                 ->where('created_at', '<=', $endOfMonth)
                 ->where(function ($query) use ($startOfMonth): void {
                     $query->whereNull('ends_at')
@@ -108,7 +111,8 @@ final class RevenueChartWidget extends ChartWidget
             $mrr[] = (int) ($monthMrr / 100);
 
             // Calculate new subscriptions revenue
-            $newSubscriptionsRevenue = $subscriptionModel::whereBetween('created_at', [$startOfMonth, $endOfMonth])
+            $newSubscriptionsRevenue = CashierChipOwnerScope::apply($subscriptionModel::query())
+                ->whereBetween('created_at', [$startOfMonth, $endOfMonth])
                 ->with('items')
                 ->get()
                 ->sum(function (Subscription $subscription): int {

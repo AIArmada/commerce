@@ -63,18 +63,7 @@ final class DocForm
                                             $ownerResolver = app(OwnerResolverInterface::class);
                                             $owner = $ownerResolver->resolve();
 
-                                            if ($owner !== null) {
-                                                $query->where(function ($builder) use ($owner, $includeGlobal): void {
-                                                    $builder->where('owner_type', $owner->getMorphClass())
-                                                        ->where('owner_id', $owner->getKey());
-
-                                                    if ($includeGlobal) {
-                                                        $builder->orWhereNull('owner_type');
-                                                    }
-                                                });
-                                            } elseif ($includeGlobal) {
-                                                $query->whereNull('owner_type');
-                                            }
+                                            $query->forOwner($owner, $includeGlobal);
                                         }
 
                                         /** @var array<string, string> $options */

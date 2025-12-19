@@ -22,6 +22,8 @@ final class SubscriptionItemFactory extends Factory
     public function definition(): array
     {
         return [
+            'owner_type' => null,
+            'owner_id' => null,
             'subscription_id' => Subscription::factory(),
             'chip_id' => 'si_' . Str::random(40),
             'chip_product' => 'prod_' . Str::random(24),

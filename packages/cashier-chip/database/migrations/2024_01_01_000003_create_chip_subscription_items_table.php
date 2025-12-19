@@ -24,6 +24,7 @@ return new class extends Migration
 
         Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->nullableUuidMorphs('owner');
             $table->foreignUuid('subscription_id');
             $table->string('chip_id')->unique();
             $table->string('chip_product')->nullable();

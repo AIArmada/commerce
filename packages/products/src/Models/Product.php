@@ -117,7 +117,9 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
 
     public function getTable(): string
     {
-        return config('products.tables.products', 'products');
+        $tables = config('products.database.tables', []);
+
+        return $tables['products'] ?? 'products';
     }
 
     /**
@@ -126,7 +128,7 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
      */
     public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
     {
-        if (! (bool) config('products.owner.enabled', true)) {
+        if (! (bool) config('products.features.owner.enabled', true)) {
             return $query;
         }
 
@@ -134,7 +136,7 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
             $owner = app(OwnerResolverInterface::class)->resolve();
         }
 
-        $includeGlobal = $includeGlobal && (bool) config('products.owner.include_global', true);
+        $includeGlobal = $includeGlobal && (bool) config('products.features.owner.include_global', true);
 
         /** @var Builder<Product> $scoped */
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
@@ -175,7 +177,7 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
     {
         return $this->belongsToMany(
             Category::class,
-            config('products.tables.category_product', 'category_product'),
+            config('products.database.tables.category_product', 'category_product'),
             'product_id',
             'category_id'
         )->withTimestamps();
@@ -190,7 +192,7 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
     {
         return $this->belongsToMany(
             Collection::class,
-            config('products.tables.collection_product', 'collection_product'),
+            config('products.database.tables.collection_product', 'collection_product'),
             'product_id',
             'collection_id'
         )->withTimestamps();
@@ -202,48 +204,68 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
 
     public function registerMediaCollections(): void
     {
+        /** @var array{limit?:int, mimes?:array<int,string>} $gallery */
+        $gallery = config('products.media.collections.gallery', []);
+        /** @var array{limit?:int, mimes?:array<int,string>} $hero */
+        $hero = config('products.media.collections.hero', []);
+        /** @var array{limit?:int, mimes?:array<int,string>} $videos */
+        $videos = config('products.media.collections.videos', []);
+        /** @var array{limit?:int, mimes?:array<int,string>} $documents */
+        $documents = config('products.media.collections.documents', []);
+
         $this->addMediaCollection('gallery')
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp'])
+            ->acceptsMimeTypes($gallery['mimes'] ?? ['image/jpeg', 'image/png', 'image/webp'])
             ->useFallbackUrl('/images/product-placeholder.jpg')
             ->useFallbackPath(public_path('/images/product-placeholder.jpg'));
 
         $this->addMediaCollection('hero')
             ->singleFile()
-            ->acceptsMimeTypes(['image/jpeg', 'image/png', 'image/webp']);
+            ->acceptsMimeTypes($hero['mimes'] ?? ['image/jpeg', 'image/png', 'image/webp']);
 
         $this->addMediaCollection('videos')
-            ->acceptsMimeTypes(['video/mp4', 'video/webm']);
+            ->acceptsMimeTypes($videos['mimes'] ?? ['video/mp4', 'video/webm']);
 
         $this->addMediaCollection('documents')
-            ->acceptsMimeTypes(['application/pdf']);
+            ->acceptsMimeTypes($documents['mimes'] ?? ['application/pdf']);
     }
 
     public function registerMediaConversions(?Media $media = null): void
     {
+        /** @var array{width?:int, height?:int, sharpen?:int} $thumbnail */
+        $thumbnail = config('products.media.conversions.thumbnail', []);
+        /** @var array{width?:int, height?:int} $card */
+        $card = config('products.media.conversions.card', []);
+        /** @var array{width?:int, height?:int} $detail */
+        $detail = config('products.media.conversions.detail', []);
+        /** @var array{width?:int, height?:int} $zoom */
+        $zoom = config('products.media.conversions.zoom', []);
+        /** @var array{width?:int, height?:int} $webpCard */
+        $webpCard = config('products.media.conversions.webp-card', []);
+
         $this->addMediaConversion('thumbnail')
-            ->width(150)
-            ->height(150)
-            ->sharpen(10)
+            ->width($thumbnail['width'] ?? 150)
+            ->height($thumbnail['height'] ?? 150)
+            ->sharpen($thumbnail['sharpen'] ?? 10)
             ->optimize();
 
         $this->addMediaConversion('card')
-            ->width(400)
-            ->height(400)
+            ->width($card['width'] ?? 400)
+            ->height($card['height'] ?? 400)
             ->optimize();
 
         $this->addMediaConversion('detail')
-            ->width(800)
-            ->height(800)
+            ->width($detail['width'] ?? 800)
+            ->height($detail['height'] ?? 800)
             ->optimize();
 
         $this->addMediaConversion('zoom')
-            ->width(1600)
-            ->height(1600)
+            ->width($zoom['width'] ?? 1600)
+            ->height($zoom['height'] ?? 1600)
             ->optimize();
 
         $this->addMediaConversion('webp-card')
-            ->width(400)
-            ->height(400)
+            ->width($webpCard['width'] ?? 400)
+            ->height($webpCard['height'] ?? 400)
             ->format('webp')
             ->optimize();
     }
@@ -258,7 +280,7 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
             ->generateSlugsFrom('name')
             ->saveSlugsTo('slug')
             ->doNotGenerateSlugsOnUpdate()
-            ->slugsShouldBeNoLongerThan(100);
+            ->slugsShouldBeNoLongerThan((int) config('products.seo.slug_max_length', 100));
     }
 
     public function getRouteKeyName(): string
@@ -272,8 +294,8 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
 
     public function getFormattedPrice(): string
     {
-        $currency = mb_strtoupper($this->currency ?: config('products.currency.default', 'MYR'));
-        $asMajorUnits = ! (bool) config('products.currency.store_in_cents', true);
+        $currency = mb_strtoupper($this->currency ?: config('products.defaults.currency', 'MYR'));
+        $asMajorUnits = ! (bool) config('products.defaults.store_money_in_cents', true);
 
         return Money::$currency($this->price, $asMajorUnits)->format();
     }
@@ -284,8 +306,8 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
             return null;
         }
 
-        $currency = mb_strtoupper($this->currency ?: config('products.currency.default', 'MYR'));
-        $asMajorUnits = ! (bool) config('products.currency.store_in_cents', true);
+        $currency = mb_strtoupper($this->currency ?: config('products.defaults.currency', 'MYR'));
+        $asMajorUnits = ! (bool) config('products.defaults.store_money_in_cents', true);
 
         return Money::$currency($this->compare_price, $asMajorUnits)->format();
     }
@@ -296,16 +318,16 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
             return null;
         }
 
-        $currency = mb_strtoupper($this->currency ?: config('products.currency.default', 'MYR'));
-        $asMajorUnits = ! (bool) config('products.currency.store_in_cents', true);
+        $currency = mb_strtoupper($this->currency ?: config('products.defaults.currency', 'MYR'));
+        $asMajorUnits = ! (bool) config('products.defaults.store_money_in_cents', true);
 
         return Money::$currency($this->cost, $asMajorUnits)->format();
     }
 
     public function getPriceAsMoney(): Money
     {
-        $currency = mb_strtoupper($this->currency ?: config('products.currency.default', 'MYR'));
-        $asMajorUnits = ! (bool) config('products.currency.store_in_cents', true);
+        $currency = mb_strtoupper($this->currency ?: config('products.defaults.currency', 'MYR'));
+        $asMajorUnits = ! (bool) config('products.defaults.store_money_in_cents', true);
 
         return Money::$currency($this->price, $asMajorUnits);
     }
@@ -570,11 +592,11 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
     protected static function booted(): void
     {
         static::creating(function (Product $product): void {
-            if (! (bool) config('products.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', true)) {
                 return;
             }
 
-            if (! (bool) config('products.owner.auto_assign_on_create', true)) {
+            if (! (bool) config('products.features.owner.auto_assign_on_create', true)) {
                 return;
             }
 

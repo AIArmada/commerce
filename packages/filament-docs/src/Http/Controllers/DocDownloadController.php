@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Http\Controllers;
 
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Services\DocService;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\HttpFoundation\StreamedResponse;
@@ -14,11 +16,13 @@ final class DocDownloadController
 {
     public function __invoke(Doc $doc): BinaryFileResponse | StreamedResponse
     {
+        DocsOwnerScope::assertCanAccessDoc($doc);
+
         if ($doc->pdf_path === null) {
             throw new NotFoundHttpException('PDF not found for this document.');
         }
 
-        $disk = config('docs.storage.disk', 'local');
+        $disk = app(DocService::class)->resolveStorageDiskForDocType($doc->doc_type);
         $storage = Storage::disk($disk);
 
         if (! $storage->exists($doc->pdf_path)) {

@@ -17,11 +17,13 @@ use AIArmada\FilamentDocs\Resources\DocResource\RelationManagers\VersionsRelatio
 use AIArmada\FilamentDocs\Resources\DocResource\Schemas\DocForm;
 use AIArmada\FilamentDocs\Resources\DocResource\Schemas\DocInfolist;
 use AIArmada\FilamentDocs\Resources\DocResource\Tables\DocsTable;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
 use Filament\Resources\Resource;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 final class DocResource extends Resource
@@ -78,7 +80,7 @@ final class DocResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        $count = self::getModel()::count();
+        $count = static::getEloquentQuery()->count();
 
         return $count > 0 ? (string) $count : null;
     }
@@ -90,11 +92,22 @@ final class DocResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-docs.navigation_group');
+        return config('filament-docs.navigation.group');
     }
 
     public static function getNavigationSort(): ?int
     {
         return config('filament-docs.resources.navigation_sort.docs', 10);
+    }
+
+    /**
+     * @return Builder<Doc>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        /** @var Builder<Doc> $query */
+        $query = parent::getEloquentQuery();
+
+        return DocsOwnerScope::applyToDocs($query);
     }
 }

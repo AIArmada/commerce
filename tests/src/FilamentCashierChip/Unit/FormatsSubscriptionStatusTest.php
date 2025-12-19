@@ -52,6 +52,6 @@ it('formats subscription statuses, intervals, and amounts', function (): void {
     expect(filamentCashierChip_invokeTrait('formatInterval', 'year', 2))->toBeString();
     expect(filamentCashierChip_invokeTrait('formatInterval', 'unknown', 3))->toBe('3 unknown');
 
-    config()->set('filament-cashier-chip.currency', 'usd');
+    config()->set('cashier-chip.currency', 'usd');
     expect(filamentCashierChip_invokeTrait('formatAmount', 12345))->toBe('USD 123.45');
 });

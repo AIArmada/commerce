@@ -61,11 +61,14 @@ class RenewSubscriptionsCommand extends Command
         // Get all active subscriptions due for renewal
         $dueDate = now()->subHours($graceHours);
 
-        $subscriptions = Subscription::query()
+        $query = Subscription::query();
+        $query = (new Subscription)->scopeForOwner($query);
+
+        $subscriptions = $query
             ->active()
             ->whereNotNull('next_billing_at')
             ->where('next_billing_at', '<=', $dueDate)
-            ->with('owner')
+            ->with('customer')
             ->get();
 
         if ($subscriptions->isEmpty()) {
@@ -80,16 +83,16 @@ class RenewSubscriptionsCommand extends Command
         $failed = 0;
 
         foreach ($subscriptions as $subscription) {
-            $owner = $subscription->owner;
+            $customer = $subscription->customer;
 
-            if (! $owner) {
+            if (! $customer) {
                 $this->warn("Subscription {$subscription->id} has no owner, skipping.");
 
                 continue;
             }
 
-            /** @var Model&BillableContract $owner */
-            $this->line("Processing: {$subscription->type} for {$owner->chipEmail()}");
+            /** @var Model&BillableContract $customer */
+            $this->line("Processing: {$subscription->type} for {$customer->chipEmail()}");
 
             if ($dryRun) {
                 $this->info('  → Would charge: ' . $this->formatAmount($subscription));
@@ -136,14 +139,14 @@ class RenewSubscriptionsCommand extends Command
      */
     protected function chargeSubscription(Subscription $subscription): mixed
     {
-        $owner = $subscription->owner;
+        $customer = $subscription->customer;
 
-        if (! $owner) {
+        if (! $customer) {
             throw new RuntimeException('Subscription has no owner');
         }
 
-        /** @var Model&BillableContract $owner */
-        $recurringTokenId = $owner->defaultPaymentMethod()?->id();
+        /** @var Model&BillableContract $customer */
+        $recurringTokenId = $customer->defaultPaymentMethod()?->id();
 
         if (! $recurringTokenId) {
             throw new RuntimeException('No payment method available for renewal');
@@ -157,7 +160,7 @@ class RenewSubscriptionsCommand extends Command
         }
 
         // Charge using the recurring token
-        return $owner->charge($amount, $recurringTokenId, [
+        return $customer->charge($amount, $recurringTokenId, [
             'product_name' => "Subscription: {$subscription->type}",
             'reference' => "Subscription {$subscription->type} - Renewal {$subscription->next_billing_at?->format('Y-m-d')}",
             'metadata' => [
@@ -184,7 +187,7 @@ class RenewSubscriptionsCommand extends Command
     protected function formatAmount(Subscription $subscription): string
     {
         $amount = $subscription->calculateSubscriptionAmount();
-        $currency = $subscription->owner?->preferredCurrency() ?? 'MYR';
+        $currency = $subscription->customer?->preferredCurrency() ?? 'MYR';
 
         return Cashier::formatAmount($amount, $currency);
     }
