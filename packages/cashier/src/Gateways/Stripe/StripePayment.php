@@ -150,7 +150,13 @@ class StripePayment implements PaymentContract
         $latestCharge = $paymentIntent->latest_charge;
 
         if ($latestCharge && is_string($latestCharge)) {
-            $stripe = new \Stripe\StripeClient(config('cashier.secret'));
+            $secret = config('cashier.gateways.stripe.secret');
+
+            if (! is_string($secret) || $secret === '') {
+                return null;
+            }
+
+            $stripe = new \Stripe\StripeClient($secret);
             $charge = $stripe->charges->retrieve($latestCharge);
 
             return $charge->receipt_url;

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 
+use AIArmada\Cashier\Contracts\BillableContract;
 use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
+use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use Exception;
 use Filament\Forms\Components\Radio;
@@ -18,6 +20,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Components\Wizard;
 use Filament\Schemas\Schema;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\HtmlString;
 use RuntimeException;
@@ -119,7 +122,7 @@ final class CreateSubscription extends CreateRecord
             return [];
         }
 
-        return $billableModel::query()
+        return CashierOwnerScope::apply($billableModel::query())
             ->limit(100)
             ->get()
             ->mapWithKeys(fn ($user) => [
@@ -177,7 +180,9 @@ final class CreateSubscription extends CreateRecord
             return [];
         }
 
-        $user = $billableModel::find($userId);
+        $user = CashierOwnerScope::apply($billableModel::query())
+            ->whereKey($userId)
+            ->first();
 
         if ($user === null) {
             return [];
@@ -210,7 +215,17 @@ final class CreateSubscription extends CreateRecord
     protected function handleRecordCreation(array $data): Model
     {
         $billableModel = config('cashier.models.billable', 'App\\Models\\User');
-        $user = $billableModel::findOrFail($data['user_id']);
+        $user = CashierOwnerScope::apply($billableModel::query())
+            ->whereKey($data['user_id'])
+            ->first();
+
+        if ($user === null) {
+            throw new AuthorizationException('Selected customer is not accessible.');
+        }
+
+        if (! $user instanceof BillableContract) {
+            throw new RuntimeException('Configured cashier billable model must implement BillableContract.');
+        }
         $gateway = $data['gateway'];
 
         // Build the subscription using the unified cashier interface

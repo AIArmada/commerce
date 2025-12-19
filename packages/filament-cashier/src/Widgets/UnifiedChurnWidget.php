@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\Widgets;
 
 use AIArmada\CashierChip\Cashier as CashierChip;
+use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -28,12 +29,12 @@ final class UnifiedChurnWidget extends StatsOverviewWidget
 
         // Count Stripe cancellations
         if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-            $canceledThisMonth += Subscription::query()
+            $canceledThisMonth += CashierOwnerScope::apply(Subscription::query())
                 ->whereNotNull('ends_at')
                 ->where('ends_at', '>=', $startOfMonth)
                 ->count();
 
-            $canceledLastMonth += Subscription::query()
+            $canceledLastMonth += CashierOwnerScope::apply(Subscription::query())
                 ->whereNotNull('ends_at')
                 ->whereBetween('ends_at', [$startOfLastMonth, $endOfLastMonth])
                 ->count();
@@ -42,12 +43,12 @@ final class UnifiedChurnWidget extends StatsOverviewWidget
         // Count CHIP cancellations
         if ($detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
-            $canceledThisMonth += $subscriptionModel::query()
+            $canceledThisMonth += CashierOwnerScope::apply($subscriptionModel::query())
                 ->whereNotNull('ends_at')
                 ->where('ends_at', '>=', $startOfMonth)
                 ->count();
 
-            $canceledLastMonth += $subscriptionModel::query()
+            $canceledLastMonth += CashierOwnerScope::apply($subscriptionModel::query())
                 ->whereNotNull('ends_at')
                 ->whereBetween('ends_at', [$startOfLastMonth, $endOfLastMonth])
                 ->count();

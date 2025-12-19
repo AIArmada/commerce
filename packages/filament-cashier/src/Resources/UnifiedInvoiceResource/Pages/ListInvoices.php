@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages;
 
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource;
+use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedInvoice;
 use Exception;
@@ -91,7 +92,9 @@ final class ListInvoices extends ListRecords
         }
 
         // Get users with subscriptions
-        $users = $billableModel::query()->limit(100)->get();
+        $users = CashierOwnerScope::apply($billableModel::query())
+            ->limit(100)
+            ->get();
 
         // Collect Stripe invoices
         if ($detector->isAvailable('stripe')) {
@@ -112,7 +115,7 @@ final class ListInvoices extends ListRecords
 
         // Collect CHIP invoices/purchases
         if ($detector->isAvailable('chip') && class_exists(Purchase::class)) {
-            $chipPurchases = Purchase::query()
+            $chipPurchases = CashierOwnerScope::apply(Purchase::query())
                 ->orderByDesc('created_at')
                 ->limit(100)
                 ->get();

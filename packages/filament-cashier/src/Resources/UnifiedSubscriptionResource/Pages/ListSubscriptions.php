@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 
 use AIArmada\CashierChip\Cashier as CashierChip;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
+use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\SubscriptionStatus;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
@@ -109,7 +110,7 @@ final class ListSubscriptions extends ListRecords
 
         // Collect from Stripe if available
         if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-            $stripeSubscriptions = Subscription::query()
+            $stripeSubscriptions = CashierOwnerScope::apply(Subscription::query())
                 ->with('user')
                 ->orderByDesc('created_at')
                 ->get()
@@ -121,7 +122,7 @@ final class ListSubscriptions extends ListRecords
         // Collect from CHIP if available
         if ($detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
-            $chipSubscriptions = $subscriptionModel::query()
+            $chipSubscriptions = CashierOwnerScope::apply($subscriptionModel::query())
                 ->with('user')
                 ->orderByDesc('created_at')
                 ->get()

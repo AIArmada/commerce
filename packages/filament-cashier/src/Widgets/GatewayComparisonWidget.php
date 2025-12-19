@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\Widgets;
 
 use AIArmada\CashierChip\Cashier as CashierChip;
+use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use DateTimeInterface;
 use Filament\Widgets\ChartWidget;
@@ -107,7 +108,7 @@ final class GatewayComparisonWidget extends ChartWidget
         $detector = app(GatewayDetector::class);
 
         if ($gateway === 'stripe' && $detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-            return Subscription::query()
+            return CashierOwnerScope::apply(Subscription::query())
                 ->whereBetween('created_at', [$start, $end])
                 ->where(function ($query) use ($end): void {
                     $query->whereNull('ends_at')
@@ -119,7 +120,7 @@ final class GatewayComparisonWidget extends ChartWidget
         if ($gateway === 'chip' && $detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
 
-            return $subscriptionModel::query()
+            return CashierOwnerScope::apply($subscriptionModel::query())
                 ->whereBetween('created_at', [$start, $end])
                 ->where(function ($query) use ($end): void {
                     $query->whereNull('ends_at')
