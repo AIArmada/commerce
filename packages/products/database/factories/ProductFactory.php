@@ -46,7 +46,7 @@ class ProductFactory extends Factory
         ];
 
         // Only include dimension columns if they exist in the table
-        $tableColumns = Schema::getColumnListing((new Product())->getTable());
+        $tableColumns = Schema::getColumnListing((new Product)->getTable());
         if (in_array('length', $tableColumns)) {
             $data['length'] = $this->faker->optional()->randomFloat(2, 1, 100);
         }
