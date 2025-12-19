@@ -24,7 +24,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
     public function test_command_runs_with_dry_run_option(): void
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        Subscription::factory()->for($user, 'owner')->create([
+        Subscription::factory()->for($user, 'customer')->create([
             'chip_status' => Subscription::STATUS_ACTIVE,
             'next_billing_at' => Carbon::now()->subDay(),
             'chip_price' => 'price_123',
@@ -38,7 +38,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
     {
         // Subscription with null owner should be skipped
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        Subscription::factory()->for($user, 'owner')->create([
+        Subscription::factory()->for($user, 'customer')->create([
             'chip_status' => Subscription::STATUS_ACTIVE,
             'next_billing_at' => Carbon::now()->subDay(),
         ]);
@@ -63,7 +63,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
         $token = $this->fakeChip->getFakeClient()->addRecurringToken($user->chip_id);
         $user->updateDefaultPaymentMethod($token['id']);
 
-        $subscription = Subscription::factory()->for($user, 'owner')->create([
+        $subscription = Subscription::factory()->for($user, 'customer')->create([
             'chip_status' => Subscription::STATUS_ACTIVE,
             'next_billing_at' => Carbon::now()->subDay(),
         ]);
@@ -90,7 +90,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
         /** @var User $user */
         $user = $this->createUser(['chip_id' => 'cli_123']);
 
-        $subscription = Subscription::factory()->for($user, 'owner')->create([
+        $subscription = Subscription::factory()->for($user, 'customer')->create([
             'chip_status' => Subscription::STATUS_ACTIVE,
             'next_billing_at' => Carbon::now()->subDay(),
         ]);
@@ -124,7 +124,7 @@ class RenewSubscriptionsCommandTest extends CashierChipTestCase
         $token = $this->fakeChip->getFakeClient()->addRecurringToken($user->chip_id);
         $user->updateDefaultPaymentMethod($token['id']);
 
-        $subscription = Subscription::factory()->for($user, 'owner')->create([
+        $subscription = Subscription::factory()->for($user, 'customer')->create([
             'chip_status' => Subscription::STATUS_ACTIVE,
             'next_billing_at' => Carbon::now()->subDay(),
         ]);

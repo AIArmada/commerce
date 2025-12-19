@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashierChip\Widgets;
 
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
+use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -16,26 +17,35 @@ final class AttentionRequiredWidget extends BaseWidget
 
     protected function getStats(): array
     {
+        /** @var class-string<Subscription> $subscriptionModel */
         $subscriptionModel = Cashier::$subscriptionModel;
 
-        $trialsEndingSoon = $subscriptionModel::whereNotNull('trial_ends_at')
-            ->where('trial_ends_at', '>=', now())
-            ->where('trial_ends_at', '<=', now()->addDays(3))
+        $now = now();
+        $inThreeDays = $now->copy()->addDays(3);
+
+        $trialsEndingSoon = CashierChipOwnerScope::apply($subscriptionModel::query())
+            ->whereNotNull('trial_ends_at')
+            ->where('trial_ends_at', '>=', $now)
+            ->where('trial_ends_at', '<=', $inThreeDays)
             ->where('chip_status', Subscription::STATUS_TRIALING)
             ->count();
 
-        $pastDue = $subscriptionModel::where('chip_status', Subscription::STATUS_PAST_DUE)
+        $pastDue = CashierChipOwnerScope::apply($subscriptionModel::query())
+            ->where('chip_status', Subscription::STATUS_PAST_DUE)
             ->count();
 
-        $gracePeriodEnding = $subscriptionModel::whereNotNull('ends_at')
-            ->where('ends_at', '>=', now())
-            ->where('ends_at', '<=', now()->addDays(3))
+        $gracePeriodEnding = CashierChipOwnerScope::apply($subscriptionModel::query())
+            ->whereNotNull('ends_at')
+            ->where('ends_at', '>=', $now)
+            ->where('ends_at', '<=', $inThreeDays)
             ->count();
 
-        $incomplete = $subscriptionModel::where('chip_status', Subscription::STATUS_INCOMPLETE)
+        $incomplete = CashierChipOwnerScope::apply($subscriptionModel::query())
+            ->where('chip_status', Subscription::STATUS_INCOMPLETE)
             ->count();
 
-        $unpaid = $subscriptionModel::where('chip_status', Subscription::STATUS_UNPAID)
+        $unpaid = CashierChipOwnerScope::apply($subscriptionModel::query())
+            ->where('chip_status', Subscription::STATUS_UNPAID)
             ->count();
 
         $totalAttention = $trialsEndingSoon + $pastDue + $gracePeriodEnding + $incomplete + $unpaid;

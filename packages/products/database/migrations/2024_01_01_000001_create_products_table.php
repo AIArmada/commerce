@@ -10,7 +10,8 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('products.tables.products', 'products'), function (Blueprint $table): void {
+        Schema::create(config('products.database.tables.products', 'products'), function (Blueprint $table): void {
+                $jsonColumnType = config('products.database.json_column_type', 'json');
             $table->uuid('id')->primary();
 
             // Owner (for multi-tenancy)
@@ -56,7 +57,7 @@ return new class extends Migration
             $table->string('tax_class')->nullable();
 
             // Metadata
-            $table->json('metadata')->nullable();
+                $table->{$jsonColumnType}('metadata')->nullable();
 
             // Publishing
             $table->timestamp('published_at')->nullable();
@@ -74,6 +75,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('products.tables.products', 'products'));
+            Schema::dropIfExists(config('products.database.tables.products', 'products'));
     }
 };

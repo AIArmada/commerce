@@ -9,9 +9,12 @@ use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Database\Factories\SubscriptionFactory;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Traits\HasOwner;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use DateTimeZone;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -48,7 +51,9 @@ use LogicException;
  * @property Carbon|null $coupon_applied_at
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
- * @property-read Model&BillableContract $owner
+ * @property string|null $owner_type
+ * @property string|null $owner_id
+ * @property-read Model&BillableContract $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, SubscriptionItem> $items
  *
  * @method static \Illuminate\Database\Eloquent\Builder<static> canceled()
@@ -62,6 +67,9 @@ class Subscription extends Model
     /** @use HasFactory<SubscriptionFactory> */
     use HasFactory;
 
+    use HasOwner {
+        scopeForOwner as private scopeForOwnerUsingTrait;
+    }
     use HasUuids;
     use InteractsWithPaymentBehavior;
     use Prorates;
@@ -107,17 +115,17 @@ class Subscription extends Model
      */
     public function user(): BelongsTo
     {
-        return $this->owner();
+        return $this->customer();
     }
 
     /**
-     * Get the model related to the subscription.
+     * Get the billable customer model related to the subscription.
      */
-    public function owner(): BelongsTo
+    public function customer(): BelongsTo
     {
         $model = Cashier::$customerModel;
 
-        return $this->belongsTo($model, (new $model)->getForeignKey());
+        return $this->belongsTo($model, 'user_id');
     }
 
     /**
@@ -126,6 +134,22 @@ class Subscription extends Model
     public function items(): HasMany
     {
         return $this->hasMany(Cashier::$subscriptionItemModel);
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    final public function scopeForOwner(Builder $query, ?Model $owner = null, ?bool $includeGlobal = null): Builder
+    {
+        if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+            return $query;
+        }
+
+        $owner ??= $this->resolveOwner();
+        $includeGlobal ??= (bool) config('cashier-chip.features.owner.include_global', false);
+
+        return $this->scopeForOwnerUsingTrait($query, $owner, $includeGlobal);
     }
 
     /**
@@ -527,6 +551,8 @@ class Subscription extends Model
                 $quantity = is_array($priceValue) ? ($priceValue['quantity'] ?? 1) : 1;
 
                 $this->items()->create([
+                    'owner_type' => $this->owner_type,
+                    'owner_id' => $this->owner_id,
                     'chip_id' => 'si_' . uniqid() . '_' . time(),
                     'chip_product' => $options['product'] ?? null,
                     'chip_price' => $price,
@@ -673,9 +699,9 @@ class Subscription extends Model
     {
         $amount = $amount ?? $this->calculateSubscriptionAmount();
 
-        $recurringTokenId = $this->owner->defaultPaymentMethod()?->id();
+        $recurringTokenId = $this->customer->defaultPaymentMethod()?->id();
 
-        return $this->owner->chargeWithRecurringToken(
+        return $this->customer->chargeWithRecurringToken(
             $amount,
             $recurringTokenId,
             [
@@ -689,7 +715,7 @@ class Subscription extends Model
      */
     public function recurringToken(): ?string
     {
-        return $this->recurring_token ?? $this->owner->defaultPaymentMethod()?->id();
+        return $this->recurring_token ?? $this->customer?->defaultPaymentMethod()?->id();
     }
 
     /**
@@ -735,7 +761,7 @@ class Subscription extends Model
             'amount' => $this->coupon_discount,
             'start' => $this->coupon_applied_at,
             'end' => $this->calculateDiscountEnd(),
-            'currency' => $this->owner->preferredCurrency(),
+            'currency' => $this->customer->preferredCurrency(),
         ]);
     }
 
@@ -846,6 +872,8 @@ class Subscription extends Model
         }
 
         $this->items()->create([
+            'owner_type' => $this->owner_type,
+            'owner_id' => $this->owner_id,
             'chip_id' => 'si_' . uniqid() . '_' . time(),
             'chip_product' => $options['product'] ?? null,
             'chip_price' => $price,
@@ -1014,9 +1042,55 @@ class Subscription extends Model
      */
     protected static function booted(): void
     {
+        static::creating(function (self $subscription): void {
+            if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+                return;
+            }
+
+            if (! (bool) config('cashier-chip.features.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            if ($subscription->hasOwner()) {
+                return;
+            }
+
+            $owner = $subscription->resolveOwner();
+
+            if ($owner === null) {
+                return;
+            }
+
+            if ($subscription->user_id !== null) {
+                /** @var class-string<Model> $customerModel */
+                $customerModel = Cashier::$customerModel;
+
+                if (method_exists($customerModel, 'scopeForOwner')) {
+                    $exists = $customerModel::forOwner($owner, false)
+                        ->whereKey($subscription->user_id)
+                        ->exists();
+
+                    if (! $exists) {
+                        throw new AuthorizationException('Cross-tenant subscription write blocked.');
+                    }
+                }
+            }
+
+            $subscription->assignOwner($owner);
+        });
+
         static::deleting(function (Subscription $subscription): void {
             $subscription->items()->delete();
         });
+    }
+
+    protected function resolveOwner(): ?Model
+    {
+        if (! app()->bound(OwnerResolverInterface::class)) {
+            return null;
+        }
+
+        return app(OwnerResolverInterface::class)->resolve();
     }
 
     /**
@@ -1099,14 +1173,14 @@ class Subscription extends Model
         /** @var \AIArmada\Vouchers\Services\VoucherService $service */
         $service = app(\AIArmada\Vouchers\Services\VoucherService::class);
 
-        $currency = $this->owner->preferredCurrency();
+        $currency = $this->customer->preferredCurrency();
 
         $service->recordUsage(
             code: $couponId,
             discountAmount: \Akaunting\Money\Money::$currency($discountAmount),
             channel: 'subscription',
             metadata: ['subscription_id' => $this->id],
-            redeemedBy: $this->owner,
+            redeemedBy: $this->customer,
         );
     }
 

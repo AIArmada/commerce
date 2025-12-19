@@ -7,6 +7,9 @@ namespace AIArmada\Docs\Services;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Models\DocEmailTemplate;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Crypt;
+use Throwable;
 
 /**
  * Document email service for sending and tracking emails.
@@ -26,7 +29,7 @@ final class DocEmailService
         array $variables = [],
     ): DocEmail {
         // Find template if not provided
-        $template ??= $this->findTemplate($doc->doc_type, 'send');
+        $template ??= $this->findTemplate($doc, 'send');
 
         // Build variables for template
         $templateVars = $this->buildVariables($doc, $variables);
@@ -58,7 +61,7 @@ final class DocEmailService
      */
     public function sendReminder(Doc $doc, string $recipientEmail): DocEmail
     {
-        $template = $this->findTemplate($doc->doc_type, 'reminder');
+        $template = $this->findTemplate($doc, 'reminder');
 
         return $this->send($doc, $recipientEmail, null, $template, [
             'days_overdue' => $doc->due_date?->diffInDays(now()),
@@ -68,13 +71,42 @@ final class DocEmailService
     /**
      * Find a template for a document type and trigger.
      */
-    public function findTemplate(string $docType, string $trigger): ?DocEmailTemplate
+    public function findTemplate(Doc $doc, string $trigger): ?DocEmailTemplate
     {
-        return DocEmailTemplate::query()
-            ->where('doc_type', $docType)
+        return $this->getTemplateQueryForDoc($doc)
+            ->where('doc_type', $doc->doc_type)
             ->where('trigger', $trigger)
             ->where('is_active', true)
             ->first();
+    }
+
+    /**
+     * @return Builder<DocEmailTemplate>
+     */
+    private function getTemplateQueryForDoc(Doc $doc): Builder
+    {
+        $query = DocEmailTemplate::query();
+
+        if (! config('docs.owner.enabled', false)) {
+            return $query;
+        }
+
+        $includeGlobal = (bool) config('docs.owner.include_global', true);
+
+        if ($doc->owner_type !== null && $doc->owner_id !== null) {
+            return $query->where(function (Builder $builder) use ($doc, $includeGlobal): void {
+                $builder->where('owner_type', $doc->owner_type)
+                    ->where('owner_id', $doc->owner_id);
+
+                if ($includeGlobal) {
+                    $builder->orWhere(function (Builder $inner): void {
+                        $inner->whereNull('owner_type')->whereNull('owner_id');
+                    });
+                }
+            });
+        }
+
+        return $query->whereNull('owner_type')->whereNull('owner_id');
     }
 
     /**
@@ -196,7 +228,13 @@ final class DocEmailService
             'url' => $url,
         ];
 
-        return base64_encode(json_encode($data) ?: '');
+        $payload = json_encode($data);
+
+        if ($payload === false) {
+            return '';
+        }
+
+        return Crypt::encryptString($payload);
     }
 
     /**
@@ -206,13 +244,15 @@ final class DocEmailService
      */
     private function decodeTrackingToken(string $token): ?array
     {
-        $decoded = base64_decode($token, true);
+        try {
+            $payload = Crypt::decryptString($token);
 
-        if (! $decoded) {
+            /** @var array<string, mixed>|null $decoded */
+            $decoded = json_decode($payload, true);
+
+            return is_array($decoded) ? $decoded : null;
+        } catch (Throwable) {
             return null;
         }
-
-        /** @var array<string, mixed>|null */
-        return json_decode($decoded, true);
     }
 }

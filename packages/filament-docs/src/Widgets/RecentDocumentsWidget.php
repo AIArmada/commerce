@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Widgets;
 
 use AIArmada\Docs\Models\Doc;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Actions\Action;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
@@ -25,7 +26,7 @@ final class RecentDocumentsWidget extends BaseWidget
     {
         return $table
             ->query(
-                Doc::query()
+                DocsOwnerScope::applyToDocs(Doc::query())
                     ->latest()
                     ->limit(10)
             )

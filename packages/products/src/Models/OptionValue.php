@@ -48,7 +48,10 @@ class OptionValue extends Model
 
     public function getTable(): string
     {
-        return config('products.tables.option_values', 'product_option_values');
+        $tables = config('products.database.tables', []);
+        $prefix = config('products.database.table_prefix', 'product_');
+
+        return $tables['option_values'] ?? $prefix . 'option_values';
     }
 
     // =========================================================================
@@ -74,7 +77,7 @@ class OptionValue extends Model
     {
         return $this->belongsToMany(
             Variant::class,
-            config('products.tables.variant_options', 'product_variant_options'),
+            config('products.database.tables.variant_options', 'product_variant_options'),
             'option_value_id',
             'variant_id'
         );

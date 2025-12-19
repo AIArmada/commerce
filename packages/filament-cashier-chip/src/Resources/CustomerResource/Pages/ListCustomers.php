@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashierChip\Resources\CustomerResource\Pages;
 
 use AIArmada\CashierChip\Cashier;
 use AIArmada\FilamentCashierChip\Resources\CustomerResource;
+use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
@@ -41,7 +42,9 @@ final class ListCustomers extends ListRecords
                 ->modalDescription('This will create or update all customers in Chip that are not yet linked. This may take some time.')
                 ->action(function (): void {
                     $model = Cashier::$customerModel;
-                    $customers = $model::whereNull('chip_id')->get();
+                    $customers = CashierChipOwnerScope::apply($model::query())
+                        ->whereNull('chip_id')
+                        ->get();
                     $synced = 0;
                     $failed = 0;
 

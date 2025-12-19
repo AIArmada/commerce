@@ -261,7 +261,7 @@ final class InvoiceInfolist
             return null;
         }
 
-        $currency = $currency ?? config('filament-cashier-chip.currency', 'MYR');
+        $currency = $currency ?? config('cashier-chip.currency', 'MYR');
         $precision = (int) config('filament-cashier-chip.tables.amount_precision', 2);
         $value = $amount / 100;
 

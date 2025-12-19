@@ -62,9 +62,10 @@ trait FormatsSubscriptionStatus
 
     protected static function formatAmount(int $amount): string
     {
-        $currency = config('filament-cashier-chip.currency', 'MYR');
+        $currency = config('cashier-chip.currency', 'MYR');
+        $precision = (int) config('filament-cashier-chip.tables.amount_precision', 2);
         $value = $amount / 100;
 
-        return mb_strtoupper($currency) . ' ' . number_format($value, 2, '.', ',');
+        return mb_strtoupper($currency) . ' ' . number_format($value, $precision, '.', ',');
     }
 }

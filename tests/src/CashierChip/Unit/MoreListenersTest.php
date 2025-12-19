@@ -64,7 +64,7 @@ class MoreListenersTest extends CashierChipTestCase
     public function test_handle_purchase_payment_failure_marks_subscription_past_due(): void
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        $subscription = Subscription::factory()->for($user, 'owner')->create([
+        $subscription = Subscription::factory()->for($user, 'customer')->create([
             'type' => 'default',
             'chip_status' => Subscription::STATUS_ACTIVE,
         ]);
@@ -152,7 +152,7 @@ class MoreListenersTest extends CashierChipTestCase
         Event::fake([SubscriptionRenewalFailed::class]);
 
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        $subscription = Subscription::factory()->for($user, 'owner')->create([
+        $subscription = Subscription::factory()->for($user, 'customer')->create([
             'type' => 'default',
             'chip_status' => Subscription::STATUS_ACTIVE,
         ]);
@@ -179,7 +179,7 @@ class MoreListenersTest extends CashierChipTestCase
     public function test_handle_subscription_charge_failure_marks_past_due(): void
     {
         $user = $this->createUser(['chip_id' => 'cli_123']);
-        $subscription = Subscription::factory()->for($user, 'owner')->create([
+        $subscription = Subscription::factory()->for($user, 'customer')->create([
             'type' => 'default',
             'chip_status' => Subscription::STATUS_ACTIVE,
         ]);

@@ -9,6 +9,7 @@ use AIArmada\FilamentCashierChip\Resources\CustomerResource;
 use AIArmada\FilamentCashierChip\Resources\InvoiceResource;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
 use AIArmada\FilamentCashierChip\Widgets\ActiveSubscribersWidget;
+use AIArmada\FilamentCashierChip\Widgets\AttentionRequiredWidget;
 use AIArmada\FilamentCashierChip\Widgets\ChurnRateWidget;
 use AIArmada\FilamentCashierChip\Widgets\MRRWidget;
 use AIArmada\FilamentCashierChip\Widgets\RevenueChartWidget;
@@ -124,22 +125,25 @@ final class FilamentCashierChipPlugin implements Plugin
         }
 
         if ($this->hasDashboardWidgets && config('filament-cashier-chip.features.dashboard_widgets', true)) {
-            if (config('filament-cashier-chip.dashboard.widgets.mrr', true)) {
+            if (config('filament-cashier-chip.features.dashboard.widgets.mrr', true)) {
                 $widgets[] = MRRWidget::class;
             }
-            if (config('filament-cashier-chip.dashboard.widgets.active_subscribers', true)) {
+            if (config('filament-cashier-chip.features.dashboard.widgets.active_subscribers', true)) {
                 $widgets[] = ActiveSubscribersWidget::class;
             }
-            if (config('filament-cashier-chip.dashboard.widgets.churn_rate', true)) {
+            if (config('filament-cashier-chip.features.dashboard.widgets.churn_rate', true)) {
                 $widgets[] = ChurnRateWidget::class;
             }
-            if (config('filament-cashier-chip.dashboard.widgets.revenue_chart', true)) {
+            if (config('filament-cashier-chip.features.dashboard.widgets.attention_required', true)) {
+                $widgets[] = AttentionRequiredWidget::class;
+            }
+            if (config('filament-cashier-chip.features.dashboard.widgets.revenue_chart', true)) {
                 $widgets[] = RevenueChartWidget::class;
             }
-            if (config('filament-cashier-chip.dashboard.widgets.subscription_distribution', true)) {
+            if (config('filament-cashier-chip.features.dashboard.widgets.subscription_distribution', true)) {
                 $widgets[] = SubscriptionDistributionWidget::class;
             }
-            if (config('filament-cashier-chip.dashboard.widgets.trial_conversions', true)) {
+            if (config('filament-cashier-chip.features.dashboard.widgets.trial_conversions', true)) {
                 $widgets[] = TrialConversionsWidget::class;
             }
         }

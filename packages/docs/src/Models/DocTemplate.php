@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
-use Illuminate\Database\Eloquent\Attributes\Scope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -105,19 +104,19 @@ final class DocTemplate extends Model
     }
 
     /**
-     * Scope to get default template
+     * Scope to default templates.
      *
      * @param  Builder<DocTemplate>  $query
+     * @return Builder<DocTemplate>
      */
-    #[Scope]
-    protected function default($query, ?string $docType = null): ?self
+    public function scopeDefault(Builder $query, ?string $docType = null): Builder
     {
-        $query = $query->where('is_default', true);
+        $query->where('is_default', true);
 
         if ($docType) {
             $query->where('doc_type', $docType);
         }
 
-        return $query->first();
+        return $query;
     }
 }

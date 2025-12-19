@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('products.tables.variant_options', 'product_variant_options'), function (Blueprint $table): void {
+        Schema::create(config('products.database.tables.variant_options', 'product_variant_options'), function (Blueprint $table): void {
             $table->foreignUuid('variant_id');
 
             $table->foreignUuid('option_value_id');
@@ -21,6 +21,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('products.tables.variant_options', 'product_variant_options'));
+        Schema::dropIfExists(config('products.database.tables.variant_options', 'product_variant_options'));
     }
 };

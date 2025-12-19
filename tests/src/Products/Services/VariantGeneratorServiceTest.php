@@ -130,7 +130,7 @@ describe('VariantGeneratorService', function (): void {
         });
 
         it('throws exception when too many combinations', function (): void {
-            config(['products.variants.max_combinations' => 2]);
+            config(['products.features.variants.max_combinations' => 2]);
 
             $product = Product::create([
                 'name' => 'Too Many Options Product',

@@ -7,9 +7,9 @@ namespace AIArmada\FilamentProducts\Resources;
 use AIArmada\FilamentProducts\Resources\CategoryResource\Pages;
 use AIArmada\Products\Models\Category;
 use BackedEnum;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
@@ -130,20 +130,29 @@ class CategoryResource extends Resource
 
                         Section::make('Media')
                             ->schema([
-                                FileUpload::make('hero_image')
+                                SpatieMediaLibraryFileUpload::make('hero')
                                     ->label('Hero Image')
+                                    ->collection('hero')
                                     ->image()
-                                    ->imageEditor(),
+                                    ->imageEditor()
+                                    ->acceptedFileTypes(config('products.media.collections.hero.mimes', []))
+                                    ->maxFiles((int) config('products.media.collections.hero.limit', 1)),
 
-                                FileUpload::make('icon_image')
+                                SpatieMediaLibraryFileUpload::make('icon')
                                     ->label('Icon Image')
+                                    ->collection('icon')
                                     ->image()
-                                    ->imageEditor(),
+                                    ->imageEditor()
+                                    ->acceptedFileTypes(config('products.media.collections.icon.mimes', []))
+                                    ->maxFiles((int) config('products.media.collections.icon.limit', 1)),
 
-                                FileUpload::make('banner_image')
+                                SpatieMediaLibraryFileUpload::make('banner')
                                     ->label('Banner Image')
+                                    ->collection('banner')
                                     ->image()
-                                    ->imageEditor(),
+                                    ->imageEditor()
+                                    ->acceptedFileTypes(config('products.media.collections.banner.mimes', []))
+                                    ->maxFiles((int) config('products.media.collections.banner.limit', 1)),
                             ]),
                     ])
                     ->columnSpan(['lg' => 1]),

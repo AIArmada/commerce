@@ -114,8 +114,12 @@ test('it finds correct template for doc type and trigger', function (): void {
 
     $emailService = app(DocEmailService::class);
 
-    $sendTemplate = $emailService->findTemplate(DocType::Invoice->value, 'send');
-    $reminderTemplate = $emailService->findTemplate(DocType::Invoice->value, 'reminder');
+    $doc = Doc::factory()->create([
+        'doc_type' => DocType::Invoice->value,
+    ]);
+
+    $sendTemplate = $emailService->findTemplate($doc, 'send');
+    $reminderTemplate = $emailService->findTemplate($doc, 'reminder');
 
     expect($sendTemplate->name)->toBe('Invoice Send')
         ->and($reminderTemplate->name)->toBe('Invoice Reminder');
@@ -124,7 +128,11 @@ test('it finds correct template for doc type and trigger', function (): void {
 test('it returns null for non-existent template', function (): void {
     $emailService = app(DocEmailService::class);
 
-    $template = $emailService->findTemplate('non_existent', 'send');
+    $doc = Doc::factory()->create([
+        'doc_type' => 'non_existent',
+    ]);
+
+    $template = $emailService->findTemplate($doc, 'send');
 
     expect($template)->toBeNull();
 });
@@ -142,7 +150,11 @@ test('it ignores inactive templates', function (): void {
 
     $emailService = app(DocEmailService::class);
 
-    $template = $emailService->findTemplate(DocType::Invoice->value, 'send');
+    $doc = Doc::factory()->create([
+        'doc_type' => DocType::Invoice->value,
+    ]);
+
+    $template = $emailService->findTemplate($doc, 'send');
 
     expect($template)->toBeNull();
 });

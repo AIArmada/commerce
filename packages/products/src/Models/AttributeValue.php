@@ -32,7 +32,10 @@ class AttributeValue extends Model
 
     public function getTable(): string
     {
-        return config('products.tables.attribute_values', 'product_attribute_values');
+        $tables = config('products.database.tables', []);
+        $prefix = config('products.database.table_prefix', 'product_');
+
+        return $tables['attribute_values'] ?? $prefix . 'attribute_values';
     }
 
     /**

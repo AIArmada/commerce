@@ -11,9 +11,9 @@ use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
 use AIArmada\Products\Models\Product;
 use BackedEnum;
-use Filament\Forms\Components\FileUpload;
 use Filament\Forms\Components\MarkdownEditor;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TagsInput;
 use Filament\Forms\Components\Textarea;
 use Filament\Forms\Components\TextInput;
@@ -226,18 +226,23 @@ class ProductResource extends Resource
 
                         Section::make('Media')
                             ->schema([
-                                FileUpload::make('hero_image')
+                                SpatieMediaLibraryFileUpload::make('hero')
                                     ->label('Featured Image')
+                                    ->collection('hero')
                                     ->image()
-                                    ->imageEditor(),
+                                    ->imageEditor()
+                                    ->acceptedFileTypes(config('products.media.collections.hero.mimes', []))
+                                    ->maxFiles((int) config('products.media.collections.hero.limit', 1)),
 
-                                FileUpload::make('gallery_images')
+                                SpatieMediaLibraryFileUpload::make('gallery')
                                     ->label('Gallery')
+                                    ->collection('gallery')
                                     ->image()
                                     ->multiple()
                                     ->reorderable()
                                     ->imageEditor()
-                                    ->maxFiles(20),
+                                    ->acceptedFileTypes(config('products.media.collections.gallery.mimes', []))
+                                    ->maxFiles((int) config('products.media.collections.gallery.limit', 20)),
                             ]),
 
                         Section::make('Organization')
@@ -272,7 +277,9 @@ class ProductResource extends Resource
     {
         return $table
             ->columns([
-                Tables\Columns\ImageColumn::make('hero_image')
+                Tables\Columns\SpatieMediaLibraryImageColumn::make('hero')
+                    ->collection('hero')
+                    ->conversion('thumbnail')
                     ->circular()
                     ->size(40),
 

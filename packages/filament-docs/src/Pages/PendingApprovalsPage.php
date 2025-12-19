@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Pages;
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
 use BackedEnum;
@@ -18,6 +19,7 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 
 class PendingApprovalsPage extends Page implements HasTable
@@ -40,7 +42,7 @@ class PendingApprovalsPage extends Page implements HasTable
 
     public static function getNavigationSort(): ?int
     {
-        return config('filament-docs.navigation.sort', 1) + 5;
+        return config('filament-docs.resources.navigation_sort.pending_approvals', 15);
     }
 
     public static function getNavigationBadge(): ?string
@@ -63,10 +65,14 @@ class PendingApprovalsPage extends Page implements HasTable
             return 0;
         }
 
-        return DocApproval::query()
+        $query = DocApproval::query()
             ->where('assigned_to', $userId)
             ->where('status', 'pending')
-            ->count();
+            ->whereHas('doc', function (Builder $docQuery): void {
+                self::applyDocOwnerScope($docQuery);
+            });
+
+        return $query->count();
     }
 
     public function getTitle(): string | Htmlable
@@ -118,6 +124,9 @@ class PendingApprovalsPage extends Page implements HasTable
                 SelectFilter::make('doc_type')
                     ->label(__('Document Type'))
                     ->options(fn (): array => Doc::query()
+                        ->tap(function (Builder $query): void {
+                            self::applyDocOwnerScope($query);
+                        })
                         ->distinct()
                         ->pluck('doc_type', 'doc_type')
                         ->toArray()),
@@ -134,6 +143,8 @@ class PendingApprovalsPage extends Page implements HasTable
                             ->rows(3),
                     ])
                     ->action(function (DocApproval $record, array $data): void {
+                        self::assertCanActOnApproval($record);
+
                         $record->update([
                             'status' => 'approved',
                             'approved_at' => now(),
@@ -158,6 +169,8 @@ class PendingApprovalsPage extends Page implements HasTable
                             ->rows(3),
                     ])
                     ->action(function (DocApproval $record, array $data): void {
+                        self::assertCanActOnApproval($record);
+
                         $record->update([
                             'status' => 'rejected',
                             'rejected_at' => now(),
@@ -188,10 +201,18 @@ class PendingApprovalsPage extends Page implements HasTable
     {
         $userId = Auth::id();
 
-        return DocApproval::query()
+        if (! $userId) {
+            return DocApproval::query()->whereRaw('1 = 0');
+        }
+
+        $query = DocApproval::query()
             ->with(['doc', 'requestedBy'])
             ->where('assigned_to', $userId)
             ->where('status', 'pending');
+
+        return $query->whereHas('doc', function (Builder $docQuery): void {
+            self::applyDocOwnerScope($docQuery);
+        });
     }
 
     /**
@@ -205,5 +226,51 @@ class PendingApprovalsPage extends Page implements HasTable
                 ->icon('heroicon-o-arrow-path')
                 ->action(fn () => $this->resetTable()),
         ];
+    }
+
+    private static function applyDocOwnerScope(Builder $query): void
+    {
+        if (! config('docs.owner.enabled', false)) {
+            return;
+        }
+
+        /** @var Model|null $owner */
+        $owner = app(OwnerResolverInterface::class)->resolve();
+        $includeGlobal = (bool) config('docs.owner.include_global', true);
+
+        if ($owner === null) {
+            $query->whereNull('owner_type')->whereNull('owner_id');
+
+            return;
+        }
+
+        $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
+            $builder->where('owner_type', $owner->getMorphClass())
+                ->where('owner_id', $owner->getKey());
+
+            if ($includeGlobal) {
+                $builder->orWhere(function (Builder $inner): void {
+                    $inner->whereNull('owner_type')->whereNull('owner_id');
+                });
+            }
+        });
+    }
+
+    private static function assertCanActOnApproval(DocApproval $approval): void
+    {
+        $userId = Auth::id();
+
+        abort_unless($userId !== null, 403);
+        abort_unless((string) $approval->assigned_to === (string) $userId, 403);
+        abort_unless($approval->status === 'pending', 403);
+
+        $exists = Doc::query()
+            ->whereKey($approval->doc_id)
+            ->tap(function (Builder $query): void {
+                self::applyDocOwnerScope($query);
+            })
+            ->exists();
+
+        abort_unless($exists, 404);
     }
 }

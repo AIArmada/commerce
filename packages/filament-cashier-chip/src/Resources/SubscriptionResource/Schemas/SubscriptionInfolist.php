@@ -75,18 +75,18 @@ final class SubscriptionInfolist
                 ->schema([
                     Grid::make(3)
                         ->schema([
-                            TextEntry::make('owner.name')
+                            TextEntry::make('customer.name')
                                 ->label('Name')
                                 ->icon(Heroicon::OutlinedUser)
                                 ->placeholder('—'),
 
-                            TextEntry::make('owner.email')
+                            TextEntry::make('customer.email')
                                 ->label('Email')
                                 ->icon(Heroicon::OutlinedEnvelope)
                                 ->copyable()
                                 ->placeholder('—'),
 
-                            TextEntry::make('owner.chip_id')
+                            TextEntry::make('customer.chip_id')
                                 ->label('Chip Customer ID')
                                 ->copyable()
                                 ->placeholder('Not linked'),

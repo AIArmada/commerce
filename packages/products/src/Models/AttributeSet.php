@@ -47,7 +47,10 @@ class AttributeSet extends Model
 
     public function getTable(): string
     {
-        return config('products.tables.attribute_sets', 'product_attribute_sets');
+        $tables = config('products.database.tables', []);
+        $prefix = config('products.database.table_prefix', 'product_');
+
+        return $tables['attribute_sets'] ?? $prefix . 'attribute_sets';
     }
 
     /**
@@ -56,7 +59,7 @@ class AttributeSet extends Model
      */
     public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
     {
-        if (! (bool) config('products.owner.enabled', true)) {
+        if (! (bool) config('products.features.owner.enabled', true)) {
             return $query;
         }
 
@@ -64,7 +67,7 @@ class AttributeSet extends Model
             $owner = app(OwnerResolverInterface::class)->resolve();
         }
 
-        $includeGlobal = $includeGlobal && (bool) config('products.owner.include_global', true);
+        $includeGlobal = $includeGlobal && (bool) config('products.features.owner.include_global', true);
 
         /** @var Builder<AttributeSet> $scoped */
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
@@ -81,7 +84,7 @@ class AttributeSet extends Model
     {
         return $this->belongsToMany(
             Attribute::class,
-            config('products.tables.attribute_attribute_set', 'attribute_attribute_set'),
+            config('products.database.tables.attribute_attribute_set', 'attribute_attribute_set'),
             'attribute_set_id',
             'attribute_id'
         )->withPivot('position')->orderByPivot('position')->withTimestamps();
@@ -96,7 +99,7 @@ class AttributeSet extends Model
     {
         return $this->belongsToMany(
             AttributeGroup::class,
-            config('products.tables.attribute_group_attribute_set', 'attribute_group_attribute_set'),
+            config('products.database.tables.attribute_group_attribute_set', 'attribute_group_attribute_set'),
             'attribute_set_id',
             'attribute_group_id'
         )->withPivot('position')->orderByPivot('position')->withTimestamps();
@@ -165,11 +168,11 @@ class AttributeSet extends Model
     protected static function booted(): void
     {
         static::creating(function (AttributeSet $set): void {
-            if (! (bool) config('products.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', true)) {
                 return;
             }
 
-            if (! (bool) config('products.owner.auto_assign_on_create', true)) {
+            if (! (bool) config('products.features.owner.auto_assign_on_create', true)) {
                 return;
             }
 

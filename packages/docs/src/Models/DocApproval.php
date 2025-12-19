@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Foundation\Auth\User as FoundationUser;
 use Illuminate\Support\Carbon;
 
 /**
@@ -25,6 +26,8 @@ use Illuminate\Support\Carbon;
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * @property-read Doc $doc
+ * @property-read Model $requestedBy
+ * @property-read Model|null $assignedTo
  */
 final class DocApproval extends Model
 {
@@ -53,6 +56,22 @@ final class DocApproval extends Model
     public function doc(): BelongsTo
     {
         return $this->belongsTo(Doc::class);
+    }
+
+    /**
+     * @return BelongsTo<Model, $this>
+     */
+    public function requestedBy(): BelongsTo
+    {
+        return $this->belongsTo($this->resolveUserModelClass(), 'requested_by');
+    }
+
+    /**
+     * @return BelongsTo<Model, $this>
+     */
+    public function assignedTo(): BelongsTo
+    {
+        return $this->belongsTo($this->resolveUserModelClass(), 'assigned_to');
     }
 
     public function isPending(): bool
@@ -103,5 +122,20 @@ final class DocApproval extends Model
             'rejected_at' => 'datetime',
             'expires_at' => 'datetime',
         ];
+    }
+
+    /**
+     * @return class-string<Model>
+     */
+    private function resolveUserModelClass(): string
+    {
+        $configured = config('auth.providers.users.model');
+
+        if (is_string($configured) && class_exists($configured)) {
+            /** @var class-string<Model> $configured */
+            return $configured;
+        }
+
+        return FoundationUser::class;
     }
 }

@@ -75,7 +75,10 @@ class Collection extends Model implements HasMedia
 
     public function getTable(): string
     {
-        return config('products.tables.collections', 'product_collections');
+        $tables = config('products.database.tables', []);
+        $prefix = config('products.database.table_prefix', 'product_');
+
+        return $tables['collections'] ?? $prefix . 'collections';
     }
 
     /**
@@ -84,7 +87,7 @@ class Collection extends Model implements HasMedia
      */
     public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
     {
-        if (! (bool) config('products.owner.enabled', true)) {
+        if (! (bool) config('products.features.owner.enabled', true)) {
             return $query;
         }
 
@@ -92,7 +95,7 @@ class Collection extends Model implements HasMedia
             $owner = app(OwnerResolverInterface::class)->resolve();
         }
 
-        $includeGlobal = $includeGlobal && (bool) config('products.owner.include_global', true);
+        $includeGlobal = $includeGlobal && (bool) config('products.features.owner.include_global', true);
 
         /** @var Builder<Collection> $scoped */
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
@@ -113,7 +116,7 @@ class Collection extends Model implements HasMedia
     {
         $relation = $this->belongsToMany(
             Product::class,
-            config('products.tables.collection_product', 'collection_product'),
+            config('products.database.tables.collection_product', 'collection_product'),
             'collection_id',
             'product_id'
         )->withTimestamps()->withPivot('position');
@@ -297,11 +300,11 @@ class Collection extends Model implements HasMedia
     protected static function booted(): void
     {
         static::creating(function (Collection $collection): void {
-            if (! (bool) config('products.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', true)) {
                 return;
             }
 
-            if (! (bool) config('products.owner.auto_assign_on_create', true)) {
+            if (! (bool) config('products.features.owner.auto_assign_on_create', true)) {
                 return;
             }
 
@@ -363,7 +366,7 @@ class Collection extends Model implements HasMedia
      */
     protected function applyOwnerScopeToProductsQuery(Builder $query): void
     {
-        if (! (bool) config('products.owner.enabled', true)) {
+        if (! (bool) config('products.features.owner.enabled', true)) {
             return;
         }
 
@@ -375,7 +378,7 @@ class Collection extends Model implements HasMedia
 
         $ownerType = $this->owner_type;
         $ownerId = $this->owner_id;
-        $includeGlobal = (bool) config('products.owner.include_global', true);
+        $includeGlobal = (bool) config('products.features.owner.include_global', true);
 
         $query->where(function (Builder $builder) use ($ownerType, $ownerId, $includeGlobal): void {
             $builder->where('owner_type', $ownerType)

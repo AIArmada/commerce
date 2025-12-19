@@ -30,7 +30,7 @@ return new class extends Migration
         if (! Schema::hasColumn($docsTable, 'owner_type')) {
             Schema::table($docsTable, function (Blueprint $table): void {
                 $table->string('owner_type')->nullable()->after('id')->index();
-                $table->string('owner_id')->nullable()->after('owner_type')->index();
+                $table->uuid('owner_id')->nullable()->after('owner_type')->index();
             });
         }
 
@@ -38,7 +38,7 @@ return new class extends Migration
         if (! Schema::hasColumn($templatesTable, 'owner_type')) {
             Schema::table($templatesTable, function (Blueprint $table) use ($templatesTable): void {
                 $table->string('owner_type')->nullable()->after('id')->index();
-                $table->string('owner_id')->nullable()->after('owner_type')->index();
+                $table->uuid('owner_id')->nullable()->after('owner_type')->index();
 
                 $table->dropUnique($templatesTable . '_slug_unique');
                 $table->unique(['owner_type', 'owner_id', 'slug'], $templatesTable . '_owner_slug_unique');

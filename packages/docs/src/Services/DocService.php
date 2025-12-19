@@ -26,6 +26,11 @@ class DocService
         return $this->numberRegistry->generate($docType);
     }
 
+    public function resolveStorageDiskForDocType(string $docType): string
+    {
+        return $this->resolveStorageDisk($docType);
+    }
+
     public function createDoc(DocData $data): Doc
     {
         $docType = $data->docType ?? 'invoice';
@@ -40,6 +45,12 @@ class DocService
         $template = null;
         if ($data->docTemplateId) {
             $template = $this->getTemplateQuery()->find($data->docTemplateId);
+
+            if (! $template) {
+                throw \Illuminate\Validation\ValidationException::withMessages([
+                    'doc_template_id' => __('Invalid template selection.'),
+                ]);
+            }
         } elseif ($data->templateSlug) {
             $template = $this->getTemplateQuery()->where('slug', $data->templateSlug)->first();
         }
@@ -123,7 +134,7 @@ class DocService
         $doc->loadMissing('docable');
 
         $docType = $doc->doc_type ?? 'invoice';
-        $template = $doc->template ?? $this->getTemplateQuery()
+        $template = $doc->template ?? $this->getTemplateQueryForDoc($doc)
             ->where('is_default', true)
             ->where('doc_type', $docType)
             ->first();
@@ -184,6 +195,37 @@ class DocService
         }
 
         return $pdf->getBrowsershot()->pdf();
+    }
+
+    /**
+     * Get template query builder scoped to the document's owner columns.
+     *
+     * @return Builder<DocTemplate>
+     */
+    protected function getTemplateQueryForDoc(Doc $doc): Builder
+    {
+        $query = DocTemplate::query();
+
+        if (! config('docs.owner.enabled', false)) {
+            return $query;
+        }
+
+        $includeGlobal = (bool) config('docs.owner.include_global', true);
+
+        if ($doc->owner_type !== null && $doc->owner_id !== null) {
+            return $query->where(function (Builder $builder) use ($doc, $includeGlobal): void {
+                $builder->where('owner_type', $doc->owner_type)
+                    ->where('owner_id', $doc->owner_id);
+
+                if ($includeGlobal) {
+                    $builder->orWhere(function (Builder $inner): void {
+                        $inner->whereNull('owner_type')->whereNull('owner_id');
+                    });
+                }
+            });
+        }
+
+        return $query->whereNull('owner_type')->whereNull('owner_id');
     }
 
     public function downloadPdf(Doc $doc): string

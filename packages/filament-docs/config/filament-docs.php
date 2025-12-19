@@ -8,13 +8,9 @@ return [
     | Navigation
     |--------------------------------------------------------------------------
     */
-    'navigation_group' => 'Documents',
-
-    'resources' => [
-        'navigation_sort' => [
-            'documents' => 10,
-            'document_templates' => 20,
-        ],
+    'navigation' => [
+        'group' => 'Documents',
+        'sort' => 1,
     ],
 
     /*
@@ -22,9 +18,33 @@ return [
     | Tables
     |--------------------------------------------------------------------------
     */
-    'polling_interval' => '30s',
-
     'tables' => [
+        'polling_interval' => '30s',
         'date_format' => 'Y-m-d H:i:s',
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Features
+    |--------------------------------------------------------------------------
+    */
+    'features' => [
+        'auto_generate_pdf' => true,
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Resources
+    |--------------------------------------------------------------------------
+    */
+    'resources' => [
+        'navigation_sort' => [
+            'docs' => 10,
+            'doc_templates' => 20,
+            'sequences' => 90,
+            'email_templates' => 91,
+            'pending_approvals' => 15,
+            'aging_report' => 100,
+        ],
     ],
 ];

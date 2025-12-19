@@ -72,7 +72,10 @@ class Category extends Model implements HasMedia
 
     public function getTable(): string
     {
-        return config('products.tables.categories', 'product_categories');
+        $tables = config('products.database.tables', []);
+        $prefix = config('products.database.table_prefix', 'product_');
+
+        return $tables['categories'] ?? $prefix . 'categories';
     }
 
     /**
@@ -81,7 +84,7 @@ class Category extends Model implements HasMedia
      */
     public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
     {
-        if (! (bool) config('products.owner.enabled', true)) {
+        if (! (bool) config('products.features.owner.enabled', true)) {
             return $query;
         }
 
@@ -89,7 +92,7 @@ class Category extends Model implements HasMedia
             $owner = app(OwnerResolverInterface::class)->resolve();
         }
 
-        $includeGlobal = $includeGlobal && (bool) config('products.owner.include_global', true);
+        $includeGlobal = $includeGlobal && (bool) config('products.features.owner.include_global', true);
 
         /** @var Builder<Category> $scoped */
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
@@ -140,7 +143,7 @@ class Category extends Model implements HasMedia
     {
         $relation = $this->belongsToMany(
             Product::class,
-            config('products.tables.category_product', 'category_product'),
+            config('products.database.tables.category_product', 'category_product'),
             'category_id',
             'product_id'
         )->withTimestamps();
@@ -157,7 +160,7 @@ class Category extends Model implements HasMedia
      */
     protected function applyOwnerScopeToProductsQuery(Builder $query): void
     {
-        if (! (bool) config('products.owner.enabled', true)) {
+        if (! (bool) config('products.features.owner.enabled', true)) {
             return;
         }
 
@@ -169,7 +172,7 @@ class Category extends Model implements HasMedia
 
         $ownerType = $this->owner_type;
         $ownerId = $this->owner_id;
-        $includeGlobal = (bool) config('products.owner.include_global', true);
+        $includeGlobal = (bool) config('products.features.owner.include_global', true);
 
         $query->where(function (Builder $builder) use ($ownerType, $ownerId, $includeGlobal): void {
             $builder->where('owner_type', $ownerType)
@@ -208,7 +211,8 @@ class Category extends Model implements HasMedia
         return SlugOptions::create()
             ->generateSlugsFrom('name')
             ->saveSlugsTo('slug')
-            ->doNotGenerateSlugsOnUpdate();
+            ->doNotGenerateSlugsOnUpdate()
+            ->slugsShouldBeNoLongerThan((int) config('products.seo.slug_max_length', 100));
     }
 
     public function getRouteKeyName(): string
@@ -364,11 +368,11 @@ class Category extends Model implements HasMedia
     protected static function booted(): void
     {
         static::creating(function (Category $category): void {
-            if (! (bool) config('products.owner.enabled', true)) {
+            if (! (bool) config('products.features.owner.enabled', true)) {
                 return;
             }
 
-            if (! (bool) config('products.owner.auto_assign_on_create', true)) {
+            if (! (bool) config('products.features.owner.auto_assign_on_create', true)) {
                 return;
             }
 

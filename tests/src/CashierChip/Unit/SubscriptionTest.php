@@ -185,7 +185,7 @@ class SubscriptionTest extends CashierChipTestCase
     public function test_end_trial()
     {
         $user = User::create(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
-        $subscription = Subscription::factory()->for($user, 'owner')->create([
+        $subscription = Subscription::factory()->for($user, 'customer')->create([
             'trial_ends_at' => Carbon::tomorrow(),
         ]);
 
@@ -204,7 +204,7 @@ class SubscriptionTest extends CashierChipTestCase
         $pm = Mockery::mock(PaymentMethod::class);
         $pm->shouldReceive('id')->andReturn('tok_default');
         $owner->shouldReceive('defaultPaymentMethod')->andReturn($pm);
-        $subscription->setRelation('owner', $owner);
+        $subscription->setRelation('customer', $owner);
 
         $this->assertEquals('tok_default', $subscription->recurringToken());
     }
@@ -212,7 +212,7 @@ class SubscriptionTest extends CashierChipTestCase
     public function test_increment_decrement_quantity()
     {
         $user = User::create(['email' => 'test@example.com', 'name' => 'Test', 'chip_id' => 'cli_1']);
-        $subscription = Subscription::factory()->for($user, 'owner')->create(['quantity' => 1, 'chip_price' => 'price_1']);
+        $subscription = Subscription::factory()->for($user, 'customer')->create(['quantity' => 1, 'chip_price' => 'price_1']);
         $subscription->items()->create(['quantity' => 1, 'chip_id' => 'si_1', 'chip_price' => 'price_1']);
 
         $subscription->incrementQuantity();
@@ -225,8 +225,8 @@ class SubscriptionTest extends CashierChipTestCase
     public function test_scope_active()
     {
         $user = User::create(['email' => 'u1', 'name' => 'U1', 'chip_id' => 'c1']);
-        Subscription::factory()->for($user, 'owner')->create(['chip_status' => Subscription::STATUS_ACTIVE]);
-        Subscription::factory()->for($user, 'owner')->create(['chip_status' => Subscription::STATUS_CANCELED, 'ends_at' => Carbon::now()->subDay()]);
+        Subscription::factory()->for($user, 'customer')->create(['chip_status' => Subscription::STATUS_ACTIVE]);
+        Subscription::factory()->for($user, 'customer')->create(['chip_status' => Subscription::STATUS_CANCELED, 'ends_at' => Carbon::now()->subDay()]);
 
         // Use query()->active()
         $this->assertEquals(1, Subscription::query()->active()->count());

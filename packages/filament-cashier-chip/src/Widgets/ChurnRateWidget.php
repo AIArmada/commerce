@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashierChip\Widgets;
 
 use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Subscription;
+use AIArmada\FilamentCashierChip\Support\CashierChipOwnerScope;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -35,13 +36,15 @@ final class ChurnRateWidget extends BaseWidget
 
     private function calculateChurnRate(): float
     {
+        /** @var class-string<Subscription> $subscriptionModel */
         $subscriptionModel = Cashier::$subscriptionModel;
 
         $startOfMonth = now()->startOfMonth();
         $endOfMonth = now()->endOfMonth();
 
         // Subscribers at start of month
-        $startCount = $subscriptionModel::where('created_at', '<', $startOfMonth)
+        $startCount = CashierChipOwnerScope::apply($subscriptionModel::query())
+            ->where('created_at', '<', $startOfMonth)
             ->where(function ($query) use ($startOfMonth): void {
                 $query->whereNull('ends_at')
                     ->orWhere('ends_at', '>=', $startOfMonth);
@@ -54,7 +57,8 @@ final class ChurnRateWidget extends BaseWidget
         }
 
         // Churned this month (subscriptions that ended)
-        $churned = $subscriptionModel::whereNotNull('ends_at')
+        $churned = CashierChipOwnerScope::apply($subscriptionModel::query())
+            ->whereNotNull('ends_at')
             ->whereBetween('ends_at', [$startOfMonth, $endOfMonth])
             ->count();
 
@@ -63,12 +67,14 @@ final class ChurnRateWidget extends BaseWidget
 
     private function calculatePreviousChurnRate(): float
     {
+        /** @var class-string<Subscription> $subscriptionModel */
         $subscriptionModel = Cashier::$subscriptionModel;
 
         $startOfMonth = now()->subMonth()->startOfMonth();
         $endOfMonth = now()->subMonth()->endOfMonth();
 
-        $startCount = $subscriptionModel::where('created_at', '<', $startOfMonth)
+        $startCount = CashierChipOwnerScope::apply($subscriptionModel::query())
+            ->where('created_at', '<', $startOfMonth)
             ->where(function ($query) use ($startOfMonth): void {
                 $query->whereNull('ends_at')
                     ->orWhere('ends_at', '>=', $startOfMonth);
@@ -79,7 +85,8 @@ final class ChurnRateWidget extends BaseWidget
             return 0.0;
         }
 
-        $churned = $subscriptionModel::whereNotNull('ends_at')
+        $churned = CashierChipOwnerScope::apply($subscriptionModel::query())
+            ->whereNotNull('ends_at')
             ->whereBetween('ends_at', [$startOfMonth, $endOfMonth])
             ->count();
 
@@ -132,13 +139,15 @@ final class ChurnRateWidget extends BaseWidget
     private function getChurnChart(): array
     {
         $chart = [];
+        /** @var class-string<Subscription> $subscriptionModel */
         $subscriptionModel = Cashier::$subscriptionModel;
 
         for ($i = 5; $i >= 0; $i--) {
             $startOfMonth = now()->subMonths($i)->startOfMonth();
             $endOfMonth = now()->subMonths($i)->endOfMonth();
 
-            $startCount = $subscriptionModel::where('created_at', '<', $startOfMonth)
+            $startCount = CashierChipOwnerScope::apply($subscriptionModel::query())
+                ->where('created_at', '<', $startOfMonth)
                 ->where(function ($query) use ($startOfMonth): void {
                     $query->whereNull('ends_at')
                         ->orWhere('ends_at', '>=', $startOfMonth);
@@ -151,7 +160,8 @@ final class ChurnRateWidget extends BaseWidget
                 continue;
             }
 
-            $churned = $subscriptionModel::whereNotNull('ends_at')
+            $churned = CashierChipOwnerScope::apply($subscriptionModel::query())
+                ->whereNotNull('ends_at')
                 ->whereBetween('ends_at', [$startOfMonth, $endOfMonth])
                 ->count();
 

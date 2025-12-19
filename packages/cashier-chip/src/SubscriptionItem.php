@@ -7,6 +7,10 @@ namespace AIArmada\CashierChip;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Database\Factories\SubscriptionItemFactory;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -32,6 +36,9 @@ class SubscriptionItem extends Model
     /** @use HasFactory<SubscriptionItemFactory> */
     use HasFactory;
 
+    use HasOwner {
+        scopeForOwner as private scopeForOwnerUsingTrait;
+    }
     use HasUuids;
     use InteractsWithPaymentBehavior;
     use Prorates;
@@ -58,7 +65,90 @@ class SubscriptionItem extends Model
     {
         $model = Cashier::$subscriptionModel;
 
-        return $this->belongsTo($model, (new $model)->getForeignKey());
+        return $this->belongsTo($model, 'subscription_id');
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    final public function scopeForOwner(Builder $query, ?Model $owner = null, ?bool $includeGlobal = null): Builder
+    {
+        if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+            return $query;
+        }
+
+        $owner ??= $this->resolveOwner();
+        $includeGlobal ??= (bool) config('cashier-chip.features.owner.include_global', false);
+
+        return $this->scopeForOwnerUsingTrait($query, $owner, $includeGlobal);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (self $item): void {
+            if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
+                return;
+            }
+
+            if (! (bool) config('cashier-chip.features.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            if ($item->hasOwner()) {
+                return;
+            }
+
+            $currentOwner = $item->resolveOwner();
+
+            if ($item->relationLoaded('subscription') && $item->subscription !== null && $item->subscription->hasOwner()) {
+                if ($currentOwner !== null && ! $item->subscription->belongsToOwner($currentOwner)) {
+                    throw new AuthorizationException('Cross-tenant subscription item write blocked.');
+                }
+
+                $item->owner_type = $item->subscription->owner_type;
+                $item->owner_id = $item->subscription->owner_id;
+
+                return;
+            }
+
+            if ($item->subscription_id !== null) {
+                /** @var class-string<Subscription> $subscriptionModel */
+                $subscriptionModel = Cashier::$subscriptionModel;
+
+                /** @var Subscription|null $subscription */
+                $subscription = $subscriptionModel::query()
+                    ->select(['id', 'owner_type', 'owner_id'])
+                    ->whereKey($item->subscription_id)
+                    ->first();
+
+                if ($subscription !== null && $subscription->hasOwner()) {
+                    if ($currentOwner !== null && ! $subscription->belongsToOwner($currentOwner)) {
+                        throw new AuthorizationException('Cross-tenant subscription item write blocked.');
+                    }
+
+                    $item->owner_type = $subscription->owner_type;
+                    $item->owner_id = $subscription->owner_id;
+
+                    return;
+                }
+            }
+
+            if ($currentOwner === null) {
+                return;
+            }
+
+            $item->assignOwner($currentOwner);
+        });
+    }
+
+    protected function resolveOwner(): ?Model
+    {
+        if (! app()->bound(OwnerResolverInterface::class)) {
+            return null;
+        }
+
+        return app(OwnerResolverInterface::class)->resolve();
     }
 
     /**

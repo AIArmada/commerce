@@ -132,7 +132,7 @@ final class SubscriptionItemsRelationManager extends RelationManager
                     ])
                     ->action(function (SubscriptionItem $record, array $data): void {
                         $options = [];
-                        if (isset($data['unit_amount'])) {
+                        if (array_key_exists('unit_amount', $data) && $data['unit_amount'] !== null) {
                             $options['unit_amount'] = (int) $data['unit_amount'];
                         }
 
@@ -152,9 +152,10 @@ final class SubscriptionItemsRelationManager extends RelationManager
 
     private static function formatAmount(int $amount): string
     {
-        $currency = config('filament-cashier-chip.currency', 'MYR');
+        $currency = config('cashier-chip.currency', 'MYR');
+        $precision = (int) config('filament-cashier-chip.tables.amount_precision', 2);
         $value = $amount / 100;
 
-        return mb_strtoupper($currency) . ' ' . number_format($value, 2, '.', ',');
+        return mb_strtoupper($currency) . ' ' . number_format($value, $precision, '.', ',');
     }
 }

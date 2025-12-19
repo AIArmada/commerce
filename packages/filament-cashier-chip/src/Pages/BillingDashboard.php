@@ -33,7 +33,7 @@ final class BillingDashboard extends Page
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-cashier-chip.navigation_group');
+        return config('filament-cashier-chip.navigation.group');
     }
 
     public function getTitle(): string

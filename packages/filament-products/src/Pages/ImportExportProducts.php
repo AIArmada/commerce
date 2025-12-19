@@ -38,7 +38,7 @@ class ImportExportProducts extends Page
 
     private function resolveOwner(): ?Model
     {
-        if (! (bool) config('products.owner.enabled', true)) {
+        if (! (bool) config('products.features.owner.enabled', true)) {
             return null;
         }
 

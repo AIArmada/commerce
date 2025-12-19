@@ -125,10 +125,10 @@ abstract class TestCase extends Orchestra
         $app['config']->set('cashier-chip.webhooks.verify_signature', false);
 
         // Configure filament-cashier-chip settings
-        $app['config']->set('filament-cashier-chip.navigation_group', 'Billing');
-        $app['config']->set('filament-cashier-chip.navigation_badge_color', 'success');
-        $app['config']->set('filament-cashier-chip.polling_interval', '45s');
-        $app['config']->set('filament-cashier-chip.currency', 'MYR');
+        $app['config']->set('filament-cashier-chip.navigation.group', 'Billing');
+        $app['config']->set('filament-cashier-chip.navigation.badge_color', 'success');
+        $app['config']->set('filament-cashier-chip.tables.polling_interval', '45s');
+        $app['config']->set('filament-cashier-chip.tables.amount_precision', 2);
 
         $app['config']->set('filament-cashier-chip.resources.navigation_sort.subscriptions', 10);
         $app['config']->set('filament-cashier-chip.resources.navigation_sort.customers', 20);
@@ -139,12 +139,13 @@ abstract class TestCase extends Orchestra
         $app['config']->set('filament-cashier-chip.features.invoices', true);
         $app['config']->set('filament-cashier-chip.features.dashboard_widgets', true);
 
-        $app['config']->set('filament-cashier-chip.dashboard.widgets.mrr', true);
-        $app['config']->set('filament-cashier-chip.dashboard.widgets.active_subscribers', true);
-        $app['config']->set('filament-cashier-chip.dashboard.widgets.churn_rate', true);
-        $app['config']->set('filament-cashier-chip.dashboard.widgets.revenue_chart', true);
-        $app['config']->set('filament-cashier-chip.dashboard.widgets.subscription_distribution', true);
-        $app['config']->set('filament-cashier-chip.dashboard.widgets.trial_conversions', true);
+        $app['config']->set('filament-cashier-chip.features.dashboard.widgets.mrr', true);
+        $app['config']->set('filament-cashier-chip.features.dashboard.widgets.active_subscribers', true);
+        $app['config']->set('filament-cashier-chip.features.dashboard.widgets.churn_rate', true);
+        $app['config']->set('filament-cashier-chip.features.dashboard.widgets.attention_required', true);
+        $app['config']->set('filament-cashier-chip.features.dashboard.widgets.revenue_chart', true);
+        $app['config']->set('filament-cashier-chip.features.dashboard.widgets.subscription_distribution', true);
+        $app['config']->set('filament-cashier-chip.features.dashboard.widgets.trial_conversions', true);
     }
 
     protected function defineDatabaseMigrations(): void

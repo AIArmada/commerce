@@ -9,6 +9,7 @@ use AIArmada\FilamentProducts\Resources\AttributeSetResource\Pages\CreateAttribu
 use AIArmada\FilamentProducts\Resources\CategoryResource\Pages\CreateCategory;
 use AIArmada\FilamentProducts\Resources\ProductResource\Pages\CreateProduct;
 use AIArmada\FilamentProducts\Resources\ProductResource\Pages\EditProduct;
+use AIArmada\Products\Models\Category;
 
 uses(TestCase::class);
 
@@ -57,7 +58,9 @@ it('converts monetary fields in EditProduct between cents and display values', f
 });
 
 it('uses parent id from request query in CreateCategory', function (): void {
-    request()->query->set('parent', 'parent-id');
+    $parent = Category::query()->create(['name' => 'Parent Category']);
+
+    request()->query->set('parent', $parent->id);
 
     $page = new class extends CreateCategory
     {
@@ -69,7 +72,7 @@ it('uses parent id from request query in CreateCategory', function (): void {
 
     $data = $page->mutate([]);
 
-    expect($data['parent_id'])->toBe('parent-id');
+    expect($data['parent_id'])->toBe($parent->id);
 });
 
 it('executes redirect url methods (they may throw without a panel)', function (): void {

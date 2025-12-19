@@ -10,7 +10,9 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create(config('products.tables.attributes', 'product_attributes'), function (Blueprint $table): void {
+        Schema::create(config('products.database.tables.attributes', 'product_attributes'), function (Blueprint $table): void {
+            $jsonColumnType = config('products.database.json_column_type', 'json');
+
             $table->uuid('id')->primary();
 
             // Owner (for multi-tenancy)
@@ -22,8 +24,8 @@ return new class extends Migration
             $table->string('type')->default('text'); // AttributeType enum
 
             // Validation and options
-            $table->json('validation')->nullable();
-            $table->json('options')->nullable(); // For select/multiselect types
+            $table->{$jsonColumnType}('validation')->nullable();
+            $table->{$jsonColumnType}('options')->nullable(); // For select/multiselect types
 
             // Behavior flags
             $table->boolean('is_required')->default(false);
@@ -52,6 +54,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists(config('products.tables.attributes', 'product_attributes'));
+        Schema::dropIfExists(config('products.database.tables.attributes', 'product_attributes'));
     }
 };

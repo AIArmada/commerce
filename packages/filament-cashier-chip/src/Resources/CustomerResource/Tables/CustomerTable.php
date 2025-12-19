@@ -129,6 +129,6 @@ final class CustomerTable
             ->bulkActions([])
             ->defaultSort('created_at', 'desc')
             ->paginated([25, 50, 100])
-            ->poll(config('filament-cashier-chip.polling_interval', '45s'));
+            ->poll(config('filament-cashier-chip.tables.polling_interval', '45s'));
     }
 }

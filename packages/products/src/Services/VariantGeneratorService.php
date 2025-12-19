@@ -38,7 +38,7 @@ class VariantGeneratorService
         $combinations = $this->generateCombinations($options);
 
         // Check safety limit
-        $maxCombinations = config('products.variants.max_combinations', 1000);
+        $maxCombinations = config('products.features.variants.max_combinations', 1000);
         if ($combinations->count() > $maxCombinations) {
             throw new RuntimeException(
                 "Too many variant combinations ({$combinations->count()}). " .
@@ -113,7 +113,7 @@ class VariantGeneratorService
             return null;
         }
 
-        $pivotTable = config('products.tables.variant_options', 'product_variant_options');
+        $pivotTable = config('products.database.tables.variant_options', 'product_variant_options');
 
         return $product->variants()
             ->has('optionValues', '=', $count)
@@ -174,7 +174,7 @@ class VariantGeneratorService
      */
     protected function generateSku(Product $product, Collection $optionValues): string
     {
-        $pattern = config('products.variants.sku_pattern', '{parent_sku}-{option_codes}');
+        $pattern = config('products.features.variants.sku_pattern', '{parent_sku}-{option_codes}');
 
         $optionCodes = $optionValues
             ->sortBy(fn ($val) => $val->option->position)

@@ -26,7 +26,9 @@ final class SubscriptionFactory extends Factory
         $model = Cashier::$customerModel;
 
         return [
-            (new $model)->getForeignKey() => ($model)::factory(),
+            'owner_type' => null,
+            'owner_id' => null,
+            'user_id' => ($model)::factory(),
             'type' => 'default',
             'chip_id' => 'sub_' . Str::random(40),
             'chip_status' => Subscription::STATUS_ACTIVE,

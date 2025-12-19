@@ -7,6 +7,7 @@ namespace AIArmada\FilamentDocs\Resources;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
 use AIArmada\Docs\Models\DocSequence;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use BackedEnum;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteBulkAction;
@@ -25,11 +26,14 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
 final class DocSequenceResource extends Resource
 {
     protected static ?string $model = DocSequence::class;
+
+    protected static ?string $tenantOwnershipRelationshipName = 'owner';
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedHashtag;
 
@@ -192,11 +196,25 @@ final class DocSequenceResource extends Resource
 
     public static function getNavigationGroup(): string | UnitEnum | null
     {
-        return config('filament-docs.navigation_group');
+        return config('filament-docs.navigation.group');
     }
 
     public static function getNavigationSort(): ?int
     {
         return config('filament-docs.resources.navigation_sort.sequences', 90);
+    }
+
+    /**
+     * @return Builder<DocSequence>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        /** @var Builder<DocSequence> $query */
+        $query = parent::getEloquentQuery();
+
+        /** @var Builder<DocSequence> $query */
+        $query = DocsOwnerScope::apply($query);
+
+        return $query;
     }
 }
