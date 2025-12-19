@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\Widgets;
 
 use AIArmada\CashierChip\Cashier as CashierChip;
+use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Widgets\ChartWidget;
@@ -86,7 +87,7 @@ final class GatewayBreakdownWidget extends ChartWidget
             $revenue = [];
 
             if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-                $stripeRevenue = Subscription::query()
+                $stripeRevenue = CashierOwnerScope::apply(Subscription::query())
                     ->with('items')
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')
@@ -104,7 +105,7 @@ final class GatewayBreakdownWidget extends ChartWidget
 
             if ($detector->isAvailable('chip')) {
                 $subscriptionModel = CashierChip::$subscriptionModel;
-                $chipRevenue = $subscriptionModel::query()
+                $chipRevenue = CashierOwnerScope::apply($subscriptionModel::query())
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')
                             ->orWhere('ends_at', '>', now());

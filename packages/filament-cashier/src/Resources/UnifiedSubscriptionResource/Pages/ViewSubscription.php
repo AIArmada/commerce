@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages;
 
 use AIArmada\CashierChip\Cashier as CashierChip;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource;
+use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Actions;
@@ -147,7 +148,9 @@ final class ViewSubscription extends ViewRecord
         $detector = app(GatewayDetector::class);
 
         if ($gateway === 'stripe' && $detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-            $sub = Subscription::find($id);
+            $sub = CashierOwnerScope::apply(Subscription::query())
+                ->whereKey($id)
+                ->first();
             if ($sub) {
                 return UnifiedSubscription::fromStripe($sub);
             }
@@ -155,7 +158,9 @@ final class ViewSubscription extends ViewRecord
 
         if ($gateway === 'chip' && $detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
-            $sub = $subscriptionModel::find($id);
+            $sub = CashierOwnerScope::apply($subscriptionModel::query())
+                ->whereKey($id)
+                ->first();
             if ($sub) {
                 return UnifiedSubscription::fromChip($sub);
             }

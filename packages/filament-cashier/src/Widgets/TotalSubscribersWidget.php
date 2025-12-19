@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\Widgets;
 
 use AIArmada\CashierChip\Cashier as CashierChip;
+use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -30,7 +31,7 @@ final class TotalSubscribersWidget extends StatsOverviewWidget
 
             // Count Stripe subscribers
             if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-                $totals['stripe'] = Subscription::query()
+                $totals['stripe'] = CashierOwnerScope::apply(Subscription::query())
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')
                             ->orWhere('ends_at', '>', now());
@@ -41,7 +42,7 @@ final class TotalSubscribersWidget extends StatsOverviewWidget
             // Count CHIP subscribers
             if ($detector->isAvailable('chip')) {
                 $subscriptionModel = CashierChip::$subscriptionModel;
-                $totals['chip'] = $subscriptionModel::query()
+                $totals['chip'] = CashierOwnerScope::apply($subscriptionModel::query())
                     ->where(function ($query): void {
                         $query->whereNull('ends_at')
                             ->orWhere('ends_at', '>', now());

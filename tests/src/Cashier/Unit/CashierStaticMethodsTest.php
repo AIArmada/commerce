@@ -93,12 +93,12 @@ describe('Cashier Static Methods Full Coverage', function (): void {
         });
 
         it('returns USD as default when not configured', function (): void {
-            // Use empty string instead of null to test the fallback
-            config(['cashier.currency' => '']);
+            $cashierConfig = config('cashier', []);
+            unset($cashierConfig['currency']);
 
-            // When config is empty string, config() returns empty string, not the default
-            // So we test with missing key instead
-            $reflection = new ReflectionClass(Cashier::class);
+            config(['cashier' => $cashierConfig]);
+
+            expect(Cashier::defaultCurrency())->toBe('USD');
         });
     });
 

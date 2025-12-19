@@ -10,6 +10,12 @@ use AIArmada\Commerce\Tests\Cashier\Fixtures\User;
 uses(CashierTestCase::class);
 
 describe('Cashier', function (): void {
+    afterEach(function (): void {
+        Cashier::$deactivatePastDue = true;
+        Cashier::$deactivateIncomplete = true;
+        Cashier::$registersRoutes = true;
+    });
+
     it('can get the gateway manager instance', function (): void {
         $manager = Cashier::manager();
 

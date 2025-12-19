@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCashier\CustomerPortal\Pages;
 
 use AIArmada\CashierChip\Cashier as CashierChip;
 use AIArmada\FilamentCashier\Policies\SubscriptionPolicy;
+use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use BackedEnum;
@@ -50,7 +51,7 @@ final class ManageSubscriptions extends Page
 
         // Get Stripe subscriptions for this user
         if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-            $stripeSubscriptions = Subscription::query()
+            $stripeSubscriptions = CashierOwnerScope::apply(Subscription::query())
                 ->where('user_id', $user->getAuthIdentifier())
                 ->orderByDesc('created_at')
                 ->get()
@@ -62,7 +63,7 @@ final class ManageSubscriptions extends Page
         // Get CHIP subscriptions for this user
         if ($detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
-            $chipSubscriptions = $subscriptionModel::query()
+            $chipSubscriptions = CashierOwnerScope::apply($subscriptionModel::query())
                 ->where('user_id', $user->getAuthIdentifier())
                 ->orderByDesc('created_at')
                 ->get()
@@ -182,9 +183,9 @@ final class ManageSubscriptions extends Page
         $userId = auth()->id();
 
         if ($gateway === 'stripe' && $detector->isAvailable('stripe') && class_exists(Subscription::class)) {
-            $sub = Subscription::query()
+            $sub = CashierOwnerScope::apply(Subscription::query())
                 ->where('user_id', $userId)
-                ->where('id', $id)
+                ->whereKey($id)
                 ->first();
 
             if ($sub) {
@@ -194,9 +195,9 @@ final class ManageSubscriptions extends Page
 
         if ($gateway === 'chip' && $detector->isAvailable('chip')) {
             $subscriptionModel = CashierChip::$subscriptionModel;
-            $sub = $subscriptionModel::query()
+            $sub = CashierOwnerScope::apply($subscriptionModel::query())
                 ->where('user_id', $userId)
-                ->where('id', $id)
+                ->whereKey($id)
                 ->first();
 
             if ($sub) {
