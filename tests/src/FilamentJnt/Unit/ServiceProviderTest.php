@@ -31,4 +31,3 @@ it('registers the FilamentJntPlugin singleton', function (): void {
     expect(app()->bound(FilamentJntPlugin::class))->toBeTrue();
     expect(app(FilamentJntPlugin::class))->toBeInstanceOf(FilamentJntPlugin::class);
 });
-

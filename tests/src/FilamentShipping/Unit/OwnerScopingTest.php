@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -77,12 +77,3 @@ it('scopes ShipmentResource to current owner plus global', function (): void {
         ->toContain($shipmentGlobal->id)
         ->not->toContain($shipmentB->id);
 });
-
-class TestOwner extends Model
-{
-    use HasUuids;
-
-    protected $table = 'test_owners';
-
-    protected $fillable = ['name'];
-}

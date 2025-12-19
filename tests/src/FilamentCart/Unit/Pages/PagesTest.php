@@ -10,22 +10,22 @@ use Filament\Pages\Page;
 
 describe('Pages Instantiation', function (): void {
     it('can instantiate AnalyticsPage', function (): void {
-        $page = new AnalyticsPage();
+        $page = new AnalyticsPage;
         expect($page)->toBeInstanceOf(Page::class);
     });
 
     it('can instantiate CartDashboard', function (): void {
-        $page = new CartDashboard();
+        $page = new CartDashboard;
         expect($page)->toBeInstanceOf(Page::class);
     });
 
     it('can instantiate LiveDashboardPage', function (): void {
-        $page = new LiveDashboardPage();
+        $page = new LiveDashboardPage;
         expect($page)->toBeInstanceOf(Page::class);
     });
 
     it('can instantiate RecoverySettingsPage', function (): void {
-        $page = new RecoverySettingsPage();
+        $page = new RecoverySettingsPage;
         expect($page)->toBeInstanceOf(Page::class);
     });
 });

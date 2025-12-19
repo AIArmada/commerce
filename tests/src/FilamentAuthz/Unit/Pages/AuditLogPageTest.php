@@ -37,7 +37,7 @@ describe('AuditLogPage', function (): void {
 
 describe('AuditLogPage::mount', function (): void {
     it('sets default date range to last 7 days', function (): void {
-        $page = new AuditLogPage();
+        $page = new AuditLogPage;
         $page->mount();
 
         expect($page->startDate)->toBe(now()->subDays(7)->toDateString());
@@ -45,7 +45,7 @@ describe('AuditLogPage::mount', function (): void {
     });
 
     it('initializes logs collection', function (): void {
-        $page = new AuditLogPage();
+        $page = new AuditLogPage;
         $page->mount();
 
         expect($page->logs)->toBeInstanceOf(Collection::class);
@@ -66,7 +66,7 @@ describe('AuditLogPage::loadLogs', function (): void {
             'occurred_at' => now(),
         ]);
 
-        $page = new AuditLogPage();
+        $page = new AuditLogPage;
         $page->startDate = now()->subDay()->toDateString();
         $page->endDate = now()->toDateString();
         $page->loadLogs();
@@ -97,7 +97,7 @@ describe('AuditLogPage::loadLogs', function (): void {
             'occurred_at' => now(),
         ]);
 
-        $page = new AuditLogPage();
+        $page = new AuditLogPage;
         $page->startDate = now()->subDay()->toDateString();
         $page->endDate = now()->toDateString();
         $page->eventTypeFilter = AuditEventType::PermissionGranted->value;
@@ -130,7 +130,7 @@ describe('AuditLogPage::loadLogs', function (): void {
             'occurred_at' => now(),
         ]);
 
-        $page = new AuditLogPage();
+        $page = new AuditLogPage;
         $page->startDate = now()->subDay()->toDateString();
         $page->endDate = now()->toDateString();
         $page->severityFilter = AuditSeverity::High->value;
@@ -143,7 +143,7 @@ describe('AuditLogPage::loadLogs', function (): void {
 
 describe('AuditLogPage::filterByEventType', function (): void {
     it('sets event type filter and reloads', function (): void {
-        $page = new AuditLogPage();
+        $page = new AuditLogPage;
         $page->startDate = now()->subDay()->toDateString();
         $page->endDate = now()->toDateString();
 
@@ -155,7 +155,7 @@ describe('AuditLogPage::filterByEventType', function (): void {
 
 describe('AuditLogPage::filterBySeverity', function (): void {
     it('sets severity filter and reloads', function (): void {
-        $page = new AuditLogPage();
+        $page = new AuditLogPage;
         $page->startDate = now()->subDay()->toDateString();
         $page->endDate = now()->toDateString();
 
@@ -167,7 +167,7 @@ describe('AuditLogPage::filterBySeverity', function (): void {
 
 describe('AuditLogPage::clearFilters', function (): void {
     it('clears all filters', function (): void {
-        $page = new AuditLogPage();
+        $page = new AuditLogPage;
         $page->startDate = now()->subDay()->toDateString();
         $page->endDate = now()->toDateString();
         $page->eventTypeFilter = AuditEventType::PermissionGranted->value;
@@ -182,7 +182,7 @@ describe('AuditLogPage::clearFilters', function (): void {
 
 describe('AuditLogPage::getEventTypeOptions', function (): void {
     it('returns event type options array', function (): void {
-        $page = new AuditLogPage();
+        $page = new AuditLogPage;
         $options = $page->getEventTypeOptions();
 
         expect($options)->toBeArray();
@@ -193,7 +193,7 @@ describe('AuditLogPage::getEventTypeOptions', function (): void {
 
 describe('AuditLogPage::getStatistics', function (): void {
     it('returns statistics array with correct structure', function (): void {
-        $page = new AuditLogPage();
+        $page = new AuditLogPage;
         $page->logs = collect();
 
         $stats = $page->getStatistics();
@@ -227,7 +227,7 @@ describe('AuditLogPage::getStatistics', function (): void {
             'occurred_at' => now(),
         ]);
 
-        $page = new AuditLogPage();
+        $page = new AuditLogPage;
         $page->logs = collect([$log1, $log2]);
 
         $stats = $page->getStatistics();

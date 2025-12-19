@@ -14,7 +14,7 @@ return new class extends Migration
         /** @var array<string, string> $tables */
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
-        $tableName = $tables['vouchers'] ?? $prefix.'vouchers';
+        $tableName = $tables['vouchers'] ?? $prefix . 'vouchers';
 
         Schema::table($tableName, function (Blueprint $table): void {
             $jsonType = (string) commerce_json_column_type('vouchers', 'json');
@@ -42,7 +42,7 @@ return new class extends Migration
         /** @var array<string, string> $tables */
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
-        $tableName = $tables['vouchers'] ?? $prefix.'vouchers';
+        $tableName = $tables['vouchers'] ?? $prefix . 'vouchers';
 
         if (Schema::getConnection()->getDriverName() === 'pgsql') {
             DB::statement('DROP INDEX IF EXISTS vouchers_stacking_rules_gin_index');

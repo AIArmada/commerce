@@ -29,7 +29,7 @@ afterEach(function (): void {
     Mockery::close();
 });
 
-function makeTable(): Table
+function makeFilamentProductsTable(): Table
 {
     /** @var HasTable $livewire */
     $livewire = Mockery::mock(HasTable::class);
@@ -47,7 +47,7 @@ it('builds resource schemas and tables', function (): void {
         AttributeSetResource::class,
     ] as $resource) {
         expect($resource::form(Schema::make()))->toBeInstanceOf(Schema::class);
-        expect($resource::table(makeTable()))->toBeInstanceOf(Table::class);
+        expect($resource::table(makeFilamentProductsTable()))->toBeInstanceOf(Table::class);
     }
 });
 
@@ -55,8 +55,8 @@ it('builds relation managers', function (): void {
     $options = app(OptionsRelationManager::class);
     $variants = app(VariantsRelationManager::class);
 
-    expect($options->table(makeTable()))->toBeInstanceOf(Table::class);
-    expect($variants->table(makeTable()))->toBeInstanceOf(Table::class);
+    expect($options->table(makeFilamentProductsTable()))->toBeInstanceOf(Table::class);
+    expect($variants->table(makeFilamentProductsTable()))->toBeInstanceOf(Table::class);
 });
 
 it('builds standalone pages', function (): void {

@@ -9,7 +9,6 @@ use AIArmada\FilamentAuthz\Enums\PermissionScope;
 use AIArmada\FilamentAuthz\Enums\PolicyCombiningAlgorithm;
 use AIArmada\FilamentAuthz\Enums\PolicyDecision;
 use AIArmada\FilamentAuthz\Enums\PolicyEffect;
-use AIArmada\FilamentAuthz\Enums\PolicyType;
 use AIArmada\FilamentAuthz\Http\Middleware\AuthorizePanelRoles;
 use AIArmada\FilamentAuthz\Jobs\WriteAuditLogJob;
 use AIArmada\FilamentAuthz\Models\PermissionAuditLog;
@@ -33,7 +32,6 @@ use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredWidget;
 use AIArmada\FilamentAuthz\ValueObjects\PolicyCondition;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 
@@ -246,7 +244,7 @@ describe('ConditionOperator Enum Coverage', function (): void {
 
 describe('AuthorizePanelRoles Middleware Coverage', function (): void {
     it('allows request when no panel', function (): void {
-        $middleware = new AuthorizePanelRoles();
+        $middleware = new AuthorizePanelRoles;
         $request = Request::create('/test');
 
         $response = $middleware->handle($request, fn ($req) => response('OK'));
@@ -257,7 +255,7 @@ describe('AuthorizePanelRoles Middleware Coverage', function (): void {
     it('allows request when feature disabled', function (): void {
         config(['filament-authz.features.panel_role_authorization' => false]);
 
-        $middleware = new AuthorizePanelRoles();
+        $middleware = new AuthorizePanelRoles;
         $request = Request::create('/test');
 
         $response = $middleware->handle($request, fn ($req) => response('OK'));
@@ -268,7 +266,7 @@ describe('AuthorizePanelRoles Middleware Coverage', function (): void {
 
 describe('ImplicitPermissionService Coverage', function (): void {
     it('expands permissions correctly', function (): void {
-        $service = new ImplicitPermissionService();
+        $service = new ImplicitPermissionService;
 
         $expanded = $service->expand('user.manage');
         expect($expanded)->toBeInstanceOf(\Illuminate\Support\Collection::class);
@@ -276,7 +274,7 @@ describe('ImplicitPermissionService Coverage', function (): void {
     });
 
     it('gets implicit abilities', function (): void {
-        $service = new ImplicitPermissionService();
+        $service = new ImplicitPermissionService;
 
         $abilities = $service->getImplicitAbilities('manage');
         expect($abilities->toArray())->toContain('viewAny');
@@ -285,7 +283,7 @@ describe('ImplicitPermissionService Coverage', function (): void {
     });
 
     it('checks if permission implies another', function (): void {
-        $service = new ImplicitPermissionService();
+        $service = new ImplicitPermissionService;
 
         expect($service->implies('user.manage', 'user.view'))->toBeTrue();
         expect($service->implies('user.view', 'user.delete'))->toBeFalse();
@@ -293,7 +291,7 @@ describe('ImplicitPermissionService Coverage', function (): void {
     });
 
     it('registers custom mappings', function (): void {
-        $service = new ImplicitPermissionService();
+        $service = new ImplicitPermissionService;
 
         $service->registerMapping('superuser', ['viewAny', 'view', 'create', 'update', 'delete']);
         $abilities = $service->getImplicitAbilities('superuser');
@@ -302,7 +300,7 @@ describe('ImplicitPermissionService Coverage', function (): void {
     });
 
     it('registers multiple mappings', function (): void {
-        $service = new ImplicitPermissionService();
+        $service = new ImplicitPermissionService;
 
         $service->registerMappings([
             'readonly' => ['viewAny', 'view'],
@@ -314,7 +312,7 @@ describe('ImplicitPermissionService Coverage', function (): void {
     });
 
     it('gets all mappings', function (): void {
-        $service = new ImplicitPermissionService();
+        $service = new ImplicitPermissionService;
         $mappings = $service->getAllMappings();
 
         expect($mappings)->toBeArray();
@@ -322,7 +320,7 @@ describe('ImplicitPermissionService Coverage', function (): void {
     });
 
     it('clears cache', function (): void {
-        $service = new ImplicitPermissionService();
+        $service = new ImplicitPermissionService;
         $service->clearCache();
 
         expect(true)->toBeTrue();
@@ -355,7 +353,7 @@ describe('DelegationService Coverage', function (): void {
 
 describe('PageTransformer Coverage', function (): void {
     it('throws exception for invalid page class', function (): void {
-        $transformer = new PageTransformer();
+        $transformer = new PageTransformer;
 
         expect(fn () => $transformer->transform('InvalidClass'))
             ->toThrow(InvalidArgumentException::class);
@@ -364,7 +362,7 @@ describe('PageTransformer Coverage', function (): void {
 
 describe('ResourceTransformer Coverage', function (): void {
     it('throws exception for invalid resource class', function (): void {
-        $transformer = new ResourceTransformer();
+        $transformer = new ResourceTransformer;
 
         expect(fn () => $transformer->transform('InvalidClass'))
             ->toThrow(InvalidArgumentException::class);
@@ -373,7 +371,7 @@ describe('ResourceTransformer Coverage', function (): void {
 
 describe('WidgetTransformer Coverage', function (): void {
     it('throws exception for invalid widget class', function (): void {
-        $transformer = new WidgetTransformer();
+        $transformer = new WidgetTransformer;
 
         expect(fn () => $transformer->transform('InvalidClass'))
             ->toThrow(InvalidArgumentException::class);
@@ -574,19 +572,19 @@ describe('PermissionCacheService Coverage', function (): void {
     });
 
     it('can be instantiated', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         expect($service)->toBeInstanceOf(PermissionCacheService::class);
     });
 
     it('gets stats', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         $stats = $service->getStats();
 
         expect($stats)->toHaveKeys(['enabled', 'store', 'ttl']);
     });
 
     it('remembers values', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         $value = $service->remember('test_key_' . uniqid(), fn () => 'cached_value');
 
         expect($value)->toBe('cached_value');
@@ -594,7 +592,7 @@ describe('PermissionCacheService Coverage', function (): void {
 
     it('gets user permissions', function (): void {
         $user = createUserWithRoles(['super_admin']);
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
 
         $permissions = $service->getUserPermissions($user);
         expect($permissions)->toBeArray();
@@ -605,7 +603,7 @@ describe('PermissionCacheService Coverage', function (): void {
         $perm = Permission::create(['name' => 'cache.test.' . uniqid(), 'guard_name' => 'web']);
         $role->givePermissionTo($perm);
 
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         $permissions = $service->getRolePermissions($role);
 
         expect($permissions)->toBeArray();
@@ -613,7 +611,7 @@ describe('PermissionCacheService Coverage', function (): void {
 
     it('checks user has permission', function (): void {
         $user = createUserWithRoles(['super_admin']);
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
 
         $has = $service->userHasPermission($user, 'nonexistent.permission');
         expect($has)->toBeBool();
@@ -621,7 +619,7 @@ describe('PermissionCacheService Coverage', function (): void {
 
     it('forgets user cache', function (): void {
         $user = createUserWithRoles(['super_admin']);
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
 
         $service->forgetUser($user);
         expect(true)->toBeTrue();
@@ -629,7 +627,7 @@ describe('PermissionCacheService Coverage', function (): void {
 
     it('forgets role cache', function (): void {
         $role = Role::create(['name' => 'forget_role_' . uniqid(), 'guard_name' => 'web']);
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
 
         $service->forgetRole($role);
         expect(true)->toBeTrue();
@@ -637,14 +635,14 @@ describe('PermissionCacheService Coverage', function (): void {
 
     it('forgets permission cache', function (): void {
         $perm = Permission::create(['name' => 'forget.perm.' . uniqid(), 'guard_name' => 'web']);
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
 
         $service->forgetPermission($perm);
         expect(true)->toBeTrue();
     });
 
     it('flushes all caches', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         $service->flush();
 
         expect(true)->toBeTrue();
@@ -652,21 +650,21 @@ describe('PermissionCacheService Coverage', function (): void {
 
     it('warms user cache', function (): void {
         $user = createUserWithRoles(['super_admin']);
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
 
         $service->warmUserCache($user);
         expect(true)->toBeTrue();
     });
 
     it('warms role cache', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         $service->warmRoleCache();
 
         expect(true)->toBeTrue();
     });
 
     it('disables and enables caching', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
 
         $service->disable();
         expect($service->getStats()['enabled'])->toBeFalse();
@@ -676,7 +674,7 @@ describe('PermissionCacheService Coverage', function (): void {
     });
 
     it('runs callback without cache', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
 
         $result = $service->withoutCache(fn () => 'no_cache_result');
         expect($result)->toBe('no_cache_result');
@@ -692,50 +690,50 @@ describe('PolicyBuilder Coverage', function (): void {
 
 describe('PolicyEngine Coverage', function (): void {
     it('can be instantiated', function (): void {
-        $engine = new PolicyEngine();
+        $engine = new PolicyEngine;
         expect($engine)->toBeInstanceOf(PolicyEngine::class);
     });
 
     it('evaluates returns decision', function (): void {
-        $engine = new PolicyEngine();
+        $engine = new PolicyEngine;
         $decision = $engine->evaluate('view', 'user');
 
         expect($decision)->toBeInstanceOf(PolicyDecision::class);
     });
 
     it('gets and sets combining algorithm', function (): void {
-        $engine = new PolicyEngine();
+        $engine = new PolicyEngine;
         $engine->setCombiningAlgorithm(PolicyCombiningAlgorithm::PermitOverrides);
 
         expect($engine->getCombiningAlgorithm())->toBe(PolicyCombiningAlgorithm::PermitOverrides);
     });
 
     it('explains decision', function (): void {
-        $engine = new PolicyEngine();
+        $engine = new PolicyEngine;
         $explanation = $engine->explain('view', 'user');
 
         expect($explanation)->toHaveKeys(['decision', 'matching_policies', 'algorithm']);
     });
 
     it('checks isPermitted', function (): void {
-        $engine = new PolicyEngine();
+        $engine = new PolicyEngine;
         expect($engine->isPermitted('view', 'nonexistent'))->toBeFalse();
     });
 
     it('checks isDenied', function (): void {
-        $engine = new PolicyEngine();
+        $engine = new PolicyEngine;
         expect($engine->isDenied('view', 'nonexistent'))->toBeFalse();
     });
 });
 
 describe('PermissionRegistry Coverage', function (): void {
     it('can be instantiated', function (): void {
-        $registry = new PermissionRegistry();
+        $registry = new PermissionRegistry;
         expect($registry)->toBeInstanceOf(PermissionRegistry::class);
     });
 
     it('registers and retrieves permissions', function (): void {
-        $registry = new PermissionRegistry();
+        $registry = new PermissionRegistry;
         $registry->register('test.view', 'View test', 'test-group', 'test');
 
         expect($registry->isRegistered('test.view'))->toBeTrue();
@@ -743,7 +741,7 @@ describe('PermissionRegistry Coverage', function (): void {
     });
 
     it('registers resource permissions', function (): void {
-        $registry = new PermissionRegistry();
+        $registry = new PermissionRegistry;
         $registry->registerResource('user', ['view', 'create'], 'users');
 
         expect($registry->isRegistered('user.view'))->toBeTrue();
@@ -751,7 +749,7 @@ describe('PermissionRegistry Coverage', function (): void {
     });
 
     it('groups by resource and group', function (): void {
-        $registry = new PermissionRegistry();
+        $registry = new PermissionRegistry;
         $registry->register('user.view', null, 'admin', 'user');
         $registry->register('user.create', null, 'admin', 'user');
 
@@ -760,7 +758,7 @@ describe('PermissionRegistry Coverage', function (): void {
     });
 
     it('exports and clears', function (): void {
-        $registry = new PermissionRegistry();
+        $registry = new PermissionRegistry;
         $registry->register('export.test', null, null, null);
 
         $exported = $registry->export();
@@ -871,12 +869,12 @@ describe('WildcardPermissionResolver Coverage', function (): void {
     });
 
     it('can be instantiated', function (): void {
-        $resolver = new WildcardPermissionResolver();
+        $resolver = new WildcardPermissionResolver;
         expect($resolver)->toBeInstanceOf(WildcardPermissionResolver::class);
     });
 
     it('detects wildcards', function (): void {
-        $resolver = new WildcardPermissionResolver();
+        $resolver = new WildcardPermissionResolver;
 
         expect($resolver->isWildcard('*'))->toBeTrue();
         expect($resolver->isWildcard('user.*'))->toBeTrue();
@@ -885,7 +883,7 @@ describe('WildcardPermissionResolver Coverage', function (): void {
     });
 
     it('resolves wildcards', function (): void {
-        $resolver = new WildcardPermissionResolver();
+        $resolver = new WildcardPermissionResolver;
 
         $resolved = $resolver->resolve('user.*');
         expect($resolved)->toContain('user.view');
@@ -893,7 +891,7 @@ describe('WildcardPermissionResolver Coverage', function (): void {
     });
 
     it('matches patterns', function (): void {
-        $resolver = new WildcardPermissionResolver();
+        $resolver = new WildcardPermissionResolver;
 
         expect($resolver->matches('user.*', 'user.view'))->toBeTrue();
         expect($resolver->matches('*.view', 'user.view'))->toBeTrue();
@@ -901,7 +899,7 @@ describe('WildcardPermissionResolver Coverage', function (): void {
     });
 
     it('gets prefixes', function (): void {
-        $resolver = new WildcardPermissionResolver();
+        $resolver = new WildcardPermissionResolver;
         $prefixes = $resolver->getPrefixes();
 
         expect($prefixes)->toContain('user');
@@ -909,7 +907,7 @@ describe('WildcardPermissionResolver Coverage', function (): void {
     });
 
     it('groups by prefix', function (): void {
-        $resolver = new WildcardPermissionResolver();
+        $resolver = new WildcardPermissionResolver;
         $grouped = $resolver->groupByPrefix();
 
         expect($grouped)->toHaveKey('user');
@@ -917,14 +915,14 @@ describe('WildcardPermissionResolver Coverage', function (): void {
     });
 
     it('extracts prefix and action', function (): void {
-        $resolver = new WildcardPermissionResolver();
+        $resolver = new WildcardPermissionResolver;
 
         expect($resolver->extractPrefix('user.view'))->toBe('user');
         expect($resolver->extractAction('user.view'))->toBe('view');
     });
 
     it('builds permission', function (): void {
-        $resolver = new WildcardPermissionResolver();
+        $resolver = new WildcardPermissionResolver;
 
         expect($resolver->buildPermission('user', 'view'))->toBe('user.view');
     });

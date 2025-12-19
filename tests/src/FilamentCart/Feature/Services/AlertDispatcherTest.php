@@ -42,7 +42,7 @@ describe('AlertDispatcher', function (): void {
             sessionId: 'session-456',
         );
 
-        $dispatcher = new AlertDispatcher();
+        $dispatcher = new AlertDispatcher;
         $log = $dispatcher->dispatch($rule, $event);
 
         expect($log)->not->toBeNull();
@@ -73,7 +73,7 @@ describe('AlertDispatcher', function (): void {
             message: 'This is a test alert for email.',
         );
 
-        $dispatcher = new AlertDispatcher();
+        $dispatcher = new AlertDispatcher;
         $log = $dispatcher->dispatch($rule, $event);
 
         expect($log->channels_notified)->toContain('email');
@@ -101,7 +101,7 @@ describe('AlertDispatcher', function (): void {
             message: 'Critical alert!',
         );
 
-        $dispatcher = new AlertDispatcher();
+        $dispatcher = new AlertDispatcher;
         $log = $dispatcher->dispatch($rule, $event);
 
         expect($log->channels_notified)->toContain('slack');
@@ -128,7 +128,7 @@ describe('AlertDispatcher', function (): void {
             message: 'Alert for webhook.',
         );
 
-        $dispatcher = new AlertDispatcher();
+        $dispatcher = new AlertDispatcher;
         $log = $dispatcher->dispatch($rule, $event);
 
         expect($log->channels_notified)->toContain('webhook');
@@ -156,7 +156,7 @@ describe('AlertDispatcher', function (): void {
             message: 'Test',
         );
 
-        $dispatcher = new AlertDispatcher();
+        $dispatcher = new AlertDispatcher;
         $dispatcher->dispatch($rule, $event);
 
         expect($rule->fresh()->last_triggered_at)->not->toBeNull();
@@ -182,7 +182,7 @@ describe('AlertDispatcher', function (): void {
             message: 'Test',
         );
 
-        $dispatcher = new AlertDispatcher();
+        $dispatcher = new AlertDispatcher;
         $log = $dispatcher->dispatch($rule, $event);
 
         // No email channel because recipients are empty
@@ -201,7 +201,7 @@ describe('AlertDispatcher', function (): void {
         );
 
         // Access private method via reflection
-        $dispatcher = new AlertDispatcher();
+        $dispatcher = new AlertDispatcher;
         $reflection = new ReflectionClass($dispatcher);
         $method = $reflection->getMethod('formatEmailMessage');
         $method->setAccessible(true);

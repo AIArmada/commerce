@@ -11,7 +11,8 @@ use AIArmada\CommerceSupport\Contracts\Events\CartEventInterface;
 describe('HasCartEventData trait', function (): void {
     beforeEach(function (): void {
         // Create a concrete implementation to test the trait
-        $this->event = new class implements CartEventInterface {
+        $this->event = new class implements CartEventInterface
+        {
             use HasCartEventData;
 
             public function __construct()
@@ -45,11 +46,12 @@ describe('HasCartEventData trait', function (): void {
         $eventId = $this->event->getEventId();
 
         expect($eventId)->toBeString()
-            ->and(strlen($eventId))->toBeGreaterThan(0);
+            ->and(mb_strlen($eventId))->toBeGreaterThan(0);
     });
 
     it('generates different event IDs for different instances', function (): void {
-        $event2 = new class implements CartEventInterface {
+        $event2 = new class implements CartEventInterface
+        {
             use HasCartEventData;
 
             public function __construct()
@@ -124,7 +126,8 @@ describe('HasCartEventData trait', function (): void {
     });
 
     it('uses toArray if available in toEventPayload', function (): void {
-        $eventWithToArray = new class implements CartEventInterface {
+        $eventWithToArray = new class implements CartEventInterface
+        {
             use HasCartEventData;
 
             public function __construct()

@@ -37,7 +37,7 @@ describe('AlertRule', function (): void {
     });
 
     it('returns table name from config', function (): void {
-        $rule = new AlertRule();
+        $rule = new AlertRule;
         $tableName = $rule->getTable();
 
         expect($tableName)->toContain('alert_rules');

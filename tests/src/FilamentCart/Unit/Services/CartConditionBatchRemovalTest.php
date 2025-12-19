@@ -45,8 +45,8 @@ describe('CartConditionBatchRemoval service', function (): void {
                     'phase' => 'cart_subtotal',
                     'application' => 'aggregate',
                 ],
-                'value' => '-10'
-            ]
+                'value' => '-10',
+            ],
         ]);
         $storage->shouldReceive('getItems')->andReturn([]);
         $storage->shouldReceive('getId')->andReturn('cart-id');
@@ -55,7 +55,7 @@ describe('CartConditionBatchRemoval service', function (): void {
         $storage->shouldReceive('getUpdatedAt')->andReturn(now()->toIso8601String());
 
         $storage->shouldReceive('putConditions')->with('session-123', 'default', \Mockery::on(function ($args) {
-            return !isset($args['Bad Condition']);
+            return ! isset($args['Bad Condition']);
         }))->once();
 
         $realCart = new Cart($storage, 'session-123');

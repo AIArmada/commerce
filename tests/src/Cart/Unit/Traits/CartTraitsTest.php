@@ -138,7 +138,7 @@ describe('ProvidesConditionScopes trait', function (): void {
     });
 
     it('can register shipment resolver and retrieve shipments', function (): void {
-        $result = $this->cart->resolveShipmentsUsing(fn() => [
+        $result = $this->cart->resolveShipmentsUsing(fn () => [
             ['id' => 'ship-1', 'amount' => 500],
             ['id' => 'ship-2', 'amount' => 800],
         ]);
@@ -152,7 +152,7 @@ describe('ProvidesConditionScopes trait', function (): void {
     });
 
     it('returns empty shipments when resolver returns empty', function (): void {
-        $this->cart->resolveShipmentsUsing(fn() => []);
+        $this->cart->resolveShipmentsUsing(fn () => []);
 
         $shipments = iterator_to_array($this->cart->getShipments());
 
@@ -160,7 +160,7 @@ describe('ProvidesConditionScopes trait', function (): void {
     });
 
     it('can register payment resolver and retrieve payments', function (): void {
-        $result = $this->cart->resolvePaymentsUsing(fn() => [
+        $result = $this->cart->resolvePaymentsUsing(fn () => [
             ['id' => 'credit-card', 'fee' => 300],
         ]);
 
@@ -173,7 +173,7 @@ describe('ProvidesConditionScopes trait', function (): void {
     });
 
     it('returns empty payments when resolver returns empty', function (): void {
-        $this->cart->resolvePaymentsUsing(fn() => []);
+        $this->cart->resolvePaymentsUsing(fn () => []);
 
         $payments = iterator_to_array($this->cart->getPayments());
 
@@ -181,7 +181,7 @@ describe('ProvidesConditionScopes trait', function (): void {
     });
 
     it('can register fulfillment resolver and retrieve fulfillments', function (): void {
-        $result = $this->cart->resolveFulfillmentsUsing(fn() => [
+        $result = $this->cart->resolveFulfillmentsUsing(fn () => [
             ['id' => 'delivery', 'base_amount' => 2000],
         ]);
 
@@ -194,7 +194,7 @@ describe('ProvidesConditionScopes trait', function (): void {
     });
 
     it('returns empty fulfillments when resolver returns empty', function (): void {
-        $this->cart->resolveFulfillmentsUsing(fn() => []);
+        $this->cart->resolveFulfillmentsUsing(fn () => []);
 
         $fulfillments = iterator_to_array($this->cart->getFulfillments());
 

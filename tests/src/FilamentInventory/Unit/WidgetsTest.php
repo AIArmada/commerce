@@ -35,7 +35,7 @@ it('builds inventory stats widget stats', function (): void {
         'reorder_point' => 5,
     ]);
 
-    $widget = new InventoryStatsWidget();
+    $widget = new InventoryStatsWidget;
 
     expect(InventoryStatsWidget::canView())->toBeTrue();
 
@@ -60,7 +60,7 @@ it('builds low inventory alerts widget table', function (): void {
         'reorder_point' => 5,
     ]);
 
-    $widget = new LowInventoryAlertsWidget();
+    $widget = new LowInventoryAlertsWidget;
 
     $livewire = Mockery::mock(HasTable::class);
     $table = $widget->table(Table::make($livewire));
@@ -82,7 +82,7 @@ it('builds movement trends chart data', function (): void {
         'occurred_at' => now()->subDays(2),
     ]);
 
-    $widget = new MovementTrendsChart();
+    $widget = new MovementTrendsChart;
 
     $method = new ReflectionMethod($widget, 'getData');
     $method->setAccessible(true);
@@ -96,7 +96,7 @@ it('builds movement trends chart data', function (): void {
 });
 
 it('builds abc analysis chart description and data without crashing', function (): void {
-    $widget = new AbcAnalysisChart();
+    $widget = new AbcAnalysisChart;
 
     $description = $widget->getDescription();
 
@@ -115,19 +115,19 @@ it('builds abc analysis chart description and data without crashing', function (
 it('builds tables for optional table widgets without evaluating routes', function (): void {
     $livewire = Mockery::mock(HasTable::class);
 
-    $backorders = (new BackordersWidget())->table(Table::make($livewire));
+    $backorders = (new BackordersWidget)->table(Table::make($livewire));
     expect($backorders->getColumns())->not()->toBeEmpty();
 
-    $reorder = (new ReorderSuggestionsWidget())->table(Table::make($livewire));
+    $reorder = (new ReorderSuggestionsWidget)->table(Table::make($livewire));
     expect($reorder->getColumns())->not()->toBeEmpty();
 
-    $expiring = (new ExpiringBatchesWidget())->table(Table::make($livewire));
+    $expiring = (new ExpiringBatchesWidget)->table(Table::make($livewire));
     expect($expiring->getColumns())->not()->toBeEmpty();
 });
 
 it('builds kpi and valuation widgets stats', function (): void {
-    $kpi = new InventoryKpiWidget();
-    $valuation = new InventoryValuationWidget();
+    $kpi = new InventoryKpiWidget;
+    $valuation = new InventoryValuationWidget;
 
     $kpiMethod = new ReflectionMethod($kpi, 'getStats');
     $kpiMethod->setAccessible(true);

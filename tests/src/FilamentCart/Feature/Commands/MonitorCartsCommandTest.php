@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Commands\MonitorCartsCommand;
 use AIArmada\FilamentCart\Models\AlertRule;
 use AIArmada\FilamentCart\Services\AlertDispatcher;
 use AIArmada\FilamentCart\Services\AlertEvaluator;
@@ -12,10 +11,10 @@ use Illuminate\Support\Collection;
 describe('MonitorCartsCommand', function (): void {
     it('runs single monitoring pass with --once option and no events', function (): void {
         $monitor = Mockery::mock(CartMonitor::class);
-        $monitor->shouldReceive('detectAbandonments')->once()->andReturn(new Collection());
-        $monitor->shouldReceive('detectFraudSignals')->once()->andReturn(new Collection());
-        $monitor->shouldReceive('detectRecoveryOpportunities')->once()->andReturn(new Collection());
-        $monitor->shouldReceive('getHighValueCarts')->once()->andReturn(new Collection());
+        $monitor->shouldReceive('detectAbandonments')->once()->andReturn(new Collection);
+        $monitor->shouldReceive('detectFraudSignals')->once()->andReturn(new Collection);
+        $monitor->shouldReceive('detectRecoveryOpportunities')->once()->andReturn(new Collection);
+        $monitor->shouldReceive('getHighValueCarts')->once()->andReturn(new Collection);
 
         $evaluator = Mockery::mock(AlertEvaluator::class);
         $dispatcher = Mockery::mock(AlertDispatcher::class);
@@ -49,9 +48,9 @@ describe('MonitorCartsCommand', function (): void {
 
         $monitor = Mockery::mock(CartMonitor::class);
         $monitor->shouldReceive('detectAbandonments')->once()->andReturn(new Collection([$abandonedCart]));
-        $monitor->shouldReceive('detectFraudSignals')->once()->andReturn(new Collection());
-        $monitor->shouldReceive('detectRecoveryOpportunities')->once()->andReturn(new Collection());
-        $monitor->shouldReceive('getHighValueCarts')->once()->andReturn(new Collection());
+        $monitor->shouldReceive('detectFraudSignals')->once()->andReturn(new Collection);
+        $monitor->shouldReceive('detectRecoveryOpportunities')->once()->andReturn(new Collection);
+        $monitor->shouldReceive('getHighValueCarts')->once()->andReturn(new Collection);
 
         $evaluator = Mockery::mock(AlertEvaluator::class);
         $evaluator->shouldReceive('getMatchingRules')->andReturn(new Collection([$rule]));

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentAffiliates\Support\Integrations\CartBridge;
-use AIArmada\FilamentAffiliates\Support\Integrations\VoucherBridge;
 use AIArmada\Affiliates\Enums\AffiliateStatus;
+use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\Affiliates\Enums\ConversionStatus;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\FilamentCart\Models\Cart as SnapshotCart;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\FilamentAffiliates\Support\Integrations\CartBridge;
+use AIArmada\FilamentAffiliates\Support\Integrations\VoucherBridge;
+use AIArmada\FilamentCart\Models\Cart as SnapshotCart;
 use AIArmada\FilamentVouchers\Models\Voucher;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
@@ -90,7 +90,8 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
         'password' => bcrypt('password'),
     ]);
 
-    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface {
+    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
+    {
         public function __construct(private readonly Model $owner) {}
 
         public function resolve(): ?Model
@@ -197,7 +198,8 @@ test('voucher bridge does not resolve urls outside current owner scope', functio
         'password' => bcrypt('password'),
     ]);
 
-    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface {
+    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
+    {
         public function __construct(private readonly Model $owner) {}
 
         public function resolve(): ?Model

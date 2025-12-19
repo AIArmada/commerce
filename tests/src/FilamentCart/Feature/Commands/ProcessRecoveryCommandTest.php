@@ -36,11 +36,11 @@ describe('ProcessRecoveryCommand', function (): void {
 
     it('accepts limit option', function (): void {
         $scheduler = Mockery::mock(RecoveryScheduler::class);
-        $scheduler->shouldReceive('processScheduledAttempts') // The command doesn't pass limit to the service method in the current implementation shown, it reads it but maybe uses later? 
+        $scheduler->shouldReceive('processScheduledAttempts') // The command doesn't pass limit to the service method in the current implementation shown, it reads it but maybe uses later?
             // Ah looking at the file: $limit = (int) $this->option('limit'); but it doesn't pass it to processScheduledAttempts() ?
-            // Wait, looking at file content: 
-            // $result = $scheduler->processScheduledAttempts(); 
-            // It seems the limit option is read but NOT passed to scheduler? 
+            // Wait, looking at file content:
+            // $result = $scheduler->processScheduledAttempts();
+            // It seems the limit option is read but NOT passed to scheduler?
             // Let's verify line 25 of ProcessRecoveryCommand.php
             ->once()
             ->andReturn(['processed' => 0, 'failed' => 0]);

@@ -2,30 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
 use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Models\CartItem;
 use AIArmada\FilamentCart\Resources\CartConditionResource;
 use AIArmada\FilamentCart\Resources\CartItemResource;
 use AIArmada\FilamentCart\Resources\CartResource;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
-
-final class StaticOwnerResolver implements OwnerResolverInterface
-{
-    public function __construct(private ?Model $owner)
-    {
-    }
-
-    public function resolve(): ?Model
-    {
-        return $this->owner;
-    }
-}
 
 it('scopes filament-cart snapshots and child resources by resolved owner', function (): void {
     config()->set('filament-cart.owner.enabled', true);
@@ -43,7 +31,7 @@ it('scopes filament-cart snapshots and child resources by resolved owner', funct
         'password' => 'secret',
     ]);
 
-    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new StaticOwnerResolver($ownerA));
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
 
     $cartA = CartSnapshot::query()->create([
         'identifier' => 'same-id',

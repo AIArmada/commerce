@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\FilamentCart\Data\AbandonmentAnalysis;
 use AIArmada\FilamentCart\Data\ConversionFunnel;
 use AIArmada\FilamentCart\Data\DashboardMetrics;
 use AIArmada\FilamentCart\Data\RecoveryMetrics;
-use AIArmada\FilamentCart\Data\AbandonmentAnalysis;
 use AIArmada\FilamentCart\Models\CartDailyMetrics;
 use AIArmada\FilamentCart\Services\CartAnalyticsService;
 use AIArmada\FilamentCart\Services\ExportService;
@@ -47,7 +47,7 @@ describe('ExportService', function (): void {
             Carbon::parse('2025-01-31')
         );
 
-        $lines = explode("\n", trim($csv));
+        $lines = explode("\n", mb_trim($csv));
 
         expect($lines)->toHaveCount(3); // Header + 2 rows
         expect($lines[0])->toContain('Date,Carts Created');

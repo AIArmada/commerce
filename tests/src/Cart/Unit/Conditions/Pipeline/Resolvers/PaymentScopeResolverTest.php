@@ -47,7 +47,8 @@ describe('PaymentScopeResolver', function (): void {
         $method = $reflection->getMethod('extractBaseAmount');
         $method->setAccessible(true);
 
-        $object = new class {
+        $object = new class
+        {
             public function getBaseAmount(): int
             {
                 return 4000;

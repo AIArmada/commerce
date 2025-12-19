@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentVouchers\Models\Voucher as FilamentVoucher;
@@ -23,20 +24,9 @@ use AIArmada\Vouchers\GiftCards\Enums\GiftCardStatus;
 use AIArmada\Vouchers\GiftCards\Models\GiftCard;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 uses(TestCase::class);
-
-final class TestOwnerResolver implements OwnerResolverInterface
-{
-    public function __construct(private ?Model $owner) {}
-
-    public function resolve(): ?Model
-    {
-        return $this->owner;
-    }
-}
 
 it('scopes Filament Vouchers resources to the resolved owner (including global)', function (): void {
     config()->set('vouchers.owner.enabled', true);
@@ -54,7 +44,7 @@ it('scopes Filament Vouchers resources to the resolved owner (including global)'
         'password' => 'secret',
     ]);
 
-    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new TestOwnerResolver($ownerA));
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
 
     $globalVoucher = FilamentVoucher::query()->create([
         'code' => 'GLOBAL-1',
@@ -253,7 +243,7 @@ it('can exclude global records from Filament Vouchers resources', function (): v
         'password' => 'secret',
     ]);
 
-    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new TestOwnerResolver($ownerA));
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
 
     $globalVoucher = FilamentVoucher::query()->create([
         'code' => 'GLOBAL-2',

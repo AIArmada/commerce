@@ -14,8 +14,8 @@ it('scopes attributions to current owner and global when enabled', function (): 
     config()->set('affiliates.owner.enabled', true);
     config()->set('affiliates.owner.auto_assign_on_create', false);
 
-    $ownerA = TestOwner::create(['name' => 'Owner A']);
-    $ownerB = TestOwner::create(['name' => 'Owner B']);
+    $ownerA = AffiliatesTestOwner::create(['name' => 'Owner A']);
+    $ownerB = AffiliatesTestOwner::create(['name' => 'Owner B']);
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {
@@ -88,8 +88,8 @@ it('scopes conversions to current owner and global when enabled', function (): v
     config()->set('affiliates.owner.enabled', true);
     config()->set('affiliates.owner.auto_assign_on_create', false);
 
-    $ownerA = TestOwner::create(['name' => 'Owner A']);
-    $ownerB = TestOwner::create(['name' => 'Owner B']);
+    $ownerA = AffiliatesTestOwner::create(['name' => 'Owner A']);
+    $ownerB = AffiliatesTestOwner::create(['name' => 'Owner B']);
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {
@@ -181,7 +181,7 @@ it('returns strict global-only when enabled and resolved owner is null', functio
         }
     });
 
-    $owner = TestOwner::create(['name' => 'Owner']);
+    $owner = AffiliatesTestOwner::create(['name' => 'Owner']);
 
     $affiliate = Affiliate::create([
         'code' => 'AFF-NULL-OWNER',
@@ -269,7 +269,7 @@ it('returns strict global-only when enabled and resolved owner is null', functio
         ->and($conversionIds)->toHaveCount(1);
 });
 
-class TestOwner extends Model
+class AffiliatesTestOwner extends Model
 {
     use HasUuids;
 

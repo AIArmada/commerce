@@ -3,8 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentCart\Models\RecoveryCampaign;
-use AIArmada\FilamentCart\Models\RecoveryAttempt;
-use AIArmada\FilamentCart\Models\RecoveryTemplate;
 use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
@@ -35,7 +33,7 @@ describe('RecoveryCampaign', function (): void {
     });
 
     it('returns table name from config', function (): void {
-        $campaign = new RecoveryCampaign();
+        $campaign = new RecoveryCampaign;
         $tableName = $campaign->getTable();
 
         expect($tableName)->toContain('recovery_campaigns');

@@ -126,7 +126,7 @@ describe('HasPageAuthz::canAccess', function (): void {
 
 describe('HasPageAuthz::isSuperAdmin', function (): void {
     it('returns false when user does not have hasRole method', function (): void {
-        $user = new stdClass();
+        $user = new stdClass;
 
         expect(TestPageWithAuthz::publicIsSuperAdmin($user))->toBeFalse();
     });
@@ -145,7 +145,7 @@ describe('HasPageAuthz::getTitleWithPermissionDebug', function (): void {
         config(['app.env' => 'local']);
         $this->app['env'] = 'local';
 
-        $page = new TestPageWithAuthz();
+        $page = new TestPageWithAuthz;
 
         expect($page->getTitleWithPermissionDebug())->toContain('Test Page');
     });

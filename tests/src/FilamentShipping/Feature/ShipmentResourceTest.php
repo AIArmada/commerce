@@ -6,9 +6,9 @@ use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Models\Shipment;
 use Filament\Schemas\Schema;
+use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
-use Filament\Support\Icons\Heroicon;
 
 uses(TestCase::class);
 

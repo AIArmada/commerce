@@ -31,13 +31,13 @@ beforeEach(function (): void {
 
 describe('ComplianceReportService', function (): void {
     test('can be instantiated', function (): void {
-        $service = new ComplianceReportService();
+        $service = new ComplianceReportService;
 
         expect($service)->toBeInstanceOf(ComplianceReportService::class);
     });
 
     test('generateReport returns complete report structure', function (): void {
-        $service = new ComplianceReportService();
+        $service = new ComplianceReportService;
 
         $startDate = Carbon::now()->subDays(7);
         $endDate = Carbon::now();
@@ -59,7 +59,7 @@ describe('ComplianceReportService', function (): void {
     })->skip(fn () => config('database.default') === 'testing', 'Skipped - uses MySQL HOUR() function not available in SQLite');
 
     test('generateReport respects report type', function (): void {
-        $service = new ComplianceReportService();
+        $service = new ComplianceReportService;
 
         $startDate = Carbon::now()->subDays(7);
         $endDate = Carbon::now();
@@ -72,7 +72,7 @@ describe('ComplianceReportService', function (): void {
     });
 
     test('getSummary returns correct counts', function (): void {
-        $service = new ComplianceReportService();
+        $service = new ComplianceReportService;
 
         // Create audit logs
         PermissionAuditLog::create([
@@ -115,7 +115,7 @@ describe('ComplianceReportService', function (): void {
     });
 
     test('getEventsByType groups events correctly', function (): void {
-        $service = new ComplianceReportService();
+        $service = new ComplianceReportService;
 
         // Create events of different types
         PermissionAuditLog::create([
@@ -148,7 +148,7 @@ describe('ComplianceReportService', function (): void {
     });
 
     test('getEventsBySeverity groups events correctly', function (): void {
-        $service = new ComplianceReportService();
+        $service = new ComplianceReportService;
 
         // Create events of different severities
         PermissionAuditLog::create([
@@ -181,7 +181,7 @@ describe('ComplianceReportService', function (): void {
     });
 
     test('getSecurityEvents returns security-related events only', function (): void {
-        $service = new ComplianceReportService();
+        $service = new ComplianceReportService;
 
         // Create security and non-security events
         PermissionAuditLog::create([
@@ -216,7 +216,7 @@ describe('ComplianceReportService', function (): void {
     });
 
     test('getTopActors returns most active actors', function (): void {
-        $service = new ComplianceReportService();
+        $service = new ComplianceReportService;
 
         // Create events with different actors
         for ($i = 0; $i < 5; $i++) {
@@ -255,7 +255,7 @@ describe('ComplianceReportService', function (): void {
     });
 
     test('getTopActors respects limit', function (): void {
-        $service = new ComplianceReportService();
+        $service = new ComplianceReportService;
 
         // Create events with many actors
         for ($i = 1; $i <= 15; $i++) {
@@ -274,7 +274,7 @@ describe('ComplianceReportService', function (): void {
     });
 
     test('getUserPermissionHistory returns user-related events', function (): void {
-        $service = new ComplianceReportService();
+        $service = new ComplianceReportService;
 
         $userId = 'target-user-id';
 
@@ -319,7 +319,7 @@ describe('ComplianceReportService', function (): void {
     });
 
     test('getUserPermissionHistory respects date range', function (): void {
-        $service = new ComplianceReportService();
+        $service = new ComplianceReportService;
 
         $userId = 'test-user';
         $differentUserId = 'different-user';
@@ -355,7 +355,7 @@ describe('ComplianceReportService', function (): void {
     });
 
     test('getRoleHistory returns role-related events', function (): void {
-        $service = new ComplianceReportService();
+        $service = new ComplianceReportService;
 
         $roleId = 'target-role-id';
 
@@ -392,7 +392,7 @@ describe('ComplianceReportService', function (): void {
     });
 
     test('exportToArray converts report to flat array', function (): void {
-        $service = new ComplianceReportService();
+        $service = new ComplianceReportService;
 
         $report = [
             'summary' => [
@@ -425,7 +425,7 @@ describe('ComplianceReportService', function (): void {
     });
 
     test('exportToCsv generates valid CSV', function (): void {
-        $service = new ComplianceReportService();
+        $service = new ComplianceReportService;
 
         // Create audit log
         PermissionAuditLog::create([
@@ -448,7 +448,7 @@ describe('ComplianceReportService', function (): void {
     });
 
     test('exportToCsv returns empty string on failure', function (): void {
-        $service = new ComplianceReportService();
+        $service = new ComplianceReportService;
 
         // With no logs, should still return valid CSV header
         $csv = $service->exportToCsv(Carbon::now()->subDay(), Carbon::now()->addDay());

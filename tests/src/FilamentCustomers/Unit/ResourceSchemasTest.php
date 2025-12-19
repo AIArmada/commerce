@@ -6,9 +6,9 @@ use AIArmada\FilamentCustomers\Resources\CustomerResource;
 use AIArmada\FilamentCustomers\Resources\SegmentResource;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
+use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
-use Filament\Support\Contracts\TranslatableContentDriver;
 use Livewire\Component as LivewireComponent;
 
 if (! function_exists('filamentCustomers_makeSchemaLivewire')) {

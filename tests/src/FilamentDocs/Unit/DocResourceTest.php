@@ -9,9 +9,7 @@ use AIArmada\FilamentDocs\Resources\DocResource\RelationManagers\EmailsRelationM
 use AIArmada\FilamentDocs\Resources\DocResource\RelationManagers\PaymentsRelationManager;
 use AIArmada\FilamentDocs\Resources\DocResource\RelationManagers\StatusHistoriesRelationManager;
 use AIArmada\FilamentDocs\Resources\DocResource\RelationManagers\VersionsRelationManager;
-use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
-use Filament\Tables\Table;
 
 test('doc resource has correct model and labels', function (): void {
     expect(DocResource::getModel())->toBe(Doc::class);
@@ -41,8 +39,6 @@ test('doc resource has correct relations', function (): void {
     expect($relations)->toContain(VersionsRelationManager::class);
     expect($relations)->toContain(ApprovalsRelationManager::class);
 });
-
-
 
 test('doc resource navigation badge color', function (): void {
     expect(DocResource::getNavigationBadgeColor())->toBe('primary');

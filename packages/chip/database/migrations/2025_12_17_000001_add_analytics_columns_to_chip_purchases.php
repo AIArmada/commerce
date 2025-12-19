@@ -9,7 +9,8 @@ use Illuminate\Support\Facades\Schema;
 /**
  * Add analytics columns to chip_purchases table for LocalAnalyticsService.
  */
-return new class extends Migration {
+return new class extends Migration
+{
     public function up(): void
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
@@ -45,8 +46,8 @@ return new class extends Migration {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
         Schema::table($tablePrefix . 'purchases', function (Blueprint $table): void {
-            $table->dropIndex([$tablePrefix . 'purchases_payment_method_status_created_at_index']);
-            $table->dropIndex([$tablePrefix . 'purchases_status_created_at_index']);
+            $table->dropIndex(['payment_method', 'status', 'created_at']);
+            $table->dropIndex(['status', 'created_at']);
 
             $table->dropColumn([
                 'payment_method',

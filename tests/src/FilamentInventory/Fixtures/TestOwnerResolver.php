@@ -9,9 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 
 final class TestOwnerResolver implements OwnerResolverInterface
 {
-    public function __construct(private readonly ?Model $owner)
-    {
-    }
+    public function __construct(private readonly ?Model $owner) {}
 
     public function resolve(): ?Model
     {

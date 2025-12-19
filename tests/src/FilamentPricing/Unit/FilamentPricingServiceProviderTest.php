@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentPricing\FilamentPricingServiceProvider;
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\FilamentPricing\FilamentPricingServiceProvider;
 
 uses(TestCase::class);
 

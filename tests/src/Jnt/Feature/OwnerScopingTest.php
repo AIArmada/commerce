@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Jnt\Models\JntOrder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -106,9 +106,7 @@ it('auto-assigns owner on create when enabled', function (): void {
 
     app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
     {
-        public function __construct(private readonly ?Model $owner)
-        {
-        }
+        public function __construct(private readonly ?Model $owner) {}
 
         public function resolve(): ?Model
         {

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentInventory\Actions\AdjustStockAction;
 use AIArmada\FilamentInventory\Actions\CycleCountAction;
 use AIArmada\FilamentInventory\Actions\ReceiveStockAction;
@@ -11,7 +12,6 @@ use AIArmada\FilamentInventory\Actions\TransferStockAction;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryService;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Eloquent\Model;
 
 beforeEach(function (): void {

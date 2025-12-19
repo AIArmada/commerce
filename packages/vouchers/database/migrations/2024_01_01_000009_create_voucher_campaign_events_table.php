@@ -14,7 +14,7 @@ return new class extends Migration
         /** @var array<string, string> $tables */
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
-        $tableName = $tables['campaign_events'] ?? $prefix.'voucher_campaign_events';
+        $tableName = $tables['campaign_events'] ?? $prefix . 'voucher_campaign_events';
 
         Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
@@ -69,7 +69,7 @@ return new class extends Migration
         /** @var array<string, string> $tables */
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
-        $tableName = $tables['campaign_events'] ?? $prefix.'voucher_campaign_events';
+        $tableName = $tables['campaign_events'] ?? $prefix . 'voucher_campaign_events';
 
         if (Schema::getConnection()->getDriverName() === 'pgsql') {
             DB::statement("DROP INDEX IF EXISTS {$tableName}_metadata_gin_index");

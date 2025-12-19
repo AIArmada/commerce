@@ -21,8 +21,10 @@ it('uses config for navigation metadata', function (): void {
         $table->string('owner_id')->nullable();
     });
 
-    $modelClass = new class extends Model {
+    $modelClass = new class extends Model
+    {
         protected $table = 'fake_records';
+
         protected $guarded = [];
 
         public function scopeForOwner(Builder $query): Builder
@@ -33,7 +35,8 @@ it('uses config for navigation metadata', function (): void {
 
     $modelFqcn = $modelClass::class;
 
-    $resource = new class ($modelFqcn) extends BaseChipResource {
+    $resource = new class($modelFqcn) extends BaseChipResource
+    {
         public function __construct(private string $modelFqcn) {}
 
         protected static ?string $model;

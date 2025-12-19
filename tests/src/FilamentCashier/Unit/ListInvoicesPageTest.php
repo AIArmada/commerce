@@ -171,4 +171,3 @@ it('returns no invoices when the configured billable model does not exist', func
     $page = app(ListInvoices::class);
     expect($page->getTableRecords())->toHaveCount(0);
 });
-

@@ -6,9 +6,57 @@ on:
   pull_request:
     branches: [main, develop]
 
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: write
+
 jobs:
   fix-code-style:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name == github.repository && github.actor != 'github-actions[bot]'
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          ref: ${{ github.head_ref }}
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          extensions: mbstring, pdo, pdo_sqlite, json
+          coverage: none
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run Pint (fix)
+        run: vendor/bin/pint
+
+      - name: Run Rector (fix)
+        run: vendor/bin/rector --no-progress-bar
+
+      - name: Commit changes (if any)
+        run: |
+          if git diff --quiet; then
+            echo "No code style changes to commit."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+          git add -A
+          git commit -m "chore(style): apply Pint and Rector"
+          git push origin HEAD:${{ github.head_ref }}
+
+  check-code-style:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -21,10 +69,10 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer update --prefer-dist --no-interaction --no-progress
-
-      - name: Check Rector (dry-run)
-        run: vendor/bin/rector --dry-run --no-progress-bar
+        run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Check Pint (test)
         run: vendor/bin/pint --test
+
+      - name: Check Rector (dry-run)
+        run: vendor/bin/rector --dry-run --no-progress-bar

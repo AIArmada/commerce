@@ -56,7 +56,7 @@ describe('ThrottleCartOperations', function (): void {
         $request = Request::create('/cart/checkout', 'POST');
         $request->setLaravelSession(app('session.store'));
 
-        $response = $middleware->handle($request, fn() => new Response('checkout'));
+        $response = $middleware->handle($request, fn () => new Response('checkout'));
 
         expect($response->getContent())->toBe('checkout');
     });
@@ -70,7 +70,7 @@ describe('ThrottleCartOperations', function (): void {
         $request = Request::create('/cart/merge', 'POST');
         $request->setLaravelSession(app('session.store'));
 
-        $response = $middleware->handle($request, fn() => new Response('merged'));
+        $response = $middleware->handle($request, fn () => new Response('merged'));
 
         expect($response->getContent())->toBe('merged');
     });
@@ -84,7 +84,7 @@ describe('ThrottleCartOperations', function (): void {
         $request = Request::create('/cart/clear', 'DELETE');
         $request->setLaravelSession(app('session.store'));
 
-        $response = $middleware->handle($request, fn() => new Response('cleared'));
+        $response = $middleware->handle($request, fn () => new Response('cleared'));
 
         expect($response->getContent())->toBe('cleared');
     });
@@ -98,7 +98,7 @@ describe('ThrottleCartOperations', function (): void {
         $request = Request::create('/cart/condition', 'POST');
         $request->setLaravelSession(app('session.store'));
 
-        $response = $middleware->handle($request, fn() => new Response('condition added'));
+        $response = $middleware->handle($request, fn () => new Response('condition added'));
 
         expect($response->getContent())->toBe('condition added');
     });
@@ -112,7 +112,7 @@ describe('ThrottleCartOperations', function (): void {
         $request = Request::create('/cart/condition/promo10', 'DELETE');
         $request->setLaravelSession(app('session.store'));
 
-        $response = $middleware->handle($request, fn() => new Response('condition removed'));
+        $response = $middleware->handle($request, fn () => new Response('condition removed'));
 
         expect($response->getContent())->toBe('condition removed');
     });
@@ -126,7 +126,7 @@ describe('ThrottleCartOperations', function (): void {
         $request = Request::create('/cart/item', 'POST');
         $request->setLaravelSession(app('session.store'));
 
-        $response = $middleware->handle($request, fn() => new Response('item added'));
+        $response = $middleware->handle($request, fn () => new Response('item added'));
 
         expect($response->getContent())->toBe('item added');
     });
@@ -140,7 +140,7 @@ describe('ThrottleCartOperations', function (): void {
         $request = Request::create('/cart/item/123', 'PUT');
         $request->setLaravelSession(app('session.store'));
 
-        $response = $middleware->handle($request, fn() => new Response('item updated'));
+        $response = $middleware->handle($request, fn () => new Response('item updated'));
 
         expect($response->getContent())->toBe('item updated');
     });
@@ -154,7 +154,7 @@ describe('ThrottleCartOperations', function (): void {
         $request = Request::create('/cart/item/123', 'DELETE');
         $request->setLaravelSession(app('session.store'));
 
-        $response = $middleware->handle($request, fn() => new Response('item removed'));
+        $response = $middleware->handle($request, fn () => new Response('item removed'));
 
         expect($response->getContent())->toBe('item removed');
     });
@@ -168,7 +168,7 @@ describe('ThrottleCartOperations', function (): void {
         $request = Request::create('/custom/endpoint', 'GET');
         $request->setLaravelSession(app('session.store'));
 
-        $response = $middleware->handle($request, fn() => new Response('custom'), 'custom_operation');
+        $response = $middleware->handle($request, fn () => new Response('custom'), 'custom_operation');
 
         expect($response->getContent())->toBe('custom');
     });
@@ -182,7 +182,7 @@ describe('ThrottleCartOperations', function (): void {
         $request = Request::create('/cart', 'GET');
         $request->setLaravelSession(app('session.store'));
 
-        $response = $middleware->handle($request, fn() => new Response('OK'));
+        $response = $middleware->handle($request, fn () => new Response('OK'));
 
         expect($response->headers->has('X-RateLimit-Remaining'))->toBeTrue();
     });

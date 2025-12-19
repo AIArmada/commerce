@@ -60,7 +60,8 @@ it('cancels an order and updates the record when authenticated', function (): vo
     $captured = [];
 
     app()->bind(JntExpressService::class, function () use (&$captured) {
-        return new class($captured) {
+        return new class($captured)
+        {
             /**
              * @param  array<string, mixed>  $captured
              */
@@ -109,7 +110,8 @@ it('handles service exceptions and shows a failure notification', function (): v
 
     $this->actingAs($user);
 
-    app()->bind(JntExpressService::class, fn () => new class {
+    app()->bind(JntExpressService::class, fn () => new class
+    {
         public function cancelOrder(string $orderId, string $reason, ?string $trackingNumber = null): void
         {
             throw new RuntimeException('fail');

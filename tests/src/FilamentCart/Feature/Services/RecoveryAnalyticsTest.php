@@ -3,17 +3,17 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentCart\Data\CampaignMetrics;
+use AIArmada\FilamentCart\Data\RecoveryInsight;
+use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Models\RecoveryAttempt;
 use AIArmada\FilamentCart\Models\RecoveryCampaign;
 use AIArmada\FilamentCart\Services\RecoveryAnalytics;
-use AIArmada\FilamentCart\Data\RecoveryInsight;
-use AIArmada\FilamentCart\Models\Cart;
 use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
     Carbon::setTestNow(Carbon::create(2025, 1, 15, 12, 0, 0));
     // Setup shared instances for this scope
-    $this->analytics = new RecoveryAnalytics();
+    $this->analytics = new RecoveryAnalytics;
 
     $this->campaign = RecoveryCampaign::create([
         'name' => 'Test Campaign',
@@ -171,7 +171,7 @@ describe('RecoveryAnalytics', function (): void {
 
         $insights = $this->analytics->generateInsights($this->campaign);
 
-        $timing = $insights->first(fn(RecoveryInsight $i) => $i->type === 'timing');
+        $timing = $insights->first(fn (RecoveryInsight $i) => $i->type === 'timing');
 
         expect($timing)->not->toBeNull();
         expect($timing->recommendation)->toContain('10:00');
@@ -203,7 +203,7 @@ describe('RecoveryAnalytics', function (): void {
 
         $insights = $this->analytics->generateInsights($this->campaign);
 
-        $strategy = $insights->first(fn(RecoveryInsight $i) => $i->type === 'strategy');
+        $strategy = $insights->first(fn (RecoveryInsight $i) => $i->type === 'strategy');
 
         expect($strategy)->not->toBeNull();
         // Access via data array for properties not in main class body
@@ -239,7 +239,7 @@ describe('RecoveryAnalytics', function (): void {
 
         $insights = $this->analytics->generateInsights($this->campaign);
 
-        $discount = $insights->first(fn(RecoveryInsight $i) => $i->type === 'discount');
+        $discount = $insights->first(fn (RecoveryInsight $i) => $i->type === 'discount');
 
         expect($discount)->not->toBeNull();
         expect($discount->data['suggested_discount_percent'])->toBe(10);
@@ -270,7 +270,7 @@ describe('RecoveryAnalytics', function (): void {
 
         $insights = $this->analytics->generateInsights($this->campaign);
 
-        $targeting = $insights->first(fn(RecoveryInsight $i) => $i->type === 'targeting');
+        $targeting = $insights->first(fn (RecoveryInsight $i) => $i->type === 'targeting');
 
         expect($targeting)->not->toBeNull();
         expect($targeting->data['segment_to_focus'])->toBe('high');

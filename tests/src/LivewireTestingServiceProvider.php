@@ -16,7 +16,7 @@ final class EnsureLivewireErrorBagInitialized extends ComponentHook
      */
     public function render($view, $data): void
     {
-        $this->component->setErrorBag(new MessageBag());
+        $this->component->setErrorBag(new MessageBag);
     }
 
     /**
@@ -25,7 +25,7 @@ final class EnsureLivewireErrorBagInitialized extends ComponentHook
      */
     public function renderIsland(string $name, $view, $data): void
     {
-        $this->component->setErrorBag(new MessageBag());
+        $this->component->setErrorBag(new MessageBag);
     }
 }
 

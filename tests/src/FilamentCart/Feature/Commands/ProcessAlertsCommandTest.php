@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Commands\ProcessAlertsCommand;
 use AIArmada\FilamentCart\Models\AlertLog;
 use AIArmada\FilamentCart\Models\AlertRule;
 use AIArmada\FilamentCart\Services\AlertDispatcher;
@@ -36,7 +35,7 @@ describe('ProcessAlertsCommand', function (): void {
 
         $dispatcher = Mockery::mock(AlertDispatcher::class);
         $dispatcher->shouldReceive('dispatch')->once()->andReturn(new AlertLog([
-            'channels_notified' => ['database']
+            'channels_notified' => ['database'],
         ]));
 
         $this->app->instance(AlertEvaluator::class, $evaluator);

@@ -189,4 +189,3 @@ it('builds resources, schemas, tables, pages, and relation managers', function (
         expect($instance->table(makeCashierChipTable()))->toBeInstanceOf(Table::class);
     }
 });
-

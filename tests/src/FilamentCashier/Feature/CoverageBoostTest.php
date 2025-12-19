@@ -55,7 +55,7 @@ afterEach(function (): void {
 });
 
 if (! function_exists('filamentCashier_makeSchemaLivewire')) {
-    function filamentCashier_makeSchemaLivewire(): LivewireComponent&HasSchemas
+    function filamentCashier_makeSchemaLivewire(): LivewireComponent & HasSchemas
     {
         return new class extends LivewireComponent implements HasSchemas
         {
@@ -73,7 +73,7 @@ if (! function_exists('filamentCashier_makeSchemaLivewire')) {
                 string $key,
                 bool $withHidden = false,
                 array $skipComponentsChildContainersWhileSearching = [],
-            ): Filament\Schemas\Components\Component|Filament\Actions\Action|Filament\Actions\ActionGroup|null {
+            ): Filament\Schemas\Components\Component | Filament\Actions\Action | Filament\Actions\ActionGroup | null {
                 return null;
             }
 
@@ -82,9 +82,7 @@ if (! function_exists('filamentCashier_makeSchemaLivewire')) {
                 return null;
             }
 
-            public function currentlyValidatingSchema(?Schema $schema): void
-            {
-            }
+            public function currentlyValidatingSchema(?Schema $schema): void {}
 
             public function getDefaultTestingSchemaName(): ?string
             {
@@ -264,8 +262,11 @@ it('covers the filament-cashier public surface', function (): void {
     $stripeInvoice = new class
     {
         public string $id = 'in_123';
+
         public string $currency = 'usd';
+
         public string $number = 'INV-001';
+
         public bool $paid = true;
 
         public function rawTotal(): int
@@ -318,6 +319,7 @@ it('covers the filament-cashier public surface', function (): void {
     $stripeSubscription = new class extends Model
     {
         protected $guarded = [];
+
         public $timestamps = false;
 
         public function active(): bool
@@ -376,6 +378,7 @@ it('covers the filament-cashier public surface', function (): void {
     $chipSubscription = new class extends Model
     {
         protected $guarded = [];
+
         public $timestamps = false;
 
         public function active(): bool
@@ -444,6 +447,7 @@ it('covers the filament-cashier public surface', function (): void {
     $user = new class extends Model
     {
         protected $guarded = [];
+
         public $timestamps = false;
     };
     $user->forceFill(['id' => 123]);
@@ -451,6 +455,7 @@ it('covers the filament-cashier public surface', function (): void {
     $owned = new class extends Model
     {
         protected $guarded = [];
+
         public $timestamps = false;
     };
     $owned->forceFill(['user_id' => 123]);
@@ -458,6 +463,7 @@ it('covers the filament-cashier public surface', function (): void {
     $notOwned = new class extends Model
     {
         protected $guarded = [];
+
         public $timestamps = false;
     };
     $notOwned->forceFill(['user_id' => 999]);

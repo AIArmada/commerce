@@ -25,7 +25,7 @@ describe('RecoveryTemplate', function (): void {
     });
 
     it('returns table name from config', function (): void {
-        $template = new RecoveryTemplate();
+        $template = new RecoveryTemplate;
         $tableName = $template->getTable();
 
         expect($tableName)->toContain('recovery_templates');

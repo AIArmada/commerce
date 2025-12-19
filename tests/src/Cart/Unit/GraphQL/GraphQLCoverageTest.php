@@ -14,7 +14,7 @@ describe('GraphQL SDL Coverage', function (): void {
         $sdl = CartMutations::sdl();
 
         expect($sdl)->toBeString()
-            ->and(strlen($sdl))->toBeGreaterThan(100);
+            ->and(mb_strlen($sdl))->toBeGreaterThan(100);
     });
 
     it('CartMutations sdl contains mutation definitions', function (): void {
@@ -39,7 +39,7 @@ describe('GraphQL SDL Coverage', function (): void {
         $sdl = CartQuery::sdl();
 
         expect($sdl)->toBeString()
-            ->and(strlen($sdl))->toBeGreaterThan(100);
+            ->and(mb_strlen($sdl))->toBeGreaterThan(100);
     });
 
     it('CartQuery sdl contains query definitions', function (): void {
@@ -63,7 +63,7 @@ describe('GraphQL SDL Coverage', function (): void {
         $sdl = CartSubscription::sdl();
 
         expect($sdl)->toBeString()
-            ->and(strlen($sdl))->toBeGreaterThan(100);
+            ->and(mb_strlen($sdl))->toBeGreaterThan(100);
     });
 
     it('CartSubscription sdl contains subscription definitions', function (): void {

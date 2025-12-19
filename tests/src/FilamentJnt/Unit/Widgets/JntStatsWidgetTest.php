@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentJnt\Widgets\JntStatsWidget;
 use AIArmada\Jnt\Models\JntOrder;
 use Illuminate\Database\Eloquent\Model;
@@ -116,4 +116,3 @@ it('builds stats and respects owner scoping', function (): void {
     expect($globalDelivered)->not()->toBeNull();
     expect($stats[0]->getValue())->toBe($expectedTotal);
 });
-

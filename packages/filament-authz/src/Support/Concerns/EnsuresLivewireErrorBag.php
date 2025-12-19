@@ -19,7 +19,7 @@ trait EnsuresLivewireErrorBag
             return $errorBag;
         }
 
-        $sharedErrors = app('view')->getShared()['errors'] ?? new ViewErrorBag();
+        $sharedErrors = app('view')->getShared()['errors'] ?? new ViewErrorBag;
 
         if ($sharedErrors instanceof ViewErrorBag) {
             $this->setErrorBag($sharedErrors->getMessages());
@@ -31,6 +31,6 @@ trait EnsuresLivewireErrorBag
 
         return $errorBag instanceof MessageBag
             ? $errorBag
-            : new MessageBag();
+            : new MessageBag;
     }
 }

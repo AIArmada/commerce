@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Commands\ScheduleRecoveryCommand;
 use AIArmada\FilamentCart\Models\RecoveryCampaign;
 use AIArmada\FilamentCart\Services\RecoveryScheduler;
 
@@ -28,7 +27,7 @@ describe('ScheduleRecoveryCommand', function (): void {
         $scheduler = Mockery::mock(RecoveryScheduler::class);
         $scheduler->shouldReceive('scheduleForCampaign')
             ->once()
-            ->with(Mockery::on(fn($arg) => $arg->id === $campaign->id))
+            ->with(Mockery::on(fn ($arg) => $arg->id === $campaign->id))
             ->andReturn(5);
 
         $this->app->instance(RecoveryScheduler::class, $scheduler);

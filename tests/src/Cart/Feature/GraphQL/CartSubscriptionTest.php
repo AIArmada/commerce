@@ -134,7 +134,8 @@ describe('CartSubscription Integration', function (): void {
         });
 
         it('returns false when event has no cart', function (): void {
-            $event = new class {
+            $event = new class
+            {
                 // No cart property
             };
 

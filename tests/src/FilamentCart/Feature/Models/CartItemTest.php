@@ -70,7 +70,7 @@ describe('CartItem Model', function (): void {
             'name' => 'No Cond',
             'price' => 100,
             'quantity' => 1,
-            'conditions' => []
+            'conditions' => [],
         ]);
         $itemWithCond = CartItem::create([
             'cart_id' => $this->cart->id,
@@ -78,7 +78,7 @@ describe('CartItem Model', function (): void {
             'name' => 'With Cond',
             'price' => 100,
             'quantity' => 1,
-            'conditions' => [['name' => 'A']]
+            'conditions' => [['name' => 'A']],
         ]);
 
         expect($itemNoCond->hasConditions())->toBeFalse();

@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\Commerce\Tests\Fixtures\Models\User as TestUser;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Models\CartItem;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
-use AIArmada\Cart\Storage\StorageInterface;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\Commerce\Tests\Fixtures\Models\User as TestUser;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
 
@@ -35,7 +35,7 @@ describe('Cart Model', function (): void {
     });
 
     it('returns correct table name', function (): void {
-        $cart = new Cart();
+        $cart = new Cart;
         expect($cart->getTable())->toContain('snapshots');
     });
 
@@ -182,7 +182,8 @@ describe('Cart Model', function (): void {
             'password' => 'secret',
         ]);
 
-        $this->app->instance(OwnerResolverInterface::class, new class($user) implements OwnerResolverInterface {
+        $this->app->instance(OwnerResolverInterface::class, new class($user) implements OwnerResolverInterface
+        {
             public function __construct(private TestUser $user) {}
 
             public function resolve(): ?\Illuminate\Database\Eloquent\Model

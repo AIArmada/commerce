@@ -12,7 +12,7 @@ use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
     Carbon::setTestNow(Carbon::create(2025, 1, 15, 12, 0, 0));
-    $this->synchronizer = new NormalizedCartSynchronizer();
+    $this->synchronizer = new NormalizedCartSynchronizer;
     $this->storage = Mockery::mock(StorageInterface::class);
     // Common stubs
     $this->storage->shouldReceive('getVersion')->andReturn(1);
@@ -29,7 +29,7 @@ describe('NormalizedCartSynchronizer', function (): void {
     it('syncs empty cart', function (): void {
         $this->storage->shouldReceive('getItems')->andReturn([]);
         $this->storage->shouldReceive('getConditions')->andReturn([]);
-        $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn() => []);
+        $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn () => []);
         $this->storage->shouldReceive('getAllMetadata')->andReturn([]);
 
         $cart = new BaseCart($this->storage, 'user-123', null, 'default');
@@ -53,7 +53,7 @@ describe('NormalizedCartSynchronizer', function (): void {
                 'associatedModel' => 'App\\Models\\Product', // Adjusted for CartItem hydration
                 'attributes' => ['color' => 'red'],
                 'conditions' => [],
-            ]
+            ],
         ]);
         $this->storage->shouldReceive('getConditions')->andReturn([
             'Promo Code' => [
@@ -68,9 +68,9 @@ describe('NormalizedCartSynchronizer', function (): void {
                 'value' => '-10%',
                 'order' => 1,
                 'attributes' => ['is_global' => true],
-            ]
+            ],
         ]);
-        $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn() => []);
+        $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn () => []);
         $this->storage->shouldReceive('getAllMetadata')->andReturn([]);
 
         $cart = new BaseCart($this->storage, 'user-123', null, 'default');
@@ -80,8 +80,8 @@ describe('NormalizedCartSynchronizer', function (): void {
         $cartModel = Cart::instance('default')->byIdentifier('user-123')->first();
         expect($cartModel->items_count)->toBe(1);
         expect($cartModel->quantity)->toBe(2);
-        // Recalculating totals relies on Cart logic. 
-        // 2 * 1000 = 2000 subtotal. 
+        // Recalculating totals relies on Cart logic.
+        // 2 * 1000 = 2000 subtotal.
         // 10% discount -> 200 discount.
         // Total 1800.
         // Savings 200.
@@ -122,7 +122,7 @@ describe('NormalizedCartSynchronizer', function (): void {
         // Sync empty cart
         $this->storage->shouldReceive('getItems')->andReturn([]);
         $this->storage->shouldReceive('getConditions')->andReturn([]);
-        $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn() => []);
+        $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn () => []);
         $this->storage->shouldReceive('getAllMetadata')->andReturn([]);
 
         $baseCart = new BaseCart($this->storage, 'user-123', null, 'default');

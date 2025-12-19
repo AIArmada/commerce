@@ -42,7 +42,8 @@ it('scopes CustomerResource query to the resolved owner', function (): void {
     $ownerA = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000a');
     $ownerB = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000b');
 
-    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($ownerA) implements OwnerResolverInterface {
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($ownerA) implements OwnerResolverInterface
+    {
         public function __construct(private readonly Model $owner) {}
 
         public function resolve(): ?Model
@@ -87,7 +88,8 @@ it('scopes SegmentResource query to the resolved owner', function (): void {
     $ownerA = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000a');
     $ownerB = filamentCustomers_makeOwner('00000000-0000-0000-0000-00000000000b');
 
-    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($ownerB) implements OwnerResolverInterface {
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($ownerB) implements OwnerResolverInterface
+    {
         public function __construct(private readonly Model $owner) {}
 
         public function resolve(): ?Model

@@ -19,9 +19,9 @@ it('wires price list pages to the correct resource', function (): void {
 });
 
 it('defines header actions for list/view/edit price list pages', function (): void {
-    $list = new ListPriceLists();
-    $view = new ViewPriceList();
-    $edit = new EditPriceList();
+    $list = new ListPriceLists;
+    $view = new ViewPriceList;
+    $edit = new EditPriceList;
 
     $getHeaderActions = static function (object $page): array {
         $method = new ReflectionMethod($page, 'getHeaderActions');

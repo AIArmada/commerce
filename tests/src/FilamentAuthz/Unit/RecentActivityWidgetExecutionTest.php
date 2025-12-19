@@ -28,7 +28,7 @@ describe('RecentActivityWidget Execution', function (): void {
         $property = $reflection->getProperty('columnSpan');
         $property->setAccessible(true);
 
-        $widget = new RecentActivityWidget();
+        $widget = new RecentActivityWidget;
         expect($property->getValue($widget))->toBe('full');
     });
 
@@ -41,7 +41,7 @@ describe('RecentActivityWidget Execution', function (): void {
     });
 
     test('table method returns Table instance', function (): void {
-        $widget = new RecentActivityWidget();
+        $widget = new RecentActivityWidget;
         $reflection = new ReflectionMethod($widget, 'table');
         $reflection->setAccessible(true);
 
@@ -52,7 +52,7 @@ describe('RecentActivityWidget Execution', function (): void {
     });
 
     test('table is not paginated', function (): void {
-        $widget = new RecentActivityWidget();
+        $widget = new RecentActivityWidget;
         $reflection = new ReflectionMethod($widget, 'table');
         $reflection->setAccessible(true);
 
@@ -64,12 +64,12 @@ describe('RecentActivityWidget Execution', function (): void {
     });
 
     test('widget can be instantiated', function (): void {
-        $widget = new RecentActivityWidget();
+        $widget = new RecentActivityWidget;
         expect($widget)->toBeInstanceOf(RecentActivityWidget::class);
     });
 
     test('table query uses PermissionAuditLog model', function (): void {
-        $widget = new RecentActivityWidget();
+        $widget = new RecentActivityWidget;
         $reflection = new ReflectionMethod($widget, 'table');
         $reflection->setAccessible(true);
 
@@ -82,7 +82,7 @@ describe('RecentActivityWidget Execution', function (): void {
 
     test('severity color mapping works correctly', function (): void {
         // Test the severity color function directly by checking column definition
-        $widget = new RecentActivityWidget();
+        $widget = new RecentActivityWidget;
         $reflection = new ReflectionMethod($widget, 'table');
         $reflection->setAccessible(true);
 
@@ -103,7 +103,7 @@ describe('RecentActivityWidget with Data', function (): void {
     });
 
     test('widget displays empty state when no logs exist', function (): void {
-        $widget = new RecentActivityWidget();
+        $widget = new RecentActivityWidget;
         $reflection = new ReflectionMethod($widget, 'table');
         $reflection->setAccessible(true);
 
@@ -129,7 +129,7 @@ describe('RecentActivityWidget with Data', function (): void {
                 'actor_id' => '1',
             ]);
 
-            $widget = new RecentActivityWidget();
+            $widget = new RecentActivityWidget;
             $reflection = new ReflectionMethod($widget, 'table');
             $reflection->setAccessible(true);
 

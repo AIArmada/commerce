@@ -139,4 +139,3 @@ it('builds Filament JNT resources, schemas, tables, pages, widgets, and actions'
     // Base resource helpers
     expect(is_a(BaseJntResource::class, \Filament\Resources\Resource::class, true))->toBeTrue();
 });
-
