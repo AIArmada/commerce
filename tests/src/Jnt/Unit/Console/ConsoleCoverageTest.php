@@ -38,12 +38,12 @@ describe('OrderCancelCommand', function (): void {
 
         $this->instance(JntExpressService::class, $jntService);
 
-        $reasons = collect(CancellationReason::cases())
-            ->mapWithKeys(fn ($reason): array => [$reason->value => $reason->value])
-            ->toArray();
+        $choices = collect(CancellationReason::cases())
+            ->map(fn (CancellationReason $reason): string => $reason->value)
+            ->all();
 
         $this->artisan('jnt:order:cancel', ['order-id' => 'ORDER123'])
-            ->expectsChoice('Select cancellation reason', 'out_of_stock', $reasons)
+            ->expectsChoice('Select cancellation reason', 'out_of_stock', $choices)
             ->expectsConfirmation('Cancel order ORDER123?', 'yes')
             ->assertExitCode(0);
     });
