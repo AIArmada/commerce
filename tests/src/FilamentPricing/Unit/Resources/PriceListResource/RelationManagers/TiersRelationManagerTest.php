@@ -11,7 +11,7 @@ use Filament\Tables\Table;
 uses(TestCase::class);
 
 it('builds tiers relation manager form schema', function (): void {
-    $manager = new TiersRelationManager();
+    $manager = new TiersRelationManager;
 
     $schema = $manager->form(Schema::make());
 
@@ -19,7 +19,7 @@ it('builds tiers relation manager form schema', function (): void {
 });
 
 it('builds tiers relation manager table definition', function (): void {
-    $manager = new TiersRelationManager();
+    $manager = new TiersRelationManager;
 
     $livewire = Mockery::mock(HasTable::class);
 

@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentVouchers\Support\Integrations\FilamentCartBridge;
 use Illuminate\Database\Eloquent\Model;

@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\Commerce\Tests\FilamentProducts\Fixtures\TestOwner;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentProducts\Pages\BulkEditProducts;
 use AIArmada\FilamentProducts\Pages\ImportExportProducts;
@@ -32,8 +33,6 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Schema as SchemaFacade;
 
 uses(TestCase::class);
-
-require_once __DIR__ . '/../Fixtures/TestOwner.php';
 
 afterEach(function (): void {
     Mockery::close();

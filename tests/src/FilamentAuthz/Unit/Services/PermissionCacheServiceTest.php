@@ -18,13 +18,13 @@ beforeEach(function (): void {
 
 describe('PermissionCacheService', function (): void {
     it('can be instantiated', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
 
         expect($service)->toBeInstanceOf(PermissionCacheService::class);
     });
 
     it('returns stats', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         $stats = $service->getStats();
 
         expect($stats)->toBeArray()
@@ -34,7 +34,7 @@ describe('PermissionCacheService', function (): void {
     });
 
     it('can be disabled and enabled', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
 
         $result = $service->disable();
         expect($result)->toBeInstanceOf(PermissionCacheService::class);
@@ -47,7 +47,7 @@ describe('PermissionCacheService', function (): void {
     });
 
     it('remembers values when enabled', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         $service->enable();
 
         $counter = 0;
@@ -66,7 +66,7 @@ describe('PermissionCacheService', function (): void {
     });
 
     it('does not cache when disabled', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         $service->disable();
 
         $counter = 0;
@@ -83,7 +83,7 @@ describe('PermissionCacheService', function (): void {
     });
 
     it('runs callback without cache', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         $service->enable();
 
         $counter = 0;
@@ -98,7 +98,7 @@ describe('PermissionCacheService', function (): void {
     });
 
     it('restores cache state after withoutCache', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         $service->enable();
 
         $service->withoutCache(function () {
@@ -110,7 +110,7 @@ describe('PermissionCacheService', function (): void {
     });
 
     it('gets user permissions for user without getAllPermissions method', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
 
         $user = new class
         {
@@ -126,7 +126,7 @@ describe('PermissionCacheService', function (): void {
     });
 
     it('gets user permissions for user with getAllPermissions method', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
 
         $user = new class
         {
@@ -152,7 +152,7 @@ describe('PermissionCacheService', function (): void {
     });
 
     it('checks if user has permission', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
 
         $user = new class
         {
@@ -175,7 +175,7 @@ describe('PermissionCacheService', function (): void {
     });
 
     it('forgets user cache', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
 
         $user = new class
         {
@@ -202,7 +202,7 @@ describe('PermissionCacheService', function (): void {
         $permission = Permission::firstOrCreate(['name' => 'cache_test_permission', 'guard_name' => 'web']);
         $role->givePermissionTo($permission);
 
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         $permissions = $service->getRolePermissions($role);
 
         expect($permissions)->toBeArray()
@@ -212,7 +212,7 @@ describe('PermissionCacheService', function (): void {
     it('forgets role cache', function (): void {
         $role = Role::firstOrCreate(['name' => 'forget_role_test', 'guard_name' => 'web']);
 
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         $service->getRolePermissions($role);
         $service->forgetRole($role);
 
@@ -222,21 +222,21 @@ describe('PermissionCacheService', function (): void {
     it('forgets permission cache', function (): void {
         $permission = Permission::firstOrCreate(['name' => 'forget_perm_test', 'guard_name' => 'web']);
 
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         $service->forgetPermission($permission);
 
         expect(true)->toBeTrue();
     });
 
     it('flushes all caches', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         $service->flush();
 
         expect(true)->toBeTrue();
     });
 
     it('warms user cache', function (): void {
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
 
         $user = new class
         {
@@ -259,7 +259,7 @@ describe('PermissionCacheService', function (): void {
     it('warms role cache', function (): void {
         Role::firstOrCreate(['name' => 'warm_cache_role', 'guard_name' => 'web']);
 
-        $service = new PermissionCacheService();
+        $service = new PermissionCacheService;
         $service->warmRoleCache();
 
         expect(true)->toBeTrue();

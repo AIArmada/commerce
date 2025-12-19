@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentPricing\Resources\PriceListResource;
 use AIArmada\FilamentPricing\Resources\PromotionResource;
 use AIArmada\Pricing\Models\PriceList;

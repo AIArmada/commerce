@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Commerce\Tests\FilamentInventory\FilamentInventoryTestCase;
-use AIArmada\Commerce\Tests\Jnt\JntTestCase;
 use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
+use AIArmada\Commerce\Tests\Jnt\JntTestCase;
 use AIArmada\Commerce\Tests\TestCase;
 
 /*
@@ -30,7 +30,7 @@ pest()->extend(TestCase::class)->in(
     'src/Customers',
     'src/Orders',
     'src/Pricing',
-        'src/FilamentCustomers',
+    'src/FilamentCustomers',
     'src/Tax',
     'src/Shipping',
     'src/Support',

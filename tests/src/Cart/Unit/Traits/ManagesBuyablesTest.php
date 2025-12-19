@@ -21,7 +21,8 @@ function createTestBuyable(
     int $increment = 1,
     bool $purchasable = true
 ): BuyableInterface {
-    return new class ($id, $name, $price, $stock, $minQty, $maxQty, $increment, $purchasable) implements BuyableInterface {
+    return new class($id, $name, $price, $stock, $minQty, $maxQty, $increment, $purchasable) implements BuyableInterface
+    {
         public function __construct(
             private string $id,
             private string $name,
@@ -31,8 +32,7 @@ function createTestBuyable(
             private ?int $maxQty,
             private int $increment,
             private bool $purchasable
-        ) {
-        }
+        ) {}
 
         public function getBuyableIdentifier(): string
         {
@@ -61,7 +61,7 @@ function createTestBuyable(
 
         public function canBePurchased(?int $quantity = null): bool
         {
-            if (!$this->purchasable) {
+            if (! $this->purchasable) {
                 return false;
             }
             if ($quantity !== null && $this->stock !== null && $quantity > $this->stock) {
@@ -267,7 +267,7 @@ describe('ManagesBuyables Trait', function (): void {
     it('skips refresh for non-buyable items', function (): void {
         $this->cart->add('item-1', 'Regular Item', 500, 1);
 
-        $changes = $this->cart->refreshBuyablePrices(fn() => createTestBuyable());
+        $changes = $this->cart->refreshBuyablePrices(fn () => createTestBuyable());
 
         expect($changes)->toBeEmpty();
     });
@@ -275,9 +275,8 @@ describe('ManagesBuyables Trait', function (): void {
     it('skips validation for non-buyable items', function (): void {
         $this->cart->add('item-1', 'Regular Item', 500, 1);
 
-        $errors = $this->cart->validateAllBuyables(fn() => createTestBuyable());
+        $errors = $this->cart->validateAllBuyables(fn () => createTestBuyable());
 
         expect($errors)->toBeEmpty();
     });
 });
-

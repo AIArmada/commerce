@@ -2,28 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCart\Models\RecoveryCampaign;
 use AIArmada\FilamentCart\Models\RecoveryTemplate;
 use AIArmada\FilamentCart\Resources\RecoveryCampaignResource;
 use AIArmada\FilamentCart\Resources\RecoveryTemplateResource;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
-
-final class StaticOwnerResolverForRecovery implements OwnerResolverInterface
-{
-    public function __construct(private ?Model $owner)
-    {
-    }
-
-    public function resolve(): ?Model
-    {
-        return $this->owner;
-    }
-}
 
 it('scopes recovery resources by owner and blocks cross-tenant template references', function (): void {
     config()->set('filament-cart.owner.enabled', true);
@@ -41,7 +29,7 @@ it('scopes recovery resources by owner and blocks cross-tenant template referenc
         'password' => 'secret',
     ]);
 
-    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new StaticOwnerResolverForRecovery($ownerA));
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
 
     $templateA = RecoveryTemplate::query()->create([
         'name' => 'Template A',
@@ -57,7 +45,7 @@ it('scopes recovery resources by owner and blocks cross-tenant template referenc
         'control_template_id' => $templateA->id,
     ]);
 
-    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new StaticOwnerResolverForRecovery($ownerB));
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerB));
 
     $templateB = RecoveryTemplate::query()->create([
         'name' => 'Template B',
@@ -73,7 +61,7 @@ it('scopes recovery resources by owner and blocks cross-tenant template referenc
         'control_template_id' => $templateB->id,
     ]);
 
-    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new StaticOwnerResolverForRecovery($ownerA));
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
 
     expect(RecoveryTemplateResource::getEloquentQuery()->count())->toBe(1);
     expect(RecoveryTemplateResource::getEloquentQuery()->first()?->id)->toBe($templateA->id);

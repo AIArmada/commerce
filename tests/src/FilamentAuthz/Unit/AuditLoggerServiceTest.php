@@ -32,12 +32,12 @@ beforeEach(function (): void {
 
 describe('AuditLogger Service', function (): void {
     test('can be instantiated', function (): void {
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
         expect($logger)->toBeInstanceOf(AuditLogger::class);
     });
 
     test('log method creates audit entry when enabled', function (): void {
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
 
         $subject = User::create([
             'name' => 'Test Subject',
@@ -57,14 +57,14 @@ describe('AuditLogger Service', function (): void {
     test('log method respects disabled config', function (): void {
         config(['filament-authz.audit.enabled' => false]);
 
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
         $logger->log(AuditEventType::PermissionGranted);
 
         expect(PermissionAuditLog::count())->toBe(0);
     });
 
     test('logPermissionGranted creates correct audit entry', function (): void {
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
 
         $subject = User::create([
             'name' => 'Test User',
@@ -81,7 +81,7 @@ describe('AuditLogger Service', function (): void {
     });
 
     test('logPermissionRevoked creates correct audit entry', function (): void {
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
 
         $subject = User::create([
             'name' => 'Test User',
@@ -98,7 +98,7 @@ describe('AuditLogger Service', function (): void {
     });
 
     test('logRoleAssigned creates correct audit entry', function (): void {
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
 
         $subject = User::create([
             'name' => 'Test User',
@@ -115,7 +115,7 @@ describe('AuditLogger Service', function (): void {
     });
 
     test('logRoleRemoved creates correct audit entry', function (): void {
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
 
         $subject = User::create([
             'name' => 'Test User',
@@ -132,7 +132,7 @@ describe('AuditLogger Service', function (): void {
     });
 
     test('logRoleCreated creates correct audit entry', function (): void {
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
 
         $role = Role::create(['name' => 'NewRole', 'guard_name' => 'web']);
 
@@ -145,7 +145,7 @@ describe('AuditLogger Service', function (): void {
     });
 
     test('logRoleDeleted creates high severity entry', function (): void {
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
 
         $role = Role::create(['name' => 'ToDelete', 'guard_name' => 'web']);
 
@@ -158,7 +158,7 @@ describe('AuditLogger Service', function (): void {
     });
 
     test('logAccessDenied creates correct audit entry', function (): void {
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
 
         $subject = User::create([
             'name' => 'Test User',
@@ -176,7 +176,7 @@ describe('AuditLogger Service', function (): void {
     });
 
     test('logPolicyEvaluated creates correct audit entry', function (): void {
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
 
         $logger->logPolicyEvaluated('view', 'User', [
             'result' => true,
@@ -192,7 +192,7 @@ describe('AuditLogger Service', function (): void {
     });
 
     test('logSuspiciousActivity creates critical severity entry', function (): void {
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
 
         $subject = User::create([
             'name' => 'Suspicious User',
@@ -212,7 +212,7 @@ describe('AuditLogger Service', function (): void {
     });
 
     test('logPrivilegeEscalation creates critical severity entry', function (): void {
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
 
         $subject = User::create([
             'name' => 'Escalating User',
@@ -230,7 +230,7 @@ describe('AuditLogger Service', function (): void {
     });
 
     test('logBulkOperation sets severity based on affected count', function (): void {
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
 
         // Low count - medium severity
         $logger->logBulkOperation('delete_users', 50);
@@ -247,7 +247,7 @@ describe('AuditLogger Service', function (): void {
     });
 
     test('log enriches metadata with request info', function (): void {
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
 
         $subject = User::create([
             'name' => 'Metadata Test User',
@@ -266,7 +266,7 @@ describe('AuditLogger Service', function (): void {
     });
 
     test('log captures authenticated user as actor', function (): void {
-        $logger = new AuditLogger();
+        $logger = new AuditLogger;
 
         $actor = User::first(); // The system user from beforeEach
         $subject = User::create([

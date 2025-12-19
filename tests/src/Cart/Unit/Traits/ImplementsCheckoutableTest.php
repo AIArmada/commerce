@@ -135,7 +135,7 @@ describe('ImplementsCheckoutable trait', function (): void {
             $currency = $this->cart->getCheckoutCurrency();
 
             expect($currency)->toBeString()
-                ->and(strlen($currency))->toBe(3); // ISO currency codes are 3 chars
+                ->and(mb_strlen($currency))->toBe(3); // ISO currency codes are 3 chars
         });
     });
 
@@ -153,7 +153,7 @@ describe('ImplementsCheckoutable trait', function (): void {
             $reference = $this->cart->getCheckoutReference();
 
             expect($reference)->toBeString()
-                ->and(strlen($reference))->toBeGreaterThan(0);
+                ->and(mb_strlen($reference))->toBeGreaterThan(0);
         });
     });
 

@@ -14,4 +14,3 @@ test('record payment action is configured correctly', function (): void {
     expect($action->getIcon())->toBe(Heroicon::OutlinedBanknotes);
     expect($action->getColor())->toBe('success');
 });
-

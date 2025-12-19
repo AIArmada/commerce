@@ -129,7 +129,7 @@ describe('HasWidgetAuthz::canView', function (): void {
 
 describe('HasWidgetAuthz::isSuperAdmin', function (): void {
     it('returns false when user does not have hasRole method', function (): void {
-        $user = new stdClass();
+        $user = new stdClass;
 
         expect(TestWidgetWithAuthz::publicIsSuperAdmin($user))->toBeFalse();
     });

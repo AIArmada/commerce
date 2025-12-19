@@ -47,7 +47,8 @@ describe('ShipmentScopeResolver', function (): void {
         $method = $reflection->getMethod('extractBaseAmount');
         $method->setAccessible(true);
 
-        $object = new class {
+        $object = new class
+        {
             public function getBaseAmount(): int
             {
                 return 2500;
@@ -64,7 +65,8 @@ describe('ShipmentScopeResolver', function (): void {
         $method = $reflection->getMethod('extractBaseAmount');
         $method->setAccessible(true);
 
-        $object = new class {
+        $object = new class
+        {
             public function baseAmount(): int
             {
                 return 3000;

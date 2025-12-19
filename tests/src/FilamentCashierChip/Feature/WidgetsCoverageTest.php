@@ -13,7 +13,6 @@ use AIArmada\FilamentCashierChip\Widgets\RevenueChartWidget;
 use AIArmada\FilamentCashierChip\Widgets\SubscriptionDistributionWidget;
 use AIArmada\FilamentCashierChip\Widgets\TrialConversionsWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
 uses(TestCase::class);
@@ -186,4 +185,3 @@ it('covers all dashboard widgets code paths', function (): void {
     expect($descriptionMethod->invoke($attentionWidget, 0, 0, 0, 0, 0))->toBe('All subscriptions healthy');
     expect($descriptionMethod->invoke($attentionWidget, 1, 2, 3, 4, 5))->toBeString();
 });
-

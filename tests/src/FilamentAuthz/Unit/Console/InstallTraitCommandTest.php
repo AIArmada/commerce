@@ -106,7 +106,7 @@ class TestPage extends Page
 
 describe('InstallTraitCommand available traits', function (): void {
     it('has HasPageAuthz trait available', function (): void {
-        $command = new InstallTraitCommand();
+        $command = new InstallTraitCommand;
         $reflection = new ReflectionClass($command);
         $property = $reflection->getProperty('availableTraits');
         $property->setAccessible(true);
@@ -118,7 +118,7 @@ describe('InstallTraitCommand available traits', function (): void {
     });
 
     it('has HasWidgetAuthz trait available', function (): void {
-        $command = new InstallTraitCommand();
+        $command = new InstallTraitCommand;
         $reflection = new ReflectionClass($command);
         $property = $reflection->getProperty('availableTraits');
         $property->setAccessible(true);
@@ -130,7 +130,7 @@ describe('InstallTraitCommand available traits', function (): void {
     });
 
     it('has HasResourceAuthz trait available', function (): void {
-        $command = new InstallTraitCommand();
+        $command = new InstallTraitCommand;
         $reflection = new ReflectionClass($command);
         $property = $reflection->getProperty('availableTraits');
         $property->setAccessible(true);
@@ -142,7 +142,7 @@ describe('InstallTraitCommand available traits', function (): void {
     });
 
     it('has HasPanelAuthz trait available', function (): void {
-        $command = new InstallTraitCommand();
+        $command = new InstallTraitCommand;
         $reflection = new ReflectionClass($command);
         $property = $reflection->getProperty('availableTraits');
         $property->setAccessible(true);

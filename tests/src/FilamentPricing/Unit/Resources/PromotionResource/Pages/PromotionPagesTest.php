@@ -19,9 +19,9 @@ it('wires promotion pages to the correct resource', function (): void {
 });
 
 it('defines header actions for list/view/edit promotion pages', function (): void {
-    $list = new ListPromotions();
-    $view = new ViewPromotion();
-    $edit = new EditPromotion();
+    $list = new ListPromotions;
+    $view = new ViewPromotion;
+    $edit = new EditPromotion;
 
     $getHeaderActions = static function (object $page): array {
         $method = new ReflectionMethod($page, 'getHeaderActions');

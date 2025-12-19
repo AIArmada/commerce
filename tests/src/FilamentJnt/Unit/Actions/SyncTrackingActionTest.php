@@ -62,7 +62,8 @@ it('syncs tracking and shows a success notification when authenticated', functio
     $called = false;
 
     app()->bind(JntTrackingService::class, function () use (&$called) {
-        return new class($called) {
+        return new class($called)
+        {
             public function __construct(private bool &$called) {}
 
             public function syncOrderTracking(JntOrder $order): void
@@ -99,7 +100,8 @@ it('handles sync failures and shows a failure notification', function (): void {
 
     $this->actingAs($user);
 
-    app()->bind(JntTrackingService::class, fn () => new class {
+    app()->bind(JntTrackingService::class, fn () => new class
+    {
         public function syncOrderTracking(JntOrder $order): void
         {
             throw new RuntimeException('fail');

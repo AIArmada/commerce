@@ -48,7 +48,8 @@ describe('FulfillmentScopeResolver', function (): void {
         $method = $reflection->getMethod('extractBaseAmount');
         $method->setAccessible(true);
 
-        $object = new class {
+        $object = new class
+        {
             public function getBaseAmount(): int
             {
                 return 2000;
@@ -65,7 +66,8 @@ describe('FulfillmentScopeResolver', function (): void {
         $method = $reflection->getMethod('extractBaseAmount');
         $method->setAccessible(true);
 
-        $object = new class {
+        $object = new class
+        {
             public function getAmount(): int
             {
                 return 1500;
@@ -82,7 +84,8 @@ describe('FulfillmentScopeResolver', function (): void {
         $method = $reflection->getMethod('extractBaseAmount');
         $method->setAccessible(true);
 
-        $object = new class {
+        $object = new class
+        {
             public function amount(): int
             {
                 return 1200;
@@ -119,10 +122,9 @@ describe('FulfillmentScopeResolver', function (): void {
         $method = $reflection->getMethod('extractBaseAmount');
         $method->setAccessible(true);
 
-        $object = new class {
-            public function doSomething(): void
-            {
-            }
+        $object = new class
+        {
+            public function doSomething(): void {}
         };
 
         $amount = $method->invoke($this->resolver, $object);

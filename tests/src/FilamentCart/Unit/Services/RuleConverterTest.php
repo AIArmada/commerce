@@ -6,7 +6,6 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Models\CartItem;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\FilamentCart\Services\RuleConverter;
-use Illuminate\Filesystem\Filesystem;
 use Illuminate\Support\Facades\Auth;
 
 describe('RuleConverter', function (): void {
@@ -28,7 +27,7 @@ describe('RuleConverter', function (): void {
     }
 
     it('throws exception for unknown rule type', function (): void {
-        expect(fn() => RuleConverter::convertRules(['unknown_rule' => 'value']))
+        expect(fn () => RuleConverter::convertRules(['unknown_rule' => 'value']))
             ->toThrow(InvalidArgumentException::class, 'Unknown rule type: unknown_rule');
     });
 
@@ -39,12 +38,12 @@ describe('RuleConverter', function (): void {
 
         // 1 item worth 15000 cents = $150.00
         $cartPass = createCartWithItems([
-            ['id' => '1', 'name' => 'Item', 'price' => 15000, 'quantity' => 1]
+            ['id' => '1', 'name' => 'Item', 'price' => 15000, 'quantity' => 1],
         ]);
 
         // 1 item worth 5000 cents = $50.00
         $cartFail = createCartWithItems([
-            ['id' => '1', 'name' => 'Item', 'price' => 5000, 'quantity' => 1]
+            ['id' => '1', 'name' => 'Item', 'price' => 5000, 'quantity' => 1],
         ]);
 
         expect($rule($cartPass))->toBeTrue();
@@ -57,11 +56,11 @@ describe('RuleConverter', function (): void {
 
         $cartPass = createCartWithItems([
             ['id' => '1', 'name' => 'Item 1', 'price' => 100, 'quantity' => 1],
-            ['id' => '2', 'name' => 'Item 2', 'price' => 100, 'quantity' => 1]
+            ['id' => '2', 'name' => 'Item 2', 'price' => 100, 'quantity' => 1],
         ]);
 
         $cartFail = createCartWithItems([
-            ['id' => '1', 'name' => 'Item 1', 'price' => 100, 'quantity' => 1]
+            ['id' => '1', 'name' => 'Item 1', 'price' => 100, 'quantity' => 1],
         ]);
 
         expect($rule($cartPass))->toBeTrue();
@@ -75,12 +74,12 @@ describe('RuleConverter', function (): void {
 
         // $50
         $cartPass = createCartWithItems([
-            ['id' => '1', 'name' => 'Item', 'price' => 5000, 'quantity' => 1]
+            ['id' => '1', 'name' => 'Item', 'price' => 5000, 'quantity' => 1],
         ]);
 
         // $150
         $cartFail = createCartWithItems([
-            ['id' => '1', 'name' => 'Item', 'price' => 15000, 'quantity' => 1]
+            ['id' => '1', 'name' => 'Item', 'price' => 15000, 'quantity' => 1],
         ]);
 
         expect($rule($cartPass))->toBeTrue();
@@ -92,13 +91,13 @@ describe('RuleConverter', function (): void {
         $rule = $rules[0];
 
         $cartPass = createCartWithItems([
-            ['id' => '1', 'name' => 'Item 1', 'price' => 100, 'quantity' => 1]
+            ['id' => '1', 'name' => 'Item 1', 'price' => 100, 'quantity' => 1],
         ]);
 
         $cartFail = createCartWithItems([
             ['id' => '1', 'name' => 'Item 1', 'price' => 100, 'quantity' => 1],
             ['id' => '2', 'name' => 'Item 2', 'price' => 100, 'quantity' => 1],
-            ['id' => '3', 'name' => 'Item 3', 'price' => 100, 'quantity' => 1]
+            ['id' => '3', 'name' => 'Item 3', 'price' => 100, 'quantity' => 1],
         ]);
 
         expect($rule($cartPass))->toBeTrue();
@@ -110,11 +109,11 @@ describe('RuleConverter', function (): void {
         $rule = $rules[0];
 
         $cartPass = createCartWithItems([
-            ['id' => '1', 'name' => 'Item', 'price' => 100, 'quantity' => 1, 'attributes' => ['category' => 'electronics']]
+            ['id' => '1', 'name' => 'Item', 'price' => 100, 'quantity' => 1, 'attributes' => ['category' => 'electronics']],
         ]);
 
         $cartFail = createCartWithItems([
-            ['id' => '1', 'name' => 'Item', 'price' => 100, 'quantity' => 1, 'attributes' => ['category' => 'books']]
+            ['id' => '1', 'name' => 'Item', 'price' => 100, 'quantity' => 1, 'attributes' => ['category' => 'books']],
         ]);
 
         expect($rule($cartPass))->toBeTrue();
@@ -128,7 +127,7 @@ describe('RuleConverter', function (): void {
         $cart = createCartWithItems([]);
 
         // User is VIP
-        $vipUser = new Illuminate\Foundation\Auth\User();
+        $vipUser = new Illuminate\Foundation\Auth\User;
         $vipUser->is_vip = true;
         Auth::shouldReceive('user')->andReturn($vipUser);
         expect($rule($cart))->toBeTrue();
@@ -140,7 +139,7 @@ describe('RuleConverter', function (): void {
         $cart = createCartWithItems([]);
 
         // User is NOT VIP
-        $regularUser = new Illuminate\Foundation\Auth\User();
+        $regularUser = new Illuminate\Foundation\Auth\User;
         $regularUser->is_vip = false;
         Auth::shouldReceive('user')->andReturn($regularUser);
 
@@ -153,16 +152,16 @@ describe('RuleConverter', function (): void {
 
         // Access via SKU in attributes
         $cartPass = createCartWithItems([
-            ['id' => '1', 'name' => 'Item', 'price' => 100, 'quantity' => 1, 'attributes' => ['sku' => 'sku-123']]
+            ['id' => '1', 'name' => 'Item', 'price' => 100, 'quantity' => 1, 'attributes' => ['sku' => 'sku-123']],
         ]);
 
         // Access via ID matching
         $cartPassId = createCartWithItems([
-            ['id' => 'sku-123', 'name' => 'Item', 'price' => 100, 'quantity' => 1]
+            ['id' => 'sku-123', 'name' => 'Item', 'price' => 100, 'quantity' => 1],
         ]);
 
         $cartFail = createCartWithItems([
-            ['id' => '1', 'name' => 'Item', 'price' => 100, 'quantity' => 1, 'attributes' => ['sku' => 'sku-456']]
+            ['id' => '1', 'name' => 'Item', 'price' => 100, 'quantity' => 1, 'attributes' => ['sku' => 'sku-456']],
         ]);
 
         expect($rule($cartPass))->toBeTrue();

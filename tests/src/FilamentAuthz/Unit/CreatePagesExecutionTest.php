@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentAuthz\Resources\PermissionResource\Pages\CreatePermission;
-use AIArmada\FilamentAuthz\Resources\RoleResource\Pages\CreateRole;
 use AIArmada\FilamentAuthz\Resources\PermissionResource;
+use AIArmada\FilamentAuthz\Resources\PermissionResource\Pages\CreatePermission;
 use AIArmada\FilamentAuthz\Resources\RoleResource;
+use AIArmada\FilamentAuthz\Resources\RoleResource\Pages\CreateRole;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
@@ -27,7 +27,7 @@ describe('CreatePermission Page Execution', function (): void {
     });
 
     test('afterCreate method clears permission cache when invoked', function (): void {
-        $page = new CreatePermission();
+        $page = new CreatePermission;
 
         // Use reflection to call the protected method directly
         $reflection = new ReflectionMethod($page, 'afterCreate');
@@ -45,7 +45,7 @@ describe('CreatePermission Page Execution', function (): void {
     });
 
     test('page can be instantiated and getResource works', function (): void {
-        $page = new CreatePermission();
+        $page = new CreatePermission;
         expect($page)->toBeInstanceOf(CreatePermission::class);
         expect(CreatePermission::getResource())->toBe(PermissionResource::class);
     });
@@ -90,12 +90,12 @@ describe('CreateRole Page Execution', function (): void {
         $property = $reflection->getProperty('permissionIds');
         $property->setAccessible(true);
 
-        $page = new CreateRole();
+        $page = new CreateRole;
         expect($property->getValue($page))->toBe([]);
     });
 
     test('mutateFormDataBeforeCreate extracts permissions', function (): void {
-        $page = new CreateRole();
+        $page = new CreateRole;
         $reflection = new ReflectionMethod($page, 'mutateFormDataBeforeCreate');
         $reflection->setAccessible(true);
 
@@ -120,7 +120,7 @@ describe('CreateRole Page Execution', function (): void {
     });
 
     test('mutateFormDataBeforeCreate handles empty permissions', function (): void {
-        $page = new CreateRole();
+        $page = new CreateRole;
         $reflection = new ReflectionMethod($page, 'mutateFormDataBeforeCreate');
         $reflection->setAccessible(true);
 
@@ -140,7 +140,7 @@ describe('CreateRole Page Execution', function (): void {
     });
 
     test('afterCreate method exists', function (): void {
-        $page = new CreateRole();
+        $page = new CreateRole;
         $reflection = new ReflectionMethod($page, 'afterCreate');
         $reflection->setAccessible(true);
 
@@ -149,7 +149,7 @@ describe('CreateRole Page Execution', function (): void {
     });
 
     test('page can be instantiated', function (): void {
-        $page = new CreateRole();
+        $page = new CreateRole;
         expect($page)->toBeInstanceOf(CreateRole::class);
     });
 });

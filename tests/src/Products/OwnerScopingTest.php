@@ -7,7 +7,7 @@ use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Product;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -260,12 +260,3 @@ it('auto-assigns owner on create for other owner-aware product models', function
         ->and($attribute->owner_type)->toBe($ownerA->getMorphClass())
         ->and($attribute->owner_id)->toBe($ownerA->getKey());
 });
-
-class TestOwner extends Model
-{
-    use HasUuids;
-
-    protected $table = 'test_owners';
-
-    protected $fillable = ['name'];
-}

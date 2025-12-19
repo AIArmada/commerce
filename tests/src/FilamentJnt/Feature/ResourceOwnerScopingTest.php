@@ -2,30 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Commerce\Tests\FilamentJnt\FilamentJntTestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentJnt\Resources\JntOrderResource;
 use AIArmada\FilamentJnt\Resources\JntTrackingEventResource;
 use AIArmada\FilamentJnt\Resources\JntWebhookLogResource;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntTrackingEvent;
 use AIArmada\Jnt\Models\JntWebhookLog;
-use Illuminate\Database\Eloquent\Model;
 
 uses(FilamentJntTestCase::class);
-
-final class TestOwnerResolver implements OwnerResolverInterface
-{
-    public function __construct(private ?Model $owner)
-    {
-    }
-
-    public function resolve(): ?Model
-    {
-        return $this->owner;
-    }
-}
 
 it('scopes Filament JNT resources to the resolved owner (including global)', function (): void {
     config()->set('jnt.owner.enabled', true);
@@ -60,7 +48,7 @@ it('scopes Filament JNT resources to the resolved owner (including global)', fun
         'scan_type_name' => 'Global',
     ]);
 
-    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new TestOwnerResolver($ownerA));
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
 
     $ownerAOrder = JntOrder::query()->create([
         'order_id' => 'ORD-A',
@@ -138,7 +126,7 @@ it('can exclude global records from Filament JNT resources', function (): void {
         'scan_type_name' => 'Global',
     ]);
 
-    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new TestOwnerResolver($ownerA));
+    app()->bind(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new FixedOwnerResolver($ownerA));
 
     $ownerAOrder = JntOrder::query()->create([
         'order_id' => 'ORD-A',

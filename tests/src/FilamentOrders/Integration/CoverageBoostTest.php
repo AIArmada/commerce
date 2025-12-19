@@ -26,7 +26,7 @@ afterEach(function (): void {
     }
 });
 
-function makeTable(): Table
+function makeFilamentOrdersTable(): Table
 {
     /** @var HasTable $livewire */
     $livewire = Mockery::mock(HasTable::class);
@@ -38,7 +38,7 @@ it('builds OrderResource form, table, and infolist schemas', function (): void {
     $formSchema = OrderResource::form(Schema::make());
     expect($formSchema)->toBeInstanceOf(Schema::class);
 
-    $table = OrderResource::table(makeTable());
+    $table = OrderResource::table(makeFilamentOrdersTable());
     expect($table)->toBeInstanceOf(Table::class);
 
     $infolist = OrderResource::infolist(Schema::make());
@@ -54,7 +54,7 @@ it('builds OrderResource form, table, and infolist schemas', function (): void {
 it('builds fulfillment queue table configuration', function (): void {
     $page = app(FulfillmentQueue::class);
 
-    $table = $page->table(makeTable());
+    $table = $page->table(makeFilamentOrdersTable());
 
     expect($table)->toBeInstanceOf(Table::class);
 });
@@ -64,11 +64,11 @@ it('builds relation manager schemas and tables', function (): void {
     $payments = app(PaymentsRelationManager::class);
     $notes = app(NotesRelationManager::class);
 
-    expect($items->table(makeTable()))->toBeInstanceOf(Table::class);
-    expect($payments->table(makeTable()))->toBeInstanceOf(Table::class);
+    expect($items->table(makeFilamentOrdersTable()))->toBeInstanceOf(Table::class);
+    expect($payments->table(makeFilamentOrdersTable()))->toBeInstanceOf(Table::class);
 
     expect($notes->form(Schema::make()))->toBeInstanceOf(Schema::class);
-    expect($notes->table(makeTable()))->toBeInstanceOf(Table::class);
+    expect($notes->table(makeFilamentOrdersTable()))->toBeInstanceOf(Table::class);
 });
 
 it('builds resource pages header actions', function (): void {
@@ -115,7 +115,7 @@ it('registers the filament orders plugin without errors', function (): void {
 it('builds the recent orders widget table', function (): void {
     $widget = app(RecentOrdersWidget::class);
 
-    $table = $widget->table(makeTable());
+    $table = $widget->table(makeFilamentOrdersTable());
 
     expect($table)->toBeInstanceOf(Table::class);
 });

@@ -22,7 +22,7 @@ afterEach(function (): void {
 
 describe('CartAnalyticsService', function (): void {
     beforeEach(function (): void {
-        $this->service = new CartAnalyticsService();
+        $this->service = new CartAnalyticsService;
     });
 
     describe('getDashboardMetrics', function (): void {
@@ -231,8 +231,8 @@ describe('CartAnalyticsService', function (): void {
             // 10000 = $100 -> '$100-$250' ?? No.
             // Code: WHEN subtotal < 10000 THEN '$50-$100'. 10000 is NOT < 10000.
             // WHEN subtotal < 25000 THEN '$100-$250'.
-            // So 10000 falls into $100-$250 range? 
-            // Wait: 
+            // So 10000 falls into $100-$250 range?
+            // Wait:
             // < 2500
             // < 5000
             // < 10000

@@ -2,14 +2,12 @@
 
 declare(strict_types=1);
 
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
-use Illuminate\Database\Eloquent\Model;
+namespace AIArmada\Commerce\Tests\FilamentOrders\Fixtures;
 
-class TestOwner extends Model
+use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner as SupportTestOwner;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
+
+class TestOwner extends SupportTestOwner
 {
     use HasUuids;
-
-    protected $table = 'test_owners';
-
-    protected $fillable = ['name'];
 }

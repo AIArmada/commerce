@@ -18,7 +18,7 @@ afterEach(function (): void {
 
 describe('CartMonitor', function (): void {
     it('can be instantiated', function (): void {
-        $monitor = new CartMonitor();
+        $monitor = new CartMonitor;
         expect($monitor)->toBeInstanceOf(CartMonitor::class);
     });
 
@@ -101,7 +101,7 @@ describe('CartMonitor', function (): void {
             'is_read' => false,
         ]);
 
-        $monitor = new CartMonitor();
+        $monitor = new CartMonitor;
         $stats = $monitor->getLiveStats();
 
         expect($stats->active_carts)->toBe(4);
@@ -159,7 +159,7 @@ describe('CartMonitor', function (): void {
             'is_read' => false,
         ]);
 
-        $monitor = new CartMonitor();
+        $monitor = new CartMonitor;
         $detected = $monitor->detectAbandonments();
 
         expect($detected)->toHaveCount(1);
@@ -193,7 +193,7 @@ describe('CartMonitor', function (): void {
             'last_activity_at' => now()->subMinutes(45),
         ]);
 
-        $monitor = new CartMonitor();
+        $monitor = new CartMonitor;
         $activity = $monitor->getRecentActivity(limit: 10);
 
         $bySessionId = $activity->keyBy('session_id');
@@ -251,7 +251,7 @@ describe('CartMonitor', function (): void {
             'updated_at' => now()->subMinutes(10),
         ]);
 
-        $monitor = new CartMonitor();
+        $monitor = new CartMonitor;
         $signals = $monitor->detectFraudSignals();
 
         expect($signals->pluck('id')->all())->toContain($bulkHighQty->id);
@@ -283,7 +283,7 @@ describe('CartMonitor', function (): void {
             'last_activity_at' => now()->subHours(3),
         ]);
 
-        $monitor = new CartMonitor();
+        $monitor = new CartMonitor;
         $opportunities = $monitor->detectRecoveryOpportunities();
 
         expect($opportunities->pluck('id')->all())->toContain($eligible->id);

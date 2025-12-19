@@ -24,87 +24,87 @@ use Filament\Widgets\Widget;
 
 describe('Widgets Instantiation', function (): void {
     it('can instantiate AbandonedCartsWidget', function (): void {
-        $widget = new AbandonedCartsWidget();
+        $widget = new AbandonedCartsWidget;
         expect($widget)->toBeInstanceOf(Widget::class);
     });
 
     it('can instantiate AbandonmentAnalysisWidget', function (): void {
-        $widget = new AbandonmentAnalysisWidget();
+        $widget = new AbandonmentAnalysisWidget;
         expect($widget)->toBeInstanceOf(Widget::class);
     });
 
     it('can instantiate AnalyticsStatsWidget', function (): void {
-        $widget = new AnalyticsStatsWidget();
+        $widget = new AnalyticsStatsWidget;
         expect($widget)->toBeInstanceOf(StatsOverviewWidget::class);
     });
 
     it('can instantiate CampaignPerformanceWidget', function (): void {
-        $widget = new CampaignPerformanceWidget();
+        $widget = new CampaignPerformanceWidget;
         expect($widget)->toBeInstanceOf(Widget::class);
     });
 
     it('can instantiate CartStatsOverviewWidget', function (): void {
-        $widget = new CartStatsOverviewWidget();
+        $widget = new CartStatsOverviewWidget;
         expect($widget)->toBeInstanceOf(StatsOverviewWidget::class);
     });
 
     it('can instantiate CartStatsWidget', function (): void {
-        $widget = new CartStatsWidget();
+        $widget = new CartStatsWidget;
         expect($widget)->toBeInstanceOf(StatsOverviewWidget::class);
     });
 
     it('can instantiate CollaborativeCartsWidget', function (): void {
-        $widget = new CollaborativeCartsWidget();
+        $widget = new CollaborativeCartsWidget;
         expect($widget)->toBeInstanceOf(Widget::class);
     });
 
     it('can instantiate ConversionFunnelWidget', function (): void {
-        $widget = new ConversionFunnelWidget();
+        $widget = new ConversionFunnelWidget;
         expect($widget)->toBeInstanceOf(Widget::class);
     });
 
     it('can instantiate FraudDetectionWidget', function (): void {
-        $widget = new FraudDetectionWidget();
+        $widget = new FraudDetectionWidget;
         expect($widget)->toBeInstanceOf(Widget::class);
     });
 
     it('can instantiate LiveStatsWidget', function (): void {
-        $widget = new LiveStatsWidget();
+        $widget = new LiveStatsWidget;
         expect($widget)->toBeInstanceOf(StatsOverviewWidget::class);
     });
 
     it('can instantiate PendingAlertsWidget', function (): void {
-        $widget = new PendingAlertsWidget();
+        $widget = new PendingAlertsWidget;
         expect($widget)->toBeInstanceOf(Widget::class);
     });
 
     it('can instantiate RecentActivityWidget', function (): void {
-        $widget = new RecentActivityWidget();
+        $widget = new RecentActivityWidget;
         expect($widget)->toBeInstanceOf(Widget::class);
     });
 
     it('can instantiate RecoveryFunnelWidget', function (): void {
-        $widget = new RecoveryFunnelWidget();
+        $widget = new RecoveryFunnelWidget;
         expect($widget)->toBeInstanceOf(Widget::class);
     });
 
     it('can instantiate RecoveryOptimizerWidget', function (): void {
-        $widget = new RecoveryOptimizerWidget();
+        $widget = new RecoveryOptimizerWidget;
         expect($widget)->toBeInstanceOf(Widget::class);
     });
 
     it('can instantiate RecoveryPerformanceWidget', function (): void {
-        $widget = new RecoveryPerformanceWidget();
+        $widget = new RecoveryPerformanceWidget;
         expect($widget)->toBeInstanceOf(Widget::class);
     });
 
     it('can instantiate StrategyComparisonWidget', function (): void {
-        $widget = new StrategyComparisonWidget();
+        $widget = new StrategyComparisonWidget;
         expect($widget)->toBeInstanceOf(Widget::class);
     });
 
     it('can instantiate ValueTrendChartWidget', function (): void {
-        $widget = new ValueTrendChartWidget();
+        $widget = new ValueTrendChartWidget;
         expect($widget)->toBeInstanceOf(Widget::class);
     });
 });

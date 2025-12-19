@@ -6,8 +6,8 @@ use AIArmada\Commerce\Tests\TestCase;
 
 uses(TestCase::class);
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentPricing\Widgets\PricingStatsWidget;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\Promotion;

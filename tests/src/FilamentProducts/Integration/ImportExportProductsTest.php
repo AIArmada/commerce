@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\Commerce\Tests\FilamentProducts\Fixtures\TestOwner;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentProducts\Pages\ImportExportProducts;
 use AIArmada\Products\Enums\ProductStatus;
@@ -14,8 +15,6 @@ use Illuminate\Support\Facades\Storage;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 uses(TestCase::class);
-
-require_once __DIR__ . '/../Fixtures/TestOwner.php';
 
 afterEach(function (): void {
     Mockery::close();

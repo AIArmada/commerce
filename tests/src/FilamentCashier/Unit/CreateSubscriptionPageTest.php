@@ -9,7 +9,6 @@ use AIArmada\Cashier\Facades\Cashier;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\ChipBillableUser;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\CreateSubscription;
 use Filament\Notifications\Notification;
-use Illuminate\Database\Eloquent\Model;
 
 afterEach(function (): void {
     Mockery::close();
@@ -52,7 +51,7 @@ it('builds customer options, plans, payment methods, and can create a subscripti
             string $key,
             bool $withHidden = false,
             array $skipComponentsChildContainersWhileSearching = [],
-        ): \Filament\Schemas\Components\Component|\Filament\Actions\Action|\Filament\Actions\ActionGroup|null {
+        ): \Filament\Schemas\Components\Component | \Filament\Actions\Action | \Filament\Actions\ActionGroup | null {
             return null;
         }
 
@@ -61,9 +60,7 @@ it('builds customer options, plans, payment methods, and can create a subscripti
             return null;
         }
 
-        public function currentlyValidatingSchema(?\Filament\Schemas\Schema $schema): void
-        {
-        }
+        public function currentlyValidatingSchema(?\Filament\Schemas\Schema $schema): void {}
 
         public function getDefaultTestingSchemaName(): ?string
         {

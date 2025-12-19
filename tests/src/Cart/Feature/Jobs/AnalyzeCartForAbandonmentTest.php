@@ -66,8 +66,7 @@ describe('AnalyzeCartForAbandonment Job Integration', function (): void {
 
             Queue::assertPushed(
                 AnalyzeCartForAbandonment::class,
-                fn($job) =>
-                $job->cartId === 'specific-cart-789'
+                fn ($job) => $job->cartId === 'specific-cart-789'
             );
         });
     });

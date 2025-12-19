@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
@@ -11,21 +12,9 @@ use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Services\VoucherValidator;
 use Akaunting\Money\Money;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-
-class TestOwner extends EloquentModel
-{
-    use HasUuids;
-
-    public $timestamps = false;
-
-    protected $table = 'test_owners';
-
-    protected $guarded = [];
-}
 
 beforeEach(function (): void {
     Schema::dropIfExists('test_owners');

@@ -31,7 +31,7 @@ describe('CartDailyMetrics', function (): void {
     });
 
     it('returns table name from config', function (): void {
-        $metrics = new CartDailyMetrics();
+        $metrics = new CartDailyMetrics;
         $tableName = $metrics->getTable();
 
         expect($tableName)->toContain('daily_metrics');

@@ -2,6 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Models\BankAccount;
+use AIArmada\Chip\Models\SendInstruction;
+use AIArmada\Chip\Services\ChipSendService;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentChip\Actions\PurchaseExporter;
 use AIArmada\FilamentChip\Actions\SendInstructionExporter;
@@ -16,20 +19,15 @@ use AIArmada\FilamentChip\Resources\BankAccountResource\Pages\ViewBankAccount;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ListClients;
 use AIArmada\FilamentChip\Resources\ClientResource\Pages\ViewClient;
 use AIArmada\FilamentChip\Resources\CompanyStatementResource\Pages\ListCompanyStatements;
-use AIArmada\FilamentChip\Resources\CompanyStatementResource\Pages\ViewCompanyStatement;
 use AIArmada\FilamentChip\Resources\Pages\ReadOnlyListRecords;
 use AIArmada\FilamentChip\Resources\PaymentResource\Pages\ListPayments;
 use AIArmada\FilamentChip\Resources\PaymentResource\Pages\ViewPayment;
 use AIArmada\FilamentChip\Resources\PurchaseResource\Pages\ListPurchases;
 use AIArmada\FilamentChip\Resources\PurchaseResource\Pages\ViewPurchase;
 use AIArmada\FilamentChip\Resources\RecurringScheduleResource\Pages\ListRecurringSchedules;
-use AIArmada\FilamentChip\Resources\RecurringScheduleResource\Pages\ViewRecurringSchedule;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\CreateSendInstruction;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\ListSendInstructions;
 use AIArmada\FilamentChip\Resources\SendInstructionResource\Pages\ViewSendInstruction;
-use AIArmada\Chip\Models\BankAccount;
-use AIArmada\Chip\Models\SendInstruction;
-use AIArmada\Chip\Services\ChipSendService;
 use Filament\Actions\Exports\Models\Export;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Route;
@@ -175,7 +173,7 @@ it('covers billing pages by stubbing the billable model methods', function (): v
                 public function resume(): void {}
             };
 
-            return new class ($subscription)
+            return new class($subscription)
             {
                 public function __construct(private object $subscription) {}
 
@@ -321,7 +319,7 @@ it('covers resource pages and read-only list base class', function (): void {
         'state' => 'completed',
     ]);
 
-    app()->instance(ChipSendService::class, new class ($bankAccount, $sendInstruction)
+    app()->instance(ChipSendService::class, new class($bankAccount, $sendInstruction)
     {
         public function __construct(private BankAccount $bankAccount, private SendInstruction $sendInstruction) {}
 

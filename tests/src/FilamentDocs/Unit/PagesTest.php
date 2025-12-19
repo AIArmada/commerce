@@ -8,26 +8,26 @@ use AIArmada\FilamentDocs\Resources\DocResource\Pages\ListDocs;
 use AIArmada\FilamentDocs\Resources\DocResource\Pages\ViewDoc;
 
 test('list docs page has correct title', function (): void {
-    $page = new ListDocs();
+    $page = new ListDocs;
 
     expect($page->getTitle())->toBe('Documents');
     expect($page->getSubheading())->toBe('Manage invoices, receipts, and other documents');
 });
 
 test('create doc page can be instantiated', function (): void {
-    $page = new CreateDoc();
+    $page = new CreateDoc;
 
     expect($page)->toBeInstanceOf(CreateDoc::class);
 });
 
 test('edit doc page can be instantiated', function (): void {
-    $page = new EditDoc();
+    $page = new EditDoc;
 
     expect($page)->toBeInstanceOf(EditDoc::class);
 });
 
 test('view doc page can be instantiated', function (): void {
-    $page = new ViewDoc();
+    $page = new ViewDoc;
 
     expect($page)->toBeInstanceOf(ViewDoc::class);
 });

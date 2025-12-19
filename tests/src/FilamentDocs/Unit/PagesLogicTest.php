@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
 use AIArmada\FilamentDocs\Pages\AgingReportPage;
 use AIArmada\FilamentDocs\Pages\PendingApprovalsPage;
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 
 uses(TestCase::class);
 

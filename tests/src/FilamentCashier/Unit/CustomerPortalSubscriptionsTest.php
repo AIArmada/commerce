@@ -117,4 +117,3 @@ it('shows and manages CHIP subscriptions in the customer portal', function (): v
     $actionsMethod->setAccessible(true);
     expect($actionsMethod->invoke($page))->toBeArray();
 });
-

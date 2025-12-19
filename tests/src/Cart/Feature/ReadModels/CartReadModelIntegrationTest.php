@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Cart\ReadModels\CartReadModel;
 use AIArmada\Cart\Storage\StorageInterface;
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Carbon\CarbonImmutable;
 
 describe('CartReadModel Integration', function (): void {

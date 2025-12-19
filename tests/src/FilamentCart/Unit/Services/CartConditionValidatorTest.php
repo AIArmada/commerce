@@ -10,7 +10,7 @@ use Illuminate\Support\Str;
 
 describe('CartConditionValidator', function (): void {
     it('returns valid when no global conditions present', function (): void {
-        $validator = new CartConditionValidator();
+        $validator = new CartConditionValidator;
         $storage = new CacheStorage(
             cache: cache()->store(),
             keyPrefix: 'filament_cart_validator_' . Str::random(12),
@@ -38,7 +38,7 @@ describe('CartConditionValidator', function (): void {
     });
 
     it('removes deactivated global conditions', function (): void {
-        $validator = new CartConditionValidator();
+        $validator = new CartConditionValidator;
         $storage = new CacheStorage(
             cache: cache()->store(),
             keyPrefix: 'filament_cart_validator_' . Str::random(12),
@@ -78,7 +78,7 @@ describe('CartConditionValidator', function (): void {
     });
 
     it('keeps active global conditions', function (): void {
-        $validator = new CartConditionValidator();
+        $validator = new CartConditionValidator;
         $storage = new CacheStorage(
             cache: cache()->store(),
             keyPrefix: 'filament_cart_validator_' . Str::random(12),

@@ -46,7 +46,7 @@ describe('AlertLog', function (): void {
     });
 
     it('returns table name from config', function (): void {
-        $log = new AlertLog();
+        $log = new AlertLog;
         $tableName = $log->getTable();
 
         expect($tableName)->toContain('alert_logs');

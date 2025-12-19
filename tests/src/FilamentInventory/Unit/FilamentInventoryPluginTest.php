@@ -13,8 +13,6 @@ use AIArmada\FilamentInventory\Widgets\InventoryStatsWidget;
 use AIArmada\FilamentInventory\Widgets\LowInventoryAlertsWidget;
 use Filament\Panel;
 
-
-
 it('exposes a stable plugin id', function (): void {
     expect((new FilamentInventoryPlugin)->getId())->toBe('filament-inventory');
 });

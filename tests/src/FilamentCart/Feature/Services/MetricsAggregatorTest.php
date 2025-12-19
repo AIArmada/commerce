@@ -33,7 +33,7 @@ describe('MetricsAggregator', function (): void {
             'items' => json_encode([]),
         ]);
 
-        $aggregator = new MetricsAggregator();
+        $aggregator = new MetricsAggregator;
         $metrics = $aggregator->aggregateForDate(now());
 
         expect($metrics)->not->toBeNull();
@@ -41,7 +41,7 @@ describe('MetricsAggregator', function (): void {
     });
 
     it('can aggregate metrics for a date with segment', function (): void {
-        $aggregator = new MetricsAggregator();
+        $aggregator = new MetricsAggregator;
         $metrics = $aggregator->aggregateForDate(now(), 'vip_customers');
 
         expect($metrics)->not->toBeNull();
@@ -49,7 +49,7 @@ describe('MetricsAggregator', function (): void {
     });
 
     it('can aggregate totals for a date range', function (): void {
-        $aggregator = new MetricsAggregator();
+        $aggregator = new MetricsAggregator;
 
         // First create some daily metrics
         $aggregator->aggregateForDate(now()->subDays(2));
@@ -62,7 +62,7 @@ describe('MetricsAggregator', function (): void {
     });
 
     it('can backfill metrics for a date range', function (): void {
-        $aggregator = new MetricsAggregator();
+        $aggregator = new MetricsAggregator;
 
         $count = $aggregator->backfill(now()->subDays(3), now());
 
@@ -70,7 +70,7 @@ describe('MetricsAggregator', function (): void {
     });
 
     it('handles empty data gracefully', function (): void {
-        $aggregator = new MetricsAggregator();
+        $aggregator = new MetricsAggregator;
         $metrics = $aggregator->aggregateForDate(now()->subYear());
 
         expect($metrics->carts_created)->toBe(0);

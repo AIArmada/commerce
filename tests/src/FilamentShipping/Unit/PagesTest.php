@@ -8,8 +8,8 @@ use AIArmada\FilamentShipping\Pages\ShippingDashboard;
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
 use Filament\Schemas\Schema;
-use Filament\Tables\Table;
 use Filament\Support\Icons\Heroicon;
+use Filament\Tables\Table;
 use Illuminate\Support\Carbon;
 
 uses(TestCase::class);
@@ -49,7 +49,7 @@ describe('ShippingDashboard', function (): void {
     });
 
     it('returns title and widgets', function (): void {
-        $page = new ShippingDashboard();
+        $page = new ShippingDashboard;
 
         expect($page->getTitle())->toBe('Shipping Dashboard');
         expect($page->getHeaderWidgetsColumns())->toBe(5);
@@ -100,14 +100,14 @@ describe('ManifestPage', function (): void {
     });
 
     it('mounts with today\'s manifest date', function (): void {
-        $page = new ManifestPage();
+        $page = new ManifestPage;
         $page->mount();
 
         expect($page->manifestDate)->toBe(Carbon::today()->toDateString());
     });
 
     it('builds manifest form schema and table definition', function (): void {
-        $page = new ManifestPage();
+        $page = new ManifestPage;
         $page->mount();
 
         $schema = $page->form(Schema::make());
@@ -119,7 +119,7 @@ describe('ManifestPage', function (): void {
     });
 
     it('filters manifest table query by carrier and date', function (): void {
-        $page = new ManifestPage();
+        $page = new ManifestPage;
         $page->mount();
 
         $date = Carbon::today()->toDateString();
@@ -159,7 +159,7 @@ describe('ManifestPage', function (): void {
     });
 
     it('defines header actions', function (): void {
-        $page = new ManifestPage();
+        $page = new ManifestPage;
 
         $method = new ReflectionMethod($page, 'getHeaderActions');
         $method->setAccessible(true);

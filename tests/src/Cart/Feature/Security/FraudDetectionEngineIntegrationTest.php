@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Security\Fraud\DetectorResult;
 use AIArmada\Cart\Security\Fraud\FraudContext;
@@ -10,7 +9,6 @@ use AIArmada\Cart\Security\Fraud\FraudDetectionEngine;
 use AIArmada\Cart\Security\Fraud\FraudDetectorInterface;
 use AIArmada\Cart\Security\Fraud\FraudSignal;
 use AIArmada\Cart\Security\Fraud\FraudSignalCollector;
-use Illuminate\Support\Collection;
 
 describe('FraudDetectionEngine Integration', function (): void {
     beforeEach(function (): void {
@@ -220,14 +218,14 @@ function createFraudMockDetector(
     array $signals = [],
     float $weight = 1.0
 ): FraudDetectorInterface {
-    return new class ($name, $enabled, $signals, $weight) implements FraudDetectorInterface {
+    return new class($name, $enabled, $signals, $weight) implements FraudDetectorInterface
+    {
         public function __construct(
             private string $name,
             private bool $enabled,
             private array $signals,
             private float $weight
-        ) {
-        }
+        ) {}
 
         public function getName(): string
         {

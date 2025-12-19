@@ -60,7 +60,7 @@ describe('RecoveryAttempt', function (): void {
     });
 
     it('returns table name from config', function (): void {
-        $attempt = new RecoveryAttempt();
+        $attempt = new RecoveryAttempt;
         $tableName = $attempt->getTable();
 
         expect($tableName)->toContain('recovery_attempts');

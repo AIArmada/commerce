@@ -6,8 +6,8 @@ use AIArmada\Commerce\Tests\TestCase;
 
 uses(TestCase::class);
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentTax\Resources\TaxExemptionResource;
 use AIArmada\FilamentTax\Resources\TaxZoneResource;
 use AIArmada\Tax\Models\TaxClass;

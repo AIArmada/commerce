@@ -21,12 +21,12 @@ afterEach(function (): void {
 
 describe('RecoveryDispatcher', function (): void {
     beforeEach(function (): void {
-        $this->dispatcher = new RecoveryDispatcher();
+        $this->dispatcher = new RecoveryDispatcher;
 
         // Define required routes for testing
-        \Illuminate\Support\Facades\Route::get('/recovery/track/open/{attempt}', fn() => 'ok')
+        \Illuminate\Support\Facades\Route::get('/recovery/track/open/{attempt}', fn () => 'ok')
             ->name('cart.recovery.track.open');
-        \Illuminate\Support\Facades\Route::get('/recovery/track/click/{attempt}', fn() => 'ok')
+        \Illuminate\Support\Facades\Route::get('/recovery/track/click/{attempt}', fn () => 'ok')
             ->name('cart.recovery.track.click');
 
         // Create a campaign

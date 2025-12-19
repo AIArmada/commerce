@@ -226,7 +226,7 @@ describe('SetupCommand Execution', function (): void {
     });
 
     test('isProhibited returns true in production without force', function (): void {
-        $command = new SetupCommand();
+        $command = new SetupCommand;
         $reflection = new ReflectionMethod($command, 'isProhibited');
         $reflection->setAccessible(true);
 
@@ -239,7 +239,7 @@ describe('SetupCommand Execution', function (): void {
     });
 
     test('welcome method outputs banner', function (): void {
-        $command = new SetupCommand();
+        $command = new SetupCommand;
         $reflection = new ReflectionMethod($command, 'welcome');
         $reflection->setAccessible(true);
 
@@ -248,7 +248,7 @@ describe('SetupCommand Execution', function (): void {
     });
 
     test('displayDetection method formats output correctly', function (): void {
-        $command = new SetupCommand();
+        $command = new SetupCommand;
         $reflection = new ReflectionMethod($command, 'displayDetection');
         $reflection->setAccessible(true);
 

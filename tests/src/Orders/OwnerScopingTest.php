@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
-use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -160,12 +160,3 @@ it('auto-assigns owner on create when enabled', function (): void {
     expect($order->owner_type)->toBe($ownerA->getMorphClass())
         ->and($order->owner_id)->toBe($ownerA->getKey());
 });
-
-class TestOwner extends Model
-{
-    use HasUuids;
-
-    protected $table = 'test_owners';
-
-    protected $fillable = ['name'];
-}

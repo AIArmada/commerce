@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Commerce\Tests\Support\OwnerResolvers\StaticOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
@@ -297,16 +298,6 @@ test('webhook dispatcher is invoked for attribution and conversion', function ()
         ->and($fakeDispatcher->events[0]['type'])->toBe('attribution')
         ->and($fakeDispatcher->events[1]['type'])->toBe('conversion');
 });
-
-class StaticOwnerResolver implements OwnerResolverInterface
-{
-    public static ?Model $owner = null;
-
-    public function resolve(): ?Model
-    {
-        return self::$owner;
-    }
-}
 
 class AffiliateTestOwner extends Model
 {

@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentCart\Models\Cart;
-use AIArmada\FilamentCart\Models\RecoveryCampaign;
 use AIArmada\FilamentCart\Models\RecoveryAttempt;
+use AIArmada\FilamentCart\Models\RecoveryCampaign;
 use AIArmada\FilamentCart\Services\RecoveryDispatcher;
 use AIArmada\FilamentCart\Services\RecoveryScheduler;
 use Illuminate\Support\Carbon;
@@ -19,7 +19,7 @@ afterEach(function (): void {
 
 describe('RecoveryScheduler', function (): void {
     beforeEach(function (): void {
-        $this->scheduler = new RecoveryScheduler();
+        $this->scheduler = new RecoveryScheduler;
     });
 
     it('can be instantiated', function (): void {

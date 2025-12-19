@@ -173,13 +173,9 @@ class ChipBillableUser extends User implements \AIArmada\Cashier\Contracts\Billa
         return $this;
     }
 
-    public function deletePaymentMethod(string $paymentMethodId, ?string $gateway = null): void
-    {
-    }
+    public function deletePaymentMethod(string $paymentMethodId, ?string $gateway = null): void {}
 
-    public function deletePaymentMethods(?string $gateway = null): void
-    {
-    }
+    public function deletePaymentMethods(?string $gateway = null): void {}
 
     public function charge(int $amount, ?string $paymentMethod = null, array $options = [], ?string $gateway = null): mixed
     {

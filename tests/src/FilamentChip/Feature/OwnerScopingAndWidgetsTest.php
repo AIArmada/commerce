@@ -41,17 +41,25 @@ it('scopes filament resource queries to the current owner', function (): void {
         $table->timestamps();
     });
 
-    $ownerA = new class extends \Illuminate\Database\Eloquent\Model {
+    $ownerA = new class extends \Illuminate\Database\Eloquent\Model
+    {
         protected $table = 'tenants';
+
         public $incrementing = false;
+
         protected $keyType = 'string';
+
         protected $guarded = [];
     };
 
-    $ownerB = new class extends \Illuminate\Database\Eloquent\Model {
+    $ownerB = new class extends \Illuminate\Database\Eloquent\Model
+    {
         protected $table = 'tenants';
+
         public $incrementing = false;
+
         protected $keyType = 'string';
+
         protected $guarded = [];
     };
 
@@ -63,7 +71,8 @@ it('scopes filament resource queries to the current owner', function (): void {
     $ownerB->name = 'B';
     $ownerB->save();
 
-    app()->bind(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, fn () => new class ($ownerA) implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface {
+    app()->bind(\AIArmada\CommerceSupport\Contracts\OwnerResolverInterface::class, fn () => new class($ownerA) implements \AIArmada\CommerceSupport\Contracts\OwnerResolverInterface
+    {
         public function __construct(private \Illuminate\Database\Eloquent\Model $owner) {}
 
         public function resolve(): ?\Illuminate\Database\Eloquent\Model

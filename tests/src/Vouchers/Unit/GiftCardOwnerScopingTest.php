@@ -45,7 +45,8 @@ it('auto-assigns gift cards to the resolved owner on create', function (): void 
     $owner = GiftCardTestOwner::create(['name' => 'Merchant A']);
 
     app()->forgetInstance(OwnerResolverInterface::class);
-    app()->singleton(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($owner) implements OwnerResolverInterface {
+    app()->singleton(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($owner) implements OwnerResolverInterface
+    {
         public function __construct(private GiftCardTestOwner $owner) {}
 
         public function resolve(): ?Model
@@ -71,7 +72,8 @@ it('blocks cross-tenant gift card reads and actions', function (): void {
     $ownerB = GiftCardTestOwner::create(['name' => 'Merchant B']);
 
     app()->forgetInstance(OwnerResolverInterface::class);
-    app()->singleton(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($ownerA) implements OwnerResolverInterface {
+    app()->singleton(OwnerResolverInterface::class, fn (): OwnerResolverInterface => new class($ownerA) implements OwnerResolverInterface
+    {
         public function __construct(private GiftCardTestOwner $owner) {}
 
         public function resolve(): ?Model

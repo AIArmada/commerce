@@ -3,7 +3,7 @@ name: rector
 on:
   push:
     branches: [main, develop]
-  pull_request:
+  workflow_dispatch:
 
 jobs:
   rector:
@@ -31,7 +31,7 @@ jobs:
           coverage: none
 
       - name: Install dependencies
-        run: composer update --prefer-dist --no-interaction --no-progress
+        run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Run Rector (dry-run)
         run: vendor/bin/rector --dry-run --no-progress-bar

@@ -77,7 +77,8 @@ it('scopes reads to the current owner by default', function (): void {
     $ownerB->name = 'B';
     $ownerB->save();
 
-    app()->bind(OwnerResolverInterface::class, fn () => new class ($ownerA) implements OwnerResolverInterface {
+    app()->bind(OwnerResolverInterface::class, fn () => new class($ownerA) implements OwnerResolverInterface
+    {
         public function __construct(private Model $owner) {}
 
         public function resolve(): ?Model
@@ -133,7 +134,8 @@ it('can optionally include global rows when explicitly requested', function (): 
     $ownerA->name = 'A';
     $ownerA->save();
 
-    app()->bind(OwnerResolverInterface::class, fn () => new class ($ownerA) implements OwnerResolverInterface {
+    app()->bind(OwnerResolverInterface::class, fn () => new class($ownerA) implements OwnerResolverInterface
+    {
         public function __construct(private Model $owner) {}
 
         public function resolve(): ?Model
@@ -194,7 +196,8 @@ it('scopes integer-ID models too (option lists must be owner-safe)', function ()
     $ownerB->name = 'B';
     $ownerB->save();
 
-    app()->bind(OwnerResolverInterface::class, fn () => new class ($ownerA) implements OwnerResolverInterface {
+    app()->bind(OwnerResolverInterface::class, fn () => new class($ownerA) implements OwnerResolverInterface
+    {
         public function __construct(private Model $owner) {}
 
         public function resolve(): ?Model

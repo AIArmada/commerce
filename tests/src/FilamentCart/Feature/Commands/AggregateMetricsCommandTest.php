@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Commands\AggregateMetricsCommand;
 use AIArmada\FilamentCart\Services\MetricsAggregator;
 
 describe('AggregateMetricsCommand', function (): void {

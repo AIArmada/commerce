@@ -7,9 +7,9 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
@@ -44,7 +44,8 @@ it('portal pages do not leak cross-tenant data when owner mode enabled', functio
         'password' => 'secret',
     ]);
 
-    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface {
+    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
+    {
         public function __construct(private readonly Model $owner) {}
 
         public function resolve(): ?Model
@@ -126,7 +127,8 @@ it('portal pages only return current owner affiliate stats when multiple owners 
         'password' => 'secret',
     ]);
 
-    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface {
+    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
+    {
         public function __construct(private readonly Model $owner) {}
 
         public function resolve(): ?Model

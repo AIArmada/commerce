@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\Commerce\Tests\FilamentProducts\Fixtures\TestOwner;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentProducts\Resources\CategoryResource;
 use AIArmada\FilamentProducts\Resources\ProductResource;
@@ -14,8 +15,6 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 uses(TestCase::class);
-
-require_once __DIR__ . '/../Fixtures/TestOwner.php';
 
 beforeEach(function (): void {
     Schema::dropIfExists('test_owners');

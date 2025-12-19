@@ -11,7 +11,7 @@ use Filament\Tables\Table;
 uses(TestCase::class);
 
 it('builds prices relation manager form schema', function (): void {
-    $manager = new PricesRelationManager();
+    $manager = new PricesRelationManager;
 
     $schema = $manager->form(Schema::make());
 
@@ -19,7 +19,7 @@ it('builds prices relation manager form schema', function (): void {
 });
 
 it('builds prices relation manager table definition', function (): void {
-    $manager = new PricesRelationManager();
+    $manager = new PricesRelationManager;
 
     $livewire = Mockery::mock(HasTable::class);
 

@@ -32,7 +32,7 @@ describe('Permission Resource - RolesRelationManager Execution', function (): vo
     });
 
     test('table method returns Table instance', function (): void {
-        $rm = new PermissionRolesRM();
+        $rm = new PermissionRolesRM;
         $reflection = new ReflectionMethod($rm, 'table');
         $reflection->setAccessible(true);
 
@@ -43,7 +43,7 @@ describe('Permission Resource - RolesRelationManager Execution', function (): vo
     });
 
     test('form method exists and accepts Schema', function (): void {
-        $rm = new PermissionRolesRM();
+        $rm = new PermissionRolesRM;
         $reflection = new ReflectionMethod($rm, 'form');
         $reflection->setAccessible(true);
 
@@ -52,7 +52,7 @@ describe('Permission Resource - RolesRelationManager Execution', function (): vo
     });
 
     test('class can be instantiated', function (): void {
-        $rm = new PermissionRolesRM();
+        $rm = new PermissionRolesRM;
         expect($rm)->toBeInstanceOf(PermissionRolesRM::class);
     });
 });
@@ -80,7 +80,7 @@ describe('Role Resource - PermissionsRelationManager Execution', function (): vo
     });
 
     test('table method returns Table instance', function (): void {
-        $rm = new RolePermissionsRM();
+        $rm = new RolePermissionsRM;
         $reflection = new ReflectionMethod($rm, 'table');
         $reflection->setAccessible(true);
 
@@ -91,7 +91,7 @@ describe('Role Resource - PermissionsRelationManager Execution', function (): vo
     });
 
     test('form method exists and accepts Schema', function (): void {
-        $rm = new RolePermissionsRM();
+        $rm = new RolePermissionsRM;
         $reflection = new ReflectionMethod($rm, 'form');
         $reflection->setAccessible(true);
 
@@ -99,7 +99,7 @@ describe('Role Resource - PermissionsRelationManager Execution', function (): vo
     });
 
     test('class can be instantiated', function (): void {
-        $rm = new RolePermissionsRM();
+        $rm = new RolePermissionsRM;
         expect($rm)->toBeInstanceOf(RolePermissionsRM::class);
     });
 });
@@ -127,7 +127,7 @@ describe('User Resource - PermissionsRelationManager Execution', function (): vo
     });
 
     test('table method returns Table instance', function (): void {
-        $rm = new UserPermissionsRM();
+        $rm = new UserPermissionsRM;
         $reflection = new ReflectionMethod($rm, 'table');
         $reflection->setAccessible(true);
 
@@ -138,7 +138,7 @@ describe('User Resource - PermissionsRelationManager Execution', function (): vo
     });
 
     test('form method exists and accepts Schema', function (): void {
-        $rm = new UserPermissionsRM();
+        $rm = new UserPermissionsRM;
         $reflection = new ReflectionMethod($rm, 'form');
         $reflection->setAccessible(true);
 
@@ -146,7 +146,7 @@ describe('User Resource - PermissionsRelationManager Execution', function (): vo
     });
 
     test('class can be instantiated', function (): void {
-        $rm = new UserPermissionsRM();
+        $rm = new UserPermissionsRM;
         expect($rm)->toBeInstanceOf(UserPermissionsRM::class);
     });
 });
@@ -174,7 +174,7 @@ describe('User Resource - RolesRelationManager Execution', function (): void {
     });
 
     test('table method returns Table instance', function (): void {
-        $rm = new UserRolesRM();
+        $rm = new UserRolesRM;
         $reflection = new ReflectionMethod($rm, 'table');
         $reflection->setAccessible(true);
 
@@ -185,7 +185,7 @@ describe('User Resource - RolesRelationManager Execution', function (): void {
     });
 
     test('form method exists and accepts Schema', function (): void {
-        $rm = new UserRolesRM();
+        $rm = new UserRolesRM;
         $reflection = new ReflectionMethod($rm, 'form');
         $reflection->setAccessible(true);
 
@@ -195,7 +195,7 @@ describe('User Resource - RolesRelationManager Execution', function (): void {
     test('table uses guards config', function (): void {
         config(['filament-authz.guards' => ['web', 'admin']]);
 
-        $rm = new UserRolesRM();
+        $rm = new UserRolesRM;
         $reflection = new ReflectionMethod($rm, 'table');
         $reflection->setAccessible(true);
 
@@ -207,7 +207,7 @@ describe('User Resource - RolesRelationManager Execution', function (): void {
     });
 
     test('class can be instantiated', function (): void {
-        $rm = new UserRolesRM();
+        $rm = new UserRolesRM;
         expect($rm)->toBeInstanceOf(UserRolesRM::class);
     });
 });

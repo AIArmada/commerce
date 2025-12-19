@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Security\Fraud\FraudContext;
 use AIArmada\Cart\Security\Fraud\FraudSignal;

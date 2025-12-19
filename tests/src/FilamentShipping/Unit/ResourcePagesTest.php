@@ -42,14 +42,14 @@ it('wires shipping zone pages to the correct resource', function (): void {
 
 it('defines header actions for list/view/edit resource pages', function (): void {
     $pages = [
-        new ListShipments(),
-        new ViewShipment(),
-        new EditShipment(),
-        new ListReturnAuthorizations(),
-        new ViewReturnAuthorization(),
-        new EditReturnAuthorization(),
-        new ListShippingZones(),
-        new EditShippingZone(),
+        new ListShipments,
+        new ViewShipment,
+        new EditShipment,
+        new ListReturnAuthorizations,
+        new ViewReturnAuthorization,
+        new EditReturnAuthorization,
+        new ListShippingZones,
+        new EditShippingZone,
     ];
 
     $getHeaderActions = static function (object $page): array {

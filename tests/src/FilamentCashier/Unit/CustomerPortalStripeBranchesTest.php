@@ -51,7 +51,9 @@ it('covers stripe branches in customer portal invoices and payment methods via a
     $stripeInvoice = new class
     {
         public string $id = 'in_1';
+
         public ?string $number = 'INV-STRIPE-1';
+
         public bool $paid = true;
 
         public function total(): string
@@ -97,17 +99,13 @@ it('covers stripe branches in customer portal invoices and payment methods via a
             return (object) ['id' => 'pm_1'];
         }
 
-        public function updateDefaultPaymentMethod(string $paymentMethodId): void
-        {
-        }
+        public function updateDefaultPaymentMethod(string $paymentMethodId): void {}
 
         public function findPaymentMethod(string $paymentMethodId): ?object
         {
             return new class
             {
-                public function delete(): void
-                {
-                }
+                public function delete(): void {}
             };
         }
     };
