@@ -10,12 +10,6 @@ use AIArmada\Jnt\Services\JntExpressService;
 use Exception;
 use Illuminate\Console\Command;
 
-use function Laravel\Prompts\confirm;
-use function Laravel\Prompts\error;
-use function Laravel\Prompts\info;
-use function Laravel\Prompts\select;
-use function Laravel\Prompts\spin;
-
 class OrderCancelCommand extends Command
 {
     protected $signature = 'jnt:order:cancel {order-id : Order ID to cancel} {--reason= : Cancellation reason}';
@@ -30,36 +24,33 @@ class OrderCancelCommand extends Command
         // If no reason provided, ask for it
         if (! $reasonInput) {
             $reasons = collect(CancellationReason::cases())
-                ->mapWithKeys(fn ($reason): array => [$reason->value => $reason->value])
-                ->toArray();
+                ->map(fn (CancellationReason $reason): string => $reason->value)
+                ->all();
 
-            $reasonInput = select('Select cancellation reason', $reasons);
+            $reasonInput = $this->choice('Select cancellation reason', $reasons);
         }
 
         // Try to match to enum, otherwise use as string
         $reason = CancellationReason::tryFrom($reasonInput) ?? $reasonInput;
 
-        if (! confirm(sprintf('Cancel order %s?', $orderId), default: true)) {
-            info('Cancellation aborted.');
+        if (! $this->confirm(sprintf('Cancel order %s?', $orderId), true)) {
+            $this->info('Cancellation aborted.');
 
             return self::SUCCESS;
         }
 
         try {
-            spin(
-                fn () => $jnt->cancelOrder($orderId, $reason),
-                'Cancelling order...'
-            );
+            $jnt->cancelOrder($orderId, $reason);
 
-            info('✓ Order cancelled successfully!');
+            $this->info('✓ Order cancelled successfully!');
 
             return self::SUCCESS;
         } catch (JntApiException $e) {
-            error('API Error: ' . $e->getMessage());
+            $this->error('API Error: ' . $e->getMessage());
 
             return self::FAILURE;
         } catch (Exception $e) {
-            error('Error: ' . $e->getMessage());
+            $this->error('Error: ' . $e->getMessage());
 
             return self::FAILURE;
         }

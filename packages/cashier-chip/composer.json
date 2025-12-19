@@ -12,7 +12,8 @@
     },
     "autoload": {
         "psr-4": {
-            "AIArmada\\CashierChip\\": "src/"
+            "AIArmada\\CashierChip\\": "src/",
+            "AIArmada\\CashierChip\\Database\\Factories\\": "database/factories/"
         }
     },
     "autoload-dev": {

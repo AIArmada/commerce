@@ -10,12 +10,6 @@ use AIArmada\Jnt\Services\JntExpressService;
 use Exception;
 use Illuminate\Console\Command;
 
-use function Laravel\Prompts\error;
-use function Laravel\Prompts\info;
-use function Laravel\Prompts\spin;
-use function Laravel\Prompts\table;
-use function Laravel\Prompts\warning;
-
 class OrderTrackCommand extends Command
 {
     protected $signature = 'jnt:order:track {order-id : Order ID or tracking number to track}';
@@ -27,18 +21,17 @@ class OrderTrackCommand extends Command
         $orderId = $this->argument('order-id');
 
         try {
-            $tracking = spin(
-                fn () => $jnt->trackParcel($orderId),
-                'Tracking order: ' . $orderId
-            );
+            $this->line('Tracking order: ' . $orderId);
+
+            $tracking = $jnt->trackParcel($orderId);
 
             if ($tracking->details->count() === 0) {
-                warning('No tracking information found for this order.');
+                $this->warn('No tracking information found for this order.');
 
                 return self::SUCCESS;
             }
 
-            info('✓ Tracking Information Found');
+            $this->info('✓ Tracking Information Found');
 
             // Display tracking details
             $details = [];
@@ -50,22 +43,19 @@ class OrderTrackCommand extends Command
                 ];
             }
 
-            table(
-                ['Time', 'Status', 'Description'],
-                $details
-            );
+            $this->table(['Time', 'Status', 'Description'], $details);
 
             return self::SUCCESS;
         } catch (JntNetworkException $e) {
-            error('Network Error: ' . $e->getMessage());
+            $this->error('Network Error: ' . $e->getMessage());
 
             return self::FAILURE;
         } catch (JntApiException $e) {
-            error('API Error: ' . $e->getMessage());
+            $this->error('API Error: ' . $e->getMessage());
 
             return self::FAILURE;
         } catch (Exception $e) {
-            error('Error: ' . $e->getMessage());
+            $this->error('Error: ' . $e->getMessage());
 
             return self::FAILURE;
         }

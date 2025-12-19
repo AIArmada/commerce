@@ -10,11 +10,6 @@ use AIArmada\Jnt\Services\JntExpressService;
 use Exception;
 use Illuminate\Console\Command;
 
-use function Laravel\Prompts\error;
-use function Laravel\Prompts\info;
-use function Laravel\Prompts\spin;
-use function Laravel\Prompts\warning;
-
 class OrderPrintCommand extends Command
 {
     protected $signature = 'jnt:order:print {order-id : Order ID to print} {--path=storage/waybills : Directory to save PDF}';
@@ -27,10 +22,9 @@ class OrderPrintCommand extends Command
         $path = $this->option('path');
 
         try {
-            $result = spin(
-                fn () => $jnt->printOrder($orderId),
-                'Printing waybill for order: ' . $orderId
-            );
+            $this->line('Printing waybill for order: ' . $orderId);
+
+            $result = $jnt->printOrder($orderId);
 
             $waybill = PrintWaybillData::fromApiArray($result);
 
@@ -39,30 +33,30 @@ class OrderPrintCommand extends Command
                 $fullPath = base_path(sprintf('%s/%s', $path, $filename));
 
                 if ($waybill->savePdf($fullPath)) {
-                    info('✓ Waybill saved successfully!');
+                    $this->info('✓ Waybill saved successfully!');
                     $this->line('Location: ' . $fullPath);
                     $this->line('Size: ' . $waybill->getFormattedSize());
                 } else {
-                    error('Failed to save waybill PDF.');
+                    $this->error('Failed to save waybill PDF.');
 
                     return self::FAILURE;
                 }
             } elseif ($waybill->hasUrlContent()) {
-                info('✓ Waybill URL generated!');
+                $this->info('✓ Waybill URL generated!');
                 $this->line('Download URL: ' . $waybill->getDownloadUrl());
             } else {
-                warning('No waybill content available.');
+                $this->warn('No waybill content available.');
 
                 return self::FAILURE;
             }
 
             return self::SUCCESS;
         } catch (JntApiException $e) {
-            error('API Error: ' . $e->getMessage());
+            $this->error('API Error: ' . $e->getMessage());
 
             return self::FAILURE;
         } catch (Exception $e) {
-            error('Error: ' . $e->getMessage());
+            $this->error('Error: ' . $e->getMessage());
 
             return self::FAILURE;
         }
