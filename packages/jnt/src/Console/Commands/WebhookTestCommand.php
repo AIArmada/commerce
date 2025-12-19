@@ -9,10 +9,6 @@ use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Http;
 
-use function Laravel\Prompts\error;
-use function Laravel\Prompts\info;
-use function Laravel\Prompts\spin;
-
 class WebhookTestCommand extends Command
 {
     protected $signature = 'jnt:webhook:test {--url= : Webhook URL to test}';
@@ -23,7 +19,7 @@ class WebhookTestCommand extends Command
     {
         $url = $this->option('url') ?: config('jnt.webhook.url', route('jnt.webhook'));
 
-        info('Testing webhook endpoint: ' . $url);
+        $this->info('Testing webhook endpoint: ' . $url);
 
         // Generate sample webhook payload
         $samplePayload = [
@@ -46,17 +42,16 @@ class WebhookTestCommand extends Command
         $samplePayload['digest'] = $signature;
 
         try {
-            $response = spin(
-                fn () => Http::post($url, $samplePayload),
-                'Sending test webhook...'
-            );
+            $this->line('Sending test webhook...');
+
+            $response = Http::post($url, $samplePayload);
 
             if ($response->successful()) {
-                info('✓ Webhook test successful!');
+                $this->info('✓ Webhook test successful!');
                 $this->line('Status: ' . $response->status());
                 $this->line('Response: ' . $response->body());
             } else {
-                error('✗ Webhook test failed!');
+                $this->error('✗ Webhook test failed!');
                 $this->line('Status: ' . $response->status());
                 $this->line('Response: ' . $response->body());
 
@@ -65,7 +60,7 @@ class WebhookTestCommand extends Command
 
             return self::SUCCESS;
         } catch (Exception $exception) {
-            error('Error: ' . $exception->getMessage());
+            $this->error('Error: ' . $exception->getMessage());
 
             return self::FAILURE;
         }

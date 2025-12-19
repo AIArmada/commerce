@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
+use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Enums\ShipmentStatus;

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Created;
-use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
