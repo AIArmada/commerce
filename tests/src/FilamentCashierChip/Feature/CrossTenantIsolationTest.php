@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\CashierChip\Subscription;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures\User;
 use AIArmada\Commerce\Tests\FilamentCashierChip\TestCase;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;

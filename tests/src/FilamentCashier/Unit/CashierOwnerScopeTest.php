@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\TenantBillableUser;
 use AIArmada\Commerce\Tests\FilamentCashier\Fixtures\TenantRecord;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCashier\Resources\UnifiedSubscriptionResource\Pages\CreateSubscription;
 use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
