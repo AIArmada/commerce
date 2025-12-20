@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Data;
 
 use AIArmada\Chip\Models\Purchase;
+use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Spatie\LaravelData\Data;
@@ -20,8 +21,8 @@ final class EnrichedWebhookPayload extends Data
         public readonly array $rawPayload,
         public readonly ?Purchase $localPurchase = null,
         public readonly ?Model $owner = null,
-        public readonly ?Carbon $receivedAt = null,
-        public readonly ?Carbon $eventTimestamp = null,
+        public readonly ?CarbonInterface $receivedAt = null,
+        public readonly ?CarbonInterface $eventTimestamp = null,
         public readonly ?string $purchaseId = null,
         public readonly ?string $clientId = null,
     ) {}

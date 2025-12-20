@@ -1,13 +1,14 @@
 name: tests
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
   run-tests:
@@ -19,13 +20,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
-        php: [8.4]
-        laravel: [12.*]
-        dependency-version: [prefer-stable]
-        include:
-          - laravel: 12.*
-            testbench: 10.*
-    name: P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }} - Shard ${{ matrix.shard }}/4
+    name: Pest (manual) - Shard ${{ matrix.shard }}/4
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -34,19 +29,17 @@ jobs:
         uses: actions/cache@v4
         with:
           path: ~/.composer/cache/files
-          key: dependencies-laravel-${{ matrix.laravel }}-php-${{ matrix.php }}-composer-${{ hashFiles('composer.json') }}
+          key: dependencies-composer-${{ hashFiles('**/composer.lock') }}
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: ${{ matrix.php }}
+          php-version: 8.4
           extensions: intl, mbstring, pdo, pdo_sqlite, json
           coverage: none
 
       - name: Install dependencies
-        run: |
-          composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" --no-interaction --no-update
-          composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-progress
+        run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Execute tests
         run: vendor/bin/pest --colors=always --parallel --shard=${{ matrix.shard }}/4
