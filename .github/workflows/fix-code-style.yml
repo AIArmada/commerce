@@ -83,6 +83,12 @@ jobs:
           git push origin HEAD:${{ github.head_ref }}
 
   check-code-style:
+    name: (deprecated) check-code-style
+    runs-on: ubuntu-latest
+    if: false
+
+  check-pint:
+    name: Pint (check)
     runs-on: ubuntu-latest
     if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
     steps:
@@ -113,6 +119,36 @@ jobs:
 
       - name: Check Pint (test)
         run: vendor/bin/pint --test
+
+  check-rector:
+    name: Rector (check)
+    runs-on: ubuntu-latest
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.pull_request.head.repo.full_name != github.repository)
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.4
+          extensions: mbstring, pdo, pdo_sqlite, json
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-composer-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-composer-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
 
       - name: Check Rector (dry-run)
         run: vendor/bin/rector --dry-run --no-progress-bar
