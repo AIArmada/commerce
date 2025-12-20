@@ -1,6 +1,9 @@
 # Database Guidelines
-- **PK**: `uuid('id')->primary()`.
-- **FK**: `foreignUuid('col')` only. NO `constrained()` or DB-level cascades.
-- **Cascades**: Handle in Application Logic (Model/Service).
-- **Schema**: No `down()` logic needed.
-- **Rules**: Ensure migrations are safe and idempotent.
+- **Primary keys**: `uuid('id')->primary()`.
+- **Foreign keys**: `foreignUuid('col')` only.
+- **Never** add DB-level constraints or cascades: no `->constrained()`, no `->cascadeOnDelete()`, no FK constraints.
+- **Cascades/integrity**: enforce in application logic (models/actions/services).
+- **Migrations**: keep safe/idempotent; no `down()` required.
+
+## Verification
+- Ensure no constraints/cascades slipped in: `rg -n -- "constrained\(|cascadeOnDelete\(" packages/*/database`

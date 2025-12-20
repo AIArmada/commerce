@@ -8,7 +8,17 @@ use AIArmada\Cart\Models\Condition;
 use Illuminate\Config\Repository;
 use Illuminate\Container\Container;
 
-beforeEach(function (): void {
+$originalContainer = null;
+
+afterEach(function () use (&$originalContainer): void {
+    if ($originalContainer instanceof Container) {
+        Container::setInstance($originalContainer);
+    }
+});
+
+beforeEach(function () use (&$originalContainer): void {
+    $originalContainer = Container::getInstance();
+
     $container = new Container;
     Container::setInstance($container);
 
