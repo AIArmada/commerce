@@ -9,7 +9,7 @@
 
 ## Best Practices
 - **Strict Laravel**: `Arr::get()`, `Collections`, `Service Container`.
-- **Modern PHP**: 8.2+ (readonly, match).
+- **Modern PHP**: 8.4+ (readonly, match, modern typing).
 - **Time**: Use `CarbonImmutable` (or immutable date/time objects) wherever possible; avoid mutable `Carbon` unless you have a strong reason.
 - **Logic**: Action Classes only. No logic in Controllers/Models.
 - **Structure**: SOLID, Repository for access, Factory for creation.
