@@ -2,9 +2,23 @@ name: fix-code-style
 
 on:
   push:
-    branches: [main, develop]
+    branches: ['**']
+    paths:
+      - '**/*.php'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'pint.json'
+      - 'rector.php'
+      - '.github/workflows/fix-code-style.yml'
   pull_request:
     branches: [main, develop]
+    paths:
+      - '**/*.php'
+      - 'composer.json'
+      - 'composer.lock'
+      - 'pint.json'
+      - 'rector.php'
+      - '.github/workflows/fix-code-style.yml'
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}

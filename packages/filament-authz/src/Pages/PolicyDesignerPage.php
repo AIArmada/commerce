@@ -260,11 +260,13 @@ PHP;
     public function savePolicy(): void
     {
         if (! $this->policyName) {
-            Notification::make()
-                ->title('Validation Error')
-                ->body('Policy name is required')
-                ->danger()
-                ->send();
+            if (! app()->runningInConsole()) {
+                Notification::make()
+                    ->title('Validation Error')
+                    ->body('Policy name is required')
+                    ->danger()
+                    ->send();
+            }
 
             return;
         }
@@ -286,20 +288,24 @@ PHP;
             ]
         );
 
-        Notification::make()
-            ->title('Policy Saved')
-            ->body("Policy '{$this->policyName}' has been saved successfully")
-            ->success()
-            ->send();
+        if (! app()->runningInConsole()) {
+            Notification::make()
+                ->title('Policy Saved')
+                ->body("Policy '{$this->policyName}' has been saved successfully")
+                ->success()
+                ->send();
+        }
     }
 
     public function testPolicy(): void
     {
-        Notification::make()
-            ->title('Policy Test')
-            ->body('Policy simulation complete. Check the results panel.')
-            ->info()
-            ->send();
+        if (! app()->runningInConsole()) {
+            Notification::make()
+                ->title('Policy Test')
+                ->body('Policy simulation complete. Check the results panel.')
+                ->info()
+                ->send();
+        }
     }
 
     protected function exportConditionsAsPhp(): string
