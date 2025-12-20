@@ -7,7 +7,6 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\AffiliateRegistrationService;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalRegistration;
 use Filament\Forms\Components\TextInput;
-use Filament\Notifications\Notification;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -125,18 +124,18 @@ it('blocks register() and sends a danger notification when disabled', function (
     $enabled->setAccessible(true);
     $enabled->setValue($page, false);
 
-    $notification = Mockery::mock();
-    $notification->shouldReceive('title')->once()->andReturnSelf();
-    $notification->shouldReceive('body')->once()->andReturnSelf();
-    $notification->shouldReceive('danger')->once()->andReturnSelf();
-    $notification->shouldReceive('send')->once();
-
-    Mockery::mock('alias:' . Notification::class)
-        ->shouldReceive('make')
-        ->once()
-        ->andReturn($notification);
+    session()->forget('filament.notifications');
 
     expect($page->register())->toBeNull();
+
+    $notifications = session('filament.notifications');
+    expect($notifications)->toBeArray()->not->toBeEmpty();
+
+    $first = $notifications[0] ?? null;
+    expect($first)
+        ->toBeArray()
+        ->and($first['title'] ?? null)->toBe((string) __('Registration Disabled'))
+        ->and($first['status'] ?? null)->toBe('danger');
 });
 
 it('afterRegister() sends a success notification with mode-specific message', function (): void {
@@ -152,22 +151,21 @@ it('afterRegister() sends a success notification with mode-specific message', fu
     $approvalMode->setAccessible(true);
     $approvalMode->setValue($page, 'open');
 
-    $notification = Mockery::mock();
-    $notification->shouldReceive('title')->once()->andReturnSelf();
-    $notification->shouldReceive('body')->once()->andReturnSelf();
-    $notification->shouldReceive('success')->once()->andReturnSelf();
-    $notification->shouldReceive('send')->once();
-
-    Mockery::mock('alias:' . Notification::class)
-        ->shouldReceive('make')
-        ->once()
-        ->andReturn($notification);
+    session()->forget('filament.notifications');
 
     $method = $reflection->getMethod('afterRegister');
     $method->setAccessible(true);
     $method->invoke($page);
 
-    expect(true)->toBeTrue();
+    $notifications = session('filament.notifications');
+    expect($notifications)->toBeArray()->not->toBeEmpty();
+
+    $first = $notifications[0] ?? null;
+    expect($first)
+        ->toBeArray()
+        ->and($first['title'] ?? null)->toBe((string) __('Registration Successful'))
+        ->and($first['status'] ?? null)->toBe('success')
+        ->and($first['body'] ?? null)->toBe((string) __('Your affiliate account has been created. It is currently pending activation.'));
 });
 
 it('exposes a register action and custom affiliate form components', function (): void {
