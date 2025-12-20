@@ -57,7 +57,7 @@ jobs:
         run: |
           sleep 12
 
-          echo "Triggering Packagist update for aiarmada/$PACKAGIST_NAME"
+          echo "Triggering Packagist update for aiarmada/${{ matrix.package }}"
 
           curl -X POST \
             "https://packagist.org/api/update-package?username=saiffil&apiToken=${{ secrets.PACKAGIST_TOKEN }}" \

@@ -1,20 +1,29 @@
-name: CI
+name: maintenance
 
 on:
-  push:
-    branches: [main, develop]
-  pull_request:
-    branches: [main, develop]
-
-permissions:
-  contents: read
+  workflow_dispatch:
+    inputs:
+      task:
+        description: "Which maintenance task to run"
+        required: true
+        default: all
+        type: choice
+        options:
+          - all
+          - tests
+          - phpstan
+          - rector
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+permissions:
+  contents: read
+
 jobs:
   tests:
+    if: ${{ github.event.inputs.task == 'all' || github.event.inputs.task == 'tests' }}
     runs-on: ubuntu-latest
     env:
       DB_CONNECTION: sqlite
@@ -23,7 +32,7 @@ jobs:
       fail-fast: false
       matrix:
         shard: [1, 2, 3, 4]
-    name: Pest (PHP 8.4) - Shard ${{ matrix.shard }}/4
+    name: Pest (manual) - Shard ${{ matrix.shard }}/4
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -31,7 +40,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: "8.4"
           extensions: intl, curl, json, mbstring, dom, pdo, pdo_sqlite, zip
           coverage: none
           tools: composer:v2
@@ -54,8 +63,9 @@ jobs:
         run: vendor/bin/pest --colors=always --parallel --shard=${{ matrix.shard }}/4
 
   phpstan:
-    name: PHPStan
+    if: ${{ github.event.inputs.task == 'all' || github.event.inputs.task == 'phpstan' }}
     runs-on: ubuntu-latest
+    name: PHPStan (manual)
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -63,7 +73,7 @@ jobs:
       - name: Setup PHP
         uses: shivammathur/setup-php@v2
         with:
-          php-version: '8.4'
+          php-version: "8.4"
           extensions: intl, curl, json, mbstring, dom, pdo, pdo_sqlite, zip
           coverage: none
           tools: composer:v2
@@ -84,3 +94,36 @@ jobs:
 
       - name: Run PHPStan
         run: composer test:phpstan
+
+  rector:
+    if: ${{ github.event.inputs.task == 'all' || github.event.inputs.task == 'rector' }}
+    runs-on: ubuntu-latest
+    name: Rector (manual) - dry-run
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.4"
+          extensions: intl, curl, json, mbstring, dom, pdo, pdo_sqlite, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Get Composer cache directory
+        id: composer-cache
+        run: echo "dir=$(composer config cache-files-dir)" >> $GITHUB_OUTPUT
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: ${{ steps.composer-cache.outputs.dir }}
+          key: ${{ runner.os }}-rector-${{ hashFiles('**/composer.lock') }}
+          restore-keys: ${{ runner.os }}-rector-
+
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+
+      - name: Run Rector (dry-run)
+        run: vendor/bin/rector --dry-run --no-progress-bar
