@@ -226,8 +226,20 @@ class SetupCommand extends Command
         $this->info(SetupStage::Database->icon() . ' Database Setup');
         $this->newLine();
 
-        // Check for existing tables
-        $hasExistingTables = Schema::hasTable('permissions');
+        $permissionTableNames = (array) config('permission.table_names', []);
+        $spatieTables = [
+            $permissionTableNames['permissions'] ?? 'permissions',
+            $permissionTableNames['roles'] ?? 'roles',
+            $permissionTableNames['role_has_permissions'] ?? 'role_has_permissions',
+            $permissionTableNames['model_has_roles'] ?? 'model_has_roles',
+            $permissionTableNames['model_has_permissions'] ?? 'model_has_permissions',
+        ];
+
+        $hasExistingTables = collect($spatieTables)
+            ->filter(fn (string $table): bool => $table !== '')
+            ->some(fn (string $table): bool => Schema::hasTable($table));
+
+        $shouldPublishSpatieMigrations = ! $hasExistingTables;
 
         if ($hasExistingTables && ! $this->option('fresh')) {
             if (! $this->option('minimal') && ! $this->option('force')) {
@@ -248,15 +260,25 @@ class SetupCommand extends Command
 
                 if ($action === 'fresh') {
                     $this->call('migrate:fresh', ['--path' => 'vendor/spatie/laravel-permission/database/migrations']);
+                    $shouldPublishSpatieMigrations = true;
+                } else {
+                    // Tables exist already; do not publish Spatie migrations again.
+                    $shouldPublishSpatieMigrations = false;
                 }
+            } else {
+                // Minimal/forced setup should not try to publish Spatie permission migrations when
+                // the tables already exist (this is common in test environments).
+                $shouldPublishSpatieMigrations = false;
             }
         }
 
         // Publish and run Spatie migrations
-        $this->call('vendor:publish', [
-            '--provider' => 'Spatie\\Permission\\PermissionServiceProvider',
-            '--tag' => 'permission-migrations',
-        ]);
+        if ($shouldPublishSpatieMigrations) {
+            $this->call('vendor:publish', [
+                '--provider' => 'Spatie\\Permission\\PermissionServiceProvider',
+                '--tag' => 'permission-migrations',
+            ]);
+        }
 
         // Publish and run our migrations
         $this->call('vendor:publish', [

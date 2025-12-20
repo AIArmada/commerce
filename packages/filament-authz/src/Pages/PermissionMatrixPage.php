@@ -95,11 +95,13 @@ class PermissionMatrixPage extends Page
 
         $role->syncPermissions($enabledPermissions);
 
-        Notification::make()
-            ->title('Permissions Updated')
-            ->body("Permissions for role '{$role->name}' have been updated.")
-            ->success()
-            ->send();
+        if (! app()->runningInConsole()) {
+            Notification::make()
+                ->title('Permissions Updated')
+                ->body("Permissions for role '{$role->name}' have been updated.")
+                ->success()
+                ->send();
+        }
     }
 
     public function getSelectedRoleName(): ?string

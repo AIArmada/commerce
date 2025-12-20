@@ -58,19 +58,23 @@ class RoleHierarchyPage extends Page
         try {
             $service->setParent($role, $parent);
 
-            Notification::make()
-                ->title('Hierarchy Updated')
-                ->body("Parent of '{$role->name}' has been updated.")
-                ->success()
-                ->send();
+            if (! app()->runningInConsole()) {
+                Notification::make()
+                    ->title('Hierarchy Updated')
+                    ->body("Parent of '{$role->name}' has been updated.")
+                    ->success()
+                    ->send();
+            }
 
             $this->buildTree($service);
         } catch (InvalidArgumentException $e) {
-            Notification::make()
-                ->title('Error')
-                ->body($e->getMessage())
-                ->danger()
-                ->send();
+            if (! app()->runningInConsole()) {
+                Notification::make()
+                    ->title('Error')
+                    ->body($e->getMessage())
+                    ->danger()
+                    ->send();
+            }
         }
     }
 
@@ -84,11 +88,13 @@ class RoleHierarchyPage extends Page
 
         $service->detachFromParent($role);
 
-        Notification::make()
-            ->title('Role Detached')
-            ->body("Role '{$role->name}' is now a root role.")
-            ->success()
-            ->send();
+        if (! app()->runningInConsole()) {
+            Notification::make()
+                ->title('Role Detached')
+                ->body("Role '{$role->name}' is now a root role.")
+                ->success()
+                ->send();
+        }
 
         $this->buildTree($service);
     }
@@ -127,11 +133,13 @@ class RoleHierarchyPage extends Page
                         $service->setParent($role, $parent);
                     }
 
-                    Notification::make()
-                        ->title('Role Created')
-                        ->body("Role '{$role->name}' has been created.")
-                        ->success()
-                        ->send();
+                    if (! app()->runningInConsole()) {
+                        Notification::make()
+                            ->title('Role Created')
+                            ->body("Role '{$role->name}' has been created.")
+                            ->success()
+                            ->send();
+                    }
 
                     $this->buildTree($service);
                 }),
