@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\GraphQL\Mutations\CartMutations;
 use AIArmada\Cart\GraphQL\Queries\CartQuery;
 use Illuminate\Auth\Access\AuthorizationException;
