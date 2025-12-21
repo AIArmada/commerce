@@ -65,9 +65,9 @@ return new class extends Migration
             commerce_json_column_type('cart', 'json') === 'jsonb'
             && Schema::getConnection()->getDriverName() === 'pgsql'
         ) {
-            DB::statement("CREATE INDEX IF NOT EXISTS conditions_attributes_gin_index ON \"{$tableName}\" USING GIN (\"attributes\")");
-            DB::statement("CREATE INDEX IF NOT EXISTS conditions_rules_gin_index ON \"{$tableName}\" USING GIN (\"rules\")");
-            DB::statement("CREATE INDEX IF NOT EXISTS conditions_target_definition_gin_index ON \"{$tableName}\" USING GIN (\"target_definition\")");
+            DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_attributes_gin_index ON \"{$tableName}\" USING GIN (\"attributes\")");
+            DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_rules_gin_index ON \"{$tableName}\" USING GIN (\"rules\")");
+            DB::statement("CREATE INDEX IF NOT EXISTS {$tableName}_target_definition_gin_index ON \"{$tableName}\" USING GIN (\"target_definition\")");
         }
     }
 
