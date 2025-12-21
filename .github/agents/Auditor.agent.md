@@ -26,8 +26,6 @@ To prevent scope creep and reduce iteration cycles, require the assignee to incl
 
 - **Package scope**: the exact `packages/<pkg>` to treat as in-scope (one at a time preferred)
 - **Goal**: one sentence describing the expected outcome (e.g. owner-scope leak fix, add cross-tenant regression test)
-- **Failing evidence**: the full output of `./vendor/bin/pest --parallel tests/src/<PackageName>` (or a path to a saved `/tmp/pest-output-<pkg>.txt`)
-- **Constraints**: anything that must not change (if any)
 
 If any of the above are missing, STOP and request the missing information before running tools or making edits.
 
