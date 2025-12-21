@@ -20,31 +20,22 @@ return [
     'database' => [
         'table_prefix' => env('CHIP_TABLE_PREFIX', 'chip_'),
         'json_column_type' => env('CHIP_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
+        'amount_precision' => env('CHIP_AMOUNT_PRECISION', 2),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | Environment
+    | Credentials/API
     |--------------------------------------------------------------------------
     */
     'environment' => env('CHIP_ENVIRONMENT', 'sandbox'),
 
-    /*
-    |--------------------------------------------------------------------------
-    | Collect API
-    |--------------------------------------------------------------------------
-    */
     'collect' => [
         'base_url' => env('CHIP_COLLECT_BASE_URL', 'https://gate.chip-in.asia/api/v1/'),
         'api_key' => env('CHIP_COLLECT_API_KEY'),
         'brand_id' => env('CHIP_COLLECT_BRAND_ID'),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Send API
-    |--------------------------------------------------------------------------
-    */
     'send' => [
         'base_url' => [
             'sandbox' => env('CHIP_SEND_SANDBOX_URL', 'https://staging-api.chip-in.asia/api'),

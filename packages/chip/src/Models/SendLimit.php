@@ -7,15 +7,21 @@ namespace AIArmada\Chip\Models;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 
 /**
+ * @property int $id
  * @property int $amount
- * @property string|null $currency
- * @property int $net_amount
  * @property int $fee
- * @property string|null $status
+ * @property int $net_amount
+ * @property string $currency
+ * @property string $fee_type
+ * @property string $transaction_type
+ * @property string $status
+ * @property int $approvals_required
+ * @property int $approvals_received
+ * @property string|null $from_settlement
  */
-class SendLimit extends ChipModel
+class SendLimit extends IntegerIdChipModel
 {
-    public $timestamps = false;
+    public $timestamps = true;
 
     /** @return Attribute<string|null, never> */
     public function formattedAmount(): Attribute

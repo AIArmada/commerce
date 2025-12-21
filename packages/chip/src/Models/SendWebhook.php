@@ -5,12 +5,16 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Models;
 
 /**
- * @property string|null $url
- * @property array<string>|null $event_hooks
+ * @property int $id
+ * @property string $name
+ * @property string $public_key
+ * @property string $callback_url
+ * @property string $email
+ * @property array<string> $event_hooks
  */
-class SendWebhook extends ChipModel
+class SendWebhook extends IntegerIdChipModel
 {
-    public $timestamps = false;
+    public $timestamps = true;
 
     protected static function tableSuffix(): string
     {

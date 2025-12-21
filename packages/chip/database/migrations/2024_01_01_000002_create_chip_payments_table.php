@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create($tablePrefix.'payments', function (Blueprint $table): void {
             // Core API fields - Payment object structure from CHIP API
             $table->uuid('id')->primary();
-            $table->uuid('purchase_id'); // Reference to purchases table
+            $table->foreignUuid('purchase_id'); // Reference to purchases table
 
             // Payment type and direction
             $table->string('payment_type', 16)

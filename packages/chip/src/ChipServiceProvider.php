@@ -44,6 +44,25 @@ final class ChipServiceProvider extends PackageServiceProvider
             'collect.api_key',
             'collect.brand_id',
         ]);
+
+        $this->registerConditionalIntegrations();
+    }
+
+    /**
+     * Register integrations with other packages when they are installed.
+     */
+    protected function registerConditionalIntegrations(): void
+    {
+        // Auto-integrate with Cart package when installed
+        if (class_exists(\AIArmada\Cart\Cart::class)) {
+            // Cart package is installed - enable seamless integration
+            // The Cart already implements CheckoutableInterface, so no additional
+            // configuration needed. The ChipGateway can work with it directly.
+        }
+
+        // Future integrations can be added here:
+        // if (class_exists(\AIArmada\Orders\Order::class)) { ... }
+        // if (class_exists(\AIArmada\Subscriptions\Subscription::class)) { ... }
     }
 
     /**

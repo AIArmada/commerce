@@ -7,15 +7,19 @@ namespace AIArmada\Chip\Models;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 
 /**
+ * @property int $id
+ * @property int $bank_account_id
  * @property string $amount
- * @property string|null $state
- * @property string|null $currency
- * @property string|null $reference
- * @property string|null $bank_account_id
+ * @property string $email
+ * @property string $description
+ * @property string $reference
+ * @property string $state
+ * @property string|null $receipt_url
+ * @property string|null $slug
  */
-class SendInstruction extends ChipModel
+class SendInstruction extends IntegerIdChipModel
 {
-    public $timestamps = false;
+    public $timestamps = true;
 
     /** @return Attribute<float, never> */
     public function amountNumeric(): Attribute

@@ -15,7 +15,7 @@ return new class extends Migration
         Schema::create($tablePrefix.'send_instructions', function (Blueprint $table): void {
             // Core API fields - Send Instruction structure from CHIP Send API
             $table->integer('id')->primary(); // API uses integer IDs, not UUIDs
-            $table->integer('bank_account_id'); // Reference to bank account (integer)
+            $table->foreignId('bank_account_id'); // Reference to bank account (integer)
 
             // Amount and transaction details
             $table->string('amount'); // Floating point string with max 2 decimals
