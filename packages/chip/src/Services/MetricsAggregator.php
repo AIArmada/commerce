@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Services;
 
 use AIArmada\Chip\Models\DailyMetric;
 use AIArmada\Chip\Models\Purchase;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -165,10 +165,10 @@ class MetricsAggregator
 
     protected function resolveOwner(): ?Model
     {
-        if (! app()->bound(OwnerResolverInterface::class)) {
+        if (! (bool) config('chip.owner.enabled', true)) {
             return null;
         }
 
-        return app(OwnerResolverInterface::class)->resolve();
+        return OwnerContext::resolve();
     }
 }

@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Commands;
 
+use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Services\MetricsAggregator;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 final class AggregateMetricsCommand extends Command
@@ -19,6 +22,37 @@ final class AggregateMetricsCommand extends Command
 
     public function handle(MetricsAggregator $aggregator): int
     {
+        if ((bool) config('chip.owner.enabled', true) && OwnerContext::resolve() === null) {
+            $owners = Purchase::query()
+                ->withoutOwnerScope()
+                ->select(['owner_type', 'owner_id'])
+                ->distinct()
+                ->get();
+
+            if ($owners->isEmpty()) {
+                $this->runAggregation($aggregator);
+
+                return self::SUCCESS;
+            }
+
+            foreach ($owners as $row) {
+                $owner = $this->resolveOwnerFromRow($row);
+
+                OwnerContext::withOwner($owner, function () use ($aggregator): void {
+                    $this->runAggregation($aggregator);
+                });
+            }
+
+            return self::SUCCESS;
+        }
+
+        $this->runAggregation($aggregator);
+
+        return self::SUCCESS;
+    }
+
+    private function runAggregation(MetricsAggregator $aggregator): void
+    {
         // Specific date
         if ($dateOption = $this->option('date')) {
             $date = Carbon::parse($dateOption);
@@ -28,7 +62,7 @@ final class AggregateMetricsCommand extends Command
 
             $this->info('Done.');
 
-            return self::SUCCESS;
+            return;
         }
 
         // Date range (backfill)
@@ -42,7 +76,7 @@ final class AggregateMetricsCommand extends Command
 
             $this->info("Aggregated metrics for {$days} day(s).");
 
-            return self::SUCCESS;
+            return;
         }
 
         // Default: aggregate yesterday
@@ -52,7 +86,16 @@ final class AggregateMetricsCommand extends Command
         $aggregator->aggregateForDate($yesterday);
 
         $this->info('Done.');
+    }
 
-        return self::SUCCESS;
+    private function resolveOwnerFromRow(object $row): ?Model
+    {
+        $ownerType = $row->owner_type ?? null;
+        $ownerId = $row->owner_id ?? null;
+
+        return OwnerContext::fromTypeAndId(
+            is_string($ownerType) ? $ownerType : null,
+            is_string($ownerId) || is_int($ownerId) ? $ownerId : null
+        );
     }
 }

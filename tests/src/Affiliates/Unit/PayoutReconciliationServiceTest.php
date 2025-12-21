@@ -30,8 +30,8 @@ describe('PayoutReconciliationService', function (): void {
         test('returns false for unknown external status', function (): void {
             $payout = AffiliatePayout::create([
                 'reference' => 'PAY-' . uniqid(),
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
                 'status' => PayoutStatus::Processing,
@@ -49,8 +49,8 @@ describe('PayoutReconciliationService', function (): void {
         test('returns false when status is unchanged', function (): void {
             $payout = AffiliatePayout::create([
                 'reference' => 'PAY-' . uniqid(),
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
                 'status' => PayoutStatus::Completed,
@@ -65,8 +65,8 @@ describe('PayoutReconciliationService', function (): void {
         test('updates payout status from external completed status', function (): void {
             $payout = AffiliatePayout::create([
                 'reference' => 'PAY-' . uniqid(),
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'amount_minor' => 10000,
                 'currency' => 'USD',
                 'status' => PayoutStatus::Processing,
@@ -85,8 +85,8 @@ describe('PayoutReconciliationService', function (): void {
         test('merges external data into metadata', function (): void {
             $payout = AffiliatePayout::create([
                 'reference' => 'PAY-' . uniqid(),
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
                 'status' => PayoutStatus::Processing,
@@ -109,8 +109,8 @@ describe('PayoutReconciliationService', function (): void {
         test('handles case-insensitive status mapping', function (): void {
             $payout = AffiliatePayout::create([
                 'reference' => 'PAY-' . uniqid(),
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
                 'status' => PayoutStatus::Processing,
@@ -131,8 +131,8 @@ describe('PayoutReconciliationService', function (): void {
             // Create old processing payout with external reference
             $oldPayout = AffiliatePayout::create([
                 'reference' => 'PAY-OLD-' . uniqid(),
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
                 'status' => PayoutStatus::Processing,
@@ -147,8 +147,8 @@ describe('PayoutReconciliationService', function (): void {
             // Create recent payout (should not be returned)
             AffiliatePayout::create([
                 'reference' => 'PAY-NEW-' . uniqid(),
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
                 'status' => PayoutStatus::Processing,
@@ -165,8 +165,8 @@ describe('PayoutReconciliationService', function (): void {
         test('excludes completed payouts', function (): void {
             $payout = AffiliatePayout::create([
                 'reference' => 'PAY-' . uniqid(),
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
                 'status' => PayoutStatus::Completed,
@@ -185,8 +185,8 @@ describe('PayoutReconciliationService', function (): void {
         test('includes pending payouts', function (): void {
             $payout = AffiliatePayout::create([
                 'reference' => 'PAY-' . uniqid(),
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
                 'status' => PayoutStatus::Pending,
@@ -220,8 +220,8 @@ describe('PayoutReconciliationService', function (): void {
         test('groups by status', function (): void {
             AffiliatePayout::create([
                 'reference' => 'PAY-1',
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
                 'status' => PayoutStatus::Completed,
@@ -230,8 +230,8 @@ describe('PayoutReconciliationService', function (): void {
 
             AffiliatePayout::create([
                 'reference' => 'PAY-2',
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
                 'status' => PayoutStatus::Completed,
@@ -240,8 +240,8 @@ describe('PayoutReconciliationService', function (): void {
 
             AffiliatePayout::create([
                 'reference' => 'PAY-3',
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'amount_minor' => 3000,
                 'currency' => 'USD',
                 'status' => PayoutStatus::Pending,

@@ -29,8 +29,8 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 100000,
             'conversion_count' => 10,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
         ]);
 
         expect($payout)->toBeInstanceOf(AffiliatePayout::class);
@@ -39,19 +39,19 @@ describe('AffiliatePayout Model', function (): void {
         expect($payout->currency)->toBe('USD');
     });
 
-    test('has polymorphic owner relationship', function (): void {
+    test('has polymorphic payee relationship', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-MORPH-' . uniqid(),
             'status' => 'pending',
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
         ]);
 
-        expect($payout->owner)->toBeInstanceOf(Affiliate::class);
-        expect($payout->owner->id)->toBe($this->affiliate->id);
+        expect($payout->payee)->toBeInstanceOf(Affiliate::class);
+        expect($payout->payee->id)->toBe($this->affiliate->id);
     });
 
     test('has conversions relationship', function (): void {
@@ -71,8 +71,8 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 75000,
             'conversion_count' => 3,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
         ]);
 
         AffiliateConversion::create([
@@ -109,8 +109,8 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 30000,
             'conversion_count' => 3,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
         ]);
 
         AffiliatePayoutEvent::create([
@@ -129,15 +129,15 @@ describe('AffiliatePayout Model', function (): void {
         expect($payout->events)->toHaveCount(2);
     });
 
-    test('affiliate accessor returns owner when owner is Affiliate', function (): void {
+    test('affiliate accessor returns payee when payee is Affiliate', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-AFF-' . uniqid(),
             'status' => 'pending',
             'total_minor' => 20000,
             'conversion_count' => 2,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
         ]);
 
         expect($payout->affiliate)->toBeInstanceOf(Affiliate::class);
@@ -151,8 +151,8 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 45000,
             'conversion_count' => 4,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
         ]);
 
         expect($payout->amount_minor)->toBe(45000);
@@ -165,8 +165,8 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 60000,
             'conversion_count' => 6,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'metadata' => ['external_reference' => 'EXT-12345'],
         ]);
 
@@ -180,8 +180,8 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 10000,
             'conversion_count' => 1,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
         ]);
 
         expect($payout->external_reference)->toBeNull();
@@ -194,8 +194,8 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 35000,
             'conversion_count' => 3,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'metadata' => ['notes' => 'Monthly payout batch'],
         ]);
 
@@ -209,8 +209,8 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 8000,
             'conversion_count' => 1,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
         ]);
 
         expect($payout->notes)->toBeNull();
@@ -223,8 +223,8 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 25000,
             'conversion_count' => 2,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'metadata' => [
                 'batch_id' => 'BATCH-001',
                 'processed_by' => 'admin@example.com',
@@ -243,8 +243,8 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 15000,
             'conversion_count' => 2,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'scheduled_at' => '2024-12-25 10:00:00',
         ]);
 
@@ -259,8 +259,8 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 55000,
             'conversion_count' => 5,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'paid_at' => '2024-12-20 14:30:00',
         ]);
 
@@ -275,8 +275,8 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 20000,
             'conversion_count' => 2,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
         ]);
 
         $eventId = AffiliatePayoutEvent::create([
@@ -297,8 +297,8 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 30000,
             'conversion_count' => 1,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
         ]);
 
         $conversion = AffiliateConversion::create([

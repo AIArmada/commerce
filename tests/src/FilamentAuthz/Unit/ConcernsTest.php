@@ -7,7 +7,7 @@ use AIArmada\FilamentAuthz\Concerns\HasAutoPermissions;
 use AIArmada\FilamentAuthz\Concerns\HasPageAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasPanelAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasWidgetAuthz;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Role;
 
 describe('AccessesRoleHierarchy trait', function (): void {
     it('can get and set role parent id', function (): void {

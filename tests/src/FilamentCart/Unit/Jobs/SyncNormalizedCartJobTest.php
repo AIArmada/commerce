@@ -65,13 +65,14 @@ describe('SyncNormalizedCartJob', function (): void {
         $synchronizer = Mockery::mock(NormalizedCartSynchronizer::class);
         $synchronizer->shouldReceive('syncFromCart')->once()->with($cart);
         $syncManager = new CartSyncManager($synchronizer, $cartInstances);
+        $this->app->instance(CartSyncManager::class, $syncManager);
 
         $job = new SyncNormalizedCartJob(
             identifier: 'user-123',
             instance: 'default',
         );
 
-        $job->handle($syncManager);
+        $job->handle();
     });
 
     it('logs and rethrows when sync fails', function (): void {
@@ -95,6 +96,7 @@ describe('SyncNormalizedCartJob', function (): void {
         $synchronizer = Mockery::mock(NormalizedCartSynchronizer::class);
         $synchronizer->shouldReceive('syncFromCart')->once()->with($cart)->andThrow(new RuntimeException('boom'));
         $syncManager = new CartSyncManager($synchronizer, $cartInstances);
+        $this->app->instance(CartSyncManager::class, $syncManager);
 
         Log::shouldReceive('error')
             ->once()
@@ -109,6 +111,6 @@ describe('SyncNormalizedCartJob', function (): void {
             instance: 'default',
         );
 
-        $job->handle($syncManager);
+        $job->handle();
     })->throws(RuntimeException::class);
 });

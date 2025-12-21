@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Console;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredPage;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredWidget;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
-use Spatie\Permission\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Permission;
+use InvalidArgumentException;
 
 class DiscoverCommand extends Command
 {
@@ -21,7 +23,9 @@ class DiscoverCommand extends Command
         {--panel= : Discover from specific panel only}
         {--type= : Entity type (resources, pages, widgets, all)}
         {--generate : Generate permissions for discovered entities}
-        {--format=table : Output format (table, json)}';
+        {--format=table : Output format (table, json)}
+        {--owner-type= : Owner model class or morph type}
+        {--owner-id= : Owner model id}';
 
     /**
      * @var string
@@ -30,58 +34,91 @@ class DiscoverCommand extends Command
 
     public function handle(EntityDiscoveryService $discovery): int
     {
-        $this->info("🔍 Discovering Filament Entities...\n");
+        return $this->withOwnerContext(function () use ($discovery): int {
+            $this->info("🔍 Discovering Filament Entities...\n");
 
-        $options = [];
-        if ($panel = $this->option('panel')) {
-            $options['panels'] = [$panel];
-        }
+            $options = [];
+            if ($panel = $this->option('panel')) {
+                $options['panels'] = [$panel];
+            }
 
-        $type = $this->option('type') ?? 'all';
+            $type = $this->option('type') ?? 'all';
 
-        $resources = collect();
-        $pages = collect();
-        $widgets = collect();
+            $resources = collect();
+            $pages = collect();
+            $widgets = collect();
 
-        if ($type === 'all' || $type === 'resources') {
-            $resources = $discovery->discoverResources($options);
-        }
+            if ($type === 'all' || $type === 'resources') {
+                $resources = $discovery->discoverResources($options);
+            }
 
-        if ($type === 'all' || $type === 'pages') {
-            $pages = $discovery->discoverPages($options);
-        }
+            if ($type === 'all' || $type === 'pages') {
+                $pages = $discovery->discoverPages($options);
+            }
 
-        if ($type === 'all' || $type === 'widgets') {
-            $widgets = $discovery->discoverWidgets($options);
-        }
+            if ($type === 'all' || $type === 'widgets') {
+                $widgets = $discovery->discoverWidgets($options);
+            }
 
-        if ($this->option('format') === 'json') {
-            $this->outputJson($resources, $pages, $widgets);
+            if ($this->option('format') === 'json') {
+                $this->outputJson($resources, $pages, $widgets);
+
+                return Command::SUCCESS;
+            }
+
+            $this->displayTable('Resources', $resources);
+            $this->displayTable('Pages', $pages);
+            $this->displayTable('Widgets', $widgets);
+
+            $this->newLine();
+            $this->info('📊 Summary:');
+
+            $resourcePermissionCount = $resources->sum(fn ($r) => count($r->permissions));
+
+            $this->table(['Entity Type', 'Count', 'Permissions'], [
+                ['Resources', $resources->count(), $resourcePermissionCount],
+                ['Pages', $pages->count(), $pages->count()],
+                ['Widgets', $widgets->count(), $widgets->count()],
+                ['<fg=cyan>Total</>', $resources->count() + $pages->count() + $widgets->count(), $resourcePermissionCount + $pages->count() + $widgets->count()],
+            ]);
+
+            if ($this->option('generate')) {
+                $this->generatePermissions($resources, $pages, $widgets);
+            }
 
             return Command::SUCCESS;
+        });
+    }
+
+    private function withOwnerContext(callable $callback): int
+    {
+        if (! config('filament-authz.owner.enabled', false)) {
+            return (int) $callback();
         }
 
-        $this->displayTable('Resources', $resources);
-        $this->displayTable('Pages', $pages);
-        $this->displayTable('Widgets', $widgets);
-
-        $this->newLine();
-        $this->info('📊 Summary:');
-
-        $resourcePermissionCount = $resources->sum(fn ($r) => count($r->permissions));
-
-        $this->table(['Entity Type', 'Count', 'Permissions'], [
-            ['Resources', $resources->count(), $resourcePermissionCount],
-            ['Pages', $pages->count(), $pages->count()],
-            ['Widgets', $widgets->count(), $widgets->count()],
-            ['<fg=cyan>Total</>', $resources->count() + $pages->count() + $widgets->count(), $resourcePermissionCount + $pages->count() + $widgets->count()],
-        ]);
-
-        if ($this->option('generate')) {
-            $this->generatePermissions($resources, $pages, $widgets);
+        if (OwnerContext::resolve() !== null) {
+            return (int) $callback();
         }
 
-        return Command::SUCCESS;
+        $ownerType = $this->option('owner-type');
+        $ownerId = $this->option('owner-id');
+
+        if ($ownerType === null || $ownerId === null || $ownerType === '' || $ownerId === '') {
+            $this->error('Owner context is required when filament-authz.owner.enabled is true.');
+            $this->line('Provide --owner-type and --owner-id, or bind OwnerResolverInterface.');
+
+            return self::FAILURE;
+        }
+
+        try {
+            $owner = OwnerContext::fromTypeAndId((string) $ownerType, $ownerId);
+        } catch (InvalidArgumentException $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
+
+        return (int) OwnerContext::withOwner($owner, $callback);
     }
 
     /**

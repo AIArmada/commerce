@@ -23,7 +23,8 @@ return new class extends Migration
             $table->json('metadata')->nullable();
             $table->timestamps();
 
-            $table->unique(['provider_type', 'provider_name', 'external_group'], 'idp_mapping_unique');
+            $table->nullableMorphs('owner');
+            $table->unique(['owner_type', 'owner_id', 'provider_type', 'provider_name', 'external_group'], 'idp_mapping_unique');
         });
     }
 

@@ -424,9 +424,14 @@ final class RecoveryOptimizer
         ?int $timeToRecoveryMinutes,
         ?int $discountUsedCents
     ): void {
+        $ownerType = $this->storage->getOwnerType();
+        $ownerId = $this->storage->getOwnerId();
+
         DB::table('cart_recovery_outcomes')->insert([
             'id' => (string) Str::uuid(),
             'cart_id' => $cartId,
+            'owner_type' => $ownerType,
+            'owner_id' => $ownerId,
             'strategy_id' => $strategyId,
             'recovered' => $recovered,
             'time_to_recovery_minutes' => $timeToRecoveryMinutes,

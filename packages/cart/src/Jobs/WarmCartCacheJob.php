@@ -6,6 +6,7 @@ namespace AIArmada\Cart\Jobs;
 
 use AIArmada\Cart\Infrastructure\Caching\CachedCartRepository;
 use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Cache\Repository as CacheRepository;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -40,34 +41,38 @@ final class WarmCartCacheJob implements ShouldQueue
         private readonly string | int | null $ownerId = null
     ) {}
 
-    public function handle(StorageInterface $storage, CacheRepository $cache): void
+    public function handle(CacheRepository $cache): void
     {
         if (! config('cart.cache.enabled', false)) {
             return;
         }
 
         $ttl = config('cart.cache.ttl', 3600);
+        $owner = OwnerContext::fromTypeAndId($this->ownerType, $this->ownerId);
 
-        $cachedRepository = new CachedCartRepository($storage, $cache, $ttl);
+        OwnerContext::withOwner($owner, function () use ($cache, $ttl): void {
+            $storage = app(StorageInterface::class);
+            $cachedRepository = new CachedCartRepository($storage, $cache, $ttl);
 
-        foreach ($this->instances as $instance) {
-            try {
-                $cachedRepository->warmCache($this->identifier, $instance);
+            foreach ($this->instances as $instance) {
+                try {
+                    $cachedRepository->warmCache($this->identifier, $instance);
 
-                Log::debug('Cart cache warmed', [
-                    'identifier' => $this->identifier,
-                    'instance' => $instance,
-                    'owner_type' => $this->ownerType,
-                    'owner_id' => $this->ownerId,
-                ]);
-            } catch (Throwable $e) {
-                Log::warning('Failed to warm cart cache', [
-                    'identifier' => $this->identifier,
-                    'instance' => $instance,
-                    'error' => $e->getMessage(),
-                ]);
+                    Log::debug('Cart cache warmed', [
+                        'identifier' => $this->identifier,
+                        'instance' => $instance,
+                        'owner_type' => $this->ownerType,
+                        'owner_id' => $this->ownerId,
+                    ]);
+                } catch (Throwable $e) {
+                    Log::warning('Failed to warm cart cache', [
+                        'identifier' => $this->identifier,
+                        'instance' => $instance,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
-        }
+        });
     }
 
     /**

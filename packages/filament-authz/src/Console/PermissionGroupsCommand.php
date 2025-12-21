@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Console;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAuthz\Models\PermissionGroup;
 use AIArmada\FilamentAuthz\Services\PermissionGroupService;
 use Illuminate\Console\Command;
-use Spatie\Permission\Models\Permission;
+use InvalidArgumentException;
+use AIArmada\FilamentAuthz\Models\Permission;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\multiselect;
@@ -19,7 +21,9 @@ class PermissionGroupsCommand extends Command
 {
     protected $signature = 'authz:groups
                             {action? : The action to perform (list, create, show, sync, delete)}
-                            {--group= : The group slug for show/sync/delete actions}';
+                            {--group= : The group slug for show/sync/delete actions}
+                            {--owner-type= : Owner model class or morph type}
+                            {--owner-id= : Owner model id}';
 
     protected $description = 'Manage permission groups';
 
@@ -31,25 +35,27 @@ class PermissionGroupsCommand extends Command
 
     public function handle(): int
     {
-        $action = $this->argument('action') ?? select(
-            label: 'What would you like to do?',
-            options: [
-                'list' => 'List all groups',
-                'create' => 'Create a new group',
-                'show' => 'Show group details',
-                'sync' => 'Sync permissions to a group',
-                'delete' => 'Delete a group',
-            ]
-        );
+        return $this->withOwnerContext(function (): int {
+            $action = $this->argument('action') ?? select(
+                label: 'What would you like to do?',
+                options: [
+                    'list' => 'List all groups',
+                    'create' => 'Create a new group',
+                    'show' => 'Show group details',
+                    'sync' => 'Sync permissions to a group',
+                    'delete' => 'Delete a group',
+                ]
+            );
 
-        return match ($action) {
-            'list' => $this->listGroups(),
-            'create' => $this->createGroup(),
-            'show' => $this->showGroup(),
-            'sync' => $this->syncGroup(),
-            'delete' => $this->deleteGroup(),
-            default => $this->handleUnknownAction($action),
-        };
+            return match ($action) {
+                'list' => $this->listGroups(),
+                'create' => $this->createGroup(),
+                'show' => $this->showGroup(),
+                'sync' => $this->syncGroup(),
+                'delete' => $this->deleteGroup(),
+                default => $this->handleUnknownAction($action),
+            };
+        });
     }
 
     protected function handleUnknownAction(string $action): int
@@ -86,6 +92,37 @@ class PermissionGroupsCommand extends Command
         );
 
         return 0;
+    }
+
+    private function withOwnerContext(callable $callback): int
+    {
+        if (! config('filament-authz.owner.enabled', false)) {
+            return (int) $callback();
+        }
+
+        if (OwnerContext::resolve() !== null) {
+            return (int) $callback();
+        }
+
+        $ownerType = $this->option('owner-type');
+        $ownerId = $this->option('owner-id');
+
+        if ($ownerType === null || $ownerId === null || $ownerType === '' || $ownerId === '') {
+            $this->error('Owner context is required when filament-authz.owner.enabled is true.');
+            $this->line('Provide --owner-type and --owner-id, or bind OwnerResolverInterface.');
+
+            return self::FAILURE;
+        }
+
+        try {
+            $owner = OwnerContext::fromTypeAndId((string) $ownerType, $ownerId);
+        } catch (InvalidArgumentException $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
+
+        return (int) OwnerContext::withOwner($owner, $callback);
     }
 
     protected function createGroup(): int

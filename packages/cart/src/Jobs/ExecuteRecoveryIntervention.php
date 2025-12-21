@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Jobs;
 
 use AIArmada\Cart\AI\RecoveryOptimizer;
-use AIArmada\Cart\CartManager;
+use AIArmada\Cart\Support\CartOwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -48,16 +49,24 @@ final class ExecuteRecoveryIntervention implements ShouldQueue
         public readonly string $cartId,
         public readonly string $strategyId,
         public readonly array $strategy,
-        public readonly array $prediction
+        public readonly array $prediction,
+        public readonly ?string $ownerType = null,
+        public readonly string | int | null $ownerId = null
     ) {}
 
     /**
      * Execute the job.
      */
-    public function handle(CartManager $cartManager, RecoveryOptimizer $optimizer): void
+    public function handle(): void
     {
         $cartsTable = config('cart.database.table', 'carts');
-        $cartRecord = DB::table($cartsTable)->where('id', $this->cartId)->first();
+        $cartRecord = DB::table($cartsTable)->where('id', $this->cartId);
+
+        if ((bool) config('cart.owner.enabled', false)) {
+            CartOwnerScope::applyForOwner($cartRecord, $this->ownerType, $this->ownerId);
+        }
+
+        $cartRecord = $cartRecord->first();
 
         if (! $cartRecord) {
             Log::info('Cart no longer exists, skipping intervention', ['cart_id' => $this->cartId]);
@@ -65,48 +74,57 @@ final class ExecuteRecoveryIntervention implements ShouldQueue
             return;
         }
 
-        if ($cartRecord->recovered_at !== null) {
-            Log::info('Cart already recovered, skipping intervention', ['cart_id' => $this->cartId]);
-            $optimizer->recordOutcome($this->cartId, $this->strategyId, true);
+        $owner = OwnerContext::fromTypeAndId(
+            $cartRecord->owner_type ?? $this->ownerType,
+            $cartRecord->owner_id ?? $this->ownerId,
+        );
 
-            return;
-        }
+        OwnerContext::withOwner($owner, function () use ($cartRecord): void {
+            $optimizer = app(RecoveryOptimizer::class);
 
-        if ($cartRecord->checkout_abandoned_at === null && $cartRecord->last_activity_at !== null) {
-            $lastActivity = strtotime($cartRecord->last_activity_at);
-            if (time() - $lastActivity < 900) {
-                Log::info('Cart has recent activity, skipping intervention', ['cart_id' => $this->cartId]);
+            if ($cartRecord->recovered_at !== null) {
+                Log::info('Cart already recovered, skipping intervention', ['cart_id' => $this->cartId]);
+                $optimizer->recordOutcome($this->cartId, $this->strategyId, true);
 
                 return;
             }
-        }
 
-        $type = $this->strategy['type'] ?? 'email';
+            if ($cartRecord->checkout_abandoned_at === null && $cartRecord->last_activity_at !== null) {
+                $lastActivity = strtotime($cartRecord->last_activity_at);
+                if (time() - $lastActivity < 900) {
+                    Log::info('Cart has recent activity, skipping intervention', ['cart_id' => $this->cartId]);
 
-        try {
-            $result = match ($type) {
-                'email' => $this->executeEmailIntervention($cartRecord),
-                'push' => $this->executePushNotification($cartRecord),
-                'sms' => $this->executeSmsIntervention($cartRecord),
-                'popup' => $this->recordPopupIntervention($cartRecord),
-                default => $this->executeEmailIntervention($cartRecord),
-            };
+                    return;
+                }
+            }
 
-            Log::info('Executed recovery intervention', [
-                'cart_id' => $this->cartId,
-                'strategy_id' => $this->strategyId,
-                'type' => $type,
-                'result' => $result,
-            ]);
-        } catch (Throwable $e) {
-            Log::error('Failed to execute recovery intervention', [
-                'cart_id' => $this->cartId,
-                'strategy_id' => $this->strategyId,
-                'error' => $e->getMessage(),
-            ]);
+            $type = $this->strategy['type'] ?? 'email';
 
-            throw $e;
-        }
+            try {
+                $result = match ($type) {
+                    'email' => $this->executeEmailIntervention($cartRecord),
+                    'push' => $this->executePushNotification($cartRecord),
+                    'sms' => $this->executeSmsIntervention($cartRecord),
+                    'popup' => $this->recordPopupIntervention($cartRecord),
+                    default => $this->executeEmailIntervention($cartRecord),
+                };
+
+                Log::info('Executed recovery intervention', [
+                    'cart_id' => $this->cartId,
+                    'strategy_id' => $this->strategyId,
+                    'type' => $type,
+                    'result' => $result,
+                ]);
+            } catch (Throwable $e) {
+                Log::error('Failed to execute recovery intervention', [
+                    'cart_id' => $this->cartId,
+                    'strategy_id' => $this->strategyId,
+                    'error' => $e->getMessage(),
+                ]);
+
+                throw $e;
+            }
+        });
     }
 
     /**
@@ -226,6 +244,8 @@ final class ExecuteRecoveryIntervention implements ShouldQueue
         DB::table('cart_popup_interventions')->insert([
             'id' => (string) Str::uuid(),
             'cart_id' => $this->cartId,
+            'owner_type' => $cartRecord->owner_type ?? null,
+            'owner_id' => $cartRecord->owner_id ?? null,
             'strategy_id' => $this->strategyId,
             'show_discount' => $this->strategy['parameters']['show_discount'] ?? false,
             'discount_percentage' => $this->strategy['parameters']['discount_percentage'] ?? null,

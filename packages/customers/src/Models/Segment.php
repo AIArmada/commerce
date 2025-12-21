@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Customers\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Enums\SegmentType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -37,7 +39,10 @@ class Segment extends Model
 {
     use HasFactory;
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'customers.features.owner';
 
     protected $guarded = ['id'];
 
@@ -225,6 +230,26 @@ class Segment extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (Segment $segment): void {
+            if (! (bool) config('customers.features.owner.enabled', false)) {
+                return;
+            }
+
+            if (! (bool) config('customers.features.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            if ($segment->owner_type !== null || $segment->owner_id !== null) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            if ($owner !== null) {
+                $segment->assignOwner($owner);
+            }
+        });
+
         static::deleting(function (Segment $segment): void {
             $segment->customers()->detach();
         });

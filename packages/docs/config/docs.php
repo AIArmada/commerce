@@ -34,7 +34,7 @@ return [
     */
     'owner' => [
         'enabled' => env('DOCS_OWNER_ENABLED', false),
-        'include_global' => env('DOCS_OWNER_INCLUDE_GLOBAL', true),
+        'include_global' => env('DOCS_OWNER_INCLUDE_GLOBAL', false),
     ],
 
     /*

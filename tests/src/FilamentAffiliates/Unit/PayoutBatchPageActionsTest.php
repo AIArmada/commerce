@@ -42,8 +42,8 @@ it('processes a payout via the record action', function (): void {
         'status' => PayoutStatus::Pending,
         'total_minor' => 5000,
         'currency' => 'USD',
-        'owner_type' => $affiliate->getMorphClass(),
-        'owner_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
     ]);
 
     $page = new PayoutBatchPage;
@@ -78,8 +78,8 @@ it('marks payout as failed when no default method exists', function (): void {
         'status' => PayoutStatus::Pending,
         'total_minor' => 5000,
         'currency' => 'USD',
-        'owner_type' => $affiliate->getMorphClass(),
-        'owner_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
     ]);
 
     $page = new PayoutBatchPage;
@@ -109,8 +109,8 @@ it('rejects a payout and stores notes in metadata', function (): void {
         'status' => PayoutStatus::Pending,
         'total_minor' => 5000,
         'currency' => 'USD',
-        'owner_type' => $affiliate->getMorphClass(),
-        'owner_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
     ]);
 
     $page = new PayoutBatchPage;
@@ -165,8 +165,8 @@ it('executes batch processing bulk action', function (): void {
         'status' => PayoutStatus::Pending,
         'total_minor' => 5000,
         'currency' => 'USD',
-        'owner_type' => $affiliateA->getMorphClass(),
-        'owner_id' => $affiliateA->getKey(),
+        'payee_type' => $affiliateA->getMorphClass(),
+        'payee_id' => $affiliateA->getKey(),
     ]);
 
     $payoutB = AffiliatePayout::create([
@@ -174,8 +174,8 @@ it('executes batch processing bulk action', function (): void {
         'status' => PayoutStatus::Pending,
         'total_minor' => 7000,
         'currency' => 'USD',
-        'owner_type' => $affiliateB->getMorphClass(),
-        'owner_id' => $affiliateB->getKey(),
+        'payee_type' => $affiliateB->getMorphClass(),
+        'payee_id' => $affiliateB->getKey(),
     ]);
 
     $page = new PayoutBatchPage;

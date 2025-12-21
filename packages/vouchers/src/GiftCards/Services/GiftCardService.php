@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\GiftCards\Services;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardStatus;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardTransactionType;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardType;
@@ -19,9 +19,7 @@ use RuntimeException;
 
 class GiftCardService
 {
-    public function __construct(
-        private ?OwnerResolverInterface $ownerResolver = null,
-    ) {}
+    public function __construct() {}
 
     /**
      * Issue a new gift card.
@@ -462,7 +460,7 @@ class GiftCardService
 
     private function includeGlobal(): bool
     {
-        return (bool) config('vouchers.owner.include_global', true);
+        return (bool) config('vouchers.owner.include_global', false);
     }
 
     private function currentOwner(): ?Model
@@ -471,14 +469,7 @@ class GiftCardService
             return null;
         }
 
-        $resolver = $this->ownerResolver;
-
-        if ($resolver === null && app()->bound(OwnerResolverInterface::class)) {
-            /** @var OwnerResolverInterface $resolver */
-            $resolver = app(OwnerResolverInterface::class);
-        }
-
-        return $resolver?->resolve();
+        return OwnerContext::resolve();
     }
 
     private function enforceOwnerContext(?Model $owner): ?Model

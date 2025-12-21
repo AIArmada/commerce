@@ -8,8 +8,9 @@ use Closure;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Support\PermissionTeamScope;
 
 class PermissionCacheService
 {
@@ -127,9 +128,12 @@ class PermissionCacheService
     public function flush(): void
     {
         // Flush user caches
-        $users = DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
-            ->distinct()
-            ->pluck('model_id');
+        $modelHasRolesTable = config('permission.table_names.model_has_roles', 'model_has_roles');
+        $modelIdColumn = (string) config('permission.column_names.model_morph_key', 'model_id');
+
+        $userQuery = DB::table($modelHasRolesTable)->distinct();
+        PermissionTeamScope::apply($userQuery, $modelHasRolesTable);
+        $users = $userQuery->pluck($modelIdColumn);
 
         foreach ($users as $userId) {
             $this->cache->forget(self::PREFIX . "user:{$userId}:permissions");

@@ -111,8 +111,8 @@ it('PayoutBatchPage view data aggregates pending payouts', function (): void {
         'status' => PayoutStatus::Pending,
         'total_minor' => 5000,
         'currency' => 'USD',
-        'owner_type' => $affiliate->getMorphClass(),
-        'owner_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
     ]);
 
     AffiliatePayout::create([
@@ -120,8 +120,8 @@ it('PayoutBatchPage view data aggregates pending payouts', function (): void {
         'status' => PayoutStatus::Pending,
         'total_minor' => 7000,
         'currency' => 'USD',
-        'owner_type' => $affiliate->getMorphClass(),
-        'owner_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
     ]);
 
     $page = new PayoutBatchPage;

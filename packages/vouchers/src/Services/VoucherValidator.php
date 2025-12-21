@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Services;
 
 use AIArmada\Cart\Cart;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Models\Voucher;
@@ -21,9 +21,7 @@ use Illuminate\Support\Facades\Session;
 
 class VoucherValidator
 {
-    public function __construct(
-        protected OwnerResolverInterface $ownerResolver
-    ) {}
+    public function __construct() {}
 
     public function validate(string $code, mixed $cart): VoucherValidationResult
     {
@@ -128,7 +126,7 @@ class VoucherValidator
     {
         return Voucher::query()->forOwner(
             $this->resolveOwner(),
-            (bool) config('vouchers.owner.include_global', true)
+            (bool) config('vouchers.owner.include_global', false)
         );
     }
 
@@ -138,7 +136,7 @@ class VoucherValidator
             return null;
         }
 
-        return $this->ownerResolver->resolve();
+        return OwnerContext::resolve();
     }
 
     protected function getUser(): ?Model

@@ -6,6 +6,9 @@ namespace AIArmada\Affiliates\Services;
 
 use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -285,11 +288,14 @@ final class CohortAnalyzer
             ? "COALESCE(json_extract(metadata, '$.source'), 'direct')"
             : "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.source')), 'direct')";
 
-        $sources = DB::table($affiliatesTable)
+        $sourcesQuery = DB::table($affiliatesTable)
             ->selectRaw("$sourceExpression as source")
             ->whereBetween('created_at', [$from, $to])
-            ->groupBy('source')
-            ->pluck('source');
+            ->groupBy('source');
+
+        $this->applyOwnerScopeToQuery($sourcesQuery, "{$affiliatesTable}.owner_type", "{$affiliatesTable}.owner_id");
+
+        $sources = $sourcesQuery->pluck('source');
 
         $results = [];
 
@@ -347,10 +353,13 @@ final class CohortAnalyzer
             ? "strftime('%Y-%m', created_at)"
             : "DATE_FORMAT(created_at, '%Y-%m')";
 
-        return DB::table($affiliatesTable)
+        $cohortQuery = DB::table($affiliatesTable)
             ->select('id', DB::raw("$dateFormat as cohort_month"))
-            ->whereBetween('created_at', [$from, $to])
-            ->get()
+            ->whereBetween('created_at', [$from, $to]);
+
+        $this->applyOwnerScopeToQuery($cohortQuery, "{$affiliatesTable}.owner_type", "{$affiliatesTable}.owner_id");
+
+        return $cohortQuery->get()
             ->groupBy('cohort_month')
             ->map(fn ($group) => $group->pluck('id')->toArray());
     }
@@ -384,11 +393,15 @@ final class CohortAnalyzer
                 })
                 ->count();
 
-            $conversions = DB::table('affiliate_conversions')
+            $conversionsTable = (new AffiliateConversion)->getTable();
+            $conversionsQuery = DB::table($conversionsTable)
                 ->whereIn('affiliate_id', $affiliateIds)
                 ->whereBetween('occurred_at', [$periodStart, $periodEnd])
-                ->selectRaw('COUNT(*) as count, SUM(total_minor) as revenue, SUM(commission_minor) as commissions')
-                ->first();
+                ->selectRaw('COUNT(*) as count, SUM(total_minor) as revenue, SUM(commission_minor) as commissions');
+
+            $this->applyOwnerScopeToQuery($conversionsQuery, "{$conversionsTable}.owner_type", "{$conversionsTable}.owner_id");
+
+            $conversions = $conversionsQuery->first();
 
             $breakdown[$month] = [
                 'month' => $month,
@@ -400,5 +413,17 @@ final class CohortAnalyzer
         }
 
         return $breakdown;
+    }
+
+    private function applyOwnerScopeToQuery($query, string $ownerTypeColumn, string $ownerIdColumn): void
+    {
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            return;
+        }
+
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
+
+        OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, $ownerTypeColumn, $ownerIdColumn);
     }
 }

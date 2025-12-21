@@ -631,8 +631,15 @@ final readonly class DatabaseStorage implements StorageInterface
             return;
         }
 
-        $query->where('owner_type', '')
-            ->where('owner_id', '');
+        $query
+            ->where(function (Builder $builder): void {
+                $builder->whereNull('owner_type')
+                    ->orWhere('owner_type', '');
+            })
+            ->where(function (Builder $builder): void {
+                $builder->whereNull('owner_id')
+                    ->orWhere('owner_id', '');
+            });
     }
 
     /**

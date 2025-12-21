@@ -18,6 +18,8 @@ describe('AnalyzeCartForAbandonment Job Integration', function (): void {
 
             expect($job->cartId)->toBe('test-cart-123');
             expect($job->batchSize)->toBe(100);
+            expect($job->ownerType)->toBeNull();
+            expect($job->ownerId)->toBeNull();
         });
 
         it('creates job with custom batch size', function (): void {
@@ -25,6 +27,8 @@ describe('AnalyzeCartForAbandonment Job Integration', function (): void {
 
             expect($job->cartId)->toBeNull();
             expect($job->batchSize)->toBe(50);
+            expect($job->ownerType)->toBeNull();
+            expect($job->ownerId)->toBeNull();
         });
 
         it('creates job for batch processing when no cart ID', function (): void {

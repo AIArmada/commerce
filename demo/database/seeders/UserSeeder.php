@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Seeder;
 
 /**
@@ -27,6 +28,8 @@ final class UserSeeder extends Seeder
     public function run(): void
     {
         $this->command->info('👥 Creating Demo Users...');
+
+        $tenantOwner = $this->resolveTenantOwner();
 
         $demoUsers = [
             // ============================================
@@ -119,8 +122,10 @@ final class UserSeeder extends Seeder
             );
 
             // Assign role if it exists
-            if ($user->wasRecentlyCreated && isset($userData['role'])) {
-                $user->assignRole($userData['role']);
+            if (isset($userData['role'])) {
+                OwnerContext::withOwner($tenantOwner, function () use ($user, $userData): void {
+                    $user->assignRole($userData['role']);
+                });
             }
         }
 
@@ -150,5 +155,18 @@ final class UserSeeder extends Seeder
         }
 
         $this->command->info('   ✓ Created ' . count($demoUsers) . ' admin users + ' . count($customers) . ' customers');
+    }
+
+    private function resolveTenantOwner(): User
+    {
+        return User::firstOrCreate(
+            ['email' => 'admin@commerce.demo'],
+            [
+                'name' => 'Sarah Chen',
+                'phone' => '+60123456789',
+                'password' => bcrypt('password'),
+                'email_verified_at' => now(),
+            ]
+        );
     }
 }

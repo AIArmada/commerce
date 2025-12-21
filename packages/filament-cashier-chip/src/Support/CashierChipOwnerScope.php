@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashierChip\Support;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -23,30 +23,28 @@ final class CashierChipOwnerScope
      */
     public static function apply(Builder $query, ?Model $owner = null, ?bool $includeGlobal = null): Builder
     {
-        $model = $query->getModel();
-
-        if (! method_exists($model, 'scopeForOwner')) {
-            $resolvedOwner = $owner ?? self::resolveOwner();
-
-            if ($resolvedOwner !== null || app()->bound(OwnerResolverInterface::class)) {
-                return $query->whereKey([]);
-            }
-
+        if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
             return $query;
         }
 
-        /** @var Builder<TModel> $scoped */
-        $scoped = $model->scopeForOwner($query, $owner, $includeGlobal);
+        $model = $query->getModel();
+        $owner ??= self::resolveOwner();
+        $includeGlobal ??= (bool) config('cashier-chip.features.owner.include_global', false);
 
-        return $scoped;
+        if (! method_exists($model, 'scopeForOwner')) {
+            return $query->whereKey([]);
+        }
+
+        /** @phpstan-ignore-next-line dynamic scope */
+        return $query->forOwner($owner, $includeGlobal);
     }
 
     public static function resolveOwner(): ?Model
     {
-        if (! app()->bound(OwnerResolverInterface::class)) {
+        if (! (bool) config('cashier-chip.features.owner.enabled', true)) {
             return null;
         }
 
-        return app(OwnerResolverInterface::class)->resolve();
+        return OwnerContext::resolve();
     }
 }

@@ -91,7 +91,7 @@ final class DocEmailService
             return $query;
         }
 
-        $includeGlobal = (bool) config('docs.owner.include_global', true);
+        $includeGlobal = (bool) config('docs.owner.include_global', false);
 
         if ($doc->owner_type !== null && $doc->owner_id !== null) {
             return $query->where(function (Builder $builder) use ($doc, $includeGlobal): void {

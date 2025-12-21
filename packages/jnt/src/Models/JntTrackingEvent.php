@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Jnt\Enums\ScanTypeCode;
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Services\JntStatusMapper;
@@ -65,7 +66,10 @@ use Illuminate\Support\Carbon;
 final class JntTrackingEvent extends Model
 {
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'jnt.owner';
 
     protected static function booted(): void
     {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing\Resources;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentPricing\Resources\PriceListResource\Pages;
 use AIArmada\FilamentPricing\Resources\PriceListResource\RelationManagers;
 use AIArmada\Pricing\Models\PriceList;
@@ -50,7 +50,7 @@ class PriceListResource extends Resource
         /** @var Builder<PriceList> $scoped */
         $scoped = $query->forOwner(
             $owner,
-            (bool) config('pricing.features.owner.include_global', true),
+            (bool) config('pricing.features.owner.include_global', false),
         );
 
         return $scoped;
@@ -58,14 +58,11 @@ class PriceListResource extends Resource
 
     private static function resolveOwner(): ?Model
     {
-        if (! app()->bound(OwnerResolverInterface::class)) {
+        if (! (bool) config('pricing.features.owner.enabled', false)) {
             return null;
         }
 
-        /** @var OwnerResolverInterface $resolver */
-        $resolver = app(OwnerResolverInterface::class);
-
-        return $resolver->resolve();
+        return OwnerContext::resolve();
     }
 
     public static function form(Schema $schema): Schema

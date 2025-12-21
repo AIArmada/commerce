@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Resources;
 
 use AIArmada\Cart\Models\Condition;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Resources\ConditionResource\Pages\CreateCondition;
 use AIArmada\FilamentCart\Resources\ConditionResource\Pages\EditCondition;
 use AIArmada\FilamentCart\Resources\ConditionResource\Pages\ListConditions;
@@ -66,12 +66,10 @@ final class ConditionResource extends Resource
         }
 
         /** @var Model|null $owner */
-        $owner = null;
-        if (app()->bound(OwnerResolverInterface::class)) {
-            $owner = app(OwnerResolverInterface::class)->resolve();
-        }
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('cart.owner.include_global', false);
 
-        return $query->forOwner($owner, true);
+        return $query->forOwner($owner, $includeGlobal);
     }
 
     public static function getRelations(): array

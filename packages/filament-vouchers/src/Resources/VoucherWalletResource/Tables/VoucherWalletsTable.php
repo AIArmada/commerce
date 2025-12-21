@@ -29,13 +29,13 @@ final class VoucherWalletsTable
                     ->searchable()
                     ->toggleable(),
 
-                TextColumn::make('owner_type')
-                    ->label('Owner Type')
-                    ->formatStateUsing(fn (string $state): string => class_basename($state))
+                TextColumn::make('holder_type')
+                    ->label('Holder Type')
+                    ->formatStateUsing(fn (?string $state): string => $state ? class_basename($state) : '—')
                     ->toggleable(isToggledHiddenByDefault: true),
 
-                TextColumn::make('owner_id')
-                    ->label('Owner ID')
+                TextColumn::make('holder_id')
+                    ->label('Holder ID')
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 IconColumn::make('is_claimed')

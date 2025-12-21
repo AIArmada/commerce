@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\Services\PermissionRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Permission;
 
 uses(RefreshDatabase::class);
 

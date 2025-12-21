@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Commands;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Data\AlertEvent;
 use AIArmada\FilamentCart\Models\AlertRule;
 use AIArmada\FilamentCart\Services\AlertDispatcher;
 use AIArmada\FilamentCart\Services\AlertEvaluator;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 
 class ProcessAlertsCommand extends Command
 {
@@ -37,7 +39,64 @@ class ProcessAlertsCommand extends Command
             $this->newLine();
         }
 
-        // Get rules to process
+        $summary = $this->processForOwners($ruleId, $eventType, (bool) $dryRun);
+
+        $this->newLine();
+        $this->info("Summary: {$summary['processed']} processed, {$summary['skipped']} skipped (cooldown), {$summary['dispatched']} dispatched");
+
+        return self::SUCCESS;
+    }
+
+    /**
+     * @return array{processed: int, skipped: int, dispatched: int}
+     */
+    private function processForOwners(?string $ruleId, ?string $eventType, bool $dryRun): array
+    {
+        if (! AlertRule::ownerScopingEnabled()) {
+            return $this->processScoped($ruleId, $eventType, $dryRun);
+        }
+
+        if (OwnerContext::resolve() !== null) {
+            return $this->processScoped($ruleId, $eventType, $dryRun);
+        }
+
+        $owners = AlertRule::query()
+            ->withoutOwnerScope()
+            ->select(['owner_type', 'owner_id'])
+            ->distinct()
+            ->get();
+
+        if ($owners->isEmpty()) {
+            return $this->processScoped($ruleId, $eventType, $dryRun);
+        }
+
+        $totals = [
+            'processed' => 0,
+            'skipped' => 0,
+            'dispatched' => 0,
+        ];
+
+        foreach ($owners as $row) {
+            $owner = $this->resolveOwnerFromRow($row);
+
+            $result = OwnerContext::withOwner(
+                $owner,
+                fn (): array => $this->processScoped($ruleId, $eventType, $dryRun)
+            );
+
+            $totals['processed'] += $result['processed'];
+            $totals['skipped'] += $result['skipped'];
+            $totals['dispatched'] += $result['dispatched'];
+        }
+
+        return $totals;
+    }
+
+    /**
+     * @return array{processed: int, skipped: int, dispatched: int}
+     */
+    private function processScoped(?string $ruleId, ?string $eventType, bool $dryRun): array
+    {
         $query = AlertRule::query()->forOwner()->where('is_active', true);
 
         if ($ruleId) {
@@ -53,7 +112,11 @@ class ProcessAlertsCommand extends Command
         if ($rules->isEmpty()) {
             $this->info('No active alert rules found.');
 
-            return self::SUCCESS;
+            return [
+                'processed' => 0,
+                'skipped' => 0,
+                'dispatched' => 0,
+            ];
         }
 
         $this->info("Processing {$rules->count()} alert rule(s)...");
@@ -66,7 +129,6 @@ class ProcessAlertsCommand extends Command
         foreach ($rules as $rule) {
             $this->line("Rule: <info>{$rule->name}</info> ({$rule->event_type})");
 
-            // Check cooldown
             if ($rule->isInCooldown()) {
                 $remaining = $rule->getCooldownRemainingMinutes();
                 $this->line("  ⏸ In cooldown ({$remaining} minutes remaining)");
@@ -75,8 +137,6 @@ class ProcessAlertsCommand extends Command
                 continue;
             }
 
-            // For demonstration, we'll create a sample event to evaluate
-            // In production, this would come from actual event sources
             $sampleEventData = $this->getSampleEventData($rule->event_type);
 
             if ($this->evaluator->evaluate($rule, $sampleEventData)) {
@@ -104,10 +164,22 @@ class ProcessAlertsCommand extends Command
             $processed++;
         }
 
-        $this->newLine();
-        $this->info("Summary: {$processed} processed, {$skipped} skipped (cooldown), {$dispatched} dispatched");
+        return [
+            'processed' => $processed,
+            'skipped' => $skipped,
+            'dispatched' => $dispatched,
+        ];
+    }
 
-        return self::SUCCESS;
+    private function resolveOwnerFromRow(object $row): ?Model
+    {
+        $ownerType = $row->owner_type ?? null;
+        $ownerId = $row->owner_id ?? null;
+
+        return OwnerContext::fromTypeAndId(
+            is_string($ownerType) ? $ownerType : null,
+            is_string($ownerId) || is_int($ownerId) ? $ownerId : null
+        );
     }
 
     /**

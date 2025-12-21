@@ -9,8 +9,8 @@ use AIArmada\FilamentAuthz\Services\ContextualAuthorizationService;
 use AIArmada\FilamentAuthz\Services\PermissionAggregator;
 use AIArmada\FilamentAuthz\Services\TemporalPermissionService;
 use Carbon\Carbon;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 beforeEach(function (): void {
     // Clear data

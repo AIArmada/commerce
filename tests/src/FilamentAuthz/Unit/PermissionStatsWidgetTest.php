@@ -3,10 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAuthz\Widgets\PermissionStatsWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 uses(RefreshDatabase::class);
 
@@ -71,6 +72,41 @@ describe('PermissionStatsWidget', function (): void {
             'password' => bcrypt('password'),
         ]);
         $user->assignRole($role);
+
+        $widget = new PermissionStatsWidget;
+
+        $reflection = new ReflectionClass($widget);
+        $method = $reflection->getMethod('countUsersWithRoles');
+
+        $count = $method->invoke($widget);
+
+        expect($count)->toBe(1);
+    });
+
+    it('scopes user role counts to the current owner', function (): void {
+        $role = Role::create(['name' => 'admin', 'guard_name' => 'web']);
+        $user = User::create([
+            'name' => 'Default Owner User',
+            'email' => 'default-owner-user@example.com',
+            'password' => bcrypt('password'),
+        ]);
+        $user->assignRole($role);
+
+        $otherOwner = User::create([
+            'name' => 'Other Owner',
+            'email' => 'other-owner@example.com',
+            'password' => bcrypt('password'),
+        ]);
+
+        OwnerContext::withOwner($otherOwner, function (): void {
+            $role = Role::create(['name' => 'other-admin', 'guard_name' => 'web']);
+            $user = User::create([
+                'name' => 'Other Owner User',
+                'email' => 'other-owner-user@example.com',
+                'password' => bcrypt('password'),
+            ]);
+            $user->assignRole($role);
+        });
 
         $widget = new PermissionStatsWidget;
 

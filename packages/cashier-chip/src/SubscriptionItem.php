@@ -7,8 +7,8 @@ namespace AIArmada\CashierChip;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Database\Factories\SubscriptionItemFactory;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -39,9 +39,12 @@ class SubscriptionItem extends Model
     use HasOwner {
         scopeForOwner as private scopeForOwnerUsingTrait;
     }
+    use HasOwnerScopeConfig;
     use HasUuids;
     use InteractsWithPaymentBehavior;
     use Prorates;
+
+    protected static string $ownerScopeConfigKey = 'cashier-chip.features.owner';
 
     /**
      * The attributes that are not mass assignable.
@@ -144,11 +147,7 @@ class SubscriptionItem extends Model
 
     protected function resolveOwner(): ?Model
     {
-        if (! app()->bound(OwnerResolverInterface::class)) {
-            return null;
-        }
-
-        return app(OwnerResolverInterface::class)->resolve();
+        return \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
     }
 
     /**

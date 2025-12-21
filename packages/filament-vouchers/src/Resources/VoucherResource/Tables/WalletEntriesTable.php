@@ -23,27 +23,35 @@ final class WalletEntriesTable
         return $table
             ->defaultSort('created_at', 'desc')
             ->columns([
-                TextColumn::make('owner_type')
-                    ->label('Owner Type')
-                    ->formatStateUsing(fn (string $state): string => class_basename($state))
+                TextColumn::make('holder_type')
+                    ->label('Holder Type')
+                    ->formatStateUsing(fn (?string $state): string => $state ? class_basename($state) : '—')
                     ->badge()
-                    ->color(fn (string $state): string => match (class_basename($state)) {
-                        'User' => 'success',
-                        'Store' => 'info',
-                        'Team' => 'warning',
-                        default => 'gray',
+                    ->color(function (?string $state): string {
+                        $type = $state ? class_basename($state) : '';
+
+                        return match ($type) {
+                            'User' => 'success',
+                            'Store' => 'info',
+                            'Team' => 'warning',
+                            default => 'gray',
+                        };
                     })
-                    ->icon(fn (string $state): Heroicon => match (class_basename($state)) {
-                        'User' => Heroicon::OutlinedUser,
-                        'Store' => Heroicon::OutlinedBuildingStorefront,
-                        'Team' => Heroicon::OutlinedUserGroup,
-                        default => Heroicon::OutlinedQuestionMarkCircle,
+                    ->icon(function (?string $state): Heroicon {
+                        $type = $state ? class_basename($state) : '';
+
+                        return match ($type) {
+                            'User' => Heroicon::OutlinedUser,
+                            'Store' => Heroicon::OutlinedBuildingStorefront,
+                            'Team' => Heroicon::OutlinedUserGroup,
+                            default => Heroicon::OutlinedQuestionMarkCircle,
+                        };
                     })
                     ->sortable()
                     ->searchable(),
 
-                TextColumn::make('owner_id')
-                    ->label('Owner ID')
+                TextColumn::make('holder_id')
+                    ->label('Holder ID')
                     ->copyable()
                     ->searchable()
                     ->toggleable(),
@@ -122,8 +130,8 @@ final class WalletEntriesTable
                     ->toggleable(isToggledHiddenByDefault: true),
             ])
             ->filters([
-                SelectFilter::make('owner_type')
-                    ->label('Owner Type')
+                SelectFilter::make('holder_type')
+                    ->label('Holder Type')
                     ->options([
                         'App\\Models\\User' => 'User',
                         'App\\Models\\Store' => 'Store',

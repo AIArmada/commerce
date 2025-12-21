@@ -21,6 +21,7 @@ return new class extends Migration
             $table->uuid('id')->primary();
             $table->foreignUuid('voucher_id');
             $table->nullableUuidMorphs('owner');
+            $table->nullableUuidMorphs('holder');
             $table->boolean('is_claimed')->default(false);
             $table->timestamp('claimed_at')->nullable();
             $table->boolean('is_redeemed')->default(false);
@@ -31,6 +32,7 @@ return new class extends Migration
             // Indexes for common queries
             $table->index('voucher_id'); // For querying wallet entries by voucher
             // Note: nullableUuidMorphs('owner') already creates index on ['owner_type', 'owner_id']
+            // Note: nullableUuidMorphs('holder') already creates index on ['holder_type', 'holder_id']
             $table->index('is_claimed'); // For filtering claimed status
             $table->index('is_redeemed'); // For filtering redeemed status
             $table->index(['is_redeemed', 'is_claimed']); // For available vouchers queries
@@ -38,8 +40,8 @@ return new class extends Migration
             $table->index('redeemed_at'); // For sorting by redemption date
             $table->index(['voucher_id', 'is_claimed', 'is_redeemed'], 'voucher_wallets_available_idx');
 
-            // Unique constraint: one voucher per owner (only for non-redeemed entries)
-            $table->unique(['voucher_id', 'owner_type', 'owner_id', 'is_redeemed']);
+            // Unique constraint: one voucher per holder (only for non-redeemed entries)
+            $table->unique(['voucher_id', 'holder_type', 'holder_id', 'is_redeemed']);
         });
     }
 

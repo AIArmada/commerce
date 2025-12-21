@@ -220,7 +220,7 @@ class JntTrackingService
     public function getOrdersNeedingTrackingUpdate(int $limit = 100): Collection
     {
         /** @var bool $includeGlobal */
-        $includeGlobal = (bool) config('jnt.owner.include_global', true);
+        $includeGlobal = (bool) config('jnt.owner.include_global', false);
 
         /** @var \Illuminate\Database\Eloquent\Builder<JntOrder> $query */
         $query = JntOrder::query()->forOwner(owner: null, includeGlobal: $includeGlobal);

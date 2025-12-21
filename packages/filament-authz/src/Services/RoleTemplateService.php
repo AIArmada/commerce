@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAuthz\Models\RoleTemplate;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Role;
 use Throwable;
 
 class RoleTemplateService
@@ -30,6 +32,8 @@ class RoleTemplateService
         ?array $metadata = null,
         bool $isSystem = false
     ): RoleTemplate {
+        $parentId = $this->resolveParentId($parentId);
+
         $template = RoleTemplate::create([
             'name' => $name,
             'slug' => Str::slug($name),
@@ -56,6 +60,10 @@ class RoleTemplateService
     {
         if (isset($data['name']) && ! isset($data['slug'])) {
             $data['slug'] = Str::slug($data['name']);
+        }
+
+        if (array_key_exists('parent_id', $data)) {
+            $data['parent_id'] = $this->resolveParentId($data['parent_id']);
         }
 
         $template->update($data);
@@ -227,6 +235,32 @@ class RoleTemplateService
             metadata: $template->metadata,
             isSystem: false
         );
+    }
+
+    private function resolveParentId(?string $parentId): ?string
+    {
+        $parent = $this->resolveParent($parentId);
+
+        return $parent?->id;
+    }
+
+    private function resolveParent(?string $parentId): ?RoleTemplate
+    {
+        if ($parentId === null) {
+            return null;
+        }
+
+        if (! config('filament-authz.owner.enabled', false)) {
+            return RoleTemplate::find($parentId);
+        }
+
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('filament-authz.owner.include_global', false);
+
+        /** @var RoleTemplate $template */
+        $template = OwnerWriteGuard::findOrFailForOwner(RoleTemplate::class, $parentId, $owner, $includeGlobal);
+
+        return $template;
     }
 
     /**

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Widgets;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentCart\Services\CartMonitor;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -63,7 +65,7 @@ class RecentActivityWidget extends BaseWidget
     {
         $snapshotsTable = $this->getSnapshotsTable();
 
-        return \Illuminate\Support\Facades\DB::table($snapshotsTable)
+        $query = \Illuminate\Support\Facades\DB::table($snapshotsTable)
             ->selectRaw("
                 id,
                 identifier as session_id,
@@ -78,6 +80,21 @@ class RecentActivityWidget extends BaseWidget
             ")
             ->orderByDesc('updated_at')
             ->limit(50);
+
+        if ((bool) config('filament-cart.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
+            $includeGlobal = (bool) config('filament-cart.owner.include_global', false);
+
+            OwnerQuery::applyToQueryBuilder(
+                $query,
+                $owner,
+                $includeGlobal,
+                "{$snapshotsTable}.owner_type",
+                "{$snapshotsTable}.owner_id"
+            );
+        }
+
+        return $query;
     }
 
     private function getSnapshotsTable(): string

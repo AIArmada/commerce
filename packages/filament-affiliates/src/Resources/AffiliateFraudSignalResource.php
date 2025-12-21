@@ -7,7 +7,7 @@ namespace AIArmada\FilamentAffiliates\Resources;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -193,27 +193,12 @@ final class AffiliateFraudSignalResource extends Resource
             return $query;
         }
 
-        if (! app()->bound(OwnerResolverInterface::class)) {
-            return $query->whereNull('owner_type')->whereNull('owner_id');
-        }
-
         /** @var Model|null $owner */
-        $owner = app(OwnerResolverInterface::class)->resolve();
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
 
-        return $query->whereHas('affiliate', function (Builder $affiliateQuery) use ($owner): void {
-            if (! $owner) {
-                $affiliateQuery->whereNull('owner_type')->whereNull('owner_id');
-
-                return;
-            }
-
-            $affiliateQuery->where(function (Builder $builder) use ($owner): void {
-                $builder->where('owner_type', $owner->getMorphClass())
-                    ->where('owner_id', $owner->getKey())
-                    ->orWhere(function (Builder $inner): void {
-                        $inner->whereNull('owner_type')->whereNull('owner_id');
-                    });
-            });
+        return $query->whereHas('affiliate', function (Builder $affiliateQuery) use ($owner, $includeGlobal): void {
+            $affiliateQuery->forOwner($owner, $includeGlobal);
         });
     }
 
@@ -235,28 +220,13 @@ final class AffiliateFraudSignalResource extends Resource
         $query = self::getModel()::query()->where('status', FraudSignalStatus::Detected);
 
         if ((bool) config('affiliates.owner.enabled', false)) {
-            if (app()->bound(OwnerResolverInterface::class)) {
-                /** @var Model|null $owner */
-                $owner = app(OwnerResolverInterface::class)->resolve();
+            /** @var Model|null $owner */
+            $owner = OwnerContext::resolve();
+            $includeGlobal = (bool) config('affiliates.owner.include_global', false);
 
-                $query->whereHas('affiliate', function (Builder $affiliateQuery) use ($owner): void {
-                    if (! $owner) {
-                        $affiliateQuery->whereNull('owner_type')->whereNull('owner_id');
-
-                        return;
-                    }
-
-                    $affiliateQuery->where(function (Builder $builder) use ($owner): void {
-                        $builder->where('owner_type', $owner->getMorphClass())
-                            ->where('owner_id', $owner->getKey())
-                            ->orWhere(function (Builder $inner): void {
-                                $inner->whereNull('owner_type')->whereNull('owner_id');
-                            });
-                    });
-                });
-            } else {
-                $query->whereNull('owner_type')->whereNull('owner_id');
-            }
+            $query->whereHas('affiliate', function (Builder $affiliateQuery) use ($owner, $includeGlobal): void {
+                $affiliateQuery->forOwner($owner, $includeGlobal);
+            });
         }
 
         $count = $query->count();

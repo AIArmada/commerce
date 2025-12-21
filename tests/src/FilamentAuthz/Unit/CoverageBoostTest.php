@@ -32,8 +32,8 @@ use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredWidget;
 use AIArmada\FilamentAuthz\ValueObjects\PolicyCondition;
 use Illuminate\Http\Request;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 describe('AuditSeverity Enum Coverage', function (): void {
     it('executes all AuditSeverity cases and methods', function (): void {

@@ -7,8 +7,9 @@ namespace AIArmada\FilamentAuthz\Services;
 use AIArmada\FilamentAuthz\Enums\ImpactLevel;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Support\PermissionTeamScope;
 
 class PermissionImpactAnalyzer
 {
@@ -223,10 +224,12 @@ class PermissionImpactAnalyzer
     {
         $roleIds = $roles->pluck('id');
 
-        return DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
-            ->whereIn('role_id', $roleIds)
-            ->distinct('model_id')
-            ->count('model_id');
+        $table = config('permission.table_names.model_has_roles', 'model_has_roles');
+
+        $query = DB::table($table)->whereIn('role_id', $roleIds);
+        PermissionTeamScope::apply($query, $table);
+
+        return $query->distinct('model_id')->count('model_id');
     }
 
     /**
@@ -249,15 +252,19 @@ class PermissionImpactAnalyzer
         // Count users in affected roles who don't have permission through other roles
         $affectedRoleIds = $affectedRoles->pluck('id');
 
-        return DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
+        $table = config('permission.table_names.model_has_roles', 'model_has_roles');
+
+        $query = DB::table($table)
             ->whereIn('role_id', $affectedRoleIds)
-            ->whereNotIn('model_id', function ($query) use ($otherRolesWithPermission): void {
+            ->whereNotIn('model_id', function ($query) use ($otherRolesWithPermission, $table): void {
                 $query->select('model_id')
-                    ->from(config('permission.table_names.model_has_roles', 'model_has_roles'))
+                    ->from($table)
                     ->whereIn('role_id', $otherRolesWithPermission);
-            })
-            ->distinct('model_id')
-            ->count('model_id');
+                PermissionTeamScope::apply($query, $table);
+            });
+        PermissionTeamScope::apply($query, $table);
+
+        return $query->distinct('model_id')->count('model_id');
     }
 
     /**
@@ -265,9 +272,12 @@ class PermissionImpactAnalyzer
      */
     protected function countUsersWithRole(Role $role): int
     {
-        return DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
-            ->where('role_id', $role->id)
-            ->count();
+        $table = config('permission.table_names.model_has_roles', 'model_has_roles');
+
+        $query = DB::table($table)->where('role_id', $role->id);
+        PermissionTeamScope::apply($query, $table);
+
+        return $query->count();
     }
 
     /**

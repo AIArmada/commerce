@@ -6,8 +6,10 @@ namespace AIArmada\FilamentAuthz\Resources;
 
 use AIArmada\FilamentAuthz\Resources\PermissionResource\Pages;
 use AIArmada\FilamentAuthz\Resources\PermissionResource\RelationManagers;
+use AIArmada\FilamentAuthz\Models\Permission;
 use Filament\Actions;
 use Filament\Forms;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -15,7 +17,7 @@ use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Spatie\Permission\Models\Permission;
+use Illuminate\Validation\Rules\Unique;
 
 class PermissionResource extends Resource
 {
@@ -58,7 +60,15 @@ class PermissionResource extends Resource
             Section::make('Permission Details')->schema([
                 Forms\Components\TextInput::make('name')
                     ->required()
-                    ->unique(ignoreRecord: true),
+                    ->unique(ignoreRecord: true, modifyRuleUsing: function (Unique $rule, Get $get): Unique {
+                        $guard = $get('guard_name');
+
+                        if (is_string($guard) && $guard !== '') {
+                            $rule->where('guard_name', $guard);
+                        }
+
+                        return $rule;
+                    }),
                 Forms\Components\Select::make('guard_name')
                     ->options(array_combine(config('filament-authz.guards'), config('filament-authz.guards')))
                     ->default(config('filament-authz.guards.0'))

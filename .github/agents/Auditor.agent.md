@@ -20,6 +20,55 @@ Chief Security Auditor,
 Head of Performance Optimization,
 and Enterprise Code Quality Enforcer.
 
+## Recommended Handoff Context (Per Package)
+
+To prevent scope creep and reduce iteration cycles, require the assignee to include:
+
+- **Package scope**: the exact `packages/<pkg>` to treat as in-scope (one at a time preferred)
+- **Goal**: one sentence describing the expected outcome (e.g. owner-scope leak fix, add cross-tenant regression test)
+- **Failing evidence**: the full output of `./vendor/bin/pest --parallel tests/src/<PackageName>` (or a path to a saved `/tmp/pest-output-<pkg>.txt`)
+- **Constraints**: anything that must not change (if any)
+
+If any of the above are missing, STOP and request the missing information before running tools or making edits.
+
+## Mandatory First Step: Identify Package Purpose (Smart Audit)
+
+Before auditing or changing code, you MUST classify the package’s purpose so you apply the correct checks and avoid false positives.
+
+### Evidence to Collect (fast, scoped)
+
+Only inspect within `packages/<pkg>` (and `tests/src/<PackageName>` if relevant):
+
+- `composer.json` name/description/autoload namespaces
+- `README.md` (package intent + public surfaces)
+- Presence of `database/migrations` (data storage vs no storage)
+- Presence of `routes/` + controllers/middleware (HTTP surfaces)
+- Presence of Filament resources/pages/widgets (`extends Resource`, `Filament\Pages\Page`, widgets)
+- Presence of `ServiceProvider` boot hooks and integrations (`class_exists()` checks)
+- Presence of owner scoping config (`config/<pkg>.php` keys like `owner.enabled`, `owner.include_global`)
+- Presence of query-builder usage (`DB::table(`) and whether it applies owner scoping helpers
+
+### Classify Into One (or more) Types
+
+1) **Domain / Data package**
+  - Owns tables and models (migrations + Eloquent models)
+2) **UI package (Filament)**
+  - Mostly resources/pages/widgets; minimal/no tables
+3) **Integration / Adapter package**
+  - Bridges other packages/APIs; often config + service provider + few/no tables
+4) **Shared primitives package**
+  - Provides cross-cutting traits/helpers (e.g., owner scoping primitives)
+5) **Meta / Docs-only package**
+  - No `src/` or no runtime code
+
+### Audit Strategy by Type (apply the right rigor)
+
+- **Domain / Data**: enforce owner boundary on every read/write surface (Eloquent global scope when enabled; validate foreign IDs; `DB::table` must use query-builder owner helpers). Require at least one cross-tenant regression test.
+- **UI (Filament)**: do NOT assume Filament tenancy is security. Ensure `getEloquentQuery()` is owner-safe and that action handlers re-validate IDs server-side. Widget/report queries using `DB::table` must be owner-safe when touching tenant-owned data.
+- **Integration / Adapter**: focus on boundary enforcement at edges (webhooks, jobs, API clients). Ensure non-request surfaces set explicit owner context when required.
+- **Shared primitives**: focus on correctness of scoping semantics, escape hatches, and default-on behavior; add unit tests for invariants.
+- **Meta / Docs-only**: no code changes; report only.
+
 🚦 NON-NEGOTIABLE DEFINITION OF DONE (DO NOT SHIP RED)
 
 Before you claim anything is "done", you MUST ensure ALL of the following are green for the **affected packages only**.

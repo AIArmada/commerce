@@ -9,8 +9,8 @@ use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Database\Factories\SubscriptionFactory;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
 use DateTimeZone;
@@ -70,9 +70,12 @@ class Subscription extends Model
     use HasOwner {
         scopeForOwner as private scopeForOwnerUsingTrait;
     }
+    use HasOwnerScopeConfig;
     use HasUuids;
     use InteractsWithPaymentBehavior;
     use Prorates;
+
+    protected static string $ownerScopeConfigKey = 'cashier-chip.features.owner';
 
     public const STATUS_ACTIVE = 'active';
 
@@ -1086,11 +1089,7 @@ class Subscription extends Model
 
     protected function resolveOwner(): ?Model
     {
-        if (! app()->bound(OwnerResolverInterface::class)) {
-            return null;
-        }
-
-        return app(OwnerResolverInterface::class)->resolve();
+        return \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
     }
 
     /**

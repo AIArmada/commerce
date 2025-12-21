@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAuthz\Services;
 
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Spatie\Permission\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Permission;
 
 class PermissionRegistry
 {

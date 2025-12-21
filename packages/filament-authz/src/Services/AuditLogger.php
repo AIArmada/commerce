@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAuthz\Enums\AuditEventType;
 use AIArmada\FilamentAuthz\Enums\AuditSeverity;
 use AIArmada\FilamentAuthz\Jobs\WriteAuditLogJob;
@@ -33,6 +34,10 @@ class AuditLogger
             return;
         }
 
+        $owner = config('filament-authz.owner.enabled', false)
+            ? OwnerContext::resolve()
+            : null;
+
         $data = [
             'event_type' => $eventType,
             'severity' => $severity ?? $eventType->defaultSeverity(),
@@ -46,6 +51,8 @@ class AuditLogger
             'new_value' => $newValues,
             'context' => $this->enrichMetadata($metadata),
             'occurred_at' => now(),
+            'owner_type' => $owner?->getMorphClass(),
+            'owner_id' => $owner?->getKey(),
         ];
 
         if ($this->shouldWriteAsync()) {

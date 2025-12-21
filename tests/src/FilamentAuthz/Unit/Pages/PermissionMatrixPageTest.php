@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\Pages\PermissionMatrixPage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 uses(RefreshDatabase::class);
 

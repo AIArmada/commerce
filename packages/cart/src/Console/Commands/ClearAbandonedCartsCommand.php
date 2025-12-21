@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Console\Commands;
 
+use AIArmada\Cart\Support\CartOwnerScope;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Console\Command;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Carbon;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
@@ -38,24 +42,94 @@ final class ClearAbandonedCartsCommand extends Command
         $dryRun = $this->option('dry-run');
         $batchSize = max(1, (int) $this->option('batch-size'));
         $table = config('cart.database.table', 'carts');
+        $now = now();
 
         if ($useExpired) {
             info('Clearing expired carts (using expires_at column)');
-            $query = DB::table($table)
-                ->whereNotNull('expires_at')
-                ->where('expires_at', '<', now());
         } else {
-            $cutoffDate = now()->subDays($days);
+            $cutoffDate = $now->copy()->subDays($days);
             info("Clearing carts abandoned before: {$cutoffDate->format('Y-m-d H:i:s')}");
-            $query = DB::table($table)
-                ->where('updated_at', '<', $cutoffDate);
+        }
+
+        if ((bool) config('cart.owner.enabled', false)) {
+            $owner = OwnerContext::resolve();
+            if ($owner === null) {
+                return $this->handleAllOwners(
+                    table: $table,
+                    useExpired: $useExpired,
+                    days: $days,
+                    now: $now,
+                    dryRun: (bool) $dryRun,
+                    batchSize: $batchSize
+                );
+            }
+
+            return $this->handleForOwner(
+                table: $table,
+                useExpired: $useExpired,
+                days: $days,
+                now: $now,
+                dryRun: (bool) $dryRun,
+                batchSize: $batchSize,
+                ownerType: $owner->getMorphClass(),
+                ownerId: $owner->getKey(),
+            );
+        }
+
+        return $this->handleForOwner(
+            table: $table,
+            useExpired: $useExpired,
+            days: $days,
+            now: $now,
+            dryRun: (bool) $dryRun,
+            batchSize: $batchSize,
+            ownerType: null,
+            ownerId: null,
+        );
+    }
+
+    private function handleAllOwners(
+        string $table,
+        bool $useExpired,
+        int $days,
+        Carbon $now,
+        bool $dryRun,
+        int $batchSize,
+    ): int {
+        $owners = DB::table($table)->select(['owner_type', 'owner_id'])->distinct()->get();
+
+        if ($owners->isEmpty()) {
+            return $this->handleForOwner(
+                table: $table,
+                useExpired: $useExpired,
+                days: $days,
+                now: $now,
+                dryRun: $dryRun,
+                batchSize: $batchSize,
+                ownerType: null,
+                ownerId: null,
+            );
+        }
+
+        $ownerBatches = [];
+        $totalCount = 0;
+
+        foreach ($owners as $row) {
+            $ownerType = $this->normalizeOwnerValue($row->owner_type ?? null);
+            $ownerId = $this->normalizeOwnerValue($row->owner_id ?? null);
+
+            $count = $this->countForOwner($table, $useExpired, $days, $now, $ownerType, $ownerId);
+            $ownerBatches[] = [
+                'owner_type' => $ownerType,
+                'owner_id' => $ownerId,
+                'count' => $count,
+            ];
+            $totalCount += $count;
         }
 
         if ($dryRun) {
             warning('DRY RUN MODE - No data will be deleted');
         }
-
-        $totalCount = $query->count();
 
         if ($totalCount === 0) {
             info('No abandoned carts found.');
@@ -65,18 +139,154 @@ final class ClearAbandonedCartsCommand extends Command
 
         info("Found {$totalCount} abandoned carts to clear.");
 
-        if (! $dryRun) {
-            $confirmed = confirm('Are you sure you want to delete these carts?');
-            if (! $confirmed) {
-                info('Operation cancelled.');
+        if ($dryRun) {
+            $deletedCount = 0;
+            foreach ($ownerBatches as $batch) {
+                if ($batch['count'] === 0) {
+                    continue;
+                }
 
-                return self::SUCCESS;
+                $deletedCount += $this->deleteForOwner(
+                    table: $table,
+                    useExpired: $useExpired,
+                    days: $days,
+                    now: $now,
+                    dryRun: true,
+                    batchSize: $batchSize,
+                    ownerType: $batch['owner_type'],
+                    ownerId: $batch['owner_id'],
+                );
             }
+
+            info("Would delete {$deletedCount} abandoned carts.");
+
+            return self::SUCCESS;
+        }
+
+        $confirmed = confirm('Are you sure you want to delete these carts?');
+        if (! $confirmed) {
+            info('Operation cancelled.');
+
+            return self::SUCCESS;
         }
 
         $deletedCount = 0;
 
-        // Process in batches to avoid memory issues
+        foreach ($ownerBatches as $batch) {
+            if ($batch['count'] === 0) {
+                continue;
+            }
+
+            $deletedCount += $this->deleteForOwner(
+                table: $table,
+                useExpired: $useExpired,
+                days: $days,
+                now: $now,
+                dryRun: false,
+                batchSize: $batchSize,
+                ownerType: $batch['owner_type'],
+                ownerId: $batch['owner_id'],
+            );
+        }
+
+        info("Successfully deleted {$deletedCount} abandoned carts.");
+
+        return self::SUCCESS;
+    }
+
+    private function handleForOwner(
+        string $table,
+        bool $useExpired,
+        int $days,
+        Carbon $now,
+        bool $dryRun,
+        int $batchSize,
+        ?string $ownerType,
+        string | int | null $ownerId,
+    ): int {
+        if ($dryRun) {
+            warning('DRY RUN MODE - No data will be deleted');
+        }
+
+        $totalCount = $this->countForOwner($table, $useExpired, $days, $now, $ownerType, $ownerId);
+
+        if ($totalCount === 0) {
+            info('No abandoned carts found.');
+
+            return self::SUCCESS;
+        }
+
+        info("Found {$totalCount} abandoned carts to clear.");
+
+        if ($dryRun) {
+            $deletedCount = $this->deleteForOwner(
+                table: $table,
+                useExpired: $useExpired,
+                days: $days,
+                now: $now,
+                dryRun: true,
+                batchSize: $batchSize,
+                ownerType: $ownerType,
+                ownerId: $ownerId,
+            );
+
+            info("Would delete {$deletedCount} abandoned carts.");
+
+            return self::SUCCESS;
+        }
+
+        $confirmed = confirm('Are you sure you want to delete these carts?');
+        if (! $confirmed) {
+            info('Operation cancelled.');
+
+            return self::SUCCESS;
+        }
+
+        $deletedCount = $this->deleteForOwner(
+            table: $table,
+            useExpired: $useExpired,
+            days: $days,
+            now: $now,
+            dryRun: false,
+            batchSize: $batchSize,
+            ownerType: $ownerType,
+            ownerId: $ownerId,
+        );
+
+        info("Successfully deleted {$deletedCount} abandoned carts.");
+
+        return self::SUCCESS;
+    }
+
+    private function countForOwner(
+        string $table,
+        bool $useExpired,
+        int $days,
+        Carbon $now,
+        ?string $ownerType,
+        string | int | null $ownerId,
+    ): int {
+        $query = $this->baseQuery($table, $useExpired, $days, $now);
+        CartOwnerScope::applyForOwner($query, $ownerType, $ownerId);
+
+        return $query->count();
+    }
+
+    private function deleteForOwner(
+        string $table,
+        bool $useExpired,
+        int $days,
+        Carbon $now,
+        bool $dryRun,
+        int $batchSize,
+        ?string $ownerType,
+        string | int | null $ownerId,
+    ): int {
+        $query = $this->baseQuery($table, $useExpired, $days, $now);
+        CartOwnerScope::applyForOwner($query, $ownerType, $ownerId);
+
+        $deletedCount = 0;
+
         progress(
             label: $dryRun ? 'Simulating deletion...' : 'Deleting carts...',
             steps: $query->clone()->pluck('id')->chunk($batchSize),
@@ -90,12 +300,29 @@ final class ClearAbandonedCartsCommand extends Command
             }
         );
 
-        if ($dryRun) {
-            info("Would delete {$deletedCount} abandoned carts.");
-        } else {
-            info("Successfully deleted {$deletedCount} abandoned carts.");
+        return $deletedCount;
+    }
+
+    private function baseQuery(string $table, bool $useExpired, int $days, Carbon $now): Builder
+    {
+        if ($useExpired) {
+            return DB::table($table)
+                ->whereNotNull('expires_at')
+                ->where('expires_at', '<', $now);
         }
 
-        return self::SUCCESS;
+        $cutoffDate = $now->copy()->subDays($days);
+
+        return DB::table($table)
+            ->where('updated_at', '<', $cutoffDate);
+    }
+
+    private function normalizeOwnerValue(string | int | null $value): string | int | null
+    {
+        if (is_string($value) && $value === '') {
+            return null;
+        }
+
+        return $value;
     }
 }

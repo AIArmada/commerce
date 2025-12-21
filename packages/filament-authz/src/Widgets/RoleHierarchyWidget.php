@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAuthz\Widgets;
 
 use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
 use Filament\Widgets\Widget;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Role;
 
 class RoleHierarchyWidget extends Widget
 {

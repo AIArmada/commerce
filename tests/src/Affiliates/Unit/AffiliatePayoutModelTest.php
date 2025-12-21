@@ -29,8 +29,8 @@ describe('AffiliatePayout Model', function (): void {
     it('can be created with required fields', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'status' => PayoutStatus::Pending,
             'total_minor' => 50000,
             'conversion_count' => 5,
@@ -43,27 +43,27 @@ describe('AffiliatePayout Model', function (): void {
             ->and($payout->conversion_count)->toBe(5);
     });
 
-    it('has polymorphic owner relationship', function (): void {
+    it('has polymorphic payee relationship', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'status' => PayoutStatus::Pending,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
         ]);
 
-        expect($payout->owner())->toBeInstanceOf(MorphTo::class)
-            ->and($payout->owner)->toBeInstanceOf(Affiliate::class)
-            ->and($payout->owner->id)->toBe($this->affiliate->id);
+        expect($payout->payee())->toBeInstanceOf(MorphTo::class)
+            ->and($payout->payee)->toBeInstanceOf(Affiliate::class)
+            ->and($payout->payee->id)->toBe($this->affiliate->id);
     });
 
     it('has many conversions', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'status' => PayoutStatus::Pending,
             'total_minor' => 50000,
             'conversion_count' => 5,
@@ -76,8 +76,8 @@ describe('AffiliatePayout Model', function (): void {
     it('has many events', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'status' => PayoutStatus::Pending,
             'total_minor' => 50000,
             'conversion_count' => 5,
@@ -87,11 +87,11 @@ describe('AffiliatePayout Model', function (): void {
         expect($payout->events())->toBeInstanceOf(HasMany::class);
     });
 
-    it('returns affiliate accessor when owner is affiliate', function (): void {
+    it('returns affiliate accessor when payee is affiliate', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'status' => PayoutStatus::Pending,
             'total_minor' => 50000,
             'conversion_count' => 5,
@@ -105,8 +105,8 @@ describe('AffiliatePayout Model', function (): void {
     it('returns amount_minor accessor aliasing total_minor', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'status' => PayoutStatus::Pending,
             'total_minor' => 12345,
             'conversion_count' => 1,
@@ -119,8 +119,8 @@ describe('AffiliatePayout Model', function (): void {
     it('returns external_reference from metadata', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'status' => PayoutStatus::Pending,
             'total_minor' => 50000,
             'conversion_count' => 5,
@@ -134,8 +134,8 @@ describe('AffiliatePayout Model', function (): void {
     it('returns null external_reference when not in metadata', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'status' => PayoutStatus::Pending,
             'total_minor' => 50000,
             'conversion_count' => 5,
@@ -148,8 +148,8 @@ describe('AffiliatePayout Model', function (): void {
     it('returns notes from metadata', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'status' => PayoutStatus::Pending,
             'total_minor' => 50000,
             'conversion_count' => 5,
@@ -163,8 +163,8 @@ describe('AffiliatePayout Model', function (): void {
     it('returns null notes when not in metadata', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'status' => PayoutStatus::Pending,
             'total_minor' => 50000,
             'conversion_count' => 5,
@@ -177,8 +177,8 @@ describe('AffiliatePayout Model', function (): void {
     it('casts metadata as array', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'status' => PayoutStatus::Pending,
             'total_minor' => 50000,
             'conversion_count' => 5,
@@ -194,8 +194,8 @@ describe('AffiliatePayout Model', function (): void {
         $scheduledAt = Carbon::now()->addDay();
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'status' => PayoutStatus::Pending,
             'total_minor' => 50000,
             'conversion_count' => 5,
@@ -210,8 +210,8 @@ describe('AffiliatePayout Model', function (): void {
         $paidAt = Carbon::now();
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'status' => PayoutStatus::Completed,
             'total_minor' => 50000,
             'conversion_count' => 5,
@@ -225,8 +225,8 @@ describe('AffiliatePayout Model', function (): void {
     it('cascade deletes events on delete', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'status' => PayoutStatus::Pending,
             'total_minor' => 50000,
             'conversion_count' => 5,
@@ -247,8 +247,8 @@ describe('AffiliatePayout Model', function (): void {
     it('nulls affiliate_payout_id on conversions when deleted', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'status' => PayoutStatus::Pending,
             'total_minor' => 50000,
             'conversion_count' => 5,

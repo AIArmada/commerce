@@ -90,7 +90,7 @@ php artisan authz:sync
 Or via tinker:
 
 ```php
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Role;
 
 Role::create(['name' => 'Super Admin', 'guard_name' => 'web']);
 ```

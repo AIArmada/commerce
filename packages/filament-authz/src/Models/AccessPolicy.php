@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Models;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\FilamentAuthz\Enums\ConditionOperator;
 use AIArmada\FilamentAuthz\Enums\PolicyDecision;
 use AIArmada\FilamentAuthz\Enums\PolicyEffect;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -35,8 +38,13 @@ use Illuminate\Support\Carbon;
  */
 class AccessPolicy extends Model
 {
-    use HasOwner;
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'filament-authz.owner';
 
     protected $fillable = [
         'name',
@@ -271,20 +279,35 @@ class AccessPolicy extends Model
             return $query;
         }
 
-        if (! $owner) {
-            return $includeGlobal
-                ? $query->whereNull('owner_id')
-                : $query->whereNull('owner_type')->whereNull('owner_id');
-        }
+        $includeGlobal = $includeGlobal && (bool) config('filament-authz.owner.include_global', false);
 
-        return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
-            $builder->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
+        /** @var Builder<static> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
-            if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
-                });
+        return $scoped;
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $policy): void {
+            if (! config('filament-authz.owner.enabled', false)) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            if ($owner === null) {
+                return;
+            }
+
+            if ($policy->owner_id === null) {
+                $policy->assignOwner($owner);
+
+                return;
+            }
+
+            if (! $policy->belongsToOwner($owner)) {
+                throw new AuthorizationException('Cannot write access policies outside the current owner scope.');
             }
         });
     }

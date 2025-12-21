@@ -7,8 +7,8 @@ use AIArmada\FilamentAuthz\Enums\AuditEventType;
 use AIArmada\FilamentAuthz\Enums\AuditSeverity;
 use AIArmada\FilamentAuthz\Models\PermissionAuditLog;
 use AIArmada\FilamentAuthz\Services\AuditLogger;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 beforeEach(function (): void {
     // Clear audit logs

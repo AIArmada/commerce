@@ -25,6 +25,8 @@ describe('ExecuteRecoveryIntervention Job Integration', function (): void {
             expect($job->strategyId)->toBe('email_reminder');
             expect($job->strategy)->toBe(['type' => 'email', 'delayMinutes' => 30]);
             expect($job->prediction)->toBe(['probability' => 0.8, 'riskLevel' => 'high']);
+            expect($job->ownerType)->toBeNull();
+            expect($job->ownerId)->toBeNull();
         });
     });
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Services;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
 use AIArmada\Vouchers\Enums\VoucherStatus;
@@ -22,8 +22,7 @@ use Illuminate\Support\Facades\DB;
 class VoucherService
 {
     public function __construct(
-        protected VoucherValidator $validator,
-        protected OwnerResolverInterface $ownerResolver
+        protected VoucherValidator $validator
     ) {}
 
     public function find(string $code): ?VoucherData
@@ -273,7 +272,7 @@ class VoucherService
      *
      * @param  array<string, mixed>|null  $metadata
      */
-    public function addToWallet(string $code, Model $owner, ?array $metadata = null): VoucherWallet
+    public function addToWallet(string $code, Model $holder, ?array $metadata = null): VoucherWallet
     {
         $voucher = $this->query()
             ->where('code', $this->normalizeCode($code))
@@ -282,8 +281,10 @@ class VoucherService
         /** @var VoucherModel $voucher */
         return VoucherWallet::create([
             'voucher_id' => $voucher->id,
-            'owner_type' => $owner->getMorphClass(),
-            'owner_id' => $owner->getKey(),
+            'holder_type' => $holder->getMorphClass(),
+            'holder_id' => $holder->getKey(),
+            'owner_type' => $voucher->owner_type,
+            'owner_id' => $voucher->owner_id,
             'is_claimed' => true,
             'claimed_at' => now(),
             'metadata' => $metadata,
@@ -293,7 +294,7 @@ class VoucherService
     /**
      * Remove a voucher from the owner's wallet (if not redeemed).
      */
-    public function removeFromWallet(string $code, Model $owner): bool
+    public function removeFromWallet(string $code, Model $holder): bool
     {
         $voucher = $this->query()
             ->where('code', $this->normalizeCode($code))
@@ -301,8 +302,8 @@ class VoucherService
 
         /** @var VoucherModel $voucher */
         return VoucherWallet::where('voucher_id', $voucher->id)
-            ->where('owner_type', $owner->getMorphClass())
-            ->where('owner_id', $owner->getKey())
+            ->where('holder_type', $holder->getMorphClass())
+            ->where('holder_id', $holder->getKey())
             ->where('is_redeemed', false)
             ->delete() > 0;
     }
@@ -333,11 +334,11 @@ class VoucherService
             return null;
         }
 
-        return $this->ownerResolver->resolve();
+        return OwnerContext::resolve();
     }
 
     protected function shouldIncludeGlobal(): bool
     {
-        return (bool) config('vouchers.owner.include_global', true);
+        return (bool) config('vouchers.owner.include_global', false);
     }
 }

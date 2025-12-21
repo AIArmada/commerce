@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cart;
 
 use AIArmada\Cart\Contracts\CartManagerInterface;
+use AIArmada\Cart\Support\CartOwnerScope;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Storage\StorageInterface;
 use Illuminate\Contracts\Auth\Factory;
@@ -221,17 +222,7 @@ class CartManager implements CartManagerInterface
         $tableName = config('cart.database.table', 'carts');
 
         $query = app('db')->table($tableName)->where('id', $uuid);
-
-        $ownerType = $this->storage->getOwnerType();
-        $ownerId = $this->storage->getOwnerId();
-
-        if ($ownerType !== null && $ownerId !== null) {
-            $query->where('owner_type', $ownerType)
-                ->where('owner_id', (string) $ownerId);
-        } else {
-            $query->where('owner_type', '')
-                ->where('owner_id', '');
-        }
+        $query = CartOwnerScope::apply($query, $this->storage);
 
         $snapshot = $query->first(['identifier', 'instance']);
 

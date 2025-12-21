@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Models;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Database\Factories\InventoryLocationFactory;
 use AIArmada\Inventory\Enums\TemperatureZone;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
@@ -59,8 +59,13 @@ final class InventoryLocation extends Model
     use HasFactory;
 
     use HasLocationHierarchy;
-    use HasOwner;
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'inventory.owner';
 
     public const DEFAULT_LOCATION_CODE = 'DEFAULT';
 
@@ -168,20 +173,12 @@ final class InventoryLocation extends Model
             return $query;
         }
 
-        if (! $owner) {
-            return $query->whereNull('owner_type')->whereNull('owner_id');
-        }
+        $includeGlobal = $includeGlobal && (bool) config('inventory.owner.include_global', false);
 
-        return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
-            $builder->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
+        /** @var Builder<static> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
-            if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
-                });
-            }
-        });
+        return $scoped;
     }
 
     /**
@@ -367,14 +364,6 @@ final class InventoryLocation extends Model
      */
     protected static function booted(): void
     {
-        static::addGlobalScope('owner', function (Builder $query): void {
-            if (! InventoryOwnerScope::isEnabled()) {
-                return;
-            }
-
-            $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
-        });
-
         static::saving(function (InventoryLocation $location): void {
             if (! InventoryOwnerScope::isEnabled()) {
                 return;
@@ -403,10 +392,6 @@ final class InventoryLocation extends Model
             }
 
             if (! (bool) config('inventory.owner.auto_assign_on_create', true)) {
-                return;
-            }
-
-            if (! app()->bound(OwnerResolverInterface::class)) {
                 return;
             }
 

@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 
@@ -46,8 +46,8 @@ trait InteractsWithAffiliate
      */
     public function getAffiliateOwner(): ?Model
     {
-        if ((bool) config('affiliates.owner.enabled', false) && app()->bound(OwnerResolverInterface::class)) {
-            return app(OwnerResolverInterface::class)->resolve();
+        if ((bool) config('affiliates.owner.enabled', false)) {
+            return OwnerContext::resolve();
         }
 
         return auth()->user();
