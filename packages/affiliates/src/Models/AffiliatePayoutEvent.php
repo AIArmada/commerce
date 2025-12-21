@@ -29,6 +29,9 @@ class AffiliatePayoutEvent extends Model
         return config('affiliates.table_names.payout_events', parent::getTable());
     }
 
+    /**
+     * @return BelongsTo<AffiliatePayout, self>
+     */
     public function payout(): BelongsTo
     {
         return $this->belongsTo(AffiliatePayout::class, 'affiliate_payout_id');

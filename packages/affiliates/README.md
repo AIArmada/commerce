@@ -134,13 +134,11 @@ Key options exposed via `config/affiliates.php`:
 
 Both events are broadcast through Laravel’s dispatcher and can be toggled via config.
 
-## Testing
+## Artisan Commands
 
-```bash
-composer test -- --group=affiliates
-```
+The package includes the following commands:
 
-> The package ships with unit coverage for the commission calculator and attribution manager. Extend the Pest suite inside `packages/affiliates/tests` for your application specifics.
+- `php artisan affiliates:export-payout {payout_id}` - Export payout details for a specific payout batch
 
 ## License
 

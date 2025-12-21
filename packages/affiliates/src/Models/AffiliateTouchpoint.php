@@ -35,11 +35,17 @@ class AffiliateTouchpoint extends Model
         return config('affiliates.table_names.touchpoints', parent::getTable());
     }
 
+    /**
+     * @return BelongsTo<AffiliateAttribution, self>
+     */
     public function attribution(): BelongsTo
     {
         return $this->belongsTo(AffiliateAttribution::class, 'affiliate_attribution_id');
     }
 
+    /**
+     * @return BelongsTo<Affiliate, self>
+     */
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);

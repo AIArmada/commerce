@@ -50,16 +50,25 @@ class AffiliateConversion extends Model
         return config('affiliates.table_names.conversions', parent::getTable());
     }
 
+    /**
+     * @return BelongsTo<Affiliate, self>
+     */
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);
     }
 
+    /**
+     * @return BelongsTo<AffiliateAttribution, self>
+     */
     public function attribution(): BelongsTo
     {
         return $this->belongsTo(AffiliateAttribution::class, 'affiliate_attribution_id');
     }
 
+    /**
+     * @return BelongsTo<AffiliatePayout, self>
+     */
     public function payout(): BelongsTo
     {
         return $this->belongsTo(AffiliatePayout::class, 'affiliate_payout_id');

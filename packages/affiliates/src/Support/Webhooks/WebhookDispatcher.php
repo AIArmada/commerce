@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Support\Webhooks;
 
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class WebhookDispatcher
@@ -38,9 +39,22 @@ class WebhookDispatcher
 
             $signature = $this->sign($body, $headers['X-Affiliates-Signature'] ?? null);
 
-            Http::withHeaders(array_merge($headers, [
-                'X-Affiliates-Webhook-Signature' => $signature,
-            ]))->asJson()->post($trimmed, $body);
+            try {
+                Http::timeout(10)
+                    ->retry(3, 100)
+                    ->withHeaders(array_merge($headers, [
+                        'X-Affiliates-Webhook-Signature' => $signature,
+                    ]))
+                    ->asJson()
+                    ->post($trimmed, $body)
+                    ->throw();
+            } catch (\Exception $e) {
+                \Illuminate\Support\Facades\Log::error('Affiliate webhook failed', [
+                    'url' => $trimmed,
+                    'type' => $type,
+                    'error' => $e->getMessage(),
+                ]);
+            }
         }
     }
 
