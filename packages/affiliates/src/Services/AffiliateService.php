@@ -24,6 +24,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Stringable;
 
@@ -55,18 +56,36 @@ final class AffiliateService
     {
         $normalized = $this->normalizeCode($code);
 
-        return $this->query()
-            ->whereRaw('LOWER(code) = ?', [mb_strtolower($normalized)])
-            ->first();
+        if ($normalized === '' || mb_strlen($normalized) > 64) {
+            return null;
+        }
+
+        $cacheKey = "affiliates:code:{$normalized}";
+        $ttl = 3600;
+
+        return Cache::remember($cacheKey, $ttl, function () use ($normalized): ?Affiliate {
+            return $this->query()
+                ->whereRaw('LOWER(code) = ?', [mb_strtolower($normalized)])
+                ->first();
+        });
     }
 
     public function findByDefaultVoucherCode(string $voucherCode): ?Affiliate
     {
         $normalized = $this->normalizeCode($voucherCode);
 
-        return $this->query()
-            ->whereRaw('LOWER(default_voucher_code) = ?', [mb_strtolower($normalized)])
-            ->first();
+        if ($normalized === '' || mb_strlen($normalized) > 64) {
+            return null;
+        }
+
+        $cacheKey = "affiliates:voucher:{$normalized}";
+        $ttl = 3600;
+
+        return Cache::remember($cacheKey, $ttl, function () use ($normalized): ?Affiliate {
+            return $this->query()
+                ->whereRaw('LOWER(default_voucher_code) = ?', [mb_strtolower($normalized)])
+                ->first();
+        });
     }
 
     public function attachToCartByCode(string $code, Cart $cart, array $context = []): ?AffiliateAttributionData
@@ -253,85 +272,87 @@ final class AffiliateService
      */
     public function recordConversion(Cart $cart, array $payload = []): ?AffiliateConversionData
     {
-        $metadata = $this->readCartMetadata($cart);
+        return DB::transaction(function () use ($cart, $payload): ?AffiliateConversionData {
+            $metadata = $this->readCartMetadata($cart);
 
-        if (! $metadata) {
-            return null;
-        }
-
-        $affiliate = $this->resolveAffiliateFromMetadata($metadata);
-
-        if (! $affiliate) {
-            return null;
-        }
-
-        $attribution = $this->resolveAttributionFromMetadata($metadata);
-
-        $subtotalMinor = $this->resolveMinorAmount($payload['subtotal'] ?? null, fn () => $cart->subtotal()->getAmount());
-        $totalMinor = $this->resolveMinorAmount($payload['total'] ?? null, fn () => $cart->total()->getAmount());
-
-        $commissionMinor = $this->resolveMinorAmount(
-            $payload['commission'] ?? null,
-            fn () => $this->commissionCalculator->calculate($affiliate, $subtotalMinor ?? $totalMinor ?? 0)
-        );
-
-        $status = config('affiliates.commissions.default_status', ConversionStatus::Pending->value);
-        $statusEnum = ConversionStatus::tryFrom($status) ?? ConversionStatus::Pending;
-        $autoApprove = config('affiliates.commissions.auto_approve', false);
-
-        $touches = $attribution?->touchpoints()->get() ?? collect();
-        $weights = $this->attributionModel->distribute($touches);
-
-        if ($weights === []) {
-            $weights = [$affiliate->getKey() => 1.0];
-        }
-
-        $conversions = [];
-
-        foreach ($weights as $affiliateId => $weight) {
-            $weight = max(0, (float) $weight);
-            $portionCommission = (int) round(($commissionMinor ?? 0) * $weight);
-            $portionRevenue = (int) round(($totalMinor ?? 0) * $weight);
-            $beneficiary = $affiliateId === $affiliate->getKey()
-                ? $affiliate
-                : $this->query()->find($affiliateId);
-
-            $conversion = AffiliateConversion::create([
-                'affiliate_id' => $beneficiary?->getKey() ?? $affiliateId,
-                'affiliate_code' => $beneficiary?->code ?? $affiliate->code,
-                'affiliate_attribution_id' => $attribution?->getKey(),
-                'cart_identifier' => $cart->getIdentifier(),
-                'cart_instance' => $cart->instance(),
-                'voucher_code' => $metadata['voucher_code'] ?? null,
-                'order_reference' => $payload['order_reference'] ?? null,
-                'subtotal_minor' => $subtotalMinor ?? 0,
-                'total_minor' => $portionRevenue,
-                'commission_minor' => $portionCommission,
-                'commission_currency' => $payload['commission_currency'] ?? $affiliate->currency,
-                'status' => $autoApprove ? ConversionStatus::Approved : $statusEnum,
-                'channel' => $payload['channel'] ?? null,
-                'metadata' => array_merge($payload['metadata'] ?? [], ['weight' => $weight]),
-                'owner_type' => $beneficiary?->owner_type ?? $affiliate->owner_type,
-                'owner_id' => $beneficiary?->owner_id ?? $affiliate->owner_id,
-                'occurred_at' => $payload['occurred_at'] ?? now(),
-                'approved_at' => $autoApprove ? now() : null,
-            ]);
-
-            $conversionData = AffiliateConversionData::fromModel($conversion);
-            $conversions[] = $conversionData;
-
-            if ($this->shouldDispatch('dispatch_conversion')) {
-                $this->events?->dispatch(new AffiliateConversionRecorded($conversionData));
+            if (! $metadata) {
+                return null;
             }
 
-            if ($this->shouldDispatch('dispatch_webhooks')) {
-                $this->webhooks->dispatch('conversion', $conversionData->toArray());
+            $affiliate = $this->resolveAffiliateFromMetadata($metadata);
+
+            if (! $affiliate) {
+                return null;
             }
-        }
 
-        $this->applyMultiLevelCommissions($conversions, $autoApprove, $statusEnum, $attribution?->getKey());
+            $attribution = $this->resolveAttributionFromMetadata($metadata);
 
-        return $conversions[0] ?? null;
+            $subtotalMinor = $this->resolveMinorAmount($payload['subtotal'] ?? null, fn () => $cart->subtotal()->getAmount());
+            $totalMinor = $this->resolveMinorAmount($payload['total'] ?? null, fn () => $cart->total()->getAmount());
+
+            $commissionMinor = $this->resolveMinorAmount(
+                $payload['commission'] ?? null,
+                fn () => $this->commissionCalculator->calculate($affiliate, $subtotalMinor ?? $totalMinor ?? 0)
+            );
+
+            $status = config('affiliates.commissions.default_status', ConversionStatus::Pending->value);
+            $statusEnum = ConversionStatus::tryFrom($status) ?? ConversionStatus::Pending;
+            $autoApprove = config('affiliates.commissions.auto_approve', false);
+
+            $touches = $attribution?->touchpoints()->get() ?? collect();
+            $weights = $this->attributionModel->distribute($touches);
+
+            if ($weights === []) {
+                $weights = [$affiliate->getKey() => 1.0];
+            }
+
+            $conversions = [];
+
+            foreach ($weights as $affiliateId => $weight) {
+                $weight = max(0, min(1.0, (float) $weight));
+                $portionCommission = $this->safeRound(($commissionMinor ?? 0) * $weight);
+                $portionRevenue = $this->safeRound(($totalMinor ?? 0) * $weight);
+                $beneficiary = $affiliateId === $affiliate->getKey()
+                    ? $affiliate
+                    : $this->query()->find($affiliateId);
+
+                $conversion = AffiliateConversion::create([
+                    'affiliate_id' => $beneficiary?->getKey() ?? $affiliateId,
+                    'affiliate_code' => $beneficiary?->code ?? $affiliate->code,
+                    'affiliate_attribution_id' => $attribution?->getKey(),
+                    'cart_identifier' => $cart->getIdentifier(),
+                    'cart_instance' => $cart->instance(),
+                    'voucher_code' => $metadata['voucher_code'] ?? null,
+                    'order_reference' => $payload['order_reference'] ?? null,
+                    'subtotal_minor' => $subtotalMinor ?? 0,
+                    'total_minor' => $portionRevenue,
+                    'commission_minor' => $portionCommission,
+                    'commission_currency' => $payload['commission_currency'] ?? $affiliate->currency,
+                    'status' => $autoApprove ? ConversionStatus::Approved : $statusEnum,
+                    'channel' => $payload['channel'] ?? null,
+                    'metadata' => array_merge($payload['metadata'] ?? [], ['weight' => $weight]),
+                    'owner_type' => $beneficiary?->owner_type ?? $affiliate->owner_type,
+                    'owner_id' => $beneficiary?->owner_id ?? $affiliate->owner_id,
+                    'occurred_at' => $payload['occurred_at'] ?? now(),
+                    'approved_at' => $autoApprove ? now() : null,
+                ]);
+
+                $conversionData = AffiliateConversionData::fromModel($conversion);
+                $conversions[] = $conversionData;
+
+                if ($this->shouldDispatch('dispatch_conversion')) {
+                    $this->events?->dispatch(new AffiliateConversionRecorded($conversionData));
+                }
+
+                if ($this->shouldDispatch('dispatch_webhooks')) {
+                    $this->webhooks->dispatch('conversion', $conversionData->toArray());
+                }
+            }
+
+            $this->applyMultiLevelCommissions($conversions, $autoApprove, $statusEnum, $attribution?->getKey());
+
+            return $conversions[0] ?? null;
+        });
     }
 
     /**
@@ -706,7 +727,11 @@ final class AffiliateService
         }
 
         foreach ($baseConversions as $conversionData) {
-            $affiliate = $this->query()->find($conversionData->affiliateId);
+            $affiliate = $this->query()->with(['parent' => function ($query) use ($levels): void {
+                for ($i = 1; $i < count($levels); $i++) {
+                    $query->with('parent');
+                }
+            }])->find($conversionData->affiliateId);
 
             if (! $affiliate) {
                 continue;
@@ -722,7 +747,7 @@ final class AffiliateService
                     break;
                 }
 
-                $portion = (int) round($conversionData->commissionMinor * (float) $share);
+                $portion = $this->safeRound($conversionData->commissionMinor * (float) $share);
 
                 if ($portion > 0) {
                     $model = AffiliateConversion::create([
@@ -767,6 +792,15 @@ final class AffiliateService
         }
     }
 
+    private function safeRound(float $value): int
+    {
+        if ($value > PHP_INT_MAX || $value < PHP_INT_MIN) {
+            return $value > 0 ? PHP_INT_MAX : PHP_INT_MIN;
+        }
+
+        return (int) round($value);
+    }
+
     private function applyOwnerScope(Builder $query): Builder
     {
         $owner = $this->resolveOwner();
@@ -792,31 +826,46 @@ final class AffiliateService
             return;
         }
 
+        $tableName = config('affiliates.table_names.attributions', 'affiliate_attributions');
+
         $query = AffiliateAttribution::query()
             ->where('cart_identifier', $cartIdentifier)
             ->when($cartInstance, static fn (Builder $builder, string $instance): Builder => $builder->where(
                 'cart_instance',
                 $instance
-            ))
-            ->orderByDesc('last_seen_at');
+            ));
 
         if (config('affiliates.owner.enabled', false) && $ownerType && $ownerId) {
             $query->where('owner_type', $ownerType)->where('owner_id', $ownerId);
         }
 
-        $ids = $query->pluck('id');
+        $count = $query->count();
 
-        if ($ids->count() <= $max) {
+        if ($count <= $max) {
             return;
         }
 
-        $toDelete = $ids->slice($max)->all();
+        $toDeleteCount = $count - $max;
 
-        if ($toDelete !== []) {
-            AffiliateAttribution::query()
-                ->whereIn('id', $toDelete)
-                ->delete();
-        }
+        DB::statement(
+            "DELETE FROM {$tableName} WHERE id IN (
+                SELECT id FROM (
+                    SELECT id FROM {$tableName} 
+                    WHERE cart_identifier = ? 
+                    " . ($cartInstance ? "AND cart_instance = ?" : "") . "
+                    " . ($ownerType && $ownerId ? "AND owner_type = ? AND owner_id = ?" : "") . "
+                    ORDER BY last_seen_at ASC 
+                    LIMIT ?
+                ) as subquery
+            )",
+            array_filter([
+                $cartIdentifier,
+                $cartInstance,
+                $ownerType,
+                $ownerId,
+                $toDeleteCount,
+            ], fn ($v) => $v !== null)
+        );
     }
 
     private function resolveOwner(): ?Model

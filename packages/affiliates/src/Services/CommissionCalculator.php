@@ -18,6 +18,12 @@ final class CommissionCalculator
         $scale = max(1, (int) config('affiliates.currency.percentage_scale', 100));
         $rate = (int) $affiliate->commission_rate;
 
-        return (int) max(0, round(($subtotalMinor * $rate) / ($scale * 100)));
+        $result = ($subtotalMinor * $rate) / ($scale * 100);
+
+        if ($result > PHP_INT_MAX || $result < 0) {
+            return $result > 0 ? PHP_INT_MAX : 0;
+        }
+
+        return (int) max(0, round($result));
     }
 }

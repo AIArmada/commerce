@@ -65,15 +65,17 @@ final class AffiliateReportService
         $sources = [];
         $campaigns = [];
 
+        /** @var AffiliateConversion $conversion */
         foreach ($conversions as $conversion) {
-            $source = $conversion->metadata['source'] ?? null;
-            $campaign = $conversion->metadata['campaign'] ?? null;
+            $metadata = is_array($conversion->metadata) ? $conversion->metadata : [];
+            $source = $metadata['source'] ?? null;
+            $campaign = $metadata['campaign'] ?? null;
 
-            if ($source) {
+            if ($source && is_string($source)) {
                 $sources[$source] = ($sources[$source] ?? 0) + 1;
             }
 
-            if ($campaign) {
+            if ($campaign && is_string($campaign)) {
                 $campaigns[$campaign] = ($campaigns[$campaign] ?? 0) + 1;
             }
         }

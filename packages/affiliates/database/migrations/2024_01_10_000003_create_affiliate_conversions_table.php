@@ -22,7 +22,7 @@ return new class extends Migration
             $table->string('cart_identifier')->nullable();
             $table->string('cart_instance')->nullable();
             $table->string('voucher_code', 64)->nullable();
-            $table->string('order_reference', 120)->nullable();
+            $table->string('order_reference', 120)->nullable()->index();
             $table->unsignedBigInteger('subtotal_minor')->default(0);
             $table->unsignedBigInteger('total_minor')->default(0);
             $table->unsignedBigInteger('commission_minor')->default(0);
@@ -39,6 +39,7 @@ return new class extends Migration
             $table->index(['owner_type', 'owner_id'], 'affiliate_conversions_owner_index');
             $table->index(['affiliate_id', 'status'], 'affiliate_conversions_affiliate_status_idx');
             $table->index(['status', 'occurred_at'], 'affiliate_conversions_status_date_idx');
+            $table->index(['cart_identifier', 'cart_instance'], 'affiliate_conversions_cart_idx');
         });
     }
 

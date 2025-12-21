@@ -41,7 +41,7 @@ final class AffiliateLinkGenerator
         $expires = (int) ($query['aff_exp'] ?? 0);
         $query['aff_exp'] = $expires;
 
-        if (! $signature || $expires < now()->timestamp) {
+        if (! is_string($signature) || $signature === '' || $expires < now()->timestamp) {
             return false;
         }
 
@@ -83,7 +83,13 @@ final class AffiliateLinkGenerator
             'exp' => $query['aff_exp'] ?? 0,
         ];
 
-        return hash_hmac('sha256', json_encode($payload, JSON_THROW_ON_ERROR), $key);
+        try {
+            $encoded = json_encode($payload, JSON_THROW_ON_ERROR);
+        } catch (\JsonException $e) {
+            $encoded = '';
+        }
+
+        return hash_hmac('sha256', $encoded, $key);
     }
 
     private function stripQuery(string $url): string

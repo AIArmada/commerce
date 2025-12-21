@@ -71,7 +71,7 @@ final class TrackAffiliateCookie
         foreach ($keys as $key) {
             $value = $request->query($key);
 
-            if (is_string($value) && $value !== '') {
+            if (is_string($value) && $value !== '' && mb_strlen($value) <= 64) {
                 return $value;
             }
         }

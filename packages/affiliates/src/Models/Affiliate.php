@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Cache;
 
 /**
  * @property string $id
@@ -74,11 +75,17 @@ class Affiliate extends Model
         return $this->hasMany(AffiliateConversion::class);
     }
 
+    /**
+     * @return BelongsTo<self, self>
+     */
     public function parent(): BelongsTo
     {
         return $this->belongsTo(self::class, 'parent_affiliate_id');
     }
 
+    /**
+     * @return HasMany<self, self>
+     */
     public function children(): HasMany
     {
         return $this->hasMany(self::class, 'parent_affiliate_id');
@@ -128,7 +135,21 @@ class Affiliate extends Model
             }
         });
 
+        static::saved(function (self $affiliate): void {
+            Cache::forget("affiliates:code:{$affiliate->code}");
+
+            if ($affiliate->default_voucher_code) {
+                Cache::forget("affiliates:voucher:{$affiliate->default_voucher_code}");
+            }
+        });
+
         static::deleting(function (self $affiliate): void {
+            Cache::forget("affiliates:code:{$affiliate->code}");
+
+            if ($affiliate->default_voucher_code) {
+                Cache::forget("affiliates:voucher:{$affiliate->default_voucher_code}");
+            }
+
             $affiliate->attributions()->delete();
             $affiliate->conversions()->delete();
             $affiliate->children()->update(['parent_affiliate_id' => null]);

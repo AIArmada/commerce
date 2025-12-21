@@ -85,7 +85,7 @@ return [
         'ttl_minutes' => env('AFFILIATES_COOKIE_TTL_MINUTES', 60 * 24 * 30),
         'path' => env('AFFILIATES_COOKIE_PATH', '/'),
         'domain' => env('AFFILIATES_COOKIE_DOMAIN'),
-        'secure' => env('AFFILIATES_COOKIE_SECURE'),
+        'secure' => env('AFFILIATES_COOKIE_SECURE', env('APP_ENV') !== 'local'),
         'http_only' => env('AFFILIATES_COOKIE_HTTP_ONLY', true),
         'same_site' => env('AFFILIATES_COOKIE_SAME_SITE', 'lax'),
         'query_parameters' => ['aff', 'affiliate', 'ref', 'referral'],
