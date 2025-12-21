@@ -134,6 +134,51 @@ Key options exposed via `config/affiliates.php`:
 
 Both events are broadcast through Laravel’s dispatcher and can be toggled via config.
 
+
+## Performance Optimization
+
+### Eager Loading
+
+To avoid N+1 query problems, use eager loading when working with affiliates and their relationships:
+
+```php
+// Load affiliates with their conversions and attributions
+$affiliates = Affiliate::with(['conversions', 'attributions'])->get();
+
+// Load affiliate with parent chain (for multi-level programs)
+$affiliate = Affiliate::with('parent')->find($id);
+
+// Load attributions with affiliate and touchpoints
+$attributions = AffiliateAttribution::with(['affiliate', 'touchpoints', 'conversions'])->get();
+
+// Load conversions with all relationships
+$conversions = AffiliateConversion::with(['affiliate', 'attribution', 'payout'])->get();
+
+// Load payouts with conversions and events
+$payouts = AffiliatePayout::with(['conversions.affiliate', 'events'])->get();
+```
+
+### Multi-Level Affiliate Performance
+
+When working with multi-level affiliate structures, limit parent chain traversal to avoid deep recursion:
+
+```php
+// The config limits multi-level depth via payouts.multi_level.levels
+// Typically 2-3 levels maximum is recommended for performance
+
+// When loading parent chains, be explicit:
+$affiliate = Affiliate::with('parent.parent')->find($id); // Max 2 levels
+
+// Avoid recursive parent loading in loops - cache parent lookups instead
+```
+
+### Query Optimization Tips
+
+1. **Use indexes effectively**: Migrations already include composite indexes on `cart_identifier + cart_instance` and `affiliate_id + status`
+2. **Limit attribution queries**: Use the `active()` scope to filter by `expires_at`
+3. **Batch conversions**: Use `AffiliatePayoutService::createPayout()` for bulk operations
+4. **Cache affiliate lookups**: Frequently accessed affiliates can be cached by code
+
 ## Artisan Commands
 
 The package includes the following commands:
