@@ -7,8 +7,8 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Policies\AffiliatePayoutPolicy;
-use Illuminate\Support\Str;
 use AIArmada\FilamentAuthz\Models\Permission;
+use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     // Clean up any previous data
