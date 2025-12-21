@@ -80,12 +80,12 @@ final class TaxDocumentService
         $endDate = Carbon::create($year, 12, 31)->endOfDay();
 
         $affiliateIds = AffiliatePayout::query()
-            ->where('owner_type', Affiliate::class)
+            ->where('payee_type', Affiliate::class)
             ->where('status', PayoutStatus::Completed->value)
             ->whereBetween('paid_at', [$startDate, $endDate])
-            ->groupBy('owner_id')
+            ->groupBy('payee_id')
             ->havingRaw('SUM(total_minor) >= ?', [$threshold])
-            ->pluck('owner_id');
+            ->pluck('payee_id');
 
         return Affiliate::query()
             ->whereIn('id', $affiliateIds)

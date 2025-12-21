@@ -75,6 +75,7 @@ return [
 
     'owner' => [
         'enabled' => env('AFFILIATES_OWNER_ENABLED', false),
+        'include_global' => env('AFFILIATES_OWNER_INCLUDE_GLOBAL', false),
         'auto_assign_on_create' => env('AFFILIATES_OWNER_AUTO_ASSIGN', true),
     ],
 

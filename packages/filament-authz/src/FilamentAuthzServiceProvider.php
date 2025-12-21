@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz;
 
+use AIArmada\FilamentAuthz\Models\Permission as AuthzPermission;
+use AIArmada\FilamentAuthz\Models\Role as AuthzRole;
 use AIArmada\FilamentAuthz\Listeners\PermissionEventSubscriber;
 use AIArmada\FilamentAuthz\Services\AuditLogger;
 use AIArmada\FilamentAuthz\Services\ComplianceReportService;
@@ -26,9 +28,14 @@ use AIArmada\FilamentAuthz\Services\RoleTemplateService;
 use AIArmada\FilamentAuthz\Services\TeamPermissionService;
 use AIArmada\FilamentAuthz\Services\TemporalPermissionService;
 use AIArmada\FilamentAuthz\Services\WildcardPermissionResolver;
+use AIArmada\FilamentAuthz\Support\OwnerContextTeamResolver;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Spatie\Permission\DefaultTeamResolver;
+use AIArmada\FilamentAuthz\Models\Permission as SpatiePermission;
+use AIArmada\FilamentAuthz\Models\Role as SpatieRole;
+use Spatie\Permission\PermissionRegistrar;
 
 class FilamentAuthzServiceProvider extends ServiceProvider
 {
@@ -37,6 +44,7 @@ class FilamentAuthzServiceProvider extends ServiceProvider
         $this->app->singleton(FilamentAuthzPlugin::class);
         $this->mergeConfigFrom(__DIR__ . '/../config/filament-authz.php', 'filament-authz');
 
+        $this->configureSpatiePermissions();
         $this->registerServices();
     }
 
@@ -224,5 +232,29 @@ class FilamentAuthzServiceProvider extends ServiceProvider
         if (config('filament-authz.audit.enabled', true)) {
             Event::subscribe(PermissionEventSubscriber::class);
         }
+    }
+
+    private function configureSpatiePermissions(): void
+    {
+        if (config('permission.models.permission') === SpatiePermission::class) {
+            config()->set('permission.models.permission', AuthzPermission::class);
+        }
+
+        if (config('permission.models.role') === SpatieRole::class) {
+            config()->set('permission.models.role', AuthzRole::class);
+        }
+
+        if (config('filament-authz.owner.enabled', false)) {
+            config()->set('permission.teams', true);
+        }
+
+        if (config('permission.team_resolver') === DefaultTeamResolver::class) {
+            config()->set('permission.team_resolver', OwnerContextTeamResolver::class);
+        }
+
+        $this->app->afterResolving(PermissionRegistrar::class, function (PermissionRegistrar $registrar): void {
+            $registrar->initializeCache();
+            $registrar->forgetCachedPermissions();
+        });
     }
 }

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentCart\Data\LiveStats;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
@@ -34,7 +36,7 @@ class CartMonitor
         $abandonedBefore = now()->subMinutes($abandonmentMinutes);
 
         // Get cart counts
-        $cartStats = DB::table($snapshotsTable)
+        $cartStats = $this->snapshotsQuery()
             ->selectRaw('
                 COUNT(*) as total_carts,
                 SUM(CASE WHEN items_count > 0 THEN 1 ELSE 0 END) as with_items,
@@ -49,12 +51,12 @@ class CartMonitor
             ->first();
 
         // Get pending alerts count
-        $pendingAlerts = DB::table($alertLogsTable)
+        $pendingAlerts = $this->alertLogsQuery()
             ->where('is_read', false)
             ->count();
 
         // Get fraud signals (recent critical alerts)
-        $fraudSignals = DB::table($alertLogsTable)
+        $fraudSignals = $this->alertLogsQuery()
             ->where('event_type', 'fraud')
             ->where('is_read', false)
             ->where('created_at', '>=', now()->subHours(24))
@@ -78,7 +80,7 @@ class CartMonitor
      */
     public function getActiveCartsCount(): int
     {
-        return DB::table($this->getSnapshotsTable())
+        return $this->snapshotsQuery()
             ->whereNull('checkout_abandoned_at')
             ->whereNull('recovered_at')
             ->count();
@@ -91,7 +93,7 @@ class CartMonitor
      */
     public function getRecentAbandonments(int $minutes = 30): Collection
     {
-        return DB::table($this->getSnapshotsTable())
+        return $this->snapshotsQuery()
             ->where('items_count', '>', 0)
             ->whereNull('checkout_abandoned_at')
             ->whereNull('recovered_at')
@@ -111,7 +113,7 @@ class CartMonitor
     {
         $threshold ??= (int) config('filament-cart.ai.high_value_threshold_cents', 10000);
 
-        return DB::table($this->getSnapshotsTable())
+        return $this->snapshotsQuery()
             ->whereNull('checkout_abandoned_at')
             ->whereNull('recovered_at')
             ->where('total', '>=', $threshold)
@@ -129,7 +131,7 @@ class CartMonitor
     {
         $abandonmentMinutes = (int) config('filament-cart.monitoring.abandonment_detection_minutes', 30);
 
-        return DB::table($this->getSnapshotsTable())
+        return $this->snapshotsQuery()
             ->where('items_count', '>', 0)
             ->whereNull('checkout_abandoned_at')
             ->whereNull('recovered_at')
@@ -141,6 +143,8 @@ class CartMonitor
                     ->whereColumn('cart_id', $this->getSnapshotsTable() . '.id')
                     ->where('event_type', 'abandonment')
                     ->where('created_at', '>=', now()->subHours(24));
+
+                $this->applyOwnerScope($query, $this->getAlertLogsTable());
             })
             ->orderByDesc('total')
             ->get();
@@ -155,7 +159,7 @@ class CartMonitor
     {
         // Get carts with suspicious patterns
         // This is a simplified detection - real implementation would be more sophisticated
-        return DB::table($this->getSnapshotsTable())
+        return $this->snapshotsQuery()
             ->whereNull('checkout_abandoned_at')
             ->whereNull('recovered_at')
             ->where(function ($query): void {
@@ -177,6 +181,8 @@ class CartMonitor
                     ->whereColumn('cart_id', $this->getSnapshotsTable() . '.id')
                     ->where('event_type', 'fraud')
                     ->where('created_at', '>=', now()->subHours(1));
+
+                $this->applyOwnerScope($query, $this->getAlertLogsTable());
             })
             ->orderByDesc('total')
             ->limit(20)
@@ -192,7 +198,7 @@ class CartMonitor
     {
         // Carts that were abandoned but might be recoverable
         // (abandoned recently, has items, moderate to high value)
-        return DB::table($this->getSnapshotsTable())
+        return $this->snapshotsQuery()
             ->where('items_count', '>', 0)
             ->whereNull('checkout_abandoned_at')
             ->whereNull('recovered_at')
@@ -213,7 +219,7 @@ class CartMonitor
      */
     public function getRecentActivity(int $limit = 20): Collection
     {
-        return DB::table($this->getSnapshotsTable())
+        return $this->snapshotsQuery()
             ->selectRaw('
                 id,
                 identifier as session_id,
@@ -233,6 +239,44 @@ class CartMonitor
             ->orderByDesc('updated_at')
             ->limit($limit)
             ->get();
+    }
+
+    private function snapshotsQuery(): Builder
+    {
+        $table = $this->getSnapshotsTable();
+        $query = DB::table($table);
+
+        $this->applyOwnerScope($query, $table);
+
+        return $query;
+    }
+
+    private function alertLogsQuery(): Builder
+    {
+        $table = $this->getAlertLogsTable();
+        $query = DB::table($table);
+
+        $this->applyOwnerScope($query, $table);
+
+        return $query;
+    }
+
+    private function applyOwnerScope(Builder $query, string $table): void
+    {
+        if (! (bool) config('filament-cart.owner.enabled', false)) {
+            return;
+        }
+
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('filament-cart.owner.include_global', false);
+
+        OwnerQuery::applyToQueryBuilder(
+            $query,
+            $owner,
+            $includeGlobal,
+            "{$table}.owner_type",
+            "{$table}.owner_id"
+        );
     }
 
     private function getSnapshotsTable(): string

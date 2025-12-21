@@ -19,9 +19,12 @@ class CartSyncManager
         $cart = $this->cartInstances->prepare($cart);
 
         if (! $force && config('filament-cart.synchronization.queue_sync', false)) {
+            $storage = $cart->storage();
             SyncNormalizedCartJob::dispatch(
                 identifier: $cart->getIdentifier(),
-                instance: $cart->instance()
+                instance: $cart->instance(),
+                ownerType: $storage->getOwnerType(),
+                ownerId: $storage->getOwnerId(),
             );
 
             return;

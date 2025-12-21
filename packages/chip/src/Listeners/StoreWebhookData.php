@@ -8,7 +8,7 @@ use AIArmada\Chip\Events\WebhookReceived;
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -222,10 +222,10 @@ final class StoreWebhookData
 
     private function resolveOwner(): ?Model
     {
-        if (! app()->bound(OwnerResolverInterface::class)) {
+        if (! (bool) config('chip.owner.enabled', true)) {
             return null;
         }
 
-        return app(OwnerResolverInterface::class)->resolve();
+        return OwnerContext::resolve();
     }
 }

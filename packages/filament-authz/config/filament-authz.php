@@ -35,7 +35,8 @@ return [
     | When enabled, authz data is automatically scoped to the owner.
     */
     'owner' => [
-        'enabled' => env('AUTHZ_OWNER_ENABLED', false),
+        'enabled' => env('AUTHZ_OWNER_ENABLED', true),
+        'include_global' => false,
     ],
 
     /*

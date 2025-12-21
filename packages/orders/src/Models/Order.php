@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Orders\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Orders\Database\Factories\OrderFactory;
 use AIArmada\Orders\States\OrderStatus;
 use Illuminate\Database\Eloquent\Builder;
@@ -65,8 +66,11 @@ class Order extends Model implements Auditable
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
+    use HasOwnerScopeConfig;
     use HasStates;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'orders.owner';
 
     public $incrementing = false;
 
@@ -141,16 +145,6 @@ class Order extends Model implements Auditable
      */
     public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
     {
-        if (! (bool) config('orders.owner.enabled', true)) {
-            return $query;
-        }
-
-        if ($owner === null && app()->bound(OwnerResolverInterface::class)) {
-            $owner = app(OwnerResolverInterface::class)->resolve();
-        }
-
-        $includeGlobal = $includeGlobal && (bool) config('orders.owner.include_global', true);
-
         /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
@@ -416,11 +410,7 @@ class Order extends Model implements Auditable
                 return;
             }
 
-            if (! app()->bound(OwnerResolverInterface::class)) {
-                return;
-            }
-
-            $owner = app(OwnerResolverInterface::class)->resolve();
+            $owner = OwnerContext::resolve();
             if ($owner === null) {
                 return;
             }

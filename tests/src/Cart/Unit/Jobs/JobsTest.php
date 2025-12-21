@@ -13,19 +13,25 @@ describe('AnalyzeCartForAbandonment', function (): void {
 
         expect($job)->toBeInstanceOf(ShouldQueue::class)
             ->and($job->cartId)->toBeNull()
-            ->and($job->batchSize)->toBe(100);
+            ->and($job->batchSize)->toBe(100)
+            ->and($job->ownerType)->toBeNull()
+            ->and($job->ownerId)->toBeNull();
     });
 
     it('can be instantiated with cart id', function (): void {
         $job = new AnalyzeCartForAbandonment(cartId: 'cart-123');
 
-        expect($job->cartId)->toBe('cart-123');
+        expect($job->cartId)->toBe('cart-123')
+            ->and($job->ownerType)->toBeNull()
+            ->and($job->ownerId)->toBeNull();
     });
 
     it('can be instantiated with custom batch size', function (): void {
         $job = new AnalyzeCartForAbandonment(batchSize: 50);
 
-        expect($job->batchSize)->toBe(50);
+        expect($job->batchSize)->toBe(50)
+            ->and($job->ownerType)->toBeNull()
+            ->and($job->ownerId)->toBeNull();
     });
 
     it('returns cart-specific tags', function (): void {
@@ -67,7 +73,9 @@ describe('ExecuteRecoveryIntervention', function (): void {
             ->and($job->cartId)->toBe('cart-123')
             ->and($job->strategyId)->toBe('strategy-1')
             ->and($job->strategy)->toBe(['type' => 'email', 'delay' => 30])
-            ->and($job->prediction)->toBe(['probability' => 0.75]);
+            ->and($job->prediction)->toBe(['probability' => 0.75])
+            ->and($job->ownerType)->toBeNull()
+            ->and($job->ownerId)->toBeNull();
     });
 
     it('returns correct tags', function (): void {

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Actions;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Services\JntTrackingService;
 use Filament\Actions\Action;
@@ -77,13 +77,8 @@ final class SyncTrackingAction
             return true;
         }
 
-        $owner = null;
-        if (app()->bound(OwnerResolverInterface::class)) {
-            $owner = app(OwnerResolverInterface::class)->resolve();
-        }
-
-        /** @var bool $includeGlobal */
-        $includeGlobal = (bool) config('jnt.owner.include_global', true);
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('jnt.owner.include_global', false);
 
         return JntOrder::query()
             ->forOwner($owner, $includeGlobal)

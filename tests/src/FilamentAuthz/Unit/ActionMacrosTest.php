@@ -206,7 +206,7 @@ test('requiresRole allows when user has any of the roles', function (): void {
 
     $this->actingAs($user);
 
-    Spatie\Permission\Models\Role::create(['name' => 'Admin', 'guard_name' => 'web']);
+    AIArmada\FilamentAuthz\Models\Role::create(['name' => 'Admin', 'guard_name' => 'web']);
     $user->assignRole('Admin');
 
     $action = Action::make('test')->requiresRole(['Admin', 'Manager']);

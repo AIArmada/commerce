@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Campaigns\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Vouchers\Campaigns\Enums\CampaignObjective;
 use AIArmada\Vouchers\Campaigns\Enums\CampaignStatus;
 use AIArmada\Vouchers\Campaigns\Enums\CampaignType;
@@ -51,7 +52,10 @@ use Illuminate\Support\Str;
 class Campaign extends Model
 {
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'vouchers.owner';
 
     protected $fillable = [
         'name',

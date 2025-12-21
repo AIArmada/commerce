@@ -7,8 +7,9 @@ namespace AIArmada\FilamentAuthz\Services;
 use AIArmada\FilamentAuthz\Support\UserModelResolver;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Support\PermissionTeamScope;
 
 class ComplianceReportGenerator
 {
@@ -36,10 +37,12 @@ class ComplianceReportGenerator
 
         if (class_exists($userModel)) {
             $userCount = $userModel::count();
-            $usersWithRoles = DB::table('model_has_roles')
-                ->where('model_type', $userModel)
-                ->distinct('model_id')
-                ->count('model_id');
+            $modelHasRolesTable = config('permission.table_names.model_has_roles', 'model_has_roles');
+
+            $usersQuery = DB::table($modelHasRolesTable)
+                ->where('model_type', $userModel);
+            PermissionTeamScope::apply($usersQuery, $modelHasRolesTable);
+            $usersWithRoles = $usersQuery->distinct('model_id')->count('model_id');
         }
 
         $report['sections']['user_access'] = [
@@ -71,10 +74,14 @@ class ComplianceReportGenerator
         $superAdminCount = 0;
 
         if (class_exists($userModel) && method_exists($userModel, 'role')) {
-            $superAdminCount = DB::table('model_has_roles')
-                ->join('roles', 'roles.id', '=', 'model_has_roles.role_id')
-                ->where('roles.name', $superAdminRole)
-                ->count();
+            $modelHasRolesTable = config('permission.table_names.model_has_roles', 'model_has_roles');
+            $rolesTable = config('permission.table_names.roles', 'roles');
+
+            $superAdminQuery = DB::table($modelHasRolesTable)
+                ->join($rolesTable, "{$rolesTable}.id", '=', "{$modelHasRolesTable}.role_id")
+                ->where("{$rolesTable}.name", $superAdminRole);
+            PermissionTeamScope::apply($superAdminQuery, $modelHasRolesTable);
+            $superAdminCount = $superAdminQuery->count();
         }
 
         $report['sections']['privileged_access'] = [
@@ -165,11 +172,13 @@ class ComplianceReportGenerator
         $usersWithPiiAccess = 0;
 
         if (class_exists($userModel)) {
-            $usersWithPiiAccess = DB::table('model_has_roles')
+            $modelHasRolesTable = config('permission.table_names.model_has_roles', 'model_has_roles');
+
+            $usersQuery = DB::table($modelHasRolesTable)
                 ->whereIn('role_id', $rolesWithPiiAccess->pluck('id'))
-                ->where('model_type', $userModel)
-                ->distinct('model_id')
-                ->count('model_id');
+                ->where('model_type', $userModel);
+            PermissionTeamScope::apply($usersQuery, $modelHasRolesTable);
+            $usersWithPiiAccess = $usersQuery->distinct('model_id')->count('model_id');
         }
 
         return [

@@ -47,7 +47,7 @@ trait HasVouchers
      */
     public function voucherWallets(): MorphMany
     {
-        return $this->morphMany(VoucherWallet::class, 'owner');
+        return $this->morphMany(VoucherWallet::class, 'holder');
     }
 
     /**
@@ -171,6 +171,8 @@ trait HasVouchers
 
         return $this->voucherWallets()->create([
             'voucher_id' => $voucher->id,
+            'owner_type' => $voucher->owner_type,
+            'owner_id' => $voucher->owner_id,
             'is_claimed' => true,
             'claimed_at' => now(),
         ]);

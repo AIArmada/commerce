@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\CommerceSupport\Traits;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\CommerceSupport\Support\OwnerScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -22,6 +25,21 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  */
 trait HasOwner // @phpstan-ignore trait.unused
 {
+    protected static function bootHasOwner(): void
+    {
+        if (! method_exists(static::class, 'ownerScopeConfig')) {
+            return;
+        }
+
+        $config = static::ownerScopeConfig();
+
+        if (! $config->enabled) {
+            return;
+        }
+
+        static::addGlobalScope(new OwnerScope($config));
+    }
+
     /**
      * Get the owner model (polymorphic relationship).
      */
@@ -38,22 +56,33 @@ trait HasOwner // @phpstan-ignore trait.unused
      * @param  bool  $includeGlobal  Whether to include global (ownerless) records
      * @return Builder<static>
      */
-    public function scopeForOwner(Builder $query, ?Model $owner, bool $includeGlobal = true): Builder
+    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
     {
-        if (! $owner) {
-            return $query->whereNull('owner_type')->whereNull('owner_id');
+        $ownerTypeColumn = 'owner_type';
+        $ownerIdColumn = 'owner_id';
+
+        if (method_exists(static::class, 'ownerScopeConfig')) {
+            /** @var \AIArmada\CommerceSupport\Support\OwnerScopeConfig $config */
+            $config = static::ownerScopeConfig();
+
+            if (! $config->enabled) {
+                return $query;
+            }
+
+            $includeGlobal = $includeGlobal && $config->includeGlobal;
+            $ownerTypeColumn = $config->ownerTypeColumn;
+            $ownerIdColumn = $config->ownerIdColumn;
         }
 
-        return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
-            $builder->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
+        $owner ??= OwnerContext::resolve();
 
-            if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
-                });
-            }
-        });
+        return OwnerQuery::applyToEloquentBuilder(
+            $query->withoutOwnerScope(),
+            $owner,
+            $includeGlobal,
+            $ownerTypeColumn,
+            $ownerIdColumn
+        );
     }
 
     /**
@@ -64,7 +93,30 @@ trait HasOwner // @phpstan-ignore trait.unused
      */
     public function scopeGlobalOnly(Builder $query): Builder
     {
-        return $query->whereNull('owner_type')->whereNull('owner_id');
+        $ownerTypeColumn = 'owner_type';
+        $ownerIdColumn = 'owner_id';
+
+        if (method_exists(static::class, 'ownerScopeConfig')) {
+            /** @var \AIArmada\CommerceSupport\Support\OwnerScopeConfig $config */
+            $config = static::ownerScopeConfig();
+            $ownerTypeColumn = $config->ownerTypeColumn;
+            $ownerIdColumn = $config->ownerIdColumn;
+        }
+
+        return $query->withoutOwnerScope()
+            ->whereNull($ownerTypeColumn)
+            ->whereNull($ownerIdColumn);
+    }
+
+    /**
+     * Remove the owner scope from the query.
+     *
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeWithoutOwnerScope(Builder $query): Builder
+    {
+        return $query->withoutGlobalScope(OwnerScope::class);
     }
 
     /**

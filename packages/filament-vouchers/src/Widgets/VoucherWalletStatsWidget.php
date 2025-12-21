@@ -26,13 +26,13 @@ final class VoucherWalletStatsWidget extends BaseWidget
         // Calculate unique vouchers in wallets
         $uniqueVouchers = (clone $wallets)->distinct('voucher_id')->count('voucher_id');
 
-        // Calculate unique owners (users/stores/teams) who have vouchers in their wallets
+        // Calculate unique holders (users/stores/teams) who have vouchers in their wallets
         /** @var Connection $connection */
         $connection = VoucherWallet::query()->getConnection();
         $driver = $connection->getDriverName();
         $concat = $driver === 'pgsql'
-            ? "owner_type || '-' || owner_id"
-            : "CONCAT(owner_type, '-', owner_id)";
+            ? "holder_type || '-' || holder_id"
+            : "CONCAT(holder_type, '-', holder_id)";
         $uniqueOwners = (clone $wallets)->selectRaw("COUNT(DISTINCT {$concat}) as count")
             ->value('count') ?? 0;
 
@@ -48,7 +48,7 @@ final class VoucherWalletStatsWidget extends BaseWidget
                 ->descriptionIcon(Heroicon::Sparkles)
                 ->color('info'),
 
-            Stat::make('Unique Owners', $uniqueOwners)
+            Stat::make('Unique Holders', $uniqueOwners)
                 ->description('Users with saved vouchers')
                 ->descriptionIcon(Heroicon::UserGroup)
                 ->color('success'),

@@ -19,6 +19,7 @@ use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Cart\Storage\SessionStorage;
 use AIArmada\Cart\Storage\StorageInterface;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\ValidatesConfiguration;
 use Illuminate\Auth\Events\Attempting;
 use Illuminate\Auth\Events\Login;
@@ -174,12 +175,7 @@ final class CartServiceProvider extends PackageServiceProvider
             return $storage;
         }
 
-        if (! $app->bound(OwnerResolverInterface::class)) {
-            return $storage;
-        }
-
-        $resolver = $app->make(OwnerResolverInterface::class);
-        $owner = $resolver->resolve();
+        $owner = OwnerContext::resolve();
 
         if ($owner === null) {
             return $storage;

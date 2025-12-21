@@ -46,8 +46,8 @@ class PortalPayouts extends Page implements HasTable
             ->query(
                 AffiliatePayout::query()
                     ->when($affiliate, fn (Builder $query) => $query
-                        ->where('owner_type', $affiliate->getMorphClass())
-                        ->where('owner_id', $affiliate->getKey()))
+                        ->where('payee_type', $affiliate->getMorphClass())
+                        ->where('payee_id', $affiliate->getKey()))
                     ->when(! $affiliate, fn (Builder $query) => $query->whereRaw('1 = 0'))
             )
             ->columns([
@@ -98,8 +98,8 @@ class PortalPayouts extends Page implements HasTable
         $affiliate = $this->getAffiliate();
         $totalPaid = $affiliate
             ? (int) AffiliatePayout::query()
-                ->where('owner_type', $affiliate->getMorphClass())
-                ->where('owner_id', $affiliate->getKey())
+                ->where('payee_type', $affiliate->getMorphClass())
+                ->where('payee_id', $affiliate->getKey())
                 ->where('status', PayoutStatus::Completed)
                 ->sum('total_minor')
             : 0;

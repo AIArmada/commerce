@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Widgets;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
@@ -70,10 +70,10 @@ class PendingShipmentsWidget extends BaseWidget
 
     private function resolveOwner(): ?Model
     {
-        if (! app()->bound(OwnerResolverInterface::class)) {
+        if (! (bool) config('shipping.features.owner.enabled', false)) {
             return null;
         }
 
-        return app(OwnerResolverInterface::class)->resolve();
+        return OwnerContext::resolve();
     }
 }

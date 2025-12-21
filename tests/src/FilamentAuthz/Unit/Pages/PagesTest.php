@@ -10,8 +10,8 @@ use AIArmada\FilamentAuthz\Pages\PolicyDesignerPage;
 use AIArmada\FilamentAuthz\Pages\RoleHierarchyPage;
 use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
 use Filament\Facades\Filament;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 beforeEach(function (): void {
     Filament::setCurrentPanel('admin');

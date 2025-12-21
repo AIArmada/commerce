@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentShipping\Actions\ApproveReturnAction;
 use AIArmada\FilamentShipping\Actions\RejectReturnAction;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\Pages;
@@ -43,19 +43,16 @@ class ReturnAuthorizationResource extends Resource
         /** @var Builder<ReturnAuthorization> $query */
         $query = parent::getEloquentQuery();
 
-        $owner = null;
-        if (app()->bound(OwnerResolverInterface::class)) {
-            $owner = app(OwnerResolverInterface::class)->resolve();
+        if (! (bool) config('shipping.features.owner.enabled', false)) {
+            return $query;
         }
 
-        if (method_exists($query->getModel(), 'scopeForOwner')) {
-            /** @var Builder<ReturnAuthorization> $scoped */
-            $scoped = $query->forOwner($owner);
+        $owner = OwnerContext::resolve();
 
-            return $scoped;
-        }
+        /** @var Builder<ReturnAuthorization> $scoped */
+        $scoped = $query->forOwner($owner);
 
-        return $query;
+        return $scoped;
     }
 
     public static function form(Schema $schema): Schema

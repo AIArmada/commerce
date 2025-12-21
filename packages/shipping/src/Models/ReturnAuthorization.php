@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Shipping\Enums\ReturnReason;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -41,7 +42,10 @@ use Illuminate\Support\Str;
 class ReturnAuthorization extends Model
 {
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'shipping.features.owner';
 
     public $incrementing = false;
 

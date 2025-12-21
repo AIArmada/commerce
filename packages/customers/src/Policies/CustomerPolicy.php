@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Policies;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Database\Eloquent\Model;
@@ -15,25 +15,27 @@ class CustomerPolicy
 
     private function resolveOwner(): ?Model
     {
-        if (! app()->bound(OwnerResolverInterface::class)) {
+        if (! (bool) config('customers.features.owner.enabled', false)) {
             return null;
         }
 
-        /** @var OwnerResolverInterface $resolver */
-        $resolver = app(OwnerResolverInterface::class);
-
-        return $resolver->resolve();
+        return OwnerContext::resolve();
     }
 
     private function isAccessible(Customer $customer): bool
     {
+        if (! (bool) config('customers.features.owner.enabled', false)) {
+            return true;
+        }
+
         $owner = $this->resolveOwner();
+        $includeGlobal = (bool) config('customers.features.owner.include_global', false);
 
         if ($owner === null) {
             return $customer->owner_type === null && $customer->owner_id === null;
         }
 
-        if (method_exists($customer, 'isGlobal') && $customer->isGlobal()) {
+        if ($includeGlobal && method_exists($customer, 'isGlobal') && $customer->isGlobal()) {
             return true;
         }
 

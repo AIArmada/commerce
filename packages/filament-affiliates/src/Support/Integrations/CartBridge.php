@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Support\Integrations;
 
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Models\Cart as FilamentCart;
 use AIArmada\FilamentCart\Resources\CartResource;
 use Illuminate\Database\Eloquent\Model;
@@ -35,9 +35,9 @@ final class CartBridge
             return null;
         }
 
-        if ((bool) config('affiliates.owner.enabled', false) && app()->bound(OwnerResolverInterface::class)) {
+        if ((bool) config('affiliates.owner.enabled', false)) {
             /** @var Model|null $owner */
-            $owner = app(OwnerResolverInterface::class)->resolve();
+            $owner = OwnerContext::resolve();
 
             $hasReference = AffiliateConversion::query()
                 ->forOwner($owner, false)

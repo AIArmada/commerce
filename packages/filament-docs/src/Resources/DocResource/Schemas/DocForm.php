@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\Schemas;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\DocTemplate;
 use Filament\Forms\Components\DatePicker;
@@ -59,9 +59,8 @@ final class DocForm
                                         }
 
                                         if (config('docs.owner.enabled', false)) {
-                                            $includeGlobal = (bool) config('docs.owner.include_global', true);
-                                            $ownerResolver = app(OwnerResolverInterface::class);
-                                            $owner = $ownerResolver->resolve();
+                                            $includeGlobal = (bool) config('docs.owner.include_global', false);
+                                            $owner = OwnerContext::resolve();
 
                                             $query->forOwner($owner, $includeGlobal);
                                         }

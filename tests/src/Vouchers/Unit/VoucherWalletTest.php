@@ -52,8 +52,8 @@ test('can add voucher to wallet using trait', function (): void {
 
     expect($walletEntry)->toBeInstanceOf(VoucherWallet::class)
         ->and($walletEntry->voucher_id)->toBe($voucher->id)
-        ->and($walletEntry->owner_id)->toBe($user->id)
-        ->and($walletEntry->owner_type)->toBe($user->getMorphClass())
+        ->and($walletEntry->holder_id)->toBe($user->id)
+        ->and($walletEntry->holder_type)->toBe($user->getMorphClass())
         ->and($walletEntry->is_claimed)->toBeTrue()
         ->and($walletEntry->claimed_at)->not->toBeNull();
 });
@@ -91,8 +91,8 @@ test('can claim voucher wallet entry', function (): void {
 
     $walletEntry = VoucherWallet::create([
         'voucher_id' => $voucher->id,
-        'owner_id' => $user->id,
-        'owner_type' => $user->getMorphClass(),
+        'holder_id' => $user->id,
+        'holder_type' => $user->getMorphClass(),
         'is_claimed' => false,
     ]);
 
@@ -126,8 +126,8 @@ test('can mark voucher wallet entry as redeemed', function (): void {
 
     $walletEntry = VoucherWallet::create([
         'voucher_id' => $voucher->id,
-        'owner_id' => $user->id,
-        'owner_type' => $user->getMorphClass(),
+        'holder_id' => $user->id,
+        'holder_type' => $user->getMorphClass(),
         'is_claimed' => true,
         'is_redeemed' => false,
     ]);
@@ -172,15 +172,15 @@ test('can check if voucher wallet entry is expired', function (): void {
 
     $expiredWallet = VoucherWallet::create([
         'voucher_id' => $expiredVoucher->id,
-        'owner_id' => $user->id,
-        'owner_type' => $user->getMorphClass(),
+        'holder_id' => $user->id,
+        'holder_type' => $user->getMorphClass(),
         'is_claimed' => true,
     ]);
 
     $activeWallet = VoucherWallet::create([
         'voucher_id' => $activeVoucher->id,
-        'owner_id' => $user->id,
-        'owner_type' => $user->getMorphClass(),
+        'holder_id' => $user->id,
+        'holder_type' => $user->getMorphClass(),
         'is_claimed' => true,
     ]);
 
@@ -231,32 +231,32 @@ test('can check if voucher wallet entry can be used', function (): void {
 
     $expiredWallet = VoucherWallet::create([
         'voucher_id' => $expiredVoucher->id,
-        'owner_id' => $user->id,
-        'owner_type' => $user->getMorphClass(),
+        'holder_id' => $user->id,
+        'holder_type' => $user->getMorphClass(),
         'is_claimed' => true,
         'is_redeemed' => false,
     ]);
 
     $activeWallet = VoucherWallet::create([
         'voucher_id' => $activeVoucher->id,
-        'owner_id' => $user->id,
-        'owner_type' => $user->getMorphClass(),
+        'holder_id' => $user->id,
+        'holder_type' => $user->getMorphClass(),
         'is_claimed' => true,
         'is_redeemed' => false,
     ]);
 
     $unclaimedWallet = VoucherWallet::create([
         'voucher_id' => $notStartedVoucher->id,
-        'owner_id' => $user->id,
-        'owner_type' => $user->getMorphClass(),
+        'holder_id' => $user->id,
+        'holder_type' => $user->getMorphClass(),
         'is_claimed' => false,
         'is_redeemed' => false,
     ]);
 
     $inactiveWallet = VoucherWallet::create([
         'voucher_id' => $inactiveVoucher->id,
-        'owner_id' => $user->id,
-        'owner_type' => $user->getMorphClass(),
+        'holder_id' => $user->id,
+        'holder_type' => $user->getMorphClass(),
         'is_claimed' => true,
         'is_redeemed' => false,
     ]);

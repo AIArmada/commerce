@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Console;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
 use Illuminate\Console\Command;
 use InvalidArgumentException;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Role;
 
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\search;
@@ -20,29 +21,64 @@ class RoleHierarchyCommand extends Command
     protected $signature = 'authz:roles-hierarchy
         {action? : The action to perform (list, set-parent, detach, tree)}
         {--role= : The role name}
-        {--parent= : The parent role name}';
+        {--parent= : The parent role name}
+        {--owner-type= : Owner model class or morph type}
+        {--owner-id= : Owner model id}';
 
     protected $description = 'Manage role hierarchy';
 
     public function handle(RoleInheritanceService $service): int
     {
-        $action = $this->argument('action') ?? select(
-            label: 'What would you like to do?',
-            options: [
-                'list' => 'List role hierarchy',
-                'tree' => 'Show hierarchy tree',
-                'set-parent' => 'Set parent role',
-                'detach' => 'Detach from parent',
-            ]
-        );
+        return $this->withOwnerContext(function () use ($service): int {
+            $action = $this->argument('action') ?? select(
+                label: 'What would you like to do?',
+                options: [
+                    'list' => 'List role hierarchy',
+                    'tree' => 'Show hierarchy tree',
+                    'set-parent' => 'Set parent role',
+                    'detach' => 'Detach from parent',
+                ]
+            );
 
-        return match ($action) {
-            'list' => $this->listRoles($service),
-            'tree' => $this->showTree($service),
-            'set-parent' => $this->setParent($service),
-            'detach' => $this->detachFromParent($service),
-            default => $this->listRoles($service),
-        };
+            return match ($action) {
+                'list' => $this->listRoles($service),
+                'tree' => $this->showTree($service),
+                'set-parent' => $this->setParent($service),
+                'detach' => $this->detachFromParent($service),
+                default => $this->listRoles($service),
+            };
+        });
+    }
+
+    private function withOwnerContext(callable $callback): int
+    {
+        if (! config('filament-authz.owner.enabled', false)) {
+            return (int) $callback();
+        }
+
+        if (OwnerContext::resolve() !== null) {
+            return (int) $callback();
+        }
+
+        $ownerType = $this->option('owner-type');
+        $ownerId = $this->option('owner-id');
+
+        if ($ownerType === null || $ownerId === null || $ownerType === '' || $ownerId === '') {
+            $this->error('Owner context is required when filament-authz.owner.enabled is true.');
+            $this->line('Provide --owner-type and --owner-id, or bind OwnerResolverInterface.');
+
+            return self::FAILURE;
+        }
+
+        try {
+            $owner = OwnerContext::fromTypeAndId((string) $ownerType, $ownerId);
+        } catch (InvalidArgumentException $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
+
+        return (int) OwnerContext::withOwner($owner, $callback);
     }
 
     protected function listRoles(RoleInheritanceService $service): int

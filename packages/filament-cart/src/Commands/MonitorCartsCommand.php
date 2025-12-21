@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Commands;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Data\AlertEvent;
+use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\AlertDispatcher;
 use AIArmada\FilamentCart\Services\AlertEvaluator;
 use AIArmada\FilamentCart\Services\CartMonitor;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 
 class MonitorCartsCommand extends Command
 {
@@ -52,6 +55,35 @@ class MonitorCartsCommand extends Command
     }
 
     private function runMonitoringPass(): void
+    {
+        if (Cart::ownerScopingEnabled() && OwnerContext::resolve() === null) {
+            $owners = Cart::query()
+                ->withoutOwnerScope()
+                ->select(['owner_type', 'owner_id'])
+                ->distinct()
+                ->get();
+
+            if ($owners->isEmpty()) {
+                $this->runMonitoringPassScoped();
+
+                return;
+            }
+
+            foreach ($owners as $row) {
+                $owner = $this->resolveOwnerFromRow($row);
+
+                OwnerContext::withOwner($owner, function (): void {
+                    $this->runMonitoringPassScoped();
+                });
+            }
+
+            return;
+        }
+
+        $this->runMonitoringPassScoped();
+    }
+
+    private function runMonitoringPassScoped(): void
     {
         $timestamp = now()->format('H:i:s');
 
@@ -134,5 +166,16 @@ class MonitorCartsCommand extends Command
                 $this->line("  → Alert dispatched: {$rule->name}");
             }
         }
+    }
+
+    private function resolveOwnerFromRow(object $row): ?Model
+    {
+        $ownerType = $row->owner_type ?? null;
+        $ownerId = $row->owner_id ?? null;
+
+        return OwnerContext::fromTypeAndId(
+            is_string($ownerType) ? $ownerType : null,
+            is_string($ownerId) || is_int($ownerId) ? $ownerId : null
+        );
     }
 }

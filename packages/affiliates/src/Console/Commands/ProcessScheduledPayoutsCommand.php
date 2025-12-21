@@ -8,8 +8,10 @@ use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\AffiliatePayoutService;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 
 final class ProcessScheduledPayoutsCommand extends Command
@@ -39,6 +41,64 @@ final class ProcessScheduledPayoutsCommand extends Command
             $this->warn('Running in dry-run mode - no changes will be made.');
         }
 
+        $result = $this->processForOwners($dryRun, $affiliateId, (int) $minAmount);
+
+        $this->outputSummary($result['processed'], $result['skipped'], $result['errors']);
+
+        return $result['errors'] > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * @return array{processed: int, skipped: int, errors: int}
+     */
+    private function processForOwners(bool $dryRun, ?string $affiliateId, int $minAmount): array
+    {
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            return $this->processScoped($dryRun, $affiliateId, $minAmount);
+        }
+
+        $owner = OwnerContext::resolve();
+        if ($owner !== null) {
+            return $this->processScoped($dryRun, $affiliateId, $minAmount);
+        }
+
+        $owners = Affiliate::query()
+            ->withoutOwnerScope()
+            ->select(['owner_type', 'owner_id'])
+            ->distinct()
+            ->get();
+
+        if ($owners->isEmpty()) {
+            return $this->processScoped($dryRun, $affiliateId, $minAmount);
+        }
+
+        $totals = [
+            'processed' => 0,
+            'skipped' => 0,
+            'errors' => 0,
+        ];
+
+        foreach ($owners as $row) {
+            $owner = $this->resolveOwnerFromRow($row);
+
+            $result = OwnerContext::withOwner(
+                $owner,
+                fn (): array => $this->processScoped($dryRun, $affiliateId, $minAmount)
+            );
+
+            $totals['processed'] += $result['processed'];
+            $totals['skipped'] += $result['skipped'];
+            $totals['errors'] += $result['errors'];
+        }
+
+        return $totals;
+    }
+
+    /**
+     * @return array{processed: int, skipped: int, errors: int}
+     */
+    private function processScoped(bool $dryRun, ?string $affiliateId, int $minAmount): array
+    {
         $processed = 0;
         $skipped = 0;
         $errors = 0;
@@ -76,14 +136,32 @@ final class ProcessScheduledPayoutsCommand extends Command
 
         $this->output->progressFinish();
 
+        return [
+            'processed' => $processed,
+            'skipped' => $skipped,
+            'errors' => $errors,
+        ];
+    }
+
+    private function outputSummary(int $processed, int $skipped, int $errors): void
+    {
         $this->info("Processed: {$processed}");
         $this->info("Skipped: {$skipped}");
 
         if ($errors > 0) {
             $this->error("Errors: {$errors}");
         }
+    }
 
-        return $errors > 0 ? self::FAILURE : self::SUCCESS;
+    private function resolveOwnerFromRow(object $row): ?Model
+    {
+        $ownerType = $row->owner_type ?? null;
+        $ownerId = $row->owner_id ?? null;
+
+        return OwnerContext::fromTypeAndId(
+            is_string($ownerType) ? $ownerType : null,
+            is_string($ownerId) || is_int($ownerId) ? $ownerId : null
+        );
     }
 
     private function processAffiliate(Affiliate $affiliate, int $minAmount, bool $dryRun): string
@@ -125,8 +203,10 @@ final class ProcessScheduledPayoutsCommand extends Command
         DB::transaction(function () use ($affiliate, $balance): void {
             $payout = AffiliatePayout::create([
                 'reference' => 'PAY-' . mb_strtoupper(bin2hex(random_bytes(8))),
-                'owner_type' => Affiliate::class,
-                'owner_id' => $affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $affiliate->id,
+                'owner_type' => $affiliate->owner_type,
+                'owner_id' => $affiliate->owner_id,
                 'total_minor' => $balance->available_minor,
                 'currency' => $balance->currency,
                 'status' => PayoutStatus::Pending->value,

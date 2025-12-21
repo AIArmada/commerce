@@ -6,8 +6,8 @@ use AIArmada\FilamentAuthz\Console\RoleHierarchyCommand;
 use AIArmada\FilamentAuthz\Console\RoleTemplateCommand;
 use AIArmada\FilamentAuthz\Console\SetupCommand;
 use AIArmada\FilamentAuthz\Models\RoleTemplate;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 describe('RoleHierarchyCommand Execution', function (): void {
     beforeEach(function (): void {

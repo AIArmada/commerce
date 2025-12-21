@@ -8,7 +8,7 @@ use AIArmada\FilamentAuthz\Services\IdentityProviderSync;
 use Illuminate\Support\Collection;
 use Mockery;
 use ReflectionClass;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Role;
 
 afterEach(function (): void {
     Mockery::close();

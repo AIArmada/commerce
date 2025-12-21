@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Tax\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -28,7 +29,10 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class TaxRate extends Model
 {
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'tax.features.owner';
     use LogsActivity;
 
     protected $fillable = [

@@ -66,8 +66,8 @@ it('processes a pending payout successfully', function (): void {
         'status' => PayoutStatus::Pending,
         'total_minor' => 1500,
         'currency' => 'USD',
-        'owner_type' => $affiliate->getMorphClass(),
-        'owner_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
     ]);
 
     $factory = new PayoutProcessorFactory;
@@ -116,8 +116,8 @@ it('marks a pending payout as failed when no default payout method exists', func
         'status' => PayoutStatus::Pending,
         'total_minor' => 1500,
         'currency' => 'USD',
-        'owner_type' => $affiliate->getMorphClass(),
-        'owner_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
     ]);
 
     $action = BulkPayoutAction::make('bulk_process_payouts');
@@ -168,8 +168,8 @@ it('marks a pending payout as failed when the processor fails', function (): voi
         'status' => PayoutStatus::Pending,
         'total_minor' => 1500,
         'currency' => 'USD',
-        'owner_type' => $affiliate->getMorphClass(),
-        'owner_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
     ]);
 
     $factory = new PayoutProcessorFactory;
@@ -224,8 +224,8 @@ it('marks a pending payout as failed when the processor throws', function (): vo
         'status' => PayoutStatus::Pending,
         'total_minor' => 1500,
         'currency' => 'USD',
-        'owner_type' => $affiliate->getMorphClass(),
-        'owner_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
     ]);
 
     $factory = new PayoutProcessorFactory;

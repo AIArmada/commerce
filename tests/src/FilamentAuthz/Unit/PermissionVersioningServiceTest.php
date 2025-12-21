@@ -7,8 +7,8 @@ use AIArmada\FilamentAuthz\Models\PermissionSnapshot;
 use AIArmada\FilamentAuthz\Services\PermissionVersioningService;
 use AIArmada\FilamentAuthz\Services\RollbackResult;
 use Illuminate\Support\Collection;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 beforeEach(function (): void {
     PermissionSnapshot::query()->delete();

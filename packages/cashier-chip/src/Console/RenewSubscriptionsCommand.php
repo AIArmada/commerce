@@ -9,6 +9,7 @@ use AIArmada\CashierChip\Contracts\BillableContract;
 use AIArmada\CashierChip\Events\SubscriptionRenewalFailed;
 use AIArmada\CashierChip\Events\SubscriptionRenewed;
 use AIArmada\CashierChip\Subscription;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
@@ -58,7 +59,55 @@ class RenewSubscriptionsCommand extends Command
             $this->warn('DRY RUN MODE - No charges will be made');
         }
 
-        // Get all active subscriptions due for renewal
+        if ((bool) config('cashier-chip.features.owner.enabled', false) && OwnerContext::resolve() === null) {
+            $owners = Subscription::query()
+                ->withoutOwnerScope()
+                ->select(['owner_type', 'owner_id'])
+                ->distinct()
+                ->get();
+
+            if ($owners->isEmpty()) {
+                $result = $this->processRenewals((bool) $dryRun, $graceHours);
+
+                $this->newLine();
+                $this->info("Renewal complete: {$result['renewed']} renewed, {$result['failed']} failed.");
+
+                return $result['failed'] > 0 ? self::FAILURE : self::SUCCESS;
+            }
+
+            $totals = [
+                'renewed' => 0,
+                'failed' => 0,
+            ];
+
+            foreach ($owners as $row) {
+                $owner = $this->resolveOwnerFromRow($row);
+
+                $result = OwnerContext::withOwner($owner, fn (): array => $this->processRenewals((bool) $dryRun, $graceHours));
+
+                $totals['renewed'] += $result['renewed'];
+                $totals['failed'] += $result['failed'];
+            }
+
+            $this->newLine();
+            $this->info("Renewal complete: {$totals['renewed']} renewed, {$totals['failed']} failed.");
+
+            return $totals['failed'] > 0 ? self::FAILURE : self::SUCCESS;
+        }
+
+        $result = $this->processRenewals((bool) $dryRun, $graceHours);
+
+        $this->newLine();
+        $this->info("Renewal complete: {$result['renewed']} renewed, {$result['failed']} failed.");
+
+        return $result['failed'] > 0 ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * @return array{renewed: int, failed: int}
+     */
+    protected function processRenewals(bool $dryRun, int $graceHours): array
+    {
         $dueDate = now()->subHours($graceHours);
 
         $query = Subscription::query();
@@ -74,7 +123,10 @@ class RenewSubscriptionsCommand extends Command
         if ($subscriptions->isEmpty()) {
             $this->info('No subscriptions due for renewal.');
 
-            return self::SUCCESS;
+            return [
+                'renewed' => 0,
+                'failed' => 0,
+            ];
         }
 
         $this->info("Found {$subscriptions->count()} subscription(s) due for renewal.");
@@ -128,10 +180,21 @@ class RenewSubscriptionsCommand extends Command
             }
         }
 
-        $this->newLine();
-        $this->info("Renewal complete: {$renewed} renewed, {$failed} failed.");
+        return [
+            'renewed' => $renewed,
+            'failed' => $failed,
+        ];
+    }
 
-        return $failed > 0 ? self::FAILURE : self::SUCCESS;
+    protected function resolveOwnerFromRow(object $row): ?Model
+    {
+        $ownerType = $row->owner_type ?? null;
+        $ownerId = $row->owner_id ?? null;
+
+        return OwnerContext::fromTypeAndId(
+            is_string($ownerType) ? $ownerType : null,
+            is_string($ownerId) || is_int($ownerId) ? $ownerId : null
+        );
     }
 
     /**

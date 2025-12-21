@@ -91,7 +91,7 @@ final class AbandonmentPredictor
     /**
      * Get carts at high risk of abandonment.
      *
-     * @return Collection<int, array{cart_id: string, identifier: string, probability: float, risk_level: string, last_activity: string|null, cart_total: int|float}>
+     * @return Collection<int, array{cart_id: string, identifier: string, probability: float, risk_level: string, last_activity: string|null, cart_total: int|float, owner_type: string|null, owner_id: string|int|null}>
      */
     public function getHighRiskCarts(int $limit = 50): Collection
     {
@@ -112,6 +112,8 @@ final class AbandonmentPredictor
             'identifier',
             'instance',
             'items',
+            'owner_type',
+            'owner_id',
             'last_activity_at',
             'checkout_started_at',
         ]);
@@ -128,6 +130,8 @@ final class AbandonmentPredictor
                 'risk_level' => $this->getRiskLevel($probability),
                 'last_activity' => $cartRecord->last_activity_at,
                 'cart_total' => $this->calculateTotalFromRecord($cartRecord),
+                'owner_type' => $cartRecord->owner_type ?? null,
+                'owner_id' => $cartRecord->owner_id ?? null,
             ];
         })->filter(fn ($cart) => $cart['probability'] >= self::RISK_MEDIUM);
     }

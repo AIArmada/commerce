@@ -11,7 +11,7 @@ use AIArmada\FilamentAuthz\Services\RoleComparer;
 use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Role;
 
 describe('ImplicitPermissionService', function (): void {
     beforeEach(function (): void {

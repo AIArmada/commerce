@@ -9,6 +9,7 @@ use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Database\Factories\ConditionFactory;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -53,8 +54,13 @@ class Condition extends Model
     /** @use HasFactory<ConditionFactory> */
     use HasFactory;
 
-    use HasOwner;
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'cart.owner';
 
     /**
      * Indicates if the model should be timestamped.
@@ -391,22 +397,12 @@ class Condition extends Model
             return $query;
         }
 
-        $includeGlobal = $includeGlobal && (bool) config('cart.owner.include_global', true);
+        $includeGlobal = $includeGlobal && (bool) config('cart.owner.include_global', false);
 
-        if (! $owner) {
-            return $query->whereNull('owner_type')->whereNull('owner_id');
-        }
+        /** @var Builder<static> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
-        return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
-            $builder->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
-
-            if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
-                });
-            }
-        });
+        return $scoped;
     }
 
     /**

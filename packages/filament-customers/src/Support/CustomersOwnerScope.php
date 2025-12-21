@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Support;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -12,14 +13,11 @@ final class CustomersOwnerScope
 {
     public static function resolveOwner(): ?Model
     {
-        if (! app()->bound(OwnerResolverInterface::class)) {
+        if (! (bool) config('customers.features.owner.enabled', false)) {
             return null;
         }
 
-        /** @var OwnerResolverInterface $resolver */
-        $resolver = app(OwnerResolverInterface::class);
-
-        return $resolver->resolve();
+        return OwnerContext::resolve();
     }
 
     /**
@@ -30,20 +28,18 @@ final class CustomersOwnerScope
      */
     public static function applyToOwnedQuery(Builder $query, bool $includeGlobal = false): Builder
     {
+        if (! (bool) config('customers.features.owner.enabled', false)) {
+            return $query;
+        }
+
         $owner = self::resolveOwner();
+        $includeGlobal = $includeGlobal && (bool) config('customers.features.owner.include_global', false);
 
         if (method_exists($query->getModel(), 'scopeForOwner')) {
-            /** @var Builder<TModel> $scoped */
-            $scoped = $query->getModel()->scopeForOwner($query, $owner, $includeGlobal);
-
-            return $scoped;
+            /** @phpstan-ignore-next-line dynamic scope */
+            return $query->forOwner($owner, $includeGlobal);
         }
 
-        if ($owner === null) {
-            return $query->whereNull('owner_type')->whereNull('owner_id');
-        }
-
-        return $query->where('owner_type', $owner->getMorphClass())
-            ->where('owner_id', $owner->getKey());
+        return OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
     }
 }

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Models;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -34,7 +36,10 @@ class OrderPayment extends Model
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'orders.owner';
 
     public $incrementing = false;
 
@@ -73,16 +78,6 @@ class OrderPayment extends Model
      */
     public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
     {
-        if (! (bool) config('orders.owner.enabled', true)) {
-            return $query;
-        }
-
-        if ($owner === null && app()->bound(OwnerResolverInterface::class)) {
-            $owner = app(OwnerResolverInterface::class)->resolve();
-        }
-
-        $includeGlobal = $includeGlobal && (bool) config('orders.owner.include_global', true);
-
         /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
@@ -185,12 +180,9 @@ class OrderPayment extends Model
                 throw new InvalidArgumentException('order_id is required.');
             }
 
-            $orderQuery = Order::query();
-            if (app()->bound(OwnerResolverInterface::class)) {
-                $orderQuery->forOwner();
-            }
-
-            $order = $orderQuery->findOrFail($payment->order_id);
+            $owner = OwnerContext::resolve();
+            $includeGlobal = (bool) config('orders.owner.include_global', false);
+            $order = OwnerWriteGuard::findOrFailForOwner(Order::class, $payment->order_id, $owner, $includeGlobal);
 
             if ($order->owner_type !== null && $order->owner_id !== null) {
                 $payment->owner_type = $order->owner_type;

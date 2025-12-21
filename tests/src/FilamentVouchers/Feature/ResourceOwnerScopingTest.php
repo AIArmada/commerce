@@ -107,8 +107,8 @@ it('scopes Filament Vouchers resources to the resolved owner (including global)'
 
     $globalWallet = VoucherWallet::query()->create([
         'voucher_id' => $globalVoucher->id,
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
+        'holder_type' => $ownerA->getMorphClass(),
+        'holder_id' => $ownerA->getKey(),
         'is_claimed' => true,
         'claimed_at' => now(),
         'is_redeemed' => false,
@@ -116,8 +116,8 @@ it('scopes Filament Vouchers resources to the resolved owner (including global)'
 
     $ownerBWallet = VoucherWallet::query()->create([
         'voucher_id' => $ownerBVoucher->id,
-        'owner_type' => $ownerB->getMorphClass(),
-        'owner_id' => $ownerB->getKey(),
+        'holder_type' => $ownerB->getMorphClass(),
+        'holder_id' => $ownerB->getKey(),
         'is_claimed' => true,
         'claimed_at' => now(),
         'is_redeemed' => false,

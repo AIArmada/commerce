@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAffiliates\Widgets;
 
 use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
 
@@ -30,8 +30,8 @@ final class NetworkVisualizationWidget extends Widget
     public function getNetworkData(): array
     {
         /** @var Model|null $owner */
-        $owner = (bool) config('affiliates.owner.enabled', false) && app()->bound(OwnerResolverInterface::class)
-            ? app(OwnerResolverInterface::class)->resolve()
+        $owner = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerContext::resolve()
             : null;
 
         if (! $this->affiliateId) {
@@ -71,8 +71,8 @@ final class NetworkVisualizationWidget extends Widget
     public function getNetworkStats(): array
     {
         /** @var Model|null $owner */
-        $owner = (bool) config('affiliates.owner.enabled', false) && app()->bound(OwnerResolverInterface::class)
-            ? app(OwnerResolverInterface::class)->resolve()
+        $owner = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerContext::resolve()
             : null;
 
         return [
@@ -137,8 +137,8 @@ final class NetworkVisualizationWidget extends Widget
     private function calculateAverageChildren(): float
     {
         /** @var Model|null $owner */
-        $owner = (bool) config('affiliates.owner.enabled', false) && app()->bound(OwnerResolverInterface::class)
-            ? app(OwnerResolverInterface::class)->resolve()
+        $owner = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerContext::resolve()
             : null;
 
         $affiliatesWithChildren = Affiliate::query()

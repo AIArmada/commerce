@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Models;
 
 use AIArmada\Cart\Cart as BaseCart;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Attributes\Scope;
@@ -62,7 +63,10 @@ class Cart extends Model
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'filament-cart.owner';
 
     protected $fillable = [
         'owner_type',
@@ -146,12 +150,8 @@ class Cart extends Model
             return null;
         }
 
-        if (! app()->bound(OwnerResolverInterface::class)) {
-            return null;
-        }
-
         /** @var EloquentModel|null $owner */
-        $owner = app(OwnerResolverInterface::class)->resolve();
+        $owner = OwnerContext::resolve();
 
         return $owner;
     }
@@ -184,10 +184,8 @@ class Cart extends Model
             return $query;
         }
 
-        if ($owner === null && app()->bound(OwnerResolverInterface::class)) {
-            /** @var EloquentModel|null $resolved */
-            $resolved = app(OwnerResolverInterface::class)->resolve();
-            $owner = $resolved;
+        if ($owner === null) {
+            $owner = self::resolveCurrentOwner();
         }
 
         $includeGlobal = $includeGlobal && (bool) config('filament-cart.owner.include_global', false);

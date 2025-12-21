@@ -66,16 +66,10 @@ describe('WarmCartCacheJob', function (): void {
 
         $job = new WarmCartCacheJob('user-123');
 
-        $storage = Mockery::mock(StorageInterface::class);
         $cache = Mockery::mock(CacheRepository::class);
 
-        // Neither should be called if cache is disabled
-        $storage->shouldNotReceive('get');
-        $cache->shouldNotReceive('put');
-        $cache->shouldNotReceive('get');
-
         // Handle should return without errors
-        $job->handle($storage, $cache);
+        $job->handle($cache);
 
         expect(true)->toBeTrue(); // If we get here, early return worked
     });
@@ -89,16 +83,18 @@ describe('WarmCartCacheJob', function (): void {
         $storage = Mockery::mock(StorageInterface::class);
         $cache = Mockery::mock(CacheRepository::class);
 
-        // Storage should return data for each instance
-        $storage->shouldReceive('get')
-            ->andReturn(['items' => [], 'metadata' => []]);
+        $storage->shouldReceive('getItems')->andReturn([]);
+        $storage->shouldReceive('getConditions')->andReturn([]);
+        $storage->shouldReceive('getAllMetadata')->andReturn([]);
+        $storage->shouldReceive('getVersion')->andReturn(1);
+        $storage->shouldReceive('getId')->andReturn('cart-id');
 
-        // Cache should receive put calls for each instance
-        $cache->shouldReceive('get')->andReturn(null);
-        $cache->shouldReceive('put')->andReturn(true);
-        $cache->shouldReceive('forget')->andReturn(true);
+        $cache->shouldReceive('remember')->andReturnUsing(
+            fn (string $key, int $ttl, callable $callback) => $callback()
+        );
 
-        $job->handle($storage, $cache);
+        $this->app->instance(StorageInterface::class, $storage);
+        $job->handle($cache);
 
         expect(true)->toBeTrue();
     });
@@ -112,11 +108,15 @@ describe('WarmCartCacheJob', function (): void {
         $cache = Mockery::mock(CacheRepository::class);
 
         // Simulate an error during cache warming
-        $storage->shouldReceive('get')
-            ->andThrow(new RuntimeException('Storage unavailable'));
+        $storage->shouldReceive('getItems')->andThrow(new RuntimeException('Storage unavailable'));
 
         // Should not throw, just log warning
-        $job->handle($storage, $cache);
+        $cache->shouldReceive('remember')->andReturnUsing(
+            fn (string $key, int $ttl, callable $callback) => $callback()
+        );
+
+        $this->app->instance(StorageInterface::class, $storage);
+        $job->handle($cache);
 
         expect(true)->toBeTrue();
     });
