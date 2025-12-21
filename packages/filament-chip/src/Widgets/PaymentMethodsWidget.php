@@ -70,7 +70,10 @@ final class PaymentMethodsWidget extends BaseWidget
             $breakdown[$method]['amount'] += $this->extractAmount($purchase);
         }
 
-        arsort($breakdown);
+        uasort(
+            $breakdown,
+            static fn (array $a, array $b): int => $b['amount'] <=> $a['amount']
+        );
 
         return array_slice($breakdown, 0, 4, true);
     }
@@ -81,14 +84,16 @@ final class PaymentMethodsWidget extends BaseWidget
         $transactionData = $purchase->transaction_data ?? [];
 
         $method = $payment['payment_type'] ?? $transactionData['payment_method'] ?? 'unknown';
+        $methodValue = mb_trim((string) $method);
+        $methodLower = mb_strtolower($methodValue);
 
-        return match ($method) {
-            'fpx', 'FPX' => 'FPX',
+        return match ($methodLower) {
+            'fpx' => 'FPX',
             'card', 'credit_card', 'debit_card' => 'Card',
             'ewallet', 'e-wallet' => 'E-Wallet',
             'bnpl', 'buy_now_pay_later' => 'BNPL',
             'bank_transfer' => 'Bank Transfer',
-            default => ucfirst((string) $method),
+            default => $methodValue !== '' ? ucfirst($methodValue) : 'Unknown',
         };
     }
 

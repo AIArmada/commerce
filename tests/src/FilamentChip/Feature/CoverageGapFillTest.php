@@ -39,7 +39,7 @@ beforeEach(function (): void {
 
     Schema::dropIfExists('users');
     Schema::create('users', function (Blueprint $table): void {
-        $table->increments('id');
+        $table->uuid('id')->primary();
         $table->string('name');
         $table->string('email')->unique();
         $table->string('password');

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Widgets;
 
 use AIArmada\Chip\Models\SendInstruction;
-use Carbon\Carbon;
 use Filament\Widgets\ChartWidget;
+use Illuminate\Support\Carbon;
 
 final class PayoutAmountWidget extends ChartWidget
 {
@@ -51,6 +51,18 @@ final class PayoutAmountWidget extends ChartWidget
      */
     private function getPayoutData(): array
     {
+        $start = Carbon::now()->subDays(29)->startOfDay();
+        $end = Carbon::now()->endOfDay();
+
+        $daily = SendInstruction::query()
+            ->forOwner()
+            ->whereIn('state', ['completed', 'processed'])
+            ->whereBetween('created_at', [$start, $end])
+            ->selectRaw('DATE(created_at) as day, SUM(amount) as total')
+            ->groupBy('day')
+            ->pluck('total', 'day')
+            ->all();
+
         $labels = [];
         $amounts = [];
 
@@ -58,13 +70,8 @@ final class PayoutAmountWidget extends ChartWidget
             $date = Carbon::now()->subDays($i);
             $labels[] = $date->format('M d');
 
-            $dayAmount = SendInstruction::query()
-                ->whereIn('state', ['completed', 'processed'])
-                ->whereDate('created_at', $date->toDateString())
-                ->get()
-                ->sum(fn (SendInstruction $instruction): float => (float) $instruction->amount);
-
-            $amounts[] = round($dayAmount, 2);
+            $key = $date->toDateString();
+            $amounts[] = round((float) ($daily[$key] ?? 0), 2);
         }
 
         return [

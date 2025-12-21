@@ -66,38 +66,54 @@ final class RevenueChartWidget extends ChartWidget
     private function getRevenueData(): array
     {
         $labels = [];
-        $amounts = [];
+        $amountsByDay = [];
+
+        $startDate = Carbon::now()->subDays(29)->startOfDay();
+        $endDate = Carbon::now()->endOfDay();
 
         for ($i = 29; $i >= 0; $i--) {
             $date = Carbon::now()->subDays($i);
-            $labels[] = $date->format('M d');
-
-            $startOfDay = $date->copy()->startOfDay()->getTimestamp();
-            $endOfDay = $date->copy()->endOfDay()->getTimestamp();
-
-            $purchases = tap(Purchase::query(), function ($query): void {
-                if (method_exists($query->getModel(), 'scopeForOwner')) {
-                    $query->forOwner();
-                }
-            })
-                ->where('status', 'paid')
-                ->where('is_test', false)
-                ->where('created_on', '>=', $startOfDay)
-                ->where('created_on', '<=', $endOfDay)
-                ->get();
-
-            $dayTotal = $purchases->sum(function (Purchase $purchase): int {
-                $total = $purchase->purchase['total'] ?? $purchase->purchase['amount'] ?? 0;
-
-                if (is_array($total)) {
-                    return (int) ($total['amount'] ?? 0);
-                }
-
-                return (int) $total;
-            });
-
-            $amounts[] = (int) ($dayTotal / 100);
+            $label = $date->format('M d');
+            $labels[] = $label;
+            $amountsByDay[$label] = 0;
         }
+
+        $purchases = tap(Purchase::query(), function ($query): void {
+            if (method_exists($query->getModel(), 'scopeForOwner')) {
+                $query->forOwner();
+            }
+        })
+            ->where('status', 'paid')
+            ->where('is_test', false)
+            ->whereBetween('created_on', [$startDate->getTimestamp(), $endDate->getTimestamp()])
+            ->get(['created_on', 'purchase']);
+
+        foreach ($purchases as $purchase) {
+            $createdOn = (int) ($purchase->getRawOriginal('created_on') ?? 0);
+
+            if ($createdOn <= 0) {
+                continue;
+            }
+
+            $label = Carbon::createFromTimestamp($createdOn)->format('M d');
+
+            if (! array_key_exists($label, $amountsByDay)) {
+                continue;
+            }
+
+            $total = $purchase->purchase['total'] ?? $purchase->purchase['amount'] ?? 0;
+
+            if (is_array($total)) {
+                $amountsByDay[$label] += (int) ($total['amount'] ?? 0);
+            } else {
+                $amountsByDay[$label] += (int) $total;
+            }
+        }
+
+        $amounts = array_map(
+            static fn (int $amountInCents): int => (int) ($amountInCents / 100),
+            array_values($amountsByDay)
+        );
 
         return [
             'labels' => $labels,

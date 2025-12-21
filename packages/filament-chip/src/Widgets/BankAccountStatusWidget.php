@@ -71,11 +71,15 @@ final class BankAccountStatusWidget extends ChartWidget
      */
     private function getStatusCounts(): array
     {
-        $active = BankAccount::whereIn('status', ['active', 'approved'])->count();
-        $pending = BankAccount::whereIn('status', ['pending', 'verifying'])->count();
-        $rejected = BankAccount::whereIn('status', ['rejected', 'disabled'])->count();
-        $other = BankAccount::whereNotIn('status', ['active', 'approved', 'pending', 'verifying', 'rejected', 'disabled'])
-            ->orWhereNull('status')
+        $active = BankAccount::query()->forOwner()->whereIn('status', ['active', 'approved'])->count();
+        $pending = BankAccount::query()->forOwner()->whereIn('status', ['pending', 'verifying'])->count();
+        $rejected = BankAccount::query()->forOwner()->whereIn('status', ['rejected', 'disabled'])->count();
+        $other = BankAccount::query()
+            ->forOwner()
+            ->where(function ($query): void {
+                $query->whereNotIn('status', ['active', 'approved', 'pending', 'verifying', 'rejected', 'disabled'])
+                    ->orWhereNull('status');
+            })
             ->count();
 
         return [

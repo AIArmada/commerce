@@ -23,6 +23,7 @@ final class RecentPayoutsWidget extends BaseWidget
         return $table
             ->query(
                 SendInstruction::query()
+                    ->forOwner()
                     ->with('bankAccount')
                     ->latest('created_at')
                     ->limit(10)

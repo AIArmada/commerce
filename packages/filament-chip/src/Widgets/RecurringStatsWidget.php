@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Widgets;
 
+use AIArmada\Chip\Enums\ChargeStatus;
 use AIArmada\Chip\Enums\RecurringStatus;
 use AIArmada\Chip\Models\RecurringCharge;
 use AIArmada\Chip\Models\RecurringSchedule;
@@ -15,16 +16,18 @@ final class RecurringStatsWidget extends BaseWidget
 {
     protected function getStats(): array
     {
-        $totalSchedules = RecurringSchedule::count();
-        $activeSchedules = RecurringSchedule::where('status', RecurringStatus::Active)->count();
-        $pausedSchedules = RecurringSchedule::where('status', RecurringStatus::Paused)->count();
-        $dueSchedules = RecurringSchedule::where('status', RecurringStatus::Active)
+        $totalSchedules = RecurringSchedule::query()->forOwner()->count();
+        $activeSchedules = RecurringSchedule::query()->forOwner()->where('status', RecurringStatus::Active)->count();
+        $pausedSchedules = RecurringSchedule::query()->forOwner()->where('status', RecurringStatus::Paused)->count();
+        $dueSchedules = RecurringSchedule::query()
+            ->forOwner()
+            ->where('status', RecurringStatus::Active)
             ->whereNotNull('next_charge_at')
             ->where('next_charge_at', '<=', now())
             ->count();
 
-        $successfulCharges = RecurringCharge::where('status', 'success')->count();
-        $failedCharges = RecurringCharge::where('status', 'failed')->count();
+        $successfulCharges = RecurringCharge::query()->forOwner()->where('status', ChargeStatus::Success)->count();
+        $failedCharges = RecurringCharge::query()->forOwner()->where('status', ChargeStatus::Failed)->count();
 
         $successRate = ($successfulCharges + $failedCharges) > 0
             ? round(($successfulCharges / ($successfulCharges + $failedCharges)) * 100, 1)
