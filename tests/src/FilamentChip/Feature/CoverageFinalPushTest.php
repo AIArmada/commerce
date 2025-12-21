@@ -19,6 +19,7 @@ beforeEach(function (): void {
     Schema::dropIfExists('chip_company_statements');
     Schema::create('chip_company_statements', function (Blueprint $table): void {
         $table->uuid('id')->primary();
+        $table->nullableMorphs('owner');
         $table->string('status')->nullable();
         $table->boolean('is_test')->default(false);
         $table->timestamps();
@@ -27,6 +28,7 @@ beforeEach(function (): void {
     Schema::dropIfExists('chip_recurring_schedules');
     Schema::create('chip_recurring_schedules', function (Blueprint $table): void {
         $table->uuid('id')->primary();
+        $table->nullableMorphs('owner');
         $table->string('status')->nullable();
         $table->integer('amount_minor')->default(0);
         $table->string('currency')->default('MYR');

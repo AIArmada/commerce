@@ -58,19 +58,29 @@ class PayoutDashboardPage extends Page
         $startDate = $endDate->copy()->subDays((int) $this->period);
 
         $this->metrics = [
-            'total_payouts' => SendInstruction::where('created_at', '>=', $startDate)->count(),
-            'completed_amount' => SendInstruction::query()
+            'total_payouts' => SendInstruction::query()
+                ->forOwner()
+                ->where('created_at', '>=', $startDate)
+                ->count(),
+            'completed_amount' => (float) SendInstruction::query()
+                ->forOwner()
                 ->whereIn('state', ['completed', 'processed'])
                 ->where('created_at', '>=', $startDate)
-                ->get()
-                ->sum(fn (SendInstruction $i): float => (float) $i->amount),
-            'pending_count' => SendInstruction::whereIn('state', ['queued', 'received', 'verifying'])
+                ->sum('amount'),
+            'pending_count' => SendInstruction::query()
+                ->forOwner()
+                ->whereIn('state', ['queued', 'received', 'verifying'])
                 ->where('created_at', '>=', $startDate)
                 ->count(),
-            'failed_count' => SendInstruction::whereIn('state', ['failed', 'cancelled', 'rejected'])
+            'failed_count' => SendInstruction::query()
+                ->forOwner()
+                ->whereIn('state', ['failed', 'cancelled', 'rejected'])
                 ->where('created_at', '>=', $startDate)
                 ->count(),
-            'active_accounts' => BankAccount::whereIn('status', ['active', 'approved'])->count(),
+            'active_accounts' => BankAccount::query()
+                ->forOwner()
+                ->whereIn('status', ['active', 'approved'])
+                ->count(),
         ];
     }
 

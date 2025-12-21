@@ -33,6 +33,10 @@ return [
     */
     'default_currency' => 'MYR',
 
+    // When enabled, the Filament UI forces CHIP models to be owner-scoped.
+    // This prevents cross-tenant reads/writes even if chip.owner.enabled is false by default.
+    'enforce_owner_scoping' => true,
+
     /*
     |--------------------------------------------------------------------------
     | Billing Portal

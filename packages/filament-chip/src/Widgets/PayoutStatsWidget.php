@@ -69,11 +69,11 @@ final class PayoutStatsWidget extends BaseWidget
 
     private function getPayoutsForPeriod(DateTimeInterface $since): float
     {
-        return SendInstruction::query()
+        return (float) SendInstruction::query()
+            ->forOwner()
             ->whereIn('state', ['completed', 'processed'])
             ->where('created_at', '>=', $since)
-            ->get()
-            ->sum(fn (SendInstruction $instruction): float => (float) $instruction->amount);
+            ->sum('amount');
     }
 
     private function getSuccessRate(): float
@@ -81,8 +81,8 @@ final class PayoutStatsWidget extends BaseWidget
         $successStates = ['completed', 'processed'];
         $failedStates = ['failed', 'cancelled', 'rejected'];
 
-        $successful = SendInstruction::whereIn('state', $successStates)->count();
-        $failed = SendInstruction::whereIn('state', $failedStates)->count();
+        $successful = SendInstruction::query()->forOwner()->whereIn('state', $successStates)->count();
+        $failed = SendInstruction::query()->forOwner()->whereIn('state', $failedStates)->count();
 
         $total = $successful + $failed;
 

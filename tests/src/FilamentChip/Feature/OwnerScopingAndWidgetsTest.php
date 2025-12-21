@@ -6,10 +6,22 @@ use AIArmada\Chip\Models\Purchase;
 use AIArmada\FilamentChip\Resources\PurchaseResource;
 use AIArmada\FilamentChip\Widgets\PaymentMethodsWidget;
 use AIArmada\FilamentChip\Widgets\RevenueChartWidget;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
 beforeEach(function (): void {
+    OwnerContext::clearOverride();
+    app()->bind(OwnerResolverInterface::class, fn () => new class implements OwnerResolverInterface
+    {
+        public function resolve(): ?Model
+        {
+            return null;
+        }
+    });
+
     Schema::dropIfExists('tenants');
     Schema::dropIfExists('chip_purchases');
 

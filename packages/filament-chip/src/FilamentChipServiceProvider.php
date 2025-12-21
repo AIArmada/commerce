@@ -29,6 +29,10 @@ final class FilamentChipServiceProvider extends PackageServiceProvider
     public function packageBooted(): void
     {
         $this->registerFilamentMacros();
+
+        if ((bool) config('filament-chip.enforce_owner_scoping', true)) {
+            config()->set('chip.owner.enabled', true);
+        }
     }
 
     /**
