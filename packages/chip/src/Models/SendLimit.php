@@ -8,9 +8,9 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 
 /**
  * @property int $id
- * @property int $amount
- * @property int $fee
- * @property int $net_amount
+ * @property int $amount Amount in cents (smallest currency unit)
+ * @property int $fee Fee amount in cents
+ * @property int $net_amount Net amount in cents after fees
  * @property string $currency
  * @property string $fee_type
  * @property string $transaction_type

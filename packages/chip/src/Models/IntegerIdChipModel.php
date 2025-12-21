@@ -17,8 +17,6 @@ use Override;
  */
 abstract class IntegerIdChipModel extends Model
 {
-    public $timestamps = false;
-
     public $incrementing = false;
 
     protected $keyType = 'int';
