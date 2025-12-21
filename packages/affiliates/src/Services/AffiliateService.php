@@ -309,7 +309,7 @@ final class AffiliateService
             $conversions = [];
 
             foreach ($weights as $affiliateId => $weight) {
-                $weight = max(0, min(1.0, (float) $weight));
+                $weight = $this->clampWeight((float) $weight);
                 $portionCommission = $this->safeRound(($commissionMinor ?? 0) * $weight);
                 $portionRevenue = $this->safeRound(($totalMinor ?? 0) * $weight);
                 $beneficiary = $affiliateId === $affiliate->getKey()
@@ -847,25 +847,15 @@ final class AffiliateService
 
         $toDeleteCount = $count - $max;
 
-        DB::statement(
-            "DELETE FROM {$tableName} WHERE id IN (
-                SELECT id FROM (
-                    SELECT id FROM {$tableName} 
-                    WHERE cart_identifier = ? 
-                    " . ($cartInstance ? "AND cart_instance = ?" : "") . "
-                    " . ($ownerType && $ownerId ? "AND owner_type = ? AND owner_id = ?" : "") . "
-                    ORDER BY last_seen_at ASC 
-                    LIMIT ?
-                ) as subquery
-            )",
-            array_filter([
-                $cartIdentifier,
-                $cartInstance,
-                $ownerType,
-                $ownerId,
-                $toDeleteCount,
-            ], fn ($v) => $v !== null)
-        );
+        // Use query builder to get oldest records, then delete them safely
+        $idsToDelete = (clone $query)
+            ->orderBy('last_seen_at', 'ASC')
+            ->limit($toDeleteCount)
+            ->pluck('id');
+
+        if ($idsToDelete->isNotEmpty()) {
+            AffiliateAttribution::whereIn('id', $idsToDelete)->delete();
+        }
     }
 
     private function resolveOwner(): ?Model
@@ -875,5 +865,13 @@ final class AffiliateService
         }
 
         return $this->ownerResolver->resolveCurrentOwner();
+    }
+
+    /**
+     * Clamp attribution weight to valid range [0.0, 1.0].
+     */
+    private function clampWeight(float $weight): float
+    {
+        return max(0.0, min(1.0, $weight));
     }
 }

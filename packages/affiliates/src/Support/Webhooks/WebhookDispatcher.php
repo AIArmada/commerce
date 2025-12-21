@@ -82,23 +82,26 @@ class WebhookDispatcher
 
         $host = strtolower($parsed['host']);
 
-        $blockedPatterns = [
-            '127.0.0.1',
-            'localhost',
-            '0.0.0.0',
-            '::1',
-            '169.254.',
-            '10.',
-            '192.168.',
-        ];
-
-        foreach ($blockedPatterns as $pattern) {
-            if (str_starts_with($host, $pattern)) {
-                return false;
-            }
+        // Block localhost patterns
+        if (in_array($host, ['localhost', '0.0.0.0'], true)) {
+            return false;
         }
 
-        if (preg_match('/^172\.(1[6-9]|2[0-9]|3[01])\./', $host)) {
+        // Try to resolve to IP address for proper validation
+        $ip = filter_var($host, FILTER_VALIDATE_IP) ? $host : gethostbyname($host);
+
+        // If DNS resolution failed, block for safety
+        if ($ip === $host && ! filter_var($host, FILTER_VALIDATE_IP)) {
+            // Allow valid domain names that don't resolve yet
+            if (! preg_match('/^[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?(\.[a-z0-9]([a-z0-9-]{0,61}[a-z0-9])?)*$/i', $host)) {
+                return false;
+            }
+            // Accept valid domain format
+            return true;
+        }
+
+        // Validate IP and check if private/reserved
+        if (! filter_var($ip, FILTER_VALIDATE_IP, FILTER_FLAG_NO_PRIV_RANGE | FILTER_FLAG_NO_RES_RANGE)) {
             return false;
         }
 
