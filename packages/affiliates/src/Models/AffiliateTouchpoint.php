@@ -50,4 +50,10 @@ class AffiliateTouchpoint extends Model
     {
         return $this->belongsTo(Affiliate::class);
     }
+
+    protected static function booted(): void
+    {
+        // This model has no child relationships requiring cascade deletes
+        // Kept for consistency with other models in the package
+    }
 }

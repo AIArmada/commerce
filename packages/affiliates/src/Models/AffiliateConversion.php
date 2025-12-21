@@ -73,4 +73,10 @@ class AffiliateConversion extends Model
     {
         return $this->belongsTo(AffiliatePayout::class, 'affiliate_payout_id');
     }
+
+    protected static function booted(): void
+    {
+        // This model has no child relationships requiring cascade deletes
+        // Kept for consistency with other models in the package
+    }
 }

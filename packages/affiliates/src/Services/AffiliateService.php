@@ -69,6 +69,11 @@ final class AffiliateService
             ->first();
     }
 
+    /**
+     * Attach an affiliate to a cart by code.
+     *
+     * @param  array{utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_term?: string, utm_content?: string, landing_url?: string, referrer_url?: string, voucher_code?: string, metadata?: array<string, mixed>}  $context
+     */
     public function attachToCartByCode(string $code, Cart $cart, array $context = []): ?AffiliateAttributionData
     {
         $affiliate = $this->findByCode($code);
@@ -80,6 +85,11 @@ final class AffiliateService
         return $this->attachAffiliate($affiliate, $cart, $context);
     }
 
+    /**
+     * Attach an affiliate to a cart.
+     *
+     * @param  array{utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_term?: string, utm_content?: string, landing_url?: string, referrer_url?: string, voucher_code?: string, metadata?: array<string, mixed>}  $context
+     */
     public function attachAffiliate(Affiliate $affiliate, Cart $cart, array $context = []): ?AffiliateAttributionData
     {
         if (! $affiliate->isActive()) {
@@ -170,6 +180,11 @@ final class AffiliateService
         return $this->attachAffiliate($attribution->affiliate, $cart, $context);
     }
 
+    /**
+     * Track an affiliate visit by code before a cart exists.
+     *
+     * @param  array{utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_term?: string, utm_content?: string, landing_url?: string, referrer_url?: string, ip_address?: string, user_agent?: string, user_id?: string, metadata?: array<string, mixed>}  $context
+     */
     public function trackVisitByCode(string $code, array $context = [], ?string $cookieValue = null): ?AffiliateAttributionData
     {
         $affiliate = $this->findByCode($code);
@@ -195,6 +210,11 @@ final class AffiliateService
         return AffiliateAttributionData::fromModel($attribution);
     }
 
+    /**
+     * Touch/update an existing cookie-based attribution.
+     *
+     * @param  array{utm_source?: string, utm_medium?: string, utm_campaign?: string, utm_term?: string, utm_content?: string, landing_url?: string, referrer_url?: string, metadata?: array<string, mixed>}  $context
+     */
     public function touchCookieAttribution(string $cookieValue, array $context = []): ?AffiliateAttributionData
     {
         $attribution = $this->findAttributionByCookie($cookieValue);
@@ -249,7 +269,9 @@ final class AffiliateService
     }
 
     /**
-     * @param  array<string, mixed>  $payload
+     * Record an affiliate conversion for a cart.
+     *
+     * @param  array{order_reference?: string, subtotal?: int, total?: int, commission?: int, commission_currency?: string, channel?: string, metadata?: array<string, mixed>, occurred_at?: \DateTimeInterface}  $payload
      */
     public function recordConversion(Cart $cart, array $payload = []): ?AffiliateConversionData
     {
