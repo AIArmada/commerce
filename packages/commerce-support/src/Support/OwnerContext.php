@@ -12,6 +12,8 @@ use InvalidArgumentException;
 
 final class OwnerContext
 {
+    public const string CURRENT = '__commerce_support_current_owner__';
+
     private static bool $hasOverride = false;
 
     private static ?Model $override = null;
@@ -77,7 +79,7 @@ final class OwnerContext
         }
 
         /** @var Model $owner */
-        $owner = new $resolved();
+        $owner = new $resolved;
         $owner->setAttribute($owner->getKeyName(), $ownerId);
 
         return $owner;

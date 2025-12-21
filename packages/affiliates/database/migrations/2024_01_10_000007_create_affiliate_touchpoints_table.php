@@ -17,6 +17,11 @@ return new class extends Migration
             $table->foreignUuid('affiliate_attribution_id')->index();
             $table->foreignUuid('affiliate_id')->index();
             $table->string('affiliate_code', 64)->index();
+
+            $table->string('owner_type')->nullable()->index();
+            $table->uuid('owner_id')->nullable()->index();
+            $table->index(['owner_type', 'owner_id'], 'affiliate_touchpoints_owner_idx');
+
             $table->string('source', 64)->nullable()->index();
             $table->string('medium', 64)->nullable()->index();
             $table->string('campaign', 64)->nullable()->index();

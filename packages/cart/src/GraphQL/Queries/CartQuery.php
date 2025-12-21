@@ -10,6 +10,10 @@ use AIArmada\Cart\Queries\GetAbandonedCartsQuery;
 use AIArmada\Cart\Queries\GetCartSummaryQuery;
 use AIArmada\Cart\Queries\SearchCartsQuery;
 use DateTimeImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Support\Facades\Auth;
+use RuntimeException;
 
 /**
  * GraphQL Query resolvers for Cart.
@@ -73,9 +77,22 @@ GRAPHQL;
      */
     public function cart(mixed $root, array $args): ?array
     {
+        $this->ensureGraphQlEnabled();
+        $user = $this->requireAuthenticatedUser();
+
         $query = new GetCartSummaryQuery($args['id']);
 
-        return $this->queryHandler->handleGetSummary($query);
+        $summary = $this->queryHandler->handleGetSummary($query);
+
+        if ($summary === null) {
+            return null;
+        }
+
+        if ((string) ($summary['identifier'] ?? '') !== (string) $user->getAuthIdentifier()) {
+            return null;
+        }
+
+        return $summary;
     }
 
     /**
@@ -86,6 +103,10 @@ GRAPHQL;
      */
     public function cartByIdentifier(mixed $root, array $args): ?array
     {
+        $this->ensureGraphQlEnabled();
+        $user = $this->requireAuthenticatedUser();
+        $this->assertIdentifierMatchesUser($args['identifier'] ?? null, $user);
+
         $cart = $this->cartManager
             ->setIdentifier($args['identifier'])
             ->setInstance($args['instance'] ?? 'default')
@@ -107,10 +128,12 @@ GRAPHQL;
      */
     public function myCart(mixed $root, array $args, mixed $context = null): ?array
     {
+        $this->ensureGraphQlEnabled();
+
         $user = $this->resolveUser($context);
 
         if ($user === null) {
-            return null;
+            throw new AuthenticationException('Authentication required.');
         }
 
         $cart = $this->cartManager
@@ -129,6 +152,9 @@ GRAPHQL;
      */
     public function abandonedCarts(mixed $root, array $args): array
     {
+        $this->ensureGraphQlEnabled();
+        $this->ensureAdminQueriesEnabled();
+
         $olderThan = new DateTimeImmutable($args['olderThan']);
 
         $query = new GetAbandonedCartsQuery(
@@ -148,6 +174,9 @@ GRAPHQL;
      */
     public function searchCarts(mixed $root, array $args): array
     {
+        $this->ensureGraphQlEnabled();
+        $this->ensureAdminQueriesEnabled();
+
         $query = new SearchCartsQuery(
             identifier: $args['identifier'] ?? null,
             instance: $args['instance'] ?? null,
@@ -234,7 +263,7 @@ GRAPHQL;
     private function resolveUser(mixed $context): ?object
     {
         if ($context === null) {
-            return auth()->user();
+            return Auth::user();
         }
 
         if (is_object($context) && method_exists($context, 'user')) {
@@ -246,5 +275,53 @@ GRAPHQL;
         }
 
         return null;
+    }
+
+    private function ensureGraphQlEnabled(): void
+    {
+        if (! (bool) config('cart.graphql.enabled', false)) {
+            throw new RuntimeException('Cart GraphQL is disabled.');
+        }
+    }
+
+    private function ensureAdminQueriesEnabled(): void
+    {
+        $user = $this->requireAuthenticatedUser();
+
+        if (! (bool) config('cart.graphql.admin_queries_enabled', false)) {
+            throw new AuthorizationException('Cart GraphQL admin queries are disabled.');
+        }
+
+        // Minimal safety net: when enabled, still require a logged-in user.
+        // Fine-grained authorization should be implemented by the host app.
+        if (! method_exists($user, 'getAuthIdentifier')) {
+            throw new AuthorizationException('User model is not authenticatable.');
+        }
+    }
+
+    private function requireAuthenticatedUser(): object
+    {
+        $user = Auth::user();
+
+        if ($user === null) {
+            throw new AuthenticationException('Authentication required.');
+        }
+
+        return $user;
+    }
+
+    private function assertIdentifierMatchesUser(mixed $identifier, object $user): void
+    {
+        if (! is_string($identifier) || $identifier === '') {
+            throw new AuthorizationException('Identifier is required.');
+        }
+
+        if (! method_exists($user, 'getAuthIdentifier')) {
+            throw new AuthorizationException('User model is not authenticatable.');
+        }
+
+        if ((string) $identifier !== (string) $user->getAuthIdentifier()) {
+            throw new AuthorizationException('Identifier does not match the authenticated user.');
+        }
     }
 }

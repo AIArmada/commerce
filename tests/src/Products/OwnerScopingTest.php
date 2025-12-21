@@ -21,13 +21,13 @@ beforeEach(function (): void {
         $table->timestamps();
     });
 
-    config()->set('products.owner.enabled', true);
-    config()->set('products.owner.include_global', true);
-    config()->set('products.owner.auto_assign_on_create', true);
+    config()->set('products.features.owner.enabled', true);
+    config()->set('products.features.owner.include_global', true);
+    config()->set('products.features.owner.auto_assign_on_create', true);
 });
 
 it('scopes Product::forOwner() to current owner plus global and excludes corrupt partial-owner rows', function (): void {
-    config()->set('products.owner.auto_assign_on_create', false);
+    config()->set('products.features.owner.auto_assign_on_create', false);
 
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
@@ -82,7 +82,7 @@ it('scopes Product::forOwner() to current owner plus global and excludes corrupt
 });
 
 it('returns strict global-only when owner resolver returns null', function (): void {
-    config()->set('products.owner.auto_assign_on_create', false);
+    config()->set('products.features.owner.auto_assign_on_create', false);
 
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
 
@@ -148,7 +148,7 @@ it('auto-assigns owner on create when enabled', function (): void {
 });
 
 it('scopes Category->products to the category owner plus global', function (): void {
-    config()->set('products.owner.auto_assign_on_create', false);
+    config()->set('products.features.owner.auto_assign_on_create', false);
 
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
@@ -191,7 +191,7 @@ it('scopes Category->products to the category owner plus global', function (): v
 });
 
 it('scopes Collection->products to the collection owner plus global', function (): void {
-    config()->set('products.owner.auto_assign_on_create', false);
+    config()->set('products.features.owner.auto_assign_on_create', false);
 
     $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
     $ownerB = TestOwner::query()->create(['name' => 'Owner B']);

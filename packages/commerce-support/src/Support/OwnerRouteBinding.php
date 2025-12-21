@@ -15,7 +15,7 @@ final class OwnerRouteBinding
      * @param  class-string<TModel>  $modelClass
      * @return TModel
      */
-    public static function resolve(string $modelClass, int|string $value, bool $includeGlobal = false): Model
+    public static function resolve(string $modelClass, int | string $value, bool $includeGlobal = false): Model
     {
         return OwnerWriteGuard::findOrFailForOwner($modelClass, $value, null, $includeGlobal);
     }

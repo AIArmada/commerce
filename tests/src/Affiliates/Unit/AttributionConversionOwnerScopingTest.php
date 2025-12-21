@@ -7,11 +7,13 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
 it('scopes attributions to current owner and global when enabled', function (): void {
     config()->set('affiliates.owner.enabled', true);
+    config()->set('affiliates.owner.include_global', true);
     config()->set('affiliates.owner.auto_assign_on_create', false);
 
     $ownerA = AffiliatesTestOwner::create(['name' => 'Owner A']);
@@ -76,7 +78,7 @@ it('scopes attributions to current owner and global when enabled', function (): 
         'owner_id' => null,
     ]);
 
-    $ids = AffiliateAttribution::query()->forOwner()->pluck('id');
+    $ids = AffiliateAttribution::query()->forOwner(OwnerContext::CURRENT, true)->pluck('id');
 
     expect($ids)->toContain($global->id)
         ->and($ids)->toContain($ownedA->id)
@@ -86,6 +88,7 @@ it('scopes attributions to current owner and global when enabled', function (): 
 
 it('scopes conversions to current owner and global when enabled', function (): void {
     config()->set('affiliates.owner.enabled', true);
+    config()->set('affiliates.owner.include_global', true);
     config()->set('affiliates.owner.auto_assign_on_create', false);
 
     $ownerA = AffiliatesTestOwner::create(['name' => 'Owner A']);
@@ -162,7 +165,7 @@ it('scopes conversions to current owner and global when enabled', function (): v
         'owner_id' => null,
     ]);
 
-    $ids = AffiliateConversion::query()->forOwner()->pluck('id');
+    $ids = AffiliateConversion::query()->forOwner(OwnerContext::CURRENT, true)->pluck('id');
 
     expect($ids)->toContain($global->id)
         ->and($ids)->toContain($ownedA->id)

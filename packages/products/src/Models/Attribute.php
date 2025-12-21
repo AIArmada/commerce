@@ -99,8 +99,14 @@ class Attribute extends Model
      */
     public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
     {
+        $ownerToScope = $owner;
+
+        if (func_num_args() < 2) {
+            $ownerToScope = OwnerContext::CURRENT;
+        }
+
         /** @var Builder<Attribute> $scoped */
-        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
+        $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobal);
 
         return $scoped;
     }

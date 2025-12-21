@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Cart;
 
 use AIArmada\Cart\Contracts\CartManagerInterface;
-use AIArmada\Cart\Support\CartOwnerScope;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\Cart\Support\CartOwnerScope;
 use Illuminate\Contracts\Auth\Factory;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Model;

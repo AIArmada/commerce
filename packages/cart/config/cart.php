@@ -49,6 +49,11 @@ return [
 
     'events' => env('CART_EVENTS_ENABLED', true),
 
+    'graphql' => [
+        'enabled' => env('CART_GRAPHQL_ENABLED', false),
+        'admin_queries_enabled' => env('CART_GRAPHQL_ADMIN_ENABLED', false),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Ownership (Multi-Tenancy)

@@ -5,9 +5,18 @@ declare(strict_types=1);
 use AIArmada\Cart\Commands\CartCommandBus;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\GraphQL\Mutations\CartMutations;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use Illuminate\Support\Facades\Auth;
 
 describe('CartMutations Integration', function (): void {
     beforeEach(function (): void {
+        config()->set('cart.graphql.enabled', true);
+
+        /** @var User $user */
+        $user = createUserWithRoles();
+        Auth::setUser($user);
+        $this->user = $user;
+
         $this->cartManager = app(CartManagerInterface::class);
         $this->commandBus = app(CartCommandBus::class);
         $this->mutations = new CartMutations($this->cartManager, $this->commandBus);
@@ -60,7 +69,7 @@ describe('CartMutations Integration', function (): void {
 
     describe('addToCart', function (): void {
         it('returns result structure', function (): void {
-            $identifier = 'graphql-add-test-' . uniqid();
+            $identifier = (string) $this->user->getAuthIdentifier();
 
             $result = $this->mutations->addToCart(null, [
                 'input' => [
@@ -82,7 +91,7 @@ describe('CartMutations Integration', function (): void {
         it('returns error details on failure', function (): void {
             $result = $this->mutations->addToCart(null, [
                 'input' => [
-                    'identifier' => '',
+                    'identifier' => (string) $this->user->getAuthIdentifier(),
                     'itemId' => '',
                     'name' => '',
                     'priceInCents' => -100,
@@ -98,7 +107,7 @@ describe('CartMutations Integration', function (): void {
 
     describe('updateCartItem', function (): void {
         it('returns result structure', function (): void {
-            $identifier = 'graphql-update-test-' . uniqid();
+            $identifier = (string) $this->user->getAuthIdentifier();
 
             $result = $this->mutations->updateCartItem(null, [
                 'input' => [
@@ -117,7 +126,7 @@ describe('CartMutations Integration', function (): void {
 
     describe('removeFromCart', function (): void {
         it('returns result structure', function (): void {
-            $identifier = 'graphql-remove-test-' . uniqid();
+            $identifier = (string) $this->user->getAuthIdentifier();
 
             $result = $this->mutations->removeFromCart(null, [
                 'identifier' => $identifier,
@@ -133,7 +142,7 @@ describe('CartMutations Integration', function (): void {
 
     describe('clearCart', function (): void {
         it('returns result structure', function (): void {
-            $identifier = 'graphql-clear-test-' . uniqid();
+            $identifier = (string) $this->user->getAuthIdentifier();
 
             $result = $this->mutations->clearCart(null, [
                 'identifier' => $identifier,
@@ -148,7 +157,7 @@ describe('CartMutations Integration', function (): void {
 
     describe('applyCondition', function (): void {
         it('returns result structure', function (): void {
-            $identifier = 'graphql-condition-test-' . uniqid();
+            $identifier = (string) $this->user->getAuthIdentifier();
 
             $result = $this->mutations->applyCondition(null, [
                 'input' => [
@@ -169,7 +178,7 @@ describe('CartMutations Integration', function (): void {
 
     describe('removeCondition', function (): void {
         it('returns result structure', function (): void {
-            $identifier = 'graphql-remove-cond-test-' . uniqid();
+            $identifier = (string) $this->user->getAuthIdentifier();
 
             $result = $this->mutations->removeCondition(null, [
                 'identifier' => $identifier,

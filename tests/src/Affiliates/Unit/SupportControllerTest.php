@@ -47,7 +47,7 @@ describe('SupportController', function (): void {
             ]);
 
             $request = Request::create('/affiliate/portal/support', 'GET');
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
 
             $response = $this->controller->index($request);
 
@@ -59,7 +59,7 @@ describe('SupportController', function (): void {
 
         test('returns empty list when no tickets exist', function (): void {
             $request = Request::create('/affiliate/portal/support', 'GET');
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
 
             $response = $this->controller->index($request);
 
@@ -97,7 +97,7 @@ describe('SupportController', function (): void {
             ]);
 
             $request = Request::create('/affiliate/portal/support', 'GET');
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
 
             $response = $this->controller->index($request);
 
@@ -114,7 +114,7 @@ describe('SupportController', function (): void {
                 'category' => 'payout',
                 'priority' => 'high',
             ]);
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
             $request->setLaravelSession(app('session.store'));
 
             $response = $this->controller->store($request);
@@ -134,7 +134,7 @@ describe('SupportController', function (): void {
                 'subject' => 'General question',
                 'message' => 'I have a general question about the program.',
             ]);
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
             $request->setLaravelSession(app('session.store'));
 
             $response = $this->controller->store($request);
@@ -149,7 +149,7 @@ describe('SupportController', function (): void {
                 'subject' => 'Technical issue',
                 'message' => 'The tracking link is not working.',
             ]);
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
             $request->setLaravelSession(app('session.store'));
 
             $response = $this->controller->store($request);
@@ -162,7 +162,7 @@ describe('SupportController', function (): void {
 
         test('validates required fields', function (): void {
             $request = Request::create('/affiliate/portal/support', 'POST', []);
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
             $request->setLaravelSession(app('session.store'));
 
             $this->controller->store($request);
@@ -174,7 +174,7 @@ describe('SupportController', function (): void {
                 'message' => 'Test message',
                 'category' => 'invalid_category',
             ]);
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
             $request->setLaravelSession(app('session.store'));
 
             $this->controller->store($request);
@@ -192,7 +192,7 @@ describe('SupportController', function (): void {
             ]);
 
             $request = Request::create("/affiliate/portal/support/{$ticket->id}", 'GET');
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
 
             $response = $this->controller->show($request, $ticket->id);
 
@@ -228,7 +228,7 @@ describe('SupportController', function (): void {
             ]);
 
             $request = Request::create("/affiliate/portal/support/{$ticket->id}", 'GET');
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
 
             $response = $this->controller->show($request, $ticket->id);
 
@@ -238,7 +238,7 @@ describe('SupportController', function (): void {
 
         test('throws 404 for non-existent ticket', function (): void {
             $request = Request::create('/affiliate/portal/support/non-existent-id', 'GET');
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
 
             $this->controller->show($request, 'non-existent-id');
         })->throws(Illuminate\Database\Eloquent\ModelNotFoundException::class);
@@ -263,7 +263,7 @@ describe('SupportController', function (): void {
             ]);
 
             $request = Request::create("/affiliate/portal/support/{$ticket->id}", 'GET');
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
 
             $this->controller->show($request, $ticket->id);
         })->throws(Illuminate\Database\Eloquent\ModelNotFoundException::class);
@@ -282,7 +282,7 @@ describe('SupportController', function (): void {
             $request = Request::create("/affiliate/portal/support/{$ticket->id}/reply", 'POST', [
                 'message' => 'This is my reply.',
             ]);
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
             $request->setLaravelSession(app('session.store'));
 
             $response = $this->controller->reply($request, $ticket->id);
@@ -306,7 +306,7 @@ describe('SupportController', function (): void {
             $request = Request::create("/affiliate/portal/support/{$ticket->id}/reply", 'POST', [
                 'message' => 'Waiting for response.',
             ]);
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
             $request->setLaravelSession(app('session.store'));
 
             $response = $this->controller->reply($request, $ticket->id);
@@ -327,7 +327,7 @@ describe('SupportController', function (): void {
             $request = Request::create("/affiliate/portal/support/{$ticket->id}/reply", 'POST', [
                 'message' => 'This should fail.',
             ]);
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
             $request->setLaravelSession(app('session.store'));
 
             $response = $this->controller->reply($request, $ticket->id);
@@ -348,7 +348,7 @@ describe('SupportController', function (): void {
             ]);
 
             $request = Request::create("/affiliate/portal/support/{$ticket->id}/reply", 'POST', []);
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
             $request->setLaravelSession(app('session.store'));
 
             $this->controller->reply($request, $ticket->id);
@@ -358,7 +358,7 @@ describe('SupportController', function (): void {
             $request = Request::create('/affiliate/portal/support/non-existent/reply', 'POST', [
                 'message' => 'Test',
             ]);
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
             $request->setLaravelSession(app('session.store'));
 
             $this->controller->reply($request, 'non-existent');
@@ -376,7 +376,7 @@ describe('SupportController', function (): void {
             ]);
 
             $request = Request::create("/affiliate/portal/support/{$ticket->id}/close", 'POST');
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
 
             $response = $this->controller->close($request, $ticket->id);
 
@@ -397,7 +397,7 @@ describe('SupportController', function (): void {
             ]);
 
             $request = Request::create("/affiliate/portal/support/{$ticket->id}/close", 'POST');
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
 
             $response = $this->controller->close($request, $ticket->id);
 
@@ -409,7 +409,7 @@ describe('SupportController', function (): void {
 
         test('throws 404 for non-existent ticket', function (): void {
             $request = Request::create('/affiliate/portal/support/non-existent/close', 'POST');
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
 
             $this->controller->close($request, 'non-existent');
         })->throws(Illuminate\Database\Eloquent\ModelNotFoundException::class);
@@ -434,7 +434,7 @@ describe('SupportController', function (): void {
             ]);
 
             $request = Request::create("/affiliate/portal/support/{$ticket->id}/close", 'POST');
-            $request->setUserResolver(fn () => $this->affiliate);
+            $request->attributes->set('affiliate', $this->affiliate);
 
             $this->controller->close($request, $ticket->id);
         })->throws(Illuminate\Database\Eloquent\ModelNotFoundException::class);

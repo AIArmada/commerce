@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -17,12 +19,18 @@ use Illuminate\Support\Collection;
  * @property string $ancestor_id
  * @property string $descendant_id
  * @property int $depth
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property-read Affiliate $ancestor
  * @property-read Affiliate $descendant
  */
 class AffiliateNetwork extends Model
 {
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
     public $timestamps = false;
 
@@ -32,6 +40,8 @@ class AffiliateNetwork extends Model
         'ancestor_id',
         'descendant_id',
         'depth',
+        'owner_type',
+        'owner_id',
     ];
 
     protected $casts = [
@@ -164,6 +174,8 @@ class AffiliateNetwork extends Model
             ],
             [
                 'depth' => 0,
+                'owner_type' => $affiliate->owner_type,
+                'owner_id' => $affiliate->owner_id,
             ]
         );
 
@@ -184,6 +196,8 @@ class AffiliateNetwork extends Model
                 ],
                 [
                     'depth' => $path->depth + 1,
+                    'owner_type' => $affiliate->owner_type,
+                    'owner_id' => $affiliate->owner_id,
                 ]
             );
         }
@@ -241,6 +255,8 @@ class AffiliateNetwork extends Model
                     ],
                     [
                         'depth' => $path->depth + 1 + $currentDepth,
+                        'owner_type' => $affiliate->owner_type,
+                        'owner_id' => $affiliate->owner_id,
                     ]
                 );
             }

@@ -101,7 +101,7 @@ final class AnalyzeCartForAbandonment implements ShouldQueue
 
         $owner = OwnerContext::fromTypeAndId($cartRecord->owner_type ?? null, $cartRecord->owner_id ?? null);
 
-        OwnerContext::withOwner($owner, function () use ($cartRecord, $cartId, $owner): void {
+        OwnerContext::withOwner($owner, function () use ($cartRecord, $cartId): void {
             $predictor = app(AbandonmentPredictor::class);
             $optimizer = app(RecoveryOptimizer::class);
             $cartManager = app(CartManager::class);

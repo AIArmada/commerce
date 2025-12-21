@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -18,6 +20,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string|null $campaign
  * @property string|null $term
  * @property string|null $content
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property string|null $ip_address
  * @property string|null $user_agent
  * @property array<string, mixed>|null $metadata
@@ -29,7 +33,11 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class AffiliateTouchpoint extends Model
 {
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
     protected $fillable = [
         'affiliate_attribution_id',
@@ -40,6 +48,8 @@ class AffiliateTouchpoint extends Model
         'campaign',
         'term',
         'content',
+        'owner_type',
+        'owner_id',
         'ip_address',
         'user_agent',
         'metadata',

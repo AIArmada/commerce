@@ -20,7 +20,7 @@ namespace AIArmada\CommerceSupport\Traits;
  * }
  * ```
  */
-trait CachesComputedValues
+trait CachesComputedValues // @phpstan-ignore trait.unused
 {
     /**
      * Cache a computed value for the request lifetime.

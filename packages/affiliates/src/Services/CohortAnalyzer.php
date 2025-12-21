@@ -282,51 +282,38 @@ final class CohortAnalyzer
         $to = $to ?? now();
 
         $affiliatesTable = (new Affiliate)->getTable();
+        $conversionsTable = (new AffiliateConversion)->getTable();
         $driver = DB::connection()->getDriverName();
 
         $sourceExpression = $driver === 'sqlite'
-            ? "COALESCE(json_extract(metadata, '$.source'), 'direct')"
-            : "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.source')), 'direct')";
+            ? "COALESCE(json_extract(a.metadata, '$.source'), 'direct')"
+            : "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(a.metadata, '$.source')), 'direct')";
 
-        $sourcesQuery = DB::table($affiliatesTable)
-            ->selectRaw("$sourceExpression as source")
-            ->whereBetween('created_at', [$from, $to])
+        $query = DB::table("{$affiliatesTable} as a")
+            ->leftJoin("{$conversionsTable} as c", 'c.affiliate_id', '=', 'a.id')
+            ->selectRaw("{$sourceExpression} as source")
+            ->selectRaw('COUNT(DISTINCT a.id) as total_affiliates')
+            ->selectRaw('COUNT(c.id) as total_conversions')
+            ->selectRaw('COUNT(DISTINCT c.affiliate_id) as with_conversions')
+            ->selectRaw('COALESCE(SUM(c.total_minor), 0) as total_revenue')
+            ->whereBetween('a.created_at', [$from, $to])
             ->groupBy('source');
 
-        $this->applyOwnerScopeToQuery($sourcesQuery, "{$affiliatesTable}.owner_type", "{$affiliatesTable}.owner_id");
+        $this->applyOwnerScopeToQuery($query, 'a.owner_type', 'a.owner_id');
+        $this->applyOwnerScopeToQuery($query, 'c.owner_type', 'c.owner_id');
 
-        $sources = $sourcesQuery->pluck('source');
+        /** @var array<int, object{source: string, total_affiliates: int|string, total_conversions: int|string, with_conversions: int|string, total_revenue: int|string}> $rows */
+        $rows = $query->get()->all();
 
         $results = [];
 
-        foreach ($sources as $source) {
-            $affiliates = Affiliate::query()
-                ->whereBetween('created_at', [$from, $to])
-                ->where(function ($query) use ($source): void {
-                    if ($source === 'direct') {
-                        $query->whereNull('metadata->source')
-                            ->orWhere('metadata->source', 'direct');
-                    } else {
-                        $query->where('metadata->source', $source);
-                    }
-                })
-                ->get();
+        foreach ($rows as $row) {
+            $affiliateCount = (int) $row->total_affiliates;
+            $totalRevenue = (int) $row->total_revenue;
+            $withConversions = (int) $row->with_conversions;
 
-            $totalRevenue = $affiliates->sum(function ($affiliate) {
-                return $affiliate->conversions()->sum('total_minor');
-            });
-
-            $totalConversions = $affiliates->sum(function ($affiliate) {
-                return $affiliate->conversions()->count();
-            });
-
-            $affiliateCount = $affiliates->count();
-            $withConversions = $affiliates->filter(function ($affiliate) {
-                return $affiliate->conversions()->exists();
-            })->count();
-
-            $results[$source] = [
-                'source' => $source,
+            $results[$row->source] = [
+                'source' => $row->source,
                 'total_affiliates' => $affiliateCount,
                 'total_revenue' => $totalRevenue,
                 'avg_ltv' => $affiliateCount > 0 ? round($totalRevenue / $affiliateCount, 2) : 0,

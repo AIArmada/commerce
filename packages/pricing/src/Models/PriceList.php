@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Models;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Pricing\Support\PricingOwnerScope;
@@ -130,8 +131,14 @@ class PriceList extends Model
 
         $includeGlobal = $includeGlobal && PricingOwnerScope::includeGlobal();
 
+        $ownerToScope = $owner;
+
+        if (func_num_args() < 2) {
+            $ownerToScope = OwnerContext::CURRENT;
+        }
+
         /** @var Builder<static> $scoped */
-        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
+        $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobal);
 
         return $scoped;
     }

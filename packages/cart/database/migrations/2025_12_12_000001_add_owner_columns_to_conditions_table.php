@@ -11,14 +11,14 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table(config('cart.database.conditions_table', 'conditions'), function (Blueprint $table): void {
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
         });
     }
 
     public function down(): void
     {
         Schema::table(config('cart.database.conditions_table', 'conditions'), function (Blueprint $table): void {
-            $table->dropMorphs('owner');
+            $table->dropUuidMorphs('owner');
         });
     }
 };

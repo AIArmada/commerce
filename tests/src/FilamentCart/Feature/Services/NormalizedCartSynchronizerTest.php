@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart as BaseCart;
 use AIArmada\Cart\Storage\StorageInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Models\CartCondition;
 use AIArmada\FilamentCart\Models\CartItem;
@@ -141,5 +143,47 @@ describe('NormalizedCartSynchronizer', function (): void {
 
         expect(Cart::find($cart->id))->toBeNull();
         expect(CartItem::where('cart_id', $cart->id)->count())->toBe(0);
+    });
+
+    it('does not overwrite another owners cart snapshot when owner mode is enabled', function (): void {
+        config()->set('filament-cart.owner.enabled', true);
+
+        $ownerA = User::query()->create([
+            'name' => 'Owner A',
+            'email' => 'owner-a-sync@example.com',
+            'password' => 'secret',
+        ]);
+
+        $ownerB = User::query()->create([
+            'name' => 'Owner B',
+            'email' => 'owner-b-sync@example.com',
+            'password' => 'secret',
+        ]);
+
+        $ownerBCart = OwnerContext::withOwner($ownerB, fn () => Cart::query()->create([
+            'instance' => 'default',
+            'identifier' => 'user-123',
+            'items_count' => 99,
+        ]));
+
+        $this->storage->shouldReceive('getItems')->andReturn([]);
+        $this->storage->shouldReceive('getConditions')->andReturn([]);
+        $this->storage->shouldReceive('getMetadata')->andReturnUsing(fn () => []);
+        $this->storage->shouldReceive('getAllMetadata')->andReturn([]);
+
+        $cart = new BaseCart($this->storage, 'user-123', null, 'default');
+
+        OwnerContext::withOwner($ownerA, fn () => $this->synchronizer->syncFromCart($cart));
+
+        $ownerACart = OwnerContext::withOwner($ownerA, fn () => Cart::query()
+            ->forOwner()
+            ->where('instance', 'default')
+            ->where('identifier', 'user-123')
+            ->first());
+
+        expect($ownerACart)->not->toBeNull();
+        expect($ownerACart?->items_count)->toBe(0);
+
+        expect($ownerBCart->refresh()->items_count)->toBe(99);
     });
 });

@@ -14,15 +14,12 @@ describe('SharedCart database-backed collaboration', function (): void {
     beforeEach(function (): void {
         Cart::clear();
 
-        Schema::table('carts', function (Blueprint $table): void {
-            $table->boolean('is_collaborative')->default(false);
-            $table->string('owner_user_id')->nullable();
-            $table->json('collaborators')->nullable();
-            $table->integer('max_collaborators')->default(5);
-            $table->string('collaboration_mode', 20)->default('edit');
-            $table->string('share_token', 64)->nullable();
-            $table->timestamp('share_expires_at')->nullable();
-        });
+        if (! Schema::hasColumn('carts', 'share_token')) {
+            Schema::table('carts', function (Blueprint $table): void {
+                $table->string('share_token', 64)->nullable();
+                $table->timestamp('share_expires_at')->nullable();
+            });
+        }
     });
 
     it('persists collaboration state and authorizes channel join', function (): void {

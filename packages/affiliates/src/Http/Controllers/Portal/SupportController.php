@@ -12,10 +12,20 @@ use Illuminate\Routing\Controller;
 
 final class SupportController extends Controller
 {
+    private function affiliateFromRequest(Request $request): Affiliate
+    {
+        $affiliate = $request->attributes->get('affiliate');
+
+        if (! $affiliate instanceof Affiliate) {
+            abort(401);
+        }
+
+        return $affiliate;
+    }
+
     public function index(Request $request): JsonResponse
     {
-        /** @var Affiliate $affiliate */
-        $affiliate = $request->attributes->get('affiliate') ?? $request->user();
+        $affiliate = $this->affiliateFromRequest($request);
 
         $tickets = AffiliateSupportTicket::query()
             ->where('affiliate_id', $affiliate->id)
@@ -36,8 +46,7 @@ final class SupportController extends Controller
             'priority' => 'nullable|string|in:low,normal,high',
         ]);
 
-        /** @var Affiliate $affiliate */
-        $affiliate = $request->attributes->get('affiliate') ?? $request->user();
+        $affiliate = $this->affiliateFromRequest($request);
 
         $ticket = AffiliateSupportTicket::create([
             'affiliate_id' => $affiliate->id,
@@ -61,8 +70,7 @@ final class SupportController extends Controller
 
     public function show(Request $request, string $ticketId): JsonResponse
     {
-        /** @var Affiliate $affiliate */
-        $affiliate = $request->attributes->get('affiliate') ?? $request->user();
+        $affiliate = $this->affiliateFromRequest($request);
 
         $ticket = AffiliateSupportTicket::query()
             ->where('affiliate_id', $affiliate->id)
@@ -80,8 +88,7 @@ final class SupportController extends Controller
             'message' => 'required|string|max:5000',
         ]);
 
-        /** @var Affiliate $affiliate */
-        $affiliate = $request->attributes->get('affiliate') ?? $request->user();
+        $affiliate = $this->affiliateFromRequest($request);
 
         $ticket = AffiliateSupportTicket::query()
             ->where('affiliate_id', $affiliate->id)
@@ -109,8 +116,7 @@ final class SupportController extends Controller
 
     public function close(Request $request, string $ticketId): JsonResponse
     {
-        /** @var Affiliate $affiliate */
-        $affiliate = $request->attributes->get('affiliate') ?? $request->user();
+        $affiliate = $this->affiliateFromRequest($request);
 
         $ticket = AffiliateSupportTicket::query()
             ->where('affiliate_id', $affiliate->id)

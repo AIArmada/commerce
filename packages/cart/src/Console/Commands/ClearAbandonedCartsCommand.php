@@ -8,8 +8,8 @@ use AIArmada\Cart\Support\CartOwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;

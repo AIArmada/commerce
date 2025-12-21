@@ -178,7 +178,7 @@ class Cart extends Model
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    public function scopeForOwner(Builder $query, ?EloquentModel $owner = null, bool $includeGlobal = true): Builder
+    public function scopeForOwner(Builder $query, ?EloquentModel $owner = null, bool $includeGlobal = false): Builder
     {
         if (! self::ownerScopingEnabled()) {
             return $query;

@@ -12,6 +12,10 @@ use AIArmada\Cart\Commands\ClearCartCommand;
 use AIArmada\Cart\Commands\RemoveItemCommand;
 use AIArmada\Cart\Commands\UpdateItemQuantityCommand;
 use AIArmada\Cart\Contracts\CartManagerInterface;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\AuthenticationException;
+use Illuminate\Support\Facades\Auth;
+use RuntimeException;
 use Throwable;
 
 /**
@@ -121,7 +125,12 @@ GRAPHQL;
      */
     public function addToCart(mixed $root, array $args): array
     {
+        $this->ensureGraphQlEnabled();
+
         $input = $args['input'];
+
+        $user = $this->requireAuthenticatedUser();
+        $this->assertIdentifierMatchesUser($input['identifier'] ?? null, $user);
 
         try {
             $command = AddItemCommand::fromArray([
@@ -169,7 +178,12 @@ GRAPHQL;
      */
     public function updateCartItem(mixed $root, array $args): array
     {
+        $this->ensureGraphQlEnabled();
+
         $input = $args['input'];
+
+        $user = $this->requireAuthenticatedUser();
+        $this->assertIdentifierMatchesUser($input['identifier'] ?? null, $user);
 
         try {
             $command = UpdateItemQuantityCommand::fromArray([
@@ -214,6 +228,10 @@ GRAPHQL;
      */
     public function removeFromCart(mixed $root, array $args): array
     {
+        $this->ensureGraphQlEnabled();
+        $user = $this->requireAuthenticatedUser();
+        $this->assertIdentifierMatchesUser($args['identifier'] ?? null, $user);
+
         try {
             $command = RemoveItemCommand::fromArray([
                 'identifier' => $args['identifier'],
@@ -256,7 +274,12 @@ GRAPHQL;
      */
     public function applyCondition(mixed $root, array $args): array
     {
+        $this->ensureGraphQlEnabled();
+
         $input = $args['input'];
+
+        $user = $this->requireAuthenticatedUser();
+        $this->assertIdentifierMatchesUser($input['identifier'] ?? null, $user);
 
         try {
             $command = ApplyConditionCommand::fromArray([
@@ -304,6 +327,10 @@ GRAPHQL;
      */
     public function removeCondition(mixed $root, array $args): array
     {
+        $this->ensureGraphQlEnabled();
+        $user = $this->requireAuthenticatedUser();
+        $this->assertIdentifierMatchesUser($args['identifier'] ?? null, $user);
+
         try {
             $cart = $this->cartManager
                 ->setIdentifier($args['identifier'])
@@ -340,6 +367,10 @@ GRAPHQL;
      */
     public function clearCart(mixed $root, array $args): array
     {
+        $this->ensureGraphQlEnabled();
+        $user = $this->requireAuthenticatedUser();
+        $this->assertIdentifierMatchesUser($args['identifier'] ?? null, $user);
+
         try {
             $command = ClearCartCommand::fromArray([
                 'identifier' => $args['identifier'],
@@ -381,7 +412,12 @@ GRAPHQL;
      */
     public function checkout(mixed $root, array $args): array
     {
+        $this->ensureGraphQlEnabled();
+
         $input = $args['input'];
+
+        $user = $this->requireAuthenticatedUser();
+        $this->assertIdentifierMatchesUser($input['identifier'] ?? null, $user);
 
         try {
             $cart = $this->cartManager
@@ -476,5 +512,38 @@ GRAPHQL;
             'createdAt' => $cart->getCreatedAt(),
             'updatedAt' => $cart->getUpdatedAt(),
         ];
+    }
+
+    private function ensureGraphQlEnabled(): void
+    {
+        if (! (bool) config('cart.graphql.enabled', false)) {
+            throw new RuntimeException('Cart GraphQL is disabled.');
+        }
+    }
+
+    private function requireAuthenticatedUser(): object
+    {
+        $user = Auth::user();
+
+        if ($user === null) {
+            throw new AuthenticationException('Authentication required.');
+        }
+
+        return $user;
+    }
+
+    private function assertIdentifierMatchesUser(mixed $identifier, object $user): void
+    {
+        if (! is_string($identifier) || $identifier === '') {
+            throw new AuthorizationException('Identifier is required.');
+        }
+
+        if (! method_exists($user, 'getAuthIdentifier')) {
+            throw new AuthorizationException('User model is not authenticatable.');
+        }
+
+        if ((string) $identifier !== (string) $user->getAuthIdentifier()) {
+            throw new AuthorizationException('Identifier does not match the authenticated user.');
+        }
     }
 }
