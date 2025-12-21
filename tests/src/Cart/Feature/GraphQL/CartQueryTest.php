@@ -6,8 +6,8 @@ use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\GraphQL\Queries\CartQuery;
 use AIArmada\Cart\Queries\CartQueryHandler;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Auth\AuthenticationException;
+use Illuminate\Support\Facades\Auth;
 
 describe('CartQuery Integration', function (): void {
     beforeEach(function (): void {
