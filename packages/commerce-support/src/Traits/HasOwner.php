@@ -10,6 +10,7 @@ use AIArmada\CommerceSupport\Support\OwnerScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use InvalidArgumentException;
 
 /**
  * Trait for models that support multi-tenancy through owner scoping.
@@ -52,11 +53,11 @@ trait HasOwner // @phpstan-ignore trait.unused
      * Scope query to the specified owner.
      *
      * @param  Builder<static>  $query
-     * @param  Model|null  $owner  The owner to scope to
+     * @param  Model|string|null  $owner  The owner to scope to; pass null for global-only; omit argument to resolve current owner
      * @param  bool  $includeGlobal  Whether to include global (ownerless) records
      * @return Builder<static>
      */
-    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
+    public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = true): Builder
     {
         $ownerTypeColumn = 'owner_type';
         $ownerIdColumn = 'owner_id';
@@ -74,7 +75,13 @@ trait HasOwner // @phpstan-ignore trait.unused
             $ownerIdColumn = $config->ownerIdColumn;
         }
 
-        $owner ??= OwnerContext::resolve();
+        if ($owner === OwnerContext::CURRENT) {
+            $owner = OwnerContext::resolve();
+        }
+
+        if (is_string($owner)) {
+            throw new InvalidArgumentException('Owner must be an Eloquent model, null, or omitted.');
+        }
 
         return OwnerQuery::applyToEloquentBuilder(
             $query->withoutOwnerScope(),

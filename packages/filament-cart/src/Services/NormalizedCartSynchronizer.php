@@ -30,7 +30,7 @@ class NormalizedCartSynchronizer
 
             $currency = $this->resolveCurrency();
 
-            $cartModel = Cart::query()->firstOrNew([
+            $cartModel = Cart::query()->forOwner($owner)->firstOrNew([
                 'identifier' => $identifier,
                 'instance' => $instance,
                 'owner_key' => $ownerKey,
@@ -72,7 +72,7 @@ class NormalizedCartSynchronizer
         $owner = Cart::resolveCurrentOwner();
         $ownerKey = Cart::resolveOwnerKey($owner);
 
-        $cartModel = Cart::query()
+        $cartModel = Cart::query()->forOwner($owner)
             ->where('identifier', $identifier)
             ->where('instance', $instance)
             ->where('owner_key', $ownerKey)

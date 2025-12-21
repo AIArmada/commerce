@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -13,6 +15,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $id
  * @property string $affiliate_id
  * @property \Carbon\CarbonInterface $date
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property int $clicks
  * @property int $unique_clicks
  * @property int $attributions
@@ -32,11 +36,17 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class AffiliateDailyStat extends Model
 {
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
     protected $fillable = [
         'affiliate_id',
         'date',
+        'owner_type',
+        'owner_id',
         'clicks',
         'unique_clicks',
         'attributions',

@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Http\Controllers\Portal\LinkController;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -235,6 +237,15 @@ describe('LinkController', function (): void {
                 'is_active' => true,
             ]);
 
+            AffiliateProgramMembership::query()->create([
+                'affiliate_id' => $this->affiliate->id,
+                'program_id' => $program->id,
+                'status' => MembershipStatus::Approved->value,
+                'applied_at' => now(),
+                'approved_at' => now(),
+                'expires_at' => null,
+            ]);
+
             $request = Request::create('/affiliate/portal/links', 'POST', [
                 'destination_url' => 'https://example.com/program-link',
                 'program_id' => $program->id,
@@ -250,6 +261,25 @@ describe('LinkController', function (): void {
             $link = AffiliateLink::find($data['link']['id']);
             expect($link->program_id)->toBe($program->id);
         });
+
+        test('rejects program_id when affiliate is not a member', function (): void {
+            $program = AffiliateProgram::create([
+                'name' => 'Non Member Program',
+                'slug' => 'non-member-' . uniqid(),
+                'commission_type' => CommissionType::Percentage,
+                'commission_rate' => 1000,
+                'is_active' => true,
+            ]);
+
+            $request = Request::create('/affiliate/portal/links', 'POST', [
+                'destination_url' => 'https://example.com/program-link',
+                'program_id' => $program->id,
+            ]);
+            $request->attributes->set('affiliate', $this->affiliate);
+            $request->setLaravelSession(app('session.store'));
+
+            $this->controller->create($request);
+        })->throws(Illuminate\Validation\ValidationException::class);
 
         test('initializes clicks and conversions to zero', function (): void {
             $request = Request::create('/affiliate/portal/links', 'POST', [
@@ -427,6 +457,15 @@ describe('LinkController', function (): void {
                 'is_active' => true,
             ]);
 
+            AffiliateProgramMembership::query()->create([
+                'affiliate_id' => $this->affiliate->id,
+                'program_id' => $program1->id,
+                'status' => MembershipStatus::Approved->value,
+                'applied_at' => now(),
+                'approved_at' => now(),
+                'expires_at' => null,
+            ]);
+
             AffiliateProgramCreative::create([
                 'program_id' => $program1->id,
                 'type' => 'banner',
@@ -457,6 +496,23 @@ describe('LinkController', function (): void {
             expect($data['creatives'][0]['name'])->toBe('Program 1 Banner');
         });
 
+        test('rejects program_id when affiliate is not a member', function (): void {
+            $program = AffiliateProgram::create([
+                'name' => 'Program Not Joined',
+                'slug' => 'not-joined-' . uniqid(),
+                'commission_type' => CommissionType::Percentage,
+                'commission_rate' => 1000,
+                'is_active' => true,
+            ]);
+
+            $request = Request::create('/affiliate/portal/creatives', 'GET', [
+                'program_id' => $program->id,
+            ]);
+            $request->attributes->set('affiliate', $this->affiliate);
+
+            $this->controller->creatives($request);
+        })->throws(Illuminate\Validation\ValidationException::class);
+
         test('returns creative data with all required fields', function (): void {
             $program = AffiliateProgram::create([
                 'name' => 'Creative Fields Program',
@@ -464,6 +520,15 @@ describe('LinkController', function (): void {
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'is_active' => true,
+            ]);
+
+            AffiliateProgramMembership::query()->create([
+                'affiliate_id' => $this->affiliate->id,
+                'program_id' => $program->id,
+                'status' => MembershipStatus::Approved->value,
+                'applied_at' => now(),
+                'approved_at' => now(),
+                'expires_at' => null,
             ]);
 
             AffiliateProgramCreative::create([
@@ -503,6 +568,60 @@ describe('LinkController', function (): void {
                 'tracking_url',
                 'embed_code',
             ]);
+        });
+
+        test('returns creatives from member programs when no program_id is provided', function (): void {
+            $program1 = AffiliateProgram::create([
+                'name' => 'Member Program',
+                'slug' => 'member-program-' . uniqid(),
+                'commission_type' => CommissionType::Percentage,
+                'commission_rate' => 1000,
+                'is_active' => true,
+            ]);
+
+            $program2 = AffiliateProgram::create([
+                'name' => 'Non Member Program',
+                'slug' => 'non-member-program-' . uniqid(),
+                'commission_type' => CommissionType::Percentage,
+                'commission_rate' => 1000,
+                'is_active' => true,
+            ]);
+
+            AffiliateProgramMembership::query()->create([
+                'affiliate_id' => $this->affiliate->id,
+                'program_id' => $program1->id,
+                'status' => MembershipStatus::Approved->value,
+                'applied_at' => now(),
+                'approved_at' => now(),
+                'expires_at' => null,
+            ]);
+
+            AffiliateProgramCreative::create([
+                'program_id' => $program1->id,
+                'type' => 'banner',
+                'name' => 'Member Creative',
+                'tracking_code' => 'TRACK-MEMBER-' . uniqid(),
+                'asset_url' => 'https://assets.example.com/member.png',
+                'destination_url' => 'https://example.com/member',
+            ]);
+
+            AffiliateProgramCreative::create([
+                'program_id' => $program2->id,
+                'type' => 'banner',
+                'name' => 'Non Member Creative',
+                'tracking_code' => 'TRACK-NONMEMBER-' . uniqid(),
+                'asset_url' => 'https://assets.example.com/nonmember.png',
+                'destination_url' => 'https://example.com/nonmember',
+            ]);
+
+            $request = Request::create('/affiliate/portal/creatives', 'GET');
+            $request->attributes->set('affiliate', $this->affiliate);
+
+            $response = $this->controller->creatives($request);
+            $data = $response->getData(true);
+
+            expect($data['creatives'])->toHaveCount(1);
+            expect($data['creatives'][0]['name'])->toBe('Member Creative');
         });
 
         // Note: Tests for programs() membership are skipped due to a known bug

@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Http\Controllers\Portal;
 
+use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
+use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -64,7 +66,15 @@ final class LinkController extends Controller
             'program_id' => [
                 'nullable',
                 'uuid',
-                Rule::exists(config('affiliates.database.tables.programs', 'affiliate_programs'), 'id'),
+                Rule::exists(config('affiliates.database.tables.program_memberships', 'affiliate_program_memberships'), 'program_id')
+                    ->where(function ($query) use ($affiliate): void {
+                        $query
+                            ->where('affiliate_id', $affiliate->id)
+                            ->where('status', MembershipStatus::Approved->value)
+                            ->where(function ($q): void {
+                                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                            });
+                    }),
             ],
             'campaign' => 'nullable|string|max:100',
             'sub_id' => 'nullable|string|max:100',
@@ -152,7 +162,23 @@ final class LinkController extends Controller
         /** @var Affiliate $affiliate */
         $affiliate = $request->attributes->get('affiliate');
 
-        $programId = $request->get('program_id');
+        $validated = $request->validate([
+            'program_id' => [
+                'nullable',
+                'uuid',
+                Rule::exists(config('affiliates.database.tables.program_memberships', 'affiliate_program_memberships'), 'program_id')
+                    ->where(function ($query) use ($affiliate): void {
+                        $query
+                            ->where('affiliate_id', $affiliate->id)
+                            ->where('status', MembershipStatus::Approved->value)
+                            ->where(function ($q): void {
+                                $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                            });
+                    }),
+            ],
+        ]);
+
+        $programId = $validated['program_id'] ?? null;
 
         $query = AffiliateProgramCreative::query();
 
@@ -160,7 +186,13 @@ final class LinkController extends Controller
             $query->where('program_id', $programId);
         } else {
             // Get creatives from programs the affiliate is a member of
-            $programIds = $affiliate->programs()->pluck('id');
+            $programIds = AffiliateProgramMembership::query()
+                ->where('affiliate_id', $affiliate->id)
+                ->where('status', MembershipStatus::Approved->value)
+                ->where(function ($q): void {
+                    $q->whereNull('expires_at')->orWhere('expires_at', '>', now());
+                })
+                ->pluck('program_id');
             $query->whereIn('program_id', $programIds);
         }
 

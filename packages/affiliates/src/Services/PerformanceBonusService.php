@@ -167,8 +167,7 @@ final class PerformanceBonusService
             ->where("{$affiliatesTable}.status", AffiliateStatus::Active->value)
             ->groupBy("{$affiliatesTable}.id", "{$affiliatesTable}.name", "{$affiliatesTable}.code")
             ->orderByDesc('total_revenue')
-            ->limit($limit)
-            ;
+            ->limit($limit);
 
         $this->applyOwnerScopeToQuery($query, "{$conversionsTable}.owner_type", "{$conversionsTable}.owner_id");
         $this->applyOwnerScopeToQuery($query, "{$affiliatesTable}.owner_type", "{$affiliatesTable}.owner_id");

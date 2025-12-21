@@ -34,27 +34,27 @@ final class DailyAggregationService
      */
     public function aggregateForAffiliate(Affiliate $affiliate, Carbon $date): AffiliateDailyStat
     {
-        $clicks = AffiliateTouchpoint::query()
+        $touchpointStats = AffiliateTouchpoint::query()
             ->where('affiliate_id', $affiliate->id)
             ->whereDate('touched_at', $date)
-            ->count();
+            ->selectRaw('COUNT(*) as clicks, COUNT(DISTINCT ip_address) as unique_clicks')
+            ->first();
 
-        $uniqueClicks = AffiliateTouchpoint::query()
-            ->where('affiliate_id', $affiliate->id)
-            ->whereDate('touched_at', $date)
-            ->distinct('ip_address')
-            ->count('ip_address');
+        $clicks = (int) ($touchpointStats?->clicks ?? 0);
+        $uniqueClicks = (int) ($touchpointStats?->unique_clicks ?? 0);
 
         $attributions = $affiliate->attributions()
             ->whereDate('first_seen_at', $date)
             ->count();
 
-        $conversions = $affiliate->conversions()
-            ->whereDate('occurred_at', $date);
+        $conversionStats = $affiliate->conversions()
+            ->whereDate('occurred_at', $date)
+            ->selectRaw('COUNT(*) as conversion_count, COALESCE(SUM(total_minor), 0) as revenue_minor, COALESCE(SUM(commission_minor), 0) as commission_minor')
+            ->first();
 
-        $conversionCount = $conversions->count();
-        $revenue = (int) $conversions->sum('total_minor');
-        $commission = (int) $conversions->sum('commission_minor');
+        $conversionCount = (int) ($conversionStats?->conversion_count ?? 0);
+        $revenue = (int) ($conversionStats?->revenue_minor ?? 0);
+        $commission = (int) ($conversionStats?->commission_minor ?? 0);
 
         $conversionRate = $clicks > 0 ? $conversionCount / $clicks : 0;
         $epc = $clicks > 0 ? $commission / $clicks : 0;
@@ -67,6 +67,8 @@ final class DailyAggregationService
                 'date' => $date->toDateString(),
             ],
             [
+                'owner_type' => $affiliate->owner_type,
+                'owner_id' => $affiliate->owner_id,
                 'clicks' => $clicks,
                 'unique_clicks' => $uniqueClicks,
                 'attributions' => $attributions,

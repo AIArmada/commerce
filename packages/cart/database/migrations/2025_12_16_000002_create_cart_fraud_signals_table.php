@@ -13,7 +13,7 @@ return new class extends Migration
         Schema::create('cart_fraud_signals', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('cart_id')->index();
-            $table->nullableMorphs('owner');
+            $table->nullableUuidMorphs('owner');
             $table->string('user_id')->nullable()->index();
             $table->string('ip_address')->nullable()->index();
             $table->string('session_id')->nullable()->index();

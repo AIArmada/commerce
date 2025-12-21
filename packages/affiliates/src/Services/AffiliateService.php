@@ -66,6 +66,25 @@ final class AffiliateService
             ->first();
     }
 
+    public function findByCodeWithoutOwnerScope(string $code): ?Affiliate
+    {
+        $normalized = $this->normalizeCode($code);
+        $query = Affiliate::query()->withoutOwnerScope();
+
+        /** @var \Illuminate\Database\Connection $connection */
+        $connection = $query->getConnection();
+        $driver = $connection->getDriverName();
+
+        /** @var Affiliate|null */
+        return $query
+            ->when(
+                $driver === 'pgsql',
+                fn ($q) => $q->whereRaw('code ILIKE ?', [$normalized]),
+                fn ($q) => $q->whereRaw('LOWER(code) = ?', [mb_strtolower($normalized)])
+            )
+            ->first();
+    }
+
     public function findByDefaultVoucherCode(string $voucherCode): ?Affiliate
     {
         $normalized = $this->normalizeCode($voucherCode);
@@ -370,6 +389,8 @@ final class AffiliateService
             'campaign' => $payload['campaign'] ?? null,
             'term' => $payload['term'] ?? null,
             'content' => $payload['content'] ?? null,
+            'owner_type' => $attribution->owner_type ?? $affiliate->owner_type,
+            'owner_id' => $attribution->owner_id ?? $affiliate->owner_id,
             'metadata' => [
                 'cart_identifier' => $attribution->cart_identifier,
                 'cart_instance' => $attribution->cart_instance,

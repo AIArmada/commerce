@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -24,6 +25,7 @@ use Illuminate\Support\Carbon;
 class AffiliateBalance extends Model
 {
     use HasUuids;
+    use ScopesByAffiliateOwner;
 
     protected $fillable = [
         'affiliate_id',

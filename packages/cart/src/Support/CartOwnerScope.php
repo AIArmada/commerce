@@ -21,10 +21,6 @@ final class CartOwnerScope
                 ->where('owner_id', (string) $ownerId);
         }
 
-        if (! (bool) config('cart.owner.enabled', false)) {
-            return $query;
-        }
-
         return $query
             ->where(function (Builder $builder): void {
                 $builder->whereNull('owner_type')

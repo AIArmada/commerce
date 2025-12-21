@@ -159,8 +159,17 @@ class CartMigrationService
     /**
      * Migrate guest cart to user cart when user logs in (user object version).
      */
-    public function migrateGuestCartForUser(mixed $user, string $instance, string $sessionId): object
+    public function migrateGuestCartForUser(mixed $user, string $instance, ?string $sessionId): object
     {
+        if ($sessionId === null || $sessionId === '') {
+            return (object) [
+                'success' => false,
+                'itemsMerged' => 0,
+                'conflicts' => collect(),
+                'message' => 'No guest session to migrate',
+            ];
+        }
+
         $success = $this->migrateGuestCartToUser($user->id, $instance, $sessionId);
 
         return (object) [

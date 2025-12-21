@@ -6,7 +6,9 @@ namespace AIArmada\Cart\Events\Store;
 
 use AIArmada\Cart\Models\CartEvent;
 use AIArmada\CommerceSupport\Contracts\Events\CartEventInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\DB;
+use RuntimeException;
 
 /**
  * Eloquent implementation of cart event repository.
@@ -15,6 +17,41 @@ use Illuminate\Support\Facades\DB;
  */
 final class EloquentCartEventRepository implements CartEventRepositoryInterface
 {
+    private function assertCartAccessible(string $cartId): void
+    {
+        if (! (bool) config('cart.owner.enabled', false)) {
+            return;
+        }
+
+        if (! $this->isCartAccessible($cartId)) {
+            throw new RuntimeException('Cart not accessible in current owner context.');
+        }
+    }
+
+    private function isCartAccessible(string $cartId): bool
+    {
+        $cartsTable = config('cart.database.table', 'carts');
+
+        $query = DB::table($cartsTable)->where('id', $cartId);
+
+        $owner = OwnerContext::resolve();
+
+        if ($owner !== null) {
+            $query->where('owner_type', $owner->getMorphClass())
+                ->where('owner_id', (string) $owner->getKey());
+        } else {
+            $query
+                ->where(function ($builder): void {
+                    $builder->whereNull('owner_type')->orWhere('owner_type', '');
+                })
+                ->where(function ($builder): void {
+                    $builder->whereNull('owner_id')->orWhere('owner_id', '');
+                });
+        }
+
+        return $query->exists();
+    }
+
     /**
      * Record a cart event to the store.
      *
@@ -24,6 +61,8 @@ final class EloquentCartEventRepository implements CartEventRepositoryInterface
      */
     public function record(CartEventInterface $event, string $cartId): string
     {
+        $this->assertCartAccessible($cartId);
+
         $streamPosition = $this->getLatestPosition($cartId) + 1;
 
         $cartEvent = CartEvent::create([
@@ -52,6 +91,8 @@ final class EloquentCartEventRepository implements CartEventRepositoryInterface
         if (empty($events)) {
             return [];
         }
+
+        $this->assertCartAccessible($cartId);
 
         $streamPosition = $this->getLatestPosition($cartId);
         $eventIds = [];
@@ -92,6 +133,10 @@ final class EloquentCartEventRepository implements CartEventRepositoryInterface
      */
     public function getEventsForCart(string $cartId, int $fromPosition = 0): array
     {
+        if ((bool) config('cart.owner.enabled', false) && ! $this->isCartAccessible($cartId)) {
+            return [];
+        }
+
         return CartEvent::query()
             ->where('cart_id', $cartId)
             ->where('stream_position', '>', $fromPosition)
@@ -109,6 +154,10 @@ final class EloquentCartEventRepository implements CartEventRepositoryInterface
      */
     public function getEventsByType(string $cartId, string $eventType): array
     {
+        if ((bool) config('cart.owner.enabled', false) && ! $this->isCartAccessible($cartId)) {
+            return [];
+        }
+
         return CartEvent::query()
             ->where('cart_id', $cartId)
             ->where('event_type', $eventType)
@@ -125,6 +174,10 @@ final class EloquentCartEventRepository implements CartEventRepositoryInterface
      */
     public function getLatestPosition(string $cartId): int
     {
+        if ((bool) config('cart.owner.enabled', false) && ! $this->isCartAccessible($cartId)) {
+            return 0;
+        }
+
         return (int) CartEvent::query()
             ->where('cart_id', $cartId)
             ->max('stream_position') ?? 0;
@@ -138,6 +191,10 @@ final class EloquentCartEventRepository implements CartEventRepositoryInterface
      */
     public function getLatestVersion(string $cartId): int
     {
+        if ((bool) config('cart.owner.enabled', false) && ! $this->isCartAccessible($cartId)) {
+            return 0;
+        }
+
         return (int) CartEvent::query()
             ->where('cart_id', $cartId)
             ->max('aggregate_version') ?? 0;
@@ -150,6 +207,10 @@ final class EloquentCartEventRepository implements CartEventRepositoryInterface
      */
     public function getEventCount(string $cartId): int
     {
+        if ((bool) config('cart.owner.enabled', false) && ! $this->isCartAccessible($cartId)) {
+            return 0;
+        }
+
         return CartEvent::query()
             ->where('cart_id', $cartId)
             ->count();
@@ -165,6 +226,10 @@ final class EloquentCartEventRepository implements CartEventRepositoryInterface
      */
     public function deleteEventsForCart(string $cartId): int
     {
+        if ((bool) config('cart.owner.enabled', false) && ! $this->isCartAccessible($cartId)) {
+            return 0;
+        }
+
         return CartEvent::query()
             ->where('cart_id', $cartId)
             ->delete();

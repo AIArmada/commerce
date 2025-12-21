@@ -9,6 +9,7 @@ return RectorConfig::configure()
         __DIR__ . '/packages',
         __DIR__ . '/tests',
     ])
+    ->withoutParallel()
     ->withTypeCoverageLevel(0)
     ->withDeadCodeLevel(0)
     ->withCodeQualityLevel(0);
