@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Tax\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -29,8 +30,13 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class TaxClass extends Model
 {
-    use HasOwner;
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'tax.features.owner';
     use LogsActivity;
 
     protected $fillable = [
@@ -169,20 +175,12 @@ class TaxClass extends Model
             return $query;
         }
 
-        if (! $owner) {
-            return $query->whereNull('owner_type')->whereNull('owner_id');
-        }
+        $includeGlobal = $includeGlobal && (bool) config('tax.features.owner.include_global', false);
 
-        return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
-            $builder->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
+        /** @var Builder<static> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
-            if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
-                });
-            }
-        });
+        return $scoped;
     }
 
     // =========================================================================

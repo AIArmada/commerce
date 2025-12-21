@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Widgets;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Category;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 
 class CategoryDistributionChart extends ChartWidget
 {
@@ -27,30 +26,10 @@ class CategoryDistributionChart extends ChartWidget
         $query = Category::query();
 
         if ((bool) config('products.features.owner.enabled', true)) {
-            $owner = null;
+            $owner = OwnerContext::resolve();
+            $includeGlobal = (bool) config('products.features.owner.include_global', false);
 
-            if (app()->bound(OwnerResolverInterface::class)) {
-                $owner = app(OwnerResolverInterface::class)->resolve();
-            }
-
-            if ($owner instanceof Model) {
-                $includeGlobal = (bool) config('products.features.owner.include_global', true);
-
-                $query->where(function (Builder $builder) use ($categoriesTable, $owner, $includeGlobal): void {
-                    $builder->where($categoriesTable . '.owner_type', $owner->getMorphClass())
-                        ->where($categoriesTable . '.owner_id', $owner->getKey());
-
-                    if ($includeGlobal) {
-                        $builder->orWhere(function (Builder $inner) use ($categoriesTable): void {
-                            $inner->whereNull($categoriesTable . '.owner_type')
-                                ->whereNull($categoriesTable . '.owner_id');
-                        });
-                    }
-                });
-            } else {
-                $query->whereNull($categoriesTable . '.owner_type')
-                    ->whereNull($categoriesTable . '.owner_id');
-            }
+            $query->forOwner($owner, $includeGlobal);
         }
 
         $categories = $query

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Jnt\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -32,7 +33,10 @@ use Illuminate\Support\Carbon;
 final class JntOrderParcel extends Model
 {
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'jnt.owner';
 
     protected static function booted(): void
     {

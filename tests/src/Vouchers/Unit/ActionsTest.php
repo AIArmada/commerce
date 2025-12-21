@@ -131,8 +131,8 @@ describe('AddVoucherToWallet Action', function (): void {
 
         expect($wallet)->toBeInstanceOf(VoucherWallet::class)
             ->and($wallet->voucher_id)->toBe($voucher->id)
-            ->and($wallet->owner_type)->toBe('user')
-            ->and($wallet->owner_id)->toBe('user-123');
+            ->and($wallet->holder_type)->toBe('user')
+            ->and($wallet->holder_id)->toBe('user-123');
     });
 
     it('returns existing wallet entry if already added', function (): void {

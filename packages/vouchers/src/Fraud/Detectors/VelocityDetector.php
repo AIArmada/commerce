@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Fraud\Detectors;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Fraud\Enums\FraudSignalType;
 use AIArmada\Vouchers\Fraud\FraudSignal;
 use AIArmada\Vouchers\Models\VoucherRedemption;
@@ -271,14 +271,8 @@ class VelocityDetector extends AbstractFraudDetector
             return;
         }
 
-        if (! app()->bound(OwnerResolverInterface::class)) {
-            return;
-        }
-
-        /** @var OwnerResolverInterface $resolver */
-        $resolver = app(OwnerResolverInterface::class);
-        $owner = $resolver->resolve();
-        $includeGlobal = (bool) config('vouchers.owner.include_global', true);
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('vouchers.owner.include_global', false);
 
         if (method_exists($query, 'forOwner')) {
             $query->forOwner($owner, $includeGlobal);

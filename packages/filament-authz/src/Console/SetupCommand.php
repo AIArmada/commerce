@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Console;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAuthz\Enums\SetupStage;
 use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
 use AIArmada\FilamentAuthz\Support\UserModelResolver;
 use Filament\Facades\Filament;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
+use InvalidArgumentException;
 use Spatie\Permission\PermissionServiceProvider;
 use Spatie\Permission\Traits\HasRoles;
 
@@ -32,7 +34,9 @@ class SetupCommand extends Command
         {--tenant= : Configure for specific tenant model}
         {--panel= : Configure for specific panel}
         {--skip-policies : Skip policy generation}
-        {--skip-permissions : Skip permission generation}';
+        {--skip-permissions : Skip permission generation}
+        {--owner-type= : Owner model class or morph type}
+        {--owner-id= : Owner model id}';
 
     /**
      * @var string
@@ -46,22 +50,24 @@ class SetupCommand extends Command
 
     public function handle(): int
     {
-        if ($this->isProhibited()) {
-            return Command::FAILURE;
-        }
+        return $this->withOwnerContext(function (): int {
+            if ($this->isProhibited()) {
+                return Command::FAILURE;
+            }
 
-        $this->welcome();
-        $this->detectEnvironment();
-        $this->configurePackage();
-        $this->setupDatabase();
-        $this->setupRoles();
-        $this->setupPermissions();
-        $this->setupPolicies();
-        $this->setupSuperAdmin();
-        $this->verify();
-        $this->showCompletion();
+            $this->welcome();
+            $this->detectEnvironment();
+            $this->configurePackage();
+            $this->setupDatabase();
+            $this->setupRoles();
+            $this->setupPermissions();
+            $this->setupPolicies();
+            $this->setupSuperAdmin();
+            $this->verify();
+            $this->showCompletion();
 
-        return Command::SUCCESS;
+            return Command::SUCCESS;
+        });
     }
 
     protected function isProhibited(): bool
@@ -522,5 +528,36 @@ class SetupCommand extends Command
         $icon = $status ? '✓' : '✗';
         $color = $status ? 'green' : 'yellow';
         $this->line("  <fg={$color}>{$icon}</> {$item}: {$detail}");
+    }
+
+    private function withOwnerContext(callable $callback): int
+    {
+        if (! config('filament-authz.owner.enabled', false)) {
+            return (int) $callback();
+        }
+
+        if (OwnerContext::resolve() !== null) {
+            return (int) $callback();
+        }
+
+        $ownerType = $this->option('owner-type');
+        $ownerId = $this->option('owner-id');
+
+        if ($ownerType === null || $ownerId === null || $ownerType === '' || $ownerId === '') {
+            $this->error('Owner context is required when filament-authz.owner.enabled is true.');
+            $this->line('Provide --owner-type and --owner-id, or bind OwnerResolverInterface.');
+
+            return self::FAILURE;
+        }
+
+        try {
+            $owner = OwnerContext::fromTypeAndId((string) $ownerType, $ownerId);
+        } catch (InvalidArgumentException $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
+
+        return (int) OwnerContext::withOwner($owner, $callback);
     }
 }

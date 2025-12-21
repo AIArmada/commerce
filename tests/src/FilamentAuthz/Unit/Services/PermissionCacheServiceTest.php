@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\Services\PermissionCacheService;
 use Illuminate\Support\Facades\Cache;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 beforeEach(function (): void {
     config()->set('cache.default', 'array');

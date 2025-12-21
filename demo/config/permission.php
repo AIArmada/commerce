@@ -1,9 +1,10 @@
 <?php
 
 declare(strict_types=1);
-use Spatie\Permission\DefaultTeamResolver;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Support\OwnerContextTeamResolver;
 
 return [
 
@@ -136,12 +137,12 @@ return [
      * (view the latest version of this package's migration file)
      */
 
-    'teams' => false,
+    'teams' => true,
 
     /*
      * The class to use to resolve the permissions team id
      */
-    'team_resolver' => DefaultTeamResolver::class,
+    'team_resolver' => OwnerContextTeamResolver::class,
 
     /*
      * Passport Client Credentials Grant

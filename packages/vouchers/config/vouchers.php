@@ -113,7 +113,7 @@ return [
     */
     'owner' => [
         'enabled' => env('VOUCHERS_OWNER_ENABLED', false),
-        'include_global' => env('VOUCHERS_OWNER_INCLUDE_GLOBAL', true),
+        'include_global' => env('VOUCHERS_OWNER_INCLUDE_GLOBAL', false),
         'auto_assign_on_create' => env('VOUCHERS_OWNER_AUTO_ASSIGN', true),
     ],
 

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Pricing\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Pricing\Support\PricingOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -33,8 +34,11 @@ use Spatie\Activitylog\Traits\LogsActivity;
 class PriceTier extends Model
 {
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
     use LogsActivity;
+
+    protected static string $ownerScopeConfigKey = 'pricing.features.owner';
 
     protected $guarded = ['id'];
 

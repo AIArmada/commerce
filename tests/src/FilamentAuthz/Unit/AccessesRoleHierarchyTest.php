@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\Concerns\AccessesRoleHierarchy;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Role;
 
 // Create a test class that uses the trait
 class TestRoleHierarchyAccessor

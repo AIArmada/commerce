@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Spatie\Permission\Models\Role;
+use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Query\Builder;
+use AIArmada\FilamentAuthz\Models\Role;
 
 class IdentityProviderSync
 {
@@ -58,12 +63,13 @@ class IdentityProviderSync
             return $this;
         }
 
-        $this->groupToRoleMapping = DB::table($table)
+        $query = DB::table($table)
             ->where('provider_type', $this->providerType)
             ->where('provider_name', $this->providerName)
-            ->where('is_active', true)
-            ->pluck('local_role', 'external_group')
-            ->toArray();
+            ->where('is_active', true);
+        $this->applyOwnerScope($query, $table);
+
+        $this->groupToRoleMapping = $query->pluck('local_role', 'external_group')->toArray();
 
         return $this;
     }
@@ -184,18 +190,36 @@ class IdentityProviderSync
             return false;
         }
 
+        $owner = $this->resolveOwnerForWrite();
+        $ownerType = $owner?->getMorphClass();
+        $ownerId = $owner?->getKey();
+
+        $attributes = [
+            'provider_type' => $this->providerType,
+            'provider_name' => $this->providerName,
+            'external_group' => $externalGroup,
+        ];
+
+        if ($this->shouldScopeOwner()) {
+            $attributes['owner_type'] = $ownerType;
+            $attributes['owner_id'] = $ownerId;
+        }
+
+        $values = [
+            'id' => (string) \Illuminate\Support\Str::uuid(),
+            'local_role' => $localRole,
+            'is_active' => true,
+            'updated_at' => now(),
+        ];
+
+        if ($this->shouldScopeOwner()) {
+            $values['owner_type'] = $ownerType;
+            $values['owner_id'] = $ownerId;
+        }
+
         DB::table($table)->updateOrInsert(
-            [
-                'provider_type' => $this->providerType,
-                'provider_name' => $this->providerName,
-                'external_group' => $externalGroup,
-            ],
-            [
-                'id' => (string) \Illuminate\Support\Str::uuid(),
-                'local_role' => $localRole,
-                'is_active' => true,
-                'updated_at' => now(),
-            ]
+            $attributes,
+            $values
         );
 
         return true;
@@ -213,11 +237,13 @@ class IdentityProviderSync
             return false;
         }
 
-        return DB::table($table)
+        $query = DB::table($table)
             ->where('provider_type', $this->providerType)
             ->where('provider_name', $this->providerName)
-            ->where('external_group', $externalGroup)
-            ->delete() > 0;
+            ->where('external_group', $externalGroup);
+        $this->applyOwnerScope($query, $table);
+
+        return $query->delete() > 0;
     }
 
     /**
@@ -234,9 +260,44 @@ class IdentityProviderSync
             return collect();
         }
 
-        return DB::table($table)
+        $query = DB::table($table)
             ->where('provider_type', $this->providerType)
-            ->where('provider_name', $this->providerName)
-            ->get();
+            ->where('provider_name', $this->providerName);
+        $this->applyOwnerScope($query, $table);
+
+        return $query->get();
+    }
+
+    private function applyOwnerScope(Builder $query, string $table): void
+    {
+        if (! $this->shouldScopeOwner()) {
+            return;
+        }
+
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('filament-authz.owner.include_global', false);
+
+        OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, "{$table}.owner_type", "{$table}.owner_id");
+    }
+
+    private function resolveOwnerForWrite(): ?Model
+    {
+        if (! $this->shouldScopeOwner()) {
+            return null;
+        }
+
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('filament-authz.owner.include_global', false);
+
+        if ($owner === null && ! $includeGlobal) {
+            throw new AuthorizationException('Identity provider mappings require an owner context.');
+        }
+
+        return $owner;
+    }
+
+    private function shouldScopeOwner(): bool
+    {
+        return (bool) config('filament-authz.owner.enabled', false);
     }
 }

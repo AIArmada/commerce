@@ -31,6 +31,7 @@ beforeEach(function (): void {
         $table->uuid('id')->primary();
         $table->foreignUuid('requester_id');
         $table->foreignUuid('approver_id')->nullable();
+        $table->nullableMorphs('owner');
         $table->json('requested_permissions')->nullable();
         $table->json('requested_roles')->nullable();
         $table->text('justification')->nullable();

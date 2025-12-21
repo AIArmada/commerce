@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Support;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
@@ -17,7 +18,7 @@ final class PricingOwnerScope
 
     public static function includeGlobal(): bool
     {
-        return (bool) config('pricing.features.owner.include_global', true);
+        return (bool) config('pricing.features.owner.include_global', false);
     }
 
     public static function resolveOwner(): ?Model
@@ -26,14 +27,7 @@ final class PricingOwnerScope
             return null;
         }
 
-        if (! app()->bound(OwnerResolverInterface::class)) {
-            return null;
-        }
-
-        /** @var OwnerResolverInterface $resolver */
-        $resolver = app(OwnerResolverInterface::class);
-
-        return $resolver->resolve();
+        return OwnerContext::resolve();
     }
 
     /**
@@ -49,12 +43,13 @@ final class PricingOwnerScope
         }
 
         $owner = self::resolveOwner();
+        $includeGlobal = self::includeGlobal();
 
-        if ($owner === null) {
-            return $query->whereNull('owner_type')->whereNull('owner_id');
+        if (method_exists($query->getModel(), 'scopeForOwner')) {
+            /** @phpstan-ignore-next-line dynamic scope from HasOwner trait */
+            return $query->forOwner($owner, $includeGlobal);
         }
 
-        /** @phpstan-ignore-next-line dynamic scope from HasOwner trait */
-        return $query->forOwner($owner, self::includeGlobal());
+        return OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
     }
 }

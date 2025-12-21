@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Enums\ResetFrequency;
 use Illuminate\Database\Eloquent\Collection;
@@ -36,7 +37,10 @@ final class DocSequence extends Model
 {
     use HasFactory;
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'docs.owner';
 
     protected $fillable = [
         'name',

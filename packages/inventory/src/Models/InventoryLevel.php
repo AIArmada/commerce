@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Database\Factories\InventoryLevelFactory;
 use AIArmada\Inventory\Enums\AlertStatus;
 use AIArmada\Inventory\Enums\AllocationStrategy;
@@ -63,7 +64,10 @@ final class InventoryLevel extends Model
     use HasFactory;
 
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'inventory.owner';
 
     /**
      * The attributes that are mass assignable.
@@ -352,14 +356,6 @@ final class InventoryLevel extends Model
      */
     protected static function booted(): void
     {
-        static::addGlobalScope('owner', function (Builder $query): void {
-            if (! InventoryOwnerScope::isEnabled()) {
-                return;
-            }
-
-            $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
-        });
-
         static::saving(function (InventoryLevel $level): void {
             if (! InventoryOwnerScope::isEnabled()) {
                 return;

@@ -7,7 +7,7 @@ namespace AIArmada\FilamentAuthz\Resources\RoleResource\Pages;
 use AIArmada\FilamentAuthz\Resources\RoleResource;
 use AIArmada\FilamentAuthz\Support\Concerns\EnsuresLivewireErrorBag;
 use Filament\Resources\Pages\CreateRecord;
-use Spatie\Permission\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 class CreateRole extends CreateRecord

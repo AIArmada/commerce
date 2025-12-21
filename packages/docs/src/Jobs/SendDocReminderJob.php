@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Jobs;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocEmailService;
@@ -34,18 +34,30 @@ class SendDocReminderJob implements ShouldQueue
         public ?string $docId = null,
         public int $daysBeforeDue = 3,
         public int $daysAfterOverdue = 1,
+        public ?string $ownerType = null,
+        public string | int | null $ownerId = null,
     ) {}
 
     public function handle(DocEmailService $emailService): void
     {
-        if ($this->docId !== null) {
-            $this->sendReminderForDoc($emailService, $this->docId);
+        if ($this->shouldFanOutByOwner()) {
+            $this->dispatchPerOwner();
 
             return;
         }
 
-        $this->sendRemindersForUpcomingDue($emailService);
-        $this->sendRemindersForOverdue($emailService);
+        $owner = OwnerContext::fromTypeAndId($this->ownerType, $this->ownerId);
+
+        OwnerContext::withOwner($owner, function () use ($emailService): void {
+            if ($this->docId !== null) {
+                $this->sendReminderForDoc($emailService, $this->docId);
+
+                return;
+            }
+
+            $this->sendRemindersForUpcomingDue($emailService);
+            $this->sendRemindersForOverdue($emailService);
+        });
     }
 
     /**
@@ -202,10 +214,69 @@ class SendDocReminderJob implements ShouldQueue
         }
 
         /** @var Model|null $owner */
-        $owner = app(OwnerResolverInterface::class)->resolve();
-        $includeGlobal = (bool) config('docs.owner.include_global', true);
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('docs.owner.include_global', false);
 
         return $query->forOwner($owner, $includeGlobal);
+    }
+
+    private function shouldFanOutByOwner(): bool
+    {
+        if ($this->docId !== null) {
+            return false;
+        }
+
+        if (! config('docs.owner.enabled', false)) {
+            return false;
+        }
+
+        return $this->ownerType === null && $this->ownerId === null;
+    }
+
+    private function dispatchPerOwner(): void
+    {
+        $owners = Doc::query()
+            ->withoutOwnerScope()
+            ->select(['owner_type', 'owner_id'])
+            ->distinct()
+            ->get();
+
+        if ($owners->isEmpty()) {
+            return;
+        }
+
+        $dispatched = [];
+
+        foreach ($owners as $row) {
+            $ownerType = $this->normalizeOwnerValue($row->owner_type ?? null);
+            $ownerId = $this->normalizeOwnerValue($row->owner_id ?? null);
+            $key = ($ownerType ?? 'global') . '|' . ($ownerId ?? 'global');
+
+            if (isset($dispatched[$key])) {
+                continue;
+            }
+
+            $dispatched[$key] = true;
+
+            self::dispatch(
+                docId: null,
+                daysBeforeDue: $this->daysBeforeDue,
+                daysAfterOverdue: $this->daysAfterOverdue,
+                ownerType: $ownerType,
+                ownerId: $ownerId,
+            );
+        }
+    }
+
+    private function normalizeOwnerValue(mixed $value): string | int | null
+    {
+        if ($value === null || $value === '') {
+            return null;
+        }
+
+        return is_numeric($value) && (string) (int) $value === (string) $value
+            ? (int) $value
+            : (string) $value;
     }
 
     protected function shouldSendReminder(Doc $doc): bool

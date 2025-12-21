@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Console;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Enums\CostingMethod;
+use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\ValuationService;
 use Exception;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 final class CreateValuationSnapshotCommand extends Command
@@ -55,6 +58,57 @@ final class CreateValuationSnapshotCommand extends Command
             $this->info('Location: All locations');
         }
 
+        if (\AIArmada\Inventory\Support\InventoryOwnerScope::isEnabled() && OwnerContext::resolve() === null) {
+            if ($locationId !== null) {
+                $location = InventoryLocation::query()
+                    ->withoutOwnerScope()
+                    ->whereKey($locationId)
+                    ->first();
+
+                if ($location === null) {
+                    $this->error('Unable to resolve the specified location.');
+
+                    return self::FAILURE;
+                }
+
+                $owner = $location->owner;
+
+                return OwnerContext::withOwner($owner, fn (): int => $this->createSnapshot($valuationService, $method, $locationId, $date));
+            }
+
+            $owners = InventoryLocation::query()
+                ->withoutOwnerScope()
+                ->select(['owner_type', 'owner_id'])
+                ->distinct()
+                ->get();
+
+            if ($owners->isEmpty()) {
+                return $this->createSnapshot($valuationService, $method, $locationId, $date);
+            }
+
+            $failed = false;
+
+            foreach ($owners as $row) {
+                $owner = $this->resolveOwnerFromRow($row);
+                $result = OwnerContext::withOwner($owner, fn (): int => $this->createSnapshot($valuationService, $method, $locationId, $date));
+
+                if ($result !== self::SUCCESS) {
+                    $failed = true;
+                }
+            }
+
+            return $failed ? self::FAILURE : self::SUCCESS;
+        }
+
+        return $this->createSnapshot($valuationService, $method, $locationId, $date);
+    }
+
+    private function createSnapshot(
+        ValuationService $valuationService,
+        CostingMethod $method,
+        ?string $locationId,
+        ?Carbon $date,
+    ): int {
         try {
             $snapshot = $valuationService->createSnapshot($method, $locationId, $date);
 
@@ -87,5 +141,16 @@ final class CreateValuationSnapshotCommand extends Command
 
             return self::FAILURE;
         }
+    }
+
+    private function resolveOwnerFromRow(object $row): ?Model
+    {
+        $ownerType = $row->owner_type ?? null;
+        $ownerId = $row->owner_id ?? null;
+
+        return OwnerContext::fromTypeAndId(
+            is_string($ownerType) ? $ownerType : null,
+            is_string($ownerId) || is_int($ownerId) ? $ownerId : null
+        );
     }
 }

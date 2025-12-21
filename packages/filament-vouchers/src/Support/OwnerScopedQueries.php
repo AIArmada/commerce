@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Support;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Vouchers\Models\Voucher;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -17,10 +18,7 @@ final class OwnerScopedQueries
             return null;
         }
 
-        /** @var OwnerResolverInterface $resolver */
-        $resolver = app(OwnerResolverInterface::class);
-
-        return $resolver->resolve();
+        return OwnerContext::resolve();
     }
 
     public static function isEnabled(): bool
@@ -30,7 +28,7 @@ final class OwnerScopedQueries
 
     public static function includeGlobal(): bool
     {
-        return (bool) config('vouchers.owner.include_global', true);
+        return (bool) config('vouchers.owner.include_global', false);
     }
 
     /**
@@ -63,20 +61,7 @@ final class OwnerScopedQueries
             return $query;
         }
 
-        if ($owner === null) {
-            return $query->whereNull('owner_type')->whereNull('owner_id');
-        }
-
-        return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
-            $builder->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
-
-            if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
-                });
-            }
-        });
+        return OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
     }
 
     /**

@@ -78,12 +78,18 @@ function createUserWithRoles(array $roles = []): AIArmada\Commerce\Tests\Fixture
         'password' => bcrypt('password'),
     ]);
 
-    foreach ($roles as $roleName) {
-        $role = Spatie\Permission\Models\Role::firstOrCreate(
-            ['name' => $roleName, 'guard_name' => 'web']
-        );
-        $user->assignRole($role);
+    if ($roles === []) {
+        return $user;
     }
+
+    AIArmada\CommerceSupport\Support\OwnerContext::withOwner($user, function () use ($roles, $user): void {
+        foreach ($roles as $roleName) {
+            $role = AIArmada\FilamentAuthz\Models\Role::firstOrCreate(
+                ['name' => $roleName, 'guard_name' => 'web']
+            );
+            $user->assignRole($role);
+        }
+    });
 
     return $user;
 }

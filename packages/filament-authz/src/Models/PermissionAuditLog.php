@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Models;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\FilamentAuthz\Enums\AuditEventType;
 use AIArmada\FilamentAuthz\Enums\AuditSeverity;
 use DateTimeInterface;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -24,6 +28,8 @@ use Illuminate\Support\Carbon;
  * @property string|null $target_type
  * @property string|null $target_id
  * @property string|null $target_name
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property array<string, mixed>|null $old_value
  * @property array<string, mixed>|null $new_value
  * @property array<string, mixed>|null $context
@@ -36,10 +42,15 @@ use Illuminate\Support\Carbon;
  * @property-read Model $actor
  * @property-read Model|null $subject
  * @property-read Model|null $target
+ * @property-read Model|null $owner
  */
 class PermissionAuditLog extends Model
 {
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'filament-authz.owner';
 
     protected $fillable = [
         'event_type',
@@ -58,6 +69,8 @@ class PermissionAuditLog extends Model
         'user_agent',
         'session_id',
         'occurred_at',
+        'owner_type',
+        'owner_id',
     ];
 
     public function getTable(): string
@@ -90,6 +103,31 @@ class PermissionAuditLog extends Model
     public function target(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $log): void {
+            if (! config('filament-authz.owner.enabled', false)) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            if ($owner === null) {
+                return;
+            }
+
+            if ($log->owner_id === null) {
+                $log->assignOwner($owner);
+
+                return;
+            }
+
+            if (! $log->belongsToOwner($owner)) {
+                throw new AuthorizationException('Cannot write audit logs outside the current owner scope.');
+            }
+        });
     }
 
     /**

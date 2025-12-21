@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Resources;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentJnt\Resources\JntTrackingEventResource\Pages\ListJntTrackingEvents;
 use AIArmada\FilamentJnt\Resources\JntTrackingEventResource\Pages\ViewJntTrackingEvent;
 use AIArmada\FilamentJnt\Resources\JntTrackingEventResource\Schemas\JntTrackingEventInfolist;
@@ -55,13 +55,8 @@ final class JntTrackingEventResource extends BaseJntResource
             return $query;
         }
 
-        $owner = null;
-        if (app()->bound(OwnerResolverInterface::class)) {
-            $owner = app(OwnerResolverInterface::class)->resolve();
-        }
-
-        /** @var bool $includeGlobal */
-        $includeGlobal = (bool) config('jnt.owner.include_global', true);
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('jnt.owner.include_global', false);
 
         return $query->whereHas('order', function (Builder $orderQuery) use ($owner, $includeGlobal): void {
             $model = $orderQuery->getModel();
@@ -70,7 +65,8 @@ final class JntTrackingEventResource extends BaseJntResource
                 return;
             }
 
-            call_user_func([$model, 'scopeForOwner'], $orderQuery, $owner, $includeGlobal);
+            /** @phpstan-ignore-next-line dynamic scope */
+            $orderQuery->forOwner($owner, $includeGlobal);
         });
     }
 

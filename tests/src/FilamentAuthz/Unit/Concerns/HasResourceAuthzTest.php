@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Database\Eloquent\Builder;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 beforeEach(function (): void {
     Role::query()->delete();

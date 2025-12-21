@@ -6,7 +6,7 @@ namespace AIArmada\FilamentAffiliates\Widgets;
 
 use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Actions\Action;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -26,8 +26,8 @@ final class PayoutQueueWidget extends BaseWidget
     public function table(Table $table): Table
     {
         /** @var Model|null $owner */
-        $owner = (bool) config('affiliates.owner.enabled', false) && app()->bound(OwnerResolverInterface::class)
-            ? app(OwnerResolverInterface::class)->resolve()
+        $owner = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerContext::resolve()
             : null;
 
         return $table
@@ -102,8 +102,8 @@ final class PayoutQueueWidget extends BaseWidget
     protected function getTableHeading(): ?string
     {
         /** @var Model|null $owner */
-        $owner = (bool) config('affiliates.owner.enabled', false) && app()->bound(OwnerResolverInterface::class)
-            ? app(OwnerResolverInterface::class)->resolve()
+        $owner = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerContext::resolve()
             : null;
 
         $pendingCount = AffiliatePayout::query()

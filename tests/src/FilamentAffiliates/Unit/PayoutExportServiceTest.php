@@ -32,8 +32,8 @@ function createPayoutWithConversions(): AffiliatePayout
         'amount_minor' => 15000,
         'currency' => 'USD',
         'status' => PayoutStatus::Pending,
-        'owner_type' => $affiliate->getMorphClass(),
-        'owner_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
     ]);
 
     // Create conversions linked to this payout
@@ -187,8 +187,8 @@ it('handles payouts with zero conversions', function (): void {
         'amount_minor' => 0,
         'currency' => 'USD',
         'status' => PayoutStatus::Pending,
-        'owner_type' => $affiliate->getMorphClass(),
-        'owner_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
     ]);
 
     $payout = AffiliatePayout::with('conversions')->find($payout->getKey());

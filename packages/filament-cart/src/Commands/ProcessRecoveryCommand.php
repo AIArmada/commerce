@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Commands;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Services\RecoveryScheduler;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 
 class ProcessRecoveryCommand extends Command
 {
@@ -22,7 +24,7 @@ class ProcessRecoveryCommand extends Command
 
         $this->info('Processing scheduled recovery attempts...');
 
-        $result = $scheduler->processScheduledAttempts();
+        $result = $this->processForOwners($scheduler);
 
         $this->info("Processed: {$result['processed']} attempts");
 
@@ -36,5 +38,59 @@ class ProcessRecoveryCommand extends Command
         }
 
         return self::SUCCESS;
+    }
+
+    /**
+     * @return array{processed: int, failed: int}
+     */
+    private function processForOwners(RecoveryScheduler $scheduler): array
+    {
+        if (! \AIArmada\FilamentCart\Models\RecoveryAttempt::ownerScopingEnabled()) {
+            return $scheduler->processScheduledAttempts();
+        }
+
+        if (OwnerContext::resolve() !== null) {
+            return $scheduler->processScheduledAttempts();
+        }
+
+        $owners = \AIArmada\FilamentCart\Models\RecoveryAttempt::query()
+            ->withoutOwnerScope()
+            ->select(['owner_type', 'owner_id'])
+            ->distinct()
+            ->get();
+
+        if ($owners->isEmpty()) {
+            return $scheduler->processScheduledAttempts();
+        }
+
+        $totals = [
+            'processed' => 0,
+            'failed' => 0,
+        ];
+
+        foreach ($owners as $row) {
+            $owner = $this->resolveOwnerFromRow($row);
+
+            $result = OwnerContext::withOwner(
+                $owner,
+                fn (): array => $scheduler->processScheduledAttempts()
+            );
+
+            $totals['processed'] += $result['processed'];
+            $totals['failed'] += $result['failed'];
+        }
+
+        return $totals;
+    }
+
+    private function resolveOwnerFromRow(object $row): ?Model
+    {
+        $ownerType = $row->owner_type ?? null;
+        $ownerId = $row->owner_id ?? null;
+
+        return OwnerContext::fromTypeAndId(
+            is_string($ownerType) ? $ownerType : null,
+            is_string($ownerId) || is_int($ownerId) ? $ownerId : null
+        );
     }
 }

@@ -24,15 +24,15 @@ final class AddVoucherToWallet
      *
      * @param  array<string, mixed>|null  $metadata
      */
-    public function handle(string $code, Model $owner, ?array $metadata = null): VoucherWallet
+    public function handle(string $code, Model $holder, ?array $metadata = null): VoucherWallet
     {
-        return DB::transaction(function () use ($code, $owner, $metadata): VoucherWallet {
+        return DB::transaction(function () use ($code, $holder, $metadata): VoucherWallet {
             $voucher = $this->findVoucher($code);
 
             // Check if already in wallet
             $existing = VoucherWallet::where('voucher_id', $voucher->id)
-                ->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey())
+                ->where('holder_type', $holder->getMorphClass())
+                ->where('holder_id', $holder->getKey())
                 ->first();
 
             if ($existing) {
@@ -41,8 +41,10 @@ final class AddVoucherToWallet
 
             return VoucherWallet::create([
                 'voucher_id' => $voucher->id,
-                'owner_type' => $owner->getMorphClass(),
-                'owner_id' => $owner->getKey(),
+                'holder_type' => $holder->getMorphClass(),
+                'holder_id' => $holder->getKey(),
+                'owner_type' => $voucher->owner_type,
+                'owner_id' => $voucher->owner_id,
                 'metadata' => $metadata,
                 'added_at' => now(),
             ]);

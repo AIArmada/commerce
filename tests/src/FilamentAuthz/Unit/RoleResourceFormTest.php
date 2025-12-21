@@ -10,8 +10,8 @@ use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Component as LivewireComponent;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 uses(RefreshDatabase::class);
 

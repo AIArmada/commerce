@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Policies;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Models\Shipment;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -141,18 +141,19 @@ class ShipmentPolicy
      */
     protected function isOwner(Authenticatable $user, Shipment $shipment): bool
     {
-        if (! app()->bound(OwnerResolverInterface::class)) {
+        if (! (bool) config('shipping.features.owner.enabled', false)) {
             return false;
         }
 
-        /** @var OwnerResolverInterface $resolver */
-        $resolver = app(OwnerResolverInterface::class);
-
         /** @var Model|null $owner */
-        $owner = $resolver->resolve();
+        $owner = OwnerContext::resolve();
 
         if ($owner === null) {
             return false;
+        }
+
+        if ((bool) config('shipping.features.owner.include_global', false) && $shipment->isGlobal()) {
+            return true;
         }
 
         return $shipment->belongsToOwner($owner);

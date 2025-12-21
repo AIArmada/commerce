@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Console\Commands;
 
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 use League\Csv\Writer;
 use SplTempFileObject;
 
@@ -18,11 +20,7 @@ final class ExportAffiliatePayoutCommand extends Command
     public function handle(): int
     {
         $reference = $this->argument('payout');
-        $payout = AffiliatePayout::query()
-            ->where('reference', $reference)
-            ->orWhere('id', $reference)
-            ->with('conversions')
-            ->first();
+        $payout = $this->resolvePayout($reference);
 
         if (! $payout) {
             $this->error('Payout not found.');
@@ -50,5 +48,62 @@ final class ExportAffiliatePayoutCommand extends Command
         $this->info("Exported payout to {$path}");
 
         return self::SUCCESS;
+    }
+
+    private function resolvePayout(string $reference): ?AffiliatePayout
+    {
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            return $this->queryPayout($reference);
+        }
+
+        $owner = OwnerContext::resolve();
+        if ($owner !== null) {
+            return $this->queryPayout($reference);
+        }
+
+        $owners = AffiliatePayout::query()
+            ->withoutOwnerScope()
+            ->select(['owner_type', 'owner_id'])
+            ->distinct()
+            ->get();
+
+        if ($owners->isEmpty()) {
+            return $this->queryPayout($reference);
+        }
+
+        foreach ($owners as $row) {
+            $owner = $this->resolveOwnerFromRow($row);
+
+            $payout = OwnerContext::withOwner($owner, fn (): ?AffiliatePayout => $this->queryPayout($reference));
+
+            if ($payout !== null) {
+                return $payout;
+            }
+        }
+
+        return null;
+    }
+
+    private function queryPayout(string $reference): ?AffiliatePayout
+    {
+        return AffiliatePayout::query()
+            ->forOwner()
+            ->where(function ($query) use ($reference): void {
+                $query->where('reference', $reference)
+                    ->orWhere('id', $reference);
+            })
+            ->with('conversions')
+            ->first();
+    }
+
+    private function resolveOwnerFromRow(object $row): ?Model
+    {
+        $ownerType = $row->owner_type ?? null;
+        $ownerId = $row->owner_id ?? null;
+
+        return OwnerContext::fromTypeAndId(
+            is_string($ownerType) ? $ownerType : null,
+            is_string($ownerId) || is_int($ownerId) ? $ownerId : null
+        );
     }
 }

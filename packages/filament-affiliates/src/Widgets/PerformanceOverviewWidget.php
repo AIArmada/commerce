@@ -7,7 +7,7 @@ namespace AIArmada\FilamentAffiliates\Widgets;
 use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Database\Eloquent\Model;
@@ -22,8 +22,8 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
     protected function getStats(): array
     {
         /** @var Model|null $owner */
-        $owner = (bool) config('affiliates.owner.enabled', false) && app()->bound(OwnerResolverInterface::class)
-            ? app(OwnerResolverInterface::class)->resolve()
+        $owner = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerContext::resolve()
             : null;
 
         $now = now();

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Services\IdentityProviderSync;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Role;
 
 beforeEach(function (): void {
     User::query()->delete();

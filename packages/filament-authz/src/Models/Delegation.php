@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Models;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\FilamentAuthz\Support\UserModelResolver;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +18,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $delegator_id
  * @property string $delegatee_id
  * @property string $permission
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property \Illuminate\Support\Carbon|null $expires_at
  * @property bool $can_redelegate
  * @property \Illuminate\Support\Carbon|null $revoked_at
@@ -21,10 +27,15 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property \Illuminate\Support\Carbon|null $updated_at
  * @property-read Model $delegator
  * @property-read Model $delegatee
+ * @property-read Model|null $owner
  */
 class Delegation extends Model
 {
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'filament-authz.owner';
 
     protected $fillable = [
         'delegator_id',
@@ -33,6 +44,8 @@ class Delegation extends Model
         'expires_at',
         'can_redelegate',
         'revoked_at',
+        'owner_type',
+        'owner_id',
     ];
 
     public function getTable(): string
@@ -58,6 +71,31 @@ class Delegation extends Model
         $userModel = UserModelResolver::resolve();
 
         return $this->belongsTo($userModel, 'delegatee_id');
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $delegation): void {
+            if (! config('filament-authz.owner.enabled', false)) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            if ($owner === null) {
+                return;
+            }
+
+            if ($delegation->owner_id === null) {
+                $delegation->assignOwner($owner);
+
+                return;
+            }
+
+            if (! $delegation->belongsToOwner($owner)) {
+                throw new AuthorizationException('Cannot write delegations outside the current owner scope.');
+            }
+        });
     }
 
     /**

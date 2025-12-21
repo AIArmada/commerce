@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -14,6 +15,8 @@ use Illuminate\Support\Carbon;
 /**
  * @property string $id
  * @property string $voucher_id
+ * @property string|null $holder_type
+ * @property string|null $holder_id
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property bool $is_claimed
@@ -24,15 +27,21 @@ use Illuminate\Support\Carbon;
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * @property-read Voucher $voucher
+ * @property-read Model|null $holder
  * @property-read Model|null $owner
  */
 final class VoucherWallet extends Model
 {
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'vouchers.owner';
 
     protected $fillable = [
         'voucher_id',
+        'holder_type',
+        'holder_id',
         'owner_type',
         'owner_id',
         'is_claimed',
@@ -67,7 +76,7 @@ final class VoucherWallet extends Model
     /**
      * @return MorphTo<Model, $this>
      */
-    public function owner(): MorphTo
+    public function holder(): MorphTo
     {
         return $this->morphTo();
     }

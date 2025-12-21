@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Models\Concerns;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
@@ -15,7 +16,7 @@ use RuntimeException;
  * Standard owner scoping for filament-cart models.
  *
  * - Uses commerce-support HasOwner columns: owner_type / owner_id
- * - When filament-cart.owner.enabled=true, scopeForOwner() resolves owner via OwnerResolverInterface
+ * - When filament-cart.owner.enabled=true, scopeForOwner() resolves owner via OwnerContext
  * - When enabled and no owner context exists, saves are blocked (fail-fast)
  */
 trait HasFilamentCartOwner
@@ -23,6 +24,9 @@ trait HasFilamentCartOwner
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
+    use HasOwnerScopeConfig;
+
+    protected static string $ownerScopeConfigKey = 'filament-cart.owner';
 
     public static function ownerScopingEnabled(): bool
     {
@@ -35,12 +39,8 @@ trait HasFilamentCartOwner
             return null;
         }
 
-        if (! app()->bound(OwnerResolverInterface::class)) {
-            return null;
-        }
-
         /** @var EloquentModel|null $owner */
-        $owner = app(OwnerResolverInterface::class)->resolve();
+        $owner = OwnerContext::resolve();
 
         return $owner;
     }

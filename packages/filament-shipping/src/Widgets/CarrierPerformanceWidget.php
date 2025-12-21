@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Widgets;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
 use Filament\Widgets\ChartWidget;
@@ -119,10 +119,10 @@ class CarrierPerformanceWidget extends ChartWidget
 
     private function resolveOwner(): ?Model
     {
-        if (! app()->bound(OwnerResolverInterface::class)) {
+        if (! (bool) config('shipping.features.owner.enabled', false)) {
             return null;
         }
 
-        return app(OwnerResolverInterface::class)->resolve();
+        return OwnerContext::resolve();
     }
 }

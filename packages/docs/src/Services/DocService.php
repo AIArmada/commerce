@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Services;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
@@ -210,7 +210,7 @@ class DocService
             return $query;
         }
 
-        $includeGlobal = (bool) config('docs.owner.include_global', true);
+        $includeGlobal = (bool) config('docs.owner.include_global', false);
 
         if ($doc->owner_type !== null && $doc->owner_id !== null) {
             return $query->where(function (Builder $builder) use ($doc, $includeGlobal): void {
@@ -357,7 +357,7 @@ class DocService
             return null;
         }
 
-        return app(OwnerResolverInterface::class)->resolve();
+        return OwnerContext::resolve();
     }
 
     /**
@@ -369,28 +369,14 @@ class DocService
     {
         $query = DocTemplate::query();
 
-        if (config('docs.owner.enabled', false)) {
-            $owner = $this->resolveOwner();
-            $includeGlobal = config('docs.owner.include_global', true);
-
-            if ($owner !== null) {
-                if ($includeGlobal) {
-                    $query->where(function ($q) use ($owner): void {
-                        $q->where('owner_type', $owner->getMorphClass())
-                            ->where('owner_id', $owner->getKey())
-                            ->orWhere(function ($q): void {
-                                $q->whereNull('owner_type')
-                                    ->whereNull('owner_id');
-                            });
-                    });
-                } else {
-                    $query->where('owner_type', $owner->getMorphClass())
-                        ->where('owner_id', $owner->getKey());
-                }
-            } elseif ($includeGlobal) {
-                $query->whereNull('owner_type')->whereNull('owner_id');
-            }
+        if (! config('docs.owner.enabled', false)) {
+            return $query;
         }
+
+        $owner = $this->resolveOwner();
+        $includeGlobal = (bool) config('docs.owner.include_global', false);
+
+        return $query->forOwner($owner, $includeGlobal);
 
         return $query;
     }

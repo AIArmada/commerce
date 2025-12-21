@@ -49,7 +49,8 @@ return new class extends Migration
         Schema::create('voucher_wallets', function (Blueprint $table): void {
             $table->id();
             $table->foreignId('voucher_id')->constrained()->cascadeOnDelete();
-            $table->morphs('owner');
+            $table->nullableMorphs('owner');
+            $table->nullableMorphs('holder');
             $table->boolean('is_claimed')->default(false);
             $table->timestamp('claimed_at')->nullable();
             $table->boolean('is_redeemed')->default(false);
@@ -59,7 +60,7 @@ return new class extends Migration
 
             $table->index('is_claimed');
             $table->index('is_redeemed');
-            $table->unique(['voucher_id', 'owner_type', 'owner_id', 'is_redeemed']);
+            $table->unique(['voucher_id', 'holder_type', 'holder_id', 'is_redeemed']);
         });
     }
 

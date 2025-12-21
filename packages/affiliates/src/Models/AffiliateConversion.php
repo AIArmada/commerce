@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\ConversionStatus;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -44,8 +44,13 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  */
 class AffiliateConversion extends Model
 {
-    use HasOwner;
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
     protected $fillable = [
         'affiliate_id',
@@ -104,22 +109,12 @@ class AffiliateConversion extends Model
             return $query;
         }
 
-        $owner ??= app(OwnerResolverInterface::class)->resolve();
+        $includeGlobal = $includeGlobal && (bool) config('affiliates.owner.include_global', false);
 
-        if (! $owner) {
-            return $query->whereNull('owner_type')->whereNull('owner_id');
-        }
+        /** @var Builder<static> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
-        return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
-            $builder->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
-
-            if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
-                });
-            }
-        });
+        return $scoped;
     }
 
     protected static function booted(): void
@@ -137,7 +132,7 @@ class AffiliateConversion extends Model
                 return;
             }
 
-            $owner = app(OwnerResolverInterface::class)->resolve();
+            $owner = \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
 
             if ($owner) {
                 $conversion->owner_type = $owner->getMorphClass();

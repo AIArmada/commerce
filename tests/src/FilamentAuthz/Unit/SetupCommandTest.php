@@ -89,7 +89,7 @@ describe('SetupCommand', function (): void {
             '--skip-permissions' => true,
         ])->assertSuccessful();
 
-        expect(Spatie\Permission\Models\Role::where('name', 'Super Admin')->exists())->toBeTrue();
+        expect(AIArmada\FilamentAuthz\Models\Role::where('name', 'Super Admin')->exists())->toBeTrue();
     });
 
     it('shows next steps after completion', function (): void {

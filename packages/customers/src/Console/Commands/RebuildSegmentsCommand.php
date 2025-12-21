@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Console\Commands;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\Customers\Services\SegmentationService;
 use Illuminate\Console\Command;
@@ -199,14 +199,9 @@ class RebuildSegmentsCommand extends Command
 
     private function resolveOwnerFromContextOrOptions(): ?Model
     {
-        if (app()->bound(OwnerResolverInterface::class)) {
-            /** @var OwnerResolverInterface $resolver */
-            $resolver = app(OwnerResolverInterface::class);
-
-            $owner = $resolver->resolve();
-            if ($owner !== null) {
-                return $owner;
-            }
+        $owner = OwnerContext::resolve();
+        if ($owner !== null) {
+            return $owner;
         }
 
         $ownerType = $this->option('owner-type');

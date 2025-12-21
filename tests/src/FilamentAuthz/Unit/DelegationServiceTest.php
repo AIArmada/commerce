@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Models\Delegation;
 use AIArmada\FilamentAuthz\Services\CannotDelegateException;
 use AIArmada\FilamentAuthz\Services\DelegationService;
-use Spatie\Permission\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Permission;
 
 beforeEach(function (): void {
     Delegation::query()->delete();

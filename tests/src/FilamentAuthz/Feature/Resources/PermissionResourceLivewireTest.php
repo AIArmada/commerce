@@ -10,7 +10,7 @@ use Filament\Facades\Filament;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
-use Spatie\Permission\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function (): void {

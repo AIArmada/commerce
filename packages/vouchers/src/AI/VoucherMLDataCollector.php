@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\AI;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -28,13 +30,21 @@ final class VoucherMLDataCollector
     public function collectConversionData(Carbon $from, Carbon $to): Collection
     {
         $voucherUsageTable = config('vouchers.database.tables.voucher_usage', 'voucher_usage');
+        $vouchersTable = config('vouchers.database.tables.vouchers', 'vouchers');
         $cartsTable = config('cart.database.tables.carts', 'carts');
-        $ordersTable = 'orders'; // Assumed standard table
+        $ordersTable = config('orders.database.tables.orders', 'orders');
 
-        return DB::table($voucherUsageTable)
+        $query = DB::table($voucherUsageTable)
+            ->join($vouchersTable, "{$vouchersTable}.id", '=', "{$voucherUsageTable}.voucher_id")
             ->join($cartsTable, "{$cartsTable}.id", '=', "{$voucherUsageTable}.cart_id")
             ->leftJoin($ordersTable, "{$ordersTable}.cart_id", '=', "{$cartsTable}.id")
-            ->whereBetween("{$voucherUsageTable}.created_at", [$from, $to])
+            ->whereBetween("{$voucherUsageTable}.created_at", [$from, $to]);
+
+        $this->applyOwnerScopeToQuery($query, 'vouchers.owner', "{$vouchersTable}.owner_type", "{$vouchersTable}.owner_id");
+        $this->applyOwnerScopeToQuery($query, 'cart.owner', "{$cartsTable}.owner_type", "{$cartsTable}.owner_id");
+        $this->applyOwnerScopeToQuery($query, 'orders.owner', "{$ordersTable}.owner_type", "{$ordersTable}.owner_id");
+
+        return $query
             ->select([
                 // Identifiers
                 "{$voucherUsageTable}.id as usage_id",
@@ -78,12 +88,17 @@ final class VoucherMLDataCollector
     public function collectAbandonmentData(Carbon $from, Carbon $to): Collection
     {
         $cartsTable = config('cart.database.tables.carts', 'carts');
-        $ordersTable = 'orders';
+        $ordersTable = config('orders.database.tables.orders', 'orders');
 
-        return DB::table($cartsTable)
+        $query = DB::table($cartsTable)
             ->leftJoin($ordersTable, "{$ordersTable}.cart_id", '=', "{$cartsTable}.id")
             ->whereBetween("{$cartsTable}.created_at", [$from, $to])
-            ->where("{$cartsTable}.item_count", '>', 0)
+            ->where("{$cartsTable}.item_count", '>', 0);
+
+        $this->applyOwnerScopeToQuery($query, 'cart.owner', "{$cartsTable}.owner_type", "{$cartsTable}.owner_id");
+        $this->applyOwnerScopeToQuery($query, 'orders.owner', "{$ordersTable}.owner_type", "{$ordersTable}.owner_id");
+
+        return $query
             ->select([
                 // Identifiers
                 "{$cartsTable}.id as cart_id",
@@ -124,13 +139,17 @@ final class VoucherMLDataCollector
         $voucherUsageTable = config('vouchers.database.tables.voucher_usage', 'voucher_usage');
         $ordersTable = config('vouchers.database.tables.orders', 'orders');
 
-        return DB::table($vouchersTable)
+        $query = DB::table($vouchersTable)
             ->leftJoin($voucherUsageTable, "{$voucherUsageTable}.voucher_id", '=', "{$vouchersTable}.id")
             ->leftJoin($ordersTable, function ($join) use ($voucherUsageTable, $ordersTable): void {
                 $join->on("{$ordersTable}.cart_id", '=', "{$voucherUsageTable}.cart_id");
             })
             ->whereBetween("{$vouchersTable}.created_at", [$from, $to])
-            ->groupBy("{$vouchersTable}.id")
+            ->groupBy("{$vouchersTable}.id");
+
+        $this->applyOwnerScopeToQuery($query, 'vouchers.owner', "{$vouchersTable}.owner_type", "{$vouchersTable}.owner_id");
+
+        return $query
             ->select([
                 // Voucher info
                 "{$vouchersTable}.id as voucher_id",
@@ -235,5 +254,17 @@ final class VoucherMLDataCollector
             'count' => $data->count(),
             'columns' => $columns,
         ];
+    }
+
+    private function applyOwnerScopeToQuery($query, string $configKey, string $ownerTypeColumn, string $ownerIdColumn): void
+    {
+        if (! (bool) config($configKey . '.enabled', false)) {
+            return;
+        }
+
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config($configKey . '.include_global', false);
+
+        OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, $ownerTypeColumn, $ownerIdColumn);
     }
 }

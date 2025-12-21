@@ -6,7 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Enums\PermissionScope;
 use AIArmada\FilamentAuthz\Models\ScopedPermission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Permission;
 
 uses(RefreshDatabase::class);
 

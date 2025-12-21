@@ -4,16 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Pages;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use BackedEnum;
 use Carbon\Carbon;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Pages\Page;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 class AuthzDashboardPage extends Page
 {
@@ -64,14 +67,16 @@ class AuthzDashboardPage extends Page
             $denialCount = 0;
 
             if (DB::getSchemaBuilder()->hasTable($auditTable)) {
-                $recentActivity = DB::table($auditTable)
-                    ->where('created_at', '>=', $since)
-                    ->count();
+                $recentActivityQuery = DB::table($auditTable)
+                    ->where('created_at', '>=', $since);
+                $this->applyOwnerScope($recentActivityQuery, $auditTable);
+                $recentActivity = $recentActivityQuery->count();
 
-                $denialCount = DB::table($auditTable)
+                $denialQuery = DB::table($auditTable)
                     ->where('created_at', '>=', $since)
-                    ->where('event_type', 'like', '%denied%')
-                    ->count();
+                    ->where('event_type', 'like', '%denied%');
+                $this->applyOwnerScope($denialQuery, $auditTable);
+                $denialCount = $denialQuery->count();
             }
 
             return [
@@ -97,6 +102,8 @@ class AuthzDashboardPage extends Page
         $query = DB::table($auditTable)
             ->orderBy('created_at', 'desc')
             ->limit(20);
+
+        $this->applyOwnerScope($query, $auditTable);
 
         if ($this->filterMode === 'denials') {
             $query->where('event_type', 'like', '%denied%');
@@ -140,12 +147,14 @@ class AuthzDashboardPage extends Page
             $since = now()->subHours(24);
 
             // Try MySQL-compatible query
-            $results = DB::table($auditTable)
+            $query = DB::table($auditTable)
                 ->selectRaw('HOUR(created_at) as hour, COUNT(*) as count')
                 ->where('created_at', '>=', $since)
-                ->groupBy('hour')
-                ->pluck('count', 'hour')
-                ->toArray();
+                ->groupBy('hour');
+
+            $this->applyOwnerScope($query, $auditTable);
+
+            $results = $query->pluck('count', 'hour')->toArray();
 
             $breakdown = [];
             for ($i = 0; $i < 24; $i++) {
@@ -174,15 +183,17 @@ class AuthzDashboardPage extends Page
         try {
             $since = $this->getTimeRangeStart();
 
-            return DB::table($auditTable)
+            $query = DB::table($auditTable)
                 ->selectRaw("JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.permission')) as permission, COUNT(*) as count")
                 ->where('created_at', '>=', $since)
                 ->whereNotNull('metadata')
                 ->groupBy('permission')
                 ->orderBy('count', 'desc')
-                ->limit(20)
-                ->pluck('count', 'permission')
-                ->toArray();
+                ->limit(20);
+
+            $this->applyOwnerScope($query, $auditTable);
+
+            return $query->pluck('count', 'permission')->toArray();
         } catch (Exception $e) {
             // Fallback for databases without JSON functions
             return [];
@@ -203,13 +214,16 @@ class AuthzDashboardPage extends Page
         $since = $this->getTimeRangeStart();
 
         // Detect unusual patterns: high denial rates per user
-        $anomalies = DB::table($auditTable)
+        $query = DB::table($auditTable)
             ->selectRaw('actor_id, COUNT(*) as total, SUM(CASE WHEN event_type LIKE "%denied%" THEN 1 ELSE 0 END) as denials')
             ->where('created_at', '>=', $since)
             ->groupBy('actor_id')
             ->havingRaw('denials / total > 0.5 AND total > 5')
-            ->limit(10)
-            ->get()
+            ->limit(10);
+
+        $this->applyOwnerScope($query, $auditTable);
+
+        $anomalies = $query->get()
             ->map(function ($row) {
                 return [
                     'user_id' => $row->actor_id,
@@ -263,6 +277,18 @@ class AuthzDashboardPage extends Page
             '30d' => now()->subDays(30),
             default => now()->subHours(24),
         };
+    }
+
+    private function applyOwnerScope(Builder $query, string $table): void
+    {
+        if (! config('filament-authz.owner.enabled', false)) {
+            return;
+        }
+
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('filament-authz.owner.include_global', false);
+
+        OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, "{$table}.owner_type", "{$table}.owner_id");
     }
 
     protected function getHeaderActions(): array

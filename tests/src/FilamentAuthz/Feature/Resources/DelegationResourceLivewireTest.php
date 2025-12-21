@@ -32,6 +32,7 @@ beforeEach(function (): void {
         $table->foreignUuid('delegator_id');
         $table->foreignUuid('delegatee_id');
         $table->string('permission');
+        $table->nullableMorphs('owner');
         $table->boolean('can_redelegate')->default(false);
         $table->timestamp('expires_at')->nullable();
         $table->timestamp('revoked_at')->nullable();

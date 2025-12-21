@@ -61,7 +61,7 @@ return [
     */
     'owner' => [
         'enabled' => env('CART_OWNER_ENABLED', false),
-        'include_global' => env('CART_OWNER_INCLUDE_GLOBAL', true),
+        'include_global' => env('CART_OWNER_INCLUDE_GLOBAL', false),
     ],
 
     /*

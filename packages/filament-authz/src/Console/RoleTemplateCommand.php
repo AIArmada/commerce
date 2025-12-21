@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Console;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAuthz\Models\RoleTemplate;
 use AIArmada\FilamentAuthz\Services\RoleTemplateService;
 use Illuminate\Console\Command;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use InvalidArgumentException;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
@@ -24,33 +26,37 @@ class RoleTemplateCommand extends Command
     protected $signature = 'authz:templates
         {action? : The action to perform (list, create, create-role, sync, sync-all, delete)}
         {--template= : The template slug}
-        {--role= : The role name}';
+        {--role= : The role name}
+        {--owner-type= : Owner model class or morph type}
+        {--owner-id= : Owner model id}';
 
     protected $description = 'Manage role templates';
 
     public function handle(RoleTemplateService $service): int
     {
-        $action = $this->argument('action') ?? select(
-            label: 'What would you like to do?',
-            options: [
-                'list' => 'List all templates',
-                'create' => 'Create a new template',
-                'create-role' => 'Create role from template',
-                'sync' => 'Sync role with template',
-                'sync-all' => 'Sync all roles from template',
-                'delete' => 'Delete a template',
-            ]
-        );
+        return $this->withOwnerContext(function () use ($service): int {
+            $action = $this->argument('action') ?? select(
+                label: 'What would you like to do?',
+                options: [
+                    'list' => 'List all templates',
+                    'create' => 'Create a new template',
+                    'create-role' => 'Create role from template',
+                    'sync' => 'Sync role with template',
+                    'sync-all' => 'Sync all roles from template',
+                    'delete' => 'Delete a template',
+                ]
+            );
 
-        return match ($action) {
-            'list' => $this->listTemplates($service),
-            'create' => $this->createTemplate($service),
-            'create-role' => $this->createRoleFromTemplate($service),
-            'sync' => $this->syncRole($service),
-            'sync-all' => $this->syncAllRoles($service),
-            'delete' => $this->deleteTemplate($service),
-            default => $this->listTemplates($service),
-        };
+            return match ($action) {
+                'list' => $this->listTemplates($service),
+                'create' => $this->createTemplate($service),
+                'create-role' => $this->createRoleFromTemplate($service),
+                'sync' => $this->syncRole($service),
+                'sync-all' => $this->syncAllRoles($service),
+                'delete' => $this->deleteTemplate($service),
+                default => $this->listTemplates($service),
+            };
+        });
     }
 
     protected function listTemplates(RoleTemplateService $service): int
@@ -236,6 +242,37 @@ class RoleTemplateCommand extends Command
         }
 
         return self::FAILURE;
+    }
+
+    private function withOwnerContext(callable $callback): int
+    {
+        if (! config('filament-authz.owner.enabled', false)) {
+            return (int) $callback();
+        }
+
+        if (OwnerContext::resolve() !== null) {
+            return (int) $callback();
+        }
+
+        $ownerType = $this->option('owner-type');
+        $ownerId = $this->option('owner-id');
+
+        if ($ownerType === null || $ownerId === null || $ownerType === '' || $ownerId === '') {
+            $this->error('Owner context is required when filament-authz.owner.enabled is true.');
+            $this->line('Provide --owner-type and --owner-id, or bind OwnerResolverInterface.');
+
+            return self::FAILURE;
+        }
+
+        try {
+            $owner = OwnerContext::fromTypeAndId((string) $ownerType, $ownerId);
+        } catch (InvalidArgumentException $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
+
+        return (int) OwnerContext::withOwner($owner, $callback);
     }
 
     protected function searchTemplate(string $label): ?string

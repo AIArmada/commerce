@@ -11,15 +11,28 @@ final class CartOwnerScope
 {
     public static function apply(Builder $query, StorageInterface $storage): Builder
     {
-        $ownerType = $storage->getOwnerType();
-        $ownerId = $storage->getOwnerId();
+        return self::applyForOwner($query, $storage->getOwnerType(), $storage->getOwnerId());
+    }
 
-        if ($ownerType !== null && $ownerId !== null) {
+    public static function applyForOwner(Builder $query, ?string $ownerType, string | int | null $ownerId): Builder
+    {
+        if ($ownerType !== null && $ownerId !== null && $ownerType !== '' && (string) $ownerId !== '') {
             return $query->where('owner_type', $ownerType)
                 ->where('owner_id', (string) $ownerId);
         }
 
-        return $query->where('owner_type', '')
-            ->where('owner_id', '');
+        if (! (bool) config('cart.owner.enabled', false)) {
+            return $query;
+        }
+
+        return $query
+            ->where(function (Builder $builder): void {
+                $builder->whereNull('owner_type')
+                    ->orWhere('owner_type', '');
+            })
+            ->where(function (Builder $builder): void {
+                $builder->whereNull('owner_id')
+                    ->orWhere('owner_id', '');
+            });
     }
 }

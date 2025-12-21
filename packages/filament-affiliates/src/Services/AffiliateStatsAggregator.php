@@ -8,15 +8,13 @@ use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
 final class AffiliateStatsAggregator
 {
-    public function __construct(
-        private readonly OwnerResolverInterface $ownerResolver
-    ) {}
+    public function __construct() {}
 
     /**
      * @return array{
@@ -84,6 +82,6 @@ final class AffiliateStatsAggregator
             return null;
         }
 
-        return $this->ownerResolver->resolve();
+        return OwnerContext::resolve();
     }
 }

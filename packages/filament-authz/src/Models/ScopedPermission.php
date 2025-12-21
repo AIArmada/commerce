@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Models;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\FilamentAuthz\Enums\PermissionScope;
 use AIArmada\FilamentAuthz\Support\UserModelResolver;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
-use Spatie\Permission\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Permission;
 
 /**
  * @property string $id
@@ -23,6 +27,8 @@ use Spatie\Permission\Models\Permission;
  * @property string|null $scope_id
  * @property string|null $scope_value
  * @property string|null $scope_model
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property array<string, mixed>|null $conditions
  * @property Carbon $granted_at
  * @property Carbon|null $expires_at
@@ -32,10 +38,15 @@ use Spatie\Permission\Models\Permission;
  * @property-read Permission $permission
  * @property-read Model $permissionable
  * @property-read Model|null $granter
+ * @property-read Model|null $owner
  */
 class ScopedPermission extends Model
 {
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'filament-authz.owner';
 
     protected $fillable = [
         'permission_id',
@@ -49,6 +60,8 @@ class ScopedPermission extends Model
         'granted_at',
         'expires_at',
         'granted_by',
+        'owner_type',
+        'owner_id',
     ];
 
     public function getTable(): string
@@ -83,6 +96,31 @@ class ScopedPermission extends Model
         $userModel = UserModelResolver::resolve();
 
         return $this->belongsTo($userModel, 'granted_by');
+    }
+
+    protected static function booted(): void
+    {
+        static::saving(function (self $permission): void {
+            if (! config('filament-authz.owner.enabled', false)) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            if ($owner === null) {
+                return;
+            }
+
+            if ($permission->owner_id === null) {
+                $permission->assignOwner($owner);
+
+                return;
+            }
+
+            if (! $permission->belongsToOwner($owner)) {
+                throw new AuthorizationException('Cannot write scoped permissions outside the current owner scope.');
+            }
+        });
     }
 
     /**

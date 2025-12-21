@@ -13,7 +13,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Role;
 
 class RoleHierarchyPage extends Page
 {

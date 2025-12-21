@@ -8,8 +8,8 @@ use AIArmada\FilamentAuthz\Support\Macros\NavigationItemMacros;
 use AIArmada\FilamentAuthz\Support\Macros\NavigationMacros;
 use Filament\Navigation\NavigationItem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 uses(RefreshDatabase::class);
 

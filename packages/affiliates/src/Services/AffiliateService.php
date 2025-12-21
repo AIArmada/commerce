@@ -17,7 +17,8 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Cart;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Illuminate\Cache\Repository as CacheRepository;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Database\Eloquent\Builder;
@@ -31,7 +32,6 @@ final class AffiliateService
 {
     public function __construct(
         private readonly CommissionCalculator $commissionCalculator,
-        private readonly OwnerResolverInterface $ownerResolver,
         private readonly Dispatcher $events,
         private readonly WebhookDispatcher $webhooks,
         private readonly AttributionModel $attributionModel
@@ -45,13 +45,7 @@ final class AffiliateService
             return $query;
         }
 
-        $owner = $this->resolveOwner();
-
-        if ($owner) {
-            return $query->forOwner($owner);
-        }
-
-        return $query->globalOnly();
+        return $query->forOwner($this->resolveOwner());
     }
 
     public function findByCode(string $code): ?Affiliate
@@ -804,20 +798,9 @@ final class AffiliateService
         }
 
         $owner = $this->resolveOwner();
+        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
 
-        if ($owner) {
-            $query->where(function (Builder $builder) use ($owner): void {
-                $builder->where('owner_type', $owner->getMorphClass())
-                    ->where('owner_id', $owner->getKey())
-                    ->orWhere(function (Builder $inner): void {
-                        $inner->whereNull('owner_type')->whereNull('owner_id');
-                    });
-            });
-
-            return $query;
-        }
-
-        return $query->whereNull('owner_type')->whereNull('owner_id');
+        return OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
     }
 
     private function pruneAttributionOverflow(
@@ -869,6 +852,6 @@ final class AffiliateService
             return null;
         }
 
-        return $this->ownerResolver->resolve();
+        return OwnerContext::resolve();
     }
 }

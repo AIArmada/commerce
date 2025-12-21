@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Resources;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Resources\Resource;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -57,17 +57,14 @@ abstract class BaseJntResource extends Resource
             return $query;
         }
 
-        $owner = null;
-        if (app()->bound(OwnerResolverInterface::class)) {
-            $owner = app(OwnerResolverInterface::class)->resolve();
+        if (! (bool) config('jnt.owner.enabled', false)) {
+            return $query;
         }
 
-        /** @var bool $includeGlobal */
-        $includeGlobal = (bool) config('jnt.owner.include_global', true);
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('jnt.owner.include_global', false);
 
-        /** @var Builder<Model> $scoped */
-        $scoped = call_user_func([$model, 'scopeForOwner'], $query, $owner, $includeGlobal);
-
-        return $scoped;
+        /** @phpstan-ignore-next-line dynamic scope */
+        return $query->forOwner($owner, $includeGlobal);
     }
 }

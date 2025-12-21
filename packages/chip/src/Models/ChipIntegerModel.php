@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Models;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +23,9 @@ abstract class ChipIntegerModel extends Model
     use HasOwner {
         scopeForOwner as private scopeForOwnerUsingTrait;
     }
+    use HasOwnerScopeConfig;
+
+    protected static string $ownerScopeConfigKey = 'chip.owner';
 
     public $incrementing = false;
 
@@ -74,11 +77,7 @@ abstract class ChipIntegerModel extends Model
 
     protected function resolveOwner(): ?Model
     {
-        if (! app()->bound(OwnerResolverInterface::class)) {
-            return null;
-        }
-
-        return app(OwnerResolverInterface::class)->resolve();
+        return \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
     }
 
     protected static function booted(): void

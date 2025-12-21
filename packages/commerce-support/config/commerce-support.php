@@ -12,5 +12,6 @@ return [
     */
     'owner' => [
         'resolver' => env('COMMERCE_OWNER_RESOLVER', NullOwnerResolver::class),
+        'team_type' => env('COMMERCE_OWNER_TEAM_TYPE'),
     ],
 ];

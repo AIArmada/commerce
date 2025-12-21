@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Docs\Enums\DocType;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -26,7 +27,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class DocWorkflow extends Model
 {
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'docs.owner';
 
     protected $fillable = [
         'owner_type',

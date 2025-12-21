@@ -9,7 +9,7 @@ use AIArmada\FilamentAuthz\Models\PermissionGroup;
 use AIArmada\FilamentAuthz\Services\ImplicitPermissionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
-use Spatie\Permission\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Permission;
 
 uses(RefreshDatabase::class);
 

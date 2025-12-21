@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Campaigns\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Vouchers\Campaigns\Enums\CampaignEventType;
 use AIArmada\Vouchers\Campaigns\Models\Campaign;
 use AIArmada\Vouchers\Campaigns\Models\CampaignEvent;
@@ -135,17 +137,20 @@ class CampaignAnalytics
         // Query event counts grouped by period
         $tableName = (new CampaignEvent)->getTable();
 
-        $events = DB::table($tableName)
+        $eventsQuery = DB::table($tableName)
             ->select([
                 DB::raw("DATE_FORMAT(occurred_at, '{$dbFormat}') as period"),
                 'event_type',
                 DB::raw('COUNT(*) as count'),
                 DB::raw('COALESCE(SUM(value_cents), 0) as total_value'),
             ])
-            ->where('campaign_id', $campaign->id)
+            ->where("{$tableName}.campaign_id", $campaign->id)
             ->whereBetween('occurred_at', [$from, $to])
-            ->groupBy('period', 'event_type')
-            ->get();
+            ->groupBy('period', 'event_type');
+
+        $this->applyOwnerScopeToEventsQuery($eventsQuery, $tableName);
+
+        $events = $eventsQuery->get();
 
         foreach ($events as $event) {
             if (! isset($data[$event->period])) {
@@ -187,13 +192,15 @@ class CampaignAnalytics
                 DB::raw('COUNT(*) as count'),
                 DB::raw('COALESCE(SUM(value_cents), 0) as total_value'),
             ])
-            ->where('campaign_id', $campaign->id)
+            ->where("{$tableName}.campaign_id", $campaign->id)
             ->whereNotNull('channel')
             ->groupBy('channel', 'event_type');
 
         if ($from !== null && $to !== null) {
             $query->whereBetween('occurred_at', [$from, $to]);
         }
+
+        $this->applyOwnerScopeToEventsQuery($query, $tableName);
 
         $results = $query->get();
 
@@ -237,6 +244,21 @@ class CampaignAnalytics
         }
 
         return $channels;
+    }
+
+    private function applyOwnerScopeToEventsQuery($query, string $eventsTable): void
+    {
+        if (! (bool) config('vouchers.owner.enabled', false)) {
+            return;
+        }
+
+        $campaignsTable = (new Campaign)->getTable();
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('vouchers.owner.include_global', false);
+
+        $query->join($campaignsTable, "{$campaignsTable}.id", '=', "{$eventsTable}.campaign_id");
+
+        OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, "{$campaignsTable}.owner_type", "{$campaignsTable}.owner_id");
     }
 
     /**

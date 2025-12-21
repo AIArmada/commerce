@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Support;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -20,12 +20,12 @@ final class DocsOwnerScope
      */
     public static function apply(Builder $query): Builder
     {
-        if (! config('docs.owner.enabled', false)) {
+        if (! (bool) config('docs.owner.enabled', false)) {
             return $query;
         }
 
         $owner = self::resolveOwner();
-        $includeGlobal = (bool) config('docs.owner.include_global', true);
+        $includeGlobal = (bool) config('docs.owner.include_global', false);
 
         $model = $query->getModel();
 
@@ -33,10 +33,8 @@ final class DocsOwnerScope
             return $query;
         }
 
-        /** @var Builder<TModel> $scoped */
-        $scoped = $model->scopeForOwner($query, $owner, $includeGlobal);
-
-        return $scoped;
+        /** @phpstan-ignore-next-line dynamic scope */
+        return $query->forOwner($owner, $includeGlobal);
     }
 
     /**
@@ -50,12 +48,12 @@ final class DocsOwnerScope
 
     public static function assertCanAccessDoc(Doc $doc): void
     {
-        if (! config('docs.owner.enabled', false)) {
+        if (! (bool) config('docs.owner.enabled', false)) {
             return;
         }
 
         $owner = self::resolveOwner();
-        $includeGlobal = (bool) config('docs.owner.include_global', true);
+        $includeGlobal = (bool) config('docs.owner.include_global', false);
 
         $isAllowed = match (true) {
             $owner !== null => $doc->belongsToOwner($owner) || ($includeGlobal && $doc->isGlobal()),
@@ -69,6 +67,10 @@ final class DocsOwnerScope
 
     private static function resolveOwner(): ?Model
     {
-        return app(OwnerResolverInterface::class)->resolve();
+        if (! (bool) config('docs.owner.enabled', false)) {
+            return null;
+        }
+
+        return OwnerContext::resolve();
     }
 }

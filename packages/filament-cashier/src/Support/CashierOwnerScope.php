@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Support;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Schema;
@@ -51,13 +51,7 @@ final class CashierOwnerScope
 
     private static function resolveOwner(): ?Model
     {
-        if (! app()->bound(OwnerResolverInterface::class)) {
-            return null;
-        }
-
-        $resolver = app(OwnerResolverInterface::class);
-
-        return $resolver->resolve();
+        return OwnerContext::resolve();
     }
 
     private static function modelHasUserId(Model $model): bool

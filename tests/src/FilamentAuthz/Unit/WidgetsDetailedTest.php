@@ -7,8 +7,8 @@ use AIArmada\FilamentAuthz\Widgets\PermissionStatsWidget;
 use AIArmada\FilamentAuthz\Widgets\RecentActivityWidget;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\TableWidget;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 describe('PermissionStatsWidget', function (): void {
     it('can be instantiated', function (): void {

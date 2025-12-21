@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Docs\Enums\DocStatus;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -55,7 +56,10 @@ final class Doc extends Model
 {
     use HasFactory;
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'docs.owner';
 
     protected $fillable = [
         'doc_number',

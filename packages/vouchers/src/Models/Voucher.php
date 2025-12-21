@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Vouchers\Campaigns\Models\Campaign;
 use AIArmada\Vouchers\Campaigns\Models\CampaignVariant;
 use AIArmada\Vouchers\Enums\VoucherStatus;
@@ -67,8 +68,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class Voucher extends Model
 {
     use HasFactory;
-    use HasOwner;
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'vouchers.owner';
 
     protected $fillable = [
         'code',
@@ -208,20 +214,12 @@ class Voucher extends Model
             return $query;
         }
 
-        if ($owner === null) {
-            return $query->whereNull('owner_type')->whereNull('owner_id');
-        }
+        $includeGlobal = $includeGlobal && (bool) config('vouchers.owner.include_global', false);
 
-        return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
-            $builder->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
+        /** @var Builder<Voucher> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
-            if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
-                });
-            }
-        });
+        return $scoped;
     }
 
     public function allowsManualRedemption(): bool

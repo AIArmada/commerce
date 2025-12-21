@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Console;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAuthz\Models\PermissionSnapshot;
 use AIArmada\FilamentAuthz\Services\PermissionVersioningService;
 use Illuminate\Console\Command;
+use InvalidArgumentException;
 
 class SnapshotCommand extends Command
 {
@@ -21,7 +23,9 @@ class SnapshotCommand extends Command
         {--to= : ID of second snapshot for comparison}
         {--snapshot= : Snapshot ID for rollback}
         {--dry-run : Preview rollback without applying}
-        {--force : Force rollback without confirmation}';
+        {--force : Force rollback without confirmation}
+        {--owner-type= : Owner model class or morph type}
+        {--owner-id= : Owner model id}';
 
     /**
      * @var string
@@ -30,15 +34,17 @@ class SnapshotCommand extends Command
 
     public function handle(PermissionVersioningService $versioning): int
     {
-        $action = $this->argument('action');
+        return $this->withOwnerContext(function () use ($versioning): int {
+            $action = $this->argument('action');
 
-        return match ($action) {
-            'create' => $this->createSnapshot($versioning),
-            'list' => $this->listSnapshots($versioning),
-            'compare' => $this->compareSnapshots($versioning),
-            'rollback' => $this->rollbackSnapshot($versioning),
-            default => $this->invalidAction($action),
-        };
+            return match ($action) {
+                'create' => $this->createSnapshot($versioning),
+                'list' => $this->listSnapshots($versioning),
+                'compare' => $this->compareSnapshots($versioning),
+                'rollback' => $this->rollbackSnapshot($versioning),
+                default => $this->invalidAction($action),
+            };
+        });
     }
 
     protected function createSnapshot(PermissionVersioningService $versioning): int
@@ -209,6 +215,37 @@ class SnapshotCommand extends Command
         }
 
         return Command::SUCCESS;
+    }
+
+    private function withOwnerContext(callable $callback): int
+    {
+        if (! config('filament-authz.owner.enabled', false)) {
+            return (int) $callback();
+        }
+
+        if (OwnerContext::resolve() !== null) {
+            return (int) $callback();
+        }
+
+        $ownerType = $this->option('owner-type');
+        $ownerId = $this->option('owner-id');
+
+        if ($ownerType === null || $ownerId === null || $ownerType === '' || $ownerId === '') {
+            $this->error('Owner context is required when filament-authz.owner.enabled is true.');
+            $this->line('Provide --owner-type and --owner-id, or bind OwnerResolverInterface.');
+
+            return self::FAILURE;
+        }
+
+        try {
+            $owner = OwnerContext::fromTypeAndId((string) $ownerType, $ownerId);
+        } catch (InvalidArgumentException $exception) {
+            $this->error($exception->getMessage());
+
+            return self::FAILURE;
+        }
+
+        return (int) OwnerContext::withOwner($owner, $callback);
     }
 
     protected function invalidAction(string $action): int

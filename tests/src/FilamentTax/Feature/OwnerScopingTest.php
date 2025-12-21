@@ -29,6 +29,10 @@ function bindOwnerResolverForFilamentTax(?Model $owner): void
 }
 
 it('scopes filament tax resources and badges to the current owner', function (): void {
+    $taxConfig = require dirname(__DIR__, 4) . '/packages/tax/config/tax.php';
+
+    expect($taxConfig['features']['owner']['include_global'] ?? null)->toBeTrue();
+
     config()->set('tax.features.owner.enabled', true);
     config()->set('tax.features.owner.include_global', false);
 

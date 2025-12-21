@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentJnt\Widgets;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Models\JntOrder;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -76,7 +76,7 @@ final class JntStatsWidget extends BaseWidget
     private function ordersQuery(): Builder
     {
         $owner = $this->resolveOwner();
-        $includeGlobal = (bool) config('jnt.owner.include_global', true);
+        $includeGlobal = (bool) config('jnt.owner.include_global', false);
 
         /** @var Builder<JntOrder> $query */
         $query = JntOrder::query()->forOwner($owner, $includeGlobal);
@@ -86,10 +86,10 @@ final class JntStatsWidget extends BaseWidget
 
     private function resolveOwner(): ?Model
     {
-        if (! app()->bound(OwnerResolverInterface::class)) {
+        if (! (bool) config('jnt.owner.enabled', false)) {
             return null;
         }
 
-        return app(OwnerResolverInterface::class)->resolve();
+        return OwnerContext::resolve();
     }
 }

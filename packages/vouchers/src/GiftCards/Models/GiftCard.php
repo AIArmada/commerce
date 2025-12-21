@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\GiftCards\Models;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardStatus;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardTransactionType;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardType;
@@ -46,8 +46,13 @@ use RuntimeException;
  */
 class GiftCard extends Model
 {
-    use HasOwner;
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'vouchers.owner';
 
     protected $fillable = [
         'code',
@@ -126,20 +131,12 @@ class GiftCard extends Model
             return $query;
         }
 
-        if ($owner === null) {
-            return $query->whereNull('owner_type')->whereNull('owner_id');
-        }
+        $includeGlobal = $includeGlobal && (bool) config('vouchers.owner.include_global', false);
 
-        return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
-            $builder->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
+        /** @var Builder<GiftCard> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
-            if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
-                });
-            }
-        });
+        return $scoped;
     }
 
     /**
@@ -150,21 +147,9 @@ class GiftCard extends Model
         /** @var Builder<GiftCard> $query */
         $query = static::query();
 
-        if (! config('vouchers.owner.enabled', false)) {
-            return $query;
-        }
+        $includeGlobal = (bool) config('vouchers.owner.include_global', false);
 
-        $owner = null;
-
-        if (app()->bound(OwnerResolverInterface::class)) {
-            /** @var OwnerResolverInterface $resolver */
-            $resolver = app(OwnerResolverInterface::class);
-            $owner = $resolver->resolve();
-        }
-
-        $includeGlobal = (bool) config('vouchers.owner.include_global', true);
-
-        return $query->forOwner($owner, $includeGlobal);
+        return $query->forOwner(null, $includeGlobal);
     }
 
     public function getTable(): string

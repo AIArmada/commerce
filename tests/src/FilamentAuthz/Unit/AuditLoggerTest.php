@@ -10,7 +10,7 @@ use AIArmada\FilamentAuthz\Models\PermissionAuditLog;
 use AIArmada\FilamentAuthz\Services\AuditLogger;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Queue;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Role;
 
 beforeEach(function (): void {
     $this->auditLogger = app(AuditLogger::class);
@@ -32,6 +32,7 @@ beforeEach(function (): void {
         $table->string('target_type')->nullable();
         $table->uuid('target_id')->nullable();
         $table->string('target_name')->nullable();
+        $table->nullableMorphs('owner');
         $table->json('old_value')->nullable();
         $table->json('new_value')->nullable();
         $table->json('context')->nullable();

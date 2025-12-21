@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
 use AIArmada\FilamentAuthz\Models\PermissionGroup;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 use InvalidArgumentException;
-use Spatie\Permission\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Permission;
 
 class PermissionGroupService
 {
@@ -29,6 +31,8 @@ class PermissionGroupService
         ?array $implicitAbilities = null,
         bool $isSystem = false
     ): PermissionGroup {
+        $parentId = $this->resolveParentId($parentId);
+
         $group = PermissionGroup::create([
             'name' => $name,
             'slug' => Str::slug($name),
@@ -56,6 +60,10 @@ class PermissionGroupService
     {
         if (isset($data['name']) && ! isset($data['slug'])) {
             $data['slug'] = Str::slug($data['name']);
+        }
+
+        if (array_key_exists('parent_id', $data)) {
+            $data['parent_id'] = $this->resolveParentId($data['parent_id']);
         }
 
         $group->update($data);
@@ -191,19 +199,17 @@ class PermissionGroupService
      */
     public function moveGroup(PermissionGroup $group, ?string $newParentId): PermissionGroup
     {
+        $newParent = $this->resolveParent($newParentId);
+
         // Prevent circular references
-        if ($newParentId !== null) {
-            $newParent = PermissionGroup::find($newParentId);
-            if ($newParent !== null && $group->isAncestorOf($newParent)) {
-                throw new InvalidArgumentException('Cannot move a group to one of its descendants.');
-            }
+        if ($newParent !== null && $group->isAncestorOf($newParent)) {
+            throw new InvalidArgumentException('Cannot move a group to one of its descendants.');
         }
 
         // Check depth limit
         $maxDepth = config('filament-authz.hierarchies.max_group_depth', 5);
-        if ($newParentId !== null) {
-            $newParent = PermissionGroup::find($newParentId);
-            $newDepth = $newParent !== null ? $newParent->getDepth() + 1 : 0;
+        if ($newParent !== null) {
+            $newDepth = $newParent->getDepth() + 1;
             $subtreeDepth = $this->getMaxSubtreeDepth($group);
 
             if ($newDepth + $subtreeDepth > $maxDepth) {
@@ -211,7 +217,7 @@ class PermissionGroupService
             }
         }
 
-        $group->update(['parent_id' => $newParentId]);
+        $group->update(['parent_id' => $newParent?->id]);
         $this->clearCache();
 
         return $group->refresh();
@@ -260,6 +266,32 @@ class PermissionGroupService
     {
         Cache::forget(self::CACHE_KEY_PREFIX . 'hierarchy_tree');
         // Note: Individual group permission caches will expire naturally
+    }
+
+    private function resolveParentId(?string $parentId): ?string
+    {
+        $parent = $this->resolveParent($parentId);
+
+        return $parent?->id;
+    }
+
+    private function resolveParent(?string $parentId): ?PermissionGroup
+    {
+        if ($parentId === null) {
+            return null;
+        }
+
+        if (! config('filament-authz.owner.enabled', false)) {
+            return PermissionGroup::find($parentId);
+        }
+
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('filament-authz.owner.include_global', false);
+
+        /** @var PermissionGroup $group */
+        $group = OwnerWriteGuard::findOrFailForOwner(PermissionGroup::class, $parentId, $owner, $includeGlobal);
+
+        return $group;
     }
 
     /**

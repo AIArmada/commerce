@@ -164,8 +164,8 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
 
         AffiliatePayout::create([
             'reference' => 'PAY-PENDING-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'amount_minor' => 5000,
             'currency' => 'USD',
             'status' => PayoutStatus::Pending,
@@ -189,8 +189,8 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
 
         AffiliatePayout::create([
             'reference' => 'PAY-PROCESSING-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'amount_minor' => 5000,
             'currency' => 'USD',
             'status' => PayoutStatus::Processing,
@@ -235,8 +235,8 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
 
         AffiliatePayout::create([
             'reference' => 'PAY-COMPLETED-' . uniqid(),
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
             'amount_minor' => 5000,
             'currency' => 'USD',
             'status' => PayoutStatus::Completed,
@@ -292,12 +292,12 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
         ]);
 
         // Count payouts before
-        $payoutsBefore = AffiliatePayout::where('owner_id', $this->affiliate->id)->count();
+        $payoutsBefore = AffiliatePayout::where('payee_id', $this->affiliate->id)->count();
 
         Artisan::call('affiliates:process-payouts');
 
         // Should have created a payout
-        $payoutsAfter = AffiliatePayout::where('owner_id', $this->affiliate->id)->count();
+        $payoutsAfter = AffiliatePayout::where('payee_id', $this->affiliate->id)->count();
         expect($payoutsAfter)->toBe($payoutsBefore + 1);
 
         // Balance should be deducted
@@ -316,7 +316,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
 
         Artisan::call('affiliates:process-payouts');
 
-        $payout = AffiliatePayout::where('owner_id', $this->affiliate->id)->first();
+        $payout = AffiliatePayout::where('payee_id', $this->affiliate->id)->first();
 
         // Should have created an event
         $eventCount = $payout->events()->count();
@@ -349,7 +349,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
         Artisan::call('affiliates:process-payouts');
 
         $conversion->refresh();
-        $payout = AffiliatePayout::where('owner_id', $this->affiliate->id)->first();
+        $payout = AffiliatePayout::where('payee_id', $this->affiliate->id)->first();
 
         // Conversion should be linked to the payout
         expect($conversion->affiliate_payout_id)->toBe($payout->id);
@@ -366,7 +366,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
 
         Artisan::call('affiliates:process-payouts');
 
-        $payout = AffiliatePayout::where('owner_id', $this->affiliate->id)->first();
+        $payout = AffiliatePayout::where('payee_id', $this->affiliate->id)->first();
 
         expect($payout->status)->toBe(PayoutStatus::Pending);
     });
@@ -382,7 +382,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
 
         Artisan::call('affiliates:process-payouts');
 
-        $payout = AffiliatePayout::where('owner_id', $this->affiliate->id)->first();
+        $payout = AffiliatePayout::where('payee_id', $this->affiliate->id)->first();
 
         expect($payout->total_minor)->toBe(15000);
         expect($payout->currency)->toBe('USD');

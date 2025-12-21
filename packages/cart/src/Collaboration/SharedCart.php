@@ -6,6 +6,7 @@ namespace AIArmada\Cart\Collaboration;
 
 use AIArmada\Cart\Broadcasting\CartChannel;
 use AIArmada\Cart\Cart;
+use AIArmada\Cart\Support\CartOwnerScope;
 use DateTimeImmutable;
 use DateTimeInterface;
 use Illuminate\Contracts\Auth\Authenticatable;
@@ -361,9 +362,10 @@ final class SharedCart
         $this->ensureCollaborative();
 
         $cartsTable = config('cart.database.table', 'carts');
-        $updated = DB::table($cartsTable)
-            ->where('id', $this->cartIdOrFail())
-            ->update(['max_collaborators' => $max]);
+        $query = DB::table($cartsTable)->where('id', $this->cartIdOrFail());
+        $query = CartOwnerScope::apply($query, $this->cart->storage());
+
+        $updated = $query->update(['max_collaborators' => $max]);
 
         if ($updated === 0) {
             throw new RuntimeException('Cart record not found.');
@@ -429,9 +431,10 @@ final class SharedCart
     private function checkCollaboratorLimit(): void
     {
         $cartsTable = config('cart.database.table', 'carts');
-        $maxCollaborators = DB::table($cartsTable)
-            ->where('id', $this->cartIdOrFail())
-            ->value('max_collaborators') ?? 5;
+        $query = DB::table($cartsTable)->where('id', $this->cartIdOrFail());
+        $query = CartOwnerScope::apply($query, $this->cart->storage());
+
+        $maxCollaborators = $query->value('max_collaborators') ?? 5;
 
         if (count($this->collaborators) >= $maxCollaborators) {
             throw new RuntimeException("Maximum collaborators ({$maxCollaborators}) reached");
@@ -449,9 +452,10 @@ final class SharedCart
         }
 
         $cartsTable = config('cart.database.table', 'carts');
-        $record = DB::table($cartsTable)
-            ->where('id', $cartId)
-            ->first();
+        $query = DB::table($cartsTable)->where('id', $cartId);
+        $query = CartOwnerScope::apply($query, $this->cart->storage());
+
+        $record = $query->first();
 
         if (! $record) {
             return;
@@ -478,21 +482,21 @@ final class SharedCart
     private function saveCollaborationState(): void
     {
         $cartsTable = config('cart.database.table', 'carts');
+        $query = DB::table($cartsTable)->where('id', $this->cartIdOrFail());
+        $query = CartOwnerScope::apply($query, $this->cart->storage());
 
-        $updated = DB::table($cartsTable)
-            ->where('id', $this->cartIdOrFail())
-            ->update([
-                'is_collaborative' => $this->isCollaborative,
-                'owner_user_id' => $this->ownerUserId,
-                'collaborators' => json_encode(array_map(
-                    fn (Collaborator $c) => $c->toArray(),
-                    $this->collaborators
-                )),
-                'collaboration_mode' => $this->collaborationMode,
-                'share_token' => $this->shareToken,
-                'share_expires_at' => $this->shareExpiresAt,
-                'updated_at' => now(),
-            ]);
+        $updated = $query->update([
+            'is_collaborative' => $this->isCollaborative,
+            'owner_user_id' => $this->ownerUserId,
+            'collaborators' => json_encode(array_map(
+                fn (Collaborator $c) => $c->toArray(),
+                $this->collaborators
+            )),
+            'collaboration_mode' => $this->collaborationMode,
+            'share_token' => $this->shareToken,
+            'share_expires_at' => $this->shareExpiresAt,
+            'updated_at' => now(),
+        ]);
 
         if ($updated === 0) {
             throw new RuntimeException('Cart record not found.');

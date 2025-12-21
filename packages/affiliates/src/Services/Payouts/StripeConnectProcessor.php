@@ -36,7 +36,7 @@ final class StripeConnectProcessor implements PayoutProcessorInterface
         $affiliate = $payout->affiliate;
 
         if (! $affiliate) {
-            return PayoutResult::failure('Payout owner is not an affiliate', 'INVALID_PAYOUT_OWNER');
+            return PayoutResult::failure('Payout payee is not an affiliate', 'INVALID_PAYOUT_OWNER');
         }
 
         $payoutMethod = $affiliate->payoutMethods()
@@ -64,7 +64,7 @@ final class StripeConnectProcessor implements PayoutProcessorInterface
                     'transfer_group' => $payout->batch_id ?? $payout->id,
                     'metadata' => [
                         'payout_id' => $payout->id,
-                        'affiliate_id' => $payout->owner_id,
+                        'affiliate_id' => $payout->payee_id,
                     ],
                 ]);
 

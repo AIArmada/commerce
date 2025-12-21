@@ -9,10 +9,15 @@ use AIArmada\Cart\CartServiceProvider;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\CommerceSupport\SupportServiceProvider;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\DocsServiceProvider;
 use AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy;
 use AIArmada\FilamentAffiliates\FilamentAffiliatesServiceProvider;
 use AIArmada\FilamentAuthz\FilamentAuthzServiceProvider;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Support\OwnerContextTeamResolver;
 use AIArmada\FilamentCart\FilamentCartServiceProvider;
 use AIArmada\FilamentCashier\FilamentCashierServiceProvider;
 use AIArmada\FilamentChip\FilamentChipServiceProvider;
@@ -20,6 +25,8 @@ use AIArmada\FilamentShipping\FilamentShippingServiceProvider;
 use AIArmada\FilamentVouchers\FilamentVouchersServiceProvider;
 use AIArmada\Jnt\JntServiceProvider;
 use AIArmada\Shipping\Facades\Shipping;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Vouchers\Facades\Voucher;
 use AIArmada\Vouchers\VoucherServiceProvider;
 use BackedEnum;
@@ -52,8 +59,6 @@ use Spatie\LaravelData\LaravelDataServiceProvider;
 use Spatie\LaravelData\Transformers\ArrayableTransformer;
 use Spatie\LaravelData\Transformers\DateTimeInterfaceTransformer;
 use Spatie\LaravelData\Transformers\EnumTransformer;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionServiceProvider;
 
 abstract class TestCase extends Orchestra
@@ -63,6 +68,8 @@ abstract class TestCase extends Orchestra
     protected function setUp(): void
     {
         parent::setUp();
+
+        OwnerContext::clearOverride();
 
         Factory::guessFactoryNamesUsing(function (string $modelName) {
             return Str::replace('Models', 'Database\\Factories', $modelName) . 'Factory';
@@ -77,6 +84,19 @@ abstract class TestCase extends Orchestra
         }));
 
         $this->setUpDatabase();
+
+        $this->bindDefaultOwnerResolver();
+    }
+
+    private function bindDefaultOwnerResolver(): void
+    {
+        $owner = User::query()->create([
+            'name' => 'Default Owner',
+            'email' => 'default-owner@example.com',
+            'password' => 'secret',
+        ]);
+
+        app()->instance(OwnerResolverInterface::class, new FixedOwnerResolver($owner));
     }
 
     protected function getPackageProviders($app): array
@@ -262,6 +282,8 @@ abstract class TestCase extends Orchestra
         // Configure Spatie Permission settings for testing
         $app['config']->set('permission.models.permission', Permission::class);
         $app['config']->set('permission.models.role', Role::class);
+        $app['config']->set('permission.teams', true);
+        $app['config']->set('permission.team_resolver', OwnerContextTeamResolver::class);
         $app['config']->set('permission.table_names', [
             'roles' => 'roles',
             'permissions' => 'permissions',
@@ -280,6 +302,8 @@ abstract class TestCase extends Orchestra
             'store' => 'array',
             'expiration_time' => DateInterval::createFromDateString('24 hours'),
         ]);
+
+        $app['config']->set('commerce-support.owner.team_type', User::class);
 
         // Configure filament-authz settings for testing
         $app['config']->set('filament-authz.guards', ['web', 'admin']);
@@ -328,7 +352,7 @@ abstract class TestCase extends Orchestra
         // Users table for permission tests
         Schema::dropIfExists('users');
         Schema::create('users', function (Blueprint $table): void {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('name');
             $table->string('email')->unique();
             $table->string('password');
@@ -343,7 +367,7 @@ abstract class TestCase extends Orchestra
         Schema::dropIfExists('permissions');
 
         Schema::create('permissions', function (Blueprint $table): void {
-            $table->id();
+            $table->uuid('id')->primary();
             $table->string('name');
             $table->string('guard_name');
             $table->timestamps();
@@ -352,7 +376,11 @@ abstract class TestCase extends Orchestra
         });
 
         Schema::create('roles', function (Blueprint $table): void {
-            $table->id();
+            $table->uuid('id')->primary();
+            if (config('permission.teams')) {
+                $table->uuid('team_id')->nullable();
+                $table->index('team_id', 'roles_team_foreign_key_index');
+            }
             $table->string('name');
             $table->string('guard_name');
             // Hierarchy columns for filament-authz
@@ -365,52 +393,49 @@ abstract class TestCase extends Orchestra
             $table->boolean('is_assignable')->default(true);
             $table->timestamps();
 
-            $table->unique(['name', 'guard_name']);
+            if (config('permission.teams')) {
+                $table->unique(['team_id', 'name', 'guard_name']);
+            } else {
+                $table->unique(['name', 'guard_name']);
+            }
             $table->index('parent_role_id', 'roles_parent_role_id_index');
             $table->index('template_id', 'roles_template_id_index');
             $table->index('level', 'roles_level_index');
         });
 
         Schema::create('model_has_permissions', function (Blueprint $table): void {
-            $table->unsignedBigInteger('permission_id');
+            $table->uuid('permission_id');
             $table->string('model_type');
-            $table->unsignedBigInteger('model_id');
+            $table->uuid('model_id');
 
             $table->index(['model_id', 'model_type'], 'model_has_permissions_model_id_model_type_index');
-            $table->foreign('permission_id')
-                ->references('id')
-                ->on('permissions')
-                ->onDelete('cascade');
-
-            $table->primary(['permission_id', 'model_id', 'model_type'], 'model_has_permissions_permission_model_type_primary');
+            if (config('permission.teams')) {
+                $table->uuid('team_id');
+                $table->index('team_id', 'model_has_permissions_team_foreign_key_index');
+                $table->primary(['team_id', 'permission_id', 'model_id', 'model_type'], 'model_has_permissions_permission_model_type_primary');
+            } else {
+                $table->primary(['permission_id', 'model_id', 'model_type'], 'model_has_permissions_permission_model_type_primary');
+            }
         });
 
         Schema::create('model_has_roles', function (Blueprint $table): void {
-            $table->unsignedBigInteger('role_id');
+            $table->uuid('role_id');
             $table->string('model_type');
-            $table->unsignedBigInteger('model_id');
+            $table->uuid('model_id');
 
             $table->index(['model_id', 'model_type'], 'model_has_roles_model_id_model_type_index');
-            $table->foreign('role_id')
-                ->references('id')
-                ->on('roles')
-                ->onDelete('cascade');
-
-            $table->primary(['role_id', 'model_id', 'model_type'], 'model_has_roles_role_model_type_primary');
+            if (config('permission.teams')) {
+                $table->uuid('team_id');
+                $table->index('team_id', 'model_has_roles_team_foreign_key_index');
+                $table->primary(['team_id', 'role_id', 'model_id', 'model_type'], 'model_has_roles_role_model_type_primary');
+            } else {
+                $table->primary(['role_id', 'model_id', 'model_type'], 'model_has_roles_role_model_type_primary');
+            }
         });
 
         Schema::create('role_has_permissions', function (Blueprint $table): void {
-            $table->unsignedBigInteger('permission_id');
-            $table->unsignedBigInteger('role_id');
-
-            $table->foreign('permission_id')
-                ->references('id')
-                ->on('permissions')
-                ->onDelete('cascade');
-            $table->foreign('role_id')
-                ->references('id')
-                ->on('roles')
-                ->onDelete('cascade');
+            $table->uuid('permission_id');
+            $table->uuid('role_id');
 
             $table->primary(['permission_id', 'role_id'], 'role_has_permissions_permission_id_role_id_primary');
         });

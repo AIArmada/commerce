@@ -9,8 +9,9 @@ use AIArmada\FilamentAuthz\Models\PermissionSnapshot;
 use DateTimeInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Support\PermissionTeamScope;
 use Spatie\Permission\PermissionRegistrar;
 
 class PermissionVersioningService
@@ -102,12 +103,32 @@ class PermissionVersioningService
         }
 
         DB::transaction(function () use ($snapshot): void {
+            $rolesTable = config('permission.table_names.roles', 'roles');
+            $permissionsTable = config('permission.table_names.permissions', 'permissions');
+            $rolePermissionsTable = config('permission.table_names.role_has_permissions', 'role_has_permissions');
+            $modelHasRolesTable = config('permission.table_names.model_has_roles', 'model_has_roles');
+            $modelHasPermissionsTable = config('permission.table_names.model_has_permissions', 'model_has_permissions');
+
+            $roleIds = Role::query()->select('id');
+
             // Clear current state
-            DB::table('role_has_permissions')->delete();
-            DB::table('model_has_roles')->delete();
-            DB::table('model_has_permissions')->delete();
-            DB::table('roles')->delete();
-            DB::table('permissions')->delete();
+            DB::table($rolePermissionsTable)
+                ->whereIn('role_id', $roleIds)
+                ->delete();
+
+            $modelRolesQuery = DB::table($modelHasRolesTable);
+            PermissionTeamScope::apply($modelRolesQuery, $modelHasRolesTable);
+            $modelRolesQuery->delete();
+
+            $modelPermissionsQuery = DB::table($modelHasPermissionsTable);
+            PermissionTeamScope::apply($modelPermissionsQuery, $modelHasPermissionsTable);
+            $modelPermissionsQuery->delete();
+
+            Role::query()->delete();
+
+            if (! PermissionTeamScope::isEnabled() || PermissionTeamScope::includeGlobal()) {
+                DB::table($permissionsTable)->delete();
+            }
 
             // Restore from snapshot
             foreach ($snapshot->getRoles() as $roleData) {
@@ -115,7 +136,7 @@ class PermissionVersioningService
             }
 
             foreach ($snapshot->getPermissions() as $permData) {
-                Permission::create($permData);
+                Permission::findOrCreate($permData['name'], $permData['guard_name'] ?? null);
             }
 
             foreach ($snapshot->getAssignments() as $assignment) {
@@ -200,11 +221,18 @@ class PermissionVersioningService
         $assignments = [];
 
         // Role-permission assignments
-        $rolePermissions = DB::table('role_has_permissions')
-            ->join('roles', 'role_has_permissions.role_id', '=', 'roles.id')
-            ->join('permissions', 'role_has_permissions.permission_id', '=', 'permissions.id')
-            ->select('roles.name as role', 'permissions.name as permission')
-            ->get();
+        $rolePermissionsTable = config('permission.table_names.role_has_permissions', 'role_has_permissions');
+        $rolesTable = config('permission.table_names.roles', 'roles');
+        $permissionsTable = config('permission.table_names.permissions', 'permissions');
+        $modelHasRolesTable = config('permission.table_names.model_has_roles', 'model_has_roles');
+
+        $rolePermissionsQuery = DB::table($rolePermissionsTable)
+            ->join($rolesTable, "{$rolePermissionsTable}.role_id", '=', "{$rolesTable}.id")
+            ->join($permissionsTable, "{$rolePermissionsTable}.permission_id", '=', "{$permissionsTable}.id")
+            ->select("{$rolesTable}.name as role", "{$permissionsTable}.name as permission");
+        PermissionTeamScope::apply($rolePermissionsQuery, $rolesTable);
+
+        $rolePermissions = $rolePermissionsQuery->get();
 
         foreach ($rolePermissions as $rp) {
             $assignments[] = [
@@ -215,10 +243,12 @@ class PermissionVersioningService
         }
 
         // Model-role assignments
-        $modelRoles = DB::table('model_has_roles')
-            ->join('roles', 'model_has_roles.role_id', '=', 'roles.id')
-            ->select('model_has_roles.model_type', 'model_has_roles.model_id', 'roles.name as role')
-            ->get();
+        $modelRolesQuery = DB::table($modelHasRolesTable)
+            ->join($rolesTable, "{$modelHasRolesTable}.role_id", '=', "{$rolesTable}.id")
+            ->select("{$modelHasRolesTable}.model_type", "{$modelHasRolesTable}.model_id", "{$rolesTable}.name as role");
+        PermissionTeamScope::apply($modelRolesQuery, $modelHasRolesTable);
+
+        $modelRoles = $modelRolesQuery->get();
 
         foreach ($modelRoles as $mr) {
             $assignments[] = [

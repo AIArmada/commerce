@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Pages;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
 use BackedEnum;
@@ -235,25 +235,10 @@ class PendingApprovalsPage extends Page implements HasTable
         }
 
         /** @var Model|null $owner */
-        $owner = app(OwnerResolverInterface::class)->resolve();
-        $includeGlobal = (bool) config('docs.owner.include_global', true);
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('docs.owner.include_global', false);
 
-        if ($owner === null) {
-            $query->whereNull('owner_type')->whereNull('owner_id');
-
-            return;
-        }
-
-        $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
-            $builder->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
-
-            if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
-                });
-            }
-        });
+        $query->forOwner($owner, $includeGlobal);
     }
 
     private static function assertCanActOnApproval(DocApproval $approval): void

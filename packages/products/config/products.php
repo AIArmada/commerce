@@ -49,7 +49,7 @@ return [
     'features' => [
         'owner' => [
             'enabled' => true,
-            'include_global' => true,
+            'include_global' => false,
             'auto_assign_on_create' => true,
         ],
 

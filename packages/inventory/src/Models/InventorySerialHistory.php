@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Enums\SerialEventType;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -43,7 +44,10 @@ use Illuminate\Support\Carbon;
 final class InventorySerialHistory extends Model
 {
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'inventory.owner';
 
     /**
      * The attributes that are mass assignable.
@@ -147,14 +151,6 @@ final class InventorySerialHistory extends Model
 
     protected static function booted(): void
     {
-        static::addGlobalScope('owner', function (Builder $query): void {
-            if (! InventoryOwnerScope::isEnabled()) {
-                return;
-            }
-
-            $query->forOwner(InventoryOwnerScope::resolveOwner(), InventoryOwnerScope::includeGlobal());
-        });
-
         static::saving(function (InventorySerialHistory $history): void {
             if (! InventoryOwnerScope::isEnabled()) {
                 return;

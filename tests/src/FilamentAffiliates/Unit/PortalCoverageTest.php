@@ -81,8 +81,8 @@ it('portal pages do not leak cross-tenant data when owner mode enabled', functio
         'status' => 'completed',
         'total_minor' => 1500,
         'currency' => 'USD',
-        'owner_type' => $affiliateB->getMorphClass(),
-        'owner_id' => $affiliateB->getKey(),
+        'payee_type' => $affiliateB->getMorphClass(),
+        'payee_id' => $affiliateB->getKey(),
         'paid_at' => now(),
     ]);
 
@@ -202,8 +202,8 @@ it('portal pages only return current owner affiliate stats when multiple owners 
         'status' => 'completed',
         'total_minor' => 1500,
         'currency' => 'USD',
-        'owner_type' => $affiliateA->getMorphClass(),
-        'owner_id' => $affiliateA->getKey(),
+        'payee_type' => $affiliateA->getMorphClass(),
+        'payee_id' => $affiliateA->getKey(),
         'paid_at' => now(),
     ]);
 
@@ -212,8 +212,8 @@ it('portal pages only return current owner affiliate stats when multiple owners 
         'status' => 'completed',
         'total_minor' => 9999,
         'currency' => 'USD',
-        'owner_type' => $affiliateB->getMorphClass(),
-        'owner_id' => $affiliateB->getKey(),
+        'payee_type' => $affiliateB->getMorphClass(),
+        'payee_id' => $affiliateB->getKey(),
         'paid_at' => now(),
     ]);
 
@@ -285,8 +285,8 @@ it('portal pages return scoped view data when affiliate exists', function (): vo
         'status' => 'completed',
         'total_minor' => 1500,
         'currency' => 'USD',
-        'owner_type' => $affiliate->getMorphClass(),
-        'owner_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
         'paid_at' => now(),
     ]);
 

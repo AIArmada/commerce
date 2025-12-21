@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Support\Facades\Gate;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 test('can create role with guard', function (): void {
     $role = Role::create(['name' => 'Admin', 'guard_name' => 'web']);

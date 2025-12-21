@@ -18,6 +18,7 @@ beforeEach(function (): void {
         $table->nullableMorphs('subject');
         $table->nullableMorphs('target');
         $table->string('target_name')->nullable();
+        $table->nullableMorphs('owner');
         $table->json('old_value')->nullable();
         $table->json('new_value')->nullable();
         $table->json('context')->nullable();

@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Models;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Products\Enums\AttributeType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -47,7 +48,10 @@ class Attribute extends Model
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'products.features.owner';
 
     protected $guarded = ['id'];
 
@@ -95,16 +99,6 @@ class Attribute extends Model
      */
     public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
     {
-        if (! (bool) config('products.features.owner.enabled', true)) {
-            return $query;
-        }
-
-        if ($owner === null && app()->bound(OwnerResolverInterface::class)) {
-            $owner = app(OwnerResolverInterface::class)->resolve();
-        }
-
-        $includeGlobal = $includeGlobal && (bool) config('products.features.owner.include_global', true);
-
         /** @var Builder<Attribute> $scoped */
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
@@ -292,12 +286,7 @@ class Attribute extends Model
                 return;
             }
 
-            if (! app()->bound(OwnerResolverInterface::class)) {
-                return;
-            }
-
-            $owner = app(OwnerResolverInterface::class)->resolve();
-
+            $owner = OwnerContext::resolve();
             if ($owner === null) {
                 return;
             }

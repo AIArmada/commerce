@@ -7,7 +7,7 @@ use AIArmada\FilamentAuthz\Pages\RoleHierarchyPage;
 use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Role;
 
 test('role hierarchy actions work end-to-end', function (): void {
 

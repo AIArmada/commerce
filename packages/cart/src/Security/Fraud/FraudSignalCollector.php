@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Security\Fraud;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -240,8 +242,16 @@ final class FraudSignalCollector
                 ->selectRaw('SUM(CASE WHEN score >= 50 AND score < 80 THEN 1 ELSE 0 END) as medium_severity')
                 ->selectRaw('SUM(CASE WHEN score < 50 THEN 1 ELSE 0 END) as low_severity')
                 ->selectRaw('COUNT(DISTINCT user_id) as unique_users')
-                ->selectRaw('COUNT(DISTINCT ip_address) as unique_ips')
-                ->first();
+                ->selectRaw('COUNT(DISTINCT ip_address) as unique_ips');
+
+            if ((bool) config('cart.owner.enabled', false)) {
+                $owner = OwnerContext::resolve();
+                $includeGlobal = (bool) config('cart.owner.include_global', false);
+
+                OwnerQuery::applyToQueryBuilder($stats, $owner, $includeGlobal, "{$table}.owner_type", "{$table}.owner_id");
+            }
+
+            $stats = $stats->first();
 
             return (array) $stats;
         });
@@ -320,12 +330,17 @@ final class FraudSignalCollector
     private function persistToDatabase(FraudContext $context, Collection $signals): void
     {
         $table = $this->configuration['table'] ?? 'cart_fraud_signals';
+        $storage = $context->cart->storage();
+        $ownerType = $storage->getOwnerType();
+        $ownerId = $storage->getOwnerId();
 
         foreach ($signals as $signal) {
             try {
                 DB::table($table)->insert([
                     'id' => (string) Str::uuid(),
                     'cart_id' => $context->getCartId(),
+                    'owner_type' => $ownerType,
+                    'owner_id' => $ownerId,
                     'user_id' => $context->userId,
                     'ip_address' => $context->ipAddress,
                     'session_id' => $context->sessionId,

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt\Models;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -68,8 +68,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  */
 final class JntOrder extends Model
 {
-    use HasOwner;
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'jnt.owner';
 
     /**
      * @var list<string>
@@ -142,29 +147,12 @@ final class JntOrder extends Model
 
         $owner ??= $this->resolveOwner();
 
-        if ($owner === null) {
-            // No owner context: never return tenant-owned rows.
-            if ($includeGlobal) {
-                return $query->whereNull('owner_type')->whereNull('owner_id');
-            }
+        $includeGlobal = $includeGlobal && (bool) config('jnt.owner.include_global', false);
 
-            // Explicitly exclude all rows when global is disabled.
-            return $query->whereRaw('1 = 0');
-        }
+        /** @var Builder<static> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
-        if ($includeGlobal) {
-            return $query->where(function (Builder $q) use ($owner): void {
-                $q->where(function (Builder $subQ) use ($owner): void {
-                    $subQ->where('owner_type', $owner->getMorphClass())
-                        ->where('owner_id', $owner->getKey());
-                })->orWhere(function (Builder $subQ): void {
-                    $subQ->whereNull('owner_type')->whereNull('owner_id');
-                });
-            });
-        }
-
-        return $query->where('owner_type', $owner->getMorphClass())
-            ->where('owner_id', $owner->getKey());
+        return $scoped;
     }
 
     /**
@@ -267,11 +255,7 @@ final class JntOrder extends Model
 
     protected function resolveOwner(): ?Model
     {
-        if (! app()->bound(OwnerResolverInterface::class)) {
-            return null;
-        }
-
-        return app(OwnerResolverInterface::class)->resolve();
+        return \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
     }
 
     /**

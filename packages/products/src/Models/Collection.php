@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Models;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -43,9 +44,12 @@ class Collection extends Model implements HasMedia
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
+    use HasOwnerScopeConfig;
     use HasSlug;
     use HasUuids;
     use InteractsWithMedia;
+
+    protected static string $ownerScopeConfigKey = 'products.features.owner';
 
     protected $guarded = ['id'];
 
@@ -87,16 +91,6 @@ class Collection extends Model implements HasMedia
      */
     public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
     {
-        if (! (bool) config('products.features.owner.enabled', true)) {
-            return $query;
-        }
-
-        if ($owner === null && app()->bound(OwnerResolverInterface::class)) {
-            $owner = app(OwnerResolverInterface::class)->resolve();
-        }
-
-        $includeGlobal = $includeGlobal && (bool) config('products.features.owner.include_global', true);
-
         /** @var Builder<Collection> $scoped */
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
@@ -312,12 +306,7 @@ class Collection extends Model implements HasMedia
                 return;
             }
 
-            if (! app()->bound(OwnerResolverInterface::class)) {
-                return;
-            }
-
-            $owner = app(OwnerResolverInterface::class)->resolve();
-
+            $owner = OwnerContext::resolve();
             if ($owner === null) {
                 return;
             }
@@ -378,7 +367,7 @@ class Collection extends Model implements HasMedia
 
         $ownerType = $this->owner_type;
         $ownerId = $this->owner_id;
-        $includeGlobal = (bool) config('products.features.owner.include_global', true);
+        $includeGlobal = (bool) config('products.features.owner.include_global', false);
 
         $query->where(function (Builder $builder) use ($ownerType, $ownerId, $includeGlobal): void {
             $builder->where('owner_type', $ownerType)

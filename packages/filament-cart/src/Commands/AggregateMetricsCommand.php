@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Commands;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\MetricsAggregator;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
 class AggregateMetricsCommand extends Command
@@ -21,6 +24,37 @@ class AggregateMetricsCommand extends Command
 
     public function handle(MetricsAggregator $aggregator): int
     {
+        if (Cart::ownerScopingEnabled() && OwnerContext::resolve() === null) {
+            $owners = Cart::query()
+                ->withoutOwnerScope()
+                ->select(['owner_type', 'owner_id'])
+                ->distinct()
+                ->get();
+
+            if ($owners->isEmpty()) {
+                $this->runAggregation($aggregator);
+
+                return self::SUCCESS;
+            }
+
+            foreach ($owners as $row) {
+                $owner = $this->resolveOwnerFromRow($row);
+
+                OwnerContext::withOwner($owner, function () use ($aggregator): void {
+                    $this->runAggregation($aggregator);
+                });
+            }
+
+            return self::SUCCESS;
+        }
+
+        $this->runAggregation($aggregator);
+
+        return self::SUCCESS;
+    }
+
+    private function runAggregation(MetricsAggregator $aggregator): void
+    {
         $date = $this->option('date');
         $from = $this->option('from');
         $to = $this->option('to');
@@ -34,8 +68,6 @@ class AggregateMetricsCommand extends Command
         } else {
             $this->aggregateLastDays($aggregator, $days, $segments);
         }
-
-        return self::SUCCESS;
     }
 
     /**
@@ -114,6 +146,17 @@ class AggregateMetricsCommand extends Command
             $from->format('Y-m-d'),
             $to->format('Y-m-d'),
             $segments,
+        );
+    }
+
+    private function resolveOwnerFromRow(object $row): ?Model
+    {
+        $ownerType = $row->owner_type ?? null;
+        $ownerId = $row->owner_id ?? null;
+
+        return OwnerContext::fromTypeAndId(
+            is_string($ownerType) ? $ownerType : null,
+            is_string($ownerId) || is_int($ownerId) ? $ownerId : null
         );
     }
 }

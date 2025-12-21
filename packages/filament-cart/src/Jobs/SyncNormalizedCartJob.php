@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCart\Jobs;
 
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 use AIArmada\FilamentCart\Services\CartSyncManager;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -24,24 +25,32 @@ final class SyncNormalizedCartJob implements ShouldQueue
     public function __construct(
         public readonly string $identifier,
         public readonly string $instance,
+        public readonly ?string $ownerType = null,
+        public readonly string | int | null $ownerId = null,
     ) {
         $this->onQueue(config('filament-cart.synchronization.queue_name', 'cart-sync'));
         $this->onConnection(config('filament-cart.synchronization.queue_connection', 'default'));
     }
 
-    public function handle(CartSyncManager $syncManager): void
+    public function handle(): void
     {
-        try {
-            $cart = app(CartInstanceManager::class)->resolve($this->instance, $this->identifier);
-            $syncManager->sync($cart, force: true);
-        } catch (Throwable $e) {
-            Log::error('Failed to synchronize normalized cart snapshot', [
-                'identifier' => $this->identifier,
-                'instance' => $this->instance,
-                'message' => $e->getMessage(),
-            ]);
+        $owner = OwnerContext::fromTypeAndId($this->ownerType, $this->ownerId);
 
-            throw $e;
-        }
+        OwnerContext::withOwner($owner, function (): void {
+            $syncManager = app(CartSyncManager::class);
+
+            try {
+                $cart = app(CartInstanceManager::class)->resolve($this->instance, $this->identifier);
+                $syncManager->sync($cart, force: true);
+            } catch (Throwable $e) {
+                Log::error('Failed to synchronize normalized cart snapshot', [
+                    'identifier' => $this->identifier,
+                    'instance' => $this->instance,
+                    'message' => $e->getMessage(),
+                ]);
+
+                throw $e;
+            }
+        });
     }
 }

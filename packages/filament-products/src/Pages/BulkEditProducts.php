@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Pages;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
 use BackedEnum;
@@ -45,11 +45,7 @@ class BulkEditProducts extends Page implements HasForms, HasTable
             return null;
         }
 
-        if (! app()->bound(OwnerResolverInterface::class)) {
-            return null;
-        }
-
-        return app(OwnerResolverInterface::class)->resolve();
+        return OwnerContext::resolve();
     }
 
     /**

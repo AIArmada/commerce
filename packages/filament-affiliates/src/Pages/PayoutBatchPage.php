@@ -8,7 +8,7 @@ use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Actions\BulkAction;
@@ -46,8 +46,8 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
     public function table(Table $table): Table
     {
         /** @var Model|null $owner */
-        $owner = (bool) config('affiliates.owner.enabled', false) && app()->bound(OwnerResolverInterface::class)
-            ? app(OwnerResolverInterface::class)->resolve()
+        $owner = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerContext::resolve()
             : null;
 
         return $table

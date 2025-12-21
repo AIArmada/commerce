@@ -160,7 +160,7 @@ final class PayoutReconciliationService
 
     private function returnCommissionToBalance(AffiliatePayout $payout): void
     {
-        $affiliate = $payout->owner;
+        $affiliate = $payout->affiliate;
         $balance = $affiliate?->balance;
 
         if ($balance && $payout->amount_minor) {

@@ -7,7 +7,7 @@ use AIArmada\FilamentAuthz\Resources\RoleResource;
 use AIArmada\FilamentAuthz\Resources\RoleResource\RelationManagers\PermissionsRelationManager;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Auth;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Role;
 
 uses(RefreshDatabase::class);
 

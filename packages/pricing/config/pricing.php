@@ -28,7 +28,7 @@ return [
     'features' => [
         'owner' => [
             'enabled' => env('PRICING_OWNER_ENABLED', false),
-            'include_global' => true,
+            'include_global' => false,
         ],
     ],
 ];

@@ -12,8 +12,8 @@ use AIArmada\FilamentAuthz\Services\PolicyEngine;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 uses(RefreshDatabase::class);
 

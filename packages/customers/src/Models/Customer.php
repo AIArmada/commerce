@@ -6,6 +6,7 @@ namespace AIArmada\Customers\Models;
 
 use AIArmada\CommerceSupport\Concerns\LogsCommerceActivity;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Events\CustomerCreated;
 use AIArmada\Customers\Events\CustomerUpdated;
@@ -60,10 +61,13 @@ class Customer extends Model implements HasMedia
 {
     use HasFactory;
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasTags;
     use HasUuids;
     use InteractsWithMedia;
     use LogsCommerceActivity;
+
+    protected static string $ownerScopeConfigKey = 'customers.features.owner';
 
     protected $guarded = ['id'];
 
@@ -480,6 +484,26 @@ class Customer extends Model implements HasMedia
 
     protected static function booted(): void
     {
+        static::creating(function (Customer $customer): void {
+            if (! (bool) config('customers.features.owner.enabled', false)) {
+                return;
+            }
+
+            if ($customer->owner_id !== null) {
+                return;
+            }
+
+            if (! (bool) config('customers.features.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            $owner = \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
+
+            if ($owner !== null) {
+                $customer->assignOwner($owner);
+            }
+        });
+
         static::deleting(function (Customer $customer): void {
             $customer->addresses()->delete();
             $customer->wishlists()->delete();

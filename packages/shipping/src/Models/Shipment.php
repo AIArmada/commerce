@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Shipping\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -47,7 +48,10 @@ use Illuminate\Support\Str;
 class Shipment extends Model
 {
     use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'shipping.features.owner';
 
     public $incrementing = false;
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Services;
 
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 
 class RoleComparer
 {

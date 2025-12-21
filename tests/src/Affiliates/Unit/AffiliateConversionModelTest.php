@@ -88,8 +88,8 @@ describe('AffiliateConversion Model', function (): void {
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
-            'owner_type' => Affiliate::class,
-            'owner_id' => $this->affiliate->id,
+            'payee_type' => Affiliate::class,
+            'payee_id' => $this->affiliate->id,
         ]);
 
         $conversion = AffiliateConversion::create([

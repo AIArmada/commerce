@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Pricing\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Pricing\Enums\PromotionType;
 use AIArmada\Pricing\Support\PricingOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -42,9 +43,14 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class Promotion extends Model
 {
-    use HasOwner;
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
     use HasUuids;
     use LogsActivity;
+
+    protected static string $ownerScopeConfigKey = 'pricing.features.owner';
 
     protected $guarded = ['id'];
 
@@ -150,23 +156,12 @@ class Promotion extends Model
             return $query;
         }
 
-        if ($owner === null) {
-            return $query->whereNull('owner_type')->whereNull('owner_id');
-        }
+        $includeGlobal = $includeGlobal && PricingOwnerScope::includeGlobal();
 
-        if ($includeGlobal) {
-            return $query->where(function (Builder $builder) use ($owner): void {
-                $builder->where(function (Builder $q) use ($owner): void {
-                    $q->where('owner_type', $owner->getMorphClass())
-                        ->where('owner_id', $owner->getKey());
-                })->orWhere(function (Builder $q): void {
-                    $q->whereNull('owner_type')->whereNull('owner_id');
-                });
-            });
-        }
+        /** @var Builder<static> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
-        return $query->where('owner_type', $owner->getMorphClass())
-            ->where('owner_id', $owner->getKey());
+        return $scoped;
     }
 
     // =========================================================================

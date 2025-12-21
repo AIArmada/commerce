@@ -45,6 +45,9 @@ final class CreatePayout
                 $status = PayoutStatus::tryFrom($status) ?? PayoutStatus::Pending;
             }
 
+            $ownerType = $attributes['owner_type'] ?? $conversions->first()?->owner_type;
+            $ownerId = $attributes['owner_id'] ?? $conversions->first()?->owner_id;
+
             $payout = AffiliatePayout::create([
                 'reference' => $reference,
                 'status' => $status,
@@ -52,8 +55,10 @@ final class CreatePayout
                 'conversion_count' => $conversions->count(),
                 'currency' => $currency,
                 'metadata' => $attributes['metadata'] ?? null,
-                'owner_type' => $attributes['owner_type'] ?? null,
-                'owner_id' => $attributes['owner_id'] ?? null,
+                'payee_type' => $attributes['payee_type'] ?? null,
+                'payee_id' => $attributes['payee_id'] ?? null,
+                'owner_type' => $ownerType,
+                'owner_id' => $ownerId,
                 'scheduled_at' => $attributes['scheduled_at'] ?? null,
                 'paid_at' => $attributes['paid_at'] ?? null,
             ]);

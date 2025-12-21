@@ -7,8 +7,9 @@ namespace AIArmada\FilamentAuthz\Widgets;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Facades\DB;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Support\PermissionTeamScope;
 
 class PermissionStatsWidget extends BaseWidget
 {
@@ -46,16 +47,26 @@ class PermissionStatsWidget extends BaseWidget
 
     protected function countUsersWithRoles(): int
     {
-        return DB::table(config('permission.table_names.model_has_roles', 'model_has_roles'))
-            ->distinct('model_id')
-            ->count('model_id');
+        $table = config('permission.table_names.model_has_roles', 'model_has_roles');
+        $modelIdColumn = (string) config('permission.column_names.model_morph_key', 'model_id');
+
+        $query = DB::table($table)->distinct();
+        PermissionTeamScope::apply($query, $table);
+
+        return $query->count($modelIdColumn);
     }
 
     protected function countUnassignedPermissions(): int
     {
-        $assignedPermissionIds = DB::table(config('permission.table_names.role_has_permissions', 'role_has_permissions'))
+        $rolePermissionsTable = config('permission.table_names.role_has_permissions', 'role_has_permissions');
+        $rolesTable = config('permission.table_names.roles', 'roles');
+
+        $assignedPermissionIds = DB::table($rolePermissionsTable)
+            ->join($rolesTable, "{$rolesTable}.id", '=', "{$rolePermissionsTable}.role_id");
+        PermissionTeamScope::apply($assignedPermissionIds, $rolesTable);
+        $assignedPermissionIds = $assignedPermissionIds
             ->distinct()
-            ->pluck('permission_id');
+            ->pluck("{$rolePermissionsTable}.permission_id");
 
         return Permission::whereNotIn('id', $assignedPermissionIds)->count();
     }

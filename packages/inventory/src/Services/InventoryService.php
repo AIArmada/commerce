@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Services;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Inventory\Enums\MovementType;
 use AIArmada\Inventory\Events\InventoryAdjusted;
 use AIArmada\Inventory\Events\InventoryReceived;
@@ -40,9 +41,7 @@ final class InventoryService
      */
     private array $totalAvailableCache = [];
 
-    public function __construct(
-        private readonly OwnerResolverInterface $ownerResolver,
-    ) {}
+    public function __construct() {}
 
     /**
      * Receive inventory at a location.
@@ -504,8 +503,8 @@ final class InventoryService
 
         return [
             'enabled' => true,
-            'owner' => $this->ownerResolver->resolve(),
-            'includeGlobal' => (bool) config('inventory.owner.include_global', true),
+            'owner' => OwnerContext::resolve(),
+            'includeGlobal' => (bool) config('inventory.owner.include_global', false),
         ];
     }
 
@@ -518,22 +517,7 @@ final class InventoryService
         $owner = $scope['owner'];
         $includeGlobal = $scope['includeGlobal'];
 
-        if ($owner === null) {
-            $query->whereNull('owner_type')->whereNull('owner_id');
-
-            return;
-        }
-
-        $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
-            $builder->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
-
-            if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
-                });
-            }
-        });
+        OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
     }
 
     private function modelCacheKey(Model $model): string

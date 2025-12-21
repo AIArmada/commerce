@@ -6,8 +6,11 @@ namespace AIArmada\FilamentAuthz\Resources;
 
 use AIArmada\FilamentAuthz\Resources\RoleResource\Pages;
 use AIArmada\FilamentAuthz\Resources\RoleResource\RelationManagers;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use Filament\Actions;
 use Filament\Forms;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Schema;
@@ -18,8 +21,8 @@ use Filament\Tables\Table;
 use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Auth;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use Illuminate\Validation\Rules\Unique;
+use Spatie\Permission\Contracts\PermissionsTeamResolver;
 
 class RoleResource extends Resource
 {
@@ -64,7 +67,26 @@ class RoleResource extends Resource
             Section::make('Role Details')->schema([
                 Forms\Components\TextInput::make('name')
                     ->required()
-                    ->unique(ignoreRecord: true),
+                    ->unique(ignoreRecord: true, modifyRuleUsing: function (Unique $rule, Get $get): Unique {
+                        $guard = $get('guard_name');
+
+                        if (is_string($guard) && $guard !== '') {
+                            $rule->where('guard_name', $guard);
+                        }
+
+                        if (config('permission.teams')) {
+                            $teamColumn = (string) config('permission.column_names.team_foreign_key', 'team_id');
+                            $teamId = app(PermissionsTeamResolver::class)->getPermissionsTeamId();
+
+                            if ($teamId === null) {
+                                $rule->whereNull($teamColumn);
+                            } else {
+                                $rule->where($teamColumn, $teamId);
+                            }
+                        }
+
+                        return $rule;
+                    }),
                 Forms\Components\Select::make('guard_name')
                     ->options(array_combine(config('filament-authz.guards'), config('filament-authz.guards')))
                     ->default(config('filament-authz.guards.0'))

@@ -98,8 +98,8 @@ it('executes widget logic and enforces owner scoping on voucher usage timelines'
 
     VoucherWallet::query()->create([
         'voucher_id' => $voucherA->id,
-        'owner_type' => $ownerA->getMorphClass(),
-        'owner_id' => $ownerA->getKey(),
+        'holder_type' => $ownerA->getMorphClass(),
+        'holder_id' => $ownerA->getKey(),
         'is_claimed' => true,
         'claimed_at' => now(),
         'is_redeemed' => false,

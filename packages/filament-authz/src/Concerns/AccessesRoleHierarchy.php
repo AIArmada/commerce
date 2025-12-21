@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Concerns;
 
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Role;
 
 /**
  * Helper trait for accessing extended Role properties added by filament-authz.

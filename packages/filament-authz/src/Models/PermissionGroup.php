@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Models;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -14,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use Spatie\Permission\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Permission;
 
 /**
  * @property string $id
@@ -35,8 +38,13 @@ use Spatie\Permission\Models\Permission;
  */
 class PermissionGroup extends Model
 {
-    use HasOwner;
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'filament-authz.owner';
 
     protected $fillable = [
         'name',
@@ -195,26 +203,38 @@ class PermissionGroup extends Model
             return $query;
         }
 
-        if (! $owner) {
-            return $includeGlobal
-                ? $query->whereNull('owner_id')
-                : $query->whereNull('owner_type')->whereNull('owner_id');
-        }
+        $includeGlobal = $includeGlobal && (bool) config('filament-authz.owner.include_global', false);
 
-        return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
-            $builder->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey());
+        /** @var Builder<static> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
-            if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
-                });
-            }
-        });
+        return $scoped;
     }
 
     protected static function booted(): void
     {
+        static::saving(function (PermissionGroup $group): void {
+            if (! config('filament-authz.owner.enabled', false)) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            if ($owner === null) {
+                return;
+            }
+
+            if ($group->owner_id === null) {
+                $group->assignOwner($owner);
+
+                return;
+            }
+
+            if (! $group->belongsToOwner($owner)) {
+                throw new AuthorizationException('Cannot write permission groups outside the current owner scope.');
+            }
+        });
+
         static::deleting(function (PermissionGroup $group): void {
             // Reassign children to parent
             $childrenQuery = self::query()->where('parent_id', $group->id);

@@ -6,7 +6,9 @@ namespace AIArmada\FilamentCart\Commands;
 
 use AIArmada\FilamentCart\Models\RecoveryCampaign;
 use AIArmada\FilamentCart\Services\RecoveryScheduler;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Console\Command;
+use Illuminate\Database\Eloquent\Model;
 
 class ScheduleRecoveryCommand extends Command
 {
@@ -25,6 +27,57 @@ class ScheduleRecoveryCommand extends Command
             $this->warn('Running in dry-run mode. No changes will be made.');
         }
 
+        if (RecoveryCampaign::ownerScopingEnabled() && OwnerContext::resolve() === null) {
+            return $this->handleAllOwners($scheduler, $campaignId, (bool) $dryRun);
+        }
+
+        $totalScheduled = $this->processCampaigns($scheduler, $campaignId, (bool) $dryRun);
+
+        if (! $dryRun) {
+            $this->info("Total scheduled: {$totalScheduled} recovery attempts");
+        }
+
+        return self::SUCCESS;
+    }
+
+    private function handleAllOwners(RecoveryScheduler $scheduler, ?string $campaignId, bool $dryRun): int
+    {
+        $owners = RecoveryCampaign::query()
+            ->withoutOwnerScope()
+            ->select(['owner_type', 'owner_id'])
+            ->distinct()
+            ->get();
+
+        if ($owners->isEmpty()) {
+            $totalScheduled = $this->processCampaigns($scheduler, $campaignId, $dryRun);
+
+            if (! $dryRun) {
+                $this->info("Total scheduled: {$totalScheduled} recovery attempts");
+            }
+
+            return self::SUCCESS;
+        }
+
+        $totalScheduled = 0;
+
+        foreach ($owners as $row) {
+            $owner = $this->resolveOwnerFromRow($row);
+
+            $totalScheduled += (int) OwnerContext::withOwner(
+                $owner,
+                fn (): int => $this->processCampaigns($scheduler, $campaignId, $dryRun)
+            );
+        }
+
+        if (! $dryRun) {
+            $this->info("Total scheduled: {$totalScheduled} recovery attempts");
+        }
+
+        return self::SUCCESS;
+    }
+
+    private function processCampaigns(RecoveryScheduler $scheduler, ?string $campaignId, bool $dryRun): int
+    {
         $query = RecoveryCampaign::query()->forOwner()
             ->where('status', 'active')
             ->where(function ($q): void {
@@ -45,7 +98,7 @@ class ScheduleRecoveryCommand extends Command
         if ($campaigns->isEmpty()) {
             $this->info('No active campaigns found.');
 
-            return self::SUCCESS;
+            return 0;
         }
 
         $this->info("Processing {$campaigns->count()} campaign(s)...");
@@ -68,10 +121,17 @@ class ScheduleRecoveryCommand extends Command
 
         $this->newLine();
 
-        if (! $dryRun) {
-            $this->info("Total scheduled: {$totalScheduled} recovery attempts");
-        }
+        return $totalScheduled;
+    }
 
-        return self::SUCCESS;
+    private function resolveOwnerFromRow(object $row): ?Model
+    {
+        $ownerType = $row->owner_type ?? null;
+        $ownerId = $row->owner_id ?? null;
+
+        return OwnerContext::fromTypeAndId(
+            is_string($ownerType) ? $ownerType : null,
+            is_string($ownerId) || is_int($ownerId) ? $ownerId : null
+        );
     }
 }

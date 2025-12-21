@@ -40,8 +40,12 @@ describe('CartSyncManager', function (): void {
     it('queues sync if configured', function (): void {
         Config::set('filament-cart.synchronization.queue_sync', true);
 
+        $storage = Mockery::mock(StorageInterface::class);
+        $storage->shouldReceive('getOwnerType')->andReturn(null);
+        $storage->shouldReceive('getOwnerId')->andReturn(null);
+
         $cart = new Cart(
-            storage: Mockery::mock(StorageInterface::class),
+            storage: $storage,
             identifier: 'user-123',
             events: null,
             instanceName: 'default',
@@ -53,7 +57,10 @@ describe('CartSyncManager', function (): void {
         $this->manager->sync($cart);
 
         Queue::assertPushed(SyncNormalizedCartJob::class, function ($job) {
-            return $job->identifier === 'user-123' && $job->instance === 'default';
+            return $job->identifier === 'user-123'
+                && $job->instance === 'default'
+                && $job->ownerType === null
+                && $job->ownerId === null;
         });
 
         $this->synchronizer->shouldNotReceive('syncFromCart');

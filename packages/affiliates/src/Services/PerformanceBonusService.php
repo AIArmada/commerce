@@ -9,6 +9,8 @@ use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -149,7 +151,7 @@ final class PerformanceBonusService
         $conversionsTable = (new AffiliateConversion)->getTable();
         $affiliatesTable = (new Affiliate)->getTable();
 
-        return DB::table($conversionsTable)
+        $query = DB::table($conversionsTable)
             ->join($affiliatesTable, "{$conversionsTable}.affiliate_id", '=', "{$affiliatesTable}.id")
             ->select([
                 "{$affiliatesTable}.id as affiliate_id",
@@ -166,6 +168,12 @@ final class PerformanceBonusService
             ->groupBy("{$affiliatesTable}.id", "{$affiliatesTable}.name", "{$affiliatesTable}.code")
             ->orderByDesc('total_revenue')
             ->limit($limit)
+            ;
+
+        $this->applyOwnerScopeToQuery($query, "{$conversionsTable}.owner_type", "{$conversionsTable}.owner_id");
+        $this->applyOwnerScopeToQuery($query, "{$affiliatesTable}.owner_type", "{$affiliatesTable}.owner_id");
+
+        return $query
             ->get()
             ->map(function ($row, $index) {
                 return [
@@ -179,6 +187,18 @@ final class PerformanceBonusService
                     'avg_order_value' => round((float) $row->avg_order_value, 2),
                 ];
             });
+    }
+
+    private function applyOwnerScopeToQuery($query, string $ownerTypeColumn, string $ownerIdColumn): void
+    {
+        if (! (bool) config('affiliates.owner.enabled', false)) {
+            return;
+        }
+
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('affiliates.owner.include_global', false);
+
+        OwnerQuery::applyToQueryBuilder($query, $owner, $includeGlobal, $ownerTypeColumn, $ownerIdColumn);
     }
 
     /**

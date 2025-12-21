@@ -11,7 +11,7 @@ use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
 use Livewire\Component as LivewireComponent;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Role;
 
 function filamentAuthz_makeSchemaLivewire(): LivewireComponent & HasSchemas
 {

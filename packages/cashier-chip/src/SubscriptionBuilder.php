@@ -9,7 +9,7 @@ use AIArmada\CashierChip\Concerns\HandlesPaymentFailures;
 use AIArmada\CashierChip\Concerns\InteractsWithPaymentBehavior;
 use AIArmada\CashierChip\Concerns\Prorates;
 use AIArmada\CashierChip\Contracts\BillableContract;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use DateTimeInterface;
@@ -374,11 +374,7 @@ class SubscriptionBuilder
             return [];
         }
 
-        if (! app()->bound(OwnerResolverInterface::class)) {
-            return [];
-        }
-
-        $owner = app(OwnerResolverInterface::class)->resolve();
+        $owner = OwnerContext::resolve();
 
         if ($owner === null) {
             return [];

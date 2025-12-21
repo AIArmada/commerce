@@ -31,15 +31,15 @@ beforeEach(function (): void {
 describe('PayoutController', function (): void {
     describe('index', function (): void {
         test('returns paginated list of payouts', function (): void {
-            // Create payouts using polymorphic owner
+            // Create payouts using polymorphic payee
             AffiliatePayout::create([
                 'reference' => 'PAY-' . uniqid(),
                 'status' => PayoutStatus::Pending->value,
                 'total_minor' => 10000,
                 'conversion_count' => 5,
                 'currency' => 'USD',
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'scheduled_at' => now()->addDays(7),
             ]);
 
@@ -49,8 +49,8 @@ describe('PayoutController', function (): void {
                 'total_minor' => 5000,
                 'conversion_count' => 3,
                 'currency' => 'USD',
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'paid_at' => now()->subDays(5),
             ]);
 
@@ -63,7 +63,7 @@ describe('PayoutController', function (): void {
 
             $data = $response->getData(true);
             // Note: payouts() relation in Affiliate uses HasMany expecting affiliate_id
-            // but table uses polymorphic owner_type/owner_id - this is a model bug
+            // but table uses polymorphic payee_type/payee_id - this is a model bug
             expect($data)->toHaveKey('data');
             expect($data)->toHaveKey('meta');
         });
@@ -111,8 +111,8 @@ describe('PayoutController', function (): void {
                 'total_minor' => 15000,
                 'conversion_count' => 7,
                 'currency' => 'USD',
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'scheduled_at' => now()->addDays(10),
                 'metadata' => [
                     'external_reference' => 'EXT-123',
@@ -140,8 +140,8 @@ describe('PayoutController', function (): void {
                 'total_minor' => 20000,
                 'conversion_count' => 10,
                 'currency' => 'USD',
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
             ]);
 
             AffiliatePayoutEvent::create([
@@ -167,8 +167,8 @@ describe('PayoutController', function (): void {
                 'total_minor' => 30000,
                 'conversion_count' => 15,
                 'currency' => 'USD',
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'paid_at' => now(),
             ]);
 
@@ -190,8 +190,8 @@ describe('PayoutController', function (): void {
                 'total_minor' => 25000,
                 'conversion_count' => 12,
                 'currency' => 'USD',
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'metadata' => [
                     'external_reference' => 'STRIPE-PAYOUT-123',
                 ],
@@ -260,8 +260,8 @@ describe('PayoutController', function (): void {
                 'total_minor' => 15000,
                 'conversion_count' => 5,
                 'currency' => 'USD',
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
             ]);
 
             // Processing payout
@@ -271,8 +271,8 @@ describe('PayoutController', function (): void {
                 'total_minor' => 10000,
                 'conversion_count' => 3,
                 'currency' => 'USD',
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
             ]);
 
             $request = Request::create('/affiliate/portal/payouts/summary', 'GET');
@@ -292,8 +292,8 @@ describe('PayoutController', function (): void {
                 'total_minor' => 25000,
                 'conversion_count' => 10,
                 'currency' => 'USD',
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'paid_at' => now()->subDays(30),
             ]);
 
@@ -315,8 +315,8 @@ describe('PayoutController', function (): void {
                 'total_minor' => 20000,
                 'conversion_count' => 8,
                 'currency' => 'USD',
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
                 'scheduled_at' => $nextWeek,
             ]);
 
@@ -349,8 +349,8 @@ describe('PayoutController', function (): void {
                 'total_minor' => 30000,
                 'conversion_count' => 12,
                 'currency' => 'USD',
-                'owner_type' => Affiliate::class,
-                'owner_id' => $this->affiliate->id,
+                'payee_type' => Affiliate::class,
+                'payee_id' => $this->affiliate->id,
             ]);
 
             $request = Request::create('/affiliate/portal/payouts/summary', 'GET');

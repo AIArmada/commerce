@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocSequenceResource\Pages;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentDocs\Resources\DocSequenceResource;
 use Filament\Resources\Pages\CreateRecord;
 
@@ -18,7 +18,7 @@ final class CreateDocSequence extends CreateRecord
             return $data;
         }
 
-        $owner = app(OwnerResolverInterface::class)->resolve();
+        $owner = OwnerContext::resolve();
 
         if ($owner === null) {
             return $data;

@@ -9,7 +9,7 @@ use AIArmada\FilamentAuthz\Resources\PermissionResource\Pages\ListPermissions;
 use AIArmada\FilamentAuthz\Resources\PermissionResource\RelationManagers\RolesRelationManager;
 use Filament\Schemas\Schema;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Spatie\Permission\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Permission;
 
 uses(RefreshDatabase::class);
 

@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Permission;
-use Spatie\Permission\Models\Role;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 /**
@@ -26,8 +27,12 @@ final class PermissionSeeder extends Seeder
 
         $this->command->info('🔐 Building Authorization System...');
 
-        $this->createPermissions();
-        $this->createRoles();
+        $owner = $this->resolveTenantOwner();
+
+        OwnerContext::withOwner($owner, function (): void {
+            $this->createPermissions();
+            $this->createRoles();
+        });
         $this->assignRolesToUsers();
 
         $this->command->info('   ✓ Authorization system complete');
@@ -322,5 +327,18 @@ final class PermissionSeeder extends Seeder
     private function assignRolesToUsers(): void
     {
         // Assignments are done in UserSeeder after users are created
+    }
+
+    private function resolveTenantOwner(): User
+    {
+        return User::firstOrCreate(
+            ['email' => 'admin@commerce.demo'],
+            [
+                'name' => 'Sarah Chen',
+                'phone' => '+60123456789',
+                'password' => bcrypt('password'),
+                'email_verified_at' => now(),
+            ]
+        );
     }
 }

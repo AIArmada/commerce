@@ -5,8 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\PayoutStatus;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -18,6 +21,8 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property int $total_minor
  * @property int $conversion_count
  * @property string $currency
+ * @property string|null $payee_type
+ * @property string|null $payee_id
  * @property string|null $owner_type
  * @property string|null $owner_id
  * @property array<string, mixed>|null $metadata
@@ -28,14 +33,21 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
  * @property-read int $amount_minor Alias for total_minor
  * @property-read string|null $external_reference From metadata
  * @property-read string|null $notes From metadata
- * @property-read Affiliate|null $affiliate Alias for owner when owner is an Affiliate
+ * @property-read Affiliate|null $affiliate Alias for payee when payee is an Affiliate
+ * @property-read Model|null $payee
  * @property-read Model|null $owner
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliateConversion> $conversions
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AffiliatePayoutEvent> $events
  */
 class AffiliatePayout extends Model
 {
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
     protected $fillable = [
         'reference',
@@ -46,6 +58,8 @@ class AffiliatePayout extends Model
         'currency',
         'metadata',
         'external_reference',
+        'payee_type',
+        'payee_id',
         'owner_type',
         'owner_id',
         'scheduled_at',
@@ -65,23 +79,23 @@ class AffiliatePayout extends Model
     }
 
     /**
-     * Polymorphic owner (typically an Affiliate).
+     * Polymorphic payee (typically an Affiliate).
      *
      * @return MorphTo<Model, self>
      */
-    public function owner(): MorphTo
+    public function payee(): MorphTo
     {
         return $this->morphTo();
     }
 
     /**
-     * Alias relation for owner when it is an Affiliate.
+     * Alias relation for payee when it is an Affiliate.
      *
      * @return MorphTo<Affiliate, self>
      */
     public function affiliate(): MorphTo
     {
-        return $this->morphTo(__FUNCTION__, 'owner_type', 'owner_id');
+        return $this->morphTo(__FUNCTION__, 'payee_type', 'payee_id');
     }
 
     /**
@@ -102,10 +116,45 @@ class AffiliatePayout extends Model
 
     protected static function booted(): void
     {
+        static::creating(function (self $payout): void {
+            if (! config('affiliates.owner.enabled', false)) {
+                return;
+            }
+
+            if ($payout->owner_id !== null) {
+                return;
+            }
+
+            if (! config('affiliates.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            $owner = \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
+
+            if ($owner) {
+                $payout->owner_type = $owner->getMorphClass();
+                $payout->owner_id = $owner->getKey();
+            }
+        });
+
         static::deleting(function (self $payout): void {
             $payout->events()->delete();
             $payout->conversions()->update(['affiliate_payout_id' => null]);
         });
+    }
+
+    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
+    {
+        if (! config('affiliates.owner.enabled', false)) {
+            return $query;
+        }
+
+        $includeGlobal = $includeGlobal && (bool) config('affiliates.owner.include_global', false);
+
+        /** @var Builder<static> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
+
+        return $scoped;
     }
 
     /**

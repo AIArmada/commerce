@@ -7,7 +7,7 @@ namespace AIArmada\FilamentAffiliates\Widgets;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Actions\Action;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -28,8 +28,8 @@ final class FraudAlertWidget extends BaseWidget
     public function table(Table $table): Table
     {
         /** @var Model|null $owner */
-        $owner = (bool) config('affiliates.owner.enabled', false) && app()->bound(OwnerResolverInterface::class)
-            ? app(OwnerResolverInterface::class)->resolve()
+        $owner = (bool) config('affiliates.owner.enabled', false)
+            ? OwnerContext::resolve()
             : null;
 
         return $table

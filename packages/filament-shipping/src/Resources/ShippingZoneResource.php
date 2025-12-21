@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Resources;
 
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource\Pages;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource\RelationManagers;
 use AIArmada\Shipping\Models\ShippingZone;
@@ -39,19 +39,16 @@ class ShippingZoneResource extends Resource
         /** @var Builder<ShippingZone> $query */
         $query = parent::getEloquentQuery();
 
-        $owner = null;
-        if (app()->bound(OwnerResolverInterface::class)) {
-            $owner = app(OwnerResolverInterface::class)->resolve();
+        if (! (bool) config('shipping.features.owner.enabled', false)) {
+            return $query;
         }
 
-        if (method_exists($query->getModel(), 'scopeForOwner')) {
-            /** @var Builder<ShippingZone> $scoped */
-            $scoped = $query->forOwner($owner);
+        $owner = OwnerContext::resolve();
 
-            return $scoped;
-        }
+        /** @var Builder<ShippingZone> $scoped */
+        $scoped = $query->forOwner($owner);
 
-        return $query;
+        return $scoped;
     }
 
     public static function form(Schema $schema): Schema
