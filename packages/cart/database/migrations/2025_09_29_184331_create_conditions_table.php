@@ -14,7 +14,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('conditions', function (Blueprint $table): void {
+        Schema::create(config('cart.database.conditions_table', 'conditions'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
 
             // Core identification
@@ -59,12 +59,15 @@ return new class extends Migration
             $table->index('order');
         });
 
-        if (commerce_json_column_type('cart', 'json') === 'jsonb') {
-            Schema::table('conditions', function (Blueprint $table): void {
-                DB::statement('CREATE INDEX conditions_attributes_gin_index ON conditions USING GIN (attributes)');
-                DB::statement('CREATE INDEX conditions_rules_gin_index ON conditions USING GIN (rules)');
-                DB::statement('CREATE INDEX conditions_target_definition_gin_index ON conditions USING GIN (target_definition)');
-            });
+        // Optional: create GIN indexes when using jsonb on PostgreSQL
+        $tableName = config('cart.database.conditions_table', 'conditions');
+        if (
+            commerce_json_column_type('cart', 'json') === 'jsonb'
+            && Schema::getConnection()->getDriverName() === 'pgsql'
+        ) {
+            DB::statement("CREATE INDEX IF NOT EXISTS conditions_attributes_gin_index ON \"{$tableName}\" USING GIN (\"attributes\")");
+            DB::statement("CREATE INDEX IF NOT EXISTS conditions_rules_gin_index ON \"{$tableName}\" USING GIN (\"rules\")");
+            DB::statement("CREATE INDEX IF NOT EXISTS conditions_target_definition_gin_index ON \"{$tableName}\" USING GIN (\"target_definition\")");
         }
     }
 
@@ -73,6 +76,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('conditions');
+        Schema::dropIfExists(config('cart.database.conditions_table', 'conditions'));
     }
 };
