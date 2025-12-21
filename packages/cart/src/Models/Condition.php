@@ -386,8 +386,12 @@ class Condition extends Model
     /**
      * Scope query to the specified owner.
      *
+     * When null is explicitly passed, this returns global-only records
+     * (owner_type IS NULL AND owner_id IS NULL). This overrides the base
+     * trait behavior which would fall back to OwnerContext::resolve().
+     *
      * @param  Builder<static>  $query
-     * @param  EloquentModel|null  $owner  The owner to scope to
+     * @param  EloquentModel|null  $owner  The owner to scope to, or null for global-only
      * @param  bool  $includeGlobal  Whether to include global (ownerless) records
      * @return Builder<static>
      */
@@ -395,6 +399,12 @@ class Condition extends Model
     {
         if (! config('cart.owner.enabled', false)) {
             return $query;
+        }
+
+        if ($owner === null) {
+            return $query->withoutOwnerScope()
+                ->whereNull('owner_type')
+                ->whereNull('owner_id');
         }
 
         $includeGlobal = $includeGlobal && (bool) config('cart.owner.include_global', false);

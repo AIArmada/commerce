@@ -451,6 +451,11 @@ abstract class TestCase extends Orchestra
             $table->json('items')->nullable();
             $table->json('conditions')->nullable();
             $table->json('metadata')->nullable();
+            $table->boolean('is_collaborative')->default(false);
+            $table->uuid('owner_user_id')->nullable();
+            $table->json('collaborators')->nullable();
+            $table->integer('max_collaborators')->default(5);
+            $table->string('collaboration_mode', 20)->default('edit');
             $table->bigInteger('version')->default(1)->index();
             $table->timestamp('expires_at')->nullable()->index();
             $table->timestamps();

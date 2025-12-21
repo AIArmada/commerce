@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Http\Middleware;
 
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Closure;
 use Illuminate\Http\Request;
 use Symfony\Component\HttpFoundation\Response;
@@ -38,7 +39,9 @@ final class AuthenticateAffiliate
 
         $request->attributes->set('affiliate', $affiliate);
 
-        return $next($request);
+        $owner = OwnerContext::fromTypeAndId($affiliate->owner_type, $affiliate->owner_id);
+
+        return OwnerContext::withOwner($owner, fn (): Response => $next($request));
     }
 
     private function resolveAffiliate(Request $request): ?Affiliate
@@ -46,7 +49,9 @@ final class AuthenticateAffiliate
         // Try bearer token first
         $token = $request->bearerToken();
         if ($token) {
-            return Affiliate::where('api_token', hash('sha256', $token))
+            return Affiliate::query()
+                ->withoutOwnerScope()
+                ->where('api_token', hash('sha256', $token))
                 ->where('status', 'active')
                 ->first();
         }
@@ -54,7 +59,7 @@ final class AuthenticateAffiliate
         // Try session-based authentication
         $affiliateId = $request->session()->get('affiliate_id');
         if ($affiliateId) {
-            return Affiliate::find($affiliateId);
+            return Affiliate::query()->withoutOwnerScope()->find($affiliateId);
         }
 
         // Try custom resolver from config

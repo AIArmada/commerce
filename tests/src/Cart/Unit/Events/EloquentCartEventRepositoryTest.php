@@ -5,7 +5,10 @@ declare(strict_types=1);
 use AIArmada\Cart\Events\Store\EloquentCartEventRepository;
 use AIArmada\Cart\Models\CartEvent;
 use AIArmada\CommerceSupport\Contracts\Events\CartEventInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 uses(RefreshDatabase::class);
 
@@ -274,5 +277,74 @@ describe('EloquentCartEventRepository', function (): void {
         $deletedCount = $this->repository->deleteEventsForCart('cart-empty-delete');
 
         expect($deletedCount)->toBe(0);
+    });
+
+    it('enforces owner scoping for reads and writes when enabled', function (): void {
+        config()->set('cart.owner.enabled', true);
+
+        $ownerA = createUserWithRoles();
+        $ownerB = createUserWithRoles();
+
+        $cartIdA = (string) Str::uuid();
+        $cartIdB = (string) Str::uuid();
+
+        $cartsTable = config('cart.database.table', 'carts');
+
+        DB::table($cartsTable)->insert([
+            [
+                'id' => $cartIdA,
+                'identifier' => (string) $ownerA->getKey(),
+                'instance' => 'default',
+                'owner_type' => $ownerA->getMorphClass(),
+                'owner_id' => (string) $ownerA->getKey(),
+                'version' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => $cartIdB,
+                'identifier' => (string) $ownerB->getKey(),
+                'instance' => 'default',
+                'owner_type' => $ownerB->getMorphClass(),
+                'owner_id' => (string) $ownerB->getKey(),
+                'version' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        $eventA = Mockery::mock(CartEventInterface::class);
+        $eventA->shouldReceive('getEventType')->andReturn('item_added');
+        $eventA->shouldReceive('getEventId')->andReturn((string) Str::uuid());
+        $eventA->shouldReceive('toEventPayload')->andReturn(['item_id' => 'prod-1']);
+        $eventA->shouldReceive('getEventMetadata')->andReturn([]);
+        $eventA->shouldReceive('getAggregateVersion')->andReturn(1);
+        $eventA->shouldReceive('getOccurredAt')->andReturn(new DateTimeImmutable);
+
+        $eventB = Mockery::mock(CartEventInterface::class);
+        $eventB->shouldReceive('getEventType')->andReturn('item_added');
+        $eventB->shouldReceive('getEventId')->andReturn((string) Str::uuid());
+        $eventB->shouldReceive('toEventPayload')->andReturn(['item_id' => 'prod-1']);
+        $eventB->shouldReceive('getEventMetadata')->andReturn([]);
+        $eventB->shouldReceive('getAggregateVersion')->andReturn(1);
+        $eventB->shouldReceive('getOccurredAt')->andReturn(new DateTimeImmutable);
+
+        OwnerContext::withOwner($ownerA, function () use ($eventA, $cartIdA): void {
+            $this->repository->record($eventA, $cartIdA);
+        });
+
+        OwnerContext::withOwner($ownerB, function () use ($eventB, $cartIdB): void {
+            $this->repository->record($eventB, $cartIdB);
+        });
+
+        OwnerContext::withOwner($ownerA, function () use ($cartIdB): void {
+            $events = $this->repository->getEventsForCart($cartIdB);
+            expect($events)->toBeEmpty();
+        });
+
+        OwnerContext::withOwner($ownerA, function () use ($eventA, $cartIdB): void {
+            expect(fn () => $this->repository->record($eventA, $cartIdB))
+                ->toThrow(\RuntimeException::class);
+        });
     });
 });

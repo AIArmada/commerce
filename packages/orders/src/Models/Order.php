@@ -143,7 +143,7 @@ class Order extends Model implements Auditable
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
-    public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
+    public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = true): Builder
     {
         /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);

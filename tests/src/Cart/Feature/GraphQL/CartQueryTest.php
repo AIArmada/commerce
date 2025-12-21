@@ -7,9 +7,18 @@ use AIArmada\Cart\GraphQL\Queries\CartQuery;
 use AIArmada\Cart\Queries\CartQueryHandler;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Auth\AuthenticationException;
 
 describe('CartQuery Integration', function (): void {
     beforeEach(function (): void {
+        config()->set('cart.graphql.enabled', true);
+        config()->set('cart.graphql.admin_queries_enabled', true);
+
+        /** @var User $user */
+        $user = createUserWithRoles();
+        Auth::setUser($user);
+        $this->user = $user;
+
         $this->cartManager = app(CartManagerInterface::class);
         $this->queryHandler = app(CartQueryHandler::class);
         $this->query = new CartQuery($this->cartManager, $this->queryHandler);
@@ -39,7 +48,7 @@ describe('CartQuery Integration', function (): void {
 
     describe('cartByIdentifier', function (): void {
         it('returns cart by identifier', function (): void {
-            $identifier = 'query-test-' . uniqid();
+            $identifier = (string) $this->user->getAuthIdentifier();
 
             // Create a cart with items
             $cart = $this->cartManager
@@ -59,7 +68,7 @@ describe('CartQuery Integration', function (): void {
         });
 
         it('returns null for empty cart', function (): void {
-            $identifier = 'empty-query-test-' . uniqid();
+            $identifier = (string) $this->user->getAuthIdentifier();
 
             $result = $this->query->cartByIdentifier(null, [
                 'identifier' => $identifier,
@@ -75,9 +84,8 @@ describe('CartQuery Integration', function (): void {
             // Clear any existing user
             Auth::forgetGuards();
 
-            $result = $this->query->myCart(null, ['instance' => 'default']);
-
-            expect($result)->toBeNull();
+            expect(fn () => $this->query->myCart(null, ['instance' => 'default']))
+                ->toThrow(AuthenticationException::class);
         });
     });
 

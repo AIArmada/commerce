@@ -88,8 +88,14 @@ class Category extends Model implements HasMedia
      */
     public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
     {
+        $ownerToScope = $owner;
+
+        if (func_num_args() < 2) {
+            $ownerToScope = OwnerContext::CURRENT;
+        }
+
         /** @var Builder<Category> $scoped */
-        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
+        $scoped = $this->baseScopeForOwner($query, $ownerToScope, $includeGlobal);
 
         return $scoped;
     }
@@ -157,6 +163,8 @@ class Category extends Model implements HasMedia
         if (! (bool) config('products.features.owner.enabled', true)) {
             return;
         }
+
+        $query->withoutOwnerScope();
 
         if ($this->owner_type === null || $this->owner_id === null) {
             $query->whereNull('owner_type')->whereNull('owner_id');

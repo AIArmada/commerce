@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCart\Actions;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Contracts\RulesFactoryInterface;
 use AIArmada\Cart\Models\Condition;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Models\Cart as CartModel;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 use Exception;
@@ -17,6 +18,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 
 final class ApplyConditionAction extends Action
@@ -36,15 +38,7 @@ final class ApplyConditionAction extends Action
                 Select::make('condition_id')
                     ->label('Condition')
                     ->placeholder('Select a condition...')
-                    ->options(
-                        Condition::active()
-                            ->orderBy('type')
-                            ->orderBy('name')
-                            ->get()
-                            ->groupBy('type')
-                            ->map(fn ($conditions) => $conditions->pluck('display_name', 'id'))
-                            ->toArray()
-                    )
+                    ->options(fn (): array => self::getConditionOptions(forItems: false))
                     ->required()
                     ->searchable()
                     ->helperText('Choose from available conditions'),
@@ -58,7 +52,8 @@ final class ApplyConditionAction extends Action
                 // Get the cart record - either directly or from relation manager
                 $cart = $record instanceof CartModel ? $record : $livewire->getOwnerRecord();
 
-                $conditionModel = Condition::findOrFail($data['condition_id']);
+                $conditionModel = self::getScopedConditionQuery(forItems: false)
+                    ->findOrFail($data['condition_id']);
                 $customName = ! empty($data['custom_name']) ? $data['custom_name'] : null;
 
                 try {
@@ -106,16 +101,7 @@ final class ApplyConditionAction extends Action
                 Select::make('condition_id')
                     ->label('Condition')
                     ->placeholder('Select a condition...')
-                    ->options(
-                        Condition::active()
-                            ->forItems()
-                            ->orderBy('type')
-                            ->orderBy('name')
-                            ->get()
-                            ->groupBy('type')
-                            ->map(fn ($conditions) => $conditions->pluck('display_name', 'id'))
-                            ->toArray()
-                    )
+                    ->options(fn (): array => self::getConditionOptions(forItems: true))
                     ->required()
                     ->searchable()
                     ->helperText('Only item-level conditions are shown'),
@@ -126,7 +112,8 @@ final class ApplyConditionAction extends Action
                     ->helperText('Override the default condition name if needed'),
             ])
             ->action(function (array $data, $record): void {
-                $conditionModel = Condition::findOrFail($data['condition_id']);
+                $conditionModel = self::getScopedConditionQuery(forItems: true)
+                    ->findOrFail($data['condition_id']);
                 $customName = ! empty($data['custom_name']) ? $data['custom_name'] : null;
 
                 try {
@@ -159,6 +146,60 @@ final class ApplyConditionAction extends Action
                         ->send();
                 }
             });
+    }
+
+    /**
+     * @return array<string, array<string, string>>
+     */
+    private static function getConditionOptions(bool $forItems): array
+    {
+        $query = self::getScopedConditionQuery($forItems)
+            ->orderBy('type')
+            ->orderBy('name');
+
+        return $query
+            ->get()
+            ->groupBy('type')
+            ->map(fn ($conditions) => $conditions->pluck('display_name', 'id'))
+            ->toArray();
+    }
+
+    /**
+     * @return Builder<Condition>
+     */
+    private static function getScopedConditionQuery(bool $forItems): Builder
+    {
+        $query = Condition::query()->active();
+
+        if ($forItems) {
+            $query->forItems();
+        }
+
+        if (! (bool) config('filament-cart.owner.enabled', false)) {
+            return $query;
+        }
+
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('filament-cart.owner.include_global', false);
+
+        if ($owner === null) {
+            return $query->whereNull('owner_type')->whereNull('owner_id');
+        }
+
+        return $query->where(function (Builder $builder) use ($owner, $includeGlobal): void {
+            $builder->where(function (Builder $inner) use ($owner): void {
+                $inner->where('owner_type', $owner->getMorphClass())
+                    ->where('owner_id', (string) $owner->getKey());
+            });
+
+            if (! $includeGlobal) {
+                return;
+            }
+
+            $builder->orWhere(function (Builder $inner): void {
+                $inner->whereNull('owner_type')->whereNull('owner_id');
+            });
+        });
     }
 
     /**

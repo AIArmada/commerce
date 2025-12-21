@@ -218,7 +218,7 @@ final class FraudSignalCollector
      */
     public function getStatistics(int $windowHours = 24): array
     {
-        $key = "fraud:stats:{$windowHours}h";
+        $key = $this->statisticsCacheKey($windowHours);
 
         return Cache::remember($key, 300, function () use ($windowHours) {
             if (! $this->shouldPersist()) {
@@ -366,6 +366,21 @@ final class FraudSignalCollector
     private function shouldPersist(): bool
     {
         return $this->configuration['persist_to_database'] ?? false;
+    }
+
+    private function statisticsCacheKey(int $windowHours): string
+    {
+        if (! (bool) config('cart.owner.enabled', false)) {
+            return "fraud:stats:{$windowHours}h";
+        }
+
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('cart.owner.include_global', false);
+
+        $ownerType = $owner?->getMorphClass() ?? '';
+        $ownerId = $owner?->getKey() ?? '';
+
+        return "fraud:stats:{$windowHours}h:{$ownerType}:{$ownerId}:include_global:" . ($includeGlobal ? '1' : '0');
     }
 
     /**

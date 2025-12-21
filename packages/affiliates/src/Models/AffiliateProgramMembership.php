@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\MembershipStatus;
+use AIArmada\Affiliates\Models\Concerns\ScopesByAffiliateOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\Pivot;
@@ -30,6 +31,7 @@ use Illuminate\Support\Carbon;
 class AffiliateProgramMembership extends Pivot
 {
     use HasUuids;
+    use ScopesByAffiliateOwner;
 
     public $incrementing = false;
 
