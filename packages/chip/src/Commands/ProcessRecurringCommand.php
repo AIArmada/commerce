@@ -130,6 +130,7 @@ final class ProcessRecurringCommand extends Command
         }
 
         $this->newLine();
+
         return [
             'processed' => $due->count(),
             'succeeded' => $succeeded,
