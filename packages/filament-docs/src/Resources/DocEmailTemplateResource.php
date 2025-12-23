@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\FilamentDocs\Support\DocsOwnerScope;
@@ -28,6 +29,8 @@ use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Filters\TernaryFilter;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Validation\Rules\Unique;
 use UnitEnum;
 
 final class DocEmailTemplateResource extends Resource
@@ -59,7 +62,9 @@ final class DocEmailTemplateResource extends Resource
                                 TextInput::make('slug')
                                     ->required()
                                     ->maxLength(255)
-                                    ->unique(ignoreRecord: true),
+                                    ->unique(ignoreRecord: true, modifyRuleUsing: function (Unique $rule): Unique {
+                                        return self::scopeUniqueRuleToOwner($rule);
+                                    }),
 
                                 Select::make('doc_type')
                                     ->label('Document Type')
@@ -218,5 +223,31 @@ final class DocEmailTemplateResource extends Resource
         $query = DocsOwnerScope::apply($query);
 
         return $query;
+    }
+
+    private static function scopeUniqueRuleToOwner(Unique $rule): Unique
+    {
+        if (! (bool) config('docs.owner.enabled', false)) {
+            return $rule;
+        }
+
+        $owner = OwnerContext::resolve();
+        $includeGlobal = (bool) config('docs.owner.include_global', false);
+
+        if ($owner instanceof Model) {
+            $rule
+                ->where('owner_type', $owner->getMorphClass())
+                ->where('owner_id', (string) $owner->getKey());
+
+            if (! $includeGlobal) {
+                return $rule;
+            }
+
+            return $rule;
+        }
+
+        return $rule
+            ->whereNull('owner_type')
+            ->whereNull('owner_id');
     }
 }

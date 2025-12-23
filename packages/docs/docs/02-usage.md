@@ -1,3 +1,7 @@
+---
+title: Basic Usage
+---
+
 # Basic Usage
 
 ## Creating Documents

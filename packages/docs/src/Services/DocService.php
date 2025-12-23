@@ -13,6 +13,7 @@ use AIArmada\Docs\Numbering\NumberStrategyRegistry;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Spatie\LaravelPdf\Facades\Pdf;
 
 class DocService
@@ -252,11 +253,19 @@ class DocService
 
         $doc->update(['status' => $status]);
 
+        $ownerAttributes = [];
+        if (config('docs.owner.enabled', false)) {
+            $ownerAttributes = [
+                'owner_type' => $doc->owner_type,
+                'owner_id' => $doc->owner_id,
+            ];
+        }
+
         // Record status change
-        $doc->statusHistories()->create([
+        $doc->statusHistories()->create(array_merge([
             'status' => $status,
             'notes' => $notes ?? "Status changed from {$oldStatus->label()} to {$status->label()}",
-        ]);
+        ], $ownerAttributes));
     }
 
     /**
@@ -324,9 +333,43 @@ class DocService
     {
         $docType = $doc->doc_type ?? 'invoice';
         $basePath = $this->resolveStoragePath($docType);
-        $filename = $doc->doc_number . '.pdf';
+        $filename = $this->normalizePdfFilename($doc);
 
-        return "{$basePath}/{$filename}";
+        $basePath = mb_trim($basePath, '/');
+
+        return $basePath === '' ? $filename : "{$basePath}/{$filename}";
+    }
+
+    protected function normalizePdfFilename(Doc $doc): string
+    {
+        $raw = (string) ($doc->doc_number ?: $doc->getKey());
+
+        // Prevent path traversal / separator injection.
+        $raw = str_replace(['/', '\\'], '-', $raw);
+
+        // Keep only safe filename characters.
+        $sanitized = (string) preg_replace('/[^A-Za-z0-9._-]+/', '-', $raw);
+        $sanitized = mb_trim($sanitized, " .-_/\t\n\r\0\x0B");
+
+        while (str_contains($sanitized, '..')) {
+            $sanitized = str_replace('..', '.', $sanitized);
+        }
+
+        // Treat remaining dots as unsafe path-ish tokens.
+        $sanitized = str_replace('.', '-', $sanitized);
+
+        // Collapse repeated separators.
+        $sanitized = (string) preg_replace('/[-_]{2,}/', '-', $sanitized);
+        $sanitized = mb_trim($sanitized, '-_ ');
+
+        if ($sanitized === '') {
+            $sanitized = (string) $doc->getKey();
+        }
+
+        // Avoid extremely long filenames.
+        $sanitized = Str::limit($sanitized, 120, '');
+
+        return $sanitized . '.pdf';
     }
 
     protected function resolveStorageDisk(string $docType): string
@@ -377,7 +420,5 @@ class DocService
         $includeGlobal = (bool) config('docs.owner.include_global', false);
 
         return $query->forOwner($owner, $includeGlobal);
-
-        return $query;
     }
 }

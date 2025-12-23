@@ -15,6 +15,7 @@ use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Component;
 use Filament\Support\Icons\Heroicon;
+use Illuminate\Validation\ValidationException;
 
 /**
  * Action to record a payment against a document.
@@ -101,9 +102,26 @@ final class RecordPaymentAction
      */
     private static function recordPayment(Doc $record, array $data): void
     {
+        $amount = (float) $data['amount'];
+        $remaining = (float) $record->total - self::getTotalPaid($record);
+
+        if ($amount <= 0) {
+            throw ValidationException::withMessages([
+                'amount' => __('Payment amount must be greater than 0.'),
+            ]);
+        }
+
+        if ($amount > $remaining) {
+            throw ValidationException::withMessages([
+                'amount' => __('Payment amount cannot exceed the outstanding balance.'),
+            ]);
+        }
+
         DocPayment::create([
             'doc_id' => $record->id,
-            'amount' => $data['amount'],
+            'owner_type' => $record->owner_type,
+            'owner_id' => $record->owner_id,
+            'amount' => $amount,
             'currency' => $record->currency,
             'payment_method' => $data['payment_method'],
             'reference' => $data['reference'] ?? null,
@@ -111,12 +129,11 @@ final class RecordPaymentAction
             'notes' => $data['notes'] ?? null,
         ]);
 
-        // Recalculate total paid and update status
-        $newPaidAmount = self::getTotalPaid($record) + (float) $data['amount'];
+        $newPaidAmount = self::getTotalPaid($record);
 
         if ($newPaidAmount >= (float) $record->total) {
             $record->status = DocStatus::PAID;
-            $record->paid_at = now();
+            $record->paid_at = $data['paid_at'];
         } else {
             $record->status = DocStatus::PARTIALLY_PAID;
         }

@@ -3,9 +3,15 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentDocs\FilamentDocsPlugin;
+use AIArmada\FilamentDocs\Resources\DocEmailTemplateResource;
 use AIArmada\FilamentDocs\Resources\DocResource;
+use AIArmada\FilamentDocs\Resources\DocSequenceResource;
 use AIArmada\FilamentDocs\Resources\DocTemplateResource;
 use AIArmada\FilamentDocs\Widgets\DocStatsWidget;
+use AIArmada\FilamentDocs\Widgets\QuickActionsWidget;
+use AIArmada\FilamentDocs\Widgets\RecentDocumentsWidget;
+use AIArmada\FilamentDocs\Widgets\RevenueChartWidget;
+use AIArmada\FilamentDocs\Widgets\StatusBreakdownWidget;
 use Filament\Panel;
 
 it('exposes a stable plugin id', function (): void {
@@ -24,7 +30,12 @@ it('registers docs resources and widgets on the panel', function (): void {
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('resources')
         ->once()
-        ->with([DocResource::class, DocTemplateResource::class])
+        ->with([
+            DocResource::class,
+            DocTemplateResource::class,
+            DocSequenceResource::class,
+            DocEmailTemplateResource::class,
+        ])
         ->andReturnSelf();
 
     // @phpstan-ignore method.notFound
@@ -36,7 +47,13 @@ it('registers docs resources and widgets on the panel', function (): void {
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('widgets')
         ->once()
-        ->with([DocStatsWidget::class])
+        ->with([
+            QuickActionsWidget::class,
+            RecentDocumentsWidget::class,
+            StatusBreakdownWidget::class,
+            RevenueChartWidget::class,
+            DocStatsWidget::class,
+        ])
         ->andReturnSelf();
 
     // @phpstan-ignore argument.type

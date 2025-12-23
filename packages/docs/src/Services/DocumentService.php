@@ -133,10 +133,18 @@ final class DocumentService
     public function recordPayment(Doc $doc, array $paymentData): DocPayment
     {
         return DB::transaction(function () use ($doc, $paymentData): DocPayment {
+            $ownerAttributes = [];
+            if (config('docs.owner.enabled', false)) {
+                $ownerAttributes = [
+                    'owner_type' => $doc->owner_type,
+                    'owner_id' => $doc->owner_id,
+                ];
+            }
+
             $payment = $doc->payments()->create(array_merge($paymentData, [
                 'paid_at' => $paymentData['paid_at'] ?? now(),
                 'currency' => $paymentData['currency'] ?? $doc->currency,
-            ]));
+            ], $ownerAttributes));
 
             // Update document status based on payments
             $totalPaid = $doc->payments()->sum('amount');
@@ -146,10 +154,10 @@ final class DocumentService
                 $doc->markAsPaid("Payment recorded: {$payment->amount}");
             } elseif ($totalPaid > 0) {
                 $doc->update(['status' => DocStatus::PARTIALLY_PAID]);
-                $doc->statusHistories()->create([
+                $doc->statusHistories()->create(array_merge([
                     'status' => DocStatus::PARTIALLY_PAID,
                     'notes' => "Partial payment recorded: {$payment->amount}",
-                ]);
+                ], $ownerAttributes));
             }
 
             return $payment;
@@ -199,12 +207,20 @@ final class DocumentService
     {
         $nextVersion = $doc->versions()->max('version_number') + 1;
 
-        return $doc->versions()->create([
+        $ownerAttributes = [];
+        if (config('docs.owner.enabled', false)) {
+            $ownerAttributes = [
+                'owner_type' => $doc->owner_type,
+                'owner_id' => $doc->owner_id,
+            ];
+        }
+
+        return $doc->versions()->create(array_merge([
             'version_number' => $nextVersion,
             'snapshot' => $doc->toArray(),
             'change_summary' => $summary,
             'changed_by' => auth()->id(),
-        ]);
+        ], $ownerAttributes));
     }
 
     /**

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -23,10 +25,16 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 final class SequenceNumber extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'docs.owner';
 
     protected $fillable = [
         'doc_sequence_id',
+        'owner_type',
+        'owner_id',
         'period_key',
         'last_number',
     ];

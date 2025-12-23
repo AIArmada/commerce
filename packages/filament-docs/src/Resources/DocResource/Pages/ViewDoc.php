@@ -45,7 +45,7 @@ final class ViewDoc extends ViewRecord
                 ->icon(Heroicon::OutlinedArrowDownTray)
                 ->color('success')
                 ->visible(fn (Doc $record): bool => $record->pdf_path !== null)
-                ->url(fn (Doc $record): string => route('filament-docs.download', $record))
+                ->url(fn (Doc $record): string => route('filament-docs.download', ['doc' => $record->getKey()]))
                 ->openUrlInNewTab(),
 
             Actions\ActionGroup::make([

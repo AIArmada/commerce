@@ -1,3 +1,7 @@
+---
+title: Vision Progress Tracker
+---
+
 # Vision Progress Tracker
 
 > **Package:** `aiarmada/docs` + `aiarmada/filament-docs`  

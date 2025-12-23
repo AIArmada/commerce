@@ -58,6 +58,29 @@ it('exports formatted column values for a doc record', function (): void {
     expect((float) $values[5])->toBe(23.45);
 });
 
+it('preloads paid_amount via modifyQuery to avoid N+1', function (): void {
+    $doc = Doc::factory()->create([
+        'currency' => 'MYR',
+    ]);
+
+    DocPayment::create([
+        'doc_id' => $doc->id,
+        'amount' => 23.45,
+        'currency' => $doc->currency,
+        'payment_method' => 'cash',
+        'reference' => 'PAY-1',
+        'transaction_id' => null,
+        'paid_at' => now(),
+        'notes' => null,
+    ]);
+
+    $docWithAggregate = DocExporter::modifyQuery(Doc::query())
+        ->whereKey($doc->id)
+        ->firstOrFail();
+
+    expect((float) $docWithAggregate->paid_amount)->toBe(23.45);
+});
+
 it('builds completed notification body for successful and failed rows', function (): void {
     $export = new Export;
     $export->successful_rows = 2;
