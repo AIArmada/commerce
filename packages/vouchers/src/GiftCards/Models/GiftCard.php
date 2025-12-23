@@ -122,8 +122,8 @@ class GiftCard extends Model
     /**
      * Scope query to the specified owner.
      *
-     * @param  Builder<GiftCard>  $query
-     * @return Builder<GiftCard>
+     * @param  Builder<static>  $query
+     * @return Builder<static>
      */
     public function scopeForOwner(Builder $query, ?Model $owner = null, bool $includeGlobal = true): Builder
     {
@@ -133,7 +133,7 @@ class GiftCard extends Model
 
         $includeGlobal = $includeGlobal && (bool) config('vouchers.owner.include_global', false);
 
-        /** @var Builder<GiftCard> $scoped */
+        /** @var Builder<static> $scoped */
         $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
 
         return $scoped;

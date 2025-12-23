@@ -6,9 +6,9 @@ namespace AIArmada\Cart\Console\Commands;
 
 use AIArmada\Cart\Support\CartOwnerScope;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Carbon\CarbonInterface;
 use Illuminate\Console\Command;
 use Illuminate\Database\Query\Builder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
 use function Laravel\Prompts\confirm;
@@ -92,7 +92,7 @@ final class ClearAbandonedCartsCommand extends Command
         string $table,
         bool $useExpired,
         int $days,
-        Carbon $now,
+        CarbonInterface $now,
         bool $dryRun,
         int $batchSize,
     ): int {
@@ -198,7 +198,7 @@ final class ClearAbandonedCartsCommand extends Command
         string $table,
         bool $useExpired,
         int $days,
-        Carbon $now,
+        CarbonInterface $now,
         bool $dryRun,
         int $batchSize,
         ?string $ownerType,
@@ -262,7 +262,7 @@ final class ClearAbandonedCartsCommand extends Command
         string $table,
         bool $useExpired,
         int $days,
-        Carbon $now,
+        CarbonInterface $now,
         ?string $ownerType,
         string | int | null $ownerId,
     ): int {
@@ -276,7 +276,7 @@ final class ClearAbandonedCartsCommand extends Command
         string $table,
         bool $useExpired,
         int $days,
-        Carbon $now,
+        CarbonInterface $now,
         bool $dryRun,
         int $batchSize,
         ?string $ownerType,
@@ -303,7 +303,7 @@ final class ClearAbandonedCartsCommand extends Command
         return $deletedCount;
     }
 
-    private function baseQuery(string $table, bool $useExpired, int $days, Carbon $now): Builder
+    private function baseQuery(string $table, bool $useExpired, int $days, CarbonInterface $now): Builder
     {
         if ($useExpired) {
             return DB::table($table)
