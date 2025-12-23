@@ -9,10 +9,20 @@ use AIArmada\Docs\Models\Doc;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;
+use Illuminate\Database\Eloquent\Builder;
 
 final class DocExporter extends Exporter
 {
     protected static ?string $model = Doc::class;
+
+    /**
+     * @param  Builder<Doc>  $query
+     * @return Builder<Doc>
+     */
+    public static function modifyQuery(Builder $query): Builder
+    {
+        return $query->withSum('payments as paid_amount', 'amount');
+    }
 
     /**
      * @return array<int, ExportColumn>
@@ -62,7 +72,7 @@ final class DocExporter extends Exporter
 
             ExportColumn::make('paid_amount')
                 ->label('Paid Amount')
-                ->state(fn (Doc $record): float => (float) $record->payments()->sum('amount')),
+                ->state(fn (Doc $record): float => (float) ($record->paid_amount ?? $record->payments()->sum('amount'))),
 
             ExportColumn::make('notes')
                 ->label('Notes'),

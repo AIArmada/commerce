@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Models;
 
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -33,10 +35,16 @@ use Illuminate\Support\Carbon;
 final class DocEInvoiceSubmission extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'docs.owner';
 
     protected $fillable = [
         'doc_id',
+        'owner_type',
+        'owner_id',
         'submission_uid',
         'document_uuid',
         'long_id',

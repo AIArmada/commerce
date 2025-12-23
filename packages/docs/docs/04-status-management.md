@@ -1,3 +1,7 @@
+---
+title: Document Status
+---
+
 # Document Status
 
 ## Available Statuses

@@ -1,3 +1,7 @@
+---
+title: Templates
+---
+
 # Templates
 
 Templates are Blade views that define document appearance.

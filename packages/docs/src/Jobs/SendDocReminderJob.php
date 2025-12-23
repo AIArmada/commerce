@@ -95,7 +95,6 @@ class SendDocReminderJob implements ShouldQueue
             Log::info('SendDocReminderJob: Reminder sent', [
                 'doc_id' => $doc->id,
                 'doc_number' => $doc->doc_number,
-                'recipient' => $recipientEmail,
             ]);
         } catch (Exception $e) {
             Log::error('SendDocReminderJob: Failed to send reminder', [

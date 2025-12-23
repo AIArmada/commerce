@@ -30,7 +30,11 @@ final class DocsOwnerScope
         $model = $query->getModel();
 
         if (! method_exists($model, 'scopeForOwner')) {
-            return $query;
+            return $query->whereRaw('1 = 0');
+        }
+
+        if ($owner === null && ! $includeGlobal) {
+            return $query->whereRaw('1 = 0');
         }
 
         /** @phpstan-ignore-next-line dynamic scope */
