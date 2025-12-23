@@ -11,11 +11,95 @@ use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Pricing\Models\Promotion;
 use AIArmada\Pricing\Support\PricingOwnerScope;
+use Carbon\CarbonImmutable;
+use DateTimeInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
+use Throwable;
 
 class PriceCalculator
 {
+    /**
+     * @param  array<string, mixed>  $context
+     */
+    protected function resolveEffectiveAt(array $context): CarbonImmutable
+    {
+        $effectiveAt = Arr::get($context, 'effective_at');
+
+        if ($effectiveAt instanceof DateTimeInterface) {
+            return CarbonImmutable::instance($effectiveAt);
+        }
+
+        if (is_int($effectiveAt)) {
+            return CarbonImmutable::createFromTimestamp($effectiveAt);
+        }
+
+        if (is_string($effectiveAt) && $effectiveAt !== '') {
+            try {
+                return CarbonImmutable::parse($effectiveAt);
+            } catch (Throwable) {
+                // Fall through to now().
+            }
+        }
+
+        return CarbonImmutable::now();
+    }
+
+    /**
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<TModel>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<TModel>
+     */
+    protected function applyPriceListActiveAt(\Illuminate\Database\Eloquent\Builder $query, CarbonImmutable $at): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('is_active', true)
+            ->where(function ($q) use ($at): void {
+                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $at);
+            })
+            ->where(function ($q) use ($at): void {
+                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $at);
+            });
+    }
+
+    /**
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<TModel>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<TModel>
+     */
+    protected function applyPriceActiveAt(\Illuminate\Database\Eloquent\Builder $query, CarbonImmutable $at): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query
+            ->where(function ($q) use ($at): void {
+                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $at);
+            })
+            ->where(function ($q) use ($at): void {
+                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $at);
+            });
+    }
+
+    /**
+     * @template TModel of \Illuminate\Database\Eloquent\Model
+     *
+     * @param  \Illuminate\Database\Eloquent\Builder<TModel>  $query
+     * @return \Illuminate\Database\Eloquent\Builder<TModel>
+     */
+    protected function applyPromotionActiveAt(\Illuminate\Database\Eloquent\Builder $query, CarbonImmutable $at): \Illuminate\Database\Eloquent\Builder
+    {
+        return $query->where('is_active', true)
+            ->where(function ($q) use ($at): void {
+                $q->whereNull('starts_at')->orWhere('starts_at', '<=', $at);
+            })
+            ->where(function ($q) use ($at): void {
+                $q->whereNull('ends_at')->orWhere('ends_at', '>=', $at);
+            })
+            ->where(function ($q): void {
+                $q->whereNull('usage_limit')
+                    ->orWhereColumn('usage_count', '<', 'usage_limit');
+            });
+    }
+
     /**
      * Calculate the final price for a priceable item.
      *
@@ -23,6 +107,8 @@ class PriceCalculator
      */
     public function calculate(Priceable $item, int $quantity = 1, array $context = []): PriceResultData
     {
+        $effectiveAt = $this->resolveEffectiveAt($context);
+
         $quantity = max(1, $quantity);
         $basePrice = $item->getBasePrice();
         $breakdown = [];
@@ -67,7 +153,7 @@ class PriceCalculator
         }
 
         // 4. Check for active promotions
-        $promotionResult = $this->getPromotionPrice($priceableType, $priceableId, $basePrice, $quantity);
+        $promotionResult = $this->getPromotionPrice($priceableType, $priceableId, $basePrice, $quantity, $effectiveAt);
         if ($promotionResult !== null) {
             $breakdown[] = ['type' => 'promotion', 'price' => $promotionResult['price'], 'promotion' => $promotionResult['name']];
 
@@ -82,7 +168,7 @@ class PriceCalculator
         }
 
         // 5. Check for price list price
-        $priceListResult = $this->getPriceListPrice($priceableType, $priceableId, $quantity, $context);
+        $priceListResult = $this->getPriceListPrice($priceableType, $priceableId, $quantity, $context, $effectiveAt);
         if ($priceListResult !== null) {
             $breakdown[] = ['type' => 'price_list', 'price' => $priceListResult['price'], 'list' => $priceListResult['name']];
 
@@ -121,6 +207,8 @@ class PriceCalculator
      */
     protected function getCustomerPrice(string $priceableType, string $priceableId, int $quantity, array $context): ?int
     {
+        $effectiveAt = $this->resolveEffectiveAt($context);
+
         $customerId = Arr::get($context, 'customer_id');
 
         if (! is_string($customerId) || $customerId === '') {
@@ -128,18 +216,16 @@ class PriceCalculator
         }
 
         // Look up customer-specific pricing
-        $price = PricingOwnerScope::applyToOwnedQuery(Price::query())
+        $price = $this->applyPriceActiveAt(PricingOwnerScope::applyToOwnedQuery(Price::query()), $effectiveAt)
             ->where('priceable_type', $priceableType)
             ->where('priceable_id', $priceableId)
             ->forQuantity($quantity)
             ->whereIn(
                 'price_list_id',
-                PricingOwnerScope::applyToOwnedQuery(PriceList::query())
-                    ->active()
+                $this->applyPriceListActiveAt(PricingOwnerScope::applyToOwnedQuery(PriceList::query()), $effectiveAt)
                     ->where('customer_id', $customerId)
                     ->select('id')
             )
-            ->active()
             ->orderByDesc('min_quantity')
             ->first();
 
@@ -153,24 +239,24 @@ class PriceCalculator
      */
     protected function getSegmentPrice(string $priceableType, string $priceableId, int $quantity, array $context): ?int
     {
+        $effectiveAt = $this->resolveEffectiveAt($context);
+
         $segmentIds = Arr::get($context, 'segment_ids');
 
         if (! is_array($segmentIds) || $segmentIds === []) {
             return null;
         }
 
-        $price = PricingOwnerScope::applyToOwnedQuery(Price::query())
+        $price = $this->applyPriceActiveAt(PricingOwnerScope::applyToOwnedQuery(Price::query()), $effectiveAt)
             ->where('priceable_type', $priceableType)
             ->where('priceable_id', $priceableId)
             ->forQuantity($quantity)
             ->whereIn(
                 'price_list_id',
-                PricingOwnerScope::applyToOwnedQuery(PriceList::query())
-                    ->active()
+                $this->applyPriceListActiveAt(PricingOwnerScope::applyToOwnedQuery(PriceList::query()), $effectiveAt)
                     ->whereIn('segment_id', $segmentIds)
                     ->select('id')
             )
-            ->active()
             ->orderBy('amount', 'asc') // Best price
             ->orderByDesc('min_quantity')
             ->first();
@@ -220,13 +306,12 @@ class PriceCalculator
      *
      * @return array{price: int, name: string}|null
      */
-    protected function getPromotionPrice(string $promotionableType, string $promotionableId, int $basePrice, int $quantity): ?array
+    protected function getPromotionPrice(string $promotionableType, string $promotionableId, int $basePrice, int $quantity, CarbonImmutable $effectiveAt): ?array
     {
         $promotionTable = (new Promotion)->getTable();
         $promotionablesTable = config('pricing.database.tables.promotionables', 'promotionables');
 
-        $promotion = PricingOwnerScope::applyToOwnedQuery(Promotion::query())
-            ->active()
+        $promotion = $this->applyPromotionActiveAt(PricingOwnerScope::applyToOwnedQuery(Promotion::query()), $effectiveAt)
             ->whereExists(function ($query) use ($promotionTable, $promotionablesTable, $promotionableType, $promotionableId): void {
                 $query->selectRaw('1')
                     ->from($promotionablesTable)
@@ -264,11 +349,11 @@ class PriceCalculator
      * @param  array<string, mixed>  $context
      * @return array{price: int, name: string}|null
      */
-    protected function getPriceListPrice(string $priceableType, string $priceableId, int $quantity, array $context): ?array
+    protected function getPriceListPrice(string $priceableType, string $priceableId, int $quantity, array $context, CarbonImmutable $effectiveAt): ?array
     {
         $priceListId = Arr::get($context, 'price_list_id');
 
-        $priceListQuery = PricingOwnerScope::applyToOwnedQuery(PriceList::query())->active();
+        $priceListQuery = $this->applyPriceListActiveAt(PricingOwnerScope::applyToOwnedQuery(PriceList::query()), $effectiveAt);
 
         $priceList = is_string($priceListId) && $priceListId !== ''
             ? $priceListQuery->whereKey($priceListId)->first()
@@ -278,12 +363,11 @@ class PriceCalculator
             return null;
         }
 
-        $price = PricingOwnerScope::applyToOwnedQuery(Price::query())
+        $price = $this->applyPriceActiveAt(PricingOwnerScope::applyToOwnedQuery(Price::query()), $effectiveAt)
             ->where('price_list_id', $priceList->id)
             ->where('priceable_type', $priceableType)
             ->where('priceable_id', $priceableId)
             ->forQuantity($quantity)
-            ->active()
             ->orderByDesc('min_quantity')
             ->first();
 
