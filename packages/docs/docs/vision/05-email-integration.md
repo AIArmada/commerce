@@ -1,3 +1,7 @@
+---
+title: Email Integration
+---
+
 # Email Integration
 
 > **Document:** 05 of 10  

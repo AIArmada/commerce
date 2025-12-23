@@ -6,6 +6,7 @@ namespace AIArmada\FilamentDocs\Widgets;
 
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\FilamentDocs\Support\DocsOwnerScope;
 use Filament\Widgets\ChartWidget;
 
 final class StatusBreakdownWidget extends ChartWidget
@@ -16,6 +17,8 @@ final class StatusBreakdownWidget extends ChartWidget
 
     protected function getData(): array
     {
+        $docs = DocsOwnerScope::applyToDocs(Doc::query());
+
         $statuses = [
             DocStatus::DRAFT,
             DocStatus::PENDING,
@@ -32,7 +35,7 @@ final class StatusBreakdownWidget extends ChartWidget
         $colors = [];
 
         foreach ($statuses as $status) {
-            $count = Doc::where('status', $status)->count();
+            $count = (clone $docs)->where('status', $status)->count();
             if ($count > 0) {
                 $labels[] = $status->label();
                 $data[] = $count;

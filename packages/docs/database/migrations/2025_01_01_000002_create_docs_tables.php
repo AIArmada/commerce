@@ -67,6 +67,7 @@ return new class extends Migration
 
         Schema::create($statusTable, function (Blueprint $table) use ($statusTable): void {
             $table->uuid('id')->primary();
+            $table->nullableUuidMorphs('owner');
             $table->foreignUuid('doc_id');
             $table->string('status');
             $table->text('notes')->nullable();

@@ -9,9 +9,13 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\Services\AffiliateService;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Http\Request;
 
 beforeEach(function (): void {
+    OwnerContext::clearOverride();
+
     $this->affiliate = Affiliate::create([
         'code' => 'API-TEST-' . uniqid(),
         'name' => 'API Test Affiliate',
@@ -57,6 +61,53 @@ describe('AffiliateApiController', function (): void {
 
             $data = json_decode($response->getContent(), true);
             expect($data['message'])->toBe('Affiliate not found');
+        });
+
+        test('blocks cross-tenant reads when owner scoping is enabled', function (): void {
+            config()->set('affiliates.owner.enabled', true);
+            config()->set('affiliates.owner.include_global', false);
+
+            $ownerA = User::query()->create([
+                'name' => 'Owner A',
+                'email' => 'affiliate-api-owner-a@example.com',
+                'password' => 'secret',
+            ]);
+
+            $ownerB = User::query()->create([
+                'name' => 'Owner B',
+                'email' => 'affiliate-api-owner-b@example.com',
+                'password' => 'secret',
+            ]);
+
+            $affiliateA = Affiliate::create([
+                'code' => 'API-OWNER-A-' . uniqid(),
+                'name' => 'Affiliate A',
+                'contact_email' => 'a@example.com',
+                'status' => AffiliateStatus::Active,
+                'commission_type' => CommissionType::Percentage,
+                'commission_rate' => 1000,
+                'currency' => 'USD',
+                'owner_type' => $ownerA->getMorphClass(),
+                'owner_id' => $ownerA->getKey(),
+            ]);
+
+            OwnerContext::override($ownerB);
+
+            $response = $this->controller->summary($affiliateA->code);
+
+            expect($response->getStatusCode())->toBe(404);
+        });
+
+        test('requires owner context when owner scoping is enabled', function (): void {
+            config()->set('affiliates.owner.enabled', true);
+            config()->set('affiliates.owner.include_global', false);
+
+            OwnerContext::override(null);
+
+            $response = $this->controller->summary($this->affiliate->code);
+
+            expect($response->getStatusCode())->toBe(400);
+            expect(json_decode($response->getContent(), true)['message'])->toBe('Owner context required');
         });
     });
 
@@ -124,6 +175,20 @@ describe('AffiliateApiController', function (): void {
             $data = json_decode($response->getContent(), true);
             expect($data)->toHaveKey('link');
         });
+
+        test('requires owner context when owner scoping is enabled', function (): void {
+            config()->set('affiliates.owner.enabled', true);
+            config()->set('affiliates.owner.include_global', false);
+
+            OwnerContext::override(null);
+
+            $request = Request::create('/api/affiliates/links', 'GET');
+
+            $response = $this->controller->links($this->affiliate->code, $request);
+
+            expect($response->getStatusCode())->toBe(400);
+            expect(json_decode($response->getContent(), true)['message'])->toBe('Owner context required');
+        });
     });
 
     describe('creatives', function (): void {
@@ -163,6 +228,18 @@ describe('AffiliateApiController', function (): void {
 
             $data = json_decode($response->getContent(), true);
             expect($data['message'])->toBe('Affiliate not found');
+        });
+
+        test('requires owner context when owner scoping is enabled', function (): void {
+            config()->set('affiliates.owner.enabled', true);
+            config()->set('affiliates.owner.include_global', false);
+
+            OwnerContext::override(null);
+
+            $response = $this->controller->creatives($this->affiliate->code);
+
+            expect($response->getStatusCode())->toBe(400);
+            expect(json_decode($response->getContent(), true)['message'])->toBe('Owner context required');
         });
     });
 });

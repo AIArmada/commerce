@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
+use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\Models\DocPayment;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\CreateAction;
 use Filament\Actions\DeleteAction;
@@ -17,6 +19,7 @@ use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
+use Illuminate\Validation\ValidationException;
 
 final class PaymentsRelationManager extends RelationManager
 {
@@ -92,10 +95,16 @@ final class PaymentsRelationManager extends RelationManager
             ])
             ->filters([])
             ->headerActions([
-                CreateAction::make(),
+                CreateAction::make()
+                    ->mutateFormDataUsing(function (array $data): array {
+                        return $this->mutatePaymentData($data);
+                    }),
             ])
             ->recordActions([
-                EditAction::make(),
+                EditAction::make()
+                    ->mutateFormDataUsing(function (array $data, DocPayment $record): array {
+                        return $this->mutatePaymentData($data, $record);
+                    }),
                 DeleteAction::make(),
             ])
             ->toolbarActions([
@@ -104,5 +113,45 @@ final class PaymentsRelationManager extends RelationManager
                 ]),
             ])
             ->defaultSort('paid_at', 'desc');
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    private function mutatePaymentData(array $data, ?DocPayment $existing = null): array
+    {
+        $doc = $this->getOwnerDoc();
+
+        if (! array_key_exists('amount', $data)) {
+            throw ValidationException::withMessages([
+                'amount' => __('Payment amount is required.'),
+            ]);
+        }
+
+        $data['currency'] = $doc->currency;
+        $data['owner_type'] = $doc->owner_type;
+        $data['owner_id'] = $doc->owner_id;
+
+        if ($existing !== null && (string) $existing->doc_id !== (string) $doc->getKey()) {
+            throw ValidationException::withMessages([
+                'doc_id' => __('Invalid payment record.'),
+            ]);
+        }
+
+        return $data;
+    }
+
+    private function getOwnerDoc(): Doc
+    {
+        $ownerRecord = $this->getOwnerRecord();
+
+        if (! $ownerRecord instanceof Doc) {
+            throw ValidationException::withMessages([
+                'doc' => __('Invalid document context.'),
+            ]);
+        }
+
+        return $ownerRecord;
     }
 }

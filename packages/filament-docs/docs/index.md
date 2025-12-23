@@ -1,3 +1,7 @@
+---
+title: Filament Docs
+---
+
 # Filament Docs Documentation
 
 Filament admin panel integration for the AIArmada Docs package.

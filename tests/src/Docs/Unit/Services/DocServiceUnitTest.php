@@ -53,6 +53,34 @@ test('generatePdf creates and stores pdf', function (): void {
     expect($doc->fresh()->pdf_path)->toBe('docs/INV-001.pdf');
 });
 
+test('generatePdf sanitizes doc_number to prevent path traversal', function (): void {
+    Storage::fake('docs');
+
+    $doc = Doc::factory()->create([
+        'doc_type' => 'invoice',
+        'doc_number' => 'INV/../../evil',
+    ]);
+
+    // Mock PDF Facade
+    $browsershotMock = Mockery::mock(Browsershot::class);
+    $browsershotMock->shouldReceive('showBackground')->andReturnSelf();
+    $browsershotMock->shouldReceive('pdf')->andReturn('PDF CONTENT');
+
+    $pdfBuilderMock = Mockery::mock(PdfBuilder::class);
+    $pdfBuilderMock->shouldReceive('format')->andReturnSelf();
+    $pdfBuilderMock->shouldReceive('orientation')->andReturnSelf();
+    $pdfBuilderMock->shouldReceive('margins')->andReturnSelf();
+    $pdfBuilderMock->shouldReceive('getBrowsershot')->andReturn($browsershotMock);
+
+    Pdf::shouldReceive('view')->andReturn($pdfBuilderMock);
+
+    $path = $this->service->generatePdf($doc);
+
+    expect($path)->toBe('docs/INV-evil.pdf');
+    Storage::disk('docs')->assertExists('docs/INV-evil.pdf');
+    expect($doc->fresh()->pdf_path)->toBe('docs/INV-evil.pdf');
+});
+
 test('downloadPdf returns existing path if exists', function (): void {
     Storage::fake('docs');
 

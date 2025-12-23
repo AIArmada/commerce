@@ -20,6 +20,7 @@ return new class extends Migration
         if (! Schema::hasTable($paymentsTable)) {
             Schema::create($paymentsTable, function (Blueprint $table) use ($paymentsTable, $jsonType): void {
                 $table->uuid('id')->primary();
+                $table->nullableUuidMorphs('owner');
                 $table->foreignUuid('doc_id');
                 $table->decimal('amount', 15, 2);
                 $table->string('currency', 3)->default('MYR');
@@ -60,6 +61,7 @@ return new class extends Migration
         if (! Schema::hasTable($emailsTable)) {
             Schema::create($emailsTable, function (Blueprint $table) use ($emailsTable, $jsonType): void {
                 $table->uuid('id')->primary();
+                $table->nullableUuidMorphs('owner');
                 $table->foreignUuid('doc_id');
                 $table->foreignUuid('doc_email_template_id')->nullable();
                 $table->string('recipient_email');
@@ -87,6 +89,7 @@ return new class extends Migration
         if (! Schema::hasTable($versionsTable)) {
             Schema::create($versionsTable, function (Blueprint $table) use ($versionsTable, $jsonType): void {
                 $table->uuid('id')->primary();
+                $table->nullableUuidMorphs('owner');
                 $table->foreignUuid('doc_id');
                 $table->unsignedInteger('version_number');
                 $table->{$jsonType}('snapshot');
@@ -103,13 +106,14 @@ return new class extends Migration
         }
 
         // Phase 4: Approvals
-    $approvalsTable = $tables['doc_approvals'] ?? $tablePrefix . 'approvals';
+        $approvalsTable = $tables['doc_approvals'] ?? $tablePrefix . 'approvals';
         if (! Schema::hasTable($approvalsTable)) {
             Schema::create($approvalsTable, function (Blueprint $table) use ($approvalsTable): void {
                 $table->uuid('id')->primary();
+                $table->nullableUuidMorphs('owner');
                 $table->foreignUuid('doc_id');
-        $table->foreignUuid('requested_by');
-        $table->foreignUuid('assigned_to')->nullable();
+                $table->foreignUuid('requested_by');
+                $table->foreignUuid('assigned_to')->nullable();
                 $table->string('status')->default('pending'); // pending, approved, rejected
                 $table->text('comments')->nullable();
                 $table->timestamp('approved_at')->nullable();
@@ -128,6 +132,7 @@ return new class extends Migration
         if (! Schema::hasTable($einvoiceTable)) {
             Schema::create($einvoiceTable, function (Blueprint $table) use ($einvoiceTable, $jsonType): void {
                 $table->uuid('id')->primary();
+                $table->nullableUuidMorphs('owner');
                 $table->foreignUuid('doc_id');
                 $table->string('submission_uid');
                 $table->string('document_uuid')->nullable();

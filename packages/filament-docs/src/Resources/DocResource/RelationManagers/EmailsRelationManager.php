@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Resources\DocResource\RelationManagers;
 
+use AIArmada\Docs\Models\DocEmail;
+use AIArmada\Docs\Services\DocEmailService;
 use Filament\Actions\Action;
 use Filament\Actions\ViewAction;
+use Filament\Notifications\Notification;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 
 final class EmailsRelationManager extends RelationManager
 {
@@ -73,8 +77,23 @@ final class EmailsRelationManager extends RelationManager
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->action(function ($record): void {
-                        // Resend logic
+                    ->action(function (DocEmail $record): void {
+                        $doc = $record->doc;
+
+                        if ($doc === null) {
+                            throw new NotFoundHttpException('Document not found.');
+                        }
+
+                        app(DocEmailService::class)->send(
+                            doc: $doc,
+                            recipientEmail: $record->recipient_email,
+                            recipientName: $record->recipient_name,
+                        );
+
+                        Notification::make()
+                            ->title('Email queued')
+                            ->success()
+                            ->send();
                     }),
                 ViewAction::make(),
             ])

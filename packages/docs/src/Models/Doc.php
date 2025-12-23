@@ -184,10 +184,18 @@ final class Doc extends Model
             'paid_at' => now(),
         ]);
 
-        $this->statusHistories()->create([
+        $ownerAttributes = [];
+        if (config('docs.owner.enabled', false)) {
+            $ownerAttributes = [
+                'owner_type' => $this->owner_type,
+                'owner_id' => $this->owner_id,
+            ];
+        }
+
+        $this->statusHistories()->create(array_merge([
             'status' => DocStatus::PAID,
             'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::PAID->label(),
-        ]);
+        ], $ownerAttributes));
     }
 
     public function markAsSent(?string $notes = null): void
@@ -197,10 +205,18 @@ final class Doc extends Model
 
             $this->update(['status' => DocStatus::SENT]);
 
-            $this->statusHistories()->create([
+            $ownerAttributes = [];
+            if (config('docs.owner.enabled', false)) {
+                $ownerAttributes = [
+                    'owner_type' => $this->owner_type,
+                    'owner_id' => $this->owner_id,
+                ];
+            }
+
+            $this->statusHistories()->create(array_merge([
                 'status' => DocStatus::SENT,
                 'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::SENT->label(),
-            ]);
+            ], $ownerAttributes));
         }
     }
 
@@ -211,10 +227,18 @@ final class Doc extends Model
 
             $this->update(['status' => DocStatus::CANCELLED]);
 
-            $this->statusHistories()->create([
+            $ownerAttributes = [];
+            if (config('docs.owner.enabled', false)) {
+                $ownerAttributes = [
+                    'owner_type' => $this->owner_type,
+                    'owner_id' => $this->owner_id,
+                ];
+            }
+
+            $this->statusHistories()->create(array_merge([
                 'status' => DocStatus::CANCELLED,
                 'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::CANCELLED->label(),
-            ]);
+            ], $ownerAttributes));
         }
     }
 
@@ -228,10 +252,18 @@ final class Doc extends Model
 
             $this->update(['status' => DocStatus::OVERDUE]);
 
-            $this->statusHistories()->create([
+            $ownerAttributes = [];
+            if (config('docs.owner.enabled', false)) {
+                $ownerAttributes = [
+                    'owner_type' => $this->owner_type,
+                    'owner_id' => $this->owner_id,
+                ];
+            }
+
+            $this->statusHistories()->create(array_merge([
                 'status' => DocStatus::OVERDUE,
                 'notes' => "Status changed from {$oldStatus->label()} to " . DocStatus::OVERDUE->label() . ' (automatic overdue detection)',
-            ]);
+            ], $ownerAttributes));
         }
     }
 

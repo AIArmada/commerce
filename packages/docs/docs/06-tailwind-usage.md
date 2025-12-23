@@ -1,3 +1,7 @@
+---
+title: Tailwind CSS Usage
+---
+
 # Tailwind CSS Usage
 
 The docs package uses [Spatie Laravel PDF](https://spatie.be/docs/laravel-pdf/v1/introduction) which supports Tailwind CSS for styling templates.

@@ -7,11 +7,7 @@ use AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy;
 $tablePrefix = env('DOCS_TABLE_PREFIX', 'docs_');
 
 return [
-    /*
-    |--------------------------------------------------------------------------
-    | Database
-    |--------------------------------------------------------------------------
-    */
+    /* Database */
     'database' => [
         'table_prefix' => $tablePrefix,
         'json_column_type' => env('DOCS_JSON_COLUMN_TYPE', env('COMMERCE_JSON_COLUMN_TYPE', 'json')),
@@ -19,40 +15,43 @@ return [
             'docs' => env('DOCS_TABLE', $tablePrefix . 'docs'),
             'doc_templates' => env('DOC_TEMPLATES_TABLE', $tablePrefix . 'doc_templates'),
             'doc_status_histories' => env('DOC_STATUS_HISTORIES_TABLE', $tablePrefix . 'doc_status_histories'),
+            'doc_payments' => env('DOC_PAYMENTS_TABLE', $tablePrefix . 'payments'),
+            'doc_email_templates' => env('DOC_EMAIL_TEMPLATES_TABLE', $tablePrefix . 'email_templates'),
+            'doc_emails' => env('DOC_EMAILS_TABLE', $tablePrefix . 'emails'),
+            'doc_versions' => env('DOC_VERSIONS_TABLE', $tablePrefix . 'versions'),
+            'doc_approvals' => env('DOC_APPROVALS_TABLE', $tablePrefix . 'approvals'),
+            'doc_einvoice_submissions' => env('DOC_EINVOICE_SUBMISSIONS_TABLE', $tablePrefix . 'einvoice_submissions'),
+            'doc_sequences' => env('DOC_SEQUENCES_TABLE', $tablePrefix . 'sequences'),
+            'sequence_numbers' => env('DOC_SEQUENCE_NUMBERS_TABLE', $tablePrefix . 'sequence_numbers'),
+            'workflows' => env('DOC_WORKFLOWS_TABLE', $tablePrefix . 'workflows'),
+            'workflow_steps' => env('DOC_WORKFLOW_STEPS_TABLE', $tablePrefix . 'workflow_steps'),
         ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Ownership (Multi-Tenancy)
-    |--------------------------------------------------------------------------
-    |
-    | Multi-tenancy support for scoping docs by owner. When enabled, docs
-    | are isolated per owner using the OwnerResolverInterface binding from
-    | commerce-support.
-    |
-    */
-    'owner' => [
-        'enabled' => env('DOCS_OWNER_ENABLED', false),
-        'include_global' => env('DOCS_OWNER_INCLUDE_GLOBAL', false),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Defaults
-    |--------------------------------------------------------------------------
-    */
+    /* Defaults */
     'defaults' => [
         'currency' => env('DOCS_CURRENCY', 'MYR'),
         'tax_rate' => env('DOCS_TAX_RATE', 0),
         'due_days' => env('DOCS_DUE_DAYS', 30),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Document Types
-    |--------------------------------------------------------------------------
-    */
+    /* Features */
+    'owner' => [
+        'enabled' => env('DOCS_OWNER_ENABLED', false),
+        'include_global' => env('DOCS_OWNER_INCLUDE_GLOBAL', false),
+    ],
+
+    /* Integrations */
+
+    /* HTTP */
+
+    /* Webhooks */
+
+    /* Cache */
+
+    /* Logging */
+
+    /* Document Types */
     'types' => [
         'invoice' => [
             'default_template' => 'doc-default',
@@ -77,11 +76,7 @@ return [
         ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Numbering
-    |--------------------------------------------------------------------------
-    */
+    /* Numbering */
     'numbering' => [
         'format' => [
             'year_format' => env('DOCS_NUMBER_YEAR_FORMAT', 'y'),
@@ -90,23 +85,13 @@ return [
         ],
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Storage
-    |--------------------------------------------------------------------------
-    */
+    /* Storage */
     'storage' => [
         'disk' => env('DOCS_STORAGE_DISK', 'local'),
         'path' => env('DOCS_STORAGE_PATH', 'docs'),
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | PDF
-    |--------------------------------------------------------------------------
-    */
-    'generate_pdf' => env('DOCS_GENERATE_PDF', true),
-
+    /* PDF */
     'pdf' => [
         'format' => 'a4',
         'orientation' => 'portrait',
@@ -120,11 +105,7 @@ return [
         'print_background' => true,
     ],
 
-    /*
-    |--------------------------------------------------------------------------
-    | Company
-    |--------------------------------------------------------------------------
-    */
+    /* Company */
     'company' => [
         'name' => env('DOCS_COMPANY_NAME', config('app.name')),
         'address' => env('DOCS_COMPANY_ADDRESS'),

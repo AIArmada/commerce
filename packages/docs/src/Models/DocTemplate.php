@@ -68,17 +68,27 @@ final class DocTemplate extends Model
      */
     public function setAsDefault(): void
     {
-        // Build query to remove default from other templates of the same type
-        $query = self::whereKeyNot($this->id)
+        // Build query to remove default from other templates of the same type.
+        // When owner scoping is enabled, we must not rely on ambient OwnerContext here;
+        // we explicitly scope the update to this record's owner boundary.
+        $query = self::query()
+            ->when(
+                config('docs.owner.enabled', false),
+                fn (Builder $query): Builder => $query->withoutOwnerScope(),
+            )
+            ->whereKeyNot($this->id)
             ->where('doc_type', $this->doc_type);
 
-        // Scope to same owner context
+        // Scope to same owner context.
         if (config('docs.owner.enabled', false)) {
             if ($this->owner_type !== null && $this->owner_id !== null) {
-                $query->where('owner_type', $this->owner_type)
+                $query
+                    ->where('owner_type', $this->owner_type)
                     ->where('owner_id', $this->owner_id);
             } else {
-                $query->whereNull('owner_type')->whereNull('owner_id');
+                $query
+                    ->whereNull('owner_type')
+                    ->whereNull('owner_id');
             }
         }
 

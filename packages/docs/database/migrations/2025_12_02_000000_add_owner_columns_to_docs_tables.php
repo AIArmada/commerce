@@ -11,14 +11,10 @@ return new class extends Migration
     /**
      * Run the migrations.
      *
-     * This migration only runs when docs owner is enabled.
+     * Adds owner boundary columns to core Docs tables.
      */
     public function up(): void
     {
-        if (! config('docs.owner.enabled', false)) {
-            return;
-        }
-
         $database = config('docs.database', []);
         $tablePrefix = $database['table_prefix'] ?? 'docs_';
         $tables = $database['tables'] ?? [];
@@ -51,10 +47,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        if (! config('docs.owner.enabled', false)) {
-            return;
-        }
-
         $database = config('docs.database', []);
         $tablePrefix = $database['table_prefix'] ?? 'docs_';
         $tables = $database['tables'] ?? [];

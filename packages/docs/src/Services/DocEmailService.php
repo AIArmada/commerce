@@ -40,15 +40,23 @@ final class DocEmailService
         $body = $template?->renderBody($templateVars)
             ?? $this->getDefaultBody($doc);
 
+        $ownerAttributes = [];
+        if (config('docs.owner.enabled', false)) {
+            $ownerAttributes = [
+                'owner_type' => $doc->owner_type,
+                'owner_id' => $doc->owner_id,
+            ];
+        }
+
         // Create email record
-        $email = $doc->emails()->create([
+        $email = $doc->emails()->create(array_merge([
             'doc_email_template_id' => $template?->id,
             'recipient_email' => $recipientEmail,
             'recipient_name' => $recipientName,
             'subject' => $subject,
             'body' => $body,
             'status' => 'queued',
-        ]);
+        ], $ownerAttributes));
 
         // Queue the email
         $this->queueEmail($email, $doc);
@@ -140,7 +148,12 @@ final class DocEmailService
             return false;
         }
 
-        $email = DocEmail::find($data['email_id']);
+        $email = DocEmail::query()
+            ->when(
+                config('docs.owner.enabled', false),
+                fn (\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder => $query->withoutOwnerScope(),
+            )
+            ->find($data['email_id']);
         $email?->markAsOpened();
 
         return $email !== null;
@@ -157,7 +170,12 @@ final class DocEmailService
             return null;
         }
 
-        $email = DocEmail::find($data['email_id']);
+        $email = DocEmail::query()
+            ->when(
+                config('docs.owner.enabled', false),
+                fn (\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder => $query->withoutOwnerScope(),
+            )
+            ->find($data['email_id']);
         $email?->markAsClicked();
 
         return $data['url'] ?? null;

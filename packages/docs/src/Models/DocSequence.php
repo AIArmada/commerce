@@ -91,10 +91,18 @@ final class DocSequence extends Model
             ->first();
 
         if (! $sequenceNumber) {
-            $sequenceNumber = $this->numbers()->create([
+            $ownerAttributes = [];
+            if (config('docs.owner.enabled', false)) {
+                $ownerAttributes = [
+                    'owner_type' => $this->owner_type,
+                    'owner_id' => $this->owner_id,
+                ];
+            }
+
+            $sequenceNumber = $this->numbers()->create(array_merge([
                 'period_key' => $periodKey,
                 'last_number' => $this->start_number - $this->increment,
-            ]);
+            ], $ownerAttributes));
         }
 
         // Increment and save

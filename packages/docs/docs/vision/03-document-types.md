@@ -1,3 +1,7 @@
+---
+title: Extended Document Types
+---
+
 # Extended Document Types
 
 > **Document:** 03 of 10  

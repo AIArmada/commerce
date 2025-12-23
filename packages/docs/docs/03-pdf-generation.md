@@ -1,3 +1,7 @@
+---
+title: PDF Generation
+---
+
 # PDF Generation
 
 ## Generating PDFs
