@@ -84,7 +84,7 @@ it('bridges spatie team resolution to the owner context', function (): void {
         'password' => 'secret',
     ]);
 
-    $resolver = new OwnerContextTeamResolver();
+    $resolver = new OwnerContextTeamResolver;
 
     OwnerContext::override($owner);
 

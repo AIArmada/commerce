@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Enums\CustomerStatus;
+use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
-use AIArmada\Customers\Services\SegmentationService;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Wishlist;
+use AIArmada\Customers\Services\SegmentationService;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 

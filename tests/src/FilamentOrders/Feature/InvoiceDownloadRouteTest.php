@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\FilamentOrders\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentOrders\FilamentOrdersServiceProvider;
 use AIArmada\Orders\Actions\GenerateInvoice;
 use AIArmada\Orders\Models\Order;
@@ -16,7 +17,6 @@ use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use AIArmada\FilamentAuthz\Models\Permission;
 
 uses(TestCase::class);
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentChip\Tests;
 
 use AIArmada\Chip\ChipServiceProvider;
-use AIArmada\CommerceSupport\SupportServiceProvider;
+use AIArmada\CommerceSupport\SupportServiceProvider as CommerceSupportServiceProvider;
 use AIArmada\FilamentChip\FilamentChipServiceProvider;
 use AIArmada\FilamentChip\Tests\Fixtures\TestPanelProvider;
 use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
@@ -13,7 +13,7 @@ use BladeUI\Icons\BladeIconsServiceProvider;
 use Filament\FilamentServiceProvider;
 use Filament\Forms\FormsServiceProvider;
 use Filament\Notifications\NotificationsServiceProvider;
-use Filament\Support\SupportServiceProvider;
+use Filament\Support\SupportServiceProvider as FilamentSupportServiceProvider;
 use Filament\Tables\TablesServiceProvider;
 use Filament\Widgets\WidgetsServiceProvider;
 use Livewire\LivewireServiceProvider;
@@ -47,7 +47,7 @@ class TestCase extends Orchestra
     protected function getPackageProviders($app): array
     {
         return [
-            SupportServiceProvider::class,
+            CommerceSupportServiceProvider::class,
             ChipServiceProvider::class,
             BladeCaptureDirectiveServiceProvider::class,
             BladeHeroiconsServiceProvider::class,
@@ -56,7 +56,7 @@ class TestCase extends Orchestra
             FormsServiceProvider::class,
             LivewireServiceProvider::class,
             NotificationsServiceProvider::class,
-            SupportServiceProvider::class,
+            FilamentSupportServiceProvider::class,
             TablesServiceProvider::class,
             WidgetsServiceProvider::class,
             FilamentChipServiceProvider::class,
