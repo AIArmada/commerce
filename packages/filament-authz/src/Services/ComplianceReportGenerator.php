@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Services;
 
-use AIArmada\FilamentAuthz\Support\UserModelResolver;
-use Illuminate\Support\Facades\DB;
-use InvalidArgumentException;
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Support\PermissionTeamScope;
+use AIArmada\FilamentAuthz\Support\UserModelResolver;
+use Illuminate\Support\Facades\DB;
+use InvalidArgumentException;
 
 class ComplianceReportGenerator
 {

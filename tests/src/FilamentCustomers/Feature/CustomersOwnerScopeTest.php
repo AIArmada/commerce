@@ -6,6 +6,8 @@ use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
 if (! function_exists('filamentCustomers_makeOwner')) {
     function filamentCustomers_makeOwner(string $id): Model
@@ -99,18 +101,24 @@ it('applyToOwnedQuery returns only owner rows when owner is resolved and model h
         }
     });
 
-    Customer::query()->create([
+    $tableName = (new Customer)->getTable();
+
+    // Bypass model events (which may auto-assign owner columns) to create a truly-global row.
+    DB::table($tableName)->insert([
+        'id' => (string) Str::uuid(),
         'first_name' => 'Global',
         'last_name' => 'Customer',
         'email' => 'global2@example.com',
         'status' => 'active',
-        'accepts_marketing' => false,
-        'is_tax_exempt' => false,
+        'accepts_marketing' => 0,
+        'is_tax_exempt' => 0,
         'wallet_balance' => 0,
         'lifetime_value' => 0,
         'total_orders' => 0,
         'owner_type' => null,
         'owner_id' => null,
+        'created_at' => now(),
+        'updated_at' => now(),
     ]);
 
     Customer::query()->create([
@@ -140,8 +148,6 @@ it('applyToOwnedQuery returns only owner rows when owner is resolved and model h
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]);
-
-    $tableName = (new Customer)->getTable();
 
     $noScopeModel = new class extends Model {};
     $noScopeModel->setTable($tableName);

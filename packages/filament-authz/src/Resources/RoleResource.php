@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources;
 
-use AIArmada\FilamentAuthz\Resources\RoleResource\Pages;
-use AIArmada\FilamentAuthz\Resources\RoleResource\RelationManagers;
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Resources\RoleResource\Pages;
+use AIArmada\FilamentAuthz\Resources\RoleResource\RelationManagers;
 use Filament\Actions;
 use Filament\Forms;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;

@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAuthz\Models\PermissionRequest;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\PermissionRequest;
 use AIArmada\FilamentAuthz\Models\Role;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 
@@ -184,7 +184,7 @@ describe('PermissionRequest approve', function (): void {
 
         $request->refresh();
         expect($request->status)->toBe(PermissionRequest::STATUS_APPROVED)
-            ->and((int) $request->approver_id)->toBe($this->approver->id)
+            ->and((string) $request->approver_id)->toBe((string) $this->approver->id)
             ->and($request->approved_at)->not->toBeNull()
             ->and($request->approver_note)->toBe('Approved for project work');
     });
@@ -229,7 +229,7 @@ describe('PermissionRequest deny', function (): void {
 
         $request->refresh();
         expect($request->status)->toBe(PermissionRequest::STATUS_DENIED)
-            ->and((int) $request->approver_id)->toBe($this->approver->id)
+            ->and((string) $request->approver_id)->toBe((string) $this->approver->id)
             ->and($request->denied_at)->not->toBeNull()
             ->and($request->denial_reason)->toBe('Not authorized for this resource');
     });

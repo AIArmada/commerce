@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources\RoleResource\Pages;
 
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Resources\RoleResource;
 use AIArmada\FilamentAuthz\Support\Concerns\EnsuresLivewireErrorBag;
 use Filament\Resources\Pages\CreateRecord;
-use AIArmada\FilamentAuthz\Models\Permission;
 use Spatie\Permission\PermissionRegistrar;
 
 class CreateRole extends CreateRecord

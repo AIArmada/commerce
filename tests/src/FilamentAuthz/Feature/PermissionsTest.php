@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use Illuminate\Support\Facades\Gate;
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
+use Illuminate\Support\Facades\Gate;
 
 test('can create role with guard', function (): void {
     $role = Role::create(['name' => 'Admin', 'guard_name' => 'web']);

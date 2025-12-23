@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Services;
 
 use AIArmada\FilamentAuthz\Enums\AuditEventType;
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\PermissionSnapshot;
+use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Support\PermissionTeamScope;
 use DateTimeInterface;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
-use AIArmada\FilamentAuthz\Support\PermissionTeamScope;
 use Spatie\Permission\PermissionRegistrar;
 
 class PermissionVersioningService

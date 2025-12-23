@@ -3,13 +3,13 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\Enums\PolicyDecision;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Services\ContextualAuthorizationService;
 use AIArmada\FilamentAuthz\Services\PermissionAggregator;
 use AIArmada\FilamentAuthz\Services\PermissionTester;
 use AIArmada\FilamentAuthz\Services\PolicyEngine;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 
 uses(RefreshDatabase::class);
 

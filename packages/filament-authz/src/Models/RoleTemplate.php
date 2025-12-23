@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
-use AIArmada\FilamentAuthz\Models\Role;
 
 /**
  * @property string $id

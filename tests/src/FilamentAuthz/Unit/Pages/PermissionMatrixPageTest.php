@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentAuthz\Pages\PermissionMatrixPage;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Pages\PermissionMatrixPage;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 

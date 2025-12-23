@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Widgets\PermissionsDiffWidget;
 use AIArmada\FilamentAuthz\Widgets\PermissionStatsWidget;
 use AIArmada\FilamentAuthz\Widgets\RecentActivityWidget;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\TableWidget;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 
 describe('PermissionStatsWidget', function (): void {
     it('can be instantiated', function (): void {

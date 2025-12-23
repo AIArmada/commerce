@@ -11,7 +11,7 @@ use Spatie\Permission\Contracts\PermissionsTeamResolver;
 
 final class OwnerContextTeamResolver implements PermissionsTeamResolver
 {
-    public function getPermissionsTeamId(): int|string|null
+    public function getPermissionsTeamId(): int | string | null
     {
         return OwnerContext::resolve()?->getKey();
     }

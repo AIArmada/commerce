@@ -64,7 +64,7 @@ enum PermissionScope: string
     public function requiresScopeId(): bool
     {
         return match ($this) {
-            self::Global, self::Owner => false,
+            self::Global => false,
             default => true,
         };
     }

@@ -32,7 +32,7 @@ class {{ class }}
             ],
             'resource' => ${{ modelVariable }} ? [
                 'id' => ${{ modelVariable }}->id,
-                'owner_id' => ${{ modelVariable }}->user_id ?? ${{ modelVariable }}->owner_id ?? null,
+                    'record_owner_id' => ${{ modelVariable }}->user_id ?? null,
                 'team_id' => ${{ modelVariable }}->team_id ?? null,
                 'status' => ${{ modelVariable }}->status ?? null,
                 'created_at' => ${{ modelVariable }}->created_at ?? null,
@@ -54,7 +54,7 @@ class {{ class }}
      */
     protected function isOwner({{ user }} $user, {{ modelVariable }} ${{ modelVariable }}): bool
     {
-        return (${{ modelVariable }}->user_id ?? ${{ modelVariable }}->owner_id ?? null) === $user->id;
+        return (string) (${{ modelVariable }}->user_id ?? null) === (string) $user->getAuthIdentifier();
     }
 
 {{ methods }}

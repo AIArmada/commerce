@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\FilamentAuthz\Unit;
 
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Services\IdentityProviderSync;
 use Illuminate\Support\Collection;
 use Mockery;
 use ReflectionClass;
-use AIArmada\FilamentAuthz\Models\Role;
 
 afterEach(function (): void {
     Mockery::close();

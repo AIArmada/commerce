@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Widgets;
 
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
 use Filament\Widgets\Widget;
-use AIArmada\FilamentAuthz\Models\Role;
 
 class RoleHierarchyWidget extends Widget
 {

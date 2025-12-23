@@ -6,11 +6,11 @@ namespace AIArmada\FilamentAuthz\Services;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Models\RoleTemplate;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-use AIArmada\FilamentAuthz\Models\Role;
 use Throwable;
 
 class RoleTemplateService

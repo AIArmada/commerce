@@ -6,13 +6,13 @@ namespace AIArmada\FilamentAuthz\Console;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAuthz\Enums\SetupStage;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
 use AIArmada\FilamentAuthz\Support\UserModelResolver;
 use Filament\Facades\Filament;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Schema;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 use InvalidArgumentException;
 use Spatie\Permission\PermissionServiceProvider;
 use Spatie\Permission\Traits\HasRoles;

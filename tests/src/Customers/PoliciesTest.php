@@ -55,6 +55,10 @@ describe('CustomerPolicy', function (): void {
         it('allows viewing any customers', function (): void {
             expect($this->policy->viewAny($this->user))->toBeTrue();
         });
+
+        it('denies viewing any customers when unauthenticated', function (): void {
+            expect($this->policy->viewAny(null))->toBeFalse();
+        });
     });
 
     describe('view', function (): void {
@@ -72,7 +76,7 @@ describe('CustomerPolicy', function (): void {
             expect($this->policy->view($this->user, $globalCustomer))->toBeTrue();
         });
 
-        it('denies viewing owner-scoped customer without owner resolver (unless user_id matches)', function (): void {
+        it('denies viewing owner-scoped customer without owner resolver', function (): void {
             $owner = CustomersTestOwner::query()->create(['name' => 'Owner A']);
 
             $customer = Customer::query()->create([
@@ -86,10 +90,6 @@ describe('CustomerPolicy', function (): void {
             ]);
 
             expect($this->policy->view($this->user, $customer))->toBeFalse();
-
-            $customer->update(['user_id' => $this->user->id]);
-
-            expect($this->policy->view($this->user, $customer))->toBeTrue();
         });
 
         it('denies cross-tenant customer access when owner resolver is set', function (): void {
@@ -128,6 +128,10 @@ describe('CustomerPolicy', function (): void {
     describe('create', function (): void {
         it('allows creating customers', function (): void {
             expect($this->policy->create($this->user))->toBeTrue();
+        });
+
+        it('denies creating customers when unauthenticated', function (): void {
+            expect($this->policy->create(null))->toBeFalse();
         });
     });
 
@@ -174,6 +178,19 @@ describe('CustomerPolicy', function (): void {
 
             expect($this->policy->addCredit($this->user, $globalCustomer))->toBeTrue();
         });
+
+        it('denies adding credit when unauthenticated', function (): void {
+            $customer = Customer::query()->create([
+                'first_name' => 'Global',
+                'last_name' => 'Customer',
+                'email' => 'global-credit-unauth-' . uniqid() . '@example.com',
+                'status' => CustomerStatus::Active,
+                'owner_type' => null,
+                'owner_id' => null,
+            ]);
+
+            expect($this->policy->addCredit(null, $customer))->toBeFalse();
+        });
     });
 
     describe('deductCredit', function (): void {
@@ -188,6 +205,19 @@ describe('CustomerPolicy', function (): void {
             ]);
 
             expect($this->policy->deductCredit($this->user, $globalCustomer))->toBeTrue();
+        });
+
+        it('denies deducting credit when unauthenticated', function (): void {
+            $customer = Customer::query()->create([
+                'first_name' => 'Global',
+                'last_name' => 'Customer',
+                'email' => 'global-debit-unauth-' . uniqid() . '@example.com',
+                'status' => CustomerStatus::Active,
+                'owner_type' => null,
+                'owner_id' => null,
+            ]);
+
+            expect($this->policy->deductCredit(null, $customer))->toBeFalse();
         });
     });
 });
@@ -204,6 +234,10 @@ describe('SegmentPolicy', function (): void {
     describe('viewAny', function (): void {
         it('allows viewing any segments', function (): void {
             expect($this->policy->viewAny($this->user))->toBeTrue();
+        });
+
+        it('denies viewing any segments when unauthenticated', function (): void {
+            expect($this->policy->viewAny(null))->toBeFalse();
         });
     });
 
@@ -255,6 +289,10 @@ describe('SegmentPolicy', function (): void {
     describe('create', function (): void {
         it('allows creating segments', function (): void {
             expect($this->policy->create($this->user))->toBeTrue();
+        });
+
+        it('denies creating segments when unauthenticated', function (): void {
+            expect($this->policy->create(null))->toBeFalse();
         });
     });
 

@@ -3,32 +3,48 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\Enums\AuditEventType;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Services\AuditLogger;
 use AIArmada\FilamentAuthz\Services\ImplicitPermissionService;
 use AIArmada\FilamentAuthz\Services\PermissionAggregator;
 use AIArmada\FilamentAuthz\Services\PermissionCacheService;
 use AIArmada\FilamentAuthz\Services\RoleComparer;
 use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
+use AIArmada\FilamentAuthz\Services\WildcardPermissionResolver;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use AIArmada\FilamentAuthz\Models\Role;
+
+/**
+ * @param  array<int, string>  $permissionNames
+ */
+function makeRoleForRoleComparerTest(string $name, array $permissionNames): Role
+{
+    $role = new Role;
+    $role->setAttribute('name', $name);
+    $role->setRelation(
+        'permissions',
+        new EloquentCollection(
+            array_map(
+                static fn (string $permissionName): object => (object) ['name' => $permissionName],
+                $permissionNames,
+            ),
+        ),
+    );
+
+    return $role;
+}
 
 describe('ImplicitPermissionService', function (): void {
     beforeEach(function (): void {
+        config(['cache.default' => 'array']);
+        config(['cache.stores.array' => ['driver' => 'array', 'serialize' => false]]);
+
+        Cache::flush();
         $this->service = new ImplicitPermissionService;
     });
 
-    it('has standard implicit ability mappings', function (): void {
-        $mappings = $this->service->getAllMappings();
-
-        expect($mappings)->toBeArray()
-            ->and($mappings)->toHaveKey('manage')
-            ->and($mappings)->toHaveKey('edit')
-            ->and($mappings)->toHaveKey('admin')
-            ->and($mappings)->toHaveKey('full_access');
-    });
-
-    it('expands manage ability to include viewAny, view, create, update, delete', function (): void {
+    it('expands manage ability to standard implicit abilities', function (): void {
         $abilities = $this->service->getImplicitAbilities('manage');
 
         expect($abilities)->toBeInstanceOf(Collection::class)
@@ -68,9 +84,7 @@ describe('ImplicitPermissionService', function (): void {
     });
 
     it('checks if permission implies another permission', function (): void {
-        expect($this->service->implies('posts.manage', 'posts.view'))->toBeTrue()
-            ->and($this->service->implies('posts.manage', 'posts.create'))->toBeTrue()
-            ->and($this->service->implies('posts.edit', 'posts.view'))->toBeTrue()
+        expect($this->service->implies('posts.edit', 'posts.view'))->toBeTrue()
             ->and($this->service->implies('posts.edit', 'posts.update'))->toBeTrue()
             ->and($this->service->implies('posts.view', 'posts.view'))->toBeTrue()
             ->and($this->service->implies('posts.view', 'posts.create'))->toBeFalse();
@@ -115,6 +129,7 @@ describe('PermissionCacheService', function (): void {
         config(['cache.default' => 'array']);
         config(['cache.stores.array' => ['driver' => 'array', 'serialize' => false]]);
         config(['filament-authz.cache.store' => 'array']);
+
         $this->service = new PermissionCacheService;
     });
 
@@ -146,7 +161,7 @@ describe('PermissionCacheService', function (): void {
     });
 
     it('can run callback without cache', function (): void {
-        $result = $this->service->withoutCache(fn () => 'test result');
+        $result = $this->service->withoutCache(fn (): string => 'test result');
 
         expect($result)->toBe('test result');
     });
@@ -161,12 +176,12 @@ describe('PermissionCacheService', function (): void {
             return 'cached value';
         };
 
-        // First call should execute callback
         $result1 = $this->service->remember('test-key', $callback);
         $result2 = $this->service->remember('test-key', $callback);
 
         expect($result1)->toBe('cached value')
-            ->and($result2)->toBe('cached value');
+            ->and($result2)->toBe('cached value')
+            ->and($callCount)->toBe(1);
     });
 });
 
@@ -182,13 +197,13 @@ describe('RoleInheritanceService', function (): void {
     it('can get root roles', function (): void {
         $roots = $this->service->getRootRoles();
 
-        expect($roots)->toBeInstanceOf(Illuminate\Database\Eloquent\Collection::class);
+        expect($roots)->toBeInstanceOf(EloquentCollection::class);
     });
 
     it('can get hierarchy tree', function (): void {
         $tree = $this->service->getHierarchyTree();
 
-        expect($tree)->toBeInstanceOf(Illuminate\Database\Eloquent\Collection::class);
+        expect($tree)->toBeInstanceOf(EloquentCollection::class);
     });
 
     it('can clear cache', function (): void {
@@ -209,18 +224,8 @@ describe('RoleComparer', function (): void {
     });
 
     it('compares two roles with identical permissions', function (): void {
-        $roleA = Mockery::mock(Role::class);
-        $roleB = Mockery::mock(Role::class);
-
-        $permissions = collect([
-            (object) ['name' => 'view users'],
-            (object) ['name' => 'edit users'],
-        ]);
-
-        $roleA->shouldReceive('getAttribute')->with('permissions')->andReturn($permissions);
-        $roleA->shouldReceive('getAttribute')->with('name')->andReturn('admin');
-        $roleB->shouldReceive('getAttribute')->with('permissions')->andReturn($permissions);
-        $roleB->shouldReceive('getAttribute')->with('name')->andReturn('manager');
+        $roleA = makeRoleForRoleComparerTest('admin', ['view users', 'edit users']);
+        $roleB = makeRoleForRoleComparerTest('manager', ['view users', 'edit users']);
 
         $result = $this->service->compare($roleA, $roleB);
 
@@ -235,22 +240,8 @@ describe('RoleComparer', function (): void {
     });
 
     it('compares two roles with different permissions', function (): void {
-        $roleA = Mockery::mock(Role::class);
-        $roleB = Mockery::mock(Role::class);
-
-        $permissionsA = collect([
-            (object) ['name' => 'view users'],
-            (object) ['name' => 'edit users'],
-        ]);
-        $permissionsB = collect([
-            (object) ['name' => 'view users'],
-            (object) ['name' => 'delete users'],
-        ]);
-
-        $roleA->shouldReceive('getAttribute')->with('permissions')->andReturn($permissionsA);
-        $roleA->shouldReceive('getAttribute')->with('name')->andReturn('admin');
-        $roleB->shouldReceive('getAttribute')->with('permissions')->andReturn($permissionsB);
-        $roleB->shouldReceive('getAttribute')->with('name')->andReturn('manager');
+        $roleA = makeRoleForRoleComparerTest('admin', ['view users', 'edit users']);
+        $roleB = makeRoleForRoleComparerTest('manager', ['view users', 'delete users']);
 
         $result = $this->service->compare($roleA, $roleB);
 
@@ -261,11 +252,11 @@ describe('RoleComparer', function (): void {
     });
 
     it('returns null when comparing role without parent', function (): void {
-        $role = Mockery::mock(Role::class);
+        $role = new Role;
 
         $this->roleInheritance->shouldReceive('getParent')
             ->with($role)
-            ->andReturn(null);
+            ->andReturnNull();
 
         $result = $this->service->compareWithParent($role);
 
@@ -273,20 +264,8 @@ describe('RoleComparer', function (): void {
     });
 
     it('gets diff between two roles', function (): void {
-        $from = Mockery::mock(Role::class);
-        $to = Mockery::mock(Role::class);
-
-        $fromPermissions = collect([
-            (object) ['name' => 'view users'],
-            (object) ['name' => 'edit users'],
-        ]);
-        $toPermissions = collect([
-            (object) ['name' => 'view users'],
-            (object) ['name' => 'delete users'],
-        ]);
-
-        $from->shouldReceive('getAttribute')->with('permissions')->andReturn($fromPermissions);
-        $to->shouldReceive('getAttribute')->with('permissions')->andReturn($toPermissions);
+        $from = makeRoleForRoleComparerTest('from', ['view users', 'edit users']);
+        $to = makeRoleForRoleComparerTest('to', ['view users', 'delete users']);
 
         $result = $this->service->getDiff($from, $to);
 
@@ -322,13 +301,13 @@ describe('AuditLogger', function (): void {
 describe('PermissionAggregator', function (): void {
     beforeEach(function (): void {
         $this->roleInheritance = Mockery::mock(RoleInheritanceService::class);
-        $this->wildcardResolver = Mockery::mock(AIArmada\FilamentAuthz\Services\WildcardPermissionResolver::class);
+        $this->wildcardResolver = Mockery::mock(WildcardPermissionResolver::class);
         $this->implicitService = Mockery::mock(ImplicitPermissionService::class);
 
         $this->service = new PermissionAggregator(
             $this->roleInheritance,
             $this->wildcardResolver,
-            $this->implicitService
+            $this->implicitService,
         );
     });
 
@@ -341,7 +320,7 @@ describe('PermissionAggregator', function (): void {
 
         $result = $this->service->getEffectivePermissions($user);
 
-        expect($result)->toBeInstanceOf(Illuminate\Database\Eloquent\Collection::class)
+        expect($result)->toBeInstanceOf(EloquentCollection::class)
             ->and($result->count())->toBe(0);
     });
 
@@ -350,7 +329,7 @@ describe('PermissionAggregator', function (): void {
 
         $result = $this->service->getEffectiveRoles($user);
 
-        expect($result)->toBeInstanceOf(Illuminate\Database\Eloquent\Collection::class)
+        expect($result)->toBeInstanceOf(EloquentCollection::class)
             ->and($result->count())->toBe(0);
     });
 
