@@ -15,8 +15,8 @@ use AIArmada\Customers\Policies\CustomerPolicy;
 use AIArmada\Customers\Policies\SegmentPolicy;
 use AIArmada\Customers\Policies\WishlistItemPolicy;
 use AIArmada\Customers\Policies\WishlistPolicy;
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\ServiceProvider;
 
 describe('CustomersServiceProvider', function (): void {
     describe('Instantiation', function (): void {

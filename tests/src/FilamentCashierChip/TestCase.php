@@ -12,6 +12,8 @@ use AIArmada\CashierChip\Testing\FakeChipCollectService;
 use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures\TestPanelProvider;
 use AIArmada\Commerce\Tests\FilamentCashierChip\Fixtures\User;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentCashierChip\FilamentCashierChipServiceProvider;
 use BladeUI\Heroicons\BladeHeroiconsServiceProvider;
 use BladeUI\Icons\BladeIconsServiceProvider;
@@ -24,8 +26,6 @@ use Illuminate\Support\Facades\Schema;
 use Livewire\LivewireServiceProvider;
 use Orchestra\Testbench\TestCase as Orchestra;
 use RyanChandler\BladeCaptureDirective\BladeCaptureDirectiveServiceProvider;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 use Spatie\Permission\PermissionServiceProvider;
 
 abstract class TestCase extends Orchestra

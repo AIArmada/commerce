@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Inventory\Console;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Inventory\Models\InventoryAllocation;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\InventoryAllocationService;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
 

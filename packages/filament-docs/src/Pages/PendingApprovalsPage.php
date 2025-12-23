@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentDocs\Pages;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
 use BackedEnum;
@@ -238,7 +239,7 @@ class PendingApprovalsPage extends Page implements HasTable
         $owner = OwnerContext::resolve();
         $includeGlobal = (bool) config('docs.owner.include_global', false);
 
-        $query->forOwner($owner, $includeGlobal);
+        OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
     }
 
     private static function assertCanActOnApproval(DocApproval $approval): void

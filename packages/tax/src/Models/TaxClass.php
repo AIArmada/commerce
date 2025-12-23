@@ -37,6 +37,7 @@ class TaxClass extends Model
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'tax.features.owner';
+
     use LogsActivity;
 
     protected $fillable = [

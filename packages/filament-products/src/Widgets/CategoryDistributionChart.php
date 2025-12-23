@@ -7,7 +7,6 @@ namespace AIArmada\FilamentProducts\Widgets;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Category;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Database\Eloquent\Builder;
 
 class CategoryDistributionChart extends ChartWidget
 {
