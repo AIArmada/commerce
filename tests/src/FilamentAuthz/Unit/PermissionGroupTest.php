@@ -3,8 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAuthz\Models\PermissionGroup;
 use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\PermissionGroup;
 
 beforeEach(function (): void {
     // Drop and recreate permission group tables
@@ -447,11 +447,16 @@ test('sort_order is cast to integer', function (): void {
 
 test('scopeForOwner filters by owner when enabled', function (): void {
     config(['filament-authz.owner.enabled' => true]);
+    config(['filament-authz.owner.include_global' => true]);
 
-    $group1 = PermissionGroup::create([
-        'name' => 'Global Group',
-        'slug' => 'global-group',
-    ]);
+    \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(null, function (): void {
+        PermissionGroup::create([
+            'name' => 'Global Group',
+            'slug' => 'global-group',
+            'owner_type' => null,
+            'owner_id' => null,
+        ]);
+    });
 
     // Create a test owner user
     $owner = User::create([
@@ -460,12 +465,14 @@ test('scopeForOwner filters by owner when enabled', function (): void {
         'password' => bcrypt('password'),
     ]);
 
-    $group2 = PermissionGroup::create([
-        'name' => 'Owned Group',
-        'slug' => 'owned-group',
-        'owner_type' => $owner->getMorphClass(),
-        'owner_id' => (string) $owner->getKey(),
-    ]);
+    \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($owner, function () use ($owner): void {
+        PermissionGroup::create([
+            'name' => 'Owned Group',
+            'slug' => 'owned-group',
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => (string) $owner->getKey(),
+        ]);
+    });
 
     $results = PermissionGroup::forOwner($owner)->get();
 

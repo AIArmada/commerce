@@ -7,9 +7,9 @@ namespace AIArmada\Commerce\Tests\FilamentAuthz\Unit;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Concerns\HasAutoPermissions;
 use AIArmada\FilamentAuthz\Contracts\RegistersPermissions;
+use AIArmada\FilamentAuthz\Models\Permission;
 use Filament\Resources\Resource;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use AIArmada\FilamentAuthz\Models\Permission;
 
 uses(RefreshDatabase::class);
 

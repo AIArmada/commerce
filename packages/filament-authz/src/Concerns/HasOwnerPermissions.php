@@ -38,7 +38,7 @@ trait HasOwnerPermissions
 
             return $service->canWithContext($user, $ownPermission, [
                 'scope' => PermissionScope::Owner->value,
-                'owner_id' => $user->getKey(),
+                'record_owner_id' => $user->getKey(),
             ]);
         }
 

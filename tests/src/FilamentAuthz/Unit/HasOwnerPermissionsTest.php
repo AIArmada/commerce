@@ -63,7 +63,7 @@ describe('HasOwnerPermissions::canUserPerform', function (): void {
         $service->shouldReceive('canWithContext')
             ->with($user, 'test_items.update.own', [
                 'scope' => PermissionScope::Owner->value,
-                'owner_id' => 1,
+                'record_owner_id' => 1,
             ])
             ->andReturn(true);
         app()->instance(ContextualAuthorizationService::class, $service);

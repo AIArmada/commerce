@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Models;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -27,7 +31,11 @@ use Illuminate\Support\Carbon;
 class CustomerNote extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'customers.features.owner';
 
     protected $guarded = ['id'];
 
@@ -74,7 +82,13 @@ class CustomerNote extends Model
      */
     public function createdBy(): BelongsTo
     {
-        return $this->belongsTo(config('customers.integrations.user_model', \App\Models\User::class), 'created_by');
+        /** @var class-string<Model>|null $userModel */
+        $userModel = config('customers.integrations.user_model');
+
+        /** @var class-string<Model>|null $fallbackUserModel */
+        $fallbackUserModel = config('auth.providers.users.model');
+
+        return $this->belongsTo($userModel ?? $fallbackUserModel ?? \Illuminate\Foundation\Auth\User::class, 'created_by');
     }
 
     // =========================================================================
@@ -142,5 +156,58 @@ class CustomerNote extends Model
     public function scopePinned(Builder $query): Builder
     {
         return $query->where('is_pinned', true);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (CustomerNote $note): void {
+            if (! (bool) config('customers.features.owner.enabled', false)) {
+                return;
+            }
+
+            if ($note->owner_type !== null || $note->owner_id !== null) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            $customer = Customer::query()
+                ->forOwner($owner, includeGlobal: false)
+                ->whereKey($note->customer_id)
+                ->first();
+
+            if ($customer === null) {
+                throw new InvalidArgumentException('Customer note customer must belong to the current owner context.');
+            }
+
+            if ($customer->owner_type !== null && $customer->owner_id !== null) {
+                $note->owner_type = $customer->owner_type;
+                $note->owner_id = $customer->owner_id;
+            }
+        });
+
+        static::updating(function (CustomerNote $note): void {
+            if (! (bool) config('customers.features.owner.enabled', false)) {
+                return;
+            }
+
+            if (! $note->isDirty('customer_id')) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            $customer = Customer::query()
+                ->forOwner($owner, includeGlobal: false)
+                ->whereKey($note->customer_id)
+                ->first();
+
+            if ($customer === null) {
+                throw new InvalidArgumentException('Customer note customer must belong to the current owner context.');
+            }
+
+            $note->owner_type = $customer->owner_type;
+            $note->owner_id = $customer->owner_id;
+        });
     }
 }

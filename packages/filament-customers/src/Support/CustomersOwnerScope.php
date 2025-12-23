@@ -33,12 +33,10 @@ final class CustomersOwnerScope
         }
 
         $owner = self::resolveOwner();
-        $includeGlobal = $includeGlobal && (bool) config('customers.features.owner.include_global', false);
-
-        if (method_exists($query->getModel(), 'scopeForOwner')) {
-            /** @phpstan-ignore-next-line dynamic scope */
-            return $query->forOwner($owner, $includeGlobal);
-        }
+        // Filament surfaces must be owner-only by default.
+        // If no owner is resolved, we treat rows with owner=null as global-only.
+        // If an owner is resolved, we never implicitly include global rows.
+        $includeGlobal = false;
 
         return OwnerQuery::applyToEloquentBuilder($query, $owner, $includeGlobal);
     }

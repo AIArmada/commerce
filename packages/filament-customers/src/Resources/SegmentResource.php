@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCustomers\Resources;
 
 use AIArmada\Customers\Enums\SegmentType;
 use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Policies\SegmentPolicy;
 use AIArmada\FilamentCustomers\Resources\SegmentResource\Pages;
 use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
 use BackedEnum;
@@ -19,6 +20,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class SegmentResource extends Resource
@@ -236,7 +238,13 @@ class SegmentResource extends Resource
                     ->color('warning')
                     ->visible(fn ($record) => $record->is_automatic)
                     ->requiresConfirmation()
-                    ->action(function ($record): void {
+                    ->action(function (Segment $record): void {
+                        $user = Auth::user();
+                        abort_unless($user !== null, 403);
+
+                        $policy = new SegmentPolicy;
+                        abort_unless($policy->rebuild($user, $record), 403);
+
                         $count = $record->rebuildCustomerList();
 
                         \Filament\Notifications\Notification::make()

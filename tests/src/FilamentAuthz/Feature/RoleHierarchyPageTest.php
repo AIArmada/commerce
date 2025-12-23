@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Pages\RoleHierarchyPage;
 use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
-use AIArmada\FilamentAuthz\Models\Role;
 
 test('role hierarchy actions work end-to-end', function (): void {
 

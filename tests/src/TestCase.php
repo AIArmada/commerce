@@ -11,6 +11,7 @@ use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\CommerceSupport\SupportServiceProvider;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Customers\CustomersServiceProvider;
 use AIArmada\Docs\DocsServiceProvider;
 use AIArmada\Docs\Numbering\Strategies\DefaultNumberStrategy;
 use AIArmada\FilamentAffiliates\FilamentAffiliatesServiceProvider;
@@ -126,6 +127,7 @@ abstract class TestCase extends Orchestra
             ChipServiceProvider::class,
             JntServiceProvider::class,
             DocsServiceProvider::class,
+            CustomersServiceProvider::class,
             VoucherServiceProvider::class,
             FilamentCartServiceProvider::class,
             FilamentChipServiceProvider::class,
@@ -826,6 +828,7 @@ abstract class TestCase extends Orchestra
         Schema::create('customer_addresses', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('customer_id');
+            $table->nullableUuidMorphs('owner');
             $table->string('type')->default('shipping');
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();
@@ -854,6 +857,7 @@ abstract class TestCase extends Orchestra
         Schema::create('wishlists', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('customer_id');
+            $table->nullableUuidMorphs('owner');
             $table->string('name')->default('My Wishlist');
             $table->text('description')->nullable();
             $table->boolean('is_public')->default(false);
@@ -866,6 +870,7 @@ abstract class TestCase extends Orchestra
         Schema::create('wishlist_items', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('wishlist_id');
+            $table->nullableUuidMorphs('owner');
             $table->string('product_type');
             $table->uuid('product_id');
             $table->boolean('notified_on_sale')->default(false);
@@ -880,6 +885,7 @@ abstract class TestCase extends Orchestra
         Schema::create('customer_notes', function (Blueprint $table): void {
             $table->uuid('id')->primary();
             $table->uuid('customer_id');
+            $table->nullableUuidMorphs('owner');
             $table->text('content');
             $table->boolean('is_internal')->default(true);
             $table->boolean('is_pinned')->default(false);

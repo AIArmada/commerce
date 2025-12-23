@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAuthz\Services\PermissionCacheService;
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Services\PermissionCacheService;
 
 beforeEach(function (): void {
     // Configure cache store before instantiating service

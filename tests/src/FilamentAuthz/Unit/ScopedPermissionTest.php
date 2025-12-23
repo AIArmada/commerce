@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Enums\PermissionScope;
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\ScopedPermission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use AIArmada\FilamentAuthz\Models\Permission;
 
 uses(RefreshDatabase::class);
 
@@ -308,7 +308,7 @@ describe('ScopedPermission', function (): void {
                 'scope_id' => 'owner-111',
             ]);
 
-            expect($scopedPermission->matchesContext(['owner_id' => 'owner-111']))->toBeTrue();
+            expect($scopedPermission->matchesContext(['record_owner_id' => 'owner-111']))->toBeTrue();
         });
     });
 

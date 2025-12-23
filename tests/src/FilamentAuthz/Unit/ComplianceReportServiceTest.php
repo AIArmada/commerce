@@ -5,12 +5,12 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Enums\AuditEventType;
 use AIArmada\FilamentAuthz\Enums\AuditSeverity;
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\PermissionAuditLog;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Models\ScopedPermission;
 use AIArmada\FilamentAuthz\Services\ComplianceReportService;
 use Carbon\Carbon;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 
 beforeEach(function (): void {
     // Clear data

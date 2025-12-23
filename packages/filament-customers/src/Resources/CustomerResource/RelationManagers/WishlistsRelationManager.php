@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 
+use AIArmada\Customers\Models\Wishlist;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 
 class WishlistsRelationManager extends RelationManager
 {
@@ -80,7 +82,15 @@ class WishlistsRelationManager extends RelationManager
                     ->icon('heroicon-o-list-bullet')
                     ->color('info')
                     ->modalHeading(fn ($record) => "Items in {$record->name}")
-                    ->modalContent(function ($record) {
+                    ->modalContent(function (Wishlist $record) {
+                        $user = \Filament\Facades\Filament::auth()->user();
+
+                        if ($user === null) {
+                            abort(403);
+                        }
+
+                        Gate::forUser($user)->authorize('view', $record);
+
                         $items = $record->items()->with('product')->get();
 
                         if ($items->isEmpty()) {
@@ -93,6 +103,14 @@ class WishlistsRelationManager extends RelationManager
                     ->label('Copy Link')
                     ->icon('heroicon-o-link')
                     ->action(function ($record): void {
+                        $user = \Filament\Facades\Filament::auth()->user();
+
+                        if ($user === null) {
+                            abort(403);
+                        }
+
+                        Gate::forUser($user)->authorize('view', $record);
+
                         \Filament\Notifications\Notification::make()
                             ->success()
                             ->title('Link Copied')

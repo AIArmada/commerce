@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Models;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -28,7 +32,11 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 class WishlistItem extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'customers.features.owner';
 
     protected $guarded = ['id'];
 
@@ -133,9 +141,53 @@ class WishlistItem extends Model
     protected static function booted(): void
     {
         static::creating(function (WishlistItem $item): void {
+            if ((bool) config('customers.features.owner.enabled', false)) {
+                if ($item->owner_type === null && $item->owner_id === null) {
+                    $owner = OwnerContext::resolve();
+
+                    $wishlist = Wishlist::query()
+                        ->forOwner($owner, includeGlobal: false)
+                        ->whereKey($item->wishlist_id)
+                        ->first();
+
+                    if ($wishlist === null) {
+                        throw new InvalidArgumentException('Wishlist item wishlist must belong to the current owner context.');
+                    }
+
+                    if ($wishlist->owner_type !== null && $wishlist->owner_id !== null) {
+                        $item->owner_type = $wishlist->owner_type;
+                        $item->owner_id = $wishlist->owner_id;
+                    }
+                }
+            }
+
             if (empty($item->added_at)) {
                 $item->added_at = now();
             }
+        });
+
+        static::updating(function (WishlistItem $item): void {
+            if (! (bool) config('customers.features.owner.enabled', false)) {
+                return;
+            }
+
+            if (! $item->isDirty('wishlist_id')) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            $wishlist = Wishlist::query()
+                ->forOwner($owner, includeGlobal: false)
+                ->whereKey($item->wishlist_id)
+                ->first();
+
+            if ($wishlist === null) {
+                throw new InvalidArgumentException('Wishlist item wishlist must belong to the current owner context.');
+            }
+
+            $item->owner_type = $wishlist->owner_type;
+            $item->owner_id = $wishlist->owner_id;
         });
     }
 }

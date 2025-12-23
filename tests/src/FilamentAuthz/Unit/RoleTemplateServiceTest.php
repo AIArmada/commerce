@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Models\RoleTemplate;
 use AIArmada\FilamentAuthz\Services\RoleTemplateService;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 
 beforeEach(function (): void {
     RoleTemplate::query()->delete();

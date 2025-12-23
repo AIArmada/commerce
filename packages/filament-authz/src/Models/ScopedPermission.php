@@ -16,7 +16,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
-use AIArmada\FilamentAuthz\Models\Permission;
 
 /**
  * @property string $id
@@ -170,7 +169,7 @@ class ScopedPermission extends Model
             PermissionScope::Team => 'team_id',
             PermissionScope::Tenant => 'tenant_id',
             PermissionScope::Resource => 'resource_id',
-            PermissionScope::Owner => 'owner_id',
+            PermissionScope::Owner => 'record_owner_id',
             default => null,
         };
 

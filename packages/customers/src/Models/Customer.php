@@ -123,7 +123,13 @@ class Customer extends Model implements HasMedia
      */
     public function user(): BelongsTo
     {
-        return $this->belongsTo(config('customers.integrations.user_model', \App\Models\User::class), 'user_id');
+        /** @var class-string<Model>|null $userModel */
+        $userModel = config('customers.integrations.user_model');
+
+        /** @var class-string<Model>|null $fallbackUserModel */
+        $fallbackUserModel = config('auth.providers.users.model');
+
+        return $this->belongsTo($userModel ?? $fallbackUserModel ?? \Illuminate\Foundation\Auth\User::class, 'user_id');
     }
 
     /**

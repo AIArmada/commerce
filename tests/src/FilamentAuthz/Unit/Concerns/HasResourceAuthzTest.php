@@ -3,9 +3,9 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use Illuminate\Database\Eloquent\Builder;
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
+use Illuminate\Database\Eloquent\Builder;
 
 beforeEach(function (): void {
     Role::query()->delete();

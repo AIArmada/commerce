@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Services;
 
 use AIArmada\FilamentAuthz\Enums\PermissionScope;
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\ScopedPermission;
 use DateTimeInterface;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Cache;
-use AIArmada\FilamentAuthz\Models\Permission;
 
 class ContextualAuthorizationService
 {
@@ -62,7 +62,7 @@ class ContextualAuthorizationService
         // Add owner check if resource has user_id
         if (method_exists($resource, 'getAttribute')) {
             if ($resource->getAttribute('user_id') !== null) {
-                $context['owner_id'] = $resource->getAttribute('user_id');
+                $context['record_owner_id'] = $resource->getAttribute('user_id');
             }
 
             if ($resource->getAttribute('team_id') !== null) {
@@ -193,7 +193,7 @@ class ContextualAuthorizationService
         return $this->getScopedPermissions($user, $permission)
             ->map(fn (ScopedPermission $sp): array => [
                 'scope' => $sp->scope_type,
-                'value' => $sp->scope_value,
+                'value' => $sp->scope_id,
             ]);
     }
 
@@ -225,7 +225,7 @@ class ContextualAuthorizationService
             PermissionScope::Team => 'team_id',
             PermissionScope::Tenant => 'tenant_id',
             PermissionScope::Resource => 'resource_id',
-            PermissionScope::Owner => 'owner_id',
+            PermissionScope::Owner => 'record_owner_id',
             PermissionScope::Global => null,
             default => null,
         };

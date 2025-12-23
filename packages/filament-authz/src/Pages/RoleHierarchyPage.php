@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Pages;
 
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -13,7 +14,6 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Illuminate\Support\Collection;
 use InvalidArgumentException;
-use AIArmada\FilamentAuthz\Models\Role;
 
 class RoleHierarchyPage extends Page
 {

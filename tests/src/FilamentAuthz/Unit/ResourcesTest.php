@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Resources\DelegationResource;
 use AIArmada\FilamentAuthz\Resources\PermissionRequestResource;
 use AIArmada\FilamentAuthz\Resources\PermissionResource;
@@ -10,8 +12,6 @@ use AIArmada\FilamentAuthz\Resources\UserResource;
 use AIArmada\FilamentAuthz\Services\PermissionRegistry;
 use AIArmada\FilamentAuthz\Support\DefaultAbilityToPermissionMapper;
 use AIArmada\FilamentAuthz\Support\ResourcePermissionDiscovery;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 
 describe('RoleResource', function (): void {
     it('has correct model', function (): void {

@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\PermissionGroup;
 use AIArmada\FilamentAuthz\Services\PermissionGroupService;
 use Illuminate\Support\Facades\Artisan;
-use AIArmada\FilamentAuthz\Models\Permission;
 
 use function Pest\Laravel\artisan;
 

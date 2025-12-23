@@ -3,12 +3,12 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\Console\DiscoverCommand;
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredPage;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredWidget;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use AIArmada\FilamentAuthz\Models\Permission;
 
 uses(RefreshDatabase::class);
 

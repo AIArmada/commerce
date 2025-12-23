@@ -20,11 +20,6 @@ return [
         'json_column_type' => 'json',
     ],
 
-    // Integrations
-    'integrations' => [
-        'user_model' => App\Models\User::class,
-    ],
-
     // Defaults
     'defaults' => [
         'wallet' => [
@@ -40,7 +35,7 @@ return [
     // Features
     'features' => [
         'owner' => [
-            'enabled' => env('CUSTOMERS_OWNER_ENABLED', false),
+            'enabled' => env('CUSTOMERS_OWNER_ENABLED', true),
             'include_global' => env('CUSTOMERS_OWNER_INCLUDE_GLOBAL', false),
             'auto_assign_on_create' => env('CUSTOMERS_OWNER_AUTO_ASSIGN', true),
         ],
@@ -55,5 +50,10 @@ return [
             'enabled' => true,
             'allow_public' => true,
         ],
+    ],
+
+    // Integrations
+    'integrations' => [
+        'user_model' => null, // Fallback: config('auth.providers.users.model')
     ],
 ];

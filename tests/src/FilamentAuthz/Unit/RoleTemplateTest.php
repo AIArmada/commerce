@@ -470,19 +470,25 @@ describe('RoleTemplate', function (): void {
                 'password' => 'password',
             ]);
 
-            RoleTemplate::create([
-                'name' => 'Owned Template',
-                'slug' => 'owned-template',
-                'guard_name' => 'web',
-                'owner_type' => $user->getMorphClass(),
-                'owner_id' => $user->id,
-            ]);
+            \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($user, function () use ($user): void {
+                RoleTemplate::create([
+                    'name' => 'Owned Template',
+                    'slug' => 'owned-template',
+                    'guard_name' => 'web',
+                    'owner_type' => $user->getMorphClass(),
+                    'owner_id' => (string) $user->getKey(),
+                ]);
+            });
 
-            RoleTemplate::create([
-                'name' => 'Global Template',
-                'slug' => 'global-template',
-                'guard_name' => 'web',
-            ]);
+            \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(null, function (): void {
+                RoleTemplate::create([
+                    'name' => 'Global Template',
+                    'slug' => 'global-template',
+                    'guard_name' => 'web',
+                    'owner_type' => null,
+                    'owner_id' => null,
+                ]);
+            });
 
             $results = RoleTemplate::forOwner($user, includeGlobal: false)->get();
 
@@ -492,6 +498,7 @@ describe('RoleTemplate', function (): void {
 
         it('includes global templates when includeGlobal is true', function (): void {
             config(['filament-authz.owner.enabled' => true]);
+            config(['filament-authz.owner.include_global' => true]);
 
             $user = User::create([
                 'name' => 'Test User',
@@ -499,21 +506,25 @@ describe('RoleTemplate', function (): void {
                 'password' => 'password',
             ]);
 
-            RoleTemplate::create([
-                'name' => 'Owned Template',
-                'slug' => 'owned-template',
-                'guard_name' => 'web',
-                'owner_type' => $user->getMorphClass(),
-                'owner_id' => $user->id,
-            ]);
+            \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($user, function () use ($user): void {
+                RoleTemplate::create([
+                    'name' => 'Owned Template',
+                    'slug' => 'owned-template',
+                    'guard_name' => 'web',
+                    'owner_type' => $user->getMorphClass(),
+                    'owner_id' => (string) $user->getKey(),
+                ]);
+            });
 
-            RoleTemplate::create([
-                'name' => 'Global Template',
-                'slug' => 'global-template',
-                'guard_name' => 'web',
-                'owner_type' => null,
-                'owner_id' => null,
-            ]);
+            \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(null, function (): void {
+                RoleTemplate::create([
+                    'name' => 'Global Template',
+                    'slug' => 'global-template',
+                    'guard_name' => 'web',
+                    'owner_type' => null,
+                    'owner_id' => null,
+                ]);
+            });
 
             $results = RoleTemplate::forOwner($user, includeGlobal: true)->get();
 

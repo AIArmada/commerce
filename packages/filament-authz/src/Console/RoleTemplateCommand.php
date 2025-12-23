@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Console;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Models\RoleTemplate;
 use AIArmada\FilamentAuthz\Services\RoleTemplateService;
 use Illuminate\Console\Command;
 use InvalidArgumentException;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\info;
