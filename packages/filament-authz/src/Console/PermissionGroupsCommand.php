@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Console;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\PermissionGroup;
 use AIArmada\FilamentAuthz\Services\PermissionGroupService;
 use Illuminate\Console\Command;
 use InvalidArgumentException;
-use AIArmada\FilamentAuthz\Models\Permission;
 
 use function Laravel\Prompts\confirm;
 use function Laravel\Prompts\multiselect;

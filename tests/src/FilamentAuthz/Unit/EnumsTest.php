@@ -297,7 +297,7 @@ describe('PermissionScope enum', function (): void {
 
     it('determines if requires scope id', function (): void {
         expect(PermissionScope::Global->requiresScopeId())->toBeFalse();
-        expect(PermissionScope::Owner->requiresScopeId())->toBeFalse();
+        expect(PermissionScope::Owner->requiresScopeId())->toBeTrue();
         expect(PermissionScope::Team->requiresScopeId())->toBeTrue();
         expect(PermissionScope::Tenant->requiresScopeId())->toBeTrue();
         expect(PermissionScope::Resource->requiresScopeId())->toBeTrue();

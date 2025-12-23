@@ -6,6 +6,8 @@ namespace AIArmada\FilamentAuthz\Pages;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use BackedEnum;
 use Carbon\Carbon;
 use Exception;
@@ -15,8 +17,6 @@ use Filament\Pages\Page;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 
 class AuthzDashboardPage extends Page
 {

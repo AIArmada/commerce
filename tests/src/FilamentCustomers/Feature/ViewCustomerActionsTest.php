@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Pages\ViewCustomer;
 use Filament\Actions\Action;
+use Symfony\Component\HttpKernel\Exception\HttpException;
 
 it('ViewCustomer credit actions update wallet balance', function (): void {
     $user = User::create([
@@ -14,7 +15,7 @@ it('ViewCustomer credit actions update wallet balance', function (): void {
         'password' => 'password',
     ]);
 
-    $this->actingAs($user);
+    test()->actingAs($user);
 
     $customer = Customer::query()->create([
         'first_name' => 'Alice',
@@ -64,7 +65,7 @@ it('ViewCustomer deduct credit prevents overdraft', function (): void {
         'password' => 'password',
     ]);
 
-    $this->actingAs($user);
+    test()->actingAs($user);
 
     $customer = Customer::query()->create([
         'first_name' => 'Bob',
@@ -98,4 +99,49 @@ it('ViewCustomer deduct credit prevents overdraft', function (): void {
     $deduct->call(['data' => ['amount' => 5, 'reason' => 'Test']]);
 
     expect(Customer::find($customer->id)?->wallet_balance)->toBe(0);
+});
+
+it('ViewCustomer credit actions require authentication', function (): void {
+    $user = User::create([
+        'name' => 'Customers Admin 3',
+        'email' => 'customers-admin-3@example.com',
+        'password' => 'password',
+    ]);
+
+    test()->actingAs($user);
+
+    $customer = Customer::query()->create([
+        'first_name' => 'Unauth',
+        'last_name' => 'Customer',
+        'email' => 'unauth@example.com',
+        'status' => 'active',
+        'accepts_marketing' => false,
+        'is_tax_exempt' => false,
+        'wallet_balance' => 0,
+        'lifetime_value' => 0,
+        'total_orders' => 0,
+        'owner_type' => null,
+        'owner_id' => null,
+    ]);
+
+    $page = new ViewCustomer;
+    $page->mount($customer->getKey());
+
+    \Illuminate\Support\Facades\Auth::logout();
+
+    $headerActions = (function () use ($page): array {
+        $method = new ReflectionMethod($page, 'getHeaderActions');
+        $method->setAccessible(true);
+        /** @var array<int, Action> $actions */
+        $actions = $method->invoke($page);
+
+        return $actions;
+    })();
+
+    /** @var Action $add */
+    $add = collect($headerActions)->first(fn (Action $action): bool => $action->getName() === 'add_credit');
+    $add->livewire($page);
+
+    expect(fn (): mixed => $add->call(['data' => ['amount' => 10, 'reason' => 'Test']]))
+        ->toThrow(HttpException::class);
 });

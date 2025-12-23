@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz;
 
-use AIArmada\FilamentAuthz\Models\Permission as AuthzPermission;
-use AIArmada\FilamentAuthz\Models\Role as AuthzRole;
 use AIArmada\FilamentAuthz\Listeners\PermissionEventSubscriber;
+use AIArmada\FilamentAuthz\Models\Permission as AuthzPermission;
+use AIArmada\FilamentAuthz\Models\Permission as SpatiePermission;
+use AIArmada\FilamentAuthz\Models\Role as AuthzRole;
+use AIArmada\FilamentAuthz\Models\Role as SpatieRole;
 use AIArmada\FilamentAuthz\Services\AuditLogger;
 use AIArmada\FilamentAuthz\Services\ComplianceReportService;
 use AIArmada\FilamentAuthz\Services\ContextualAuthorizationService;
@@ -32,9 +34,8 @@ use AIArmada\FilamentAuthz\Support\OwnerContextTeamResolver;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
+use Spatie\Permission\Contracts\PermissionsTeamResolver;
 use Spatie\Permission\DefaultTeamResolver;
-use AIArmada\FilamentAuthz\Models\Permission as SpatiePermission;
-use AIArmada\FilamentAuthz\Models\Role as SpatieRole;
 use Spatie\Permission\PermissionRegistrar;
 
 class FilamentAuthzServiceProvider extends ServiceProvider
@@ -251,6 +252,15 @@ class FilamentAuthzServiceProvider extends ServiceProvider
         if (config('permission.team_resolver') === DefaultTeamResolver::class) {
             config()->set('permission.team_resolver', OwnerContextTeamResolver::class);
         }
+
+        // Ensure the contract is always resolvable, even when Spatie's provider
+        // isn't the component resolving it (e.g. during isolated tests).
+        $this->app->singleton(PermissionsTeamResolver::class, function ($app): PermissionsTeamResolver {
+            /** @var class-string<PermissionsTeamResolver> $resolverClass */
+            $resolverClass = config('permission.team_resolver', DefaultTeamResolver::class);
+
+            return $app->make($resolverClass);
+        });
 
         $this->app->afterResolving(PermissionRegistrar::class, function (PermissionRegistrar $registrar): void {
             $registrar->initializeCache();

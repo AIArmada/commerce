@@ -9,11 +9,27 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\Permission\Models\Role as SpatieRole;
 
 final class Role extends SpatieRole
 {
     use HasUuids;
+
+    /**
+     * @return BelongsToMany<Permission, $this>
+     */
+    public function permissions(): BelongsToMany
+    {
+        $pivotTable = (string) config('permission.table_names.role_has_permissions', 'role_has_permissions');
+        $rolePivotKey = (string) config('permission.column_names.role_pivot_key', 'role_id');
+        $permissionPivotKey = (string) config('permission.column_names.permission_pivot_key', 'permission_id');
+
+        /** @var BelongsToMany<Permission, $this> $relation */
+        $relation = $this->belongsToMany(Permission::class, $pivotTable, $rolePivotKey, $permissionPivotKey);
+
+        return $relation;
+    }
 
     protected static function booted(): void
     {

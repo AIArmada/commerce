@@ -145,3 +145,10 @@ function conditionTargetDefinition(string $dsl): array
 {
     return ConditionTarget::from($dsl)->toArray();
 }
+
+beforeEach(function (): void {
+    config()->set('customers.features.owner.enabled', true);
+    config()->set('customers.features.owner.include_global', false);
+
+    AIArmada\CommerceSupport\Support\OwnerContext::clearOverride();
+})->in('src/Customers');

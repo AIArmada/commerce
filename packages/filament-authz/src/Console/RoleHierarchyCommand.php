@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Console;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
 use Illuminate\Console\Command;
 use InvalidArgumentException;
-use AIArmada\FilamentAuthz\Models\Role;
 
 use function Laravel\Prompts\info;
 use function Laravel\Prompts\search;

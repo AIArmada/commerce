@@ -532,6 +532,7 @@ test('casts work correctly', function (): void {
 
 test('scopeForOwner filters by owner when enabled', function (): void {
     config(['filament-authz.owner.enabled' => true]);
+    config(['filament-authz.owner.include_global' => true]);
 
     $owner = User::create([
         'name' => 'Owner User',
@@ -539,23 +540,29 @@ test('scopeForOwner filters by owner when enabled', function (): void {
         'password' => bcrypt('password'),
     ]);
 
-    AccessPolicy::create([
-        'name' => 'Global Policy',
-        'slug' => 'global-policy',
-        'effect' => 'allow',
-        'target_action' => 'view',
-        'is_active' => true,
-    ]);
+    \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(null, function (): void {
+        AccessPolicy::create([
+            'name' => 'Global Policy',
+            'slug' => 'global-policy',
+            'effect' => 'allow',
+            'target_action' => 'view',
+            'is_active' => true,
+            'owner_type' => null,
+            'owner_id' => null,
+        ]);
+    });
 
-    AccessPolicy::create([
-        'name' => 'Owned Policy',
-        'slug' => 'owned-policy',
-        'effect' => 'allow',
-        'target_action' => 'view',
-        'is_active' => true,
-        'owner_type' => $owner->getMorphClass(),
-        'owner_id' => (string) $owner->getKey(),
-    ]);
+    \AIArmada\CommerceSupport\Support\OwnerContext::withOwner($owner, function () use ($owner): void {
+        AccessPolicy::create([
+            'name' => 'Owned Policy',
+            'slug' => 'owned-policy',
+            'effect' => 'allow',
+            'target_action' => 'view',
+            'is_active' => true,
+            'owner_type' => $owner->getMorphClass(),
+            'owner_id' => (string) $owner->getKey(),
+        ]);
+    });
 
     $policies = AccessPolicy::forOwner($owner)->get();
 

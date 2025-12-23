@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCustomers\Widgets;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
+use Carbon\CarbonImmutable;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
@@ -18,18 +19,32 @@ class CustomerStatsWidget extends BaseWidget
     {
         $baseQuery = CustomersOwnerScope::applyToOwnedQuery(Customer::query());
 
-        $totalCustomers = (clone $baseQuery)->count();
-        $activeCustomers = (clone $baseQuery)->where('status', CustomerStatus::Active)->count();
-        $newThisMonth = (clone $baseQuery)->where('created_at', '>=', now()->startOfMonth())->count();
-        $acceptsMarketing = (clone $baseQuery)->where('accepts_marketing', true)->count();
+        $now = CarbonImmutable::now();
+        $startOfMonth = $now->startOfMonth();
+        $thisWeekStart = $now->subWeek();
+        $lastWeekStart = $now->subWeeks(2);
+        $lastWeekEnd = $now->subWeek();
 
-        // Calculate LTV
-        $totalLtv = (clone $baseQuery)->sum('lifetime_value');
+        $stats = (clone $baseQuery)
+            ->toBase()
+            ->selectRaw('COUNT(*) as total_customers')
+            ->selectRaw('SUM(CASE WHEN status = ? THEN 1 ELSE 0 END) as active_customers', [CustomerStatus::Active->value])
+            ->selectRaw('SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) as new_this_month', [$startOfMonth])
+            ->selectRaw('SUM(CASE WHEN accepts_marketing = 1 THEN 1 ELSE 0 END) as accepts_marketing')
+            ->selectRaw('COALESCE(SUM(lifetime_value), 0) as total_ltv')
+            ->selectRaw('SUM(CASE WHEN created_at >= ? THEN 1 ELSE 0 END) as this_week', [$thisWeekStart])
+            ->selectRaw('SUM(CASE WHEN created_at >= ? AND created_at < ? THEN 1 ELSE 0 END) as last_week', [$lastWeekStart, $lastWeekEnd])
+            ->first();
+
+        $totalCustomers = (int) ($stats->total_customers ?? 0);
+        $activeCustomers = (int) ($stats->active_customers ?? 0);
+        $newThisMonth = (int) ($stats->new_this_month ?? 0);
+        $acceptsMarketing = (int) ($stats->accepts_marketing ?? 0);
+        $totalLtv = (int) ($stats->total_ltv ?? 0);
+        $thisWeek = (int) ($stats->this_week ?? 0);
+        $lastWeek = (int) ($stats->last_week ?? 0);
+
         $avgLtv = $totalCustomers > 0 ? (int) ($totalLtv / $totalCustomers) : 0;
-
-        // Trend - new customers this week vs last week
-        $thisWeek = (clone $baseQuery)->where('created_at', '>=', now()->subWeek())->count();
-        $lastWeek = (clone $baseQuery)->whereBetween('created_at', [now()->subWeeks(2), now()->subWeek()])->count();
 
         $trend = $lastWeek > 0
             ? round((($thisWeek - $lastWeek) / $lastWeek) * 100)

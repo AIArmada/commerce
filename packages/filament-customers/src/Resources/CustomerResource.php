@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCustomers\Resources;
 
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Customers\Policies\CustomerPolicy;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\Pages;
 use AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 use AIArmada\FilamentCustomers\Support\CustomersOwnerScope;
@@ -21,6 +22,7 @@ use Filament\Support\Enums\TextSize;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Auth;
 use UnitEnum;
 
 class CustomerResource extends Resource
@@ -263,6 +265,12 @@ class CustomerResource extends Resource
                             ->rows(2),
                     ])
                     ->action(function (Customer $record, array $data): void {
+                        $user = Auth::user();
+                        abort_unless($user !== null, 403);
+
+                        $policy = new CustomerPolicy;
+                        abort_unless($policy->update($user, $record), 403);
+
                         $amountInCents = (int) ($data['amount'] * 100);
                         $record->addCredit($amountInCents, $data['reason'] ?? null);
 

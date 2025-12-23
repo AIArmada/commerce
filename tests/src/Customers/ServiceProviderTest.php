@@ -3,7 +3,20 @@
 declare(strict_types=1);
 
 use AIArmada\Customers\CustomersServiceProvider;
+use AIArmada\Customers\Models\Address;
+use AIArmada\Customers\Models\Customer;
+use AIArmada\Customers\Models\CustomerNote;
+use AIArmada\Customers\Models\Segment;
+use AIArmada\Customers\Models\Wishlist;
+use AIArmada\Customers\Models\WishlistItem;
+use AIArmada\Customers\Policies\AddressPolicy;
+use AIArmada\Customers\Policies\CustomerNotePolicy;
+use AIArmada\Customers\Policies\CustomerPolicy;
+use AIArmada\Customers\Policies\SegmentPolicy;
+use AIArmada\Customers\Policies\WishlistItemPolicy;
+use AIArmada\Customers\Policies\WishlistPolicy;
 use Illuminate\Support\ServiceProvider;
+use Illuminate\Support\Facades\Gate;
 
 describe('CustomersServiceProvider', function (): void {
     describe('Instantiation', function (): void {
@@ -45,6 +58,19 @@ describe('CustomersServiceProvider', function (): void {
             $namespaces = $translator->getLoader()->namespaces();
 
             expect($namespaces)->toHaveKey('customers');
+        });
+
+        it('registers policies for all customers models', function (): void {
+            $provider = new CustomersServiceProvider(app());
+            $provider->register();
+            $provider->boot();
+
+            expect(Gate::getPolicyFor(Customer::class))->toBeInstanceOf(CustomerPolicy::class);
+            expect(Gate::getPolicyFor(Segment::class))->toBeInstanceOf(SegmentPolicy::class);
+            expect(Gate::getPolicyFor(Address::class))->toBeInstanceOf(AddressPolicy::class);
+            expect(Gate::getPolicyFor(CustomerNote::class))->toBeInstanceOf(CustomerNotePolicy::class);
+            expect(Gate::getPolicyFor(Wishlist::class))->toBeInstanceOf(WishlistPolicy::class);
+            expect(Gate::getPolicyFor(WishlistItem::class))->toBeInstanceOf(WishlistItemPolicy::class);
         });
     });
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Services;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Events\CustomerSegmentChanged;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
@@ -27,18 +28,20 @@ class SegmentationService
      */
     public function rebuildAllSegments(?Model $owner = null): array
     {
-        $query = Segment::query()->active()->automatic();
+        return OwnerContext::withOwner($owner, function () use ($owner): array {
+            $query = Segment::query()->active()->automatic();
 
-        $query->forOwner($owner, includeGlobal: false);
+            $query->forOwner($owner, includeGlobal: false);
 
-        $results = [];
+            $results = [];
 
-        $query->each(function (Segment $segment) use (&$results): void {
-            $count = $this->rebuildSegment($segment);
-            $results[$segment->name] = $count;
+            $query->each(function (Segment $segment) use (&$results): void {
+                $count = $this->rebuildSegment($segment);
+                $results[$segment->name] = $count;
+            });
+
+            return $results;
         });
-
-        return $results;
     }
 
     /**
@@ -46,44 +49,54 @@ class SegmentationService
      */
     public function rebuildSegment(Segment $segment): int
     {
-        if (! $segment->is_automatic) {
-            return $segment->customers()->count();
-        }
+        $segmentOwner = OwnerContext::fromTypeAndId($segment->owner_type, $segment->owner_id);
 
-        $matchingCustomers = $segment->getMatchingCustomers();
-        $currentCustomerIds = $segment->customers()->pluck('id')->toArray();
-        $newCustomerIds = $matchingCustomers->pluck('id')->toArray();
-
-        // Find customers added and removed
-        $addedIds = array_diff($newCustomerIds, $currentCustomerIds);
-        $removedIds = array_diff($currentCustomerIds, $newCustomerIds);
-
-        // Sync the segment
-        $segment->customers()->sync($newCustomerIds);
-
-        // Fire events for changes (batch-loaded)
-        $customersById = Customer::query()
-            ->whereIn('id', array_values(array_unique(array_merge($addedIds, $removedIds))))
-            ->get()
-            ->keyBy('id');
-
-        foreach ($addedIds as $customerId) {
-            /** @var Customer|null $customer */
-            $customer = $customersById->get($customerId);
-            if ($customer !== null) {
-                event(new CustomerSegmentChanged($customer, $segment, 'added'));
+        return OwnerContext::withOwner($segmentOwner, function () use ($segment, $segmentOwner): int {
+            if (! $segment->is_automatic) {
+                return $segment->customers()->count();
             }
-        }
 
-        foreach ($removedIds as $customerId) {
-            /** @var Customer|null $customer */
-            $customer = $customersById->get($customerId);
-            if ($customer !== null) {
-                event(new CustomerSegmentChanged($customer, $segment, 'removed'));
+            $matchingCustomers = $segment->getMatchingCustomers();
+            $currentCustomerIds = $segment->customers()->pluck('id')->toArray();
+            $newCustomerIds = $matchingCustomers->pluck('id')->toArray();
+
+            // Find customers added and removed
+            $addedIds = array_diff($newCustomerIds, $currentCustomerIds);
+            $removedIds = array_diff($currentCustomerIds, $newCustomerIds);
+
+            // Sync the segment
+            $segment->customers()->sync($newCustomerIds);
+
+            $changedIds = array_values(array_unique(array_merge($addedIds, $removedIds)));
+            if ($changedIds === []) {
+                return count($newCustomerIds);
             }
-        }
 
-        return count($newCustomerIds);
+            // Fire events for changes (batch-loaded)
+            $customersById = Customer::query()
+                ->forOwner($segmentOwner, includeGlobal: false)
+                ->whereIn('id', $changedIds)
+                ->get()
+                ->keyBy('id');
+
+            foreach ($addedIds as $customerId) {
+                /** @var Customer|null $customer */
+                $customer = $customersById->get($customerId);
+                if ($customer !== null) {
+                    event(new CustomerSegmentChanged($customer, $segment, 'added'));
+                }
+            }
+
+            foreach ($removedIds as $customerId) {
+                /** @var Customer|null $customer */
+                $customer = $customersById->get($customerId);
+                if ($customer !== null) {
+                    event(new CustomerSegmentChanged($customer, $segment, 'removed'));
+                }
+            }
+
+            return count($newCustomerIds);
+        });
     }
 
     /**
@@ -97,10 +110,12 @@ class SegmentationService
             return collect();
         }
 
+        $customerOwner = OwnerContext::fromTypeAndId($customer->owner_type, $customer->owner_id);
+
         $automaticSegments = Segment::query()
             ->active()
             ->automatic()
-            ->forOwner($customer->owner, includeGlobal: false)
+            ->forOwner($customerOwner, includeGlobal: false)
             ->get();
 
         $matchingSegments = collect();
@@ -133,7 +148,7 @@ class SegmentationService
         $removedIds = array_diff($currentAutoSegmentIds, $newAutoSegmentIds);
 
         $segmentsById = Segment::query()
-            ->forOwner($customer->owner, includeGlobal: false)
+            ->forOwner($customerOwner, includeGlobal: false)
             ->whereIn('id', array_values(array_unique(array_merge($addedIds, $removedIds))))
             ->get()
             ->keyBy('id');

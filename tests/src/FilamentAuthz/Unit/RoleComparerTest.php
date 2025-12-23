@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentAuthz\Services\RoleComparer;
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Services\RoleComparer;
 
 beforeEach(function (): void {
     Role::query()->delete();

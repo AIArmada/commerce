@@ -6,6 +6,9 @@ use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Customers\Models\Segment;
 use AIArmada\Customers\Services\SegmentationService;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Customers\Models\Address;
+use AIArmada\Customers\Models\Wishlist;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
@@ -94,4 +97,75 @@ it('prevents cross-tenant segment membership changes', function (): void {
     $service->evaluateCustomer($customerB);
 
     expect($customerB->segments()->whereKey($segmentA->getKey())->exists())->toBeFalse();
+});
+
+it('enforces owner scoping for addresses and wishlists', function (): void {
+    $ownerA = CustomersTestOwner::query()->create(['name' => 'Owner A']);
+    $ownerB = CustomersTestOwner::query()->create(['name' => 'Owner B']);
+
+    $customerA = Customer::query()->create([
+        'first_name' => 'A',
+        'last_name' => 'Customer',
+        'email' => 'addr-a-' . uniqid() . '@example.com',
+        'status' => CustomerStatus::Active,
+        'owner_type' => $ownerA->getMorphClass(),
+        'owner_id' => $ownerA->getKey(),
+    ]);
+
+    $customerB = Customer::query()->create([
+        'first_name' => 'B',
+        'last_name' => 'Customer',
+        'email' => 'addr-b-' . uniqid() . '@example.com',
+        'status' => CustomerStatus::Active,
+        'owner_type' => $ownerB->getMorphClass(),
+        'owner_id' => $ownerB->getKey(),
+    ]);
+
+    OwnerContext::withOwner($ownerA, function () use ($customerA): void {
+        Address::query()->create([
+            'customer_id' => $customerA->id,
+            'address_line_1' => '123 Owner A',
+            'city' => 'KL',
+            'postcode' => '50000',
+            'country' => 'MY',
+        ]);
+
+        Wishlist::query()->create([
+            'customer_id' => $customerA->id,
+            'name' => 'Owner A Wishlist',
+        ]);
+    });
+
+    OwnerContext::withOwner($ownerB, function () use ($customerB): void {
+        Address::query()->create([
+            'customer_id' => $customerB->id,
+            'address_line_1' => '456 Owner B',
+            'city' => 'KL',
+            'postcode' => '50000',
+            'country' => 'MY',
+        ]);
+
+        Wishlist::query()->create([
+            'customer_id' => $customerB->id,
+            'name' => 'Owner B Wishlist',
+        ]);
+    });
+
+    OwnerContext::withOwner($ownerA, function () use ($customerB): void {
+        expect(Address::query()->count())->toBe(1)
+            ->and(Wishlist::query()->count())->toBe(1);
+
+        expect(fn () => Address::query()->create([
+            'customer_id' => $customerB->id,
+            'address_line_1' => 'Cross-tenant',
+            'city' => 'KL',
+            'postcode' => '50000',
+            'country' => 'MY',
+        ]))->toThrow(InvalidArgumentException::class);
+
+        expect(fn () => Wishlist::query()->create([
+            'customer_id' => $customerB->id,
+            'name' => 'Cross-tenant wishlist',
+        ]))->toThrow(InvalidArgumentException::class);
+    });
 });

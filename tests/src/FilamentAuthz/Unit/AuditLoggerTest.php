@@ -7,10 +7,10 @@ use AIArmada\FilamentAuthz\Enums\AuditEventType;
 use AIArmada\FilamentAuthz\Enums\AuditSeverity;
 use AIArmada\FilamentAuthz\Jobs\WriteAuditLogJob;
 use AIArmada\FilamentAuthz\Models\PermissionAuditLog;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Services\AuditLogger;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Queue;
-use AIArmada\FilamentAuthz\Models\Role;
 
 beforeEach(function (): void {
     $this->auditLogger = app(AuditLogger::class);

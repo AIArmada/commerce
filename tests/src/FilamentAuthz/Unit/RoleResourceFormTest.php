@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Resources\RoleResource;
 use Filament\Forms\Components\CheckboxList;
 use Filament\Schemas\Contracts\HasSchemas;
@@ -10,8 +12,6 @@ use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Component as LivewireComponent;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 
 uses(RefreshDatabase::class);
 

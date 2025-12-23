@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 
 use AIArmada\Customers\Enums\AddressType;
+use AIArmada\Customers\Models\Address;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Gate;
 
 class AddressesRelationManager extends RelationManager
 {
@@ -139,12 +141,32 @@ class AddressesRelationManager extends RelationManager
                 \Filament\Actions\Action::make('set_billing')
                     ->label('Set as Billing')
                     ->icon('heroicon-o-credit-card')
-                    ->action(fn ($record) => $record->setAsDefaultBilling())
+                    ->action(function (Address $record): void {
+                        $user = \Filament\Facades\Filament::auth()->user();
+
+                        if ($user === null) {
+                            abort(403);
+                        }
+
+                        Gate::forUser($user)->authorize('update', $record);
+
+                        $record->setAsDefaultBilling();
+                    })
                     ->visible(fn ($record) => ! $record->is_default_billing),
                 \Filament\Actions\Action::make('set_shipping')
                     ->label('Set as Shipping')
                     ->icon('heroicon-o-truck')
-                    ->action(fn ($record) => $record->setAsDefaultShipping())
+                    ->action(function (Address $record): void {
+                        $user = \Filament\Facades\Filament::auth()->user();
+
+                        if ($user === null) {
+                            abort(403);
+                        }
+
+                        Gate::forUser($user)->authorize('update', $record);
+
+                        $record->setAsDefaultShipping();
+                    })
                     ->visible(fn ($record) => ! $record->is_default_shipping),
                 \Filament\Actions\DeleteAction::make(),
             ])

@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
 use AIArmada\FilamentAuthz\Widgets\RoleHierarchyWidget;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use AIArmada\FilamentAuthz\Models\Role;
 
 uses(RefreshDatabase::class);
 

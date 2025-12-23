@@ -15,6 +15,9 @@ return new class extends Migration
 
             $table->uuid('id')->primary();
 
+            // Owner (for multi-tenancy)
+            $table->nullableUuidMorphs('owner');
+
             $table->foreignUuid('wishlist_id');
 
             // Polymorphic product reference

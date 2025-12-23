@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Http\Middleware\AuthorizePanelRoles;
+use AIArmada\FilamentAuthz\Models\Role;
 use Filament\Facades\Filament;
 use Filament\Panel;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
-use AIArmada\FilamentAuthz\Models\Role;
 use Symfony\Component\HttpKernel\Exception\AccessDeniedHttpException;
 
 beforeEach(function (): void {

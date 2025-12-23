@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\Pages;
 
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Customers\Policies\CustomerPolicy;
 use AIArmada\FilamentCustomers\Resources\CustomerResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
+use Illuminate\Support\Facades\Auth;
 
 class ViewCustomer extends ViewRecord
 {
@@ -35,6 +37,12 @@ class ViewCustomer extends ViewRecord
                         ->rows(2),
                 ])
                 ->action(function (Customer $record, array $data): void {
+                    $user = Auth::user();
+                    abort_unless($user !== null, 403);
+
+                    $policy = new CustomerPolicy;
+                    abort_unless($policy->update($user, $record), 403);
+
                     $amountInCents = (int) ($data['amount'] * 100);
                     $record->addCredit($amountInCents, $data['reason'] ?? null);
 
@@ -62,6 +70,12 @@ class ViewCustomer extends ViewRecord
                         ->rows(2),
                 ])
                 ->action(function (Customer $record, array $data): void {
+                    $user = Auth::user();
+                    abort_unless($user !== null, 403);
+
+                    $policy = new CustomerPolicy;
+                    abort_unless($policy->update($user, $record), 403);
+
                     $amountInCents = (int) ($data['amount'] * 100);
 
                     if (! $record->deductCredit($amountInCents, $data['reason'] ?? null)) {

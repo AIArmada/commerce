@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Services\PermissionRegistry;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use AIArmada\FilamentAuthz\Models\Permission;
 
 uses(RefreshDatabase::class);
 

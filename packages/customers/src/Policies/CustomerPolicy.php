@@ -13,6 +13,11 @@ class CustomerPolicy
 {
     use HandlesAuthorization;
 
+    private function isAuthenticated(mixed $user): bool
+    {
+        return $user !== null;
+    }
+
     private function resolveOwner(): ?Model
     {
         if (! (bool) config('customers.features.owner.enabled', false)) {
@@ -49,33 +54,29 @@ class CustomerPolicy
 
     public function viewAny($user): bool
     {
-        return true;
+        return $this->isAuthenticated($user);
     }
 
     public function view($user, Customer $customer): bool
     {
-        if ($this->isAccessible($customer)) {
-            return true;
-        }
-
-        return $customer->user_id !== null && $customer->user_id === $user->id;
+        return $this->isAuthenticated($user) && $this->isAccessible($customer);
     }
 
     public function create($user): bool
     {
-        return true;
+        return $this->isAuthenticated($user);
     }
 
     public function update($user, Customer $customer): bool
     {
-        return $this->isAccessible($customer);
+        return $this->isAuthenticated($user) && $this->isAccessible($customer);
     }
 
     public function delete($user, Customer $customer): bool
     {
         // Cannot delete customers with orders
         // This would integrate with orders package
-        return $this->isAccessible($customer);
+        return $this->isAuthenticated($user) && $this->isAccessible($customer);
     }
 
     /**
@@ -83,7 +84,7 @@ class CustomerPolicy
      */
     public function addCredit($user, Customer $customer): bool
     {
-        return $this->isAccessible($customer);
+        return $this->isAuthenticated($user) && $this->isAccessible($customer);
     }
 
     /**
@@ -91,6 +92,6 @@ class CustomerPolicy
      */
     public function deductCredit($user, Customer $customer): bool
     {
-        return $this->isAccessible($customer);
+        return $this->isAuthenticated($user) && $this->isAccessible($customer);
     }
 }

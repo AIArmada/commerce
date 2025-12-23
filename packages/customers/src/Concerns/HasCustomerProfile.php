@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Concerns;
 
+use AIArmada\Customers\Models\Address;
 use AIArmada\Customers\Models\Customer;
 use Illuminate\Database\Eloquent\Relations\HasOne;
+use InvalidArgumentException;
 
 /**
  * Trait to be used on User models to provide customer profile functionality.
@@ -33,14 +35,39 @@ trait HasCustomerProfile
             return $customer;
         }
 
+        $email = $this->email;
+
+        if (! is_string($email) || mb_trim($email) === '') {
+            throw new InvalidArgumentException('User email is required to create a customer profile.');
+        }
+
+        [$firstName, $lastName] = $this->splitName($this->name);
+
         return $this->customerProfile()->create([
-            'first_name' => $this->name ?? explode(' ', $this->name ?? 'User')[0],
-            'last_name' => count(explode(' ', $this->name ?? '')) > 1
-                ? last(explode(' ', $this->name ?? ''))
-                : '',
-            'email' => $this->email,
+            'first_name' => $firstName,
+            'last_name' => $lastName,
+            'email' => $email,
             'phone' => $this->phone ?? null,
         ]);
+    }
+
+    /**
+     * @return array{0: string, 1: string}
+     */
+    private function splitName(?string $name): array
+    {
+        $name = mb_trim((string) $name);
+
+        if ($name === '') {
+            return ['User', ''];
+        }
+
+        $parts = preg_split('/\s+/', $name) ?: [];
+
+        $firstName = $parts[0] ?? $name;
+        $lastName = count($parts) > 1 ? (string) end($parts) : '';
+
+        return [$firstName, $lastName];
     }
 
     /**
@@ -78,7 +105,7 @@ trait HasCustomerProfile
     /**
      * Get the customer's default shipping address.
      */
-    public function getDefaultShippingAddress()
+    public function getDefaultShippingAddress(): ?Address
     {
         return $this->customerProfile?->getDefaultShippingAddress();
     }
@@ -86,7 +113,7 @@ trait HasCustomerProfile
     /**
      * Get the customer's default billing address.
      */
-    public function getDefaultBillingAddress()
+    public function getDefaultBillingAddress(): ?Address
     {
         return $this->customerProfile?->getDefaultBillingAddress();
     }
