@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers\Resources\CustomerResource\RelationManagers;
 
+use AIArmada\Customers\Models\CustomerNote;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Gate;
 
 class NotesRelationManager extends RelationManager
 {
@@ -80,7 +83,7 @@ class NotesRelationManager extends RelationManager
             ->headerActions([
                 \Filament\Actions\CreateAction::make()
                     ->mutateFormDataUsing(function (array $data): array {
-                        $data['created_by'] = auth()->id();
+                        $data['created_by'] = Auth::user()?->getAuthIdentifier();
 
                         return $data;
                     }),
@@ -88,12 +91,32 @@ class NotesRelationManager extends RelationManager
             ->actions([
                 \Filament\Actions\Action::make('pin')
                     ->icon('heroicon-o-star')
-                    ->action(fn ($record) => $record->pin())
+                    ->action(function (CustomerNote $record): void {
+                        $user = \Filament\Facades\Filament::auth()->user();
+
+                        if ($user === null) {
+                            abort(403);
+                        }
+
+                        Gate::forUser($user)->authorize('update', $record);
+
+                        $record->pin();
+                    })
                     ->visible(fn ($record) => ! $record->is_pinned),
                 \Filament\Actions\Action::make('unpin')
                     ->icon('heroicon-s-star')
                     ->color('warning')
-                    ->action(fn ($record) => $record->unpin())
+                    ->action(function (CustomerNote $record): void {
+                        $user = \Filament\Facades\Filament::auth()->user();
+
+                        if ($user === null) {
+                            abort(403);
+                        }
+
+                        Gate::forUser($user)->authorize('update', $record);
+
+                        $record->unpin();
+                    })
                     ->visible(fn ($record) => $record->is_pinned),
                 \Filament\Actions\EditAction::make(),
                 \Filament\Actions\DeleteAction::make(),

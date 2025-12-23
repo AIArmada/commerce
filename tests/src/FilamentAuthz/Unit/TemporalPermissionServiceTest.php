@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAuthz\Enums\PermissionScope;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Models\ScopedPermission;
 use AIArmada\FilamentAuthz\Services\ContextualAuthorizationService;
 use AIArmada\FilamentAuthz\Services\PermissionAggregator;
 use AIArmada\FilamentAuthz\Services\TemporalPermissionService;
 use Carbon\Carbon;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 
 beforeEach(function (): void {
     // Clear data

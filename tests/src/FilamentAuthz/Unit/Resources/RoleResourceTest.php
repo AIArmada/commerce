@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Resources\RoleResource;
 use AIArmada\FilamentAuthz\Resources\RoleResource\Pages\CreateRole;
 use AIArmada\FilamentAuthz\Resources\RoleResource\Pages\EditRole;
@@ -9,7 +10,6 @@ use AIArmada\FilamentAuthz\Resources\RoleResource\Pages\ListRoles;
 use AIArmada\FilamentAuthz\Resources\RoleResource\RelationManagers\PermissionsRelationManager;
 use Filament\Schemas\Schema;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use AIArmada\FilamentAuthz\Models\Role;
 
 uses(RefreshDatabase::class);
 

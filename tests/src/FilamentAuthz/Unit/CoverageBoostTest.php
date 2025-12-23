@@ -11,7 +11,9 @@ use AIArmada\FilamentAuthz\Enums\PolicyDecision;
 use AIArmada\FilamentAuthz\Enums\PolicyEffect;
 use AIArmada\FilamentAuthz\Http\Middleware\AuthorizePanelRoles;
 use AIArmada\FilamentAuthz\Jobs\WriteAuditLogJob;
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\PermissionAuditLog;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Services\AuditLogger;
 use AIArmada\FilamentAuthz\Services\DelegationService;
 use AIArmada\FilamentAuthz\Services\Discovery\PageTransformer;
@@ -32,8 +34,6 @@ use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredWidget;
 use AIArmada\FilamentAuthz\ValueObjects\PolicyCondition;
 use Illuminate\Http\Request;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 
 describe('AuditSeverity Enum Coverage', function (): void {
     it('executes all AuditSeverity cases and methods', function (): void {
@@ -71,7 +71,7 @@ describe('PermissionScope Enum Coverage', function (): void {
         }
 
         expect(PermissionScope::Global->requiresScopeId())->toBeFalse();
-        expect(PermissionScope::Owner->requiresScopeId())->toBeFalse();
+        expect(PermissionScope::Owner->requiresScopeId())->toBeTrue();
         expect(PermissionScope::Team->requiresScopeId())->toBeTrue();
         expect(PermissionScope::Tenant->requiresScopeId())->toBeTrue();
         expect(PermissionScope::Resource->requiresScopeId())->toBeTrue();

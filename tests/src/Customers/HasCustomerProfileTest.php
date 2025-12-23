@@ -5,12 +5,14 @@ declare(strict_types=1);
 use AIArmada\Customers\Concerns\HasCustomerProfile;
 use AIArmada\Customers\Enums\CustomerStatus;
 use AIArmada\Customers\Models\Customer;
+use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 
-// Create a test model that uses the trait (without HasUuids - users table uses bigint)
+// Create a test model that uses the trait (users table uses UUID primary key in the test schema)
 class TestUserWithProfile extends Model
 {
     use HasCustomerProfile;
+    use HasUuids;
 
     public $timestamps = true;
 
@@ -90,7 +92,9 @@ describe('HasCustomerProfile Trait', function (): void {
             $profile = $user->getOrCreateCustomerProfile();
 
             expect($profile)->toBeInstanceOf(Customer::class)
-                ->and($profile->email)->toBe($user->email);
+                ->and($profile->email)->toBe($user->email)
+                ->and($profile->first_name)->toBe('Jane')
+                ->and($profile->last_name)->toBe('Doe');
         });
     });
 

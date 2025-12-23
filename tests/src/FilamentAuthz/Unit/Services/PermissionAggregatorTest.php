@@ -3,14 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Services\ImplicitPermissionService;
 use AIArmada\FilamentAuthz\Services\PermissionAggregator;
 use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
 use AIArmada\FilamentAuthz\Services\WildcardPermissionResolver;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Facades\Cache;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 
 beforeEach(function (): void {
     User::query()->delete();

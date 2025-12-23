@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Services;
 
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Support\PermissionTeamScope;
 use Closure;
 use Illuminate\Contracts\Cache\Repository;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
-use AIArmada\FilamentAuthz\Support\PermissionTeamScope;
 
 class PermissionCacheService
 {

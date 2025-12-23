@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAuthz\Pages\PermissionMatrixPage;
-use Filament\Actions\Action;
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Pages\PermissionMatrixPage;
+use Filament\Actions\Action;
 
 test('permission matrix can select role, toggle, and save permissions', function (): void {
     $user = User::create([

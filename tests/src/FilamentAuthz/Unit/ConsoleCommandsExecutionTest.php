@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\PermissionGroup;
 use AIArmada\FilamentAuthz\Models\PermissionSnapshot;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
 use AIArmada\FilamentAuthz\Services\PermissionGroupService;
 use AIArmada\FilamentAuthz\Services\PermissionVersioningService;
@@ -16,8 +18,6 @@ use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use Illuminate\Filesystem\Filesystem;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 uses(RefreshDatabase::class);

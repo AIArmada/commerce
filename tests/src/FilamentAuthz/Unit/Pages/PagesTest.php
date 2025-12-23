@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Pages\AuditLogPage;
 use AIArmada\FilamentAuthz\Pages\AuthzDashboardPage;
 use AIArmada\FilamentAuthz\Pages\PermissionExplorer;
@@ -10,8 +12,6 @@ use AIArmada\FilamentAuthz\Pages\PolicyDesignerPage;
 use AIArmada\FilamentAuthz\Pages\RoleHierarchyPage;
 use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
 use Filament\Facades\Filament;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 
 beforeEach(function (): void {
     Filament::setCurrentPanel('admin');

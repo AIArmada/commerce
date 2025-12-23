@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Services\WildcardPermissionResolver;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Cache;
-use AIArmada\FilamentAuthz\Models\Permission;
 
 beforeEach(function (): void {
     Permission::query()->delete();

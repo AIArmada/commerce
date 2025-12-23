@@ -3,6 +3,8 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\FilamentAuthz\Fixtures\AuthzUser;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Resources\RoleResource\Pages\CreateRole;
 use AIArmada\FilamentAuthz\Resources\RoleResource\Pages\EditRole;
 use AIArmada\FilamentAuthz\Resources\RoleResource\Pages\ListRoles;
@@ -10,8 +12,6 @@ use Filament\Facades\Filament;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 use Livewire\Livewire;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 beforeEach(function (): void {

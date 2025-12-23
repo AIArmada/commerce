@@ -3,10 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
-use AIArmada\FilamentAuthz\Models\PermissionRequest;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\PermissionRequest;
 use AIArmada\FilamentAuthz\Models\Role;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
 

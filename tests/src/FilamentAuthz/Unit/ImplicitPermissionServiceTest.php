@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Commerce\Tests\FilamentAuthz\Unit;
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\PermissionGroup;
 use AIArmada\FilamentAuthz\Services\ImplicitPermissionService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
-use AIArmada\FilamentAuthz\Models\Permission;
 
 uses(RefreshDatabase::class);
 

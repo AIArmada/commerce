@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Services;
 
 use AIArmada\FilamentAuthz\Enums\ImpactLevel;
-use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\DB;
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Support\PermissionTeamScope;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\DB;
 
 class PermissionImpactAnalyzer
 {

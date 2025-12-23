@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Console;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredPage;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
 use AIArmada\FilamentAuthz\ValueObjects\DiscoveredWidget;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
-use AIArmada\FilamentAuthz\Models\Permission;
 use InvalidArgumentException;
 
 class DiscoverCommand extends Command

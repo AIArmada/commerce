@@ -41,11 +41,13 @@ class RebuildSegmentsCommand extends Command
             $this->components->warn('Running in dry-run mode. No changes will be made.');
         }
 
-        if ($segmentId) {
-            return $this->rebuildSingleSegment($service, $segmentId, $dryRun, $owner);
-        }
+        return OwnerContext::withOwner($owner, function () use ($segmentId, $service, $dryRun, $owner, $allOwners): int {
+            if ($segmentId) {
+                return $this->rebuildSingleSegment($service, $segmentId, $dryRun, $owner);
+            }
 
-        return $this->rebuildAllSegments($service, $dryRun, $owner, $allOwners);
+            return $this->rebuildAllSegments($service, $dryRun, $owner, $allOwners);
+        });
     }
 
     protected function rebuildSingleSegment(SegmentationService $service, string $segmentId, bool $dryRun, ?Model $owner): int
@@ -143,6 +145,7 @@ class RebuildSegmentsCommand extends Command
     private function rebuildAllOwners(SegmentationService $service, bool $dryRun): int
     {
         $owners = Segment::query()
+            ->withoutOwnerScope()
             ->active()
             ->automatic()
             ->select(['owner_type', 'owner_id'])
@@ -169,19 +172,23 @@ class RebuildSegmentsCommand extends Command
                 $owner = $this->resolveOwnerFromTypeAndId($ownerType, (string) $ownerId);
             }
 
-            if ($dryRun) {
-                $counts = Segment::query()
-                    ->active()
-                    ->automatic()
-                    ->forOwner($owner, includeGlobal: false)
-                    ->count();
-                $results[$this->ownerLabel($ownerType, $ownerId)] = "{$counts} segment(s)";
+            $label = $this->ownerLabel($ownerType, $ownerId);
 
-                continue;
-            }
+            $result = OwnerContext::withOwner($owner, function () use ($service, $dryRun, $owner): int {
+                if ($dryRun) {
+                    return Segment::query()
+                        ->active()
+                        ->automatic()
+                        ->forOwner($owner, includeGlobal: false)
+                        ->count();
+                }
 
-            $rebuilt = $service->rebuildAllSegments($owner);
-            $results[$this->ownerLabel($ownerType, $ownerId)] = (string) array_sum($rebuilt);
+                $rebuilt = $service->rebuildAllSegments($owner);
+
+                return array_sum($rebuilt);
+            });
+
+            $results[$label] = $dryRun ? "{$result} segment(s)" : (string) $result;
         }
 
         $this->newLine();

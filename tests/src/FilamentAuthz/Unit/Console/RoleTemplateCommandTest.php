@@ -3,11 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\Console\RoleTemplateCommand;
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\FilamentAuthz\Models\RoleTemplate;
 use AIArmada\FilamentAuthz\Services\RoleTemplateService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 
 uses(RefreshDatabase::class);
 

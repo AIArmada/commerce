@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Services;
 
+use AIArmada\FilamentAuthz\Models\Permission;
+use AIArmada\FilamentAuthz\Models\Role;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
-use AIArmada\FilamentAuthz\Models\Permission;
-use AIArmada\FilamentAuthz\Models\Role;
 
 /**
  * Service for managing role hierarchy (parent-child relationships).

@@ -13,6 +13,11 @@ class SegmentPolicy
 {
     use HandlesAuthorization;
 
+    private function isAuthenticated(mixed $user): bool
+    {
+        return $user !== null;
+    }
+
     private function resolveOwner(): ?Model
     {
         if (! (bool) config('customers.features.owner.enabled', false)) {
@@ -49,27 +54,27 @@ class SegmentPolicy
 
     public function viewAny($user): bool
     {
-        return true;
+        return $this->isAuthenticated($user);
     }
 
     public function view($user, Segment $segment): bool
     {
-        return $this->isAccessible($segment);
+        return $this->isAuthenticated($user) && $this->isAccessible($segment);
     }
 
     public function create($user): bool
     {
-        return true;
+        return $this->isAuthenticated($user);
     }
 
     public function update($user, Segment $segment): bool
     {
-        return $this->isAccessible($segment);
+        return $this->isAuthenticated($user) && $this->isAccessible($segment);
     }
 
     public function delete($user, Segment $segment): bool
     {
-        return $this->isAccessible($segment);
+        return $this->isAuthenticated($user) && $this->isAccessible($segment);
     }
 
     /**
@@ -77,6 +82,6 @@ class SegmentPolicy
      */
     public function rebuild($user, Segment $segment): bool
     {
-        return $this->update($user, $segment) && $segment->is_automatic;
+        return $this->isAuthenticated($user) && $this->update($user, $segment) && $segment->is_automatic;
     }
 }

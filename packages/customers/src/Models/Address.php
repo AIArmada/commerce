@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Customers\Models;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Customers\Enums\AddressType;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -11,6 +14,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 /**
  * @property string $id
@@ -39,7 +43,11 @@ use Illuminate\Support\Carbon;
 class Address extends Model
 {
     use HasFactory;
+    use HasOwner;
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'customers.features.owner';
 
     protected $guarded = ['id'];
 
@@ -252,5 +260,58 @@ class Address extends Model
     public function scopeVerified(Builder $query): Builder
     {
         return $query->where('is_verified', true);
+    }
+
+    protected static function booted(): void
+    {
+        static::creating(function (Address $address): void {
+            if (! (bool) config('customers.features.owner.enabled', false)) {
+                return;
+            }
+
+            if ($address->owner_type !== null || $address->owner_id !== null) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            $customer = Customer::query()
+                ->forOwner($owner, includeGlobal: false)
+                ->whereKey($address->customer_id)
+                ->first();
+
+            if ($customer === null) {
+                throw new InvalidArgumentException('Address customer must belong to the current owner context.');
+            }
+
+            if ($customer->owner_type !== null && $customer->owner_id !== null) {
+                $address->owner_type = $customer->owner_type;
+                $address->owner_id = $customer->owner_id;
+            }
+        });
+
+        static::updating(function (Address $address): void {
+            if (! (bool) config('customers.features.owner.enabled', false)) {
+                return;
+            }
+
+            if (! $address->isDirty('customer_id')) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            $customer = Customer::query()
+                ->forOwner($owner, includeGlobal: false)
+                ->whereKey($address->customer_id)
+                ->first();
+
+            if ($customer === null) {
+                throw new InvalidArgumentException('Address customer must belong to the current owner context.');
+            }
+
+            $address->owner_type = $customer->owner_type;
+            $address->owner_id = $customer->owner_id;
+        });
     }
 }
