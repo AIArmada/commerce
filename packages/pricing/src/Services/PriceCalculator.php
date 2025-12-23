@@ -27,6 +27,11 @@ class PriceCalculator
         $basePrice = $item->getBasePrice();
         $breakdown = [];
 
+        $currency = Arr::get($context, 'currency');
+        $currency = is_string($currency) && $currency !== ''
+            ? $currency
+            : (string) config('pricing.defaults.currency', 'MYR');
+
         $priceableType = $this->getPriceableMorphType($item);
         $priceableId = $item->getBuyableIdentifier();
 
@@ -35,7 +40,7 @@ class PriceCalculator
         if ($customerPrice !== null) {
             $breakdown[] = ['type' => 'customer_specific', 'price' => $customerPrice];
 
-            return $this->buildResult($basePrice, $customerPrice, 'Customer Specific Price', $breakdown);
+            return $this->buildResult($basePrice, $customerPrice, 'Customer Specific Price', $breakdown, currency: $currency);
         }
 
         // 2. Check for segment price
@@ -43,7 +48,7 @@ class PriceCalculator
         if ($segmentPrice !== null) {
             $breakdown[] = ['type' => 'segment', 'price' => $segmentPrice];
 
-            return $this->buildResult($basePrice, $segmentPrice, 'Segment Price', $breakdown);
+            return $this->buildResult($basePrice, $segmentPrice, 'Segment Price', $breakdown, currency: $currency);
         }
 
         // 3. Check for tier pricing
@@ -56,7 +61,8 @@ class PriceCalculator
                 $tierResult['price'],
                 'Tier Pricing',
                 $breakdown,
-                tierDescription: $tierResult['tier']
+                tierDescription: $tierResult['tier'],
+                currency: $currency
             );
         }
 
@@ -70,7 +76,8 @@ class PriceCalculator
                 $promotionResult['price'],
                 'Promotion',
                 $breakdown,
-                promotionName: $promotionResult['name']
+                promotionName: $promotionResult['name'],
+                currency: $currency
             );
         }
 
@@ -84,14 +91,15 @@ class PriceCalculator
                 $priceListResult['price'],
                 'Price List',
                 $breakdown,
-                priceListName: $priceListResult['name']
+                priceListName: $priceListResult['name'],
+                currency: $currency
             );
         }
 
         // 6. Return base price
         $breakdown[] = ['type' => 'base', 'price' => $basePrice];
 
-        return $this->buildResult($basePrice, $basePrice, null, $breakdown);
+        return $this->buildResult($basePrice, $basePrice, null, $breakdown, currency: $currency);
     }
 
     /**
@@ -301,7 +309,8 @@ class PriceCalculator
         array $breakdown,
         ?string $priceListName = null,
         ?string $tierDescription = null,
-        ?string $promotionName = null
+        ?string $promotionName = null,
+        string $currency = 'MYR'
     ): PriceResultData {
         $discountAmount = max(0, $originalPrice - $finalPrice);
         $discountPercentage = $originalPrice > 0
@@ -317,6 +326,7 @@ class PriceCalculator
             priceListName: $priceListName,
             tierDescription: $tierDescription,
             promotionName: $promotionName,
+            currency: $currency,
             breakdown: $breakdown,
         );
     }

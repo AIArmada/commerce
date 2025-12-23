@@ -6,6 +6,7 @@ use AIArmada\Commerce\Tests\FilamentOrders\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentOrders\Resources\OrderResource\Pages\ViewOrder;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\OrdersServiceProvider;
@@ -16,7 +17,6 @@ use Illuminate\Contracts\Auth\Guard;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use AIArmada\FilamentAuthz\Models\Permission;
 
 uses(TestCase::class);
 
@@ -33,6 +33,14 @@ beforeEach(function (): void {
     config()->set('orders.owner.include_global', true);
     config()->set('orders.owner.auto_assign_on_create', false);
 
+    app()->instance(OwnerResolverInterface::class, new class implements OwnerResolverInterface
+    {
+        public function resolve(): ?Model
+        {
+            return null;
+        }
+    });
+
     app()->register(OrdersServiceProvider::class);
 });
 
@@ -40,8 +48,18 @@ afterEach(function (): void {
     Mockery::close();
 });
 
-function makeAuthedUser(): User
+function makeAuthedUser(TestOwner $owner): User
 {
+    app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
+    {
+        public function __construct(private readonly ?Model $owner) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
     $user = User::query()->create([
         'name' => 'QA',
         'email' => 'qa@example.com',
@@ -66,19 +84,9 @@ function makeAuthedUser(): User
 }
 
 it('evaluates ViewOrder header action authorization + visibility closures', function (): void {
-    makeAuthedUser();
-
     $owner = TestOwner::query()->create(['name' => 'Owner A']);
 
-    app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
-    {
-        public function __construct(private readonly ?Model $owner) {}
-
-        public function resolve(): ?Model
-        {
-            return $this->owner;
-        }
-    });
+    makeAuthedUser($owner);
 
     $order = Order::query()->create([
         'owner_type' => $owner->getMorphClass(),
@@ -112,19 +120,9 @@ it('evaluates ViewOrder header action authorization + visibility closures', func
 });
 
 it('evaluates status-dependent header actions for processing orders', function (): void {
-    makeAuthedUser();
-
     $owner = TestOwner::query()->create(['name' => 'Owner A']);
 
-    app()->instance(OwnerResolverInterface::class, new class($owner) implements OwnerResolverInterface
-    {
-        public function __construct(private readonly ?Model $owner) {}
-
-        public function resolve(): ?Model
-        {
-            return $this->owner;
-        }
-    });
+    makeAuthedUser($owner);
 
     $order = Order::query()->create([
         'owner_type' => $owner->getMorphClass(),
