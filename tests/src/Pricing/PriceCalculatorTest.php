@@ -345,7 +345,7 @@ describe('PriceCalculator Service', function (): void {
                 'is_active' => true,
             ]);
 
-            DB::table('promotionables')->insert([
+            DB::table(config('pricing.database.tables.promotionables', 'promotionables'))->insert([
                 'promotion_id' => $promotion->id,
                 'promotionable_type' => TestPriceableItem::class,
                 'promotionable_id' => $itemId,
@@ -371,7 +371,7 @@ describe('PriceCalculator Service', function (): void {
                 'is_active' => true,
             ]);
 
-            DB::table('promotionables')->insert([
+            DB::table(config('pricing.database.tables.promotionables', 'promotionables'))->insert([
                 'promotion_id' => $promotion->id,
                 'promotionable_type' => TestPriceableItem::class,
                 'promotionable_id' => $itemId,
@@ -395,7 +395,7 @@ describe('PriceCalculator Service', function (): void {
                 'is_active' => true,
             ]);
 
-            DB::table('promotionables')->insert([
+            DB::table(config('pricing.database.tables.promotionables', 'promotionables'))->insert([
                 'promotion_id' => $promotion->id,
                 'promotionable_type' => TestPriceableItem::class,
                 'promotionable_id' => $itemId,
@@ -437,7 +437,7 @@ describe('PriceCalculator Service', function (): void {
                 'is_active' => false,
             ]);
 
-            DB::table('promotionables')->insert([
+            DB::table(config('pricing.database.tables.promotionables', 'promotionables'))->insert([
                 'promotion_id' => $promotion->id,
                 'promotionable_type' => TestPriceableItem::class,
                 'promotionable_id' => $itemId,
@@ -461,7 +461,7 @@ describe('PriceCalculator Service', function (): void {
                 'ends_at' => now()->subDay(),
             ]);
 
-            DB::table('promotionables')->insert([
+            DB::table(config('pricing.database.tables.promotionables', 'promotionables'))->insert([
                 'promotion_id' => $promotion->id,
                 'promotionable_type' => TestPriceableItem::class,
                 'promotionable_id' => $itemId,
