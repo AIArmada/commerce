@@ -12,11 +12,11 @@ use AIArmada\Cashier\Contracts\PaymentMethodContract;
 use AIArmada\Cashier\Contracts\SubscriptionBuilderContract;
 use AIArmada\Cashier\Contracts\SubscriptionContract;
 use AIArmada\Cashier\Gateways\AbstractGateway;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
 use AIArmada\Commerce\Tests\Cashier\Fixtures\OwnerScopedBillableUser;
 use AIArmada\Commerce\Tests\Cashier\Fixtures\Tenant;
 use AIArmada\Commerce\Tests\Cashier\Fixtures\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Collection;
 
 uses(CashierTestCase::class);

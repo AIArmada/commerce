@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Chip\Models\Purchase;
-use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Chip\Http\Controllers\WebhookController;
 use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
-use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Chip\Models\Purchase;
+use AIArmada\Chip\Testing\WebhookFactory;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Facades\Route;
 
 it('assigns purchase owner from brand_id mapping when owner context is missing', function (): void {

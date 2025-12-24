@@ -88,8 +88,7 @@ it('scopes Product::forOwner() to current owner plus global', function (): void 
     expect($ids)
         ->toContain($productA->id)
         ->toContain($productGlobal->id)
-        ->not->toContain($productB->id)
-        ;
+        ->not->toContain($productB->id);
 });
 
 it('returns strict global-only when owner resolver returns null', function (): void {
@@ -130,8 +129,7 @@ it('returns strict global-only when owner resolver returns null', function (): v
 
     expect($ids)
         ->toContain($productGlobal->id)
-        ->not->toContain($productA->id)
-        ;
+        ->not->toContain($productA->id);
 });
 
 it('auto-assigns owner on create when enabled', function (): void {

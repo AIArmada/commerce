@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Jnt\Webhooks\JntWebhookProfile;
 use AIArmada\Jnt\Exceptions\JntValidationException;
+use AIArmada\Jnt\Webhooks\JntWebhookProfile;
 use Illuminate\Http\Request;
 
 describe('JntWebhookProfile', function (): void {

@@ -14,6 +14,7 @@ final class GiftCardTransactionTimelineWidget extends Widget
 {
     public ?GiftCard $record = null;
 
+    /** @var view-string */
     protected string $view = 'filament-vouchers::widgets.gift-card-transaction-timeline';
 
     protected int | string | array $columnSpan = 'full';

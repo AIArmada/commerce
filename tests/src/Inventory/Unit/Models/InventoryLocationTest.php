@@ -497,11 +497,10 @@ class InventoryLocationTest extends InventoryTestCase
         ]);
 
         // Create global location (no owner)
-        $globalLocation = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(null, fn (): InventoryLocation =>
-            InventoryLocation::factory()->create([
-                'owner_type' => null,
-                'owner_id' => null,
-            ]));
+        $globalLocation = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+        ]));
 
         // When owner is null and includeGlobal is true (default), return ownerless
         $result = InventoryLocation::forOwner(null, true)->get();
@@ -542,11 +541,10 @@ class InventoryLocationTest extends InventoryTestCase
                 return null;
             }
         });
-        $globalLocation = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(null, fn (): InventoryLocation =>
-            InventoryLocation::factory()->create([
-                'owner_type' => null,
-                'owner_id' => null,
-            ]));
+        $globalLocation = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+        ]));
 
         // Create location owned by different owner
         $otherOwner = InventoryItem::create(['name' => 'Other Owner']);
@@ -602,11 +600,10 @@ class InventoryLocationTest extends InventoryTestCase
                 return null;
             }
         });
-        $globalLocation = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(null, fn (): InventoryLocation =>
-            InventoryLocation::factory()->create([
-                'owner_type' => null,
-                'owner_id' => null,
-            ]));
+        $globalLocation = \AIArmada\CommerceSupport\Support\OwnerContext::withOwner(null, fn (): InventoryLocation => InventoryLocation::factory()->create([
+            'owner_type' => null,
+            'owner_id' => null,
+        ]));
 
         // With includeGlobal false, should only get owner's
         $result = InventoryLocation::withoutGlobalScopes()->forOwner($owner, false)->get();
