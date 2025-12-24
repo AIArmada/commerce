@@ -1,6 +1,0 @@
-includes:
-    - ../../phpstan.neon
-
-parameters:
-    excludePaths:
-        - src/Pages/ManageTaxSettings.php

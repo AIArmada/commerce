@@ -113,7 +113,7 @@ final class JntStatsWidget extends BaseWidget
         $row = (clone $query)
             ->selectRaw('COUNT(*) as total')
             ->selectRaw('SUM(CASE WHEN delivered_at IS NOT NULL THEN 1 ELSE 0 END) as delivered')
-            ->selectRaw("SUM(CASE WHEN delivered_at IS NULL AND tracking_number IS NOT NULL AND has_problem = 0 THEN 1 ELSE 0 END) as in_transit")
+            ->selectRaw('SUM(CASE WHEN delivered_at IS NULL AND tracking_number IS NOT NULL AND has_problem = 0 THEN 1 ELSE 0 END) as in_transit')
             ->selectRaw('SUM(CASE WHEN has_problem = 1 THEN 1 ELSE 0 END) as problems')
             ->selectRaw('SUM(CASE WHEN tracking_number IS NULL THEN 1 ELSE 0 END) as pending')
             ->selectRaw("SUM(CASE WHEN last_status_code IN ('172','173') THEN 1 ELSE 0 END) as returns")

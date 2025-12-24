@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Pricing\Enums\PromotionType;
 use AIArmada\Pricing\Models\Promotion;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Carbon;
 
 describe('Promotion Model - Extended Tests', function (): void {

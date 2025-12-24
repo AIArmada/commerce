@@ -26,7 +26,7 @@ final class AppliedVoucherBadgesWidget extends Widget
 {
     public ?Model $record = null;
 
-    /** @phpstan-ignore-next-line */
+    /** @var view-string */
     protected string $view = 'filament-vouchers::widgets.applied-voucher-badges';
 
     protected int | string | array $columnSpan = 'full';

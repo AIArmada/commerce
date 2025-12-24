@@ -78,8 +78,10 @@ describe('ShipmentService', function (): void {
     it('enforces owner context when owner scoping is enabled', function (): void {
         config(['shipping.features.owner.enabled' => true]);
 
-        $owner = new class extends \Illuminate\Database\Eloquent\Model {
+        $owner = new class extends \Illuminate\Database\Eloquent\Model
+        {
             public $incrementing = false;
+
             protected $keyType = 'string';
         };
         $owner->setAttribute('id', 'test-owner-123');

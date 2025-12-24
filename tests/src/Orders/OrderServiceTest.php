@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Services\OrderService;
 use AIArmada\Orders\States\Canceled;
@@ -12,8 +14,6 @@ use AIArmada\Orders\States\Processing;
 use AIArmada\Orders\States\Refunded;
 use AIArmada\Orders\States\Returned;
 use AIArmada\Orders\States\Shipped;
-use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
