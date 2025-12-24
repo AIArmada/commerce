@@ -2,12 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
+use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource\RelationManagers\ItemsRelationManager;
 use AIArmada\FilamentShipping\Resources\ShipmentResource\RelationManagers\EventsRelationManager;
 use AIArmada\FilamentShipping\Resources\ShipmentResource\RelationManagers\ItemsRelationManager as ShipmentItemsRelationManager;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource\RelationManagers\RatesRelationManager;
-use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\ReturnAuthorizationItem;
 use AIArmada\Shipping\Models\ShippingRate;
@@ -18,7 +19,6 @@ use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Livewire\Component as LivewireComponent;
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 
 if (! function_exists('filamentShipping_makeSchemaLivewire')) {
     function filamentShipping_makeSchemaLivewire(): LivewireComponent & HasSchemas

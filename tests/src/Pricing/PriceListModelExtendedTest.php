@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\PriceTier;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Support\Carbon;
 
 describe('PriceList Model - Extended Tests', function (): void {
