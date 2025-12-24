@@ -75,7 +75,8 @@ class JntHealthCheck extends CommerceHealthCheck
 
         try {
             // Verify the client can be instantiated
-            new JntClient($baseUrl, $apiAccount, $privateKey, config('jnt', []));
+            $client = new JntClient($baseUrl, $apiAccount, $privateKey, config('jnt', []));
+            unset($client);
 
             // If we get here, the client is configured
             return $this->success('J&T Express API is configured', [

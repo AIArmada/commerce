@@ -2,6 +2,10 @@
 
 declare(strict_types=1);
 
+if (! class_exists('Facades\\Livewire\\Features\\SupportFileUploads\\GenerateSignedUploadUrl')) {
+    require_once __DIR__ . '/Support/Shims/Facades/Livewire/Features/SupportFileUploads/GenerateSignedUploadUrl.php';
+}
+
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\Commerce\Tests\FilamentInventory\FilamentInventoryTestCase;
 use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
