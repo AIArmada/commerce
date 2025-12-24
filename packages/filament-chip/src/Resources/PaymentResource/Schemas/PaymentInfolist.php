@@ -71,7 +71,7 @@ final class PaymentInfolist
                             ]),
                     ]),
                 Fieldset::make('Purchase Reference')
-                    ->inlineLabelled() // @phpstan-ignore method.notFound
+                    ->inlineLabelled()
                     ->schema([
                         TextEntry::make('purchase_id')
                             ->label('Purchase ID')

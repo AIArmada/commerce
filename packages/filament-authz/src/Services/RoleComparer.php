@@ -187,9 +187,7 @@ class RoleComparer
             $levelsCount[$depth] = ($levelsCount[$depth] ?? 0) + 1;
 
             // Check for orphans (roles with invalid parent_id)
-            /** @phpstan-ignore property.notFound */
             if ($role->parent_role_id !== null) {
-                /** @phpstan-ignore property.notFound */
                 $parent = Role::find($role->parent_role_id);
                 if ($parent === null) {
                     $orphans[] = $role->name;

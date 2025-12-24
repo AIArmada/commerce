@@ -24,6 +24,7 @@ class RecoveryAnalytics
         // By channel
         $byChannel = RecoveryAttempt::query()->forOwner()
             ->where('campaign_id', $campaign->id)
+            ->toBase()
             ->selectRaw('
                 channel,
                 COUNT(*) as attempts,
@@ -46,6 +47,7 @@ class RecoveryAnalytics
         // By attempt number
         $byAttemptNumber = RecoveryAttempt::query()->forOwner()
             ->where('campaign_id', $campaign->id)
+            ->toBase()
             ->selectRaw('
                 attempt_number,
                 COUNT(*) as attempts,
@@ -93,6 +95,7 @@ class RecoveryAnalytics
         $control = RecoveryAttempt::query()->forOwner()
             ->where('campaign_id', $campaign->id)
             ->where('is_control', true)
+            ->toBase()
             ->selectRaw('
                 COUNT(*) as total,
                 SUM(CASE WHEN sent_at IS NOT NULL THEN 1 ELSE 0 END) as sent,
@@ -100,11 +103,12 @@ class RecoveryAnalytics
                 SUM(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE 0 END) as clicks,
                 SUM(CASE WHEN converted_at IS NOT NULL THEN 1 ELSE 0 END) as conversions
             ')
-            ->first();
+            ->first() ?? (object) ['total' => 0, 'sent' => 0, 'opens' => 0, 'clicks' => 0, 'conversions' => 0];
 
         $variant = RecoveryAttempt::query()->forOwner()
             ->where('campaign_id', $campaign->id)
             ->where('is_variant', true)
+            ->toBase()
             ->selectRaw('
                 COUNT(*) as total,
                 SUM(CASE WHEN sent_at IS NOT NULL THEN 1 ELSE 0 END) as sent,
@@ -112,7 +116,7 @@ class RecoveryAnalytics
                 SUM(CASE WHEN clicked_at IS NOT NULL THEN 1 ELSE 0 END) as clicks,
                 SUM(CASE WHEN converted_at IS NOT NULL THEN 1 ELSE 0 END) as conversions
             ')
-            ->first();
+            ->first() ?? (object) ['total' => 0, 'sent' => 0, 'opens' => 0, 'clicks' => 0, 'conversions' => 0];
 
         $controlRate = $control->sent > 0 ? $control->conversions / $control->sent : 0;
         $variantRate = $variant->sent > 0 ? $variant->conversions / $variant->sent : 0;
@@ -171,6 +175,7 @@ class RecoveryAnalytics
         return RecoveryCampaign::query()->forOwner()
             ->whereBetween('created_at', [$from, $to])
             ->where('total_sent', '>', 0)
+            ->toBase()
             ->selectRaw('
                 strategy,
                 COUNT(*) as campaigns,
@@ -249,6 +254,7 @@ class RecoveryAnalytics
         $byHour = RecoveryAttempt::query()->forOwner()
             ->where('campaign_id', $campaign->id)
             ->whereNotNull('sent_at')
+            ->toBase()
             ->selectRaw("
                 {$hourExpression} as hour,
                 COUNT(*) as sent,
@@ -319,6 +325,7 @@ class RecoveryAnalytics
         $byDiscount = RecoveryCampaign::query()->forOwner()
             ->where('offer_discount', true)
             ->where('total_sent', '>=', 100)
+            ->toBase()
             ->selectRaw('
                 discount_value,
                 discount_type,
@@ -355,6 +362,7 @@ class RecoveryAnalytics
         // Analyze by cart value range
         $byValue = RecoveryAttempt::query()->forOwner()
             ->where('campaign_id', $campaign->id)
+            ->toBase()
             ->selectRaw("
                 CASE
                     WHEN cart_value_cents < 5000 THEN 'low'

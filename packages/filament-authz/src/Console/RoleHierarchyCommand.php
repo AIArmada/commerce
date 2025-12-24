@@ -98,11 +98,9 @@ class RoleHierarchyCommand extends Command
             return [
                 $role->name,
                 $role->guard_name,
-                /** @phpstan-ignore-next-line property.notFound */
                 $role->level ?? 0,
                 $parent->name ?? '-',
                 (string) $childCount,
-                /** @phpstan-ignore-next-line property.notFound */
                 $role->is_system ? 'Yes' : 'No',
             ];
         })->toArray();
@@ -188,7 +186,6 @@ class RoleHierarchyCommand extends Command
         /** @var Role $role */
         $role = Role::findByName($roleName);
 
-        /** @phpstan-ignore property.notFound */
         if ($role->parent_role_id === null) {
             warning("Role '{$roleName}' has no parent.");
 

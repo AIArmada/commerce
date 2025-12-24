@@ -45,7 +45,7 @@ use Illuminate\Support\Collection;
  * $user->allSubscriptions();
  * ```
  */
-trait Billable
+trait Billable // @phpstan-ignore trait.unused
 {
     use ManagesGateway;
 

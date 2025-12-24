@@ -105,7 +105,6 @@ final class CartCondition extends Model
      *
      * @return BelongsTo<Cart, CartCondition>
      */
-    /** @phpstan-ignore return.type, missingType.generics */
     public function cart(): BelongsTo
     {
         return $this->belongsTo(Cart::class);
@@ -116,7 +115,6 @@ final class CartCondition extends Model
      *
      * @return BelongsTo<CartItem, CartCondition>
      */
-    /** @phpstan-ignore return.type, missingType.generics */
     public function cartItem(): BelongsTo
     {
         return $this->belongsTo(CartItem::class);

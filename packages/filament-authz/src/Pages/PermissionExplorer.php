@@ -33,12 +33,12 @@ class PermissionExplorer extends Page
 
         $canView = false;
         if (method_exists($user, 'can')) {
-            $canView = $user->can('permission.viewAny'); // @phpstan-ignore-line
+            $canView = $user->can('permission.viewAny');
         }
 
         $isSuperAdmin = false;
         if (method_exists($user, 'hasRole')) {
-            $isSuperAdmin = $user->hasRole(config('filament-authz.super_admin_role')); // @phpstan-ignore-line
+            $isSuperAdmin = $user->hasRole(config('filament-authz.super_admin_role'));
         }
 
         return $canView || $isSuperAdmin;

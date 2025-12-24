@@ -9,7 +9,7 @@ use AIArmada\CashierChip\Exceptions\CustomerAlreadyCreated;
 use AIArmada\CashierChip\Exceptions\InvalidCustomer;
 use AIArmada\Chip\Data\ClientData;
 
-trait ManagesCustomer
+trait ManagesCustomer // @phpstan-ignore trait.unused
 {
     /**
      * Retrieve the CHIP customer ID.

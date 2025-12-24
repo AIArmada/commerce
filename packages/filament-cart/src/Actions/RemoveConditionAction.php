@@ -30,10 +30,8 @@ final class RemoveConditionAction extends Action
             ->action(function (CartCondition $record): void {
                 try {
                     // Get the cart instance
-                    /** @phpstan-ignore-next-line */
                     $cart = $record->cart;
                     $cartInstance = app(CartInstanceManager::class)
-                        /** @phpstan-ignore-next-line */
                         ->resolve($cart->instance, $cart->identifier);
 
                     if ($record->isItemLevel()) {

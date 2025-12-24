@@ -85,7 +85,6 @@ final class ViewCart extends ViewRecord
                     ->clear();
                 $this->redirect($this->getResource()::getUrl('view', ['record' => $this->record]));
             })
-            /** @phpstan-ignore-next-line */
             ->visible(fn () => ! $this->record->isEmpty());
 
         $actions[] = Actions\Action::make('export_cart')

@@ -16,7 +16,6 @@ class ActionMacros
     {
         Action::macro('requiresPermission', function (string $permission): static {
             /** @var Action $this */
-            /** @phpstan-ignore return.type */
             return $this
                 ->authorize(function () use ($permission): bool {
                     $user = Auth::user();
@@ -44,7 +43,6 @@ class ActionMacros
             /** @var Action $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
-            /** @phpstan-ignore return.type, method.notFound */
             return $this
                 ->authorize(fn (): bool => Auth::user()?->hasAnyRole($rolesArray) ?? false)
                 ->visible(fn (): bool => Auth::user()?->hasAnyRole($rolesArray) ?? false);
@@ -52,7 +50,6 @@ class ActionMacros
 
         Action::macro('requiresAnyPermission', function (array $permissions): static {
             /** @var Action $this */
-            /** @phpstan-ignore return.type */
             return $this
                 ->authorize(function () use ($permissions): bool {
                     $user = Auth::user();
@@ -78,7 +75,6 @@ class ActionMacros
 
         Action::macro('requiresAllPermissions', function (array $permissions): static {
             /** @var Action $this */
-            /** @phpstan-ignore return.type */
             return $this
                 ->authorize(function () use ($permissions): bool {
                     $user = Auth::user();
@@ -104,7 +100,6 @@ class ActionMacros
 
         Action::macro('requiresTeamPermission', function (string $permission, string | int $teamId): static {
             /** @var Action $this */
-            /** @phpstan-ignore return.type */
             return $this
                 ->authorize(function () use ($permission, $teamId): bool {
                     $user = Auth::user();
@@ -130,7 +125,6 @@ class ActionMacros
 
         Action::macro('requiresResourcePermission', function (string $permission, ?Model $resource = null): static {
             /** @var Action $this */
-            /** @phpstan-ignore return.type */
             return $this
                 ->authorize(function () use ($permission, $resource): bool {
                     $user = Auth::user();
@@ -168,7 +162,6 @@ class ActionMacros
 
         Action::macro('requiresOwnership', function (?Model $resource = null): static {
             /** @var Action $this */
-            /** @phpstan-ignore return.type */
             return $this
                 ->authorize(function () use ($resource): bool {
                     $user = Auth::user();
@@ -178,7 +171,6 @@ class ActionMacros
 
                     $ownerId = $resource->getAttribute('user_id');
 
-                    /** @phpstan-ignore method.notFound */
                     return $ownerId !== null && $ownerId === $user->getKey();
                 })
                 ->visible(function () use ($resource): bool {
@@ -189,7 +181,6 @@ class ActionMacros
 
                     $ownerId = $resource->getAttribute('user_id');
 
-                    /** @phpstan-ignore method.notFound */
                     return $ownerId !== null && $ownerId === $user->getKey();
                 });
         });

@@ -44,9 +44,7 @@ class RoleInheritanceService
             }
         }
 
-        /** @phpstan-ignore property.notFound */
         $role->parent_role_id = $parent?->id;
-        /** @phpstan-ignore property.notFound */
         $role->level = $parent !== null ? $this->getDepth($parent) + 1 : 0;
         $role->save();
 
@@ -62,7 +60,6 @@ class RoleInheritanceService
      */
     public function getParent(Role $role): ?Role
     {
-        /** @phpstan-ignore property.notFound */
         $parentId = $role->parent_role_id ?? null;
 
         if ($parentId === null) {
@@ -349,11 +346,9 @@ class RoleInheritanceService
     protected function updateDescendantLevels(Role $role): void
     {
         $children = $this->getChildren($role);
-        /** @phpstan-ignore property.notFound */
         $newLevel = ($role->level ?? 0) + 1;
 
         foreach ($children as $child) {
-            /** @phpstan-ignore property.notFound */
             $child->level = $newLevel;
             $child->save();
             $this->updateDescendantLevels($child);

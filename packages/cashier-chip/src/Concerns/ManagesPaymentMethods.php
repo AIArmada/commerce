@@ -10,7 +10,7 @@ use AIArmada\Chip\Data\PurchaseData;
 use Exception;
 use Illuminate\Support\Collection;
 
-trait ManagesPaymentMethods
+trait ManagesPaymentMethods // @phpstan-ignore trait.unused
 {
     /**
      * Get the customer's recurring tokens (payment methods).

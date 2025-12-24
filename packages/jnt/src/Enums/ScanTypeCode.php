@@ -131,8 +131,8 @@ enum ScanTypeCode: string
     public function getCategory(): string
     {
         return match (true) {
-            $this->value >= '400' && $this->value <= '405' => 'Cargo/Customs', // @phpstan-ignore-line
-            $this->value >= '10' && $this->value <= '100' => 'Normal Flow', // @phpstan-ignore-line
+            $this->value >= '400' && $this->value <= '405' => 'Cargo/Customs',
+            $this->value >= '10' && $this->value <= '100' => 'Normal Flow',
             $this->value >= '110' && $this->value <= '173' => 'Problems/Returns',
             $this->value >= '200' && $this->value <= '306' => 'Terminal States',
             default => 'Unknown',

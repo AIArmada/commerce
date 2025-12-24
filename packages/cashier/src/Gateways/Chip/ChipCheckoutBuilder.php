@@ -252,6 +252,7 @@ class ChipCheckoutBuilder implements CheckoutBuilderContract
             'failure_callback' => $this->cancel ?? url('/'),
             'cancel_callback' => $this->cancel ?? url('/'),
             'brand_id' => $this->gateway->brandId(),
+            'metadata' => [],
         ];
 
         // Check for CHIP customer ID using the unified gateway interface
@@ -287,7 +288,7 @@ class ChipCheckoutBuilder implements CheckoutBuilderContract
 
         // Add coupon metadata if present
         if ($this->couponCode) {
-            $options['metadata'] = array_merge($options['metadata'] ?? [], [
+            $options['metadata'] = array_merge($options['metadata'], [
                 'coupon_id' => $this->couponCode,
             ]);
         }

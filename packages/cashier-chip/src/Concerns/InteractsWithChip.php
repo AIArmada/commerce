@@ -8,7 +8,7 @@ use AIArmada\CashierChip\Cashier;
 use AIArmada\CashierChip\Testing\FakeChipCollectService;
 use AIArmada\Chip\Services\ChipCollectService;
 
-trait InteractsWithChip
+trait InteractsWithChip // @phpstan-ignore trait.unused
 {
     /**
      * Get the CHIP Collect service client.

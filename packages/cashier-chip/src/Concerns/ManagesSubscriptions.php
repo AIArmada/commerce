@@ -11,7 +11,7 @@ use Carbon\Carbon;
 use Illuminate\Contracts\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-trait ManagesSubscriptions
+trait ManagesSubscriptions // @phpstan-ignore trait.unused
 {
     /**
      * Begin creating a new subscription.

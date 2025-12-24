@@ -50,8 +50,6 @@ class HandlePurchasePaymentFailure
 
     /**
      * Handle a subscription payment failure.
-     *
-     * @phpstan-ignore-next-line
      */
     protected function handleSubscriptionPaymentFailure(object $billable, string $subscriptionType): void
     {
