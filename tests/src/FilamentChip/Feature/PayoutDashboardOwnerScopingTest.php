@@ -14,6 +14,10 @@ use Illuminate\Support\Facades\Schema;
 it('does not leak payout metrics across owners', function (): void {
     $this->artisan('migrate', ['--database' => 'testing']);
 
+    config([
+        'chip.owner.enabled' => true,
+    ]);
+
     Schema::dropIfExists('test_owners');
 
     Schema::create('test_owners', function (Blueprint $table): void {
