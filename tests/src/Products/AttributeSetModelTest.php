@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Products\Models\AttributeSet;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Products\Models\AttributeSet;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 

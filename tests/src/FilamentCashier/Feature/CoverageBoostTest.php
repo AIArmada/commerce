@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentCashier\Components\GatewayBadge;
 use AIArmada\FilamentCashier\CustomerPortal\BillingPanelProvider;
 use AIArmada\FilamentCashier\CustomerPortal\Pages\BillingOverview;
@@ -38,8 +40,6 @@ use Filament\Tables\Table;
 use Filament\Widgets\ChartWidget;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Auth\User as AuthenticatableUser;
 use Illuminate\Support\Carbon;

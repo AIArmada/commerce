@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Policies\CategoryPolicy;
 use AIArmada\Products\Policies\ProductPolicy;
-use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use Illuminate\Support\Facades\Gate;
 
 describe('Policy Registration', function (): void {

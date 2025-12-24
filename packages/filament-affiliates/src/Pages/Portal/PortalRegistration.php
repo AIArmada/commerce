@@ -12,10 +12,12 @@ use Filament\Auth\Pages\Register as FilamentRegister;
 use Filament\Forms\Components\TextInput;
 use Filament\Notifications\Notification;
 use Filament\Schemas\Components\Component;
+use Filament\Schemas\Schema;
 use Illuminate\Database\Eloquent\Model;
 
 class PortalRegistration extends FilamentRegister
 {
+    /** @var view-string */
     protected string $view = 'filament-affiliates::pages.portal.registration';
 
     protected bool $registrationEnabled;
@@ -90,25 +92,17 @@ class PortalRegistration extends FilamentRegister
         return $this->registrationEnabled;
     }
 
-    /**
-     * @return array<int, Component>
-     */
-    protected function getForms(): array
+    public function form(Schema $schema): Schema
     {
-        return [
-            $this->form(
-                $this->makeForm()
-                    ->schema([
-                        $this->getNameFormComponent(),
-                        $this->getEmailFormComponent(),
-                        $this->getPasswordFormComponent(),
-                        $this->getPasswordConfirmationFormComponent(),
-                        $this->getAffiliateNameFormComponent(),
-                        $this->getWebsiteUrlFormComponent(),
-                    ])
-                    ->statePath('data'),
-            ),
-        ];
+        return $schema
+            ->components([
+                $this->getNameFormComponent(),
+                $this->getEmailFormComponent(),
+                $this->getPasswordFormComponent(),
+                $this->getPasswordConfirmationFormComponent(),
+                $this->getAffiliateNameFormComponent(),
+                $this->getWebsiteUrlFormComponent(),
+            ]);
     }
 
     protected function getAffiliateNameFormComponent(): Component

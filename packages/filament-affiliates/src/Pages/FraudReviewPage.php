@@ -38,6 +38,7 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
 
     protected static ?int $navigationSort = 15;
 
+    /** @var view-string */
     protected string $view = 'filament-affiliates::pages.fraud-review';
 
     public function table(Table $table): Table
