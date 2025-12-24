@@ -8,6 +8,7 @@ use Filament\Widgets\Widget;
 
 final class AIInsightsWidget extends Widget
 {
+    /** @var view-string */
     protected string $view = 'filament-vouchers::widgets.ai-insights';
 
     protected int | string | array $columnSpan = 'full';

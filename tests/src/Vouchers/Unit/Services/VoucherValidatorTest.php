@@ -19,7 +19,7 @@ describe('VoucherValidator', function (): void {
             config(['vouchers.code.auto_uppercase' => true]);
             config(['vouchers.owner.enabled' => false]);
 
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('normalizeCode');
@@ -34,7 +34,7 @@ describe('VoucherValidator', function (): void {
             config(['vouchers.code.auto_uppercase' => false]);
             config(['vouchers.owner.enabled' => false]);
 
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('normalizeCode');
@@ -49,7 +49,7 @@ describe('VoucherValidator', function (): void {
             config(['vouchers.code.auto_uppercase' => true]);
             config(['vouchers.owner.enabled' => false]);
 
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('normalizeCode');
@@ -65,7 +65,7 @@ describe('VoucherValidator', function (): void {
         it('returns null when owner is disabled', function (): void {
             config(['vouchers.owner.enabled' => false]);
 
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('resolveOwner');
@@ -85,7 +85,7 @@ describe('VoucherValidator', function (): void {
 
             app()->instance(OwnerResolverInterface::class, $ownerResolver);
 
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('resolveOwner');
@@ -109,7 +109,7 @@ describe('VoucherValidator', function (): void {
                 }
             };
 
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getCartTotal');
@@ -125,7 +125,7 @@ describe('VoucherValidator', function (): void {
 
             $cart = ['total' => 20000];
 
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getCartTotal');
@@ -141,7 +141,7 @@ describe('VoucherValidator', function (): void {
 
             $cart = 'invalid';
 
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getCartTotal');
@@ -157,7 +157,7 @@ describe('VoucherValidator', function (): void {
 
             $cart = ['items' => [], 'count' => 0];
 
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getCartTotal');
@@ -173,7 +173,7 @@ describe('VoucherValidator', function (): void {
 
             $cart = ['total' => '25000'];
 
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getCartTotal');
@@ -187,7 +187,7 @@ describe('VoucherValidator', function (): void {
 
     describe('constructor', function (): void {
         it('constructs', function (): void {
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             expect($validator)->toBeInstanceOf(VoucherValidator::class);
         });
@@ -220,7 +220,7 @@ describe('VoucherValidator', function (): void {
             config(['vouchers.owner.enabled' => false]);
             Illuminate\Support\Facades\Auth::shouldReceive('user')->andReturn(null);
 
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getUser');
@@ -240,7 +240,7 @@ describe('VoucherValidator', function (): void {
 
             Illuminate\Support\Facades\Auth::shouldReceive('user')->andReturn($nonModelUser);
 
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getUser');
@@ -257,7 +257,7 @@ describe('VoucherValidator', function (): void {
             $mockUser = Mockery::mock(Model::class);
             Illuminate\Support\Facades\Auth::shouldReceive('user')->andReturn($mockUser);
 
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getUser');
@@ -274,7 +274,7 @@ describe('VoucherValidator', function (): void {
             config(['vouchers.owner.enabled' => false]);
             Illuminate\Support\Facades\Auth::shouldReceive('id')->andReturn(123);
 
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getUserIdentifier');
@@ -290,7 +290,7 @@ describe('VoucherValidator', function (): void {
             Illuminate\Support\Facades\Auth::shouldReceive('id')->andReturn(null);
             Illuminate\Support\Facades\Session::shouldReceive('getId')->andReturn('session-abc123');
 
-            $validator = new VoucherValidator();
+            $validator = new VoucherValidator;
 
             $reflection = new ReflectionClass($validator);
             $method = $reflection->getMethod('getUserIdentifier');

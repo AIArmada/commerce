@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Jnt\Data\TrackingData as JntTrackingData;
+use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Services\JntExpressService;
 use AIArmada\Jnt\Services\JntStatusMapper;
 use AIArmada\Jnt\Services\JntTrackingService;
 use AIArmada\Jnt\Shipping\JntShippingDriver;
-use AIArmada\Jnt\Data\TrackingData as JntTrackingData;
-use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Data\PackageData;

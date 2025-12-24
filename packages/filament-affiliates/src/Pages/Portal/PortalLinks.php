@@ -28,6 +28,7 @@ class PortalLinks extends Page
 
     protected static ?int $navigationSort = 1;
 
+    /** @var view-string */
     protected string $view = 'filament-affiliates::pages.portal.links';
 
     public static function getNavigationLabel(): string

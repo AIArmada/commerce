@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
+use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
@@ -113,7 +113,7 @@ it('prevents cross-tenant metric leakage in Filament Docs widgets', function ():
     $createDocForOwner($ownerB, ['status' => DocStatus::PAID, 'paid_at' => now(), 'total' => 999]);
     $createDocForOwner($ownerB, ['status' => DocStatus::CANCELLED]);
 
-    OwnerContext::withOwner($ownerA, function () use ($ownerA): void {
+    OwnerContext::withOwner($ownerA, function (): void {
         $statsWidget = app(DocStatsWidget::class);
         $stats = filamentDocs_invokeMethod($statsWidget, 'getStats');
 

@@ -8,8 +8,8 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Jnt\Enums\TrackingStatus;
 use AIArmada\Jnt\Models\JntOrder;
 use Illuminate\Broadcasting\InteractsWithSockets;
-use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Foundation\Events\Dispatchable;
 
 class JntOrderStatusChanged
 {

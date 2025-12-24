@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Actions;
 
 use AIArmada\Affiliates\Enums\PayoutStatus;
+use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
 use Exception;
 use Filament\Actions\BulkAction;
@@ -30,6 +31,10 @@ final class BulkPayoutAction extends BulkAction
             $failed = 0;
 
             foreach ($records as $payout) {
+                if (! $payout instanceof AffiliatePayout) {
+                    continue;
+                }
+
                 if ($payout->status !== PayoutStatus::Pending) {
                     continue;
                 }

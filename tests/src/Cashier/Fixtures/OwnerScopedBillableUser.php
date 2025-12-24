@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
+use RuntimeException;
 
 final class OwnerScopedBillableUser extends Authenticatable implements BillableContract
 {
@@ -58,22 +59,22 @@ final class OwnerScopedBillableUser extends Authenticatable implements BillableC
 
     public function createAsCustomer(array $options = [], ?string $gateway = null): CustomerContract
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function createOrGetCustomer(array $options = [], ?string $gateway = null): CustomerContract
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function updateCustomer(array $options = [], ?string $gateway = null): CustomerContract
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function asCustomer(?string $gateway = null): CustomerContract
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function syncCustomerDetails(?string $gateway = null): self
@@ -125,7 +126,7 @@ final class OwnerScopedBillableUser extends Authenticatable implements BillableC
 
     public function newSubscription(string $type, string | array $prices = [], ?string $gateway = null): SubscriptionBuilderContract
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function onTrial(string $type = 'default', ?string $price = null): bool
@@ -219,17 +220,17 @@ final class OwnerScopedBillableUser extends Authenticatable implements BillableC
 
     public function charge(int $amount, ?string $paymentMethod = null, array $options = [], ?string $gateway = null): mixed
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function checkout(string | array $items, array $sessionOptions = [], array $customerOptions = [], ?string $gateway = null): CheckoutContract
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function refund(string $paymentId, ?int $amount = null, ?string $gateway = null): mixed
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function invoices(bool $includePending = false, ?string $gateway = null): Collection
@@ -249,22 +250,22 @@ final class OwnerScopedBillableUser extends Authenticatable implements BillableC
 
     public function asStripeCustomer(): mixed
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function createOrGetStripeCustomer(array $options = []): mixed
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function updateStripeCustomer(array $options = []): mixed
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function syncStripeCustomerDetails(array $options = []): mixed
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function stripeId(): ?string
@@ -282,17 +283,17 @@ final class OwnerScopedBillableUser extends Authenticatable implements BillableC
 
     public function createAsChipCustomer(array $options = []): mixed
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function createOrGetChipCustomer(array $options = []): mixed
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function updateChipCustomer(array $options = []): mixed
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function chipId(): ?string
@@ -318,21 +319,21 @@ final class OwnerScopedBillableUser extends Authenticatable implements BillableC
 
     public function createSetupIntent(array $options = []): mixed
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function billingPortalUrl(string $returnUrl, array $options = []): string
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function syncChipCustomerDetails(): mixed
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 
     public function createSetupPurchase(array $options = []): mixed
     {
-        throw new \RuntimeException('Not implemented for tests.');
+        throw new RuntimeException('Not implemented for tests.');
     }
 }

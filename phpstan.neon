@@ -439,42 +439,8 @@ parameters:
         # method.protected - false positives from trait usage
         - identifier: 'method.protected'
 
-     # Exclude patterns
+    # Exclude patterns
     excludePaths:
         analyseAndScan:
-            # Exclude widget files with property override issues
-            - packages/filament-vouchers/src/Widgets/AppliedVoucherBadgesWidget.php
-            - packages/filament-vouchers/src/Widgets/QuickApplyVoucherWidget.php
-            - packages/filament-vouchers/src/Widgets/VoucherSuggestionsWidget.php
-            - packages/filament-vouchers/src/Widgets/VoucherUsageTimelineWidget.php
-            - packages/filament-vouchers/src/Widgets/AIInsightsWidget.php
-            - packages/filament-vouchers/src/Widgets/GiftCardTransactionTimelineWidget.php
-            # Exclude Filament affiliate pages with $view property issues
-            - packages/filament-affiliates/src/Pages/FraudReviewPage.php
-            - packages/filament-affiliates/src/Pages/PayoutBatchPage.php
-            - packages/filament-affiliates/src/Pages/ReportsPage.php
-            - packages/filament-affiliates/src/Widgets/NetworkVisualizationWidget.php
-            # Exclude Filament actions extending unknown Filament classes
-            - packages/filament-affiliates/src/Actions/BulkFraudReviewAction.php
-            - packages/filament-affiliates/src/Actions/BulkPayoutAction.php
-            - packages/filament-affiliates/src/Pages/Portal/PortalRegistration.php
-            - packages/filament-affiliates/src/Pages/Portal/PortalLinks.php
-            # Exclude Filament Settings pages (require optional spatie-laravel-settings-plugin)
-            - packages/filament-tax/src/Pages/ManageTaxSettings.php
-            - packages/filament-pricing/src/Pages/ManagePricingSettings.php
-            # Exclude Health check files (extend Spatie Health Check which is optional)
-            - packages/commerce-support/src/Health/CommerceHealthCheck.php
-            - packages/commerce-support/src/Contracts/HasHealthCheck.php
-            - packages/commerce-support/src/Contracts/Auditable.php
-            - packages/commerce-support/src/Concerns/HasCommerceAudit.php
-            - packages/chip/src/Health/ChipGatewayCheck.php
-            - packages/jnt/src/Health/JntHealthCheck.php
-            - packages/inventory/src/Health/LowStockCheck.php
-            - packages/orders/src/Health/OrderProcessingCheck.php
-            # Exclude Filament Settings pages (depend on filament/spatie-laravel-settings-plugin)
-            - packages/filament-pricing/src/Pages/ManagePricingSettings.php
-            - packages/filament-tax/src/Pages/ManageTaxSettings.php
-            # Exclude examples file with external dependencies
-            - packages/vouchers/examples/usage.php
-        - vendor
-        - '*/Testing/*'
+            - vendor
+            - '*/Testing/*'

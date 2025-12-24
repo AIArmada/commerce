@@ -9,11 +9,11 @@ use AIArmada\Jnt\Enums\CancellationReason;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Services\JntExpressService;
 use Filament\Actions\Action;
+use Filament\Facades\Filament;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
-use Filament\Facades\Filament;
 use Throwable;
 
 final class CancelOrderAction
@@ -53,8 +53,8 @@ final class CancelOrderAction
                     return;
                 }
 
-                $reasonValue = trim((string) ($data['reason'] ?? ''));
-                $customReason = trim((string) ($data['custom_reason'] ?? ''));
+                $reasonValue = mb_trim((string) ($data['reason'] ?? ''));
+                $customReason = mb_trim((string) ($data['custom_reason'] ?? ''));
 
                 if ($reasonValue === '') {
                     Notification::make()

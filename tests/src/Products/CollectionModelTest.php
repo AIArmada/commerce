@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Collection;
 use AIArmada\Products\Models\Product;
-use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
@@ -160,7 +160,7 @@ describe('Collection Model', function (): void {
         });
 
         it('filters manual collection products to same owner and global', function (): void {
-                config()->set('products.features.owner.include_global', true);
+            config()->set('products.features.owner.include_global', true);
             config()->set('products.features.owner.auto_assign_on_create', false);
 
             $ownerType = 'tenant';

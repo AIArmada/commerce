@@ -2,25 +2,25 @@
 
 declare(strict_types=1);
 
+use AIArmada\Commerce\Tests\FilamentInventory\Fixtures\TestOwner;
+use AIArmada\Commerce\Tests\FilamentInventory\Fixtures\TestOwnerResolver;
 use AIArmada\FilamentInventory\Resources\InventoryAllocationResource;
 use AIArmada\FilamentInventory\Resources\InventoryBatchResource;
 use AIArmada\FilamentInventory\Resources\InventoryLevelResource;
 use AIArmada\FilamentInventory\Resources\InventoryLocationResource;
 use AIArmada\FilamentInventory\Resources\InventoryMovementResource;
 use AIArmada\FilamentInventory\Resources\InventorySerialResource;
-use AIArmada\Commerce\Tests\FilamentInventory\Fixtures\TestOwner;
-use AIArmada\Commerce\Tests\FilamentInventory\Fixtures\TestOwnerResolver;
-use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryBatch;
+use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventorySerial;
-use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Facades\Schema as SchemaFacade;
 use Filament\Schemas\Contracts\HasSchemas;
 use Filament\Schemas\Schema;
 use Filament\Support\Contracts\TranslatableContentDriver;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema as SchemaFacade;
 use Livewire\Component as LivewireComponent;
 
 if (! function_exists('filamentInventory_makeSchemaLivewire')) {

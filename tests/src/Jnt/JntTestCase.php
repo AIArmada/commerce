@@ -8,8 +8,6 @@ use AIArmada\Commerce\Tests\TestCase;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-use function class_exists;
-
 abstract class JntTestCase extends TestCase
 {
     protected function defineDatabaseMigrations(): void
@@ -18,7 +16,7 @@ abstract class JntTestCase extends TestCase
 
         $this->loadMigrationsFrom(__DIR__ . '/../../../packages/jnt/database/migrations');
 
-        if (class_exists(\Spatie\WebhookClient\Models\WebhookCall::class)) {
+        if (\class_exists(\Spatie\WebhookClient\Models\WebhookCall::class)) {
             Schema::dropIfExists('webhook_calls');
 
             Schema::create('webhook_calls', function (Blueprint $table): void {

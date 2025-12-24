@@ -6,8 +6,8 @@ use AIArmada\Jnt\Webhooks\JntSpatieSignatureValidator;
 use AIArmada\Jnt\Webhooks\JntWebhookProfile;
 use AIArmada\Jnt\Webhooks\JntWebhookResponse;
 use Illuminate\Http\Request;
-use Spatie\WebhookClient\WebhookConfig;
 use Spatie\WebhookClient\Models\WebhookCall;
+use Spatie\WebhookClient\WebhookConfig;
 
 it('validates a correct signature', function (): void {
     config()->set('jnt.webhooks.verify_signature', true);
