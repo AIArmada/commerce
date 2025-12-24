@@ -61,7 +61,7 @@ final class ClientResource extends BaseChipResource
                             ->label('Phone')
                             ->icon('heroicon-o-phone')
                             ->placeholder('—'),
-                    ])->carded(), // @phpstan-ignore method.notFound
+                    ])->carded(),
                     Panel::make([
                         Stack::make([
                             TextColumn::make('location')
@@ -77,8 +77,8 @@ final class ClientResource extends BaseChipResource
                                 ->badge()
                                 ->formatStateUsing(fn (?string $state): ?string => $state !== null && $state !== '' && $state !== '0' ? mb_strtoupper($state) : null)
                                 ->placeholder('—'),
-                        ])->carded(), // @phpstan-ignore method.notFound
-                    ])->softShadow(), // @phpstan-ignore method.notFound
+                        ])->carded(),
+                    ])->softShadow(),
                     Stack::make([
                         TextColumn::make('created_on')
                             ->label('Created')
@@ -98,8 +98,8 @@ final class ClientResource extends BaseChipResource
                             ->label('Tax #')
                             ->icon('heroicon-o-identification')
                             ->placeholder('—'),
-                    ])->carded(), // @phpstan-ignore method.notFound
-                ])->glow(), // @phpstan-ignore method.notFound
+                    ])->carded(),
+                ])->glow(),
             ])
             ->filters([
                 SelectFilter::make('country')

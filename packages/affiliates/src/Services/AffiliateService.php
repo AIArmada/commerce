@@ -369,7 +369,7 @@ final class AffiliateService
 
         $this->applyMultiLevelCommissions($conversions, $autoApprove, $statusEnum, $attribution?->getKey());
 
-        return $conversions[0] ?? null;
+        return $conversions[0];
     }
 
     /**

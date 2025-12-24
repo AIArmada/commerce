@@ -21,7 +21,7 @@ use Illuminate\Support\Collection;
  * This trait provides a unified interface for interacting with multiple
  * payment gateways (Stripe, CHIP, etc.) through a single API.
  */
-trait ManagesGateway
+trait ManagesGateway // @phpstan-ignore trait.unused
 {
     /**
      * Get a gateway instance.

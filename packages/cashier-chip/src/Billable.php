@@ -10,7 +10,7 @@ use AIArmada\CashierChip\Concerns\ManagesPaymentMethods;
 use AIArmada\CashierChip\Concerns\ManagesSubscriptions;
 use AIArmada\CashierChip\Concerns\PerformsCharges;
 
-trait Billable
+trait Billable // @phpstan-ignore trait.unused
 {
     use Concerns\HandlesPaymentFailures;
     use ManagesCustomer;

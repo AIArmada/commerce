@@ -54,13 +54,13 @@ final class CartsTable
                 TextColumn::make('subtotal')
                     ->label('Subtotal')
                     ->alignEnd()
-                    ->money(fn (Cart $record): string => /** @phpstan-ignore property.notFound */ $record->currency, divideBy: 100)
+                    ->money(fn (Cart $record): string => $record->currency, divideBy: 100)
                     ->sortable(),
 
                 TextColumn::make('total')
                     ->label('Total')
                     ->alignEnd()
-                    ->money(fn (Cart $record): string => /** @phpstan-ignore property.notFound */ $record->currency, divideBy: 100)
+                    ->money(fn (Cart $record): string => $record->currency, divideBy: 100)
                     ->sortable(),
 
                 TextColumn::make('savings')
@@ -146,12 +146,11 @@ final class CartsTable
                         ->color('danger')
                         ->requiresConfirmation()
                         ->action(function (Cart $record): void {
-                            /** @phpstan-ignore property.notFound */
                             app(CartInstanceManager::class)
                                 ->resolve($record->instance, $record->identifier)
                                 ->clear();
                         })
-                        ->visible(fn (Cart $record): bool => /** @phpstan-ignore property.notFound */ $record->items_count > 0)
+                        ->visible(fn (Cart $record): bool => $record->items_count > 0)
                         ->successNotificationTitle('Cart cleared'),
 
                     Action::make('view_items')
@@ -180,7 +179,6 @@ final class CartsTable
                     ->action(function (Collection $records): void {
                         /** @var Collection<int|string, Cart> $records */
                         $records->each(function (Cart $record): void {
-                            /** @phpstan-ignore property.notFound */
                             app(CartInstanceManager::class)
                                 ->resolve($record->instance, $record->identifier)
                                 ->clear();
@@ -195,7 +193,6 @@ final class CartsTable
                     ->action(function (Collection $records): void {
                         /** @var Collection<int|string, Cart> $records */
                         $records->each(function (Cart $record): void {
-                            /** @phpstan-ignore property.notFound */
                             app(CartInstanceManager::class)
                                 ->resolve($record->instance, $record->identifier)
                                 ->destroy();

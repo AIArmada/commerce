@@ -124,7 +124,7 @@ class VoucherCondition implements Arrayable, CartConditionConvertible
             value: $this->value,
             attributes: $this->attributes,
             order: $this->order,
-            rules: $this->rules // @phpstan-ignore argument.type
+            rules: $this->rules
         );
 
         return $this->cartCondition;

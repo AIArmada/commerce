@@ -15,7 +15,6 @@ class FormMacros
     {
         Field::macro('visibleForPermission', function (string $permission): static {
             /** @var Field $this */
-            /** @phpstan-ignore return.type */
             return $this->visible(function () use ($permission): bool {
                 $user = Auth::user();
                 if ($user === null) {
@@ -32,13 +31,11 @@ class FormMacros
             /** @var Field $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
-            /** @phpstan-ignore return.type, method.notFound */
             return $this->visible(fn (): bool => Auth::user()?->hasAnyRole($rolesArray) ?? false);
         });
 
         Field::macro('disabledWithoutPermission', function (string $permission): static {
             /** @var Field $this */
-            /** @phpstan-ignore return.type */
             return $this->disabled(function () use ($permission): bool {
                 $user = Auth::user();
                 if ($user === null) {
@@ -53,7 +50,6 @@ class FormMacros
 
         Section::macro('visibleForPermission', function (string $permission): static {
             /** @var Section $this */
-            /** @phpstan-ignore return.type */
             return $this->visible(function () use ($permission): bool {
                 $user = Auth::user();
                 if ($user === null) {
@@ -70,13 +66,11 @@ class FormMacros
             /** @var Section $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
-            /** @phpstan-ignore return.type, method.notFound */
             return $this->visible(fn (): bool => Auth::user()?->hasAnyRole($rolesArray) ?? false);
         });
 
         Section::macro('collapsedWithoutPermission', function (string $permission): static {
             /** @var Section $this */
-            /** @phpstan-ignore return.type */
             return $this->collapsed(function () use ($permission): bool {
                 $user = Auth::user();
                 if ($user === null) {

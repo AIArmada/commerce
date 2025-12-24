@@ -10,7 +10,7 @@ use AIArmada\Chip\Data\PurchaseData;
 use Exception;
 use Illuminate\Support\Collection;
 
-trait ManagesInvoices
+trait ManagesInvoices // @phpstan-ignore trait.unused
 {
     /**
      * Stored tab items for later invoicing (in-memory).

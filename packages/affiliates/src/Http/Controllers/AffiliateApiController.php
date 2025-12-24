@@ -59,11 +59,15 @@ final class AffiliateApiController extends Controller
         }
 
         $url = (string) $request->query('url', url('/'));
-        $ttl = $request->integer('ttl', null);
+        $ttl = null;
+        if ($request->filled('ttl')) {
+            $ttlValue = $request->integer('ttl');
+            $ttl = $ttlValue > 0 ? $ttlValue : null;
+        }
         $params = (array) $request->query('params', []);
 
         try {
-            $link = $this->links->generate($affiliate->code, $url, $params, $ttl ?: null);
+            $link = $this->links->generate($affiliate->code, $url, $params, $ttl);
         } catch (InvalidArgumentException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }

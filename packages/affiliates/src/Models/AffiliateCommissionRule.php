@@ -127,9 +127,15 @@ class AffiliateCommissionRule extends Model
      */
     public function calculateCommission(int $amountMinor): int
     {
-        return match ($this->commission_type) {
-            CommissionType::Percentage => (int) round($amountMinor * $this->commission_value / 10000),
-            CommissionType::Fixed => $this->commission_value,
+        $commissionType = $this->getAttribute('commission_type');
+
+        $commissionTypeValue = $commissionType instanceof CommissionType
+            ? $commissionType->value
+            : (is_string($commissionType) ? $commissionType : (string) $this->getRawOriginal('commission_type'));
+
+        return match ($commissionTypeValue) {
+            CommissionType::Percentage->value => (int) round($amountMinor * $this->commission_value / 10000),
+            CommissionType::Fixed->value => $this->commission_value,
             default => 0,
         };
     }

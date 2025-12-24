@@ -187,7 +187,6 @@ final class OwnerTypeRegistry
         }
 
         if (method_exists($owner, 'getDisplayNameAttribute')) {
-            /** @phpstan-ignore-next-line */
             return (string) $owner->getAttribute('display_name');
         }
 

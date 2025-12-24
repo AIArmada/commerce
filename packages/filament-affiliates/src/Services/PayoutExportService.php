@@ -176,7 +176,6 @@ final class PayoutExportService
             function () use ($data): void {
                 /** @phpstan-ignore class.notFound */
                 $xlsx = \Shuchkin\SimpleXLSXGen::fromArray($data);
-                /** @phpstan-ignore method.nonObject */
                 $xlsx->saveAs('php://output');
             },
             $filename,
@@ -229,7 +228,6 @@ final class PayoutExportService
 
         return response()->streamDownload(
             function () use ($html): void {
-                /** @phpstan-ignore method.notFound */
                 $pdf = \Spatie\LaravelPdf\Facades\Pdf::html($html)->base64();
                 echo base64_decode($pdf);
             },

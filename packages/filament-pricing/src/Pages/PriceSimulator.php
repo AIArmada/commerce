@@ -50,6 +50,18 @@ class PriceSimulator extends Page
         return OwnerContext::resolve();
     }
 
+    private function scopeQueryForOwner(string $modelClass, Builder $query, ?Model $owner): Builder
+    {
+        $model = new $modelClass;
+
+        if ($model instanceof Model && method_exists($model, 'scopeForOwner')) {
+            /** @var Builder $query */
+            $query = $model->scopeForOwner($query, $owner);
+        }
+
+        return $query;
+    }
+
     public function form(Schema $schema): Schema
     {
         return $schema
@@ -74,9 +86,13 @@ class PriceSimulator extends Page
                             ->getSearchResultsUsing(function (string $search): array {
                                 $owner = $this->resolveOwner();
 
-                                return \AIArmada\Products\Models\Product::query()
-                                    /** @phpstan-ignore-next-line */
-                                    ->forOwner($owner)
+                                $query = $this->scopeQueryForOwner(
+                                    \AIArmada\Products\Models\Product::class,
+                                    \AIArmada\Products\Models\Product::query(),
+                                    $owner
+                                );
+
+                                return $query
                                     ->where('name', 'like', "%{$search}%")
                                     ->limit(50)
                                     ->get()
@@ -91,9 +107,14 @@ class PriceSimulator extends Page
                                 }
 
                                 $owner = $this->resolveOwner();
-                                $product = \AIArmada\Products\Models\Product::query()
-                                    /** @phpstan-ignore-next-line */
-                                    ->forOwner($owner)
+
+                                $query = $this->scopeQueryForOwner(
+                                    \AIArmada\Products\Models\Product::class,
+                                    \AIArmada\Products\Models\Product::query(),
+                                    $owner
+                                );
+
+                                $product = $query
                                     ->whereKey($value)
                                     ->first();
 
@@ -112,17 +133,25 @@ class PriceSimulator extends Page
 
                                 return \AIArmada\Products\Models\Variant::query()
                                     ->with('product')
-                                    ->where(function (Builder $query) use ($owner, $search): void {
+                                    ->where(function ($query) use ($owner, $search): void {
                                         $query->where('sku', 'like', "%{$search}%")
-                                            ->orWhereHas('product', function (Builder $inner) use ($owner, $search): void {
-                                                /** @phpstan-ignore-next-line */
-                                                $inner->forOwner($owner)
+                                            ->orWhereHas('product', function ($inner) use ($owner, $search): void {
+                                                $inner = $this->scopeQueryForOwner(
+                                                    \AIArmada\Products\Models\Product::class,
+                                                    $inner,
+                                                    $owner
+                                                );
+
+                                                $inner
                                                     ->where('name', 'like', "%{$search}%");
                                             });
                                     })
-                                    ->whereHas('product', function (Builder $query) use ($owner): void {
-                                        /** @phpstan-ignore-next-line */
-                                        $query->forOwner($owner);
+                                    ->whereHas('product', function ($query) use ($owner): void {
+                                        $query = $this->scopeQueryForOwner(
+                                            \AIArmada\Products\Models\Product::class,
+                                            $query,
+                                            $owner
+                                        );
                                     })
                                     ->limit(50)
                                     ->get()
@@ -141,9 +170,12 @@ class PriceSimulator extends Page
                                 $variant = \AIArmada\Products\Models\Variant::query()
                                     ->with('product')
                                     ->whereKey($value)
-                                    ->whereHas('product', function (Builder $query) use ($owner): void {
-                                        /** @phpstan-ignore-next-line */
-                                        $query->forOwner($owner);
+                                    ->whereHas('product', function ($query) use ($owner): void {
+                                        $query = $this->scopeQueryForOwner(
+                                            \AIArmada\Products\Models\Product::class,
+                                            $query,
+                                            $owner
+                                        );
                                     })
                                     ->first();
 
@@ -164,9 +196,9 @@ class PriceSimulator extends Page
 
                                 $owner = $this->resolveOwner();
 
-                                return Customer::query()
-                                    /** @phpstan-ignore-next-line */
-                                    ->forOwner($owner)
+                                $query = $this->scopeQueryForOwner(Customer::class, Customer::query(), $owner);
+
+                                return $query
                                     ->where(function (Builder $query) use ($search): void {
                                         $query
                                             ->where('full_name', 'like', "%{$search}%")
@@ -186,9 +218,9 @@ class PriceSimulator extends Page
 
                                 $owner = $this->resolveOwner();
 
-                                $customer = Customer::query()
-                                    /** @phpstan-ignore-next-line */
-                                    ->forOwner($owner)
+                                $query = $this->scopeQueryForOwner(Customer::class, Customer::query(), $owner);
+
+                                $customer = $query
                                     ->whereKey($value)
                                     ->first();
 
@@ -231,15 +263,21 @@ class PriceSimulator extends Page
         // Get the priceable
         $priceable = null;
         if ($data['product_type'] === 'product') {
-            $priceable = \AIArmada\Products\Models\Product::query()
-                /** @phpstan-ignore-next-line */
-                ->forOwner($owner)
-                ->find($data['product_id']);
+            $query = $this->scopeQueryForOwner(
+                \AIArmada\Products\Models\Product::class,
+                \AIArmada\Products\Models\Product::query(),
+                $owner
+            );
+
+            $priceable = $query->find($data['product_id']);
         } else {
             $priceable = \AIArmada\Products\Models\Variant::query()
-                ->whereHas('product', function (Builder $query) use ($owner): void {
-                    /** @phpstan-ignore-next-line */
-                    $query->forOwner($owner);
+                ->whereHas('product', function ($query) use ($owner): void {
+                    $query = $this->scopeQueryForOwner(
+                        \AIArmada\Products\Models\Product::class,
+                        $query,
+                        $owner
+                    );
                 })
                 ->find($data['variant_id']);
         }
@@ -253,11 +291,10 @@ class PriceSimulator extends Page
         // Get customer if provided
         $customer = null;
 
-        if (! empty($data['customer_id']) && class_exists(Customer::class)) {
-            $customer = Customer::query()
-                /** @phpstan-ignore-next-line */
-                ->forOwner($owner)
-                ->find($data['customer_id']);
+        $customerId = Arr::get($data, 'customer_id');
+        if (is_string($customerId) && $customerId !== '' && class_exists(Customer::class)) {
+            $query = $this->scopeQueryForOwner(Customer::class, Customer::query(), $owner);
+            $customer = $query->find($customerId);
         }
 
         // Calculate price using PriceCalculator

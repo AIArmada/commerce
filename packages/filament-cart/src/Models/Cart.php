@@ -214,7 +214,6 @@ class Cart extends Model
     protected static function booted(): void
     {
         static::saving(function (Cart $cart): void {
-            /** @phpstan-ignore-next-line assign.propertyReadOnly */
             $cart->owner_key = self::makeOwnerKey($cart->owner_type, $cart->owner_id);
         });
     }
@@ -235,7 +234,6 @@ class Cart extends Model
     }
 
     /** @return HasMany<CartItem, Cart> */
-    /** @phpstan-ignore return.type, missingType.generics */
     public function cartItems(): HasMany
     {
         return $this->hasMany(CartItem::class);
@@ -248,25 +246,20 @@ class Cart extends Model
     }
 
     /** @return HasMany<CartCondition, Cart> */
-    /** @phpstan-ignore return.type, missingType.generics */
     public function cartConditions(): HasMany
     {
         return $this->hasMany(CartCondition::class);
     }
 
     /** @return HasMany<CartCondition, Cart> */
-    /** @phpstan-ignore method.notFound, missingType.generics */
     public function cartLevelConditions(): HasMany
     {
-        /** @phpstan-ignore-next-line */
         return $this->cartConditions()->cartLevel();
     }
 
     /** @return HasMany<CartCondition, Cart> */
-    /** @phpstan-ignore method.notFound, missingType.generics */
     public function itemLevelConditions(): HasMany
     {
-        /** @phpstan-ignore-next-line */
         return $this->cartConditions()->itemLevel();
     }
 

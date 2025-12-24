@@ -243,7 +243,6 @@ class AuditLogger
     {
         $user = Auth::user();
 
-        /** @phpstan-ignore method.notFound */
         return $user?->getMorphClass();
     }
 

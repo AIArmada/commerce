@@ -36,8 +36,6 @@ abstract class PayoutEvent
      * Create event from a raw webhook payload.
      *
      * @param  array<string, mixed>  $payload
-     *
-     * @phpstan-ignore-next-line new.static - All subclasses are final, this is safe
      */
     final public static function fromPayload(array $payload): static
     {

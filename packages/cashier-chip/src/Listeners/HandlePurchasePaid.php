@@ -56,8 +56,6 @@ class HandlePurchasePaid
     /**
      * Handle recurring token from a purchase.
      *
-     * @phpstan-ignore-next-line
-     *
      * @param  array<string, mixed>  $purchase
      */
     protected function handleRecurringToken(object $billable, string $recurringToken, array $purchase): void
@@ -77,8 +75,6 @@ class HandlePurchasePaid
 
     /**
      * Handle a subscription payment success.
-     *
-     * @phpstan-ignore-next-line
      */
     protected function handleSubscriptionPayment(object $billable, string $subscriptionType): void
     {

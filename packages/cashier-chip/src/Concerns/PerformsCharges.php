@@ -11,7 +11,7 @@ use AIArmada\CashierChip\Payment;
 use AIArmada\Chip\Data\PurchaseData;
 use Exception;
 
-trait PerformsCharges
+trait PerformsCharges // @phpstan-ignore trait.unused
 {
     /**
      * Make a "one off" charge on the customer for the given amount.

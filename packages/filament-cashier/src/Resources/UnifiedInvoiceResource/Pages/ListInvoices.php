@@ -111,7 +111,6 @@ final class ListInvoices extends ListRecords
                     try {
                         $stripeInvoices = $user->invoices(['limit' => 50]);
                         foreach ($stripeInvoices as $invoice) {
-                            // @phpstan-ignore method.nonObject
                             $invoices->push(UnifiedInvoice::fromStripe($invoice, (string) $user->getKey()));
                         }
                     } catch (Throwable) {

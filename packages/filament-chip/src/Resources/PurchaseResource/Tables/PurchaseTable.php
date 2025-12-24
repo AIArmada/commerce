@@ -70,8 +70,8 @@ final class PurchaseTable
                                 ))
                                 ->icon('heroicon-o-sparkles')
                                 ->placeholder('—'),
-                        ])->carded(), // @phpstan-ignore method.notFound
-                    ])->softShadow(), // @phpstan-ignore method.notFound
+                        ])->carded(),
+                    ])->softShadow(),
                     Stack::make([
                         TextColumn::make('status')
                             ->label('Status')
@@ -93,8 +93,8 @@ final class PurchaseTable
                             ->boolean()
                             ->trueColor('warning')
                             ->falseColor('gray'),
-                    ])->carded(), // @phpstan-ignore method.notFound
-                ])->glow(), // @phpstan-ignore method.notFound
+                    ])->carded(),
+                ])->glow(),
             ])
             ->filters([
                 SelectFilter::make('status')

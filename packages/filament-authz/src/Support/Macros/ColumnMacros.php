@@ -15,7 +15,6 @@ class ColumnMacros
     {
         Column::macro('visibleForPermission', function (string $permission): static {
             /** @var Column $this */
-            /** @phpstan-ignore return.type */
             return $this->visible(function () use ($permission): bool {
                 $user = Auth::user();
                 if ($user === null) {
@@ -32,13 +31,11 @@ class ColumnMacros
             /** @var Column $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
-            /** @phpstan-ignore return.type, method.notFound */
             return $this->visible(fn (): bool => Auth::user()?->hasAnyRole($rolesArray) ?? false);
         });
 
         Column::macro('visibleForAnyPermission', function (array $permissions): static {
             /** @var Column $this */
-            /** @phpstan-ignore return.type */
             return $this->visible(function () use ($permissions): bool {
                 $user = Auth::user();
                 if ($user === null) {
@@ -53,7 +50,6 @@ class ColumnMacros
 
         TextColumn::macro('formatPermission', function (): static {
             /** @var TextColumn $this */
-            /** @phpstan-ignore return.type */
             return $this
                 ->badge()
                 ->color(fn (string $state): string => match (true) {
@@ -67,7 +63,6 @@ class ColumnMacros
 
         TextColumn::macro('formatRole', function (): static {
             /** @var TextColumn $this */
-            /** @phpstan-ignore return.type */
             return $this
                 ->badge()
                 ->color('primary');

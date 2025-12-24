@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentPricing\Resources\PriceListResource\RelationManagers;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -56,9 +57,13 @@ class TiersRelationManager extends RelationManager
                                 $owner = $this->resolveOwner();
 
                                 if ($type === \AIArmada\Products\Models\Product::class) {
-                                    return \AIArmada\Products\Models\Product::query()
-                                        /** @phpstan-ignore-next-line */
-                                        ->forOwner($owner)
+                                    $query = OwnerQuery::applyToEloquentBuilder(
+                                        \AIArmada\Products\Models\Product::query(),
+                                        $owner,
+                                        (bool) config('products.features.owner.include_global', false)
+                                    );
+
+                                    return $query
                                         ->where('name', 'like', "%{$search}%")
                                         ->limit(50)
                                         ->pluck('name', 'id')
@@ -68,13 +73,16 @@ class TiersRelationManager extends RelationManager
                                 if ($type === \AIArmada\Products\Models\Variant::class) {
                                     return \AIArmada\Products\Models\Variant::query()
                                         ->with('product')
-                                        ->whereHas('product', function (Builder $query) use ($owner): void {
-                                            /** @phpstan-ignore-next-line */
-                                            $query->forOwner($owner);
+                                        ->whereHas('product', function ($query) use ($owner): void {
+                                            OwnerQuery::applyToEloquentBuilder(
+                                                $query,
+                                                $owner,
+                                                (bool) config('products.features.owner.include_global', false)
+                                            );
                                         })
-                                        ->where(function (Builder $query) use ($search): void {
+                                        ->where(function ($query) use ($search): void {
                                             $query->where('sku', 'like', "%{$search}%")
-                                                ->orWhereHas('product', fn (Builder $inner) => $inner->where('name', 'like', "%{$search}%"));
+                                                ->orWhereHas('product', fn ($inner) => $inner->where('name', 'like', "%{$search}%"));
                                         })
                                         ->limit(50)
                                         ->get()
@@ -100,9 +108,9 @@ class TiersRelationManager extends RelationManager
                                 /** @var Builder<Model> $query */
                                 $query = $type::query();
 
-                                if (method_exists($type, 'scopeForOwner')) {
-                                    /** @phpstan-ignore-next-line */
-                                    $query = $query->forOwner($owner);
+                                $model = new $type;
+                                if ($model instanceof Model && method_exists($model, 'scopeForOwner')) {
+                                    $query = $model->scopeForOwner($query, $owner);
                                 }
 
                                 $record = $query->whereKey($value)->first();

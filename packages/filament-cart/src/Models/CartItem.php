@@ -87,7 +87,6 @@ final class CartItem extends Model
      *
      * @return BelongsTo<Cart, CartItem>
      */
-    /** @phpstan-ignore return.type, missingType.generics */
     public function cart(): BelongsTo
     {
         return $this->belongsTo(Cart::class);

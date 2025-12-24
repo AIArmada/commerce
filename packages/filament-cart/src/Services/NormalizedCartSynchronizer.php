@@ -40,21 +40,13 @@ class NormalizedCartSynchronizer
                 $cartModel->assignOwner($owner);
             }
 
-            /** @phpstan-ignore assign.propertyReadOnly */
             $cartModel->items = $items->isEmpty() ? null : $items->toArray();
-            /** @phpstan-ignore assign.propertyReadOnly */
             $cartModel->conditions = $conditions->isEmpty() ? null : $conditions->toArray();
-            /** @phpstan-ignore assign.propertyReadOnly */
             $cartModel->items_count = $cart->countItems();
-            /** @phpstan-ignore assign.propertyReadOnly */
             $cartModel->quantity = $cart->getTotalQuantity();
-            /** @phpstan-ignore assign.propertyReadOnly */
             $cartModel->subtotal = (int) $cart->subtotalWithoutConditions()->getAmount();
-            /** @phpstan-ignore assign.propertyReadOnly */
             $cartModel->total = (int) $cart->total()->getAmount();
-            /** @phpstan-ignore assign.propertyReadOnly */
             $cartModel->savings = (int) $cart->savings()->getAmount();
-            /** @phpstan-ignore assign.propertyReadOnly */
             $cartModel->currency = $currency;
             $cartModel->save();
 
@@ -134,7 +126,6 @@ class NormalizedCartSynchronizer
         return $persisted;
     }
 
-    /** @phpstan-ignore-next-line */
     private function syncConditions(Cart $cartModel, Collection $conditions, array $itemModels, array $originalItems): void
     {
         $persistedKeys = [];
@@ -173,7 +164,6 @@ class NormalizedCartSynchronizer
             ->get(['id', 'name', 'item_id', 'cart_item_id']);
 
         foreach ($existing as $existingCondition) {
-            /** @phpstan-ignore property.notFound */
             $key = $existingCondition->cart_item_id === null
                 ? $this->conditionKey($existingCondition->name)
                 : $this->conditionKey($existingCondition->name, $existingCondition->item_id);

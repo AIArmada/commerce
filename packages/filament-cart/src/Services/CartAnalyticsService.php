@@ -27,6 +27,7 @@ class CartAnalyticsService
             ->forOwner()
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
             ->whereNull('segment')
+            ->toBase()
             ->selectRaw('
                 SUM(carts_created) as total_carts,
                 SUM(carts_active) as active_carts,
@@ -48,6 +49,7 @@ class CartAnalyticsService
             ->forOwner()
             ->whereBetween('date', [$previousFrom->toDateString(), $previousTo->toDateString()])
             ->whereNull('segment')
+            ->toBase()
             ->selectRaw('
                 SUM(checkouts_started) as checkouts_started,
                 SUM(checkouts_completed) as checkouts_completed,
@@ -113,6 +115,7 @@ class CartAnalyticsService
             ->forOwner()
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
             ->whereNull('segment')
+            ->toBase()
             ->selectRaw('
                 SUM(carts_created) as carts_created,
                 SUM(carts_with_items) as items_added,
@@ -138,6 +141,7 @@ class CartAnalyticsService
             ->forOwner()
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
             ->whereNull('segment')
+            ->toBase()
             ->selectRaw('
                 SUM(checkouts_abandoned) as total_abandoned,
                 SUM(recovery_emails_sent) as recovery_attempts,
@@ -155,6 +159,7 @@ class CartAnalyticsService
         $strategyBreakdown = Cart::query()->forOwner()
             ->whereBetween('recovered_at', [$from, $to])
             ->whereNotNull('recovered_at')
+            ->toBase()
             ->selectRaw("
                 {$strategyExpression} as strategy,
                 COUNT(*) as conversions,
@@ -199,6 +204,7 @@ class CartAnalyticsService
             ->forOwner()
             ->whereBetween('date', [$from->toDateString(), $to->toDateString()])
             ->whereNull('segment')
+            ->toBase()
             ->selectRaw("
                 {$groupBy} as period,
                 SUM(total_cart_value_cents) as total_value,
