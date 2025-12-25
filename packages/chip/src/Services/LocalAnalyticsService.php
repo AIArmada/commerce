@@ -37,6 +37,7 @@ class LocalAnalyticsService
         $metrics = Purchase::query()
             ->forOwner()
             ->whereBetween('created_at', [$startDate, $endDate])
+            ->toBase()
             ->selectRaw('
                 SUM(CASE WHEN status = "paid" THEN total_minor ELSE 0 END) as revenue,
                 SUM(CASE WHEN status = "refunded" THEN refund_amount_minor ELSE 0 END) as refunds,
@@ -79,6 +80,7 @@ class LocalAnalyticsService
         $metrics = Purchase::query()
             ->forOwner()
             ->whereBetween('created_at', [$startDate, $endDate])
+            ->toBase()
             ->selectRaw('
                 COUNT(*) as total,
                 SUM(CASE WHEN status = "paid" THEN 1 ELSE 0 END) as successful,
@@ -112,6 +114,7 @@ class LocalAnalyticsService
         return Purchase::query()
             ->forOwner()
             ->whereBetween('created_at', [$startDate, $endDate])
+            ->toBase()
             ->selectRaw('
                 COALESCE(payment_method, "unknown") as payment_method,
                 COUNT(*) as total_attempts,
@@ -120,12 +123,12 @@ class LocalAnalyticsService
             ')
             ->groupBy('payment_method')
             ->get()
-            ->map(fn ($row) => [
-                'method' => $row->payment_method,
+            ->map(fn (object $row): array => [
+                'method' => (string) $row->payment_method,
                 'attempts' => (int) $row->total_attempts,
                 'successful' => (int) $row->successful,
-                'success_rate' => $row->total_attempts > 0
-                    ? round($row->successful / $row->total_attempts * 100, 2)
+                'success_rate' => (int) $row->total_attempts > 0
+                    ? round(((int) $row->successful) / ((int) $row->total_attempts) * 100, 2)
                     : 0,
                 'revenue' => (int) $row->revenue,
             ])
@@ -145,6 +148,7 @@ class LocalAnalyticsService
             ->forOwner()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->whereIn('status', ['failed', 'error'])
+            ->toBase()
             ->selectRaw('
                 COALESCE(failure_reason, "Unknown") as failure_reason,
                 COUNT(*) as count,
@@ -153,8 +157,8 @@ class LocalAnalyticsService
             ->groupBy('failure_reason')
             ->orderByDesc('count')
             ->get()
-            ->map(fn ($row) => [
-                'reason' => $row->failure_reason,
+            ->map(fn (object $row): array => [
+                'reason' => (string) $row->failure_reason,
                 'count' => (int) $row->count,
                 'lost_revenue' => (int) ($row->lost_revenue ?? 0),
             ])
@@ -180,14 +184,15 @@ class LocalAnalyticsService
             ->forOwner()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->where('status', 'paid')
+            ->toBase()
             ->selectRaw("{$interval} as period, 
                 COUNT(*) as count,
                 SUM(total_minor) as revenue")
             ->groupBy('period')
             ->orderBy('period')
             ->get()
-            ->map(fn ($row) => [
-                'period' => $row->period,
+            ->map(fn (object $row): array => [
+                'period' => (string) $row->period,
                 'count' => (int) $row->count,
                 'revenue' => (int) $row->revenue,
             ])

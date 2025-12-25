@@ -155,7 +155,7 @@ class WebhookController extends Controller
         }
 
         // Only update if no default payment method exists
-        if ($billable->default_pm_id) {
+        if ($billable->getAttribute('default_pm_id')) {
             return;
         }
 

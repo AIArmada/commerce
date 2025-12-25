@@ -24,6 +24,10 @@ use Illuminate\Support\Carbon;
  * @property int|null $created_on
  * @property int|null $updated_on
  * @property int|null $pending_unfreeze_on
+ * @property-read Money|null $amountMoney
+ * @property-read Money|null $netAmountMoney
+ * @property-read Money|null $feeAmountMoney
+ * @property-read Money|null $pendingAmountMoney
  */
 class Payment extends ChipModel
 {

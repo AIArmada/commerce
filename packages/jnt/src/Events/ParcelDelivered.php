@@ -28,11 +28,13 @@ class ParcelDelivered
 
     public function getShipmentId(): string
     {
-        return $this->shipment->id;
+        return (string) $this->shipment->getKey();
     }
 
     public function getTrackingNumber(): ?string
     {
-        return $this->shipment->tracking_number;
+        $trackingNumber = $this->shipment->getAttribute('tracking_number');
+
+        return is_string($trackingNumber) ? $trackingNumber : null;
     }
 }

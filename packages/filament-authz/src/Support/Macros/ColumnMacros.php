@@ -14,7 +14,6 @@ class ColumnMacros
     public static function register(): void
     {
         Column::macro('visibleForPermission', function (string $permission): static {
-            /** @var Column $this */
             return $this->visible(function () use ($permission): bool {
                 $user = Auth::user();
                 if ($user === null) {
@@ -28,14 +27,12 @@ class ColumnMacros
         });
 
         Column::macro('visibleForRole', function (string | array $roles): static {
-            /** @var Column $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
             return $this->visible(fn (): bool => Auth::user()?->hasAnyRole($rolesArray) ?? false);
         });
 
         Column::macro('visibleForAnyPermission', function (array $permissions): static {
-            /** @var Column $this */
             return $this->visible(function () use ($permissions): bool {
                 $user = Auth::user();
                 if ($user === null) {
@@ -49,7 +46,6 @@ class ColumnMacros
         });
 
         TextColumn::macro('formatPermission', function (): static {
-            /** @var TextColumn $this */
             return $this
                 ->badge()
                 ->color(fn (string $state): string => match (true) {
@@ -62,7 +58,6 @@ class ColumnMacros
         });
 
         TextColumn::macro('formatRole', function (): static {
-            /** @var TextColumn $this */
             return $this
                 ->badge()
                 ->color('primary');

@@ -133,10 +133,15 @@ class Subscription extends Model
 
     /**
      * Get the subscription items related to the subscription.
+     *
+     * @return HasMany<SubscriptionItem, $this>
      */
     public function items(): HasMany
     {
-        return $this->hasMany(Cashier::$subscriptionItemModel);
+        /** @var class-string<SubscriptionItem> $model */
+        $model = Cashier::$subscriptionItemModel;
+
+        return $this->hasMany($model);
     }
 
     /**
@@ -918,6 +923,10 @@ class Subscription extends Model
 
         if ($this->items()->count() < 2) {
             $item = $this->items()->first();
+
+            if (! $item instanceof SubscriptionItem) {
+                return $this;
+            }
 
             $this->fill([
                 'chip_price' => $item->chip_price,

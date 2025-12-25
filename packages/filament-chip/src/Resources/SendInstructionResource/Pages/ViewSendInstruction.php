@@ -22,7 +22,7 @@ final class ViewSendInstruction extends ViewRecord
     {
         $record = $this->getRecord();
 
-        return sprintf('Payout %s', $record->reference ?? $record->getKey());
+        return sprintf('Payout %s', (string) ($record->getAttribute('reference') ?? $record->getKey()));
     }
 
     public function getHeadingIcon(): Heroicon
@@ -49,7 +49,7 @@ final class ViewSendInstruction extends ViewRecord
                     $service = app(ChipSendService::class);
 
                     try {
-                        $service->resendSendInstructionWebhook((string) $record->id);
+                        $service->resendSendInstructionWebhook((string) $record->getKey());
                         Notification::make()
                             ->title('Webhook resent successfully')
                             ->success()
@@ -62,7 +62,7 @@ final class ViewSendInstruction extends ViewRecord
                             ->send();
                     }
                 })
-                ->visible(fn (): bool => in_array($this->getRecord()->state, ['completed', 'processed', 'failed'], true)),
+                ->visible(fn (): bool => in_array((string) $this->getRecord()->getAttribute('state'), ['completed', 'processed', 'failed'], true)),
 
             Actions\Action::make('cancel')
                 ->label('Cancel Payout')
@@ -76,7 +76,7 @@ final class ViewSendInstruction extends ViewRecord
                     $service = app(ChipSendService::class);
 
                     try {
-                        $service->cancelSendInstruction((string) $record->id);
+                        $service->cancelSendInstruction((string) $record->getKey());
                         Notification::make()
                             ->title('Payout cancelled successfully')
                             ->success()
@@ -90,7 +90,7 @@ final class ViewSendInstruction extends ViewRecord
                             ->send();
                     }
                 })
-                ->visible(fn (): bool => in_array($this->getRecord()->state, ['queued', 'received', 'verifying'], true)),
+                ->visible(fn (): bool => in_array((string) $this->getRecord()->getAttribute('state'), ['queued', 'received', 'verifying'], true)),
         ];
     }
 }

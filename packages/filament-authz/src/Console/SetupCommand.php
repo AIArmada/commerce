@@ -423,12 +423,14 @@ class SetupCommand extends Command
         $this->info(SetupStage::UserSetup->icon() . ' Super Admin Assignment');
         $this->newLine();
 
-        $userModel = $this->state['userModel'];
-        if (! class_exists($userModel)) {
+        $userModel = $this->state['userModel'] ?? null;
+        if (! is_string($userModel) || ! class_exists($userModel) || ! is_a($userModel, \Illuminate\Database\Eloquent\Model::class, true)) {
             $this->line('User model not found. Super Admin can be assigned later.');
 
             return;
         }
+
+        /** @var class-string<\Illuminate\Database\Eloquent\Model> $userModel */
 
         $existingUsers = $userModel::count();
 
@@ -451,9 +453,24 @@ class SetupCommand extends Command
         }
 
         // Show user selection
-        $users = $userModel::limit(10)->get()->mapWithKeys(fn ($user) => [
-            $user->id => "{$user->name} ({$user->email})",
-        ])->toArray();
+        $users = $userModel::query()
+            ->limit(10)
+            ->get()
+            ->mapWithKeys(function (\Illuminate\Database\Eloquent\Model $user): array {
+                $key = (string) $user->getKey();
+                $name = $user->getAttribute('name');
+                $email = $user->getAttribute('email');
+
+                $nameString = is_scalar($name) ? (string) $name : '';
+                $emailString = is_scalar($email) ? (string) $email : '';
+                $labelName = $nameString !== '' ? $nameString : ($emailString !== '' ? $emailString : $key);
+                $labelEmail = $emailString !== '' ? $emailString : '-';
+
+                return [
+                    $key => $labelName . ' (' . $labelEmail . ')',
+                ];
+            })
+            ->toArray();
 
         $userId = select(
             label: 'Select user to become Super Admin:',
@@ -463,7 +480,9 @@ class SetupCommand extends Command
         $user = $userModel::find($userId);
         if ($user && method_exists($user, 'assignRole')) {
             $user->assignRole($this->state['superAdminRole']);
-            $this->line("✓ Assigned {$this->state['superAdminRole']} to {$user->name}");
+            $assignedName = $user->getAttribute('name');
+            $assignedNameString = is_scalar($assignedName) ? (string) $assignedName : (string) $user->getKey();
+            $this->line("✓ Assigned {$this->state['superAdminRole']} to {$assignedNameString}");
         }
 
         $this->newLine();

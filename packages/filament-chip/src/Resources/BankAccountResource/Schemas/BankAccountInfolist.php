@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\BankAccountResource\Schemas;
 
+use AIArmada\Chip\Models\BankAccount;
 use Filament\Infolists\Components\IconEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
@@ -30,8 +31,8 @@ final class BankAccountInfolist
                             TextEntry::make('status')
                                 ->label('Status')
                                 ->badge()
-                                ->formatStateUsing(fn ($record): string => $record->statusLabel())
-                                ->color(fn ($record): string => $record->statusColor()),
+                                ->formatStateUsing(fn (BankAccount $record): string => $record->statusLabel())
+                                ->color(fn (BankAccount $record): string => $record->statusColor()),
 
                             TextEntry::make('reference')
                                 ->label('Reference')
@@ -91,7 +92,7 @@ final class BankAccountInfolist
                         ->label('Rejection Reason')
                         ->placeholder('No rejection reason')
                         ->columnSpanFull()
-                        ->visible(fn ($record): bool => $record->status === 'rejected'),
+                        ->visible(fn (BankAccount $record): bool => $record->status === 'rejected'),
 
                     Grid::make(2)
                         ->schema([

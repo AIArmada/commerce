@@ -12,12 +12,12 @@ class InvalidInvoice extends Exception
 {
     /**
      * Create a new InvalidInvoice instance for invalid owner.
-     *
-     * @param  Model  $owner
      */
-    public static function invalidOwner(Invoice $invoice, $owner): self
+    public static function invalidOwner(Invoice $invoice, Model $owner): self
     {
-        return new self("The invoice `{$invoice->id()}` does not belong to this customer `{$owner->chip_id}`.");
+        $chipId = $owner->getAttribute('chip_id');
+
+        return new self("The invoice `{$invoice->id()}` does not belong to this customer `{$chipId}`.");
     }
 
     /**

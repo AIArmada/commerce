@@ -22,7 +22,7 @@ final class ViewBankAccount extends ViewRecord
     {
         $record = $this->getRecord();
 
-        return sprintf('Bank Account: %s', $record->name ?? $record->getKey());
+        return sprintf('Bank Account: %s', (string) ($record->getAttribute('name') ?? $record->getKey()));
     }
 
     public function getHeadingIcon(): Heroicon
@@ -49,7 +49,7 @@ final class ViewBankAccount extends ViewRecord
                     $service = app(ChipSendService::class);
 
                     try {
-                        $service->updateBankAccount((string) $record->id, [
+                        $service->updateBankAccount((string) $record->getKey(), [
                             'status' => 'verifying',
                         ]);
                         Notification::make()
@@ -65,7 +65,7 @@ final class ViewBankAccount extends ViewRecord
                             ->send();
                     }
                 })
-                ->visible(fn (): bool => $this->getRecord()->status === 'pending'),
+                ->visible(fn (): bool => (string) $this->getRecord()->getAttribute('status') === 'pending'),
 
             Actions\Action::make('disable')
                 ->label('Disable Account')
@@ -79,7 +79,7 @@ final class ViewBankAccount extends ViewRecord
                     $service = app(ChipSendService::class);
 
                     try {
-                        $service->deleteBankAccount((string) $record->id);
+                        $service->deleteBankAccount((string) $record->getKey());
                         Notification::make()
                             ->title('Bank account disabled')
                             ->success()
@@ -93,7 +93,7 @@ final class ViewBankAccount extends ViewRecord
                             ->send();
                     }
                 })
-                ->visible(fn (): bool => in_array($this->getRecord()->status, ['active', 'approved'], true)),
+                ->visible(fn (): bool => in_array((string) $this->getRecord()->getAttribute('status'), ['active', 'approved'], true)),
         ];
     }
 }

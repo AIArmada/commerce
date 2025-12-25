@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Resources\BankAccountResource\Tables;
 
+use AIArmada\Chip\Models\BankAccount;
 use AIArmada\Chip\Services\ChipSendService;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
@@ -50,8 +51,8 @@ final class BankAccountTable
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->formatStateUsing(fn ($record): string => $record->statusLabel())
-                    ->color(fn ($record): string => $record->statusColor())
+                    ->formatStateUsing(fn (BankAccount $record): string => $record->statusLabel())
+                    ->color(fn (BankAccount $record): string => $record->statusColor())
                     ->sortable(),
 
                 IconColumn::make('is_debiting_account')
@@ -127,11 +128,11 @@ final class BankAccountTable
                         ->requiresConfirmation()
                         ->modalHeading('Request Verification')
                         ->modalDescription('This will submit the bank account for verification with CHIP. Continue?')
-                        ->action(function ($record): void {
+                        ->action(function (BankAccount $record): void {
                             $service = app(ChipSendService::class);
 
                             try {
-                                $service->updateBankAccount((string) $record->id, [
+                                $service->updateBankAccount((string) $record->getKey(), [
                                     'status' => 'verifying',
                                 ]);
                                 Notification::make()
@@ -146,7 +147,7 @@ final class BankAccountTable
                                     ->send();
                             }
                         })
-                        ->visible(fn ($record): bool => $record->status === 'pending'),
+                        ->visible(fn (BankAccount $record): bool => $record->status === 'pending'),
 
                     Action::make('disable')
                         ->label('Disable Account')
@@ -155,11 +156,11 @@ final class BankAccountTable
                         ->requiresConfirmation()
                         ->modalHeading('Disable Bank Account')
                         ->modalDescription('This will disable the bank account. It cannot be used for payouts until re-enabled.')
-                        ->action(function ($record): void {
+                        ->action(function (BankAccount $record): void {
                             $service = app(ChipSendService::class);
 
                             try {
-                                $service->deleteBankAccount((string) $record->id);
+                                $service->deleteBankAccount((string) $record->getKey());
                                 Notification::make()
                                     ->title('Bank account disabled')
                                     ->success()
@@ -172,7 +173,7 @@ final class BankAccountTable
                                     ->send();
                             }
                         })
-                        ->visible(fn ($record): bool => in_array($record->status, ['active', 'approved'], true)),
+                                ->visible(fn (BankAccount $record): bool => in_array($record->status, ['active', 'approved'], true)),
                 ])
                     ->iconButton()
                     ->icon(Heroicon::OutlinedEllipsisVertical),

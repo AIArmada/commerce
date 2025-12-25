@@ -233,8 +233,12 @@ readonly class TargetingContext
                     return $model->getCategories();
                 }
 
-                if (method_exists($model, 'categories') && $model->categories) {
-                    return $model->categories->pluck('slug')->all();
+                if ($model instanceof Model && method_exists($model, 'categories')) {
+                    $categories = $model->getRelationValue('categories');
+
+                    if ($categories instanceof \Illuminate\Support\Collection) {
+                        return $categories->pluck('slug')->all();
+                    }
                 }
 
                 if (is_object($model) && property_exists($model, 'category')) {

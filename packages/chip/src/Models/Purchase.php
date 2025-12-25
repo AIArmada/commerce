@@ -20,6 +20,8 @@ use Illuminate\Support\Carbon;
  * @property array<array<string, mixed>>|null $status_history
  * @property array<string, mixed>|null $currency_conversion
  * @property array<string>|null $payment_method_whitelist
+ * @property string|null $checkout_url
+ * @property int|null $paid_on
  * @property bool $send_receipt
  * @property bool $is_test
  * @property bool $is_recurring_token
@@ -30,6 +32,8 @@ use Illuminate\Support\Carbon;
  * @property int|null $updated_on
  * @property int|null $due
  * @property int|null $viewed_on
+ * @property-read Money|null $totalMoney
+ * @property-read array<int, array{status: string, timestamp: Carbon|null, translated: string}> $timeline
  */
 class Purchase extends ChipModel
 {

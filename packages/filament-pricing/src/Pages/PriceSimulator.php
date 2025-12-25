@@ -6,6 +6,8 @@ namespace AIArmada\FilamentPricing\Pages;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\Variant;
 use AIArmada\Pricing\Services\PriceCalculator;
 use BackedEnum;
 use DateTimeInterface;
@@ -50,12 +52,18 @@ class PriceSimulator extends Page
         return OwnerContext::resolve();
     }
 
+    /**
+     * @template TModel of Model
+     * @param class-string<TModel> $modelClass
+     * @param Builder<TModel> $query
+     * @return Builder<TModel>
+     */
     private function scopeQueryForOwner(string $modelClass, Builder $query, ?Model $owner): Builder
     {
         $model = new $modelClass;
 
         if ($model instanceof Model && method_exists($model, 'scopeForOwner')) {
-            /** @var Builder $query */
+            /** @var Builder<TModel> $query */
             $query = $model->scopeForOwner($query, $owner);
         }
 
@@ -96,9 +104,14 @@ class PriceSimulator extends Page
                                     ->where('name', 'like', "%{$search}%")
                                     ->limit(50)
                                     ->get()
-                                    ->mapWithKeys(fn ($p): array => [
-                                        $p->id => $p->name . ' (Base: RM' . number_format($p->price / 100, 2) . ')',
-                                    ])
+                                    ->mapWithKeys(function (Product $product): array {
+                                        $name = (string) $product->getAttribute('name');
+                                        $priceMinor = (int) $product->getAttribute('price');
+
+                                        return [
+                                            (string) $product->getKey() => $name . ' (Base: RM' . number_format($priceMinor / 100, 2) . ')',
+                                        ];
+                                    })
                                     ->toArray();
                             })
                             ->getOptionLabelUsing(function ($value): ?string {
@@ -118,9 +131,14 @@ class PriceSimulator extends Page
                                     ->whereKey($value)
                                     ->first();
 
-                                return $product
-                                    ? $product->name . ' (Base: RM' . number_format($product->price / 100, 2) . ')'
-                                    : null;
+                                if (! $product instanceof Product) {
+                                    return null;
+                                }
+
+                                $name = (string) $product->getAttribute('name');
+                                $priceMinor = (int) $product->getAttribute('price');
+
+                                return $name . ' (Base: RM' . number_format($priceMinor / 100, 2) . ')';
                             }),
 
                         Forms\Components\Select::make('variant_id')
@@ -131,7 +149,7 @@ class PriceSimulator extends Page
                             ->getSearchResultsUsing(function (string $search): array {
                                 $owner = $this->resolveOwner();
 
-                                return \AIArmada\Products\Models\Variant::query()
+                                return Variant::query()
                                     ->with('product')
                                     ->where(function ($query) use ($owner, $search): void {
                                         $query->where('sku', 'like', "%{$search}%")
@@ -155,9 +173,22 @@ class PriceSimulator extends Page
                                     })
                                     ->limit(50)
                                     ->get()
-                                    ->mapWithKeys(fn ($v): array => [
-                                        $v->id => $v->product->name . ' - ' . $v->sku . ' (RM' . number_format(($v->price ?? $v->product->price) / 100, 2) . ')',
-                                    ])
+                                    ->mapWithKeys(function (Variant $variant): array {
+                                        $productName = (string) $variant->product?->getAttribute('name');
+                                        $sku = (string) $variant->getAttribute('sku');
+
+                                        $variantPrice = $variant->getAttribute('price');
+                                        $variantPriceMinor = is_int($variantPrice) ? $variantPrice : null;
+
+                                        $productPrice = $variant->product?->getAttribute('price');
+                                        $productPriceMinor = is_int($productPrice) ? $productPrice : 0;
+
+                                        $priceMinor = $variantPriceMinor ?? $productPriceMinor;
+
+                                        return [
+                                            (string) $variant->getKey() => $productName . ' - ' . $sku . ' (RM' . number_format($priceMinor / 100, 2) . ')',
+                                        ];
+                                    })
                                     ->toArray();
                             })
                             ->getOptionLabelUsing(function ($value): ?string {
@@ -167,7 +198,7 @@ class PriceSimulator extends Page
 
                                 $owner = $this->resolveOwner();
 
-                                $variant = \AIArmada\Products\Models\Variant::query()
+                                $variant = Variant::query()
                                     ->with('product')
                                     ->whereKey($value)
                                     ->whereHas('product', function ($query) use ($owner): void {
@@ -179,9 +210,22 @@ class PriceSimulator extends Page
                                     })
                                     ->first();
 
-                                return $variant
-                                    ? $variant->product->name . ' - ' . $variant->sku . ' (RM' . number_format(($variant->price ?? $variant->product->price) / 100, 2) . ')'
-                                    : null;
+                                if (! $variant instanceof Variant) {
+                                    return null;
+                                }
+
+                                $productName = (string) $variant->product?->getAttribute('name');
+                                $sku = (string) $variant->getAttribute('sku');
+
+                                $variantPrice = $variant->getAttribute('price');
+                                $variantPriceMinor = is_int($variantPrice) ? $variantPrice : null;
+
+                                $productPrice = $variant->product?->getAttribute('price');
+                                $productPriceMinor = is_int($productPrice) ? $productPrice : 0;
+
+                                $priceMinor = $variantPriceMinor ?? $productPriceMinor;
+
+                                return $productName . ' - ' . $sku . ' (RM' . number_format($priceMinor / 100, 2) . ')';
                             }),
 
                         Forms\Components\Select::make('customer_id')
@@ -206,9 +250,14 @@ class PriceSimulator extends Page
                                     })
                                     ->limit(50)
                                     ->get()
-                                    ->mapWithKeys(fn ($c): array => [
-                                        $c->id => $c->full_name . ' (' . $c->email . ')',
-                                    ])
+                                    ->mapWithKeys(function (Customer $customer): array {
+                                        $fullName = (string) $customer->getAttribute('full_name');
+                                        $email = (string) $customer->getAttribute('email');
+
+                                        return [
+                                            (string) $customer->getKey() => $fullName . ' (' . $email . ')',
+                                        ];
+                                    })
                                     ->toArray();
                             })
                             ->getOptionLabelUsing(function ($value): ?string {
@@ -224,9 +273,14 @@ class PriceSimulator extends Page
                                     ->whereKey($value)
                                     ->first();
 
-                                return $customer
-                                    ? $customer->full_name . ' (' . $customer->email . ')'
-                                    : null;
+                                if (! $customer instanceof Customer) {
+                                    return null;
+                                }
+
+                                $fullName = (string) $customer->getAttribute('full_name');
+                                $email = (string) $customer->getAttribute('email');
+
+                                return $fullName . ' (' . $email . ')';
                             }),
 
                         Forms\Components\TextInput::make('quantity')
@@ -299,7 +353,7 @@ class PriceSimulator extends Page
 
         // Calculate price using PriceCalculator
         $pricingService = app(PriceCalculator::class);
-        $context = $customer ? ['customer_id' => $customer->id] : [];
+        $context = $customer ? ['customer_id' => (string) $customer->getKey()] : [];
 
         $effectiveAt = Arr::get($data, 'effective_date');
 

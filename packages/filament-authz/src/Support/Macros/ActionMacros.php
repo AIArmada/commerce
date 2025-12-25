@@ -15,7 +15,6 @@ class ActionMacros
     public static function register(): void
     {
         Action::macro('requiresPermission', function (string $permission): static {
-            /** @var Action $this */
             return $this
                 ->authorize(function () use ($permission): bool {
                     $user = Auth::user();
@@ -40,7 +39,6 @@ class ActionMacros
         });
 
         Action::macro('requiresRole', function (string | array $roles): static {
-            /** @var Action $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
             return $this
@@ -49,7 +47,6 @@ class ActionMacros
         });
 
         Action::macro('requiresAnyPermission', function (array $permissions): static {
-            /** @var Action $this */
             return $this
                 ->authorize(function () use ($permissions): bool {
                     $user = Auth::user();
@@ -74,7 +71,6 @@ class ActionMacros
         });
 
         Action::macro('requiresAllPermissions', function (array $permissions): static {
-            /** @var Action $this */
             return $this
                 ->authorize(function () use ($permissions): bool {
                     $user = Auth::user();
@@ -99,7 +95,6 @@ class ActionMacros
         });
 
         Action::macro('requiresTeamPermission', function (string $permission, string | int $teamId): static {
-            /** @var Action $this */
             return $this
                 ->authorize(function () use ($permission, $teamId): bool {
                     $user = Auth::user();
@@ -124,7 +119,6 @@ class ActionMacros
         });
 
         Action::macro('requiresResourcePermission', function (string $permission, ?Model $resource = null): static {
-            /** @var Action $this */
             return $this
                 ->authorize(function () use ($permission, $resource): bool {
                     $user = Auth::user();
@@ -161,7 +155,6 @@ class ActionMacros
         });
 
         Action::macro('requiresOwnership', function (?Model $resource = null): static {
-            /** @var Action $this */
             return $this
                 ->authorize(function () use ($resource): bool {
                     $user = Auth::user();
