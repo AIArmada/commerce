@@ -14,6 +14,10 @@ use Illuminate\Support\Carbon;
  * @property int|null $updated_on
  * @property int|null $began_on
  * @property int|null $finished_on
+ * @property-read Carbon|null $createdOn
+ * @property-read Carbon|null $updatedOn
+ * @property-read Carbon|null $beganOn
+ * @property-read Carbon|null $finishedOn
  */
 class CompanyStatement extends ChipModel
 {

@@ -18,7 +18,7 @@ final class ViewRecurringSchedule extends ReadOnlyViewRecord
     {
         $record = $this->getRecord();
 
-        return sprintf('Schedule %s', mb_substr($record->id, 0, 8));
+        return sprintf('Schedule %s', mb_substr((string) $record->getKey(), 0, 8));
     }
 
     public function getHeadingIcon(): Heroicon

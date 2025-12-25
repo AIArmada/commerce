@@ -49,7 +49,11 @@ final class CartManagerWithPayment implements CartManagerInterface
      */
     public function checkout(?string $identifier = null, ?string $gateway = null): CartCheckoutBuilder
     {
-        $cart = $this->get($identifier);
+        $cart = $this->cart->getCurrentCart();
+
+        if ($identifier !== null) {
+            $cart = $cart->setIdentifier($identifier);
+        }
 
         /** @var GatewayManager $gatewayManager */
         $gatewayManager = app(GatewayManager::class);
@@ -68,150 +72,6 @@ final class CartManagerWithPayment implements CartManagerInterface
     {
         return $this->checkout($identifier, $gateway);
     }
-
-    // ========================================
-    // Delegate all CartManagerInterface methods
-    // ========================================
-
-    public function get(?string $identifier = null): Cart
-    {
-        return $this->cart->get($identifier);
-    }
-
-    public function has(?string $identifier = null): bool
-    {
-        return $this->cart->has($identifier);
-    }
-
-    public function create(?string $identifier = null): Cart
-    {
-        return $this->cart->create($identifier);
-    }
-
-    public function add(
-        string | int $id,
-        string $name,
-        int $price,
-        int $quantity = 1,
-        array $attributes = [],
-        ?array $conditions = null,
-        ?string $identifier = null
-    ): Cart {
-        return $this->cart->add($id, $name, $price, $quantity, $attributes, $conditions, $identifier);
-    }
-
-    public function update(
-        string | int $id,
-        int | array $quantityOrAttributes,
-        ?string $identifier = null
-    ): Cart {
-        return $this->cart->update($id, $quantityOrAttributes, $identifier);
-    }
-
-    public function remove(string | int $id, ?string $identifier = null): Cart
-    {
-        return $this->cart->remove($id, $identifier);
-    }
-
-    public function clear(?string $identifier = null): Cart
-    {
-        return $this->cart->clear($identifier);
-    }
-
-    public function destroy(?string $identifier = null): void
-    {
-        $this->cart->destroy($identifier);
-    }
-
-    public function items(?string $identifier = null): \AIArmada\Cart\Collections\CartCollection
-    {
-        return $this->cart->items($identifier);
-    }
-
-    public function isEmpty(?string $identifier = null): bool
-    {
-        return $this->cart->isEmpty($identifier);
-    }
-
-    public function count(?string $identifier = null): int
-    {
-        return $this->cart->count($identifier);
-    }
-
-    public function totalQuantity(?string $identifier = null): int
-    {
-        return $this->cart->totalQuantity($identifier);
-    }
-
-    public function subtotal(?string $identifier = null): int
-    {
-        return $this->cart->subtotal($identifier);
-    }
-
-    public function total(?string $identifier = null): int
-    {
-        return $this->cart->total($identifier);
-    }
-
-    public function setMetadata(string $key, mixed $value, ?string $identifier = null): Cart
-    {
-        return $this->cart->setMetadata($key, $value, $identifier);
-    }
-
-    public function getMetadata(?string $key = null, ?string $identifier = null): mixed
-    {
-        return $this->cart->getMetadata($key, $identifier);
-    }
-
-    public function removeMetadata(string $key, ?string $identifier = null): Cart
-    {
-        return $this->cart->removeMetadata($key, $identifier);
-    }
-
-    public function addCondition(mixed $condition, ?string $identifier = null): Cart
-    {
-        return $this->cart->addCondition($condition, $identifier);
-    }
-
-    public function removeCondition(string $name, ?string $identifier = null): Cart
-    {
-        return $this->cart->removeCondition($name, $identifier);
-    }
-
-    public function conditions(?string $identifier = null): \AIArmada\Cart\Collections\CartConditionCollection
-    {
-        return $this->cart->conditions($identifier);
-    }
-
-    public function addItemCondition(
-        string | int $id,
-        mixed $condition,
-        ?string $identifier = null
-    ): Cart {
-        return $this->cart->addItemCondition($id, $condition, $identifier);
-    }
-
-    public function removeItemCondition(
-        string | int $id,
-        string $conditionName,
-        ?string $identifier = null
-    ): Cart {
-        return $this->cart->removeItemCondition($id, $conditionName, $identifier);
-    }
-
-    public function mergeFromSession(?string $identifier = null): Cart
-    {
-        return $this->cart->mergeFromSession($identifier);
-    }
-
-    public function persist(?string $identifier = null): Cart
-    {
-        return $this->cart->persist($identifier);
-    }
-
-    // ========================================
-    // Additional CartManagerInterface methods
-    // ========================================
 
     public function getCurrentCart(): Cart
     {

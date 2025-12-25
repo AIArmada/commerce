@@ -16,7 +16,6 @@ class FilterMacros
     public static function register(): void
     {
         Filter::macro('visibleForPermission', function (string $permission): static {
-            /** @var Filter $this */
             return $this->visible(function () use ($permission): bool {
                 $user = Auth::user();
                 if ($user === null) {
@@ -30,19 +29,16 @@ class FilterMacros
         });
 
         Filter::macro('visibleForRole', function (string | array $roles): static {
-            /** @var Filter $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
             return $this->visible(fn (): bool => Auth::user()?->hasAnyRole($rolesArray) ?? false);
         });
 
         SelectFilter::macro('roleOptions', function (): static {
-            /** @var SelectFilter $this */
             return $this->options(Role::pluck('name', 'id')->toArray());
         });
 
         SelectFilter::macro('permissionOptions', function (?string $prefix = null): static {
-            /** @var SelectFilter $this */
             $query = Permission::query();
 
             if ($prefix !== null) {
@@ -53,7 +49,6 @@ class FilterMacros
         });
 
         SelectFilter::macro('permissionGroupOptions', function (): static {
-            /** @var SelectFilter $this */
             $groups = Permission::all()
                 ->groupBy(function (Permission $permission): string {
                     $parts = explode('.', $permission->name);

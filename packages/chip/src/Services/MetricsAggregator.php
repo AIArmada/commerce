@@ -29,6 +29,7 @@ class MetricsAggregator
         $byMethod = Purchase::query()
             ->forOwner($owner)
             ->whereBetween('created_at', [$startOfDay, $endOfDay])
+            ->toBase()
             ->selectRaw('
                 payment_method,
                 COUNT(*) as total_attempts,
@@ -43,8 +44,8 @@ class MetricsAggregator
             ->get();
 
         foreach ($byMethod as $row) {
-            $successRate = $row->total_attempts > 0
-                ? $row->successful_count / $row->total_attempts * 100
+            $successRate = ((int) $row->total_attempts) > 0
+                ? ((int) $row->successful_count) / ((int) $row->total_attempts) * 100
                 : 0;
 
             DailyMetric::updateOrCreate(
@@ -55,10 +56,10 @@ class MetricsAggregator
                     'payment_method' => $row->payment_method,
                 ],
                 [
-                    'total_attempts' => $row->total_attempts,
-                    'successful_count' => $row->successful_count,
-                    'failed_count' => $row->failed_count,
-                    'refunded_count' => $row->refunded_count,
+                    'total_attempts' => (int) $row->total_attempts,
+                    'successful_count' => (int) $row->successful_count,
+                    'failed_count' => (int) $row->failed_count,
+                    'refunded_count' => (int) $row->refunded_count,
                     'revenue_minor' => $row->revenue_minor ?? 0,
                     'refunds_minor' => $row->refunds_minor ?? 0,
                     'success_rate' => round($successRate, 2),
@@ -83,6 +84,7 @@ class MetricsAggregator
             ->forOwner($owner)
             ->where('date', $date->toDateString())
             ->whereNotNull('payment_method')
+            ->toBase()
             ->selectRaw('
                 SUM(total_attempts) as total_attempts,
                 SUM(successful_count) as successful_count,

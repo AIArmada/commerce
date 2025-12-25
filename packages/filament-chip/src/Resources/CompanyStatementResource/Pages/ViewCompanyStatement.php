@@ -46,10 +46,10 @@ final class ViewCompanyStatement extends ReadOnlyViewRecord
                     $service = app(ChipCollectService::class);
 
                     try {
-                        $statement = $service->getCompanyStatement($record->id);
-                        $downloadUrl = $statement->download_url ?? null;
+                        $statement = $service->getCompanyStatement((string) $record->getKey());
+                        $downloadUrl = $statement->download_url;
 
-                        if ($downloadUrl) {
+                        if (is_string($downloadUrl) && $downloadUrl !== '') {
                             redirect()->away($downloadUrl);
                         } else {
                             Notification::make()
@@ -66,7 +66,7 @@ final class ViewCompanyStatement extends ReadOnlyViewRecord
                             ->send();
                     }
                 })
-                ->visible(fn (): bool => in_array($this->getRecord()->status, ['completed', 'ready'], true)),
+                ->visible(fn (): bool => in_array((string) $this->getRecord()->getAttribute('status'), ['completed', 'ready'], true)),
 
             Actions\Action::make('cancel')
                 ->label('Cancel Request')
@@ -80,7 +80,7 @@ final class ViewCompanyStatement extends ReadOnlyViewRecord
                     $service = app(ChipCollectService::class);
 
                     try {
-                        $service->cancelCompanyStatement($record->id);
+                        $service->cancelCompanyStatement((string) $record->getKey());
                         Notification::make()
                             ->title('Statement request cancelled')
                             ->success()
@@ -94,7 +94,7 @@ final class ViewCompanyStatement extends ReadOnlyViewRecord
                             ->send();
                     }
                 })
-                ->visible(fn (): bool => in_array($this->getRecord()->status, ['queued', 'processing'], true)),
+                ->visible(fn (): bool => in_array((string) $this->getRecord()->getAttribute('status'), ['queued', 'processing'], true)),
         ];
     }
 }
