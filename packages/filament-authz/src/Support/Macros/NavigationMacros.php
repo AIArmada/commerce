@@ -13,7 +13,6 @@ class NavigationMacros
     public static function register(): void
     {
         NavigationItem::macro('visibleForPermission', function (string $permission): static {
-            /** @var NavigationItem $this */
             return $this->visible(function () use ($permission): bool {
                 $user = Auth::user();
                 if ($user === null) {
@@ -27,14 +26,12 @@ class NavigationMacros
         });
 
         NavigationItem::macro('visibleForRole', function (string | array $roles): static {
-            /** @var NavigationItem $this */
             $rolesArray = is_array($roles) ? $roles : [$roles];
 
             return $this->visible(fn (): bool => Auth::user()?->hasAnyRole($rolesArray) ?? false);
         });
 
         NavigationItem::macro('visibleForAnyPermission', function (array $permissions): static {
-            /** @var NavigationItem $this */
             return $this->visible(function () use ($permissions): bool {
                 $user = Auth::user();
                 if ($user === null) {
@@ -48,7 +45,6 @@ class NavigationMacros
         });
 
         NavigationItem::macro('visibleForAllPermissions', function (array $permissions): static {
-            /** @var NavigationItem $this */
             return $this->visible(function () use ($permissions): bool {
                 $user = Auth::user();
                 if ($user === null) {

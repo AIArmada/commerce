@@ -7,6 +7,8 @@ namespace AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource\Pag
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
+use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 
 final class ViewAffiliateFraudSignal extends ViewRecord
 {
@@ -14,23 +16,29 @@ final class ViewAffiliateFraudSignal extends ViewRecord
 
     protected function getHeaderActions(): array
     {
+        $record = $this->getRecord();
+
+        if (! $record instanceof AffiliateFraudSignal) {
+            return [];
+        }
+
         return [
             Actions\Action::make('dismiss')
                 ->icon('heroicon-o-x-mark')
                 ->color('gray')
                 ->requiresConfirmation()
-                ->visible(fn () => $this->record->status->value === 'detected')
-                ->action(fn () => $this->record->update([
-                    'status' => 'dismissed',
+                ->visible(fn (): bool => $record->status === FraudSignalStatus::Detected)
+                ->action(fn (): bool => $record->update([
+                    'status' => FraudSignalStatus::Dismissed,
                     'reviewed_at' => now(),
                 ])),
             Actions\Action::make('confirm')
                 ->icon('heroicon-o-check')
                 ->color('danger')
                 ->requiresConfirmation()
-                ->visible(fn () => $this->record->status->value === 'detected')
-                ->action(fn () => $this->record->update([
-                    'status' => 'confirmed',
+                ->visible(fn (): bool => $record->status === FraudSignalStatus::Detected)
+                ->action(fn (): bool => $record->update([
+                    'status' => FraudSignalStatus::Confirmed,
                     'reviewed_at' => now(),
                 ])),
         ];

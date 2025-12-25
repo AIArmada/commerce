@@ -21,7 +21,10 @@ final class ViewCustomer extends ViewRecord
     {
         $record = $this->getRecord();
 
-        return sprintf('Customer: %s', $record->name ?? $record->email ?? $record->getKey());
+        return sprintf(
+            'Customer: %s',
+            $record->getAttribute('name') ?? $record->getAttribute('email') ?? $record->getKey()
+        );
     }
 
     public function getHeadingIcon(): Heroicon
@@ -41,7 +44,7 @@ final class ViewCustomer extends ViewRecord
                     ->requiresConfirmation()
                     ->modalHeading('Create Customer in Chip')
                     ->modalDescription('This will create this customer in the Chip payment gateway.')
-                    ->visible(fn (): bool => empty($this->getRecord()->chip_id))
+                    ->visible(fn (): bool => empty($this->getRecord()->getAttribute('chip_id')))
                     ->action(function (): void {
                         $record = $this->getRecord();
 
@@ -50,7 +53,7 @@ final class ViewCustomer extends ViewRecord
 
                             Notification::make()
                                 ->title('Customer Created in Chip')
-                                ->body('Chip ID: ' . $record->chip_id)
+                                ->body('Chip ID: ' . $record->getAttribute('chip_id'))
                                 ->success()
                                 ->send();
 
@@ -63,7 +66,7 @@ final class ViewCustomer extends ViewRecord
                     ->icon('heroicon-o-arrow-path')
                     ->color('primary')
                     ->requiresConfirmation()
-                    ->visible(fn (): bool => ! empty($this->getRecord()->chip_id))
+                    ->visible(fn (): bool => ! empty($this->getRecord()->getAttribute('chip_id')))
                     ->action(function (): void {
                         $record = $this->getRecord();
 
@@ -82,7 +85,7 @@ final class ViewCustomer extends ViewRecord
                     ->icon('heroicon-o-credit-card')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->visible(fn (): bool => ! empty($this->getRecord()->chip_id))
+                    ->visible(fn (): bool => ! empty($this->getRecord()->getAttribute('chip_id')))
                     ->action(function (): void {
                         $record = $this->getRecord();
 
@@ -103,7 +106,7 @@ final class ViewCustomer extends ViewRecord
                 ->label('Add Payment Method')
                 ->icon('heroicon-o-plus-circle')
                 ->color('success')
-                ->visible(fn (): bool => ! empty($this->getRecord()->chip_id))
+                ->visible(fn (): bool => ! empty($this->getRecord()->getAttribute('chip_id')))
                 ->action(function (): void {
                     $record = $this->getRecord();
 
@@ -128,8 +131,8 @@ final class ViewCustomer extends ViewRecord
                 ->label('View in Chip')
                 ->icon('heroicon-o-arrow-top-right-on-square')
                 ->color('gray')
-                ->visible(fn (): bool => ! empty($this->getRecord()->chip_id))
-                ->url(fn (): string => 'https://app.chip-in.asia/clients/' . $this->getRecord()->chip_id)
+                ->visible(fn (): bool => ! empty($this->getRecord()->getAttribute('chip_id')))
+                ->url(fn (): string => 'https://app.chip-in.asia/clients/' . $this->getRecord()->getAttribute('chip_id'))
                 ->openUrlInNewTab(),
         ];
     }

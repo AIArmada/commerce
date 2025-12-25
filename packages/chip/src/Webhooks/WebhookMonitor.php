@@ -103,9 +103,10 @@ class WebhookMonitor
             ")
             ->groupBy('hour')
             ->orderBy('hour')
+            ->toBase()
             ->get()
             ->keyBy('hour')
-            ->map(fn ($row) => [
+            ->map(fn (object $row): array => [
                 'total' => (int) $row->total,
                 'processed' => (int) $row->processed,
                 'failed' => (int) $row->failed,

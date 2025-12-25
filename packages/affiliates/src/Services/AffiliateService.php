@@ -37,6 +37,9 @@ final class AffiliateService
         private readonly AttributionModel $attributionModel
     ) {}
 
+    /**
+     * @return Builder<Affiliate>
+     */
     public function query(): Builder
     {
         $query = Affiliate::query();

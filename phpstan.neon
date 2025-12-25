@@ -44,8 +44,6 @@ parameters:
         # Filament v5 Forms\Components not found (larastan resolution issue)
         - message: '#Call to static method make\(\) on an unknown class Filament\\Forms\\Components\\.*#'
         # Ignore property override issues in widgets
-        # Ignore template type issues in collect() calls
-        - message: '#Unable to resolve the template type.*in call to function collect#'
         # Ignore external cart model references
         - message: '#PHPDoc tag @var for variable.*contains unknown class.*Cart\.#'
         - message: '#PHPDoc tag @var with type.*Cart.*is not subtype of native type.*Model.*#'
@@ -67,11 +65,6 @@ parameters:
         - identifier: 'nullsafe.neverNull'
         # Ignore scope return type issues (scopes return Builder<static> but PHPStan sees Builder<Model>)
         - message: '#Method AIArmada\\Inventory\\Models\\.*::scope.*should return Illuminate\\Database\\Eloquent\\Builder.*but returns Illuminate\\Database\\Eloquent\\Builder.*#'
-        # Ignore unresolvable return types from collection operations
-        - message: '#Return type of call to method Illuminate\\.*Collection.*::map\(\) contains unresolvable type\.#'
-        - message: '#Return type of call to method Illuminate\\Support\\Collection.*::values\(\) contains unresolvable type\.#'
-        - message: '#Parameter .* of method Illuminate\\.*Collection.*::map\(\) contains unresolvable type\.#'
-        - message: '#Parameter .* of method Illuminate\\Support\\Collection.*::sortByDesc\(\) contains unresolvable type\.#'
         # Ignore mapWithKeys collection operation type issues
         # Ignore undefined scope method calls (scopes are dynamically resolved)
         - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Builder.*::open\(\)\.#'
@@ -84,20 +77,11 @@ parameters:
         - message: '#Method AIArmada\\Inventory\\Services\\SerialLookupService::search\(\) should return.*LengthAwarePaginator.*but returns.*#'
         # Ignore missingType.iterableValue for metadata arrays
         - message: '#Method AIArmada\\Inventory\\Services\\StandardCostService::setStandardCost\(\) has parameter \$metadata with no value type specified in iterable type array\.#'
-        # Ignore Collection template type covariance issues (they don't affect runtime)
-        - message: '#Unable to resolve the template type.*in call to method.*#'
-        # Ignore method_exists and is_subclass_of checks that are always true (defensive programming)
-        - message: '#Call to function method_exists\(\) with.*will always evaluate to true\.#'
-        - message: '#Call to function is_subclass_of\(\) with.*will always evaluate to true\.#'
         # Ignore hasMany/belongsTo template type resolution with external models
         # Ignore identical return type covariance warnings (PHPStan bug with array shape types)
         - message: '#Method.*should return.*Collection.*array\{.*\}.*but returns.*Collection.*array\{.*\}.*#'
         - message: '#Anonymous function should return.*Collection.*array\{.*\}.*but returns.*Collection.*array\{.*\}.*#'
         - message: '#Parameter.*\$callback of method.*Collection.*map\(\) expects callable.*#'
-        # Ignore macro classes using $this in static context
-        - message: '#Undefined variable: \$this#'
-        - message: '#Variable \$this in PHPDoc tag @var does not exist\.#'
-        - message: '#Variable \$this in PHPDoc tag @var does not match assigned variable .*#'
         # Ignore test-specific issues
         # Ignore Faker method calls (methods exist but PHPStan can't resolve them)
         - message: '#Call to an undefined method Faker\\Generator::.*#'
@@ -112,9 +96,6 @@ parameters:
         # Ignore unused traits (public API)
         - message: '#Trait AIArmada\\Vouchers\\Traits\\.*is used zero times and is not analysed\.#'
         - message: '#Trait AIArmada\\Vouchers\\GiftCards\\Traits\\.*is used zero times and is not analysed\.#'
-        # Ignore property access on Model (dynamic properties)
-        - message: '#Access to an undefined property Illuminate\\Database\\Eloquent\\Model::\$.*#'
-        - message: '#Access to an undefined property AIArmada\\Chip\\Models\\.*::\$.*#'
         # Ignore relation existence errors (Larastan false positives)
         # Ignore cast.string for enums
         - message: '#Cannot cast AIArmada\\Affiliates\\Enums\\.*to string\.#'
@@ -130,22 +111,14 @@ parameters:
         - message: '#Call to an undefined method Illuminate\\Database\\ConnectionInterface::getDriverName\(\)\.#'
         # Ignore property.defaultValue issues
         - identifier: 'property.defaultValue'
-        # Ignore property.nonObject for status checks
-        - message: '#Cannot access property \$status on.*#'
         # Ignore arguments.count for context methods
-        # Ignore property.nonObject on class-string
-        - message: '#Cannot access property.*on class-string\|object\.#'
         # Ignore CompoundVoucherCondition rules parameter type
         - message: '#Parameter \$rules of class AIArmada\\Cart\\Conditions\\CartCondition constructor expects.*#'
         # Ignore FilamentChip Jetstream/Cashier integration issues
         - message: '#Access to an undefined property Illuminate\\Foundation\\Auth\\User::\$currentTeam\.#'
         - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::(updateDefaultPaymentMethod|deletePaymentMethod)\(\)\.#'
-        # Ignore FilamentAffiliates service method calls
-        - message: '#Call to an undefined method AIArmada\\Affiliates\\Services\\AffiliateReportService::.*#'
         # Ignore new.static (safe in our context)
         - identifier: 'new.static'
-        # Ignore CartManagerInterface method calls (proxied to Cart instance)
-        - message: '#Call to an undefined method AIArmada\\Cart\\Contracts\\CartManagerInterface::.*#'
         # Ignore PHPDoc type issues in Cart traits
         - message: '#PHPDoc tag @param for parameter \$resolver with type.*is not subtype of native type callable\.#'
         # Ignore nullCoalesce in exception classes
@@ -158,15 +131,17 @@ parameters:
         # Ignore unused Buyable trait (it's part of the public API)
         - message: '#Trait AIArmada\\Cart\\Concerns\\Buyable is used zero times and is not analysed\.#'
 
+        # Filament macros are dynamically bound at runtime (Macroable), PHPStan can't see $this
+        - message: '#Undefined variable: \$this#'
+          paths:
+              - packages/filament-authz/src/Support/Macros
+
         # Optional dependencies (Stripe / Cashier)
         - identifier: 'class.notFound'
           paths:
               - packages/cashier/src/Gateways/Stripe
               - packages/cashier/src/Gateways/StripeGateway.php
               - packages/filament-cashier/src
-
-        # method_exists/class_exists checks for optional dependencies
-        - message: '#Call to function method_exists\(\).*will always evaluate to (true|false)\.#'
 
         # Arguments count in Akaunting Money (version compatibility)
         - message: '#Method Akaunting\\Money\\Money::format\(\) invoked with 1 parameter.*#'

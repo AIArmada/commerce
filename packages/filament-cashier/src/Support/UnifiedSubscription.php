@@ -54,17 +54,17 @@ final readonly class UnifiedSubscription
         return new self(
             id: (string) $subscription->getKey(),
             gateway: 'stripe',
-            userId: (string) $subscription->user_id,
-            type: (string) $subscription->type,
-            planId: (string) ($subscription->stripe_price ?? $subscription->name),
+            userId: (string) $subscription->getAttribute('user_id'),
+            type: (string) $subscription->getAttribute('type'),
+            planId: (string) ($subscription->getAttribute('stripe_price') ?? $subscription->getAttribute('name')),
             amount: self::getStripeAmount($subscription),
             currency: 'USD',
-            quantity: (int) ($subscription->quantity ?? 1),
+            quantity: (int) ($subscription->getAttribute('quantity') ?? 1),
             status: self::normalizeStripeStatus($subscription),
-            trialEndsAt: $subscription->trial_ends_at,
-            endsAt: $subscription->ends_at,
+            trialEndsAt: $subscription->getAttribute('trial_ends_at'),
+            endsAt: $subscription->getAttribute('ends_at'),
             nextBillingDate: self::calculateStripeNextBilling($subscription),
-            createdAt: $subscription->created_at,
+            createdAt: $subscription->getAttribute('created_at'),
             original: $subscription,
         );
     }
@@ -77,17 +77,17 @@ final readonly class UnifiedSubscription
         return new self(
             id: (string) $subscription->getKey(),
             gateway: 'chip',
-            userId: (string) $subscription->user_id,
-            type: (string) $subscription->type,
-            planId: (string) ($subscription->plan_id ?? $subscription->name),
+            userId: (string) $subscription->getAttribute('user_id'),
+            type: (string) $subscription->getAttribute('type'),
+            planId: (string) ($subscription->getAttribute('plan_id') ?? $subscription->getAttribute('name')),
             amount: self::getChipAmount($subscription),
             currency: 'MYR',
-            quantity: (int) ($subscription->quantity ?? 1),
+            quantity: (int) ($subscription->getAttribute('quantity') ?? 1),
             status: self::normalizeChipStatus($subscription),
-            trialEndsAt: $subscription->trial_ends_at,
-            endsAt: $subscription->ends_at,
-            nextBillingDate: $subscription->next_billing_at ?? null,
-            createdAt: $subscription->created_at,
+            trialEndsAt: $subscription->getAttribute('trial_ends_at'),
+            endsAt: $subscription->getAttribute('ends_at'),
+            nextBillingDate: $subscription->getAttribute('next_billing_at') ?? null,
+            createdAt: $subscription->getAttribute('created_at'),
             original: $subscription,
         );
     }
@@ -345,18 +345,22 @@ final readonly class UnifiedSubscription
     private static function calculateStripeNextBilling(Model $subscription): ?Carbon
     {
         // If subscription has ends_at, no next billing
-        if ($subscription->ends_at !== null) {
+        if ($subscription->getAttribute('ends_at') !== null) {
             return null;
         }
 
         // If on trial, next billing is after trial
-        if ($subscription->trial_ends_at !== null && $subscription->trial_ends_at->isFuture()) {
-            return $subscription->trial_ends_at;
+        $trialEndsAt = $subscription->getAttribute('trial_ends_at');
+
+        if ($trialEndsAt instanceof Carbon && $trialEndsAt->isFuture()) {
+            return $trialEndsAt;
         }
 
         // Try to get from Stripe API metadata if available
-        if (isset($subscription->current_period_end)) {
-            return Carbon::createFromTimestamp($subscription->current_period_end);
+        $currentPeriodEnd = $subscription->getAttribute('current_period_end');
+
+        if (is_int($currentPeriodEnd)) {
+            return Carbon::createFromTimestamp($currentPeriodEnd);
         }
 
         return null;

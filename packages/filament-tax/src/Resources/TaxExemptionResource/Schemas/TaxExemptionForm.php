@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\FilamentTax\Resources\TaxExemptionResource\Schemas;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\Customers\Models\Customer;
+use AIArmada\Customers\Models\CustomerGroup;
 use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Filament\Forms\Components\DatePicker;
@@ -59,8 +61,15 @@ final class TaxExemptionForm
                                             $query = TaxOwnerScope::applyToOwnedQuery($query);
                                         }
 
-                                        if ($type === 'AIArmada\\Customers\\Models\\Customer') {
-                                            return $query
+                                        if ($type === Customer::class) {
+                                            /** @var Builder<Customer> $customerQuery */
+                                            $customerQuery = Customer::query();
+
+                                            if (in_array(HasOwner::class, class_uses_recursive($type), true)) {
+                                                $customerQuery = TaxOwnerScope::applyToOwnedQuery($customerQuery);
+                                            }
+
+                                            return $customerQuery
                                                 ->where(function (Builder $builder) use ($search): void {
                                                     $builder
                                                         ->where('full_name', 'like', "%{$search}%")
@@ -68,12 +77,21 @@ final class TaxExemptionForm
                                                 })
                                                 ->limit(50)
                                                 ->get()
-                                                ->mapWithKeys(fn ($c): array => [$c->id => $c->full_name . ' (' . $c->email . ')'])
+                                                ->mapWithKeys(fn (Customer $customer): array => [
+                                                    (string) $customer->getKey() => (string) $customer->getAttribute('full_name') . ' (' . (string) $customer->getAttribute('email') . ')',
+                                                ])
                                                 ->toArray();
                                         }
 
-                                        if ($type === 'AIArmada\\Customers\\Models\\CustomerGroup') {
-                                            return $query
+                                        if ($type === CustomerGroup::class) {
+                                            /** @var Builder<CustomerGroup> $groupQuery */
+                                            $groupQuery = CustomerGroup::query();
+
+                                            if (in_array(HasOwner::class, class_uses_recursive($type), true)) {
+                                                $groupQuery = TaxOwnerScope::applyToOwnedQuery($groupQuery);
+                                            }
+
+                                            return $groupQuery
                                                 ->where('name', 'like', "%{$search}%")
                                                 ->limit(50)
                                                 ->pluck('name', 'id')
@@ -88,7 +106,9 @@ final class TaxExemptionForm
                                             })
                                             ->limit(50)
                                             ->get()
-                                            ->mapWithKeys(fn (Model $m): array => [$m->getKey() => (string) ($m->name ?? $m->email ?? $m->getKey())])
+                                            ->mapWithKeys(fn (Model $model): array => [
+                                                (string) $model->getKey() => (string) ($model->getAttribute('name') ?? $model->getAttribute('email') ?? $model->getKey()),
+                                            ])
                                             ->toArray();
                                     })
                                     ->getOptionLabelUsing(function ($value, GetFormState $get): ?string {
@@ -111,11 +131,11 @@ final class TaxExemptionForm
                                             return null;
                                         }
 
-                                        if ($type === 'AIArmada\\Customers\\Models\\Customer') {
-                                            return $record->full_name . ' (' . $record->email . ')';
+                                        if ($type === Customer::class) {
+                                            return (string) $record->getAttribute('full_name') . ' (' . (string) $record->getAttribute('email') . ')';
                                         }
 
-                                        return (string) ($record->name ?? $record->email ?? $record->getKey());
+                                        return (string) ($record->getAttribute('name') ?? $record->getAttribute('email') ?? $record->getKey());
                                     }),
 
                                 Select::make('tax_zone_id')

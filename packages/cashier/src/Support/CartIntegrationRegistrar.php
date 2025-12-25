@@ -102,10 +102,10 @@ final class CartIntegrationRegistrar
         /** @var CartManagerInterface $cartManager */
         $cartManager = $this->app->make('cart');
 
-        // Get cart before clearing for metadata preservation
-        $cart = $cartManager->get($cartId);
+        // Retrieve cart without mutating global cart manager state
+        $cart = $cartManager->getCartInstance($cartManager->instance(), $cartId);
 
-        if (! $cart) {
+        if (! $cart->exists()) {
             return;
         }
 
@@ -121,7 +121,7 @@ final class CartIntegrationRegistrar
 
         // Clear the cart
         if (config('cashier.cart.clear_on_success', true)) {
-            $cartManager->destroy($cartId);
+            $cart->destroy();
         }
     }
 
