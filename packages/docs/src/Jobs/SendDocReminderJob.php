@@ -35,8 +35,9 @@ class SendDocReminderJob implements ShouldQueue
         public int $daysBeforeDue = 3,
         public int $daysAfterOverdue = 1,
         public ?string $ownerType = null,
-        public string | int | null $ownerId = null,
-    ) {}
+        public string|int|null $ownerId = null,
+    ) {
+    }
 
     public function handle(DocEmailService $emailService): void
     {
@@ -61,7 +62,7 @@ class SendDocReminderJob implements ShouldQueue
     }
 
     /**
-     * @return array<string, mixed>
+     * @return array<int, string>
      */
     public function tags(): array
     {
@@ -77,7 +78,7 @@ class SendDocReminderJob implements ShouldQueue
         $doc = $this->getScopedDocsQuery()->find($docId);
         $recipientEmail = $this->getRecipientEmail($doc);
 
-        if (! $doc || ! $recipientEmail) {
+        if (!$doc || !$recipientEmail) {
             Log::warning('SendDocReminderJob: Document not found or has no recipient email', [
                 'doc_id' => $docId,
             ]);
@@ -85,7 +86,7 @@ class SendDocReminderJob implements ShouldQueue
             return;
         }
 
-        if (! $this->shouldSendReminder($doc)) {
+        if (!$this->shouldSendReminder($doc)) {
             return;
         }
 
@@ -114,7 +115,7 @@ class SendDocReminderJob implements ShouldQueue
             $recipientEmail = $this->getRecipientEmail($doc);
             $recipientName = $this->getRecipientName($doc);
 
-            if (! $recipientEmail) {
+            if (!$recipientEmail) {
                 continue;
             }
 
@@ -150,7 +151,7 @@ class SendDocReminderJob implements ShouldQueue
         foreach ($docs as $doc) {
             $recipientEmail = $this->getRecipientEmail($doc);
 
-            if (! $recipientEmail) {
+            if (!$recipientEmail) {
                 continue;
             }
 
@@ -208,7 +209,7 @@ class SendDocReminderJob implements ShouldQueue
     {
         $query = Doc::query();
 
-        if (! config('docs.owner.enabled', false)) {
+        if (!config('docs.owner.enabled', false)) {
             return $query;
         }
 
@@ -225,7 +226,7 @@ class SendDocReminderJob implements ShouldQueue
             return false;
         }
 
-        if (! config('docs.owner.enabled', false)) {
+        if (!config('docs.owner.enabled', false)) {
             return false;
         }
 
@@ -267,7 +268,7 @@ class SendDocReminderJob implements ShouldQueue
         }
     }
 
-    private function normalizeOwnerValue(mixed $value): string | int | null
+    private function normalizeOwnerValue(mixed $value): string|int|null
     {
         if ($value === null || $value === '') {
             return null;
@@ -292,7 +293,7 @@ class SendDocReminderJob implements ShouldQueue
 
     protected function getRecipientEmail(?Doc $doc): ?string
     {
-        if (! $doc) {
+        if (!$doc) {
             return null;
         }
 
@@ -303,7 +304,7 @@ class SendDocReminderJob implements ShouldQueue
 
     protected function getRecipientName(?Doc $doc): ?string
     {
-        if (! $doc) {
+        if (!$doc) {
             return null;
         }
 

@@ -237,7 +237,7 @@ final class CartValidator
                 return null;
             }
 
-            $currentPrice = $buyable->getBuyablePrice();
+            $currentPrice = (int) $buyable->getBuyablePrice()->getAmount();
             if ($item->price !== $currentPrice) {
                 return ValidationError::item(
                     $item->id,

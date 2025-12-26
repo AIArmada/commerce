@@ -283,9 +283,9 @@ final class CartCollection extends Collection
         return [
             'total_items' => $this->count(),
             'total_quantity' => $this->getTotalQuantity(),
-            'average_price' => $this->avg('price'),
-            'highest_price' => $this->max('price'),
-            'lowest_price' => $this->min('price'),
+            'average_price' => (float) ($this->avg('price') ?? 0),
+            'highest_price' => (int) ($this->max('price') ?? 0),
+            'lowest_price' => (int) ($this->min('price') ?? 0),
             'total_value' => $this->getSubtotal(),
             'total_with_conditions' => $this->getSubtotal(), // Same as total_value since subtotal now includes conditions
             'items_with_conditions' => $this->filter(fn (CartItem $item) => $item->hasConditions())->count(),

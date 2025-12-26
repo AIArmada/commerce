@@ -63,6 +63,10 @@ final class BoostUpdateCommand extends Command
         $agentNames = $config['agents'] ?? [];
         $guidelineNames = $config['guidelines'] ?? [];
 
+        if (! is_array($agentNames)) {
+            $agentNames = [];
+        }
+
         if (empty($agentNames)) {
             $this->components->warn('No agents configured in boost.json.');
 
@@ -74,10 +78,21 @@ final class BoostUpdateCommand extends Command
         $availableAgents = $allEnvironments->filter(fn ($env): bool => $env instanceof Agent);
 
         /** @var Collection<int, Agent> $selectedAgents */
-        $selectedAgents = collect($agentNames)
-            ->map(fn (string $name) => $availableAgents->first(fn ($env): bool => $env->name() === $name))
-            ->filter()
-            ->values();
+        $selectedAgents = collect();
+
+        foreach ($agentNames as $name) {
+            if (! is_string($name) || $name === '') {
+                continue;
+            }
+
+            $agent = $availableAgents->first(fn ($env): bool => $env->name() === $name);
+
+            if ($agent instanceof Agent) {
+                $selectedAgents->push($agent);
+            }
+        }
+
+        $selectedAgents = $selectedAgents->values();
 
         if ($selectedAgents->isEmpty()) {
             $this->components->warn('No valid agents found for the configured names.');

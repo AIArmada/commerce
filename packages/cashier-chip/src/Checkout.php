@@ -151,7 +151,7 @@ class Checkout implements Arrayable, Jsonable, JsonSerializable, Responsable
 
         $purchase = $builder->create();
 
-        return new static($owner, $purchase);
+        return new self($owner, $purchase);
     }
 
     /**

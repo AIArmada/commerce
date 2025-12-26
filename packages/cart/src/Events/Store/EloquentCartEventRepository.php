@@ -180,7 +180,7 @@ final class EloquentCartEventRepository implements CartEventRepositoryInterface
 
         return (int) CartEvent::query()
             ->where('cart_id', $cartId)
-            ->max('stream_position') ?? 0;
+            ->max('stream_position');
     }
 
     /**
@@ -197,7 +197,7 @@ final class EloquentCartEventRepository implements CartEventRepositoryInterface
 
         return (int) CartEvent::query()
             ->where('cart_id', $cartId)
-            ->max('aggregate_version') ?? 0;
+            ->max('aggregate_version');
     }
 
     /**

@@ -167,21 +167,6 @@ final class RankQualificationService
         return $affiliate->rank_id !== $newRank?->id;
     }
 
-    private function determineReason(Affiliate $affiliate, ?AffiliateRank $newRank): RankQualificationReason
-    {
-        if ($affiliate->rank === null) {
-            return RankQualificationReason::Initial;
-        }
-
-        if ($newRank === null) {
-            return RankQualificationReason::Demoted;
-        }
-
-        return $newRank->isHigherThan($affiliate->rank)
-            ? RankQualificationReason::Qualified
-            : RankQualificationReason::Demoted;
-    }
-
     private function changeRank(Affiliate $affiliate, ?AffiliateRank $newRank, RankQualificationReason $reason): void
     {
         $oldRank = $affiliate->rank;

@@ -10,7 +10,7 @@ use Throwable;
 /**
  * Exception thrown when a gateway is not found.
  */
-class GatewayNotFoundException extends Exception
+final class GatewayNotFoundException extends Exception
 {
     /**
      * Create a new exception instance.

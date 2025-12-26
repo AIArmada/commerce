@@ -431,7 +431,6 @@ class SetupCommand extends Command
         }
 
         /** @var class-string<\Illuminate\Database\Eloquent\Model> $userModel */
-
         $existingUsers = $userModel::count();
 
         if ($existingUsers === 0) {

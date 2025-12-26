@@ -26,13 +26,31 @@ use InvalidArgumentException;
  */
 trait HasOwner // @phpstan-ignore trait.unused
 {
-    protected static function bootHasOwner(): void
+    protected static function resolveOwnerScopeConfig(): \AIArmada\CommerceSupport\Support\OwnerScopeConfig
     {
-        if (! method_exists(static::class, 'ownerScopeConfig')) {
-            return;
+        // @phpstan-ignore-next-line
+        if (method_exists(static::class, 'ownerScopeConfig')) {
+            // @phpstan-ignore-next-line
+            $config = static::ownerScopeConfig();
+
+            // @phpstan-ignore-next-line
+            if ($config instanceof \AIArmada\CommerceSupport\Support\OwnerScopeConfig) {
+                return $config;
+            }
         }
 
-        $config = static::ownerScopeConfig();
+        return new \AIArmada\CommerceSupport\Support\OwnerScopeConfig(
+            enabled: true,
+            includeGlobal: true,
+            owner: null,
+            ownerTypeColumn: 'owner_type',
+            ownerIdColumn: 'owner_id',
+        );
+    }
+
+    protected static function bootHasOwner(): void
+    {
+        $config = static::resolveOwnerScopeConfig();
 
         if (! $config->enabled) {
             return;
@@ -59,21 +77,16 @@ trait HasOwner // @phpstan-ignore trait.unused
      */
     public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
     {
-        $ownerTypeColumn = 'owner_type';
-        $ownerIdColumn = 'owner_id';
+        /** @var \AIArmada\CommerceSupport\Support\OwnerScopeConfig $config */
+        $config = static::resolveOwnerScopeConfig();
 
-        if (method_exists(static::class, 'ownerScopeConfig')) {
-            /** @var \AIArmada\CommerceSupport\Support\OwnerScopeConfig $config */
-            $config = static::ownerScopeConfig();
-
-            if (! $config->enabled) {
-                return $query;
-            }
-
-            $includeGlobal = $includeGlobal && $config->includeGlobal;
-            $ownerTypeColumn = $config->ownerTypeColumn;
-            $ownerIdColumn = $config->ownerIdColumn;
+        if (! $config->enabled) {
+            return $query;
         }
+
+        $includeGlobal = $includeGlobal && $config->includeGlobal;
+        $ownerTypeColumn = $config->ownerTypeColumn;
+        $ownerIdColumn = $config->ownerIdColumn;
 
         if ($owner === OwnerContext::CURRENT) {
             $owner = OwnerContext::resolve();
@@ -100,15 +113,10 @@ trait HasOwner // @phpstan-ignore trait.unused
      */
     public function scopeGlobalOnly(Builder $query): Builder
     {
-        $ownerTypeColumn = 'owner_type';
-        $ownerIdColumn = 'owner_id';
-
-        if (method_exists(static::class, 'ownerScopeConfig')) {
-            /** @var \AIArmada\CommerceSupport\Support\OwnerScopeConfig $config */
-            $config = static::ownerScopeConfig();
-            $ownerTypeColumn = $config->ownerTypeColumn;
-            $ownerIdColumn = $config->ownerIdColumn;
-        }
+        /** @var \AIArmada\CommerceSupport\Support\OwnerScopeConfig $config */
+        $config = static::resolveOwnerScopeConfig();
+        $ownerTypeColumn = $config->ownerTypeColumn;
+        $ownerIdColumn = $config->ownerIdColumn;
 
         return $query->withoutOwnerScope()
             ->whereNull($ownerTypeColumn)
@@ -184,22 +192,16 @@ trait HasOwner // @phpstan-ignore trait.unused
             return null;
         }
 
-        if (method_exists($owner, 'getAttribute')) {
-            /** @var string|null $name */
-            $name = $owner->getAttribute('name');
-            /** @var string|null $displayName */
-            $displayName = $owner->getAttribute('display_name');
-            /** @var string|null $email */
-            $email = $owner->getAttribute('email');
-            /** @var int|string $key */
-            $key = $owner->getKey();
-
-            return $name ?? $displayName ?? $email ?? class_basename($owner) . ':' . (string) $key;
-        }
+        /** @var string|null $name */
+        $name = $owner->getAttribute('name');
+        /** @var string|null $displayName */
+        $displayName = $owner->getAttribute('display_name');
+        /** @var string|null $email */
+        $email = $owner->getAttribute('email');
 
         /** @var int|string $key */
         $key = $owner->getKey();
 
-        return class_basename($owner) . ':' . (string) $key;
+        return $name ?? $displayName ?? $email ?? class_basename($owner) . ':' . (string) $key;
     }
 }

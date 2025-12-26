@@ -7,7 +7,7 @@ namespace AIArmada\Affiliates\Services;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use Carbon\Carbon;
+use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 
 final class AffiliateReportService
@@ -15,7 +15,7 @@ final class AffiliateReportService
     /**
      * @return array{attributions: int, conversions: int, revenue_minor: int, commission_minor: int}
      */
-    public function getSummary(Carbon $startDate, Carbon $endDate): array
+    public function getSummary(CarbonInterface $startDate, CarbonInterface $endDate): array
     {
         $conversions = AffiliateConversion::query()
             ->forOwner()
@@ -38,7 +38,7 @@ final class AffiliateReportService
     /**
      * @return array<int, array{affiliate_id: string, affiliate_code: string, name: string|null, conversions: int, revenue_minor: int, commission_minor: int}>
      */
-    public function getTopAffiliates(Carbon $startDate, Carbon $endDate, int $limit = 10): array
+    public function getTopAffiliates(CarbonInterface $startDate, CarbonInterface $endDate, int $limit = 10): array
     {
         $rows = AffiliateConversion::query()
             ->forOwner()
@@ -70,7 +70,7 @@ final class AffiliateReportService
     /**
      * @return array<int, array{date: string, conversions: int, revenue_minor: int, commission_minor: int}>
      */
-    public function getConversionTrend(Carbon $startDate, Carbon $endDate): array
+    public function getConversionTrend(CarbonInterface $startDate, CarbonInterface $endDate): array
     {
         $rows = AffiliateConversion::query()
             ->forOwner()
@@ -94,7 +94,7 @@ final class AffiliateReportService
     /**
      * @return array{sources: array<string, int>, campaigns: array<string, int>}
      */
-    public function getTrafficSources(Carbon $startDate, Carbon $endDate): array
+    public function getTrafficSources(CarbonInterface $startDate, CarbonInterface $endDate): array
     {
         $conversions = AffiliateConversion::query()
             ->forOwner()

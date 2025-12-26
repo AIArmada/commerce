@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Model;
  *
  * Can be referenced as either `Cashier` or `CashierChip` for compatibility.
  */
-class Cashier
+final class Cashier
 {
     /**
      * The Cashier Chip library version.
@@ -42,8 +42,10 @@ class Cashier
 
     /**
      * The default customer model class name.
+     *
+     * @var class-string<Model>
      */
-    public static string $customerModel = 'App\\Models\\User';
+    public static string $customerModel = Model::class;
 
     /**
      * The subscription model class name.
@@ -76,7 +78,7 @@ class Cashier
     /**
      * Get the customer instance by its CHIP ID.
      *
-     * @phpstan-return (Model&BillableContract)|null
+     * @return (Model&BillableContract)|null
      */
     public static function findBillable(?string $chipId): ?Model
     {
@@ -86,7 +88,10 @@ class Cashier
 
         $model = static::$customerModel;
 
-        return $model::where('chip_id', $chipId)->first();
+        /** @var (Model&BillableContract)|null $billable */
+        $billable = $model::where('chip_id', $chipId)->first();
+
+        return $billable;
     }
 
     /**
@@ -95,7 +100,7 @@ class Cashier
      * This explicitly bypasses owner scoping when the current owner is not resolvable,
      * since webhook/event payloads are not tenant-aware.
      *
-     * @phpstan-return (Model&BillableContract)|null
+     * @return (Model&BillableContract)|null
      */
     public static function findBillableForWebhook(?string $chipId): ?Model
     {
@@ -111,7 +116,10 @@ class Cashier
             return null;
         }
 
-        return $query->where('chip_id', $chipId)->first();
+        /** @var (Model&BillableContract)|null $billable */
+        $billable = $query->where('chip_id', $chipId)->first();
+
+        return $billable;
     }
 
     public static function findSubscriptionForWebhook(Model $billable, string $subscriptionType): ?Subscription
@@ -210,7 +218,7 @@ class Cashier
         // Akaunting\Money expects amount in cents/minor units
         $money = new Money($amount, new Currency($currency), false);
 
-        return $money->format($locale);
+        return $money->format();
     }
 
     /**

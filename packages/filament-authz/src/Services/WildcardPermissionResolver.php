@@ -153,7 +153,8 @@ class WildcardPermissionResolver
             return false;
         }
 
-        $userPermissions = collect($user->getAllPermissions()->pluck('name'));
+        /** @var Collection<int, string> $userPermissions */
+        $userPermissions = $user->getAllPermissions()->pluck('name')->values();
 
         // Check direct permission
         if ($userPermissions->contains($permission)) {

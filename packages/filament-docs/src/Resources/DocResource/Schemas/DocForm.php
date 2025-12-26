@@ -23,7 +23,13 @@ final class DocForm
 {
     public static function configure(Schema $schema): Schema
     {
-        $docTypeOptions = collect(config('docs.types', []))
+        $docTypes = config('docs.types', []);
+
+        if (! is_array($docTypes)) {
+            $docTypes = [];
+        }
+
+        $docTypeOptions = collect($docTypes)
             ->keys()
             ->mapWithKeys(static fn (string $type): array => [$type => Str::headline($type)])
             ->all();

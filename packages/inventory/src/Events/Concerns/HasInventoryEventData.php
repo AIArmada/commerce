@@ -36,6 +36,8 @@ trait HasInventoryEventData
      */
     abstract public function getEventType(): string;
 
+    abstract protected function resolveQuantity(): int;
+
     /**
      * Get the unique event identifier.
      */
@@ -57,11 +59,7 @@ trait HasInventoryEventData
      */
     public function getInventoryableType(): string
     {
-        if (property_exists($this, 'inventoryable') && $this->inventoryable instanceof Model) {
-            return $this->inventoryable->getMorphClass();
-        }
-
-        return '';
+        return $this->inventoryable->getMorphClass();
     }
 
     /**
@@ -69,11 +67,7 @@ trait HasInventoryEventData
      */
     public function getInventoryableId(): string | int
     {
-        if (property_exists($this, 'inventoryable') && $this->inventoryable instanceof Model) {
-            return $this->inventoryable->getKey();
-        }
-
-        return '';
+        return $this->inventoryable->getKey();
     }
 
     /**
@@ -81,16 +75,7 @@ trait HasInventoryEventData
      */
     public function getQuantity(): int
     {
-        if (property_exists($this, 'quantity')) {
-            return (int) $this->quantity;
-        }
-
-        // For events with allocations collection
-        if (property_exists($this, 'allocations') && method_exists($this, 'getTotalQuantity')) {
-            return $this->getTotalQuantity();
-        }
-
-        return 0;
+        return $this->resolveQuantity();
     }
 
     /**
@@ -98,14 +83,6 @@ trait HasInventoryEventData
      */
     public function getLocationId(): ?string
     {
-        if (property_exists($this, 'locationId')) {
-            return $this->locationId;
-        }
-
-        if (property_exists($this, 'location_id')) {
-            return $this->location_id;
-        }
-
         return null;
     }
 
@@ -114,15 +91,7 @@ trait HasInventoryEventData
      */
     public function getCartId(): ?string
     {
-        if (property_exists($this, 'cartId')) {
-            return $this->cartId;
-        }
-
-        if (property_exists($this, 'cart_id')) {
-            return $this->cart_id;
-        }
-
-        return null;
+        return $this->cartId;
     }
 
     /**

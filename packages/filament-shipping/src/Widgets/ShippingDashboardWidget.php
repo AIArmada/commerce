@@ -10,7 +10,6 @@ use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Database\Eloquent\Model;
 
 class ShippingDashboardWidget extends StatsOverviewWidget
 {
@@ -142,14 +141,5 @@ class ShippingDashboardWidget extends StatsOverviewWidget
         return $query
             ->where('status', 'pending')
             ->count();
-    }
-
-    private function resolveOwner(): ?Model
-    {
-        if (! (bool) config('shipping.features.owner.enabled', false)) {
-            return null;
-        }
-
-        return OwnerContext::resolve();
     }
 }

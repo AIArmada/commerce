@@ -49,6 +49,7 @@ final class VoucherBridge
             return null;
         }
 
+        /** @phpstan-ignore function.alreadyNarrowedType */
         if (method_exists(VoucherResource::class, 'canView') && ! VoucherResource::canView($voucher)) {
             return null;
         }

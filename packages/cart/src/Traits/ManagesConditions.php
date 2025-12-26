@@ -19,6 +19,8 @@ use Traversable;
 
 trait ManagesConditions
 {
+    abstract public function invalidatePipelineCache(): void;
+
     /**
      * Add condition to cart
      *
@@ -53,14 +55,10 @@ trait ManagesConditions
     {
         $conditions = $this->storage->getConditions($this->getIdentifier(), $this->instance());
 
-        if (! $conditions || ! is_array($conditions)) { // @phpstan-ignore function.alreadyNarrowedType
-            return new CartConditionCollection;
-        }
-
         // Convert array back to CartConditionCollection
         $collection = new CartConditionCollection;
         foreach ($conditions as $conditionData) {
-            if (is_array($conditionData) && isset($conditionData['name'])) {
+            if (isset($conditionData['name'])) {
                 $condition = CartCondition::fromArray($conditionData);
                 $collection->put($condition->getName(), $condition);
             }
@@ -96,9 +94,7 @@ trait ManagesConditions
         $this->storage->putConditions($this->getIdentifier(), $this->instance(), $conditionsArray);
 
         // Invalidate pipeline cache after condition modification
-        if (method_exists($this, 'invalidatePipelineCache')) {
-            $this->invalidatePipelineCache();
-        }
+        $this->invalidatePipelineCache();
 
         // Dispatch cart-level condition removed event
         if ($this->eventsEnabled && $this->events && $removedCondition) {
@@ -116,9 +112,7 @@ trait ManagesConditions
         $this->storage->putConditions($this->getIdentifier(), $this->instance(), []);
 
         // Invalidate pipeline cache after condition modification
-        if (method_exists($this, 'invalidatePipelineCache')) {
-            $this->invalidatePipelineCache();
-        }
+        $this->invalidatePipelineCache();
 
         return true;
     }
@@ -151,9 +145,7 @@ trait ManagesConditions
         $this->storage->putConditions($this->getIdentifier(), $this->instance(), $conditionsArray);
 
         // Invalidate pipeline cache after condition modification
-        if (method_exists($this, 'invalidatePipelineCache')) {
-            $this->invalidatePipelineCache();
-        }
+        $this->invalidatePipelineCache();
 
         return true;
     }
@@ -176,9 +168,7 @@ trait ManagesConditions
         $this->save($cartItems);
 
         // Invalidate pipeline cache after condition modification
-        if (method_exists($this, 'invalidatePipelineCache')) {
-            $this->invalidatePipelineCache();
-        }
+        $this->invalidatePipelineCache();
 
         // Dispatch item-level condition added event
         if ($this->eventsEnabled && $this->events) {
@@ -215,9 +205,7 @@ trait ManagesConditions
         $this->save($cartItems);
 
         // Invalidate pipeline cache after condition modification
-        if (method_exists($this, 'invalidatePipelineCache')) {
-            $this->invalidatePipelineCache();
-        }
+        $this->invalidatePipelineCache();
 
         // Dispatch item-level condition removed event
         if ($this->eventsEnabled && $this->events && $removedCondition) {
@@ -245,9 +233,7 @@ trait ManagesConditions
         $this->save($cartItems);
 
         // Invalidate pipeline cache after condition modification
-        if (method_exists($this, 'invalidatePipelineCache')) {
-            $this->invalidatePipelineCache();
-        }
+        $this->invalidatePipelineCache();
 
         return true;
     }
@@ -460,9 +446,7 @@ trait ManagesConditions
         $this->storage->putConditions($this->getIdentifier(), $this->instance(), $conditionsArray);
 
         // Invalidate pipeline cache after condition modification
-        if (method_exists($this, 'invalidatePipelineCache')) {
-            $this->invalidatePipelineCache();
-        }
+        $this->invalidatePipelineCache();
 
         // Dispatch cart-level condition added event
         if ($this->eventsEnabled && $this->events) {

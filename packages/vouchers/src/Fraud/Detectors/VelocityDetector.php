@@ -8,6 +8,7 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Fraud\Enums\FraudSignalType;
 use AIArmada\Vouchers\Fraud\FraudSignal;
 use AIArmada\Vouchers\Models\VoucherRedemption;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 
@@ -265,7 +266,7 @@ class VelocityDetector extends AbstractFraudDetector
             ->count('user_id');
     }
 
-    private function scopeVoucherOwner($query): void
+    private function scopeVoucherOwner(Builder $query): void
     {
         if (! config('vouchers.owner.enabled', false)) {
             return;

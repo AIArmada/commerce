@@ -167,7 +167,7 @@ class PermissionGroupsCommand extends Command
             name: $name,
             description: $description ?: null,
             parentId: $parentId,
-            authz: $selectedPermissions,
+            permissions: $selectedPermissions,
         );
 
         $this->info("Permission group '{$group->name}' created successfully.");

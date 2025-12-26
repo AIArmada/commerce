@@ -8,7 +8,6 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
 use Filament\Widgets\ChartWidget;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
 
@@ -128,14 +127,5 @@ class CarrierPerformanceWidget extends ChartWidget
                 ],
             ],
         ];
-    }
-
-    private function resolveOwner(): ?Model
-    {
-        if (! (bool) config('shipping.features.owner.enabled', false)) {
-            return null;
-        }
-
-        return OwnerContext::resolve();
     }
 }

@@ -7,7 +7,7 @@ namespace AIArmada\Cashier\Exceptions;
 /**
  * Exception thrown when a payment requires additional action (e.g., 3D Secure).
  */
-class PaymentActionRequired extends CashierException
+final class PaymentActionRequired extends CashierException
 {
     /**
      * The payment intent ID or reference.

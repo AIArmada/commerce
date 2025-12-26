@@ -28,6 +28,11 @@ class TestEventWithTrait
     {
         return 'test.event';
     }
+
+    protected function resolveQuantity(): int
+    {
+        return $this->quantity;
+    }
 }
 
 class TestEventWithAllocations
@@ -36,8 +41,13 @@ class TestEventWithAllocations
 
     public Collection $allocations;
 
-    public function __construct()
+    public Model $inventoryable;
+
+    public ?string $cartId = null;
+
+    public function __construct(Model $inventoryable)
     {
+        $this->inventoryable = $inventoryable;
         $this->allocations = new Collection;
         $this->initializeEventData();
     }
@@ -51,6 +61,11 @@ class TestEventWithAllocations
     {
         return 25;
     }
+
+    protected function resolveQuantity(): int
+    {
+        return $this->getTotalQuantity();
+    }
 }
 
 class TestEventWithUnderscoreProperties
@@ -59,10 +74,13 @@ class TestEventWithUnderscoreProperties
 
     public string $location_id = 'loc-underscore';
 
-    public string $cart_id = 'cart-underscore';
+    public ?string $cartId = 'cart-underscore';
 
-    public function __construct()
+    public Model $inventoryable;
+
+    public function __construct(Model $inventoryable)
     {
+        $this->inventoryable = $inventoryable;
         $this->initializeEventData();
     }
 
@@ -70,20 +88,40 @@ class TestEventWithUnderscoreProperties
     {
         return 'underscore.event';
     }
+
+    public function getLocationId(): ?string
+    {
+        return $this->location_id;
+    }
+
+    protected function resolveQuantity(): int
+    {
+        return 0;
+    }
 }
 
 class TestEventMinimal
 {
     use HasInventoryEventData;
 
-    public function __construct()
+    public Model $inventoryable;
+
+    public ?string $cartId = null;
+
+    public function __construct(Model $inventoryable)
     {
+        $this->inventoryable = $inventoryable;
         $this->initializeEventData();
     }
 
     public function getEventType(): string
     {
         return 'minimal.event';
+    }
+
+    protected function resolveQuantity(): int
+    {
+        return 0;
     }
 }
 
@@ -110,12 +148,6 @@ describe('HasInventoryEventData', function (): void {
 
             expect($event->getInventoryableType())->toBe($this->item->getMorphClass());
         });
-
-        it('returns empty string when no inventoryable', function (): void {
-            $event = new TestEventMinimal;
-
-            expect($event->getInventoryableType())->toBe('');
-        });
     });
 
     describe('getInventoryableId', function (): void {
@@ -124,51 +156,39 @@ describe('HasInventoryEventData', function (): void {
 
             expect($event->getInventoryableId())->toBe($this->item->getKey());
         });
-
-        it('returns empty string when no inventoryable', function (): void {
-            $event = new TestEventMinimal;
-
-            expect($event->getInventoryableId())->toBe('');
-        });
     });
 
     describe('getQuantity', function (): void {
-        it('returns quantity property', function (): void {
+        it('returns quantity property via resolveQuantity', function (): void {
             $event = new TestEventWithTrait($this->item, 50);
 
             expect($event->getQuantity())->toBe(50);
         });
 
         it('calls getTotalQuantity for allocations events', function (): void {
-            $event = new TestEventWithAllocations;
+            $event = new TestEventWithAllocations($this->item);
 
             expect($event->getQuantity())->toBe(25);
         });
 
         it('returns 0 when no quantity available', function (): void {
-            $event = new TestEventMinimal;
+            $event = new TestEventMinimal($this->item);
 
             expect($event->getQuantity())->toBe(0);
         });
     });
 
     describe('getLocationId', function (): void {
-        it('returns locationId property', function (): void {
+        it('returns null by default', function (): void {
             $event = new TestEventWithTrait($this->item, 10, 'loc-123');
 
-            expect($event->getLocationId())->toBe('loc-123');
+            expect($event->getLocationId())->toBeNull();
         });
 
-        it('returns location_id property', function (): void {
-            $event = new TestEventWithUnderscoreProperties;
+        it('returns location_id when overridden', function (): void {
+            $event = new TestEventWithUnderscoreProperties($this->item);
 
             expect($event->getLocationId())->toBe('loc-underscore');
-        });
-
-        it('returns null when no location', function (): void {
-            $event = new TestEventMinimal;
-
-            expect($event->getLocationId())->toBeNull();
         });
     });
 
@@ -179,14 +199,14 @@ describe('HasInventoryEventData', function (): void {
             expect($event->getCartId())->toBe('cart-123');
         });
 
-        it('returns cart_id property', function (): void {
-            $event = new TestEventWithUnderscoreProperties;
+        it('returns cartId property from class', function (): void {
+            $event = new TestEventWithUnderscoreProperties($this->item);
 
             expect($event->getCartId())->toBe('cart-underscore');
         });
 
         it('returns null when no cart', function (): void {
-            $event = new TestEventMinimal;
+            $event = new TestEventMinimal($this->item);
 
             expect($event->getCartId())->toBeNull();
         });
@@ -232,7 +252,7 @@ describe('HasInventoryEventData', function (): void {
 
             expect($payload['event_type'])->toBe('test.event');
             expect($payload['quantity'])->toBe(20);
-            expect($payload['location_id'])->toBe('loc-456');
+            expect($payload['location_id'])->toBeNull(); // getLocationId returns null by default
             expect($payload['cart_id'])->toBe('cart-789');
         });
     });

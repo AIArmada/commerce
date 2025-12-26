@@ -210,9 +210,13 @@ class ChipGateway extends AbstractGateway
      */
     public function subscriptions(BillableContract $billable): Collection
     {
-        return $billable->subscriptions()->get()->map(function ($subscription) {
-            return new ChipSubscription($subscription);
-        });
+        $subscriptions = $billable->subscriptions()
+            ->get()
+            ->map(fn ($subscription) => new ChipSubscription($subscription))
+            ->values();
+
+        /** @var Collection<int, SubscriptionContract> $subscriptions */
+        return $subscriptions;
     }
 
     /**
@@ -226,9 +230,12 @@ class ChipGateway extends AbstractGateway
     {
         $includePending = is_bool($parameters) ? $parameters : ($parameters['include_pending'] ?? false);
 
-        return $billable->invoices($includePending)->map(function ($invoice) {
-            return new Chip\ChipInvoice($invoice);
-        });
+        $invoices = $billable->invoices($includePending)
+            ->map(fn ($invoice) => new Chip\ChipInvoice($invoice))
+            ->values();
+
+        /** @var Collection<int, InvoiceContract> $invoices */
+        return $invoices;
     }
 
     /**
@@ -239,9 +246,12 @@ class ChipGateway extends AbstractGateway
      */
     public function paymentMethods(BillableContract $billable, ?string $type = null): Collection
     {
-        return $billable->paymentMethods($type)->map(function ($paymentMethod) use ($billable) {
-            return new ChipPaymentMethod($paymentMethod, $billable);
-        });
+        $paymentMethods = $billable->paymentMethods($type)
+            ->map(fn ($paymentMethod) => new ChipPaymentMethod($paymentMethod, $billable))
+            ->values();
+
+        /** @var Collection<int, PaymentMethodContract> $paymentMethods */
+        return $paymentMethods;
     }
 
     /**
@@ -306,7 +316,7 @@ class ChipGateway extends AbstractGateway
         try {
             $publicKey = $this->client()->getPublicKey();
 
-            if (! is_string($publicKey) || $publicKey === '') {
+            if ($publicKey === '') {
                 return false;
             }
 

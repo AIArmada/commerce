@@ -40,39 +40,34 @@ class SegmentPolicy
             return $segment->owner_type === null && $segment->owner_id === null;
         }
 
-        if ($includeGlobal && method_exists($segment, 'isGlobal') && $segment->isGlobal()) {
+        if ($includeGlobal && $segment->isGlobal()) {
             return true;
         }
 
-        if (method_exists($segment, 'belongsToOwner')) {
-            return $segment->belongsToOwner($owner);
-        }
-
-        return $segment->owner_type === $owner->getMorphClass()
-            && $segment->owner_id === $owner->getKey();
+        return $segment->belongsToOwner($owner);
     }
 
-    public function viewAny($user): bool
+    public function viewAny(mixed $user): bool
     {
         return $this->isAuthenticated($user);
     }
 
-    public function view($user, Segment $segment): bool
+    public function view(mixed $user, Segment $segment): bool
     {
         return $this->isAuthenticated($user) && $this->isAccessible($segment);
     }
 
-    public function create($user): bool
+    public function create(mixed $user): bool
     {
         return $this->isAuthenticated($user);
     }
 
-    public function update($user, Segment $segment): bool
+    public function update(mixed $user, Segment $segment): bool
     {
         return $this->isAuthenticated($user) && $this->isAccessible($segment);
     }
 
-    public function delete($user, Segment $segment): bool
+    public function delete(mixed $user, Segment $segment): bool
     {
         return $this->isAuthenticated($user) && $this->isAccessible($segment);
     }
@@ -80,7 +75,7 @@ class SegmentPolicy
     /**
      * Determine if user can rebuild segment.
      */
-    public function rebuild($user, Segment $segment): bool
+    public function rebuild(mixed $user, Segment $segment): bool
     {
         return $this->isAuthenticated($user) && $this->update($user, $segment) && $segment->is_automatic;
     }

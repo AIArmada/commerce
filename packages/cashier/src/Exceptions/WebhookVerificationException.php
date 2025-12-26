@@ -7,7 +7,7 @@ namespace AIArmada\Cashier\Exceptions;
 /**
  * Exception thrown when a webhook cannot be verified.
  */
-class WebhookVerificationException extends CashierException
+final class WebhookVerificationException extends CashierException
 {
     /**
      * Create a new webhook verification exception.

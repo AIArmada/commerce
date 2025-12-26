@@ -38,7 +38,7 @@ class ChipPayment implements PaymentContract
     public function id(): string
     {
         if ($this->payment instanceof Payment) {
-            return $this->payment->id() ?? '';
+            return $this->payment->id();
         }
 
         return $this->payment->id;
@@ -268,7 +268,7 @@ class ChipPayment implements PaymentContract
     public function status(): string
     {
         if ($this->payment instanceof Payment) {
-            return $this->payment->status() ?? 'unknown';
+            return $this->payment->status();
         }
 
         return $this->payment->status ?? 'unknown';

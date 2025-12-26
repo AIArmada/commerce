@@ -31,4 +31,9 @@ final class InventoryReleased implements InventoryEventInterface
     {
         return 'inventory.released';
     }
+
+    protected function resolveQuantity(): int
+    {
+        return $this->quantity;
+    }
 }

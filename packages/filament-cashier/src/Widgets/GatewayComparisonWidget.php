@@ -86,11 +86,10 @@ final class GatewayComparisonWidget extends ChartWidget
     /**
      * Get monthly revenue data for a gateway.
      *
-     * @return array<int>
+     * @return list<float>
      */
     protected function getMonthlyDataForGateway(string $gateway): array
     {
-        $detector = app(GatewayDetector::class);
         $data = [];
 
         // Generate data for last 6 months

@@ -104,7 +104,7 @@ class Affiliate extends Model
     }
 
     /**
-     * @return HasMany<AffiliateAttribution, self>
+     * @return HasMany<AffiliateAttribution, $this>
      */
     public function attributions(): HasMany
     {
@@ -112,7 +112,7 @@ class Affiliate extends Model
     }
 
     /**
-     * @return HasMany<AffiliateConversion, self>
+     * @return HasMany<AffiliateConversion, $this>
      */
     public function conversions(): HasMany
     {
@@ -120,7 +120,7 @@ class Affiliate extends Model
     }
 
     /**
-     * @return MorphMany<AffiliatePayout, self>
+     * @return MorphMany<AffiliatePayout, $this>
      */
     public function payouts(): MorphMany
     {
@@ -128,7 +128,7 @@ class Affiliate extends Model
     }
 
     /**
-     * @return HasMany<AffiliateLink, self>
+     * @return HasMany<AffiliateLink, $this>
      */
     public function links(): HasMany
     {
@@ -173,7 +173,7 @@ class Affiliate extends Model
     }
 
     /**
-     * @return HasMany<AffiliateFraudSignal, self>
+     * @return HasMany<AffiliateFraudSignal, $this>
      */
     public function fraudSignals(): HasMany
     {
@@ -181,7 +181,7 @@ class Affiliate extends Model
     }
 
     /**
-     * @return HasMany<AffiliateDailyStat, self>
+     * @return HasMany<AffiliateDailyStat, $this>
      */
     public function dailyStats(): HasMany
     {
@@ -197,7 +197,7 @@ class Affiliate extends Model
     }
 
     /**
-     * @return HasMany<AffiliatePayoutMethod, self>
+     * @return HasMany<AffiliatePayoutMethod, $this>
      */
     public function payoutMethods(): HasMany
     {
@@ -205,7 +205,7 @@ class Affiliate extends Model
     }
 
     /**
-     * @return HasMany<AffiliatePayoutHold, self>
+     * @return HasMany<AffiliatePayoutHold, $this>
      */
     public function payoutHolds(): HasMany
     {
@@ -215,7 +215,7 @@ class Affiliate extends Model
     /**
      * Get all vouchers linked to this affiliate (when aiarmada/vouchers is installed).
      *
-     * @return HasMany<\AIArmada\Vouchers\Models\Voucher, self>|HasMany<Model, self>
+     * @return HasMany<\AIArmada\Vouchers\Models\Voucher, $this>|HasMany<Model, $this>
      */
     public function vouchers(): HasMany
     {

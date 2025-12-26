@@ -41,7 +41,7 @@ class SegmentResource extends Resource
             ->where('is_active', true)
             ->count();
 
-        return $count ?: null;
+        return $count > 0 ? (string) $count : null;
     }
 
     /**

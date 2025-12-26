@@ -27,16 +27,6 @@ final class VoucherFraudDetector
      */
     private float $blockThreshold = 0.8;
 
-    /**
-     * Whether to run detectors in parallel (for future async support).
-     */
-    private bool $parallelExecution = false;
-
-    /**
-     * Maximum combined score before automatic blocking.
-     */
-    private float $maxAllowedScore = 100.0;
-
     public function __construct()
     {
         $this->registerDefaultDetectors();

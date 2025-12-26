@@ -18,6 +18,12 @@ final class DocTemplateForm
 {
     public static function configure(Schema $schema): Schema
     {
+        $docTypes = config('docs.types', []);
+
+        if (! is_array($docTypes)) {
+            $docTypes = [];
+        }
+
         return $schema
             ->schema([
                 Section::make('Template Information')
@@ -49,12 +55,12 @@ final class DocTemplateForm
                                 Select::make('doc_type')
                                     ->label('Document Type')
                                     ->options(
-                                        collect(config('docs.types', []))
+                                        collect($docTypes)
                                             ->keys()
                                             ->mapWithKeys(static fn (string $type): array => [$type => Str::headline($type)])
                                             ->all()
                                     )
-                                    ->default(array_key_first(config('docs.types', ['invoice' => []])))
+                                    ->default(array_key_first($docTypes) ?? 'invoice')
                                     ->required(),
 
                                 TextInput::make('view_name')

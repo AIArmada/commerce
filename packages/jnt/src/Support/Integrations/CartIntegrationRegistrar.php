@@ -6,7 +6,6 @@ namespace AIArmada\Jnt\Support\Integrations;
 
 use AIArmada\Jnt\Cart\CartManagerWithJntShipping;
 use AIArmada\Jnt\Cart\JntShippingCalculator;
-use AIArmada\Jnt\Services\JntExpressService;
 use Illuminate\Contracts\Foundation\Application;
 use Illuminate\Support\Facades\Facade;
 
@@ -47,11 +46,9 @@ final class CartIntegrationRegistrar
 
             $proxy = CartManagerWithJntShipping::fromCartManager($manager);
 
-            // Inject the calculator if JntExpressService is available
-            if ($app->bound(JntExpressService::class)) {
-                $calculator = new JntShippingCalculator($app->make(JntExpressService::class));
-                $proxy->setCalculator($calculator);
-            }
+            // Inject the calculator
+            $calculator = new JntShippingCalculator;
+            $proxy->setCalculator($calculator);
 
             $app->instance('AIArmada\\Cart\\CartManager', $proxy);
             $app->instance($cartManagerInterface, $proxy);

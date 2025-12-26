@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace AIArmada\CommerceSupport\Support;
 
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use Closure;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use InvalidArgumentException;
@@ -46,7 +45,7 @@ final class OwnerContext
         self::$hasOverride = false;
     }
 
-    public static function withOwner(?Model $owner, Closure $callback): mixed
+    public static function withOwner(?Model $owner, callable $callback): mixed
     {
         $previousOwner = self::$override;
         $previousHasOverride = self::$hasOverride;

@@ -41,7 +41,7 @@ final class MRRWidget extends BaseWidget
         $subscriptionModel = Cashier::$subscriptionModel;
 
         return CashierChipOwnerScope::apply($subscriptionModel::query())
-            ->active()
+            ->whereActive()
             ->with('items')
             ->get()
             ->sum(function (Subscription $subscription): int {

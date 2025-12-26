@@ -118,9 +118,16 @@ final class AppliedVouchersWidget extends BaseWidget
             /** @phpstan-ignore-next-line - getAppliedVouchers method is added dynamically via proxy */
             $appliedVouchers = $cartInstance->getAppliedVouchers();
 
+            $appliedVoucherItems = [];
+            if (is_iterable($appliedVouchers)) {
+                foreach ($appliedVouchers as $appliedVoucher) {
+                    $appliedVoucherItems[] = $appliedVoucher;
+                }
+            }
+
             // Transform vouchers into a collection for the table
-            /** @var Collection<int, mixed> $voucherCollection */
-            $voucherCollection = collect($appliedVouchers);
+            /** @var Collection<int|string, mixed> $voucherCollection */
+            $voucherCollection = collect($appliedVoucherItems);
 
             return $voucherCollection->map(function ($voucher) {
                 return [

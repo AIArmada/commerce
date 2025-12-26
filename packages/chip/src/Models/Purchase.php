@@ -37,49 +37,49 @@ use Illuminate\Support\Carbon;
  */
 class Purchase extends ChipModel
 {
-    /** @return Attribute<int|null, never> */
     public function amount(): Attribute
     {
-        return Attribute::get(fn (): ?int => Arr::get($this->purchase, 'amount'));
+        return Attribute::get(function (): ?int {
+            $amount = Arr::get($this->purchase, 'amount');
+
+            return is_numeric($amount) ? (int) $amount : null;
+        });
     }
 
-    /** @return Attribute<string|null, never> */
     public function currency(): Attribute
     {
-        return Attribute::get(fn (): ?string => Arr::get($this->purchase, 'currency'));
+        return Attribute::get(function (): ?string {
+            $currency = Arr::get($this->purchase, 'currency');
+
+            return is_string($currency) ? $currency : null;
+        });
     }
 
-    /** @return Attribute<Carbon|null, never> */
     public function createdOn(): Attribute
     {
         return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['created_on'] ?? null));
     }
 
-    /** @return Attribute<Carbon|null, never> */
     public function updatedOn(): Attribute
     {
         return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['updated_on'] ?? null));
     }
 
-    /** @return Attribute<Carbon|null, never> */
     public function dueOn(): Attribute
     {
         return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['due'] ?? null));
     }
 
-    /** @return Attribute<Carbon|null, never> */
     public function viewedOn(): Attribute
     {
         return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['viewed_on'] ?? null));
     }
 
-    /** @return Attribute<string|null, never> */
     public function clientEmail(): Attribute
     {
         return Attribute::get(fn (): ?string => Arr::get($this->client, 'email'));
     }
 
-    /** @return Attribute<Money|null, never> */
     public function totalMoney(): Attribute
     {
         return Attribute::get(function (): ?Money {
@@ -103,7 +103,6 @@ class Purchase extends ChipModel
         });
     }
 
-    /** @return Attribute<string|null, never> */
     public function formattedTotal(): Attribute
     {
         return Attribute::get(function (): ?string {
@@ -134,9 +133,6 @@ class Purchase extends ChipModel
         return (string) str($this->status ?? 'unknown')->headline();
     }
 
-    /**
-     * @return Attribute<array<int, array{status: string, timestamp: Carbon|null, translated: string}>, never>
-     */
     public function timeline(): Attribute
     {
         return Attribute::get(function (): array {
@@ -145,9 +141,9 @@ class Purchase extends ChipModel
             /** @var array<int, array<string, mixed>> $history */
             return collect($history)
                 ->map(fn (array $entry): array => [
-                    'status' => $entry['status'] ?? 'unknown',
+                    'status' => (string) ($entry['status'] ?? 'unknown'),
                     'timestamp' => isset($entry['timestamp']) ? Carbon::createFromTimestampUTC((int) $entry['timestamp']) : null,
-                    'translated' => (string) str($entry['status'] ?? 'unknown')->headline(),
+                    'translated' => (string) str((string) ($entry['status'] ?? 'unknown'))->headline(),
                 ])
                 ->all();
         });

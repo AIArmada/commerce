@@ -43,7 +43,7 @@ final class ActiveSubscribersWidget extends BaseWidget
         $subscriptionModel = Cashier::$subscriptionModel;
 
         return CashierChipOwnerScope::apply($subscriptionModel::query())
-            ->active()
+            ->whereActive()
             ->count();
     }
 
@@ -53,7 +53,7 @@ final class ActiveSubscribersWidget extends BaseWidget
         $subscriptionModel = Cashier::$subscriptionModel;
 
         return CashierChipOwnerScope::apply($subscriptionModel::query())
-            ->onTrial()
+            ->whereOnTrial()
             ->count();
     }
 

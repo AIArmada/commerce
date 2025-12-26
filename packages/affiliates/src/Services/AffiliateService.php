@@ -149,7 +149,7 @@ final class AffiliateService
         if ($attribution) {
             $this->fillAttribution($attribution, $payload);
         } else {
-            if (! isset($payload['cart_instance']) || $payload['cart_instance'] === null) {
+            if (! isset($payload['cart_instance'])) {
                 $payload['cart_instance'] = 'default';
             }
 
@@ -482,7 +482,7 @@ final class AffiliateService
         if ($attribution) {
             $this->fillAttribution($attribution, $payload);
         } else {
-            if (! isset($payload['cart_instance']) || $payload['cart_instance'] === null) {
+            if (! isset($payload['cart_instance'])) {
                 $payload['cart_instance'] = 'default';
             }
 
@@ -605,7 +605,7 @@ final class AffiliateService
 
     private function shouldDispatch(string $flag): bool
     {
-        return (bool) config("affiliates.events.{$flag}", true) && $this->events !== null;
+        return (bool) config("affiliates.events.{$flag}", true);
     }
 
     private function isRateLimited(Affiliate $affiliate, array $context): bool

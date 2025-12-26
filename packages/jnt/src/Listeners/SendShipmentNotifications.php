@@ -79,12 +79,7 @@ class SendShipmentNotifications implements ShouldQueue
      */
     private function resolveNotifiable(JntOrder $order): ?object
     {
-        // Try customer relationship first
-        if (method_exists($order, 'customer') && $order->customer !== null) {
-            return $order->customer;
-        }
-
-        // Try owner relationship
+        // Try owner relationship (from HasOwner trait)
         if (method_exists($order, 'owner') && $order->owner !== null) {
             return $order->owner;
         }

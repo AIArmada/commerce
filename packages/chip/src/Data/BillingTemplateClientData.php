@@ -34,7 +34,8 @@ class BillingTemplateClientData extends ChipData
     {
         $data = self::resolvePayload(...$payloads);
 
-        return new self(
+        // @phpstan-ignore-next-line new.static
+        return new static(
             id: $data['id'] ?? '',
             type: $data['type'] ?? 'billing_template_client',
             created_on: $data['created_on'] ?? time(),

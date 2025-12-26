@@ -118,10 +118,11 @@ final class ResourcePermissionDiscovery
     /**
      * Get resources from a panel.
      *
-     * @return Collection<int, class-string<resource>>
+     * @return Collection<(int|string), class-string<resource>>
      */
     private function getResourcesFromPanel(Panel $panel): Collection
     {
+        /** @phpstan-ignore return.type (Filament's getResources() returns class-string, not class-string<Resource>) */
         return collect($panel->getResources());
     }
 

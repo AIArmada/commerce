@@ -51,7 +51,9 @@ class ProductResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return static::getEloquentQuery()->where('status', ProductStatus::Active)->count() ?: null;
+        $count = static::getEloquentQuery()->where('status', ProductStatus::Active)->count();
+
+        return $count > 0 ? (string) $count : null;
     }
 
     public static function form(Schema $schema): Schema
@@ -292,13 +294,14 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('type')
                     ->label('Type')
                     ->badge()
-                    ->formatStateUsing(fn ($state) => $state->label())
-                    ->color(fn ($state) => match ($state) {
+                    ->formatStateUsing(fn (ProductType | string | null $state): string => ($state instanceof ProductType ? $state : ProductType::tryFrom((string) $state))?->label() ?? '—')
+                    ->color(fn (ProductType | string | null $state): string => match ($state instanceof ProductType ? $state : ProductType::tryFrom((string) $state)) {
                         ProductType::Simple => 'gray',
                         ProductType::Configurable => 'info',
                         ProductType::Bundle => 'warning',
                         ProductType::Digital => 'success',
                         ProductType::Subscription => 'primary',
+                        null => 'gray',
                     })
                     ->toggleable(isToggledHiddenByDefault: true),
 

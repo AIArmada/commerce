@@ -7,7 +7,7 @@ namespace AIArmada\CashierChip\Exceptions;
 use AIArmada\CashierChip\Payment;
 use Exception;
 
-class IncompletePayment extends Exception
+final class IncompletePayment extends Exception
 {
     /**
      * The CHIP Payment instance.

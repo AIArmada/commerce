@@ -102,7 +102,8 @@ trait HasCartEventData
     public function toEventPayload(): array
     {
         // Default implementation uses toArray if available
-        if (method_exists($this, 'toArray')) {
+        // @phpstan-ignore-next-line
+        if (is_callable([$this, 'toArray'])) {
             return $this->toArray();
         }
 

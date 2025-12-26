@@ -172,7 +172,7 @@ class RecoveryAnalytics
      */
     public function getStrategyComparison(Carbon $from, Carbon $to): Collection
     {
-        return RecoveryCampaign::query()->forOwner()
+        $collection = RecoveryCampaign::query()->forOwner()
             ->whereBetween('created_at', [$from, $to])
             ->where('total_sent', '>', 0)
             ->toBase()
@@ -202,6 +202,11 @@ class RecoveryAnalytics
                     ? (int) ($row->total_revenue / $row->total_recovered)
                     : 0,
             ]);
+
+        /** @var Collection<int, array<string, mixed>> $result */
+        $result = $collection;
+
+        return $result;
     }
 
     /**
@@ -384,15 +389,18 @@ class RecoveryAnalytics
         $bestRate = $best->sent > 0 ? $best->conversions / $best->sent : 0;
 
         if ($bestRate > $campaign->getConversionRate() * 1.5) {
-            $segment = match ($best->value_range) {
+            $valueRange = (string) ($best->value_range ?? '');
+
+            $segment = match ($valueRange) {
                 'low' => 'lower value carts (under $50)',
                 'medium' => 'medium value carts ($50-$150)',
                 'high' => 'high value carts (over $150)',
+                default => 'carts of varying values',
             };
 
             return RecoveryInsight::targeting(
                 recommendation: "Focusing on {$segment} shows significantly higher conversion rates.",
-                segmentToFocus: $best->value_range,
+                segmentToFocus: $valueRange !== '' ? $valueRange : 'unknown',
                 segmentConversionRate: $bestRate,
                 confidence: min(0.9, $byValue->sum('sent') / 200),
             );

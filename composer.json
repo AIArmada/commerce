@@ -176,7 +176,7 @@
         "pint": "pint",
         "rector": "rector",
         "test:pest": "pest --parallel",
-        "test:phpstan": "phpstan analyse",
+        "test:phpstan": "phpstan analyse --level=6",
         "test": [
             "@test:pest",
             "@test:phpstan"

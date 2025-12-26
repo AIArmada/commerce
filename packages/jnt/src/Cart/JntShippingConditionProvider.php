@@ -11,7 +11,6 @@ use AIArmada\Cart\Conditions\Enums\ConditionPhase;
 use AIArmada\Cart\Conditions\Enums\ConditionScope;
 use AIArmada\Cart\Contracts\ConditionProviderInterface;
 use AIArmada\Jnt\Data\AddressData;
-use AIArmada\Jnt\Services\JntExpressService;
 use Illuminate\Support\Carbon;
 
 /**
@@ -32,7 +31,6 @@ readonly class JntShippingConditionProvider implements ConditionProviderInterfac
     private const int PRIORITY = 75;
 
     public function __construct(
-        private JntExpressService $jntService,
         private JntShippingCalculator $calculator
     ) {}
 

@@ -9,6 +9,7 @@ use AIArmada\Vouchers\Fraud\Enums\FraudSignalType;
 use AIArmada\Vouchers\Fraud\FraudSignal;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherRedemption;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Str;
@@ -325,7 +326,7 @@ class CodeAbuseDetector extends AbstractFraudDetector
             ->count('device_fingerprint');
     }
 
-    private function scopeVoucherOwner($query): void
+    private function scopeVoucherOwner(Builder $query): void
     {
         if (! config('vouchers.owner.enabled', false)) {
             return;

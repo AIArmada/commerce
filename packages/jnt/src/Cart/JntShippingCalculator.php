@@ -6,7 +6,6 @@ namespace AIArmada\Jnt\Cart;
 
 use AIArmada\Cart\Cart;
 use AIArmada\Jnt\Data\AddressData;
-use AIArmada\Jnt\Services\JntExpressService;
 
 /**
  * Calculates J&T Express shipping rates for cart contents.
@@ -16,9 +15,7 @@ use AIArmada\Jnt\Services\JntExpressService;
  */
 class JntShippingCalculator
 {
-    public function __construct(
-        private readonly JntExpressService $jntService
-    ) {}
+    public function __construct() {}
 
     /**
      * Calculate shipping cost for the cart to a destination address.

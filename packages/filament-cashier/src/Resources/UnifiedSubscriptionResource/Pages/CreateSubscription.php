@@ -116,9 +116,9 @@ final class CreateSubscription extends CreateRecord
      */
     protected function getCustomerOptions(): array
     {
-        $billableModel = config('cashier.models.billable', 'App\\Models\\User');
+        $billableModel = (string) config('cashier.models.billable', 'App\\Models\\User');
 
-        if (! class_exists($billableModel)) {
+        if (! class_exists($billableModel) || ! is_a($billableModel, Model::class, true)) {
             return [];
         }
 
@@ -180,9 +180,9 @@ final class CreateSubscription extends CreateRecord
             return [];
         }
 
-        $billableModel = config('cashier.models.billable', 'App\\Models\\User');
+        $billableModel = (string) config('cashier.models.billable', 'App\\Models\\User');
 
-        if (! class_exists($billableModel)) {
+        if (! class_exists($billableModel) || ! is_a($billableModel, Model::class, true)) {
             return [];
         }
 
@@ -220,7 +220,11 @@ final class CreateSubscription extends CreateRecord
 
     protected function handleRecordCreation(array $data): Model
     {
-        $billableModel = config('cashier.models.billable', 'App\\Models\\User');
+        $billableModel = (string) config('cashier.models.billable', 'App\\Models\\User');
+
+        if (! class_exists($billableModel) || ! is_a($billableModel, Model::class, true)) {
+            throw new RuntimeException('Configured cashier billable model must be an Eloquent model.');
+        }
         $user = CashierOwnerScope::apply($billableModel::query())
             ->whereKey($data['user_id'])
             ->first();
@@ -241,50 +245,26 @@ final class CreateSubscription extends CreateRecord
             throw new RuntimeException("Selected gateway is not available: {$gateway}");
         }
 
-        // Build the subscription using the unified cashier interface
-        if (class_exists(Cashier::class)) {
-            $builder = Cashier::gateway($gateway)
-                ->newSubscription($user, $data['type'] ?? 'default', $data['plan_id']);
+        $builder = Cashier::gateway($gateway)
+            ->newSubscription($user, $data['type'] ?? 'default', $data['plan_id']);
 
-            if (isset($data['quantity']) && $data['quantity'] > 1) {
-                $builder->quantity($data['quantity']);
-            }
+        if (isset($data['quantity']) && $data['quantity'] > 1) {
+            $builder->quantity((int) $data['quantity']);
+        }
 
-            if (! empty($data['has_trial']) && ! empty($data['trial_days'])) {
-                $builder->trialDays((int) $data['trial_days']);
-            }
+        if (! empty($data['has_trial']) && ! empty($data['trial_days'])) {
+            $builder->trialDays((int) $data['trial_days']);
+        }
 
-            if (! empty($data['payment_method'])) {
-                $builder->create($data['payment_method']);
-
-                return $user;
-            }
-
-            $builder->create();
+        if (! empty($data['payment_method']) && is_string($data['payment_method'])) {
+            $builder->create($data['payment_method']);
 
             return $user;
         }
 
-        // Fallback for direct gateway usage
-        if ($gateway === 'stripe' && method_exists($user, 'newSubscription')) {
-            $builder = $user->newSubscription($data['type'] ?? 'default', $data['plan_id']);
+        $builder->create();
 
-            if (isset($data['quantity']) && $data['quantity'] > 1) {
-                $builder->quantity($data['quantity']);
-            }
-
-            if (! empty($data['has_trial']) && ! empty($data['trial_days'])) {
-                $builder->trialDays((int) $data['trial_days']);
-            }
-
-            if (! empty($data['payment_method'])) {
-                return $builder->create($data['payment_method']);
-            }
-
-            return $builder->create();
-        }
-
-        throw new RuntimeException("Unable to create subscription on gateway: {$gateway}");
+        return $user;
     }
 
     protected function getCreatedNotification(): ?Notification

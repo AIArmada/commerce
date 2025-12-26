@@ -25,7 +25,13 @@ class PayoutDashboardPage extends Page
     public string $period = '30';
 
     /** @var array{total_payouts: int, completed_amount: float, pending_count: int, failed_count: int, active_accounts: int} */
-    public array $metrics = [];
+    public array $metrics = [
+        'total_payouts' => 0,
+        'completed_amount' => 0.0,
+        'pending_count' => 0,
+        'failed_count' => 0,
+        'active_accounts' => 0,
+    ];
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedBanknotes;
 
@@ -98,7 +104,7 @@ class PayoutDashboardPage extends Page
     }
 
     /**
-     * @return array<string, class-string>
+     * @return list<class-string>
      */
     protected function getHeaderWidgets(): array
     {
@@ -108,7 +114,7 @@ class PayoutDashboardPage extends Page
     }
 
     /**
-     * @return array<string, class-string>
+     * @return list<class-string>
      */
     protected function getFooterWidgets(): array
     {

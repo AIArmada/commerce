@@ -166,7 +166,7 @@ PHP;
     /**
      * Append to an array property.
      */
-    public function appendToArray(string $property, string $key, mixed $value): self
+    public function appendToArray(string $property, ?string $key, mixed $value): self
     {
         $content = $this->getCurrentContent();
         $valueStr = $this->valueToString($value);

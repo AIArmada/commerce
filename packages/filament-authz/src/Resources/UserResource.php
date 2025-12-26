@@ -60,9 +60,15 @@ class UserResource extends Resource
             $components = $appForm->getComponents();
 
             // Add password field if not present
-            $hasPassword = collect($components)->contains(function ($component) {
-                return method_exists($component, 'getName') && $component->getName() === 'password';
-            });
+            $hasPassword = false;
+
+            foreach ($components as $component) {
+                if (method_exists($component, 'getName') && $component->getName() === 'password') {
+                    $hasPassword = true;
+
+                    break;
+                }
+            }
 
             if (! $hasPassword) {
                 $components[] = Forms\Components\TextInput::make('password')
@@ -100,10 +106,21 @@ class UserResource extends Resource
             $columns = $appTable->getColumns();
 
             // Check if roles column already exists
-            $hasRolesColumn = collect($columns)->contains(function ($column) {
-                return method_exists($column, 'getName') &&
-                       (str_contains($column->getName(), 'roles') || $column->getName() === 'roles.name');
-            });
+            $hasRolesColumn = false;
+
+            foreach ($columns as $column) {
+                if (! method_exists($column, 'getName')) {
+                    continue;
+                }
+
+                $name = $column->getName();
+
+                if (str_contains($name, 'roles') || $name === 'roles.name') {
+                    $hasRolesColumn = true;
+
+                    break;
+                }
+            }
 
             // Add roles column if not present
             if (! $hasRolesColumn) {
@@ -159,6 +176,11 @@ class UserResource extends Resource
             'App\Filament\Resources\UserResource',
             'App\Filament\Resources\Users\UserResource',
         ];
+
+        $candidates = array_map(
+            static fn (string $candidate): string => $candidate,
+            $candidates,
+        );
 
         foreach ($candidates as $candidate) {
             if (class_exists($candidate) && is_subclass_of($candidate, Resource::class)) {

@@ -10,6 +10,7 @@ use AIArmada\FilamentCart\Data\LiveStats;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use stdClass;
 
 /**
  * Real-time cart monitoring service.
@@ -89,7 +90,7 @@ class CartMonitor
     /**
      * Get recent abandonments within the specified minutes.
      *
-     * @return Collection<int, object>
+     * @return Collection<int, stdClass>
      */
     public function getRecentAbandonments(int $minutes = 30): Collection
     {
@@ -107,7 +108,7 @@ class CartMonitor
     /**
      * Get high value carts above the threshold.
      *
-     * @return Collection<int, object>
+     * @return Collection<int, stdClass>
      */
     public function getHighValueCarts(?int $threshold = null): Collection
     {
@@ -125,7 +126,7 @@ class CartMonitor
     /**
      * Detect abandonments that need attention.
      *
-     * @return Collection<int, object>
+     * @return Collection<int, stdClass>
      */
     public function detectAbandonments(): Collection
     {
@@ -153,7 +154,7 @@ class CartMonitor
     /**
      * Detect fraud signals based on cart patterns.
      *
-     * @return Collection<int, object>
+     * @return Collection<int, stdClass>
      */
     public function detectFraudSignals(): Collection
     {
@@ -192,7 +193,7 @@ class CartMonitor
     /**
      * Detect recovery opportunities.
      *
-     * @return Collection<int, object>
+     * @return Collection<int, stdClass>
      */
     public function detectRecoveryOpportunities(): Collection
     {
@@ -215,7 +216,7 @@ class CartMonitor
     /**
      * Get recent cart activity feed.
      *
-     * @return Collection<int, object>
+     * @return Collection<int, stdClass>
      */
     public function getRecentActivity(int $limit = 20): Collection
     {

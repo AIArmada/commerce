@@ -6,9 +6,9 @@ namespace AIArmada\FilamentPricing\Pages;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Pricing\Services\PriceCalculator;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
-use AIArmada\Pricing\Services\PriceCalculator;
 use BackedEnum;
 use DateTimeInterface;
 use Filament\Forms;
@@ -54,8 +54,9 @@ class PriceSimulator extends Page
 
     /**
      * @template TModel of Model
-     * @param class-string<TModel> $modelClass
-     * @param Builder<TModel> $query
+     *
+     * @param  class-string<TModel>  $modelClass
+     * @param  Builder<TModel>  $query
      * @return Builder<TModel>
      */
     private function scopeQueryForOwner(string $modelClass, Builder $query, ?Model $owner): Builder

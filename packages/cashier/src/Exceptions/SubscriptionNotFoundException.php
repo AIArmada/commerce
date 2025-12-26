@@ -7,7 +7,7 @@ namespace AIArmada\Cashier\Exceptions;
 /**
  * Exception thrown when a subscription is not found.
  */
-class SubscriptionNotFoundException extends CashierException
+final class SubscriptionNotFoundException extends CashierException
 {
     /**
      * Create a new subscription not found exception.

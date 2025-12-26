@@ -16,7 +16,7 @@ final class RateLimitExceededException extends RuntimeException
         public readonly CartRateLimitResult $result,
         ?string $message = null
     ) {
-        parent::__construct($message ?? $result->getMessage() ?? 'Rate limit exceeded');
+        parent::__construct($message ?? $result->getMessage());
     }
 
     public function getOperation(): string

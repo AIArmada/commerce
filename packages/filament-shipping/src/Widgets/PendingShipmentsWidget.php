@@ -12,7 +12,6 @@ use Filament\Actions\Action;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Illuminate\Database\Eloquent\Model;
 
 class PendingShipmentsWidget extends BaseWidget
 {
@@ -76,14 +75,5 @@ class PendingShipmentsWidget extends BaseWidget
                     ->url(fn (Shipment $record) => ShipmentResource::getUrl('view', ['record' => $record])),
             ])
             ->paginated(false);
-    }
-
-    private function resolveOwner(): ?Model
-    {
-        if (! (bool) config('shipping.features.owner.enabled', false)) {
-            return null;
-        }
-
-        return OwnerContext::resolve();
     }
 }

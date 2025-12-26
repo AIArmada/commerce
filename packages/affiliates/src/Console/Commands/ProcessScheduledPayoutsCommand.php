@@ -7,7 +7,6 @@ namespace AIArmada\Affiliates\Console\Commands;
 use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
-use AIArmada\Affiliates\Services\AffiliatePayoutService;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Exception;
 use Illuminate\Console\Command;
@@ -23,9 +22,8 @@ final class ProcessScheduledPayoutsCommand extends Command
 
     protected $description = 'Process scheduled payouts for affiliates';
 
-    public function __construct(
-        private readonly AffiliatePayoutService $payoutService
-    ) {
+    public function __construct()
+    {
         parent::__construct();
     }
 

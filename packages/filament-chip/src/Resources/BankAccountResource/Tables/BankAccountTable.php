@@ -173,7 +173,7 @@ final class BankAccountTable
                                     ->send();
                             }
                         })
-                                ->visible(fn (BankAccount $record): bool => in_array($record->status, ['active', 'approved'], true)),
+                        ->visible(fn (BankAccount $record): bool => in_array($record->status, ['active', 'approved'], true)),
                 ])
                     ->iconButton()
                     ->icon(Heroicon::OutlinedEllipsisVertical),

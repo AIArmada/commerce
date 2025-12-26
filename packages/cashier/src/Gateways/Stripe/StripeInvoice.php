@@ -158,9 +158,14 @@ class StripeInvoice implements InvoiceContract
     {
         $stripeInvoice = $this->getStripeInvoice();
 
-        return collect($stripeInvoice->lines->data)->map(function ($item) {
-            return new StripeInvoiceLineItem($item);
-        });
+        $data = $stripeInvoice->lines->data;
+
+        $items = collect(is_array($data) ? $data : [])
+            ->map(static fn ($item): InvoiceLineItemContract => new StripeInvoiceLineItem($item))
+            ->values();
+
+        /** @var Collection<int, InvoiceLineItemContract> $items */
+        return $items;
     }
 
     /**
