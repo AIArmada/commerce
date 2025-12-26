@@ -11,7 +11,7 @@ use AIArmada\Vouchers\AI\Contracts\AbandonmentPredictorInterface;
 use AIArmada\Vouchers\AI\Contracts\CartFeatureExtractorInterface;
 use AIArmada\Vouchers\AI\Enums\AbandonmentRiskLevel;
 use AIArmada\Vouchers\AI\Enums\InterventionType;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -325,7 +325,7 @@ final class RuleBasedAbandonmentPredictor implements AbandonmentPredictorInterfa
     /**
      * Predict when abandonment will occur.
      */
-    private function predictAbandonmentTime(float $riskScore, array $features): ?Carbon
+    private function predictAbandonmentTime(float $riskScore, array $features): ?CarbonImmutable
     {
         // Only predict for medium+ risk
         if ($riskScore < 0.3) {
@@ -342,6 +342,6 @@ final class RuleBasedAbandonmentPredictor implements AbandonmentPredictorInterfa
             default => 60,
         };
 
-        return now()->addMinutes($minutesRemaining);
+        return CarbonImmutable::now()->addMinutes($minutesRemaining);
     }
 }

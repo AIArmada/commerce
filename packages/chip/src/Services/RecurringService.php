@@ -16,9 +16,9 @@ use AIArmada\Chip\Exceptions\ChipApiException;
 use AIArmada\Chip\Exceptions\NoRecurringTokenException;
 use AIArmada\Chip\Models\RecurringCharge;
 use AIArmada\Chip\Models\RecurringSchedule;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 use Throwable;
 
 /**
@@ -41,7 +41,7 @@ class RecurringService
         int $intervalCount = 1,
         ?Model $subscriber = null,
         string $currency = 'MYR',
-        ?Carbon $firstChargeAt = null,
+        ?CarbonImmutable $firstChargeAt = null,
         int $maxFailures = 3,
         ?array $metadata = null,
     ): RecurringSchedule {
@@ -75,7 +75,7 @@ class RecurringService
         RecurringInterval $interval,
         int $intervalCount = 1,
         ?Model $subscriber = null,
-        ?Carbon $firstChargeAt = null,
+        ?CarbonImmutable $firstChargeAt = null,
     ): RecurringSchedule {
         $recurringToken = $purchaseData['recurring_token'] ?? null;
 
@@ -280,13 +280,13 @@ class RecurringService
         }
     }
 
-    private function calculateFirstCharge(RecurringInterval $interval, int $count): Carbon
+    private function calculateFirstCharge(RecurringInterval $interval, int $count): CarbonImmutable
     {
         return match ($interval) {
-            RecurringInterval::Daily => now()->addDays($count),
-            RecurringInterval::Weekly => now()->addWeeks($count),
-            RecurringInterval::Monthly => now()->addMonths($count),
-            RecurringInterval::Yearly => now()->addYears($count),
+            RecurringInterval::Daily => CarbonImmutable::now()->addDays($count),
+            RecurringInterval::Weekly => CarbonImmutable::now()->addWeeks($count),
+            RecurringInterval::Monthly => CarbonImmutable::now()->addMonths($count),
+            RecurringInterval::Yearly => CarbonImmutable::now()->addYears($count),
         };
     }
 }

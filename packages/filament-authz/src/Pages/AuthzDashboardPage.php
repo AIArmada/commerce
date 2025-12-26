@@ -9,7 +9,7 @@ use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
 use BackedEnum;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Exception;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
@@ -268,14 +268,14 @@ class AuthzDashboardPage extends Page
         return $breakdown;
     }
 
-    protected function getTimeRangeStart(): Carbon
+    protected function getTimeRangeStart(): CarbonImmutable
     {
         return match ($this->timeRange) {
-            '1h' => now()->subHour(),
-            '24h' => now()->subHours(24),
-            '7d' => now()->subDays(7),
-            '30d' => now()->subDays(30),
-            default => now()->subHours(24),
+            '1h' => CarbonImmutable::now()->subHour(),
+            '24h' => CarbonImmutable::now()->subHours(24),
+            '7d' => CarbonImmutable::now()->subDays(7),
+            '30d' => CarbonImmutable::now()->subDays(30),
+            default => CarbonImmutable::now()->subHours(24),
         };
     }
 
