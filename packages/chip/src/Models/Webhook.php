@@ -32,13 +32,11 @@ class Webhook extends ChipModel
 {
     public $timestamps = true;
 
-    /** @return Attribute<Carbon|null, never> */
     public function createdOn(): Attribute
     {
         return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['created_on'] ?? null));
     }
 
-    /** @return Attribute<Carbon|null, never> */
     public function updatedOn(): Attribute
     {
         return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['updated_on'] ?? null));

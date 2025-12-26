@@ -97,11 +97,7 @@ class CashierChipServiceProvider extends ServiceProvider
                 __DIR__ . '/../config/cashier-chip.php' => $this->app->configPath('cashier-chip.php'),
             ], 'cashier-chip-config');
 
-            $publishesMigrationsMethod = method_exists($this, 'publishesMigrations')
-                ? 'publishesMigrations'
-                : 'publishes';
-
-            $this->{$publishesMigrationsMethod}([
+            $this->publishesMigrations([
                 __DIR__ . '/../database/migrations' => $this->app->databasePath('migrations'),
             ], 'cashier-chip-migrations');
 

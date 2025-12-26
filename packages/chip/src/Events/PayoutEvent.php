@@ -22,7 +22,7 @@ abstract class PayoutEvent
     /**
      * @param  array<string, mixed>  $payload
      */
-    public function __construct(
+    final public function __construct(
         public readonly PayoutData $payout,
         public readonly array $payload,
     ) {}

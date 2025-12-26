@@ -12,6 +12,7 @@ use AIArmada\FilamentCart\Services\AlertEvaluator;
 use AIArmada\FilamentCart\Services\CartMonitor;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
+use stdClass;
 
 class MonitorCartsCommand extends Command
 {
@@ -50,8 +51,6 @@ class MonitorCartsCommand extends Command
             $this->runMonitoringPass();
             sleep($interval);
         }
-
-        return self::SUCCESS;
     }
 
     private function runMonitoringPass(): void
@@ -116,7 +115,7 @@ class MonitorCartsCommand extends Command
     }
 
     /**
-     * @param  \Illuminate\Support\Collection<int, object>  $items
+     * @param  \Illuminate\Support\Collection<int, stdClass>  $items
      */
     private function processEvents(string $eventType, $items): void
     {

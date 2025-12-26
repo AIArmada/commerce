@@ -104,7 +104,7 @@ class ChipSubscription implements SubscriptionContract
      */
     public function canceled(): bool
     {
-        return $this->subscription->canceled();
+        return $this->subscription->ends_at !== null;
     }
 
     /**
@@ -120,7 +120,9 @@ class ChipSubscription implements SubscriptionContract
      */
     public function onGracePeriod(): bool
     {
-        return $this->subscription->onGracePeriod();
+        $endsAt = $this->subscription->ends_at;
+
+        return $endsAt !== null && $endsAt->isFuture();
     }
 
     /**
@@ -202,7 +204,10 @@ class ChipSubscription implements SubscriptionContract
      */
     public function items(): Collection
     {
-        return $this->subscription->items->map(fn ($item) => new ChipSubscriptionItem($item));
+        /** @var Collection<int, SubscriptionItemContract> $items */
+        $items = $this->subscription->items->map(fn ($item) => new ChipSubscriptionItem($item));
+
+        return $items;
     }
 
     /**

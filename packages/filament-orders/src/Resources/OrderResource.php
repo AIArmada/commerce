@@ -44,7 +44,9 @@ class OrderResource extends Resource
 
     public static function getNavigationBadge(): ?string
     {
-        return self::getEloquentQuery()->whereState('status', [PendingPayment::class, Processing::class])->count() ?: null;
+        $count = self::getEloquentQuery()->whereState('status', [PendingPayment::class, Processing::class])->count();
+
+        return $count > 0 ? (string) $count : null;
     }
 
     public static function getNavigationBadgeColor(): ?string

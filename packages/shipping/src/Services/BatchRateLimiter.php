@@ -14,7 +14,7 @@ use Throwable;
  *
  * Prevents overwhelming carrier APIs during bulk operations.
  */
-class BatchRateLimiter
+final class BatchRateLimiter
 {
     /**
      * Maximum operations per time window.

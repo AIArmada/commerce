@@ -10,7 +10,6 @@ use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Laravel\Cashier\Subscription;
 
@@ -80,10 +79,6 @@ final class TotalMrrWidget extends StatsOverviewWidget
 
                 $stripeQuery->chunk(200, function (Collection $chunk) use (&$count, &$mrrByCurrency): void {
                     foreach ($chunk as $model) {
-                        if (! $model instanceof Model) {
-                            continue;
-                        }
-
                         $unified = UnifiedSubscription::fromStripe($model);
 
                         if (! $unified->status->isActive()) {
@@ -107,10 +102,6 @@ final class TotalMrrWidget extends StatsOverviewWidget
 
                 $chipQuery->chunk(200, function (Collection $chunk) use (&$count, &$mrrByCurrency): void {
                     foreach ($chunk as $model) {
-                        if (! $model instanceof Model) {
-                            continue;
-                        }
-
                         $unified = UnifiedSubscription::fromChip($model);
 
                         if (! $unified->status->isActive()) {

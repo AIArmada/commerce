@@ -7,6 +7,7 @@ namespace AIArmada\Vouchers\AI;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Carbon\Carbon;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use JsonException;
@@ -45,7 +46,7 @@ final class VoucherMLDataCollector
         $this->applyOwnerScopeToQuery($query, 'cart.owner', "{$cartsTable}.owner_type", "{$cartsTable}.owner_id");
         $this->applyOwnerScopeToQuery($query, 'orders.owner', "{$ordersTable}.owner_type", "{$ordersTable}.owner_id");
 
-        return $query
+        $data = $query
             ->select([
                 // Identifiers
                 "{$voucherUsageTable}.id as usage_id",
@@ -76,7 +77,12 @@ final class VoucherMLDataCollector
                 "{$voucherUsageTable}.created_at as applied_at",
                 "{$ordersTable}.created_at as converted_at",
             ])
-            ->get();
+            ->get()
+            ->map(fn (object $row): array => (array) $row)
+            ->values();
+
+        /** @var Collection<int, array<string, mixed>> $data */
+        return $data;
     }
 
     /**
@@ -99,7 +105,7 @@ final class VoucherMLDataCollector
         $this->applyOwnerScopeToQuery($query, 'cart.owner', "{$cartsTable}.owner_type", "{$cartsTable}.owner_id");
         $this->applyOwnerScopeToQuery($query, 'orders.owner', "{$ordersTable}.owner_type", "{$ordersTable}.owner_id");
 
-        return $query
+        $data = $query
             ->select([
                 // Identifiers
                 "{$cartsTable}.id as cart_id",
@@ -124,7 +130,12 @@ final class VoucherMLDataCollector
                 "{$cartsTable}.created_at as cart_created_at",
                 "{$ordersTable}.created_at as order_created_at",
             ])
-            ->get();
+            ->get()
+            ->map(fn (object $row): array => (array) $row)
+            ->values();
+
+        /** @var Collection<int, array<string, mixed>> $data */
+        return $data;
     }
 
     private function sqlHourOfDay(string $qualifiedColumn): string
@@ -187,7 +198,7 @@ final class VoucherMLDataCollector
 
         $this->applyOwnerScopeToQuery($query, 'vouchers.owner', "{$vouchersTable}.owner_type", "{$vouchersTable}.owner_id");
 
-        return $query
+        $data = $query
             ->select([
                 // Voucher info
                 "{$vouchersTable}.id as voucher_id",
@@ -210,7 +221,12 @@ final class VoucherMLDataCollector
                     ELSE 0 
                 END as conversion_rate"),
             ])
-            ->get();
+            ->get()
+            ->map(fn (object $row): array => (array) $row)
+            ->values();
+
+        /** @var Collection<int, array<string, mixed>> $data */
+        return $data;
     }
 
     /**
@@ -312,7 +328,7 @@ final class VoucherMLDataCollector
         ];
     }
 
-    private function applyOwnerScopeToQuery($query, string $configKey, string $ownerTypeColumn, string $ownerIdColumn): void
+    private function applyOwnerScopeToQuery(QueryBuilder $query, string $configKey, string $ownerTypeColumn, string $ownerIdColumn): void
     {
         if (! (bool) config($configKey . '.enabled', false)) {
             return;

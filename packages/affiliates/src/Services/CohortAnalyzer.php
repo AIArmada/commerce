@@ -9,6 +9,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -31,7 +32,7 @@ final class CohortAnalyzer
      *     total_commissions: int,
      *     avg_revenue_per_affiliate: float,
      *     avg_conversions_per_affiliate: float,
-     *     monthly_breakdown: array<string, array{
+     *     monthly_breakdown: array<int, array{
      *         month: int,
      *         active: int,
      *         conversions: int,
@@ -65,11 +66,11 @@ final class CohortAnalyzer
                 return $affiliate->conversions()->count();
             });
 
-            $totalRevenue = $affiliates->sum(function ($affiliate) {
+            $totalRevenue = (int) $affiliates->sum(function ($affiliate): int | float {
                 return $affiliate->conversions()->sum('total_minor');
             });
 
-            $totalCommissions = $affiliates->sum(function ($affiliate) {
+            $totalCommissions = (int) $affiliates->sum(function ($affiliate): int | float {
                 return $affiliate->conversions()->sum('commission_minor');
             });
 
@@ -81,16 +82,16 @@ final class CohortAnalyzer
                 'active_affiliates' => $activeAffiliates,
                 'retention_rate' => count($affiliateIds) > 0
                     ? round(($activeAffiliates / count($affiliateIds)) * 100, 2)
-                    : 0,
+                    : 0.0,
                 'total_conversions' => $totalConversions,
                 'total_revenue' => $totalRevenue,
                 'total_commissions' => $totalCommissions,
                 'avg_revenue_per_affiliate' => count($affiliateIds) > 0
                     ? round($totalRevenue / count($affiliateIds), 2)
-                    : 0,
+                    : 0.0,
                 'avg_conversions_per_affiliate' => count($affiliateIds) > 0
                     ? round($totalConversions / count($affiliateIds), 2)
-                    : 0,
+                    : 0.0,
                 'monthly_breakdown' => $monthlyBreakdown,
             ];
         }
@@ -346,9 +347,13 @@ final class CohortAnalyzer
 
         $this->applyOwnerScopeToQuery($cohortQuery, "{$affiliatesTable}.owner_type", "{$affiliatesTable}.owner_id");
 
-        return $cohortQuery->get()
-            ->groupBy('cohort_month')
-            ->map(fn ($group) => $group->pluck('id')->toArray());
+        $cohorts = $cohortQuery->get()
+            ->filter(fn (object $row): bool => isset($row->cohort_month) && is_string($row->cohort_month))
+            ->groupBy(fn (object $row): string => (string) $row->cohort_month)
+            ->map(fn (Collection $group): array => $group->pluck('id')->map(fn (mixed $id): string => (string) $id)->values()->all());
+
+        /** @var Collection<string, array<int, string>> $cohorts */
+        return $cohorts;
     }
 
     /**
@@ -402,7 +407,7 @@ final class CohortAnalyzer
         return $breakdown;
     }
 
-    private function applyOwnerScopeToQuery($query, string $ownerTypeColumn, string $ownerIdColumn): void
+    private function applyOwnerScopeToQuery(Builder $query, string $ownerTypeColumn, string $ownerIdColumn): void
     {
         if (! (bool) config('affiliates.owner.enabled', false)) {
             return;

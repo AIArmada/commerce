@@ -41,7 +41,8 @@ class PayoutData extends ChipData
         $currency = $data['currency'] ?? 'MYR';
         $amount = $data['amount'] ?? 0;
 
-        return new self(
+        // @phpstan-ignore-next-line new.static
+        return new static(
             id: (string) ($data['id'] ?? ''),
             type: $data['type'] ?? 'payout',
             created_on: $data['created_on'] ?? time(),

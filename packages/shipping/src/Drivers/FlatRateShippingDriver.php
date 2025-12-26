@@ -52,6 +52,10 @@ class FlatRateShippingDriver implements ShippingDriverInterface
     {
         $rates = $this->config['rates'] ?? [];
 
+        if (! is_array($rates)) {
+            $rates = [];
+        }
+
         return collect($rates)->map(fn (array $rate, string $code) => new ShippingMethodData(
             code: $code,
             name: $rate['name'] ?? ucfirst($code),
@@ -68,6 +72,10 @@ class FlatRateShippingDriver implements ShippingDriverInterface
         array $options = []
     ): Collection {
         $rates = $this->config['rates'] ?? [];
+
+        if (! is_array($rates)) {
+            $rates = [];
+        }
         $currency = $this->config['currency'] ?? 'MYR';
 
         return collect($rates)->map(fn (array $rate, string $code) => new RateQuoteData(

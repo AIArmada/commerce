@@ -10,6 +10,7 @@ use AIArmada\FilamentCart\Services\CartMonitor;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Database\Query\Builder;
 
 /**
  * Recent cart activity feed widget.
@@ -61,7 +62,7 @@ class RecentActivityWidget extends BaseWidget
             ->paginated([10]);
     }
 
-    private function getActivityQuery()
+    private function getActivityQuery(): Builder
     {
         $snapshotsTable = $this->getSnapshotsTable();
 

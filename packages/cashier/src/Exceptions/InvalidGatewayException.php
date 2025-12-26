@@ -7,7 +7,7 @@ namespace AIArmada\Cashier\Exceptions;
 /**
  * Exception thrown when an invalid gateway is specified.
  */
-class InvalidGatewayException extends CashierException
+final class InvalidGatewayException extends CashierException
 {
     /**
      * Create a new invalid gateway exception.

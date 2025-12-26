@@ -7,7 +7,7 @@ namespace AIArmada\Cashier\Exceptions;
 /**
  * Exception thrown when a subscription update fails.
  */
-class SubscriptionUpdateFailure extends CashierException
+final class SubscriptionUpdateFailure extends CashierException
 {
     /**
      * Create exception for incomplete subscription.

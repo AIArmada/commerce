@@ -8,7 +8,6 @@ use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
-use Illuminate\Support\Carbon;
 
 /**
  * Service for managing commission maturity and release to available balance.
@@ -84,7 +83,7 @@ final class CommissionMaturityService
     /**
      * Get the maturity date for a conversion.
      */
-    public function getMaturityDate(AffiliateConversion $conversion): Carbon
+    public function getMaturityDate(AffiliateConversion $conversion): \Carbon\CarbonInterface
     {
         return $conversion->occurred_at->addDays($this->maturityDays);
     }

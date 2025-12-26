@@ -199,15 +199,12 @@ class JntServiceProvider extends PackageServiceProvider
         if (class_exists('AIArmada\\Cart\\CartManager')) {
             $this->app->singleton(
                 JntShippingCalculator::class,
-                fn (Application $app): JntShippingCalculator => new JntShippingCalculator(
-                    $app->make(JntExpressService::class)
-                )
+                fn (): JntShippingCalculator => new JntShippingCalculator
             );
 
             $this->app->singleton(
                 JntShippingConditionProvider::class,
                 fn (Application $app): JntShippingConditionProvider => new JntShippingConditionProvider(
-                    $app->make(JntExpressService::class),
                     $app->make(JntShippingCalculator::class)
                 )
             );

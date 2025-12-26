@@ -102,7 +102,7 @@ final class TrialConversionsWidget extends BaseWidget
         $subscriptionModel = Cashier::$subscriptionModel;
 
         return CashierChipOwnerScope::apply($subscriptionModel::query())
-            ->onTrial()
+            ->whereOnTrial()
             ->count();
     }
 

@@ -61,7 +61,7 @@ class ProductPolicy
     /**
      * Determine whether the user can view any products.
      */
-    public function viewAny($user): bool
+    public function viewAny(mixed $user): bool
     {
         return true;
     }
@@ -69,7 +69,7 @@ class ProductPolicy
     /**
      * Determine whether the user can view the product.
      */
-    public function view($user, Product $product): bool
+    public function view(mixed $user, Product $product): bool
     {
         return $this->canAccessProduct($product);
     }
@@ -77,7 +77,7 @@ class ProductPolicy
     /**
      * Determine whether the user can create products.
      */
-    public function create($user): bool
+    public function create(mixed $user): bool
     {
         return true;
     }
@@ -85,7 +85,7 @@ class ProductPolicy
     /**
      * Determine whether the user can update the product.
      */
-    public function update($user, Product $product): bool
+    public function update(mixed $user, Product $product): bool
     {
         return $this->canAccessProduct($product);
     }
@@ -93,7 +93,7 @@ class ProductPolicy
     /**
      * Determine whether the user can delete the product.
      */
-    public function delete($user, Product $product): bool
+    public function delete(mixed $user, Product $product): bool
     {
         return $this->canAccessProduct($product);
     }
@@ -101,7 +101,7 @@ class ProductPolicy
     /**
      * Determine whether the user can duplicate the product.
      */
-    public function duplicate($user, Product $product): bool
+    public function duplicate(mixed $user, Product $product): bool
     {
         return $this->view($user, $product);
     }

@@ -7,7 +7,7 @@ namespace AIArmada\Cashier\Exceptions;
 /**
  * Exception thrown when a payment fails.
  */
-class PaymentFailedException extends CashierException
+final class PaymentFailedException extends CashierException
 {
     /**
      * The payment intent ID or reference.

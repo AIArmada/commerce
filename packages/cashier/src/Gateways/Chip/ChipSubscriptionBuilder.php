@@ -172,7 +172,7 @@ class ChipSubscriptionBuilder implements SubscriptionBuilderContract
      */
     public function withCoupon(?string $coupon): self
     {
-        if ($coupon && method_exists($this->builder, 'withCoupon')) {
+        if ($coupon) {
             $this->builder->withCoupon($coupon);
         }
 
@@ -186,7 +186,7 @@ class ChipSubscriptionBuilder implements SubscriptionBuilderContract
      */
     public function withPromotionCode(?string $promotionCode): self
     {
-        if ($promotionCode && method_exists($this->builder, 'withPromotionCode')) {
+        if ($promotionCode) {
             $this->builder->withPromotionCode($promotionCode);
         }
 
@@ -210,9 +210,7 @@ class ChipSubscriptionBuilder implements SubscriptionBuilderContract
      */
     public function allowPaymentFailures(): self
     {
-        if (method_exists($this->builder, 'allowPaymentFailures')) {
-            $this->builder->allowPaymentFailures();
-        }
+        $this->builder->allowPaymentFailures();
 
         return $this;
     }

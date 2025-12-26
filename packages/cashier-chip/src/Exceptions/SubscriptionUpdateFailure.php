@@ -7,7 +7,7 @@ namespace AIArmada\CashierChip\Exceptions;
 use AIArmada\CashierChip\Subscription;
 use Exception;
 
-class SubscriptionUpdateFailure extends Exception
+final class SubscriptionUpdateFailure extends Exception
 {
     /**
      * The CHIP subscription instance.

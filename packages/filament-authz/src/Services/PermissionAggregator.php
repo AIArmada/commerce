@@ -179,7 +179,10 @@ class PermissionAggregator
             $allRoles = $allRoles->merge($ancestors);
         }
 
-        return new Collection($allRoles->unique('id')->values()->all());
+        /** @var Collection<int, Role> $result */
+        $result = new Collection($allRoles->unique('id')->values()->all());
+
+        return $result;
     }
 
     /**

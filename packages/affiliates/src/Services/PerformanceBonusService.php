@@ -11,6 +11,7 @@ use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -188,7 +189,7 @@ final class PerformanceBonusService
             });
     }
 
-    private function applyOwnerScopeToQuery($query, string $ownerTypeColumn, string $ownerIdColumn): void
+    private function applyOwnerScopeToQuery(Builder $query, string $ownerTypeColumn, string $ownerIdColumn): void
     {
         if (! (bool) config('affiliates.owner.enabled', false)) {
             return;

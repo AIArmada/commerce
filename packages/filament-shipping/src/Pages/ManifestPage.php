@@ -23,7 +23,6 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Carbon;
 use UnitEnum;
 
@@ -289,14 +288,5 @@ class ManifestPage extends Page implements HasTable
         return collect($shipping->getAvailableDrivers())
             ->mapWithKeys(fn ($driver) => [$driver => ucfirst($driver)])
             ->toArray();
-    }
-
-    private function resolveOwner(): ?Model
-    {
-        if (! (bool) config('shipping.features.owner.enabled', false)) {
-            return null;
-        }
-
-        return OwnerContext::resolve();
     }
 }

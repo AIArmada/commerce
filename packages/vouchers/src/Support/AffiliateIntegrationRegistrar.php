@@ -8,7 +8,6 @@ use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Services\VoucherService;
 use Illuminate\Contracts\Events\Dispatcher;
 
 /**
@@ -23,7 +22,6 @@ final class AffiliateIntegrationRegistrar
 {
     public function __construct(
         private readonly Dispatcher $events,
-        private readonly VoucherService $voucherService,
     ) {}
 
     public function register(): void

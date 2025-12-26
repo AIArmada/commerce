@@ -35,6 +35,7 @@ final class TransactionsRelationManager extends RelationManager
                         GiftCardTransactionType::Expire => 'danger',
                         GiftCardTransactionType::Merge => 'info',
                         GiftCardTransactionType::Adjustment => 'gray',
+                        GiftCardTransactionType::Fee => 'gray',
                     })
                     ->formatStateUsing(static fn (GiftCardTransactionType | string $state): string => $state instanceof GiftCardTransactionType ? $state->label() : GiftCardTransactionType::from($state)->label()),
 

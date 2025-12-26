@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Cashier\Gateways\Chip;
 
 use AIArmada\Cashier\Contracts\InvoiceLineItemContract;
+use AIArmada\Chip\Data\ProductData;
 
 /**
  * Wrapper for CHIP invoice line item (product).
@@ -13,11 +14,9 @@ class ChipInvoiceLineItem implements InvoiceLineItemContract
 {
     /**
      * Create a new CHIP invoice line item wrapper.
-     *
-     * @param  array<string, mixed>  $product
      */
     public function __construct(
-        protected array $product,
+        protected ProductData $product,
         protected int $index = 0
     ) {}
 
@@ -26,7 +25,7 @@ class ChipInvoiceLineItem implements InvoiceLineItemContract
      */
     public function id(): string
     {
-        return (string) ($this->product['id'] ?? $this->index);
+        return (string) $this->index;
     }
 
     /**
@@ -34,7 +33,7 @@ class ChipInvoiceLineItem implements InvoiceLineItemContract
      */
     public function description(): ?string
     {
-        return $this->product['name'] ?? null;
+        return $this->product->name;
     }
 
     /**
@@ -42,7 +41,7 @@ class ChipInvoiceLineItem implements InvoiceLineItemContract
      */
     public function quantity(): int
     {
-        return $this->product['quantity'] ?? 1;
+        return max(1, (int) $this->product->quantity);
     }
 
     /**
@@ -50,10 +49,7 @@ class ChipInvoiceLineItem implements InvoiceLineItemContract
      */
     public function rawUnitAmount(): int
     {
-        // CHIP returns price in decimal
-        $price = $this->product['price'] ?? 0;
-
-        return (int) ($price * 100);
+        return max(0, $this->product->getPriceInCents() - $this->product->getDiscountInCents());
     }
 
     /**
@@ -85,7 +81,7 @@ class ChipInvoiceLineItem implements InvoiceLineItemContract
      */
     public function currency(): string
     {
-        return $this->product['currency'] ?? 'MYR';
+        return $this->product->getCurrency();
     }
 
     /**
@@ -101,7 +97,7 @@ class ChipInvoiceLineItem implements InvoiceLineItemContract
      */
     public function priceId(): ?string
     {
-        return $this->product['price_id'] ?? null;
+        return null;
     }
 
     /**

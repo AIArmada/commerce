@@ -56,9 +56,9 @@ use LogicException;
  * @property-read Model&BillableContract $customer
  * @property-read \Illuminate\Database\Eloquent\Collection<int, SubscriptionItem> $items
  *
- * @method static \Illuminate\Database\Eloquent\Builder<static> canceled()
- * @method static \Illuminate\Database\Eloquent\Builder<static> notOnTrial()
- * @method static \Illuminate\Database\Eloquent\Builder<static> onGracePeriod()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> whereCanceled()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> whereNotOnTrial()
+ * @method static \Illuminate\Database\Eloquent\Builder<static> whereOnGracePeriod()
  */
 class Subscription extends Model
 {
@@ -123,9 +123,12 @@ class Subscription extends Model
 
     /**
      * Get the billable customer model related to the subscription.
+     *
+     * @return BelongsTo<Model, $this>
      */
     public function customer(): BelongsTo
     {
+        /** @var class-string<Model> $model */
         $model = Cashier::$customerModel;
 
         return $this->belongsTo($model, 'user_id');
@@ -230,9 +233,17 @@ class Subscription extends Model
     /**
      * Filter query by incomplete.
      */
-    public function scopeIncomplete(Builder $query): void
+    public function scopeWhereIncomplete(Builder $query): void
     {
         $query->where('chip_status', self::STATUS_INCOMPLETE);
+    }
+
+    /**
+     * Filter query by incomplete.
+     */
+    public function scopeIncomplete(Builder $query): void
+    {
+        $this->scopeWhereIncomplete($query);
     }
 
     /**
@@ -246,9 +257,17 @@ class Subscription extends Model
     /**
      * Filter query by past due.
      */
-    public function scopePastDue(Builder $query): void
+    public function scopeWherePastDue(Builder $query): void
     {
         $query->where('chip_status', self::STATUS_PAST_DUE);
+    }
+
+    /**
+     * Filter query by past due.
+     */
+    public function scopePastDue(Builder $query): void
+    {
+        $this->scopeWherePastDue($query);
     }
 
     /**
@@ -266,7 +285,7 @@ class Subscription extends Model
     /**
      * Filter query by active.
      */
-    public function scopeActive(Builder $query): void
+    public function scopeWhereActive(Builder $query): void
     {
         $query->where(function ($query): void {
             $query->whereNull('ends_at')
@@ -297,7 +316,7 @@ class Subscription extends Model
     /**
      * Filter query by recurring.
      */
-    public function scopeRecurring(Builder $query): void
+    public function scopeWhereRecurring(Builder $query): void
     {
         $query
             ->where(function (Builder $query): void {
@@ -318,7 +337,7 @@ class Subscription extends Model
     /**
      * Filter query by canceled.
      */
-    public function scopeCanceled(Builder $query): void
+    public function scopeWhereCanceled(Builder $query): void
     {
         $query->whereNotNull('ends_at');
     }
@@ -342,7 +361,7 @@ class Subscription extends Model
     /**
      * Filter query by ended.
      */
-    public function scopeEnded(Builder $query): void
+    public function scopeWhereEnded(Builder $query): void
     {
         $query->whereNotNull('ends_at')
             ->where('ends_at', '<=', Carbon::now());
@@ -359,7 +378,7 @@ class Subscription extends Model
     /**
      * Filter query by on trial.
      */
-    public function scopeOnTrial(Builder $query): void
+    public function scopeWhereOnTrial(Builder $query): void
     {
         $query->whereNotNull('trial_ends_at')->where('trial_ends_at', '>', Carbon::now());
     }
@@ -399,7 +418,7 @@ class Subscription extends Model
     /**
      * Filter query by on grace period.
      */
-    public function scopeOnGracePeriod(Builder $query): void
+    public function scopeWhereOnGracePeriod(Builder $query): void
     {
         $query->whereNotNull('ends_at')->where('ends_at', '>', Carbon::now());
     }
@@ -410,6 +429,76 @@ class Subscription extends Model
     public function scopeNotOnGracePeriod(Builder $query): void
     {
         $query->whereNull('ends_at')->orWhere('ends_at', '<=', Carbon::now());
+    }
+
+    /**
+     * Shorthand scope for active subscriptions.
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopeActive(Builder $query): void
+    {
+        $this->scopeWhereActive($query);
+    }
+
+    /**
+     * Shorthand scope for paused subscriptions.
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopePaused(Builder $query): void
+    {
+        $this->scopeWherePaused($query);
+    }
+
+    /**
+     * Shorthand scope for canceled subscriptions.
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopeCanceled(Builder $query): void
+    {
+        $this->scopeWhereCanceled($query);
+    }
+
+    /**
+     * Shorthand scope for recurring subscriptions.
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopeRecurring(Builder $query): void
+    {
+        $this->scopeWhereRecurring($query);
+    }
+
+    /**
+     * Shorthand scope for subscriptions on trial.
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopeOnTrial(Builder $query): void
+    {
+        $this->scopeWhereOnTrial($query);
+    }
+
+    /**
+     * Shorthand scope for subscriptions on grace period.
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopeOnGracePeriod(Builder $query): void
+    {
+        $this->scopeWhereOnGracePeriod($query);
+    }
+
+    /**
+     * Shorthand scope for ended subscriptions.
+     *
+     * @param  Builder<static>  $query
+     */
+    public function scopeEnded(Builder $query): void
+    {
+        $this->scopeWhereEnded($query);
     }
 
     /**
@@ -983,7 +1072,7 @@ class Subscription extends Model
     /**
      * Filter query by paused.
      */
-    public function scopePaused(Builder $query): void
+    public function scopeWherePaused(Builder $query): void
     {
         $query->where('chip_status', self::STATUS_PAUSED);
     }
@@ -1081,8 +1170,7 @@ class Subscription extends Model
                 $customerModel = Cashier::$customerModel;
 
                 if (
-                    $owner !== null
-                    && is_a($owner, $customerModel)
+                    is_a($owner, $customerModel)
                     && (string) $owner->getKey() === (string) $subscription->user_id
                 ) {
                     // Safe fast-path: tenant owner is the billable.

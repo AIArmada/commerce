@@ -112,7 +112,8 @@ class PurchaseData extends ChipData
                 'metadata' => $data['metadata'] ?? null,
             ]);
 
-        return new self(
+        // @phpstan-ignore-next-line new.static
+        return new static(
             id: $data['id'],
             type: $data['type'] ?? 'purchase',
             created_on: $created_on,

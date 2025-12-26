@@ -21,19 +21,16 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
  */
 class SendLimit extends ChipIntegerModel
 {
-    /** @return Attribute<Money|null, never> */
     public function amountMoney(): Attribute
     {
         return Attribute::get(fn (): ?Money => $this->toMoney((int) $this->amount, $this->currency));
     }
 
-    /** @return Attribute<Money|null, never> */
     public function netAmountMoney(): Attribute
     {
         return Attribute::get(fn (): ?Money => $this->toMoney((int) $this->net_amount, $this->currency));
     }
 
-    /** @return Attribute<Money|null, never> */
     public function feeMoney(): Attribute
     {
         return Attribute::get(fn (): ?Money => $this->toMoney((int) $this->fee, $this->currency));

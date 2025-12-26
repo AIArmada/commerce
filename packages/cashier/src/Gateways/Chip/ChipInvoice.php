@@ -6,8 +6,8 @@ namespace AIArmada\Cashier\Gateways\Chip;
 
 use AIArmada\Cashier\Contracts\InvoiceContract;
 use AIArmada\Cashier\Contracts\InvoiceLineItemContract;
+use AIArmada\Chip\Data\ProductData;
 use AIArmada\Chip\Data\PurchaseData;
-use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Collection;
 use Symfony\Component\HttpFoundation\Response;
@@ -45,7 +45,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function number(): ?string
     {
-        return $this->purchase->purchase['notes'] ?? $this->purchase->id;
+        return $this->purchase->purchase->notes ?? $this->purchase->notes ?? $this->purchase->id;
     }
 
     /**
@@ -53,13 +53,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function date(): CarbonInterface
     {
-        $created = $this->purchase->createdOn ?? $this->purchase->created ?? now();
-
-        if (is_string($created)) {
-            return Carbon::parse($created);
-        }
-
-        return $created instanceof CarbonInterface ? $created : Carbon::now();
+        return $this->purchase->getCreatedAt();
     }
 
     /**
@@ -67,13 +61,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function dueDate(): ?CarbonInterface
     {
-        $due = $this->purchase->dueOn ?? $this->purchase->due ?? null;
-
-        if ($due && is_string($due)) {
-            return Carbon::parse($due);
-        }
-
-        return $due instanceof CarbonInterface ? $due : null;
+        return $this->purchase->getDueDate();
     }
 
     /**
@@ -81,7 +69,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function status(): string
     {
-        return $this->purchase->status ?? 'pending';
+        return $this->purchase->status;
     }
 
     /**
@@ -89,9 +77,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function rawTotal(): int
     {
-        $total = $this->purchase->purchase['total'] ?? 0;
-
-        return (int) ($total * 100);
+        return $this->purchase->purchase->getTotalInCents();
     }
 
     /**
@@ -107,9 +93,13 @@ class ChipInvoice implements InvoiceContract
      */
     public function rawSubtotal(): int
     {
-        $subtotal = $this->purchase->purchase['subtotal_override'] ?? $this->purchase->purchase['total'] ?? 0;
+        $subtotalOverride = $this->purchase->purchase->subtotal_override;
 
-        return (int) ($subtotal * 100);
+        if ($subtotalOverride !== null) {
+            return (int) $subtotalOverride->getAmount();
+        }
+
+        return $this->purchase->purchase->getSubtotalInCents();
     }
 
     /**
@@ -125,9 +115,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function rawTax(): int
     {
-        $tax = $this->purchase->purchase['total_tax_override'] ?? 0;
-
-        return (int) ($tax * 100);
+        return (int) ($this->purchase->purchase->total_tax_override?->getAmount() ?? 0);
     }
 
     /**
@@ -143,7 +131,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function currency(): string
     {
-        return mb_strtoupper($this->purchase->purchase['currency'] ?? 'MYR');
+        return mb_strtoupper($this->purchase->purchase->currency);
     }
 
     /**
@@ -153,11 +141,16 @@ class ChipInvoice implements InvoiceContract
      */
     public function items(): Collection
     {
-        $products = $this->purchase->purchase['products'] ?? [];
+        $products = $this->purchase->purchase->products;
 
-        return collect($products)->map(function ($product, $index) {
-            return new ChipInvoiceLineItem($product, $index);
-        });
+        $items = collect($products)
+            ->values()
+            ->map(static function (ProductData $product, int $index): InvoiceLineItemContract {
+                return new ChipInvoiceLineItem($product, $index);
+            });
+
+        /** @var Collection<int, InvoiceLineItemContract> $items */
+        return $items;
     }
 
     /**
@@ -205,7 +198,7 @@ class ChipInvoice implements InvoiceContract
      */
     public function hostedUrl(): ?string
     {
-        return $this->purchase->checkoutUrl ?? $this->purchase->checkout_url ?? null;
+        return $this->purchase->getCheckoutUrl();
     }
 
     /**

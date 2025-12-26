@@ -64,9 +64,12 @@ class SubscriptionItem extends Model
 
     /**
      * Get the subscription that the item belongs to.
+     *
+     * @return BelongsTo<Subscription, $this>
      */
     public function subscription(): BelongsTo
     {
+        /** @var class-string<Model> $model */
         $model = Cashier::$subscriptionModel;
 
         return $this->belongsTo($model, 'subscription_id');

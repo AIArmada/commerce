@@ -36,6 +36,7 @@ final class TaxZoneResource extends Resource
     {
         $query = TaxOwnerScope::applyToOwnedQuery(parent::getEloquentQuery());
 
+        /** @phpstan-ignore return.type (template type not preserved through helper) */
         return $query->withCount([
             'rates as rates_count' => fn (Builder $builder) => TaxOwnerScope::applyToOwnedQuery($builder),
         ]);

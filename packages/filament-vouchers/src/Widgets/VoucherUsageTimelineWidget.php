@@ -32,7 +32,7 @@ final class VoucherUsageTimelineWidget extends Widget
      * Get timeline events from voucher usage history
      *
      * @return Collection<int, array{
-     *     id: int,
+     *     id: string,
      *     type: string,
      *     title: string,
      *     description: string,
@@ -122,7 +122,7 @@ final class VoucherUsageTimelineWidget extends Widget
      * Build a timeline event from a usage record
      *
      * @return array{
-     *     id: int,
+     *     id: string,
      *     type: string,
      *     title: string,
      *     description: string,

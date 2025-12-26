@@ -12,7 +12,7 @@ use Throwable;
 /**
  * Provides retry logic with exponential backoff for carrier API calls.
  */
-class RetryService
+final class RetryService
 {
     /**
      * Default maximum retry attempts.

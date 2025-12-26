@@ -34,6 +34,7 @@ final class TaxExemptionResource extends Resource
      */
     public static function getEloquentQuery(): Builder
     {
+        /** @phpstan-ignore return.type (template type not preserved through helper) */
         return TaxOwnerScope::applyToOwnedQuery(parent::getEloquentQuery());
     }
 

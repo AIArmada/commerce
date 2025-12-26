@@ -148,7 +148,8 @@ class ImplicitPermissionService
             return collect();
         }
 
-        $directPermissions = collect($user->getAllPermissions()->pluck('name'));
+        /** @var Collection<int, string> $directPermissions */
+        $directPermissions = $user->getAllPermissions()->pluck('name')->values();
         $allPermissions = collect();
 
         foreach ($directPermissions as $permission) {

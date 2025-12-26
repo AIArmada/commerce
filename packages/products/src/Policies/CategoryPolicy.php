@@ -58,27 +58,27 @@ class CategoryPolicy
         return $isGlobal;
     }
 
-    public function viewAny($user): bool
+    public function viewAny(mixed $user): bool
     {
         return true;
     }
 
-    public function view($user, Category $category): bool
+    public function view(mixed $user, Category $category): bool
     {
         return $this->canAccessCategory($category);
     }
 
-    public function create($user): bool
+    public function create(mixed $user): bool
     {
         return true;
     }
 
-    public function update($user, Category $category): bool
+    public function update(mixed $user, Category $category): bool
     {
         return $this->canAccessCategory($category);
     }
 
-    public function delete($user, Category $category): bool
+    public function delete(mixed $user, Category $category): bool
     {
         // Prevent deletion if category has products
         if ($category->products()->exists()) {

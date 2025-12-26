@@ -281,9 +281,7 @@ trait ManagesItems
      */
     private function checkRateLimitIfEnabled(string $operation): void
     {
-        if (method_exists($this, 'checkRateLimit')) {
-            $this->checkRateLimit($operation);
-        }
+        $this->checkRateLimit($operation);
     }
 
     /**
@@ -291,9 +289,7 @@ trait ManagesItems
      */
     private function invalidatePipelineCacheIfEnabled(): void
     {
-        if (method_exists($this, 'invalidatePipelineCache')) {
-            $this->invalidatePipelineCache();
-        }
+        $this->invalidatePipelineCache();
     }
 
     /**

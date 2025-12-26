@@ -214,9 +214,13 @@ class StripeGateway extends AbstractGateway
      */
     public function subscriptions(BillableContract $billable): Collection
     {
-        return $billable->subscriptions()->get()->map(function ($subscription) {
-            return new StripeSubscription($subscription);
-        });
+        $subscriptions = $billable->subscriptions()
+            ->get()
+            ->map(fn ($subscription) => new StripeSubscription($subscription))
+            ->values();
+
+        /** @var Collection<int, SubscriptionContract> $subscriptions */
+        return $subscriptions;
     }
 
     /**
@@ -229,9 +233,12 @@ class StripeGateway extends AbstractGateway
     {
         $includePending = is_bool($parameters) ? $parameters : ($parameters['include_pending'] ?? false);
 
-        return $billable->invoices($includePending)->map(function ($invoice) {
-            return new StripeInvoice($invoice->asStripeInvoice());
-        });
+        $invoices = $billable->invoices($includePending)
+            ->map(fn ($invoice) => new StripeInvoice($invoice->asStripeInvoice()))
+            ->values();
+
+        /** @var Collection<int, InvoiceContract> $invoices */
+        return $invoices;
     }
 
     /**
@@ -242,9 +249,12 @@ class StripeGateway extends AbstractGateway
      */
     public function paymentMethods(BillableContract $billable, ?string $type = null): Collection
     {
-        return $billable->paymentMethods($type)->map(function ($paymentMethod) use ($billable) {
-            return new StripePaymentMethod($paymentMethod, $billable);
-        });
+        $paymentMethods = $billable->paymentMethods($type)
+            ->map(fn ($paymentMethod) => new StripePaymentMethod($paymentMethod, $billable))
+            ->values();
+
+        /** @var Collection<int, PaymentMethodContract> $paymentMethods */
+        return $paymentMethods;
     }
 
     /**
@@ -357,7 +367,9 @@ class StripeGateway extends AbstractGateway
     {
         $prices = $this->client()->prices->all($parameters);
 
-        return collect($prices->data);
+        $data = $prices->data;
+
+        return collect(is_array($data) ? $data : []);
     }
 
     /**
@@ -369,7 +381,9 @@ class StripeGateway extends AbstractGateway
     {
         $products = $this->client()->products->all($parameters);
 
-        return collect($products->data);
+        $data = $products->data;
+
+        return collect(is_array($data) ? $data : []);
     }
 
     /**

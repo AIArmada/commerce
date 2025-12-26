@@ -7,7 +7,6 @@ use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Storage\DatabaseStorage;
 use AIArmada\Jnt\Cart\JntShippingCalculator;
 use AIArmada\Jnt\Cart\JntShippingConditionProvider;
-use AIArmada\Jnt\Services\JntExpressService;
 use Illuminate\Support\Facades\DB;
 
 function createConditionTestCart(string $identifier = 'condition-test'): Cart
@@ -22,23 +21,9 @@ function createConditionTestCart(string $identifier = 'condition-test'): Cart
     );
 }
 
-function createMockJntExpressService(): JntExpressService
-{
-    return new JntExpressService(
-        customerCode: 'TEST123',
-        password: 'password',
-        config: [
-            'environment' => 'testing',
-            'base_urls' => ['testing' => 'https://demo.api.test'],
-            'api_account' => '640826271705595946',
-            'private_key' => '8e88c8477d4e4939859c560192fcafbc',
-        ]
-    );
-}
-
 function createRealCalculator(): JntShippingCalculator
 {
-    return new JntShippingCalculator(createMockJntExpressService());
+    return new JntShippingCalculator;
 }
 
 function createTestCondition(string $type = 'shipping'): CartCondition
@@ -77,20 +62,20 @@ describe('JntShippingConditionProvider', function (): void {
     it('returns empty conditions when no shipping address in cart metadata', function (): void {
         $cart = createConditionTestCart('no-address');
 
-        $provider = new JntShippingConditionProvider(createMockJntExpressService(), createRealCalculator());
+        $provider = new JntShippingConditionProvider(createRealCalculator());
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toBeEmpty();
     });
 
     it('returns the correct type', function (): void {
-        $provider = new JntShippingConditionProvider(createMockJntExpressService(), createRealCalculator());
+        $provider = new JntShippingConditionProvider(createRealCalculator());
 
         expect($provider->getType())->toBe('shipping');
     });
 
     it('returns the correct priority', function (): void {
-        $provider = new JntShippingConditionProvider(createMockJntExpressService(), createRealCalculator());
+        $provider = new JntShippingConditionProvider(createRealCalculator());
 
         expect($provider->getPriority())->toBe(75);
     });
@@ -100,7 +85,7 @@ describe('JntShippingConditionProvider', function (): void {
 
         $condition = createTestCondition('discount');
 
-        $provider = new JntShippingConditionProvider(createMockJntExpressService(), createRealCalculator());
+        $provider = new JntShippingConditionProvider(createRealCalculator());
 
         expect($provider->validate($condition, $cart))->toBeTrue();
     });
@@ -110,7 +95,7 @@ describe('JntShippingConditionProvider', function (): void {
 
         $condition = createTestCondition('shipping');
 
-        $provider = new JntShippingConditionProvider(createMockJntExpressService(), createRealCalculator());
+        $provider = new JntShippingConditionProvider(createRealCalculator());
 
         expect($provider->validate($condition, $cart))->toBeFalse();
     });
@@ -126,7 +111,7 @@ describe('JntShippingConditionProvider', function (): void {
 
         $condition = createTestCondition('shipping');
 
-        $provider = new JntShippingConditionProvider(createMockJntExpressService(), createRealCalculator());
+        $provider = new JntShippingConditionProvider(createRealCalculator());
 
         expect($provider->validate($condition, $cart))->toBeTrue();
     });
@@ -150,7 +135,7 @@ describe('JntShippingConditionProvider', function (): void {
             'attributes' => ['weight' => 1500],
         ]);
 
-        $provider = new JntShippingConditionProvider(createMockJntExpressService(), createRealCalculator());
+        $provider = new JntShippingConditionProvider(createRealCalculator());
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toHaveCount(1);
@@ -169,7 +154,7 @@ describe('JntShippingConditionProvider', function (): void {
 
         // No items, so zero weight
 
-        $provider = new JntShippingConditionProvider(createMockJntExpressService(), createRealCalculator());
+        $provider = new JntShippingConditionProvider(createRealCalculator());
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toBeEmpty();
@@ -191,7 +176,7 @@ describe('JntShippingConditionProvider', function (): void {
             'cart_weight' => 0, // Match the cart's actual weight (no items)
         ]);
 
-        $provider = new JntShippingConditionProvider(createMockJntExpressService(), createRealCalculator());
+        $provider = new JntShippingConditionProvider(createRealCalculator());
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toHaveCount(1);
@@ -225,7 +210,7 @@ describe('JntShippingConditionProvider', function (): void {
             'cart_weight' => 1000, // Different from current weight
         ]);
 
-        $provider = new JntShippingConditionProvider(createMockJntExpressService(), createRealCalculator());
+        $provider = new JntShippingConditionProvider(createRealCalculator());
         $conditions = $provider->getConditionsFor($cart);
 
         expect($conditions)->toHaveCount(1);

@@ -37,19 +37,16 @@ class Client extends ChipModel
 {
     public $timestamps = true;
 
-    /** @return Attribute<Carbon|null, never> */
     public function createdOn(): Attribute
     {
         return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['created_on'] ?? null));
     }
 
-    /** @return Attribute<Carbon|null, never> */
     public function updatedOn(): Attribute
     {
         return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['updated_on'] ?? null));
     }
 
-    /** @return Attribute<string|null, never> */
     public function location(): Attribute
     {
         return Attribute::get(function (): ?string {
@@ -63,7 +60,6 @@ class Client extends ChipModel
         });
     }
 
-    /** @return Attribute<string|null, never> */
     public function shippingLocation(): Attribute
     {
         return Attribute::get(function (): ?string {

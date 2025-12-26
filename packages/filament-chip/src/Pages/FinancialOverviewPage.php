@@ -108,7 +108,7 @@ class FinancialOverviewPage extends Page
     }
 
     /**
-     * @return array<string, class-string>
+     * @return list<class-string>
      */
     protected function getHeaderWidgets(): array
     {
@@ -118,7 +118,7 @@ class FinancialOverviewPage extends Page
     }
 
     /**
-     * @return array<string, class-string>
+     * @return list<class-string>
      */
     protected function getFooterWidgets(): array
     {

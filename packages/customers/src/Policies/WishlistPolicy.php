@@ -40,39 +40,34 @@ class WishlistPolicy
             return $wishlist->owner_type === null && $wishlist->owner_id === null;
         }
 
-        if ($includeGlobal && method_exists($wishlist, 'isGlobal') && $wishlist->isGlobal()) {
+        if ($includeGlobal && $wishlist->isGlobal()) {
             return true;
         }
 
-        if (method_exists($wishlist, 'belongsToOwner')) {
-            return $wishlist->belongsToOwner($owner);
-        }
-
-        return $wishlist->owner_type === $owner->getMorphClass()
-            && $wishlist->owner_id === $owner->getKey();
+        return $wishlist->belongsToOwner($owner);
     }
 
-    public function viewAny($user): bool
+    public function viewAny(mixed $user): bool
     {
         return $this->isAuthenticated($user);
     }
 
-    public function view($user, Wishlist $wishlist): bool
+    public function view(mixed $user, Wishlist $wishlist): bool
     {
         return $this->isAuthenticated($user) && $this->isAccessible($wishlist);
     }
 
-    public function create($user): bool
+    public function create(mixed $user): bool
     {
         return $this->isAuthenticated($user);
     }
 
-    public function update($user, Wishlist $wishlist): bool
+    public function update(mixed $user, Wishlist $wishlist): bool
     {
         return $this->isAuthenticated($user) && $this->isAccessible($wishlist);
     }
 
-    public function delete($user, Wishlist $wishlist): bool
+    public function delete(mixed $user, Wishlist $wishlist): bool
     {
         return $this->isAuthenticated($user) && $this->isAccessible($wishlist);
     }

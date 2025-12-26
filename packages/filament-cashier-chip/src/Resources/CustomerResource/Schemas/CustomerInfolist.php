@@ -81,7 +81,7 @@ final class CustomerInfolist
                                     /** @var \Illuminate\Database\Eloquent\Builder<Subscription> $query */
                                     $query = CashierChipOwnerScope::apply($record->subscriptions()->getQuery());
 
-                                    return $query->active()->count();
+                                    return $query->whereActive()->count();
                                 })
                                 ->badge()
                                 ->color(fn (int $state): string => $state > 0 ? 'success' : 'gray'),

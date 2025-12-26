@@ -115,32 +115,41 @@ class Voucher extends Model
         return $tables['vouchers'] ?? $prefix . 'vouchers';
     }
 
+    /**
+     * @return HasMany<VoucherUsage, $this>
+     */
     public function usages(): HasMany
     {
-        /** @var HasMany<VoucherUsage, Voucher> $relation */
+        /** @var HasMany<VoucherUsage, self> $relation */
         $relation = $this->hasMany(VoucherUsage::class);
 
         return $relation;
     }
 
+    /**
+     * @return HasMany<VoucherWallet, $this>
+     */
     public function walletEntries(): HasMany
     {
-        /** @var HasMany<VoucherWallet, Voucher> $relation */
+        /** @var HasMany<VoucherWallet, self> $relation */
         $relation = $this->hasMany(VoucherWallet::class);
 
         return $relation;
     }
 
+    /**
+     * @return HasMany<VoucherTransaction, $this>
+     */
     public function transactions(): HasMany
     {
-        /** @var HasMany<VoucherTransaction, Voucher> $relation */
+        /** @var HasMany<VoucherTransaction, self> $relation */
         $relation = $this->hasMany(VoucherTransaction::class);
 
         return $relation;
     }
 
     /**
-     * @return BelongsTo<Campaign, Voucher>
+     * @return BelongsTo<Campaign, $this>
      */
     public function campaign(): BelongsTo
     {
@@ -148,7 +157,7 @@ class Voucher extends Model
     }
 
     /**
-     * @return BelongsTo<CampaignVariant, Voucher>
+     * @return BelongsTo<CampaignVariant, $this>
      */
     public function campaignVariant(): BelongsTo
     {
@@ -158,7 +167,7 @@ class Voucher extends Model
     /**
      * Get the affiliate that owns this voucher (when aiarmada/affiliates is installed).
      *
-     * @return BelongsTo<\AIArmada\Affiliates\Models\Affiliate, Voucher>|BelongsTo<Model, Voucher>
+     * @return BelongsTo<\AIArmada\Affiliates\Models\Affiliate, $this>|BelongsTo<Model, $this>
      */
     public function affiliate(): BelongsTo
     {

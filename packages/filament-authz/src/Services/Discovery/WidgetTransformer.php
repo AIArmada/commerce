@@ -81,9 +81,11 @@ class WidgetTransformer
             // Detect chart type for chart widgets
             if ($metadata['isChart'] && $reflection->hasMethod('getType')) {
                 try {
+                    $method = $reflection->getMethod('getType');
+                    $method->setAccessible(true);
                     /** @var ChartWidget $widget */
                     $widget = app($widgetClass);
-                    $metadata['chartType'] = $widget->getType();
+                    $metadata['chartType'] = $method->invoke($widget);
                 } catch (Throwable) {
                     // Ignore
                 }

@@ -32,6 +32,7 @@ final class AffiliateInfolist
                             ->label('Status')
                             ->badge()
                             ->color(fn (AffiliateStatus $state): string => match ($state) {
+                                AffiliateStatus::Draft => 'gray',
                                 AffiliateStatus::Active => 'success',
                                 AffiliateStatus::Pending => 'warning',
                                 AffiliateStatus::Paused => 'gray',

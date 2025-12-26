@@ -40,39 +40,34 @@ class CustomerPolicy
             return $customer->owner_type === null && $customer->owner_id === null;
         }
 
-        if ($includeGlobal && method_exists($customer, 'isGlobal') && $customer->isGlobal()) {
+        if ($includeGlobal && $customer->isGlobal()) {
             return true;
         }
 
-        if (method_exists($customer, 'belongsToOwner')) {
-            return $customer->belongsToOwner($owner);
-        }
-
-        return $customer->owner_type === $owner->getMorphClass()
-            && $customer->owner_id === $owner->getKey();
+        return $customer->belongsToOwner($owner);
     }
 
-    public function viewAny($user): bool
+    public function viewAny(mixed $user): bool
     {
         return $this->isAuthenticated($user);
     }
 
-    public function view($user, Customer $customer): bool
+    public function view(mixed $user, Customer $customer): bool
     {
         return $this->isAuthenticated($user) && $this->isAccessible($customer);
     }
 
-    public function create($user): bool
+    public function create(mixed $user): bool
     {
         return $this->isAuthenticated($user);
     }
 
-    public function update($user, Customer $customer): bool
+    public function update(mixed $user, Customer $customer): bool
     {
         return $this->isAuthenticated($user) && $this->isAccessible($customer);
     }
 
-    public function delete($user, Customer $customer): bool
+    public function delete(mixed $user, Customer $customer): bool
     {
         // Cannot delete customers with orders
         // This would integrate with orders package
@@ -82,7 +77,7 @@ class CustomerPolicy
     /**
      * Determine if user can add credit to customer wallet.
      */
-    public function addCredit($user, Customer $customer): bool
+    public function addCredit(mixed $user, Customer $customer): bool
     {
         return $this->isAuthenticated($user) && $this->isAccessible($customer);
     }
@@ -90,7 +85,7 @@ class CustomerPolicy
     /**
      * Determine if user can deduct credit from customer wallet.
      */
-    public function deductCredit($user, Customer $customer): bool
+    public function deductCredit(mixed $user, Customer $customer): bool
     {
         return $this->isAuthenticated($user) && $this->isAccessible($customer);
     }

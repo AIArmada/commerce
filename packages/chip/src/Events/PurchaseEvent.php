@@ -24,7 +24,7 @@ abstract class PurchaseEvent
     /**
      * @param  array<string, mixed>  $payload
      */
-    public function __construct(
+    final public function __construct(
         public readonly PurchaseData $purchase,
         public readonly array $payload,
     ) {}

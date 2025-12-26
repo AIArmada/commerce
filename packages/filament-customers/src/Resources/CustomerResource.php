@@ -43,7 +43,7 @@ class CustomerResource extends Resource
             ->where('status', CustomerStatus::Active)
             ->count();
 
-        return $count ?: null;
+        return $count > 0 ? (string) $count : null;
     }
 
     /**

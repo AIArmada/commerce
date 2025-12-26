@@ -12,7 +12,6 @@ use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
-use Illuminate\Database\Eloquent\Model;
 
 class PendingActionsWidget extends StatsOverviewWidget
 {
@@ -127,14 +126,5 @@ class PendingActionsWidget extends StatsOverviewWidget
         return $query
             ->where('status', 'approved')
             ->count();
-    }
-
-    private function resolveOwner(): ?Model
-    {
-        if (! (bool) config('shipping.features.owner.enabled', false)) {
-            return null;
-        }
-
-        return OwnerContext::resolve();
     }
 }

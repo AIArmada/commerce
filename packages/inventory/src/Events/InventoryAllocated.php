@@ -45,6 +45,11 @@ final class InventoryAllocated implements InventoryEventInterface
         return $this->allocations->sum('quantity');
     }
 
+    protected function resolveQuantity(): int
+    {
+        return $this->getTotalQuantity();
+    }
+
     /**
      * Get number of locations involved.
      */

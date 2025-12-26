@@ -13,6 +13,7 @@ use AIArmada\Vouchers\Campaigns\Models\CampaignVariant;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Facades\DB;
 
 class CampaignAnalytics
@@ -239,7 +240,7 @@ class CampaignAnalytics
         return $channels;
     }
 
-    private function applyOwnerScopeToEventsQuery($query, string $eventsTable): void
+    private function applyOwnerScopeToEventsQuery(QueryBuilder $query, string $eventsTable): void
     {
         if (! (bool) config('vouchers.owner.enabled', false)) {
             return;

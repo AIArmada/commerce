@@ -231,8 +231,8 @@ final class CartIntegrationRegistrar
         /** @var \AIArmada\Affiliates\Services\AffiliateService $affiliateService */
         $affiliateService = $this->app->make(\AIArmada\Affiliates\Services\AffiliateService::class);
 
-        $amount = $event->payment->rawAmount() ?? 0;
-        $currency = $event->payment->currency() ?? config('cashier.currency', 'USD');
+        $amount = $event->payment->rawAmount();
+        $currency = $event->payment->currency();
 
         /** @var \AIArmada\Cart\Cart $cart */
         $affiliateService->recordConversion($cart, [

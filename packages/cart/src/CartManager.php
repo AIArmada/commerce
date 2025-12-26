@@ -159,7 +159,8 @@ class CartManager implements CartManagerInterface
     {
         $scopedStorage = $this->storage->withOwner($owner);
 
-        return new self(
+        // @phpstan-ignore-next-line
+        return new static(
             storage: $scopedStorage,
             events: $this->events,
             eventsEnabled: $this->eventsEnabled,

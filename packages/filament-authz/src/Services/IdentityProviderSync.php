@@ -13,6 +13,7 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use stdClass;
 
 class IdentityProviderSync
 {
@@ -249,7 +250,7 @@ class IdentityProviderSync
     /**
      * Get all mappings for the current provider.
      *
-     * @return Collection<int, object>
+     * @return Collection<int, stdClass>
      */
     public function getAllMappings(): Collection
     {

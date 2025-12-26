@@ -114,7 +114,7 @@ class RenewSubscriptionsCommand extends Command
         $query = (new Subscription)->scopeForOwner($query);
 
         $subscriptions = $query
-            ->active()
+            ->whereActive()
             ->whereNotNull('next_billing_at')
             ->where('next_billing_at', '<=', $dueDate)
             ->with('customer')

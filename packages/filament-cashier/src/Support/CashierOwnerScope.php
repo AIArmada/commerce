@@ -25,11 +25,6 @@ final class CashierOwnerScope
      * - Else, if the model has a `user_id` or `billable_id` column and the billable model supports owner scoping,
      *   scope via a subquery of billable IDs for the current owner.
      * - Else, fail closed when an owner context exists.
-     *
-     * @template TModel of Model
-     *
-     * @param  Builder<TModel>  $query
-     * @return Builder<TModel>
      */
     public static function apply(Builder $query, ?Model $owner = null, ?bool $includeGlobal = null): Builder
     {
@@ -97,12 +92,6 @@ final class CashierOwnerScope
         return self::$hasColumnCache[$cacheKey] = Schema::connection($connection)->hasColumn($table, $column);
     }
 
-    /**
-     * @template TModel of Model
-     *
-     * @param  Builder<TModel>  $query
-     * @return Builder<TModel>
-     */
     private static function applyViaBillableIdSubquery(Builder $query, string $foreignKey, Model $owner, bool $includeGlobal): Builder
     {
         $billableModel = (string) config('cashier.models.billable', 'App\\Models\\User');
@@ -128,12 +117,6 @@ final class CashierOwnerScope
         return $query->whereIn($foreignKey, $billables);
     }
 
-    /**
-     * @template TModel of Model
-     *
-     * @param  Builder<TModel>  $query
-     * @return Builder<TModel>
-     */
     private static function empty(Builder $query): Builder
     {
         return $query->whereRaw('1 = 0');

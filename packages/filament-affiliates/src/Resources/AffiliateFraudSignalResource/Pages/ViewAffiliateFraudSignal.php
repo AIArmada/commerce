@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource\Pages;
 
+use AIArmada\Affiliates\Enums\FraudSignalStatus;
+use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\FilamentAffiliates\Resources\AffiliateFraudSignalResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
-use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 
 final class ViewAffiliateFraudSignal extends ViewRecord
 {

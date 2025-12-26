@@ -61,6 +61,7 @@ trait CachesComputedValues // @phpstan-ignore trait.unused
      */
     private function getCacheKey(string $method): string
     {
+        /** @phpstan-ignore function.alreadyNarrowedType */
         $instanceId = method_exists($this, 'getKey') ? $this->getKey() : spl_object_id($this);
 
         return static::class . ':' . $instanceId . ':' . $method;

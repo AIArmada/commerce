@@ -40,39 +40,34 @@ class AddressPolicy
             return $address->owner_type === null && $address->owner_id === null;
         }
 
-        if ($includeGlobal && method_exists($address, 'isGlobal') && $address->isGlobal()) {
+        if ($includeGlobal && $address->isGlobal()) {
             return true;
         }
 
-        if (method_exists($address, 'belongsToOwner')) {
-            return $address->belongsToOwner($owner);
-        }
-
-        return $address->owner_type === $owner->getMorphClass()
-            && $address->owner_id === $owner->getKey();
+        return $address->belongsToOwner($owner);
     }
 
-    public function viewAny($user): bool
+    public function viewAny(mixed $user): bool
     {
         return $this->isAuthenticated($user);
     }
 
-    public function view($user, Address $address): bool
+    public function view(mixed $user, Address $address): bool
     {
         return $this->isAuthenticated($user) && $this->isAccessible($address);
     }
 
-    public function create($user): bool
+    public function create(mixed $user): bool
     {
         return $this->isAuthenticated($user);
     }
 
-    public function update($user, Address $address): bool
+    public function update(mixed $user, Address $address): bool
     {
         return $this->isAuthenticated($user) && $this->isAccessible($address);
     }
 
-    public function delete($user, Address $address): bool
+    public function delete(mixed $user, Address $address): bool
     {
         return $this->isAuthenticated($user) && $this->isAccessible($address);
     }

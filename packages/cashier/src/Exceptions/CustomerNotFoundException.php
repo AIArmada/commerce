@@ -7,7 +7,7 @@ namespace AIArmada\Cashier\Exceptions;
 /**
  * Exception thrown when a customer is not found or cannot be created.
  */
-class CustomerNotFoundException extends CashierException
+final class CustomerNotFoundException extends CashierException
 {
     /**
      * Create a new customer not found exception.

@@ -12,7 +12,7 @@ parameters:
     treatPhpDocTypesAsCertain: false
 
     parallel:
-        maximumNumberOfProcesses: 4
+        maximumNumberOfProcesses: 8
 
     tmpDir: var/cache/phpstan
 
@@ -20,12 +20,16 @@ parameters:
     ignoreErrors:
         - identifier: 'missingType.generics'
         - identifier: 'larastan.noEnvCallsOutsideOfConfig'
-        - identifier: 'return.unusedType'
         # Spatie packages are installed via require-dev; do not ignore missing class/trait errors
         # Missing type specifications in scope methods (legacy code)
         - identifier: 'missingType.return'
+          paths:
+              - packages/*/src/Models/*
         - identifier: 'missingType.parameter'
-                # Ignore example files that reference external dependencies
+          paths:
+              - packages/*/src/Models/*
+
+        # Ignore example files that reference external dependencies
         # Ignore Filament v5 beta compatibility issues
         - message: '#Call to an undefined method.*Filament.*glow\(\)\.#'
         - message: '#Call to an undefined method.*Filament.*carded\(\)\.#'
@@ -60,9 +64,19 @@ parameters:
         - message: '#Trait AIArmada\\FilamentAuthz\\Concerns\\.*is used zero times and is not analysed\.#'
         # Filament-authz Spatie Permission integration (methods come from HasRoles trait at runtime)
         - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::syncPermissions\(\)\.#'
-        - identifier: 'method.unused'
-        # Ignore nullsafe warnings on eager loaded relations (PHPStan can't detect the with() call context)
+        # Note: method.unused kept REMOVED - we want to catch dead code
+        # Ignore nullsafe.neverNull for defensive patterns:
+        # - request()?-> is correct (request() returns null outside HTTP context: console, queue, tests)
+        # - first()?-> is correct (first() can return null but PHPStan sees it as narrowed)
+        # - $model->relation?-> is defensive for eager-loaded relations
         - identifier: 'nullsafe.neverNull'
+        # Temporarily ignore missingType.iterableValue (214 errors)
+        # TODO: Gradually fix these by adding proper array type hints to parameters and returns
+        - identifier: 'missingType.iterableValue'
+        # Ignore return.unusedType for interface implementations that guarantee non-null returns
+        # These are informational - implementations satisfy contracts while providing stricter guarantees
+        # Common pattern: interface returns ?T (some implementations need null), implementation always returns T
+        - identifier: 'return.unusedType'
         # Ignore scope return type issues (scopes return Builder<static> but PHPStan sees Builder<Model>)
         - message: '#Method AIArmada\\Inventory\\Models\\.*::scope.*should return Illuminate\\Database\\Eloquent\\Builder.*but returns Illuminate\\Database\\Eloquent\\Builder.*#'
         # Ignore mapWithKeys collection operation type issues
@@ -75,8 +89,6 @@ parameters:
         - message: '#Generic type Illuminate\\Contracts\\Pagination\\LengthAwarePaginator.*does not specify all template types.*#'
         - message: '#Type.*in generic type Illuminate\\Contracts\\Pagination\\LengthAwarePaginator.*is not subtype of template type.*#'
         - message: '#Method AIArmada\\Inventory\\Services\\SerialLookupService::search\(\) should return.*LengthAwarePaginator.*but returns.*#'
-        # Ignore missingType.iterableValue for metadata arrays
-        - message: '#Method AIArmada\\Inventory\\Services\\StandardCostService::setStandardCost\(\) has parameter \$metadata with no value type specified in iterable type array\.#'
         # Ignore hasMany/belongsTo template type resolution with external models
         # Ignore identical return type covariance warnings (PHPStan bug with array shape types)
         - message: '#Method.*should return.*Collection.*array\{.*\}.*but returns.*Collection.*array\{.*\}.*#'
@@ -91,43 +103,26 @@ parameters:
         - message: '#Call to an undefined method Illuminate\\Support\\HigherOrderCollectionProxy.*::markAsRedeemed\(\)\.#'
         # Ignore return type covariance issues with Eloquent relations (PHPStan template variance)
         - message: '#Method.*should return.*Relations\\(HasMany|BelongsTo|MorphTo).*but returns.*Relations\\(HasMany|BelongsTo|MorphTo).*#'
-        # Ignore missingType.iterableValue (array type specifications)
-        - identifier: 'missingType.iterableValue'
         # Ignore unused traits (public API)
         - message: '#Trait AIArmada\\Vouchers\\Traits\\.*is used zero times and is not analysed\.#'
         - message: '#Trait AIArmada\\Vouchers\\GiftCards\\Traits\\.*is used zero times and is not analysed\.#'
         # Ignore relation existence errors (Larastan false positives)
         # Ignore cast.string for enums
         - message: '#Cannot cast AIArmada\\Affiliates\\Enums\\.*to string\.#'
-        # Ignore match.unhandled for enums with new cases
-        - identifier: 'match.unhandled'
-        # Ignore property.onlyWritten (intentional design patterns)
-        - identifier: 'property.onlyWritten'
-        # Ignore return.type covariance issues
-        - identifier: 'return.type'
         # Ignore argument.type for Filament closures
         - message: '#Parameter.*of method Illuminate\\Support\\Collection.*::each\(\) expects callable.*given\.#'
         # Ignore getDriverName method (exists in concrete implementation)
         - message: '#Call to an undefined method Illuminate\\Database\\ConnectionInterface::getDriverName\(\)\.#'
-        # Ignore property.defaultValue issues
-        - identifier: 'property.defaultValue'
         # Ignore arguments.count for context methods
         # Ignore CompoundVoucherCondition rules parameter type
         - message: '#Parameter \$rules of class AIArmada\\Cart\\Conditions\\CartCondition constructor expects.*#'
         # Ignore FilamentChip Jetstream/Cashier integration issues
         - message: '#Access to an undefined property Illuminate\\Foundation\\Auth\\User::\$currentTeam\.#'
         - message: '#Call to an undefined method Illuminate\\Database\\Eloquent\\Model::(updateDefaultPaymentMethod|deletePaymentMethod)\(\)\.#'
-        # Ignore new.static (safe in our context)
-        - identifier: 'new.static'
         # Ignore PHPDoc type issues in Cart traits
         - message: '#PHPDoc tag @param for parameter \$resolver with type.*is not subtype of native type callable\.#'
         # Ignore nullCoalesce in exception classes
-        - identifier: 'nullCoalesce.expr'
-        # Ignore strict comparison and deadCode in validators (defensive programming)
-        - identifier: 'notIdentical.alwaysTrue'
-        - identifier: 'deadCode.unreachable'
-        - identifier: 'identical.alwaysFalse'
-        - identifier: 'instanceof.alwaysTrue'
+        # (no ignore) surface strict/dead-code issues
         # Ignore unused Buyable trait (it's part of the public API)
         - message: '#Trait AIArmada\\Cart\\Concerns\\Buyable is used zero times and is not analysed\.#'
 
@@ -143,27 +138,38 @@ parameters:
               - packages/cashier/src/Gateways/StripeGateway.php
               - packages/filament-cashier/src
 
-        # Arguments count in Akaunting Money (version compatibility)
-        - message: '#Method Akaunting\\Money\\Money::format\(\) invoked with 1 parameter.*#'
-
-        # function.alreadyNarrowedType - defensive programming patterns
+        # Defensive programming patterns - method_exists/instanceof checks on types that are guaranteed
+        # These are intentional for forward/backward compatibility and defensive coding
         - identifier: 'function.alreadyNarrowedType'
-        - identifier: 'function.impossibleType'
+        - identifier: 'instanceof.alwaysTrue'
+        - identifier: 'notIdentical.alwaysTrue'
+        - identifier: 'identical.alwaysFalse'
+        # REMOVED: - identifier: 'function.impossibleType' - we want to catch dead code
 
-        # throws.notThrowable - Exception class hierarchy issues
+        # Return type covariance issues with static/self in scope methods and relations
+        - message: '#Method .* should return Illuminate\\Database\\Eloquent\\Builder<.*> but returns Illuminate\\Database\\Eloquent\\Builder<static\(.*\)>#'
+        - message: '#Method .* should return Illuminate\\Database\\Eloquent\\Builder<static\(.*\)> but returns Illuminate\\Database\\Eloquent\\Builder<.*>#'
+        - message: '#Method .* should return Illuminate\\Database\\Eloquent\\Relations\\.*<.*> but returns Illuminate\\Database\\Eloquent\\Relations\\.*<.*\$this.*>#'
+
+        # Filament plugin get() method return type
+        - message: '#Method .* should return static\(.*\) but returns Filament\\Contracts\\Plugin\|Filament\\FilamentManager#'
+
+        # Collection covariance issues
+        - message: '#Method .* should return Illuminate\\Support\\Collection<int, array<string, mixed>> but returns Illuminate\\Support\\Collection<int, array\{.*\}>#'
+
+        # PHPDoc @throws not subtype of Throwable (external package types)
         - identifier: 'throws.notThrowable'
 
-        # offsetAccess.nonOffsetAccessible - dynamic property access patterns
-        - identifier: 'offsetAccess.nonOffsetAccessible'
+        # Return type issues with external package methods
+        - message: '#Method .* should return Symfony\\Component\\HttpFoundation\\StreamedResponse but returns Spatie\\LaravelPdf\\PdfBuilder#'
 
-        # argument.templateType - complex generic type resolution
+        # Template type resolution issues in owner scope helpers
         - identifier: 'argument.templateType'
 
-        # argument.unknown - external class method calls
-        - identifier: 'argument.unknown'
+        # Filament action getReasonOptions return type array shape mismatch
+        - message: '#Method .* should return array<string, string> but returns array<string, array<string, string>>#'
 
-        # method.protected - false positives from trait usage
-        - identifier: 'method.protected'
+        # Note: return.type identifier removed - too dangerous, hides real bugs
 
     # Exclude patterns
     excludePaths:
