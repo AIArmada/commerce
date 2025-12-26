@@ -6,7 +6,7 @@ namespace AIArmada\FilamentCashierChip\Resources\SubscriptionResource\Pages;
 
 use AIArmada\CashierChip\Subscription;
 use AIArmada\FilamentCashierChip\Resources\SubscriptionResource;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Actions\ActionGroup;
 use Filament\Forms\Components\DateTimePicker;
@@ -180,7 +180,7 @@ final class ViewSubscription extends ViewRecord
                         ->label('New Trial End Date')
                         ->required()
                         ->minDate(now())
-                        ->default(fn (): Carbon => now()->addDays(14)),
+                        ->default(fn (): CarbonImmutable => CarbonImmutable::now()->addDays(14)),
                 ])
                 ->visible(function (): bool {
                     /** @var Subscription $record */
@@ -191,7 +191,7 @@ final class ViewSubscription extends ViewRecord
                 ->action(function (array $data): void {
                     /** @var Subscription $subscription */
                     $subscription = $this->getRecord();
-                    $subscription->extendTrial(Carbon::parse($data['trial_ends_at']));
+                    $subscription->extendTrial(CarbonImmutable::parse($data['trial_ends_at']));
 
                     Notification::make()
                         ->title('Trial Extended')
