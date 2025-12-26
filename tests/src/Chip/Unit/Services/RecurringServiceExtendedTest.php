@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\RecurringService;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 describe('RecurringService', function (): void {
     beforeEach(function (): void {
@@ -132,7 +132,7 @@ describe('RecurringService', function (): void {
             $reflection = new ReflectionMethod($this->service, 'calculateFirstCharge');
             $returnType = $reflection->getReturnType();
 
-            expect($returnType->getName())->toBe(Carbon::class);
+            expect($returnType->getName())->toBe(CarbonImmutable::class);
         });
 
         it('calculateFirstCharge accepts interval and count', function (): void {

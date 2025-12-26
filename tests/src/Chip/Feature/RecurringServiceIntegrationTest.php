@@ -10,7 +10,7 @@ use AIArmada\Chip\Exceptions\NoRecurringTokenException;
 use AIArmada\Chip\Models\RecurringSchedule;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\RecurringService;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 
 describe('RecurringService', function (): void {
@@ -43,7 +43,7 @@ describe('RecurringService', function (): void {
         });
 
         it('creates schedule with custom parameters', function (): void {
-            $firstChargeAt = Carbon::now()->addDays(7);
+            $firstChargeAt = CarbonImmutable::now()->addDays(7);
             $metadata = ['plan' => 'premium', 'feature' => 'unlimited'];
 
             $schedule = $this->service->createSchedule(
@@ -68,7 +68,7 @@ describe('RecurringService', function (): void {
         });
 
         it('calculates first charge for daily interval', function (): void {
-            Carbon::setTestNow('2025-01-01 12:00:00');
+            CarbonImmutable::setTestNow('2025-01-01 12:00:00');
 
             $schedule = $this->service->createSchedule(
                 chipClientId: 'client-123',
@@ -80,11 +80,11 @@ describe('RecurringService', function (): void {
 
             expect($schedule->next_charge_at->format('Y-m-d'))->toBe('2025-01-04');
 
-            Carbon::setTestNow();
+            CarbonImmutable::setTestNow();
         });
 
         it('calculates first charge for weekly interval', function (): void {
-            Carbon::setTestNow('2025-01-01 12:00:00');
+            CarbonImmutable::setTestNow('2025-01-01 12:00:00');
 
             $schedule = $this->service->createSchedule(
                 chipClientId: 'client-123',
@@ -96,11 +96,11 @@ describe('RecurringService', function (): void {
 
             expect($schedule->next_charge_at->format('Y-m-d'))->toBe('2025-01-15');
 
-            Carbon::setTestNow();
+            CarbonImmutable::setTestNow();
         });
 
         it('calculates first charge for yearly interval', function (): void {
-            Carbon::setTestNow('2025-01-01 12:00:00');
+            CarbonImmutable::setTestNow('2025-01-01 12:00:00');
 
             $schedule = $this->service->createSchedule(
                 chipClientId: 'client-123',
@@ -112,7 +112,7 @@ describe('RecurringService', function (): void {
 
             expect($schedule->next_charge_at->format('Y-m-d'))->toBe('2026-01-01');
 
-            Carbon::setTestNow();
+            CarbonImmutable::setTestNow();
         });
     });
 
@@ -148,7 +148,7 @@ describe('RecurringService', function (): void {
                 ],
             ];
 
-            expect(fn () => $this->service->createScheduleFromPurchase(
+            expect(fn() => $this->service->createScheduleFromPurchase(
                 purchaseData: $purchaseData,
                 interval: RecurringInterval::Monthly,
             ))->toThrow(NoRecurringTokenException::class);
