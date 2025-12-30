@@ -10,6 +10,7 @@ use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedSubscription;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Cashier\Subscription;
 
 final class ActiveSubscriptionsWidget extends Widget
@@ -37,7 +38,11 @@ final class ActiveSubscriptionsWidget extends Widget
         $detector = app(GatewayDetector::class);
         $limit = max(1, $this->perGatewayLimit);
 
-        if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
+        if (
+            $detector->isAvailable('stripe')
+            && class_exists(Subscription::class)
+            && Schema::hasTable((new Subscription)->getTable())
+        ) {
             $stripeSubscriptions = CashierOwnerScope::apply(Subscription::query())
                 ->with('items')
                 ->where('user_id', $user->getAuthIdentifier())

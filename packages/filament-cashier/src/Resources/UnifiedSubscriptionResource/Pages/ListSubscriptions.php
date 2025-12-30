@@ -17,6 +17,7 @@ use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Cashier\Subscription;
 
 final class ListSubscriptions extends ListRecords
@@ -117,7 +118,11 @@ final class ListSubscriptions extends ListRecords
         $detector = app(GatewayDetector::class);
 
         // Collect from Stripe if available
-        if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
+        if (
+            $detector->isAvailable('stripe')
+            && class_exists(Subscription::class)
+            && Schema::hasTable((new Subscription)->getTable())
+        ) {
             $stripeSubscriptions = CashierOwnerScope::apply(Subscription::query())
                 ->with(['user', 'items'])
                 ->where('user_id', $userId)
