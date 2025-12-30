@@ -16,8 +16,7 @@ final class DocsServiceProvider extends PackageServiceProvider
             ->name('docs')
             ->hasConfigFile()
             ->hasViews()
-            ->discoversMigrations()
-            ->runsMigrations();
+            ->discoversMigrations();
     }
 
     public function packageRegistered(): void

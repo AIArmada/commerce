@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Events\PurchasePaid;
+use AIArmada\Orders\Models\Order;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\ShopController;
-use App\Models\Order;
+use App\Models\User;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Support\Facades\Route;
 
@@ -14,8 +15,17 @@ use Illuminate\Support\Facades\Route;
 // CUSTOMER STOREFRONT ROUTES
 // ==========================================
 
+Route::get('/favicon.ico', fn () => response()->noContent());
+
 // Login redirect (uses Filament admin login)
 Route::get('/login', fn () => redirect('/admin/login'))->name('login');
+
+// Demo: switch active owner context (used by commerce-support OwnerResolverInterface)
+Route::get('/demo/owner/{user}', function (User $user) {
+    session(['demo_owner_id' => $user->id]);
+
+    return redirect()->back();
+})->name('demo.owner');
 
 // Homepage
 Route::get('/', [ShopController::class, 'home'])->name('shop.home');
@@ -100,6 +110,15 @@ Route::get('/checkout/success/{id}', function (string $id) {
 // This route simulates receiving a webhook from CHIP for demo purposes.
 // In production, CHIP sends webhooks to a public URL with signature verification.
 Route::post('/demo/simulate-payment/{order}', function (Order $order) {
+    $shippingAddress = $order->shippingAddress;
+
+    $customerEmail = $shippingAddress?->email ?? 'demo@example.com';
+    $customerFullName = trim(sprintf(
+        '%s %s',
+        $shippingAddress?->first_name ?? 'Demo',
+        $shippingAddress?->last_name ?? 'Customer',
+    ));
+
     // Dispatch the PurchasePaid event directly for demo
     $purchaseData = [
         'id' => $order->metadata['chip_purchase_id'] ?? 'demo-purchase-id',
@@ -109,8 +128,8 @@ Route::post('/demo/simulate-payment/{order}', function (Order $order) {
         'created_on' => time(),
         'updated_on' => time(),
         'client' => [
-            'email' => $order->shipping_address['email'] ?? 'demo@example.com',
-            'full_name' => $order->shipping_address['name'] ?? 'Demo Customer',
+            'email' => $customerEmail,
+            'full_name' => $customerFullName,
         ],
         'purchase' => [
             'currency' => 'MYR',

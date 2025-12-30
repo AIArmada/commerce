@@ -37,7 +37,6 @@ return new class extends Migration
 
             Schema::table($tableName, function (Blueprint $table): void {
                 $table->nullableUuidMorphs('owner');
-                $table->index(['owner_type', 'owner_id']);
             });
         }
 

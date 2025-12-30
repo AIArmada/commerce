@@ -11,7 +11,7 @@
         <p class="text-xl text-gray-600 mb-2">Thank you for your purchase.</p>
         <p class="text-gray-500 mb-8">Order Number: <span class="font-mono font-bold text-gray-900">{{ $order->order_number }}</span></p>
 
-        @if($order->payment_status !== 'paid')
+        @if($order->paid_at === null)
         <!-- Processing Notice (only shown while waiting for webhook) -->
         <div class="bg-amber-50 border border-amber-200 rounded-xl p-6 mb-8">
             <div class="flex items-center justify-center gap-3 mb-3">
@@ -49,12 +49,12 @@
             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg mb-6">
                 <div>
                     <p class="text-sm text-gray-600">Order Status</p>
-                    <p class="font-semibold text-gray-900">{{ ucfirst(str_replace('_', ' ', $order->status)) }}</p>
+                    <p class="font-semibold text-gray-900">{{ $order->status->label() }}</p>
                 </div>
                 <div class="text-right">
                     <p class="text-sm text-gray-600">Payment Status</p>
-                    <p class="font-semibold {{ $order->payment_status === 'paid' ? 'text-green-600' : 'text-amber-600' }}">
-                        {{ ucfirst($order->payment_status) }}
+                    <p class="font-semibold {{ $order->paid_at !== null ? 'text-green-600' : 'text-amber-600' }}">
+                        {{ $order->paid_at !== null ? 'Paid' : 'Pending' }}
                     </p>
                 </div>
             </div>
@@ -70,7 +70,7 @@
                             <p class="text-sm text-gray-500">Qty: {{ $item->quantity }}</p>
                         </div>
                     </div>
-                    <p class="font-medium text-gray-900">RM {{ number_format($item->total_price / 100, 2) }}</p>
+                    <p class="font-medium text-gray-900">RM {{ number_format($item->total / 100, 2) }}</p>
                 </div>
                 @endforeach
             </div>
@@ -91,6 +91,12 @@
                     <span>Shipping</span>
                     <span>{{ $order->shipping_total > 0 ? 'RM '.number_format($order->shipping_total / 100, 2) : 'Free' }}</span>
                 </div>
+                @if($order->tax_total > 0)
+                <div class="flex justify-between text-gray-600">
+                    <span>Tax</span>
+                    <span>RM {{ number_format($order->tax_total / 100, 2) }}</span>
+                </div>
+                @endif
                 <div class="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t">
                     <span>Total</span>
                     <span>RM {{ number_format($order->grand_total / 100, 2) }}</span>
@@ -101,12 +107,12 @@
             <div class="mt-6 pt-6 border-t">
                 <h3 class="font-semibold text-gray-900 mb-3">Shipping Address</h3>
                 <div class="text-gray-600">
-                    <p>{{ $order->shipping_address['name'] ?? '' }}</p>
-                    <p>{{ $order->shipping_address['address_line_1'] ?? '' }}</p>
-                    @if(!empty($order->shipping_address['address_line_2']))
-                    <p>{{ $order->shipping_address['address_line_2'] }}</p>
+                    <p>{{ $order->shippingAddress?->getFullName() ?? '' }}</p>
+                    <p>{{ $order->shippingAddress?->line1 ?? '' }}</p>
+                    @if(!empty($order->shippingAddress?->line2))
+                    <p>{{ $order->shippingAddress?->line2 }}</p>
                     @endif
-                    <p>{{ $order->shipping_address['city'] ?? '' }}, {{ $order->shipping_address['state'] ?? '' }} {{ $order->shipping_address['postcode'] ?? '' }}</p>
+                    <p>{{ $order->shippingAddress?->city ?? '' }}, {{ $order->shippingAddress?->state ?? '' }} {{ $order->shippingAddress?->postcode ?? '' }}</p>
                 </div>
             </div>
 

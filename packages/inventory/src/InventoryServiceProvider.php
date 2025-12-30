@@ -45,7 +45,6 @@ final class InventoryServiceProvider extends PackageServiceProvider
             ->name('inventory')
             ->hasConfigFile()
             ->discoversMigrations()
-            ->runsMigrations()
             ->hasCommands([
                 CleanupExpiredAllocationsCommand::class,
                 CreateValuationSnapshotCommand::class,

@@ -34,7 +34,7 @@ class StripePaymentMethod implements PaymentMethodContract
      */
     public function id(): string
     {
-        return $this->paymentMethod->id;
+        return $this->paymentMethod->asStripePaymentMethod()->id;
     }
 
     /**
@@ -50,7 +50,7 @@ class StripePaymentMethod implements PaymentMethodContract
      */
     public function brand(): ?string
     {
-        return $this->paymentMethod->card?->brand;
+        return $this->paymentMethod->asStripePaymentMethod()->card?->brand;
     }
 
     /**
@@ -58,7 +58,7 @@ class StripePaymentMethod implements PaymentMethodContract
      */
     public function lastFour(): ?string
     {
-        return $this->paymentMethod->card?->last4;
+        return $this->paymentMethod->asStripePaymentMethod()->card?->last4;
     }
 
     /**
@@ -66,7 +66,7 @@ class StripePaymentMethod implements PaymentMethodContract
      */
     public function expirationMonth(): ?int
     {
-        return $this->paymentMethod->card?->exp_month;
+        return $this->paymentMethod->asStripePaymentMethod()->card?->exp_month;
     }
 
     /**
@@ -74,7 +74,7 @@ class StripePaymentMethod implements PaymentMethodContract
      */
     public function expirationYear(): ?int
     {
-        return $this->paymentMethod->card?->exp_year;
+        return $this->paymentMethod->asStripePaymentMethod()->card?->exp_year;
     }
 
     /**
@@ -82,7 +82,7 @@ class StripePaymentMethod implements PaymentMethodContract
      */
     public function type(): string
     {
-        return $this->paymentMethod->type;
+        return $this->paymentMethod->asStripePaymentMethod()->type;
     }
 
     /**
@@ -97,7 +97,7 @@ class StripePaymentMethod implements PaymentMethodContract
         $default = $this->billable->defaultPaymentMethod();
 
         if ($default instanceof PaymentMethod) {
-            return $default->id === $this->id();
+            return $default->asStripePaymentMethod()->id === $this->id();
         }
 
         if ($default instanceof PaymentMethodContract) {

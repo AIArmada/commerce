@@ -8,19 +8,25 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Testing\WebhookSimulator;
-use AIArmada\Inventory\Models\InventoryLevel;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Customers\Models\Customer;
 use AIArmada\Jnt\Models\JntOrder;
+use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Models\OrderAddress;
+use AIArmada\Orders\Models\OrderItem;
+use AIArmada\Pricing\Services\PriceCalculator;
+use AIArmada\Products\Enums\ProductStatus;
+use AIArmada\Products\Models\Category;
+use AIArmada\Products\Models\Product;
+use AIArmada\Tax\Services\TaxCalculator;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\GiftCards\Models\GiftCard;
 use AIArmada\Vouchers\Models\Voucher;
-use App\Models\Category;
-use App\Models\Order;
-use App\Models\OrderItem;
-use App\Models\Product;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -35,8 +41,8 @@ final class ShopController extends Controller
     {
         $categories = Category::withCount('products')->get();
 
-        $featuredProducts = Product::with('category')
-            ->where('is_active', true)
+        $featuredProducts = Product::with('categories')
+            ->where('status', ProductStatus::Active)
             ->inRandomOrder()
             ->take(8)
             ->get();
@@ -64,13 +70,13 @@ final class ShopController extends Controller
         $categories = Category::withCount('products')->get();
         $currentCategory = null;
 
-        $query = Product::with('category')->where('is_active', true);
+        $query = Product::with('categories')->where('status', ProductStatus::Active);
 
         // Category filter
         if ($request->filled('category')) {
             $currentCategory = Category::where('slug', $request->category)->first();
             if ($currentCategory) {
-                $query->where('category_id', $currentCategory->id);
+                $query->whereHas('categories', fn ($q) => $q->whereKey($currentCategory->id));
             }
         }
 
@@ -91,21 +97,7 @@ final class ShopController extends Controller
             $query->where('price', '<=', (int) $request->max_price * 100);
         }
 
-        // In stock filter
-        if ($request->boolean('in_stock')) {
-            $inventoryLevelTable = (new InventoryLevel())->getTable();
-
-            $query->where(function ($q) use ($inventoryLevelTable): void {
-                $q->where('track_stock', false)
-                    ->orWhereExists(function ($sub) use ($inventoryLevelTable): void {
-                        $sub->selectRaw('1')
-                            ->from($inventoryLevelTable)
-                            ->whereColumn($inventoryLevelTable . '.inventoryable_id', 'products.id')
-                            ->where($inventoryLevelTable . '.inventoryable_type', Product::class)
-                            ->whereRaw($inventoryLevelTable . '.quantity_on_hand - ' . $inventoryLevelTable . '.quantity_reserved > 0');
-                    });
-            });
-        }
+        // In-stock filtering is handled by the Inventory package in admin.
 
         // Sorting
         $sort = $request->get('sort', 'newest');
@@ -136,12 +128,14 @@ final class ShopController extends Controller
      */
     public function product(Product $product): View
     {
-        $product->load('category');
+        $product->load('categories');
 
-        $relatedProducts = Product::with('category')
-            ->where('is_active', true)
+        $primaryCategoryId = $product->categories->first()?->getKey();
+
+        $relatedProducts = Product::with('categories')
+            ->where('status', ProductStatus::Active)
             ->where('id', '!=', $product->id)
-            ->when($product->category_id, fn ($q) => $q->where('category_id', $product->category_id))
+            ->when($primaryCategoryId, fn ($q) => $q->whereHas('categories', fn ($sub) => $sub->whereKey($primaryCategoryId)))
             ->inRandomOrder()
             ->take(4)
             ->get();
@@ -181,28 +175,33 @@ final class ShopController extends Controller
     public function addToCart(Request $request): RedirectResponse
     {
         $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => ['required', 'string'],
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $product = Product::findOrFail($request->product_id);
+        $product = Product::query()->whereKey($request->product_id)->firstOrFail();
 
-        if ($product->isOutOfStock()) {
-            return back()->with('error', 'Sorry, this product is out of stock.');
+        if (! $product->isPurchasable()) {
+            return back()->with('error', 'Sorry, this product is not available for purchase.');
         }
 
-        if ($request->quantity > $product->getCurrentStock()) {
-            return back()->with('error', 'Requested quantity exceeds available stock.');
-        }
+        $quantity = max(1, (int) $request->quantity);
+
+        /** @var PriceCalculator $priceCalculator */
+        $priceCalculator = app(PriceCalculator::class);
+
+        $priceResult = $priceCalculator->calculate($product, $quantity, [
+            'currency' => 'MYR',
+        ]);
 
         Cart::add([
             'id' => $product->id,
             'name' => $product->name,
-            'price' => $product->price,
-            'quantity' => $request->quantity,
+            'price' => $priceResult->finalPrice,
+            'quantity' => $quantity,
             'attributes' => [
                 'sku' => $product->sku,
-                'category' => $product->category?->name,
+                'category' => $product->categories->first()?->name,
                 'slug' => $product->slug,
             ],
         ]);
@@ -221,11 +220,29 @@ final class ShopController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
+        $quantity = max(1, (int) $request->quantity);
+
+        $product = Product::query()->whereKey($itemId)->first();
+
+        $unitPrice = null;
+
+        if ($product !== null) {
+            /** @var PriceCalculator $priceCalculator */
+            $priceCalculator = app(PriceCalculator::class);
+
+            $priceResult = $priceCalculator->calculate($product, $quantity, [
+                'currency' => 'MYR',
+            ]);
+
+            $unitPrice = $priceResult->finalPrice;
+        }
+
         Cart::update($itemId, [
             'quantity' => [
                 'relative' => false,
-                'value' => $request->quantity,
+                'value' => $quantity,
             ],
+            ...($unitPrice !== null ? ['price' => $unitPrice] : []),
         ]);
 
         session(['cart_count' => Cart::getTotalQuantity()]);
@@ -326,53 +343,196 @@ final class ShopController extends Controller
             default => 800,
         };
 
+        $owner = OwnerContext::resolve();
+
+        $customer = Customer::query()
+            ->where('email', $request->email)
+            ->first();
+
+        if ($customer === null) {
+            $customer = new Customer([
+                'first_name' => $request->first_name,
+                'last_name' => $request->last_name,
+                'email' => $request->email,
+                'phone' => $request->phone,
+                'user_id' => Auth::id(),
+            ]);
+
+            if ($owner !== null) {
+                $customer->assignOwner($owner);
+            }
+
+            $customer->save();
+        } else {
+            $customer->fill([
+                'first_name' => $request->first_name,
+                'last_name' => $request->last_name,
+                'phone' => $request->phone,
+                'user_id' => Auth::id(),
+            ]);
+            $customer->save();
+        }
+
+        /** @var PriceCalculator $priceCalculator */
+        $priceCalculator = app(PriceCalculator::class);
+
+        /** @var TaxCalculator $taxCalculator */
+        $taxCalculator = app(TaxCalculator::class);
+
+        $pricingContext = [
+            'currency' => 'MYR',
+            'customer_id' => $customer->id,
+        ];
+
+        $taxContext = [
+            'customer_id' => $customer->id,
+            'shipping_address' => [
+                'country' => 'MY',
+                'state' => $request->state,
+                'postcode' => $request->postcode,
+            ],
+        ];
+
+        $lineSnapshots = [];
+        $itemsSubtotal = 0;
+
+        foreach (Cart::getItems() as $item) {
+            $product = Product::query()->whereKey((string) $item->id)->firstOrFail();
+            $quantity = max(1, (int) $item->quantity);
+
+            $priceResult = $priceCalculator->calculate($product, $quantity, $pricingContext);
+            $unitPrice = $priceResult->finalPrice;
+            $lineSubtotal = $unitPrice * $quantity;
+
+            $itemsSubtotal += $lineSubtotal;
+            $lineSnapshots[] = [
+                'product' => $product,
+                'name' => $item->name,
+                'sku' => $item->attributes['sku'] ?? null,
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'line_subtotal' => $lineSubtotal,
+            ];
+
+            // Keep cart math consistent with Pricing-derived unit price.
+            Cart::update((string) $item->id, ['price' => $unitPrice]);
+        }
+
         // Calculate discount properly (subtotal without conditions - subtotal with conditions)
         $subtotalWithoutConditions = (int) Cart::getRawSubtotalWithoutConditions();
         $subtotalWithConditions = (int) Cart::getRawSubtotal();
         $discountTotal = max(0, $subtotalWithoutConditions - $subtotalWithConditions);
 
+        $taxableItemsAmount = max(0, $itemsSubtotal - $discountTotal);
+
+        $itemsTax = 0;
+        $shippingTax = 0;
+
+        try {
+            $itemsTax = $taxCalculator
+                ->calculateTax($taxableItemsAmount, 'standard', null, $taxContext)
+                ->taxAmount;
+
+            $shippingTax = $taxCalculator
+                ->calculateShippingTax($shippingCost, null, $taxContext)
+                ->taxAmount;
+        } catch (QueryException $exception) {
+            Log::warning('Tax calculation skipped due to missing DB tables.', [
+                'message' => $exception->getMessage(),
+            ]);
+        }
+
+        $taxTotal = $itemsTax + $shippingTax;
+
         // Create order with pending_payment status
         $order = Order::create([
-            'order_number' => 'ORD-' . mb_strtoupper(Str::random(8)),
-            'user_id' => Auth::id(),
+            'order_number' => Order::generateOrderNumber(),
             'status' => 'pending_payment',
-            'payment_status' => 'pending',
-            'subtotal' => $subtotalWithConditions,
+            'customer_type' => $customer->getMorphClass(),
+            'customer_id' => $customer->getKey(),
+            'subtotal' => $itemsSubtotal,
             'discount_total' => $discountTotal,
-            'tax_total' => 0,
+            'tax_total' => $taxTotal,
             'shipping_total' => $shippingCost,
-            'grand_total' => $subtotalWithConditions + $shippingCost,
+            'grand_total' => max(0, $itemsSubtotal - $discountTotal) + $shippingCost + $taxTotal,
             'currency' => 'MYR',
-            'shipping_address' => [
-                'name' => $request->first_name . ' ' . $request->last_name,
-                'email' => $request->email,
-                'phone' => $request->phone,
-                'address_line_1' => $request->address_line_1,
-                'address_line_2' => $request->address_line_2,
-                'city' => $request->city,
-                'state' => $request->state,
-                'postcode' => $request->postcode,
-                'country' => 'Malaysia',
-            ],
             'metadata' => [
                 'shipping_method' => $request->shipping_method,
                 'payment_method' => $request->payment_method,
                 'affiliate_code' => session('affiliate_code'),
+                'voucher_code' => session('applied_voucher'),
+                'tax' => [
+                    'items_tax' => $itemsTax,
+                    'shipping_tax' => $shippingTax,
+                ],
             ],
             'notes' => $request->notes,
-            'voucher_code' => session('applied_voucher'),
+        ]);
+
+        if ($owner !== null && $order->owner_id === null) {
+            $order->assignOwner($owner);
+            $order->save();
+        }
+
+        OrderAddress::create([
+            'order_id' => $order->id,
+            'type' => 'shipping',
+            'first_name' => $request->first_name,
+            'last_name' => $request->last_name,
+            'line1' => $request->address_line_1,
+            'line2' => $request->address_line_2,
+            'city' => $request->city,
+            'state' => $request->state,
+            'postcode' => $request->postcode,
+            'country_code' => 'MY',
+            'phone' => $request->phone,
+            'email' => $request->email,
         ]);
 
         // Create order items (don't deduct stock yet - wait for payment)
-        foreach (Cart::getItems() as $item) {
+        $remainingDiscount = $discountTotal;
+        $remainingTax = $itemsTax;
+
+        foreach ($lineSnapshots as $index => $snapshot) {
+            $lineSubtotal = (int) $snapshot['line_subtotal'];
+            $isLast = $index === array_key_last($lineSnapshots);
+
+            $lineDiscount = 0;
+            if ($discountTotal > 0 && $itemsSubtotal > 0) {
+                $lineDiscount = $isLast
+                    ? $remainingDiscount
+                    : (int) floor(($lineSubtotal / $itemsSubtotal) * $discountTotal);
+                $lineDiscount = min($remainingDiscount, max(0, $lineDiscount));
+                $remainingDiscount -= $lineDiscount;
+            }
+
+            $lineTax = 0;
+            if ($itemsTax > 0 && $taxableItemsAmount > 0) {
+                $taxableLineAmount = max(0, $lineSubtotal - $lineDiscount);
+                $lineTax = $isLast
+                    ? $remainingTax
+                    : (int) floor(($taxableLineAmount / $taxableItemsAmount) * $itemsTax);
+                $lineTax = min($remainingTax, max(0, $lineTax));
+                $remainingTax -= $lineTax;
+            }
+
+            /** @var Product $product */
+            $product = $snapshot['product'];
+            $quantity = (int) $snapshot['quantity'];
+            $unitPrice = (int) $snapshot['unit_price'];
+
             OrderItem::create([
                 'order_id' => $order->id,
-                'product_id' => $item->id,
-                'name' => $item->name,
-                'sku' => $item->attributes['sku'] ?? null,
-                'quantity' => $item->quantity,
-                'unit_price' => (int) $item->price,
-                'total_price' => (int) $item->getRawSubtotal(),
+                'purchasable_type' => $product->getMorphClass(),
+                'purchasable_id' => $product->getKey(),
+                'name' => (string) $snapshot['name'],
+                'sku' => $snapshot['sku'],
+                'quantity' => $quantity,
+                'unit_price' => $unitPrice,
+                'discount_amount' => $lineDiscount,
+                'tax_amount' => $lineTax,
+                'total' => max(0, ($unitPrice * $quantity) - $lineDiscount + $lineTax),
+                'currency' => 'MYR',
             ]);
         }
 
@@ -423,6 +583,15 @@ final class ShopController extends Controller
             // Apply discount using CHIP's total_discount_override
             if ($order->discount_total > 0) {
                 $purchase->discount($order->discount_total);
+            }
+
+            // Represent tax explicitly so payment total matches order.
+            if ($order->tax_total > 0) {
+                $purchase->addProduct(
+                    name: 'Tax',
+                    price: $order->tax_total,
+                    quantity: 1
+                );
             }
 
             // Set redirect URLs
@@ -482,12 +651,12 @@ final class ShopController extends Controller
 
         // For demo: Simulate webhook if payment is still pending
         // In production, CHIP sends the webhook to a public URL automatically
-        if ($order->payment_status === 'pending' && $order->metadata['chip_purchase_id'] ?? null) {
+        if ((string) $order->status === 'pending_payment' && ($order->metadata['chip_purchase_id'] ?? null)) {
             $this->simulatePaymentWebhook($order);
             $order->refresh(); // Reload to get updated status
         }
 
-        $order->load('items');
+        $order->load('items', 'shippingAddress', 'billingAddress');
 
         return view('shop.payment-success', compact('order'));
     }
@@ -517,7 +686,7 @@ final class ShopController extends Controller
      */
     public function orderSuccess(Order $order): View
     {
-        $order->load('items');
+        $order->load('items', 'shippingAddress', 'billingAddress');
 
         return view('shop.order-success', compact('order'));
     }
@@ -547,15 +716,24 @@ final class ShopController extends Controller
     public function buyNow(Request $request): RedirectResponse
     {
         $request->validate([
-            'product_id' => 'required|exists:products,id',
+            'product_id' => ['required', 'string'],
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $product = Product::findOrFail($request->product_id);
+        $product = Product::query()->whereKey($request->product_id)->firstOrFail();
 
-        if ($product->isOutOfStock()) {
+        if (! $product->isInStock()) {
             return back()->with('error', 'Sorry, this product is out of stock.');
         }
+
+        $quantity = max(1, (int) $request->quantity);
+
+        /** @var PriceCalculator $priceCalculator */
+        $priceCalculator = app(PriceCalculator::class);
+
+        $priceResult = $priceCalculator->calculate($product, $quantity, [
+            'currency' => 'MYR',
+        ]);
 
         // Clear cart and add single item
         Cart::clear();
@@ -564,11 +742,11 @@ final class ShopController extends Controller
         Cart::add([
             'id' => $product->id,
             'name' => $product->name,
-            'price' => $product->price,
-            'quantity' => $request->quantity,
+            'price' => $priceResult->finalPrice,
+            'quantity' => $quantity,
             'attributes' => [
                 'sku' => $product->sku,
-                'category' => $product->category?->name,
+                'category' => $product->categories->first()?->name,
                 'slug' => $product->slug,
             ],
         ]);
@@ -583,18 +761,9 @@ final class ShopController extends Controller
      */
     public function orders(): View
     {
-        // For demo purposes, show all recent orders if not authenticated
-        if (Auth::check()) {
-            $orders = Order::where('user_id', Auth::id())
-                ->with('items')
-                ->orderBy('created_at', 'desc')
-                ->paginate(10);
-        } else {
-            // Show recent orders for demo
-            $orders = Order::with('items')
-                ->orderBy('created_at', 'desc')
-                ->paginate(10);
-        }
+        $orders = Order::with('items', 'shippingAddress')
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
 
         return view('shop.orders', compact('orders'));
     }
@@ -609,8 +778,7 @@ final class ShopController extends Controller
         }
 
         $user = Auth::user();
-        $recentOrders = Order::with('items')
-            ->where('user_id', $user->id)
+        $recentOrders = Order::with('items', 'shippingAddress')
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
@@ -694,29 +862,29 @@ final class ShopController extends Controller
      */
     private function simulatePaymentWebhook(Order $order): void
     {
-        $address = $order->shipping_address ?? [];
-        $streetAddress = $address['address_line_1'] ?? $address['address'] ?? '';
+        $shipping = $order->shippingAddress;
+        $streetAddress = $shipping?->line1 ?? '';
 
         WebhookSimulator::paid()
             ->purchaseId($order->metadata['chip_purchase_id'])
             ->reference($order->order_number)
             ->amount($order->grand_total)
             ->customer(
-                $address['email'] ?? 'demo@example.com',
-                $address['name'] ?? 'Demo Customer',
-                $address['phone'] ?? '+60123456789'
+                $shipping?->email ?? 'demo@example.com',
+                $shipping?->getFullName() ?? 'Demo Customer',
+                $shipping?->phone ?? '+60123456789'
             )
             ->with([
                 'client' => [
                     'street_address' => $streetAddress,
-                    'city' => $address['city'] ?? '',
-                    'state' => $address['state'] ?? '',
-                    'zip_code' => $address['postcode'] ?? '',
+                    'city' => $shipping?->city ?? '',
+                    'state' => $shipping?->state ?? '',
+                    'zip_code' => $shipping?->postcode ?? '',
                     'country' => 'MY',
                     'shipping_street_address' => $streetAddress,
-                    'shipping_city' => $address['city'] ?? '',
-                    'shipping_state' => $address['state'] ?? '',
-                    'shipping_zip_code' => $address['postcode'] ?? '',
+                    'shipping_city' => $shipping?->city ?? '',
+                    'shipping_state' => $shipping?->state ?? '',
+                    'shipping_zip_code' => $shipping?->postcode ?? '',
                     'shipping_country' => 'MY',
                 ],
                 'purchase' => [

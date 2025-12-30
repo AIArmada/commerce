@@ -16,6 +16,34 @@
         },
         {
             "type": "path",
+            "url": "../packages/customers"
+        },
+        {
+            "type": "path",
+            "url": "../packages/docs"
+        },
+        {
+            "type": "path",
+            "url": "../packages/orders"
+        },
+        {
+            "type": "path",
+            "url": "../packages/pricing"
+        },
+        {
+            "type": "path",
+            "url": "../packages/products"
+        },
+        {
+            "type": "path",
+            "url": "../packages/shipping"
+        },
+        {
+            "type": "path",
+            "url": "../packages/tax"
+        },
+        {
+            "type": "path",
             "url": "../packages/cashier"
         },
         {
@@ -48,6 +76,14 @@
         },
         {
             "type": "path",
+            "url": "../packages/filament-cashier"
+        },
+        {
+            "type": "path",
+            "url": "../packages/filament-cashier-chip"
+        },
+        {
+            "type": "path",
             "url": "../packages/filament-vouchers"
         },
         {
@@ -60,7 +96,35 @@
         },
         {
             "type": "path",
+            "url": "../packages/filament-customers"
+        },
+        {
+            "type": "path",
+            "url": "../packages/filament-docs"
+        },
+        {
+            "type": "path",
             "url": "../packages/filament-jnt"
+        },
+        {
+            "type": "path",
+            "url": "../packages/filament-orders"
+        },
+        {
+            "type": "path",
+            "url": "../packages/filament-pricing"
+        },
+        {
+            "type": "path",
+            "url": "../packages/filament-products"
+        },
+        {
+            "type": "path",
+            "url": "../packages/filament-shipping"
+        },
+        {
+            "type": "path",
+            "url": "../packages/filament-tax"
         },
         {
             "type": "path",
@@ -80,6 +144,13 @@
         "laravel/framework": "^12.0",
         "laravel/tinker": "^2.10.1",
         "filament/filament": "^5.0",
+        "aiarmada/customers": "*",
+        "aiarmada/docs": "*",
+        "aiarmada/orders": "*",
+        "aiarmada/pricing": "*",
+        "aiarmada/products": "*",
+        "aiarmada/shipping": "*",
+        "aiarmada/tax": "*",
         "aiarmada/cart": "*",
         "aiarmada/cashier": "*",
         "aiarmada/cashier-chip": "*",
@@ -89,10 +160,19 @@
         "aiarmada/affiliates": "*",
         "aiarmada/jnt": "*",
         "aiarmada/filament-cart": "*",
+        "aiarmada/filament-cashier": "*",
+        "aiarmada/filament-cashier-chip": "*",
         "aiarmada/filament-vouchers": "*",
         "aiarmada/filament-affiliates": "*",
         "aiarmada/filament-chip": "*",
+        "aiarmada/filament-customers": "*",
+        "aiarmada/filament-docs": "*",
         "aiarmada/filament-jnt": "*",
+        "aiarmada/filament-orders": "*",
+        "aiarmada/filament-pricing": "*",
+        "aiarmada/filament-products": "*",
+        "aiarmada/filament-shipping": "*",
+        "aiarmada/filament-tax": "*",
         "aiarmada/filament-authz": "*",
         "aiarmada/inventory": "*",
         "aiarmada/filament-inventory": "*",
@@ -125,6 +205,7 @@
             "composer install",
             "@php -r \"file_exists('.env') || copy('.env.example', '.env');\"",
             "@php artisan key:generate",
+            "@php artisan vendor:publish --provider=\"Spatie\\LaravelSettings\\LaravelSettingsServiceProvider\" --tag=migrations --force --ansi",
             "@php artisan migrate --force",
             "npm install",
             "npm run build"
@@ -151,6 +232,8 @@
         "post-create-project-cmd": [
             "@php artisan key:generate --ansi",
             "@php -r \"file_exists('database/database.sqlite') || touch('database/database.sqlite');\"",
+            "@php artisan vendor:publish --provider=\"Spatie\\LaravelSettings\\LaravelSettingsServiceProvider\" --tag=migrations --force --ansi",
+            "@php artisan vendor:publish --provider=\"Laravel\\Cashier\\CashierServiceProvider\" --tag=cashier-migrations --force --ansi",
             "@php artisan migrate --graceful --ansi"
         ],
         "pre-package-uninstall": [

@@ -19,11 +19,11 @@
             <div class="flex items-center justify-between p-4 bg-amber-50 rounded-lg mb-6">
                 <div>
                     <p class="text-sm text-gray-600">Order Status</p>
-                    <p class="font-semibold text-amber-600">{{ ucfirst($order->status) }}</p>
+                    <p class="font-semibold text-amber-600">{{ $order->status->label() }}</p>
                 </div>
                 <div class="text-right">
                     <p class="text-sm text-gray-600">Payment Status</p>
-                    <p class="font-semibold text-amber-600">{{ ucfirst($order->payment_status) }}</p>
+                    <p class="font-semibold text-amber-600">{{ $order->paid_at !== null ? 'Paid' : 'Pending' }}</p>
                 </div>
             </div>
 
@@ -38,7 +38,7 @@
                             <p class="text-sm text-gray-500">Qty: {{ $item->quantity }}</p>
                         </div>
                     </div>
-                    <p class="font-medium text-gray-900">RM {{ number_format($item->total_price / 100, 2) }}</p>
+                    <p class="font-medium text-gray-900">RM {{ number_format($item->total / 100, 2) }}</p>
                 </div>
                 @endforeach
             </div>
@@ -59,6 +59,12 @@
                     <span>Shipping</span>
                     <span>{{ $order->shipping_total > 0 ? 'RM '.number_format($order->shipping_total / 100, 2) : 'Free' }}</span>
                 </div>
+                @if($order->tax_total > 0)
+                <div class="flex justify-between text-gray-600">
+                    <span>Tax</span>
+                    <span>RM {{ number_format($order->tax_total / 100, 2) }}</span>
+                </div>
+                @endif
                 <div class="flex justify-between text-xl font-bold text-gray-900 pt-2 border-t">
                     <span>Total</span>
                     <span>RM {{ number_format($order->grand_total / 100, 2) }}</span>
@@ -69,23 +75,23 @@
             <div class="mt-6 pt-6 border-t">
                 <h3 class="font-semibold text-gray-900 mb-3">Shipping Address</h3>
                 <div class="text-gray-600">
-                    <p>{{ $order->shipping_address['name'] ?? '' }}</p>
-                    <p>{{ $order->shipping_address['address_line_1'] ?? '' }}</p>
-                    @if(!empty($order->shipping_address['address_line_2']))
-                    <p>{{ $order->shipping_address['address_line_2'] }}</p>
+                    <p>{{ $order->shippingAddress?->getFullName() ?? '' }}</p>
+                    <p>{{ $order->shippingAddress?->line1 ?? '' }}</p>
+                    @if(!empty($order->shippingAddress?->line2))
+                    <p>{{ $order->shippingAddress?->line2 }}</p>
                     @endif
-                    <p>{{ $order->shipping_address['city'] ?? '' }}, {{ $order->shipping_address['state'] ?? '' }} {{ $order->shipping_address['postcode'] ?? '' }}</p>
-                    <p>{{ $order->shipping_address['country'] ?? '' }}</p>
+                    <p>{{ $order->shippingAddress?->city ?? '' }}, {{ $order->shippingAddress?->state ?? '' }} {{ $order->shippingAddress?->postcode ?? '' }}</p>
+                    <p>{{ $order->shippingAddress?->country_code ?? '' }}</p>
                 </div>
             </div>
 
             <!-- Voucher/Affiliate Info -->
-            @if($order->voucher_code || ($order->metadata['affiliate_code'] ?? null))
+            @if(($order->metadata['voucher_code'] ?? null) || ($order->metadata['affiliate_code'] ?? null))
             <div class="mt-6 pt-6 border-t grid grid-cols-2 gap-4">
-                @if($order->voucher_code)
+                @if($order->metadata['voucher_code'] ?? null)
                 <div class="p-3 bg-green-50 rounded-lg">
                     <p class="text-sm text-gray-600">Voucher Applied</p>
-                    <p class="font-mono font-bold text-green-600">{{ $order->voucher_code }}</p>
+                    <p class="font-mono font-bold text-green-600">{{ $order->metadata['voucher_code'] }}</p>
                 </div>
                 @endif
                 @if($order->metadata['affiliate_code'] ?? null)

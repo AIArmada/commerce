@@ -32,7 +32,6 @@ return new class extends Migration
             $table->timestamps();
 
             // Indexes
-            $table->index(['tierable_type', 'tierable_id']);
             $table->index(['min_quantity', 'max_quantity']);
         });
     }

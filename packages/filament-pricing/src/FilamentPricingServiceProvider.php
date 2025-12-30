@@ -4,17 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentPricing;
 
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class FilamentPricingServiceProvider extends ServiceProvider
+final class FilamentPricingServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        //
-    }
-
-    public function boot(): void
-    {
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'filament-pricing');
+        $package
+            ->name('filament-pricing')
+            ->hasViews('filament-pricing');
     }
 }

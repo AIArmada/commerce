@@ -4,21 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCustomers;
 
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class FilamentCustomersServiceProvider extends ServiceProvider
+final class FilamentCustomersServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        //
-    }
-
-    public function boot(): void
-    {
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__ . '/../resources/views' => resource_path('views/vendor/filament-customers'),
-            ], 'filament-customers-views');
-        }
+        $package
+            ->name('filament-customers')
+            ->hasViews('filament-customers');
     }
 }
