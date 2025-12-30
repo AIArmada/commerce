@@ -15,6 +15,7 @@ use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Schema;
 use Laravel\Cashier\Subscription;
 
 final class ManageSubscriptions extends Page
@@ -61,7 +62,11 @@ final class ManageSubscriptions extends Page
         $hasMoreChip = false;
 
         // Get Stripe subscriptions for this user
-        if ($detector->isAvailable('stripe') && class_exists(Subscription::class)) {
+        if (
+            $detector->isAvailable('stripe')
+            && class_exists(Subscription::class)
+            && Schema::hasTable((new Subscription)->getTable())
+        ) {
             $stripeModels = CashierOwnerScope::apply(Subscription::query())
                 ->with('items')
                 ->where('user_id', $user->getAuthIdentifier())
@@ -216,7 +221,12 @@ final class ManageSubscriptions extends Page
         $detector = app(GatewayDetector::class);
         $userId = auth()->id();
 
-        if ($gateway === 'stripe' && $detector->isAvailable('stripe') && class_exists(Subscription::class)) {
+        if (
+            $gateway === 'stripe'
+            && $detector->isAvailable('stripe')
+            && class_exists(Subscription::class)
+            && Schema::hasTable((new Subscription)->getTable())
+        ) {
             $sub = CashierOwnerScope::apply(Subscription::query())
                 ->with('items')
                 ->where('user_id', $userId)
