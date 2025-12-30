@@ -7,9 +7,18 @@ namespace App\Providers\Filament;
 use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
 use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
 use AIArmada\FilamentCart\FilamentCartPlugin;
+use AIArmada\FilamentCashier\FilamentCashierPlugin;
+use AIArmada\FilamentCashierChip\FilamentCashierChipPlugin;
 use AIArmada\FilamentChip\FilamentChipPlugin;
+use AIArmada\FilamentCustomers\FilamentCustomersPlugin;
+use AIArmada\FilamentDocs\FilamentDocsPlugin;
 use AIArmada\FilamentInventory\FilamentInventoryPlugin;
 use AIArmada\FilamentJnt\FilamentJntPlugin;
+use AIArmada\FilamentOrders\FilamentOrdersPlugin;
+use AIArmada\FilamentPricing\FilamentPricingPlugin;
+use AIArmada\FilamentProducts\FilamentProductsPlugin;
+use AIArmada\FilamentShipping\FilamentShippingPlugin;
+use AIArmada\FilamentTax\FilamentTaxPlugin;
 use AIArmada\FilamentVouchers\FilamentVouchersPlugin;
 use Filament\Http\Middleware\Authenticate;
 use Filament\Http\Middleware\AuthenticateSession;
@@ -52,6 +61,14 @@ final class AdminPanelProvider extends PanelProvider
                     ->label('Commerce')
                     ->collapsed(false),
                 NavigationGroup::make()
+                    ->label('Catalog'),
+                NavigationGroup::make()
+                    ->label('Pricing'),
+                NavigationGroup::make()
+                    ->label('Orders'),
+                NavigationGroup::make()
+                    ->label('Customers'),
+                NavigationGroup::make()
                     ->label('Inventory'),
                 NavigationGroup::make()
                     ->label('Marketing'),
@@ -59,6 +76,10 @@ final class AdminPanelProvider extends PanelProvider
                     ->label('Payments'),
                 NavigationGroup::make()
                     ->label('Shipping'),
+                NavigationGroup::make()
+                    ->label('Tax'),
+                NavigationGroup::make()
+                    ->label('Docs'),
                 NavigationGroup::make()
                     ->label('Settings')
                     ->collapsed(),
@@ -73,12 +94,21 @@ final class AdminPanelProvider extends PanelProvider
                 // AccountWidget::class,
             ])
             ->plugins([
+                FilamentProductsPlugin::make(),
+                FilamentPricingPlugin::make(),
+                FilamentOrdersPlugin::make(),
+                FilamentCustomersPlugin::make(),
                 FilamentCartPlugin::make(),
                 FilamentVouchersPlugin::make(),
                 FilamentInventoryPlugin::make(),
                 FilamentAffiliatesPlugin::make(),
                 FilamentChipPlugin::make(),
+                FilamentCashierPlugin::make(),
+                FilamentCashierChipPlugin::make(),
                 FilamentJntPlugin::make(),
+                FilamentShippingPlugin::make(),
+                FilamentTaxPlugin::make(),
+                FilamentDocsPlugin::make(),
                 FilamentAuthzPlugin::make(),
             ])
             ->middleware([

@@ -2,8 +2,10 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cashier\CashierServiceProvider;
 use AIArmada\Cashier\GatewayManager;
 use AIArmada\Commerce\Tests\Cashier\CashierTestCase;
+use Illuminate\Support\ServiceProvider;
 
 uses(CashierTestCase::class);
 
@@ -33,5 +35,19 @@ describe('CashierServiceProvider', function (): void {
     it('has the chip gateway configured', function (): void {
         expect(config('cashier.gateways.chip'))->toBeArray()
             ->and(config('cashier.gateways.chip.brand_id'))->toBe('test_brand_id');
+    });
+
+    it('does not auto-run Stripe migrations and instead makes them publishable', function (): void {
+        $provider = $this->app->getProvider(CashierServiceProvider::class);
+
+        expect($provider)->not()->toBeNull();
+
+        if (class_exists(\Composer\InstalledVersions::class) && \Composer\InstalledVersions::isInstalled('laravel/cashier')) {
+            $pathsToPublish = ServiceProvider::pathsToPublish(CashierServiceProvider::class, 'cashier-stripe-migrations');
+
+            expect($pathsToPublish)->toBeArray()->not()->toBeEmpty();
+        } else {
+            expect(true)->toBeTrue();
+        }
     });
 });

@@ -7,7 +7,6 @@ namespace Database\Seeders;
 use AIArmada\Jnt\Models\JntOrder;
 use AIArmada\Jnt\Models\JntOrderItem;
 use AIArmada\Jnt\Models\JntTrackingEvent;
-use App\Models\Order;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 

@@ -4,33 +4,32 @@ declare(strict_types=1);
 
 namespace AIArmada\Tax;
 
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class TaxServiceProvider extends ServiceProvider
+final class TaxServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/tax.php', 'tax');
+        $package
+            ->name('tax')
+            ->hasConfigFile()
+            ->discoversMigrations();
+    }
 
+    public function packageRegistered(): void
+    {
         $this->app->singleton(Services\TaxCalculator::class);
     }
 
-    public function boot(): void
+    public function bootingPackage(): void
     {
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__ . '/../config/tax.php' => config_path('tax.php'),
-            ], 'tax-config');
-
-            $this->publishes([
-                __DIR__ . '/../database/migrations' => database_path('migrations'),
-            ], 'tax-migrations');
-
-            $this->publishes([
-                __DIR__ . '/../database/settings' => database_path('settings'),
-            ], 'tax-settings');
-
-            $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
+        if (! $this->app->runningInConsole()) {
+            return;
         }
+
+        $this->publishes([
+            __DIR__ . '/../database/settings' => database_path('settings'),
+        ], 'tax-settings');
     }
 }

@@ -17,6 +17,7 @@
         "guzzlehttp/guzzle": "^7.0",
         "larastan/larastan": "^3.0",
         "laravel/boost": "^1.8",
+        "laravel/cashier": "^16.0",
         "laravel/framework": "^12.0",
         "laravel/pint": "^1.0",
         "laravel/prompts": "^0.3.5",

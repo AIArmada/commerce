@@ -35,17 +35,17 @@
                     <div class="flex items-center gap-4">
                         <!-- Order Status -->
                         <span class="px-3 py-1 rounded-full text-sm font-medium 
-                            {{ $order->status === 'completed' ? 'bg-green-100 text-green-800' : '' }}
-                            {{ $order->status === 'pending' ? 'bg-amber-100 text-amber-800' : '' }}
-                            {{ $order->status === 'processing' ? 'bg-blue-100 text-blue-800' : '' }}
-                            {{ $order->status === 'shipped' ? 'bg-purple-100 text-purple-800' : '' }}
-                            {{ $order->status === 'cancelled' ? 'bg-red-100 text-red-800' : '' }}">
-                            {{ ucfirst($order->status) }}
+                            {{ (string) $order->status === 'completed' ? 'bg-green-100 text-green-800' : '' }}
+                            {{ (string) $order->status === 'pending_payment' ? 'bg-amber-100 text-amber-800' : '' }}
+                            {{ (string) $order->status === 'processing' ? 'bg-blue-100 text-blue-800' : '' }}
+                            {{ (string) $order->status === 'shipped' ? 'bg-purple-100 text-purple-800' : '' }}
+                            {{ (string) $order->status === 'cancelled' ? 'bg-red-100 text-red-800' : '' }}">
+                            {{ $order->status->label() }}
                         </span>
                         <!-- Payment Status -->
                         <span class="px-3 py-1 rounded-full text-sm font-medium 
-                            {{ $order->payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
-                            {{ ucfirst($order->payment_status) }}
+                            {{ $order->paid_at !== null ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                            {{ $order->paid_at !== null ? 'Paid' : 'Pending' }}
                         </span>
                     </div>
                 </div>
@@ -64,7 +64,7 @@
                                     Qty: {{ $item->quantity }} × RM {{ number_format($item->unit_price / 100, 2) }}
                                 </p>
                             </div>
-                            <p class="font-medium text-gray-900">RM {{ number_format($item->total_price / 100, 2) }}</p>
+                            <p class="font-medium text-gray-900">RM {{ number_format($item->total / 100, 2) }}</p>
                         </div>
                         @endforeach
                     </div>
@@ -73,9 +73,9 @@
                     <div class="mt-6 pt-4 border-t">
                         <div class="flex justify-between items-center">
                             <div class="text-sm text-gray-500">
-                                @if($order->shipping_address)
-                                <p><strong>Ship to:</strong> {{ $order->shipping_address['name'] ?? 'N/A' }}</p>
-                                <p>{{ $order->shipping_address['city'] ?? '' }}, {{ $order->shipping_address['state'] ?? '' }}</p>
+                                @if($order->shippingAddress)
+                                <p><strong>Ship to:</strong> {{ $order->shippingAddress->getFullName() }}</p>
+                                <p>{{ $order->shippingAddress->city }}, {{ $order->shippingAddress->state }}</p>
                                 @endif
                             </div>
                             <div class="text-right">
@@ -85,6 +85,9 @@
                                     <span class="text-green-600"> • Discount: -RM {{ number_format($order->discount_total / 100, 2) }}</span>
                                     @endif
                                     <span> • Shipping: {{ $order->shipping_total > 0 ? 'RM '.number_format($order->shipping_total / 100, 2) : 'Free' }}</span>
+                                    @if($order->tax_total > 0)
+                                    <span> • Tax: RM {{ number_format($order->tax_total / 100, 2) }}</span>
+                                    @endif
                                 </div>
                             </div>
                         </div>

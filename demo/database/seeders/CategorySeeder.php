@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\Category;
+use AIArmada\Products\Models\Category;
 use Illuminate\Database\Seeder;
 
 final class CategorySeeder extends Seeder
@@ -44,24 +44,24 @@ final class CategorySeeder extends Seeder
             ],
         ];
 
-        $sortOrder = 0;
+        $position = 0;
         foreach ($categories as $categoryData) {
             $children = $categoryData['children'] ?? [];
             unset($categoryData['children']);
 
             $parent = Category::create([
                 ...$categoryData,
-                'is_active' => true,
-                'sort_order' => $sortOrder++,
+                'is_visible' => true,
+                'position' => $position++,
             ]);
 
-            $childOrder = 0;
+            $childPosition = 0;
             foreach ($children as $childData) {
                 Category::create([
                     ...$childData,
                     'parent_id' => $parent->id,
-                    'is_active' => true,
-                    'sort_order' => $childOrder++,
+                    'is_visible' => true,
+                    'position' => $childPosition++,
                 ]);
             }
         }

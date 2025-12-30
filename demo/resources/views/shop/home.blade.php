@@ -102,31 +102,31 @@
                                 📦
                             @endif
                         </div>
-                        @if($product->compare_at_price && $product->compare_at_price > $product->price)
+                        @if($product->compare_price && $product->compare_price > $product->price)
                         <span class="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
                             SALE
                         </span>
                         @endif
-                        @if($product->isOutOfStock())
+                        @if(! $product->isInStock())
                         <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
                             <span class="bg-white text-gray-900 px-4 py-2 rounded-lg font-semibold">Out of Stock</span>
                         </div>
                         @endif
                     </div>
                     <div class="p-4">
-                        <p class="text-xs text-gray-500 mb-1">{{ $product->category?->name ?? 'Uncategorized' }}</p>
+                        <p class="text-xs text-gray-500 mb-1">{{ $product->categories->first()?->name ?? 'Uncategorized' }}</p>
                         <h3 class="font-semibold text-gray-900 group-hover:text-amber-600 transition mb-2">
                             <a href="{{ route('shop.product', $product) }}">{{ $product->name }}</a>
                         </h3>
                         <div class="flex items-center gap-2 mb-3">
                             <span class="text-lg font-bold text-amber-600">RM {{ number_format($product->price / 100, 2) }}</span>
-                            @if($product->compare_at_price && $product->compare_at_price > $product->price)
-                            <span class="text-sm text-gray-400 line-through">RM {{ number_format($product->compare_at_price / 100, 2) }}</span>
+                            @if($product->compare_price && $product->compare_price > $product->price)
+                            <span class="text-sm text-gray-400 line-through">RM {{ number_format($product->compare_price / 100, 2) }}</span>
                             @endif
                         </div>
                         <div class="flex items-center justify-between">
                             <span class="text-xs {{ $product->isInStock() ? 'text-green-600' : 'text-red-600' }}">
-                                {{ $product->isInStock() ? '✓ In Stock ('.$product->available_stock.')' : '✗ Out of Stock' }}
+                                {{ $product->isInStock() ? '✓ In Stock' : '✗ Out of Stock' }}
                             </span>
                         </div>
                         <form action="{{ route('shop.cart.add') }}" method="POST" class="mt-3">
@@ -134,7 +134,7 @@
                             <input type="hidden" name="product_id" value="{{ $product->id }}">
                             <input type="hidden" name="quantity" value="1">
                             <button type="submit" 
-                                    {{ $product->isOutOfStock() ? 'disabled' : '' }}
+                                    {{ ! $product->isInStock() ? 'disabled' : '' }}
                                     class="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-2 rounded-lg font-medium transition">
                                 Add to Cart
                             </button>
@@ -197,14 +197,18 @@
                     <p class="text-white/80 text-sm mb-1">Use code:</p>
                     <p class="text-2xl font-bold font-mono mb-2">{{ $voucher->code }}</p>
                     <p class="text-lg">
-                        @if($voucher->discount_type === 'percentage')
-                            {{ $voucher->discount_value }}% OFF
+                        @if($voucher->type === \AIArmada\Vouchers\Enums\VoucherType::Percentage)
+                            {{ rtrim(rtrim(number_format($voucher->value / 100, 2), '0'), '.') }}% OFF
+                        @elseif($voucher->type === \AIArmada\Vouchers\Enums\VoucherType::Fixed)
+                            RM {{ number_format($voucher->value / 100, 2) }} OFF
+                        @elseif($voucher->type === \AIArmada\Vouchers\Enums\VoucherType::FreeShipping)
+                            Free Shipping
                         @else
-                            RM {{ number_format($voucher->discount_value / 100, 2) }} OFF
+                            {{ $voucher->type->label() }}
                         @endif
                     </p>
-                    @if($voucher->min_order_value)
-                    <p class="text-sm text-white/80 mt-2">Min. order: RM {{ number_format($voucher->min_order_value / 100, 2) }}</p>
+                    @if($voucher->min_cart_value)
+                    <p class="text-sm text-white/80 mt-2">Min. order: RM {{ number_format($voucher->min_cart_value / 100, 2) }}</p>
                     @endif
                     @if($voucher->expires_at)
                     <p class="text-xs text-white/60 mt-2">Expires: {{ $voucher->expires_at->format('M d, Y') }}</p>

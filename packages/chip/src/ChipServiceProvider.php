@@ -38,7 +38,6 @@ final class ChipServiceProvider extends PackageServiceProvider
             ->name('chip')
             ->hasConfigFile()
             ->discoversMigrations()
-            ->runsMigrations()
             ->hasCommands([
                 ChipHealthCheckCommand::class,
                 ProcessRecurringCommand::class,

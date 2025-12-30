@@ -6,9 +6,9 @@
                 <li><a href="{{ route('shop.home') }}" class="hover:text-amber-600">Home</a></li>
                 <li>/</li>
                 <li><a href="{{ route('shop.products') }}" class="hover:text-amber-600">Products</a></li>
-                @if($product->category)
+                @if($product->categories->isNotEmpty())
                 <li>/</li>
-                <li><a href="{{ route('shop.products', ['category' => $product->category->slug]) }}" class="hover:text-amber-600">{{ $product->category->name }}</a></li>
+                <li><a href="{{ route('shop.products', ['category' => $product->categories->first()?->slug]) }}" class="hover:text-amber-600">{{ $product->categories->first()?->name }}</a></li>
                 @endif
                 <li>/</li>
                 <li class="text-gray-900 font-medium">{{ $product->name }}</li>
@@ -39,9 +39,9 @@
                         📦
                     @endif
                 </span>
-                @if($product->compare_at_price && $product->compare_at_price > $product->price)
+                @if($product->compare_price && $product->compare_price > $product->price)
                 <span class="absolute top-4 left-4 bg-red-500 text-white text-sm font-bold px-3 py-1 rounded">
-                    {{ round((1 - $product->price / $product->compare_at_price) * 100) }}% OFF
+                    {{ round((1 - $product->price / $product->compare_price) * 100) }}% OFF
                 </span>
                 @endif
             </div>
@@ -49,10 +49,10 @@
             <!-- Product Details -->
             <div>
                 <div class="mb-4">
-                    @if($product->category)
-                    <a href="{{ route('shop.products', ['category' => $product->category->slug]) }}" 
+                    @if($product->categories->isNotEmpty())
+                    <a href="{{ route('shop.products', ['category' => $product->categories->first()?->slug]) }}" 
                        class="text-amber-600 text-sm font-medium hover:text-amber-700">
-                        {{ $product->category->name }}
+                        {{ $product->categories->first()?->name }}
                     </a>
                     @endif
                 </div>
@@ -62,10 +62,10 @@
                 <!-- Price -->
                 <div class="flex items-baseline gap-4 mb-6">
                     <span class="text-4xl font-bold text-amber-600">RM {{ number_format($product->price / 100, 2) }}</span>
-                    @if($product->compare_at_price && $product->compare_at_price > $product->price)
-                    <span class="text-xl text-gray-400 line-through">RM {{ number_format($product->compare_at_price / 100, 2) }}</span>
+                    @if($product->compare_price && $product->compare_price > $product->price)
+                    <span class="text-xl text-gray-400 line-through">RM {{ number_format($product->compare_price / 100, 2) }}</span>
                     <span class="text-sm bg-red-100 text-red-700 px-2 py-1 rounded font-medium">
-                        Save RM {{ number_format(($product->compare_at_price - $product->price) / 100, 2) }}
+                        Save RM {{ number_format(($product->compare_price - $product->price) / 100, 2) }}
                     </span>
                     @endif
                 </div>
@@ -78,7 +78,7 @@
                     </svg>
                     <div>
                         <p class="font-semibold text-green-800">In Stock</p>
-                        <p class="text-sm text-green-600">{{ $product->available_stock }} units available</p>
+                        <p class="text-sm text-green-600">Available now</p>
                     </div>
                     @else
                     <svg class="h-6 w-6 text-red-600" fill="currentColor" viewBox="0 0 20 20">
@@ -110,13 +110,13 @@
                         @endif
                         <div>
                             <dt class="text-gray-500">Category</dt>
-                            <dd class="font-medium text-gray-900">{{ $product->category?->name ?? 'Uncategorized' }}</dd>
+                            <dd class="font-medium text-gray-900">{{ $product->categories->first()?->name ?? 'Uncategorized' }}</dd>
                         </div>
                         <div>
                             <dt class="text-gray-500">Currency</dt>
                             <dd class="font-medium text-gray-900">{{ $product->currency ?? 'MYR' }}</dd>
                         </div>
-                        @if($product->track_stock)
+                        @if($product->tracksInventory())
                         <div>
                             <dt class="text-gray-500">Stock Tracking</dt>
                             <dd class="font-medium text-green-600">Enabled</dd>
@@ -136,18 +136,18 @@
                             <button type="button" onclick="decrementQty()" 
                                     class="px-4 py-2 text-gray-600 hover:bg-gray-100">−</button>
                             <input type="number" id="quantity" name="quantity" value="1" min="1" 
-                                   max="{{ $product->track_stock ? $product->available_stock : '' }}"
+                                   max=""
                                    class="w-16 text-center border-0 focus:ring-0">
-                                <button type="button" onclick="incrementQty({{ $product->track_stock ? $product->available_stock : 'null' }})" 
+                                <button type="button" onclick="incrementQty(null)" 
                                     class="px-4 py-2 text-gray-600 hover:bg-gray-100">+</button>
                         </div>
                     </div>
 
                     <div class="flex gap-4">
                         <button type="submit" 
-                                {{ $product->isOutOfStock() ? 'disabled' : '' }}
+                                {{ ! $product->isInStock() ? 'disabled' : '' }}
                                 class="flex-1 bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-3 rounded-lg font-semibold text-lg transition">
-                            {{ $product->isOutOfStock() ? 'Out of Stock' : 'Add to Cart' }}
+                            {{ ! $product->isInStock() ? 'Out of Stock' : 'Add to Cart' }}
                         </button>
                         <button type="button" 
                                 class="px-4 py-3 border-2 border-gray-300 rounded-lg hover:border-amber-500 transition">

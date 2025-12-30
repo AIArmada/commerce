@@ -5,35 +5,23 @@ declare(strict_types=1);
 namespace AIArmada\Orders;
 
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class OrdersServiceProvider extends ServiceProvider
+final class OrdersServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        $this->mergeConfigFrom(
-            __DIR__ . '/../config/orders.php',
-            'orders'
-        );
+        $package
+            ->name('orders')
+            ->hasConfigFile()
+            ->hasTranslations()
+            ->hasViews()
+            ->discoversMigrations();
     }
 
-    public function boot(): void
+    public function bootingPackage(): void
     {
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__ . '/../config/orders.php' => config_path('orders.php'),
-            ], 'orders-config');
-
-            $this->publishes([
-                __DIR__ . '/../database/migrations' => database_path('migrations'),
-            ], 'orders-migrations');
-
-            $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-        }
-
-        $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'orders');
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'orders');
-
         $this->registerPolicies();
         $this->registerEventListeners();
     }

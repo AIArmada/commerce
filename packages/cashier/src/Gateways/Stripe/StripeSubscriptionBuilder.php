@@ -274,7 +274,7 @@ class StripeSubscriptionBuilder implements SubscriptionBuilderContract
     {
         $checkout = $this->builder->checkout($sessionOptions);
 
-        return new StripeCheckout($checkout);
+        return new StripeCheckout($checkout->asStripeCheckoutSession());
     }
 
     /**

@@ -6,14 +6,18 @@ namespace App\Listeners;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Chip\Events\PurchasePaid;
+use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\Services\OrderService;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use App\Models\Order;
-use App\Models\Product;
 use Illuminate\Support\Facades\Log;
 
 final class HandleChipPaymentSuccess
 {
+    public function __construct(
+        private readonly OrderService $orderService,
+    ) {}
+
     /**
      * Handle the PurchasePaid event from CHIP webhook.
      */
@@ -39,7 +43,7 @@ final class HandleChipPaymentSuccess
         }
 
         // Don't process if already paid
-        if ($order->payment_status === 'paid') {
+        if ($order->isPaid() || $order->payments()->where('transaction_id', $event->getPurchaseId())->exists()) {
             Log::info('Order already marked as paid', [
                 'order_id' => $order->id,
                 'order_number' => $order->order_number,
@@ -48,17 +52,24 @@ final class HandleChipPaymentSuccess
             return;
         }
 
-        // Update order status
-        $order->update([
-            'status' => 'pending',
-            'payment_status' => 'paid',
-            'placed_at' => now(),
-            'metadata' => array_merge($order->metadata ?? [], [
+        $this->orderService->confirmPayment(
+            order: $order,
+            transactionId: $event->getPurchaseId(),
+            gateway: 'chip',
+            amount: $event->getAmount(),
+            metadata: [
                 'chip_purchase_id' => $event->getPurchaseId(),
                 'chip_payment_method' => $event->getPaymentMethod(),
-                'chip_paid_at' => now()->toISOString(),
-            ]),
+                'chip_reference' => $event->getReference(),
+            ],
+        );
+
+        $order->metadata = array_merge($order->metadata ?? [], [
+            'chip_purchase_id' => $event->getPurchaseId(),
+            'chip_payment_method' => $event->getPaymentMethod(),
+            'chip_paid_at' => now()->toISOString(),
         ]);
+        $order->save();
 
         Log::info('Order updated to paid status', [
             'order_id' => $order->id,
@@ -66,7 +77,6 @@ final class HandleChipPaymentSuccess
         ]);
 
         // Process post-payment actions
-        $this->updateStock($order);
         $this->trackAffiliateConversion($order, $event);
         $this->updateVoucherUsage($order);
     }
@@ -92,28 +102,6 @@ final class HandleChipPaymentSuccess
 
         // Finally try finding by chip_purchase_id in order metadata
         return Order::whereJsonContains('metadata->chip_purchase_id', $event->getPurchaseId())->first();
-    }
-
-    /**
-     * Update stock for order items.
-     */
-    private function updateStock(Order $order): void
-    {
-        foreach ($order->items as $item) {
-            $product = Product::find($item->product_id);
-            if ($product && $product->track_stock) {
-                $product->removeStock(
-                    $item->quantity,
-                    'sale',
-                    'Order paid: ' . $order->order_number
-                );
-            }
-        }
-
-        Log::info('Stock updated for order', [
-            'order_id' => $order->id,
-            'items_count' => $order->items->count(),
-        ]);
     }
 
     /**
@@ -159,16 +147,18 @@ final class HandleChipPaymentSuccess
      */
     private function updateVoucherUsage(Order $order): void
     {
-        if (! $order->voucher_code) {
+        $voucherCode = $order->metadata['voucher_code'] ?? null;
+
+        if (! is_string($voucherCode) || $voucherCode === '') {
             return;
         }
 
-        $voucher = Voucher::where('code', $order->voucher_code)->first();
+        $voucher = Voucher::where('code', $voucherCode)->first();
 
         if (! $voucher) {
             Log::warning('Voucher not found for usage tracking', [
                 'order_id' => $order->id,
-                'voucher_code' => $order->voucher_code,
+                'voucher_code' => $voucherCode,
             ]);
 
             return;
@@ -182,7 +172,8 @@ final class HandleChipPaymentSuccess
             'channel' => VoucherUsage::CHANNEL_AUTOMATIC,
             'notes' => null,
             'metadata' => [
-                'user_id' => $order->user_id,
+                'customer_id' => $order->customer_id,
+                'customer_type' => $order->customer_type,
                 'subtotal' => $order->subtotal,
                 'grand_total' => $order->grand_total,
             ],
@@ -193,7 +184,7 @@ final class HandleChipPaymentSuccess
 
         Log::info('Voucher usage recorded', [
             'order_id' => $order->id,
-            'voucher_code' => $order->voucher_code,
+            'voucher_code' => $voucherCode,
             'voucher_id' => $voucher->id,
             'discount_amount' => $order->discount_total,
             'new_applied_count' => $voucher->applied_count,

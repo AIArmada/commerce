@@ -84,9 +84,6 @@ These files are intentionally split by concern for easier maintenance. Read and 
 - Jobs/commands MUST NOT rely on ambient web auth to resolve owner; pass/iterate owner explicitly and apply owner context via the standard override mechanism.
 
 ## Verification (Required)
-- Add at least one cross-tenant regression test per package proving:
-	
-  - Cross-tenant reads return empty/404.
   - Cross-tenant writes throw/abort.
 - Grep for unscoped entrypoints:
   - `rg -n -- "::query\(|->query\(|getEloquentQuery\(" packages/<pkg>/src`
@@ -196,9 +193,9 @@ These files are intentionally split by concern for easier maintenance. Read and 
 - **Level**: 6
 - **Scope**: per package (e.g. `packages/<pkg>/src`), not repo-wide.
 - **Rules**:
-	- Respect `phpstan.neon` / `phpstan-baseline.neon`.
-	- Do not add new `ignoreErrors` unless root-cause fixes are exhausted.
-	- Prefer real fixes over suppression.
+  - Respect `phpstan.neon` / `phpstan-baseline.neon`.
+  - Do not add new `ignoreErrors` unless root-cause fixes are exhausted.
+  - Prefer real fixes over suppression.
 
 ## Verification
 - Example: `./vendor/bin/phpstan analyse packages/<pkg>/src --level=6`
@@ -266,7 +263,7 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 ## Foundational Context
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.4.15
+- php - 8.4.16
 
 ## Conventions
 - You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, naming.

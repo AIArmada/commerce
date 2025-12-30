@@ -5,7 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Cashier;
 
 use AIArmada\Cashier\Support\CartIntegrationRegistrar;
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
+use Throwable;
 
 /**
  * Service provider for the unified multi-gateway Cashier package.
@@ -15,15 +17,17 @@ use Illuminate\Support\ServiceProvider;
  * respective gateway package's tables (subscriptions for Stripe,
  * chip_subscriptions for CHIP).
  */
-class CashierServiceProvider extends ServiceProvider
+final class CashierServiceProvider extends PackageServiceProvider
 {
-    /**
-     * Register any application services.
-     */
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/cashier.php', 'cashier');
+        $package
+            ->name('cashier')
+            ->hasConfigFile();
+    }
 
+    public function packageRegistered(): void
+    {
         $this->app->singleton(GatewayManager::class, function ($app) {
             return new GatewayManager($app);
         });
@@ -34,16 +38,45 @@ class CashierServiceProvider extends ServiceProvider
         $this->app->singleton(CartIntegrationRegistrar::class);
     }
 
-    /**
-     * Bootstrap any package services.
-     */
-    public function boot(): void
+    public function bootingPackage(): void
     {
         $this->registerPublishing();
         $this->registerRoutes();
 
         // Register cart integration if cart package is installed
         $this->app->make(CartIntegrationRegistrar::class)->register();
+    }
+
+    protected function resolveLaravelCashierMigrationsPath(): ?string
+    {
+        $path = null;
+
+        // Prefer Composer's install path resolution (works with non-standard vendor dirs).
+        if (class_exists(\Composer\InstalledVersions::class)) {
+            /** @var class-string $installedVersions */
+            $installedVersions = \Composer\InstalledVersions::class;
+
+            try {
+                if ($installedVersions::isInstalled('laravel/cashier')) {
+                    $installPath = $installedVersions::getInstallPath('laravel/cashier');
+
+                    if (is_string($installPath) && $installPath !== '') {
+                        $path = $installPath . '/database/migrations';
+                    }
+                }
+            } catch (Throwable) {
+                // Ignore and fall back to a conventional vendor path.
+            }
+        }
+
+        // Fallback: conventional Composer vendor path.
+        $path ??= base_path('vendor/laravel/cashier/database/migrations');
+
+        if (! is_string($path) || $path === '' || ! is_dir($path)) {
+            return null;
+        }
+
+        return $path;
     }
 
     /**
@@ -69,6 +102,14 @@ class CashierServiceProvider extends ServiceProvider
             $this->publishes([
                 __DIR__ . '/../config/cashier.php' => $this->app->configPath('cashier.php'),
             ], 'cashier-config');
+
+            $cashierMigrationsPath = $this->resolveLaravelCashierMigrationsPath();
+
+            if ($cashierMigrationsPath !== null) {
+                $this->publishesMigrations([
+                    $cashierMigrationsPath => $this->app->databasePath('migrations'),
+                ], 'cashier-stripe-migrations');
+            }
         }
     }
 

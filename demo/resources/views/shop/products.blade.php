@@ -128,12 +128,12 @@
                                         📦
                                     @endif
                                 </div>
-                                @if($product->compare_at_price && $product->compare_at_price > $product->price)
+                                @if($product->compare_price && $product->compare_price > $product->price)
                                 <span class="absolute top-3 left-3 bg-red-500 text-white text-xs font-bold px-2 py-1 rounded">
-                                    {{ round((1 - $product->price / $product->compare_at_price) * 100) }}% OFF
+                                    {{ round((1 - $product->price / $product->compare_price) * 100) }}% OFF
                                 </span>
                                 @endif
-                                @if($product->isOutOfStock())
+                                @if(! $product->isInStock())
                                 <div class="absolute inset-0 bg-black/50 flex items-center justify-center">
                                     <span class="bg-white text-gray-900 px-4 py-2 rounded-lg font-semibold">Out of Stock</span>
                                 </div>
@@ -141,7 +141,7 @@
                             </div>
                         </a>
                         <div class="p-4">
-                            <p class="text-xs text-gray-500 mb-1">{{ $product->category?->name ?? 'Uncategorized' }}</p>
+                            <p class="text-xs text-gray-500 mb-1">{{ $product->categories->first()?->name ?? 'Uncategorized' }}</p>
                             <h3 class="font-semibold text-gray-900 group-hover:text-amber-600 transition mb-2">
                                 <a href="{{ route('shop.product', $product) }}">{{ $product->name }}</a>
                             </h3>
@@ -150,8 +150,8 @@
                             @endif
                             <div class="flex items-center gap-2 mb-3">
                                 <span class="text-lg font-bold text-amber-600">RM {{ number_format($product->price / 100, 2) }}</span>
-                                @if($product->compare_at_price && $product->compare_at_price > $product->price)
-                                <span class="text-sm text-gray-400 line-through">RM {{ number_format($product->compare_at_price / 100, 2) }}</span>
+                                @if($product->compare_price && $product->compare_price > $product->price)
+                                <span class="text-sm text-gray-400 line-through">RM {{ number_format($product->compare_price / 100, 2) }}</span>
                                 @endif
                             </div>
                             <div class="flex items-center justify-between text-xs mb-3">
@@ -167,7 +167,7 @@
                                 <input type="hidden" name="product_id" value="{{ $product->id }}">
                                 <input type="hidden" name="quantity" value="1">
                                 <button type="submit" 
-                                        {{ $product->isOutOfStock() ? 'disabled' : '' }}
+                                        {{ ! $product->isInStock() ? 'disabled' : '' }}
                                         class="w-full bg-amber-500 hover:bg-amber-600 disabled:bg-gray-300 disabled:cursor-not-allowed text-white py-2 rounded-lg font-medium transition">
                                     Add to Cart
                                 </button>

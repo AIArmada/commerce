@@ -66,7 +66,7 @@
                         </div>
                         <div class="text-center p-4 bg-green-50 rounded-lg">
                             <p class="text-2xl font-bold text-green-600">
-                                {{ $recentOrders->where('payment_status', 'paid')->count() }}
+                                {{ $recentOrders->filter(fn ($order) => $order->paid_at !== null)->count() }}
                             </p>
                             <p class="text-xs text-gray-500">Paid Orders</p>
                         </div>
@@ -106,16 +106,16 @@
                                 </div>
                                 <div class="flex items-center gap-2">
                                     <span class="px-2 py-1 rounded-full text-xs font-medium 
-                                        {{ $order->status === 'completed' ? 'bg-green-100 text-green-800' : '' }}
-                                        {{ $order->status === 'pending' ? 'bg-amber-100 text-amber-800' : '' }}
-                                        {{ $order->status === 'processing' ? 'bg-blue-100 text-blue-800' : '' }}
-                                        {{ $order->status === 'shipped' ? 'bg-purple-100 text-purple-800' : '' }}
-                                        {{ $order->status === 'cancelled' ? 'bg-red-100 text-red-800' : '' }}">
-                                        {{ ucfirst($order->status) }}
+                                        {{ (string) $order->status === 'completed' ? 'bg-green-100 text-green-800' : '' }}
+                                        {{ (string) $order->status === 'pending_payment' ? 'bg-amber-100 text-amber-800' : '' }}
+                                        {{ (string) $order->status === 'processing' ? 'bg-blue-100 text-blue-800' : '' }}
+                                        {{ (string) $order->status === 'shipped' ? 'bg-purple-100 text-purple-800' : '' }}
+                                        {{ (string) $order->status === 'cancelled' ? 'bg-red-100 text-red-800' : '' }}">
+                                        {{ $order->status->label() }}
                                     </span>
                                     <span class="px-2 py-1 rounded-full text-xs font-medium 
-                                        {{ $order->payment_status === 'paid' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
-                                        {{ ucfirst($order->payment_status) }}
+                                        {{ $order->paid_at !== null ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                        {{ $order->paid_at !== null ? 'Paid' : 'Pending' }}
                                     </span>
                                 </div>
                             </div>

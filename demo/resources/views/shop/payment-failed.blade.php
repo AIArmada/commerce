@@ -46,7 +46,7 @@
                 @foreach($order->items as $item)
                 <div class="flex justify-between items-center py-2 border-b border-gray-100">
                     <span class="text-gray-700">{{ $item->name }} × {{ $item->quantity }}</span>
-                    <span class="font-medium text-gray-900">RM {{ number_format($item->total_price / 100, 2) }}</span>
+                    <span class="font-medium text-gray-900">RM {{ number_format($item->total / 100, 2) }}</span>
                 </div>
                 @endforeach
             </div>

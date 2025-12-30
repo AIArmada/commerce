@@ -9,33 +9,22 @@ use AIArmada\Products\Models\Product;
 use AIArmada\Products\Policies\CategoryPolicy;
 use AIArmada\Products\Policies\ProductPolicy;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class ProductsServiceProvider extends ServiceProvider
+final class ProductsServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/products.php', 'products');
+        $package
+            ->name('products')
+            ->hasConfigFile()
+            ->hasTranslations()
+            ->discoversMigrations();
     }
 
-    public function boot(): void
+    public function bootingPackage(): void
     {
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__ . '/../config/products.php' => config_path('products.php'),
-            ], 'products-config');
-
-            $this->publishes([
-                __DIR__ . '/../database/migrations' => database_path('migrations'),
-            ], 'products-migrations');
-        }
-
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-
-        if (is_dir(__DIR__ . '/../resources/lang')) {
-            $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'products');
-        }
-
         $this->registerPolicies();
     }
 

@@ -7,7 +7,7 @@ namespace Database\Seeders;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventoryMovement;
-use App\Models\Product;
+use AIArmada\Products\Models\Product;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 

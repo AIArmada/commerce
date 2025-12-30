@@ -5,17 +5,20 @@ declare(strict_types=1);
 namespace AIArmada\FilamentShipping;
 
 use AIArmada\FilamentShipping\Services\CartBridge;
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class FilamentShippingServiceProvider extends ServiceProvider
+final class FilamentShippingServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        $this->app->singleton(CartBridge::class);
+        $package
+            ->name('filament-shipping')
+            ->hasViews('filament-shipping');
     }
 
-    public function boot(): void
+    public function packageRegistered(): void
     {
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'filament-shipping');
+        $this->app->singleton(CartBridge::class);
     }
 }

@@ -33,41 +33,49 @@ use AIArmada\FilamentAuthz\Services\WildcardPermissionResolver;
 use AIArmada\FilamentAuthz\Support\OwnerContextTeamResolver;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Spatie\Permission\Contracts\PermissionsTeamResolver;
 use Spatie\Permission\DefaultTeamResolver;
 use Spatie\Permission\PermissionRegistrar;
 
-class FilamentAuthzServiceProvider extends ServiceProvider
+final class FilamentAuthzServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
+    {
+        $package
+            ->name('filament-authz')
+            ->hasConfigFile('filament-authz')
+            ->hasViews('filament-authz')
+            ->discoversMigrations()
+            ->hasCommands([
+                Console\SyncAuthzCommand::class,
+                Console\DoctorAuthzCommand::class,
+                Console\ExportAuthzCommand::class,
+                Console\ImportAuthzCommand::class,
+                Console\GeneratePoliciesCommand::class,
+                Console\PermissionGroupsCommand::class,
+                Console\RoleHierarchyCommand::class,
+                Console\RoleTemplateCommand::class,
+                Console\AuthzCacheCommand::class,
+                Console\SetupCommand::class,
+                Console\DiscoverCommand::class,
+                Console\SnapshotCommand::class,
+                Console\InstallTraitCommand::class,
+            ]);
+    }
+
+    public function packageRegistered(): void
     {
         $this->app->singleton(FilamentAuthzPlugin::class);
-        $this->mergeConfigFrom(__DIR__ . '/../config/filament-authz.php', 'filament-authz');
 
         $this->configureSpatiePermissions();
         $this->registerServices();
     }
 
-    public function boot(): void
+    public function bootingPackage(): void
     {
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'filament-authz');
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-
-        $this->publishes([
-            __DIR__ . '/../config/filament-authz.php' => config_path('filament-authz.php'),
-        ], 'filament-authz-config');
-
-        $this->publishes([
-            __DIR__ . '/../resources/views' => resource_path('views/vendor/filament-authz'),
-        ], 'filament-authz-views');
-
-        $this->publishes([
-            __DIR__ . '/../database/migrations' => database_path('migrations'),
-        ], 'filament-authz-migrations');
-
         $this->registerGateBefore();
-        $this->registerCommands();
         $this->registerMacros();
         $this->registerEventSubscriber();
     }
@@ -193,27 +201,6 @@ class FilamentAuthzServiceProvider extends ServiceProvider
 
                 return null;
             });
-        }
-    }
-
-    protected function registerCommands(): void
-    {
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                Console\SyncAuthzCommand::class,
-                Console\DoctorAuthzCommand::class,
-                Console\ExportAuthzCommand::class,
-                Console\ImportAuthzCommand::class,
-                Console\GeneratePoliciesCommand::class,
-                Console\PermissionGroupsCommand::class,
-                Console\RoleHierarchyCommand::class,
-                Console\RoleTemplateCommand::class,
-                Console\AuthzCacheCommand::class,
-                Console\SetupCommand::class,
-                Console\DiscoverCommand::class,
-                Console\SnapshotCommand::class,
-                Console\InstallTraitCommand::class,
-            ]);
         }
     }
 

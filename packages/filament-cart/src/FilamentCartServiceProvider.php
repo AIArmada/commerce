@@ -57,8 +57,7 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
                 MonitorCartsCommand::class,
                 ProcessAlertsCommand::class,
             ])
-            ->discoversMigrations()
-            ->runsMigrations();
+            ->discoversMigrations();
     }
 
     public function packageRegistered(): void

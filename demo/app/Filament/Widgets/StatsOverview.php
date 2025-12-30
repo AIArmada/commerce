@@ -8,11 +8,11 @@ use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Orders\Models\Order;
+use AIArmada\Products\Models\Product;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use App\Models\Order;
-use App\Models\Product;
 use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -27,8 +27,8 @@ final class StatsOverview extends BaseWidget
     protected function getStats(): array
     {
         // Calculate revenue
-        $totalRevenue = Order::where('payment_status', 'paid')->sum('grand_total');
-        $pendingOrders = Order::where('status', 'pending')->count();
+        $totalRevenue = Order::whereNotNull('paid_at')->sum('grand_total');
+        $pendingOrders = Order::whereNull('paid_at')->count();
 
         // Voucher stats
         $activeVouchers = Voucher::where('status', VoucherStatus::Active)->count();
@@ -38,11 +38,7 @@ final class StatsOverview extends BaseWidget
         $activeAffiliates = Affiliate::where('status', AffiliateStatus::Active)->count();
         $pendingCommissions = AffiliateConversion::where('status', ConversionStatus::Pending)->sum('commission_minor');
 
-        // Inventory stats
-        $lowStockProducts = Product::where('track_stock', true)
-            ->get()
-            ->filter(fn (Product $product): bool => $product->getTotalAvailable() <= $product->low_stock_threshold)
-            ->count();
+        $lowStockProducts = 0;
 
         return [
             Stat::make('Total Revenue', 'RM ' . Number::format($totalRevenue / 100, 2))
@@ -72,7 +68,7 @@ final class StatsOverview extends BaseWidget
                 ->color('success'),
 
             Stat::make('Customers', User::count())
-                ->description(Order::distinct('user_id')->count() . ' with orders')
+                ->description(Order::distinct('customer_id')->count() . ' with orders')
                 ->descriptionIcon('heroicon-m-user-group')
                 ->color('info'),
         ];

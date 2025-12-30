@@ -41,8 +41,7 @@ final class VoucherServiceProvider extends PackageServiceProvider
         $package
             ->name('vouchers')
             ->hasConfigFile()
-            ->discoversMigrations()
-            ->runsMigrations();
+            ->discoversMigrations();
     }
 
     public function packageRegistered(): void

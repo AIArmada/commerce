@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\Category;
-use App\Models\Product;
-use App\Models\ProductVariant;
+use AIArmada\Products\Enums\ProductStatus;
+use AIArmada\Products\Enums\ProductVisibility;
+use AIArmada\Products\Models\Category;
+use AIArmada\Products\Models\Product;
+use AIArmada\Products\Models\Variant;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 
 final class ProductSeeder extends Seeder
 {
@@ -149,39 +150,40 @@ final class ProductSeeder extends Seeder
         foreach ($products as $productData) {
             $category = Category::where('slug', $productData['category'])->first();
             $variants = $productData['variants'];
+            $compareAtPrice = $productData['compare_at_price'];
 
             unset($productData['category'], $productData['variants']);
+            unset($productData['compare_at_price']);
 
             $product = Product::create([
                 ...$productData,
-                'slug' => Str::slug($productData['name']),
-                'category_id' => $category?->id,
-                'is_active' => true,
-                'stock_quantity' => fake()->numberBetween(10, 100),
-                'track_stock' => true,
+                'status' => ProductStatus::Active,
+                'visibility' => ProductVisibility::CatalogSearch,
+                'currency' => 'MYR',
+                'compare_price' => $compareAtPrice,
             ]);
 
+            if ($category !== null) {
+                $product->categories()->syncWithoutDetaching([$category->id]);
+            }
+
+            $defaultVariantId = null;
             foreach ($variants as $variantData) {
-                $options = [];
-                if (isset($variantData['size']) && $variantData['size']) {
-                    $options['size'] = $variantData['size'];
-                }
-                if (isset($variantData['color']) && $variantData['color']) {
-                    $options['color'] = $variantData['color'];
-                }
+                $variantName = implode(' / ', array_filter([$variantData['size'] ?? null, $variantData['color'] ?? null])) ?: null;
 
-                // Build name from options
-                $variantName = implode(' / ', array_filter([$variantData['size'] ?? null, $variantData['color'] ?? null])) ?: 'Default';
-
-                ProductVariant::create([
+                $variant = Variant::create([
                     'product_id' => $product->id,
                     'name' => $variantName,
                     'sku' => $variantData['sku'],
                     'price' => $variantData['price'],
-                    'stock_quantity' => fake()->numberBetween(5, 30),
-                    'options' => $options ?: null,
-                    'is_active' => true,
+                    'is_enabled' => true,
                 ]);
+
+                $defaultVariantId ??= $variant->id;
+            }
+
+            if ($defaultVariantId !== null) {
+                Variant::where('id', $defaultVariantId)->update(['is_default' => true]);
             }
         }
     }

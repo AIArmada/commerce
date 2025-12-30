@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use AIArmada\CashierChip\Subscription;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
@@ -32,13 +33,13 @@ final class BillingShowcaseSeeder extends Seeder
      */
     private function seedBillingData(): void
     {
-        // Get the admin user and a few regular users
-        $admin = User::where('email', 'admin@commerce.demo')->first();
-        $users = User::where('email', '!=', 'admin@commerce.demo')->take(5)->get();
+        $owner = OwnerContext::resolve();
 
-        if (! $admin) {
+        if (! $owner instanceof User) {
             return;
         }
+
+        $admin = $owner;
 
         // Setup admin with CHIP customer ID and payment method
         $this->setupBillableUser($admin, [
@@ -80,54 +81,8 @@ final class BillingShowcaseSeeder extends Seeder
             'stripe_price' => 'price_stripe_pro',
         ]);
 
-        // Setup other users with varying subscription states
-        foreach ($users as $index => $user) {
-            $this->setupBillableUser($user, [
-                'chip_id' => 'cli_demo_user_' . Str::random(16),
-                'chip_default_payment_method' => 'tok_' . Str::random(32),
-                'pm_type' => $this->randomCardBrand(),
-                'pm_last_four' => (string) rand(1000, 9999),
-            ]);
-
-            // Create different subscription scenarios
-            match ($index) {
-                0 => $this->createSubscription($user, [
-                    'type' => 'Starter Plan',
-                    'chip_status' => Subscription::STATUS_ACTIVE,
-                    'chip_price' => 'price_starter',
-                    'billing_interval' => 'month',
-                    'next_billing_at' => Carbon::now()->addDays(rand(5, 25)),
-                ]),
-                1 => $this->createSubscription($user, [
-                    'type' => 'Business Annual',
-                    'chip_status' => Subscription::STATUS_ACTIVE,
-                    'chip_price' => 'price_business_yearly',
-                    'billing_interval' => 'year',
-                    'next_billing_at' => Carbon::now()->addMonths(8),
-                ]),
-                2 => $this->createSubscription($user, [
-                    'type' => 'Premium Trial',
-                    'chip_status' => Subscription::STATUS_TRIALING,
-                    'chip_price' => 'price_premium',
-                    'billing_interval' => 'month',
-                    'trial_ends_at' => Carbon::now()->addDays(10),
-                    'next_billing_at' => Carbon::now()->addDays(10),
-                ]),
-                3 => $this->createSubscription($user, [
-                    'type' => 'Enterprise',
-                    'chip_status' => Subscription::STATUS_ACTIVE,
-                    'chip_price' => 'price_enterprise',
-                    'billing_interval' => 'month',
-                    'ends_at' => Carbon::now()->addDays(5), // On grace period
-                    'next_billing_at' => Carbon::now()->addDays(5),
-                ]),
-                default => null,
-            };
-
-            $user->update([
-                'stripe_id' => 'cus_demo_user_' . Str::random(16),
-            ]);
-        }
+        // Note: we intentionally only seed subscriptions for the current tenant owner.
+        // Creating subscriptions for other (global) users would violate owner scoping.
     }
 
     /**

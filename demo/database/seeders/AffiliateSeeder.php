@@ -9,7 +9,7 @@ use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
-use App\Models\Order;
+use AIArmada\Orders\Models\Order;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 

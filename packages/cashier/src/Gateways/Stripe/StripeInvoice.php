@@ -247,7 +247,7 @@ class StripeInvoice implements InvoiceContract
     public function view(array $data = []): Response
     {
         if ($this->invoice instanceof Invoice) {
-            return $this->invoice->view($data);
+            return response($this->invoice->view($data));
         }
 
         // Fallback to redirect to hosted URL

@@ -38,7 +38,6 @@ final class CartServiceProvider extends PackageServiceProvider
             ->name('cart')
             ->hasConfigFile()
             ->discoversMigrations()
-            ->runsMigrations()
             ->hasCommands([
                 Console\Commands\ClearAbandonedCartsCommand::class,
             ]);

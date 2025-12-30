@@ -96,7 +96,29 @@ class StripeInvoiceLineItem implements InvoiceLineItemContract
      */
     public function priceId(): ?string
     {
-        return $this->item->pricing?->price_id ?? $this->item->price?->id;
+        $pricing = $this->item->offsetGet('pricing');
+
+        if (is_object($pricing) && isset($pricing->price_id) && is_string($pricing->price_id)) {
+            return $pricing->price_id;
+        }
+
+        $priceDetails = $this->item->offsetGet('price_details');
+
+        if (is_object($priceDetails) && isset($priceDetails->price) && is_string($priceDetails->price)) {
+            return $priceDetails->price;
+        }
+
+        $price = $this->item->offsetGet('price');
+
+        if ($price instanceof \Stripe\Price) {
+            return $price->id;
+        }
+
+        if (is_object($price) && isset($price->id) && is_string($price->id)) {
+            return $price->id;
+        }
+
+        return null;
     }
 
     /**
