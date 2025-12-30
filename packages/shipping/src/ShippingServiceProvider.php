@@ -13,17 +13,21 @@ use AIArmada\Shipping\Policies\ShippingZonePolicy;
 use AIArmada\Shipping\Services\FreeShippingEvaluator;
 use AIArmada\Shipping\Services\RateShoppingEngine;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class ShippingServiceProvider extends ServiceProvider
+final class ShippingServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        $this->mergeConfigFrom(
-            __DIR__ . '/../config/shipping.php',
-            'shipping'
-        );
+        $package
+            ->name('shipping')
+            ->hasConfigFile()
+            ->discoversMigrations();
+    }
 
+    public function packageRegistered(): void
+    {
         $this->app->singleton(ShippingManager::class, function ($app) {
             return new ShippingManager($app);
         });
@@ -46,20 +50,8 @@ class ShippingServiceProvider extends ServiceProvider
         });
     }
 
-    public function boot(): void
+    public function bootingPackage(): void
     {
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__ . '/../config/shipping.php' => config_path('shipping.php'),
-            ], 'shipping-config');
-
-            $this->publishes([
-                __DIR__ . '/../database/migrations' => database_path('migrations'),
-            ], 'shipping-migrations');
-
-            $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-        }
-
         $this->registerPolicies();
         $this->registerEventListeners();
         $this->registerCommands();

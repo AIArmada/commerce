@@ -12,19 +12,20 @@ use Filament\Facades\Filament;
 use Filament\Http\Middleware\Authenticate as FilamentAuthenticate;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Facades\Route;
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class FilamentOrdersServiceProvider extends ServiceProvider
+final class FilamentOrdersServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        //
+        $package
+            ->name('filament-orders')
+            ->hasViews('filament-orders');
     }
 
-    public function boot(): void
+    public function bootingPackage(): void
     {
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'filament-orders');
-
         Order::saved(static function (Order $order): void {
             FilamentOrdersCache::forgetForOrder($order);
         });
@@ -32,12 +33,6 @@ class FilamentOrdersServiceProvider extends ServiceProvider
         Order::deleted(static function (Order $order): void {
             FilamentOrdersCache::forgetForOrder($order);
         });
-
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__ . '/../resources/views' => resource_path('views/vendor/filament-orders'),
-            ], 'filament-orders-views');
-        }
 
         $this->registerRoutes();
     }

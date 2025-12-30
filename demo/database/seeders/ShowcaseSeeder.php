@@ -13,9 +13,10 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use App\Models\Order;
+use AIArmada\Orders\Models\Order;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
@@ -28,6 +29,8 @@ use Illuminate\Support\Str;
  */
 final class ShowcaseSeeder extends Seeder
 {
+    private ?string $tenantCodeSuffix = null;
+
     public function run(): void
     {
         $this->command->info('');
@@ -246,6 +249,12 @@ final class ShowcaseSeeder extends Seeder
         );
 
         foreach ($allVouchers as $voucherData) {
+            $voucherData['code'] = $this->withTenantSuffix($voucherData['code']);
+
+            if (isset($voucherData['metadata']['affiliate_code']) && is_string($voucherData['metadata']['affiliate_code'])) {
+                $voucherData['metadata']['affiliate_code'] = $this->withTenantSuffix($voucherData['metadata']['affiliate_code']);
+            }
+
             $voucher = Voucher::create(array_merge([
                 'currency' => 'MYR',
                 'allows_manual_redemption' => true,
@@ -453,6 +462,11 @@ final class ShowcaseSeeder extends Seeder
         $allAffiliates = [];
 
         foreach ($topInfluencers as $data) {
+            $data['code'] = $this->withTenantSuffix($data['code']);
+            if (isset($data['default_voucher_code']) && is_string($data['default_voucher_code'])) {
+                $data['default_voucher_code'] = $this->withTenantSuffix($data['default_voucher_code']);
+            }
+
             $affiliate = Affiliate::create(array_merge([
                 'status' => AffiliateStatus::Active,
                 'currency' => 'MYR',
@@ -462,6 +476,8 @@ final class ShowcaseSeeder extends Seeder
         }
 
         foreach ($businessPartners as $data) {
+            $data['code'] = $this->withTenantSuffix($data['code']);
+
             $affiliate = Affiliate::create(array_merge([
                 'status' => AffiliateStatus::Active,
                 'currency' => 'MYR',
@@ -471,6 +487,8 @@ final class ShowcaseSeeder extends Seeder
         }
 
         foreach ($regularAffiliates as $data) {
+            $data['code'] = $this->withTenantSuffix($data['code']);
+
             $affiliate = Affiliate::create(array_merge([
                 'status' => AffiliateStatus::Active,
                 'currency' => 'MYR',
@@ -481,6 +499,8 @@ final class ShowcaseSeeder extends Seeder
         }
 
         foreach ($pendingAffiliates as $data) {
+            $data['code'] = $this->withTenantSuffix($data['code']);
+
             Affiliate::create(array_merge([
                 'currency' => 'MYR',
                 'payout_terms' => 'monthly',
@@ -602,5 +622,30 @@ final class ShowcaseSeeder extends Seeder
         // This seeder focuses on backend data that persists in the database
 
         $this->command->info('   ✓ Cart infrastructure ready for user interactions');
+    }
+
+    private function withTenantSuffix(string $code): string
+    {
+        return $code . '-' . $this->tenantCodeSuffix();
+    }
+
+    private function tenantCodeSuffix(): string
+    {
+        if ($this->tenantCodeSuffix !== null) {
+            return $this->tenantCodeSuffix;
+        }
+
+        $owner = OwnerContext::resolve();
+
+        if ($owner === null) {
+            $this->tenantCodeSuffix = Str::upper(Str::random(6));
+
+            return $this->tenantCodeSuffix;
+        }
+
+        $normalizedOwnerId = str_replace('-', '', (string) $owner->getKey());
+        $this->tenantCodeSuffix = Str::upper(Str::substr($normalizedOwnerId, 0, 6));
+
+        return $this->tenantCodeSuffix;
     }
 }

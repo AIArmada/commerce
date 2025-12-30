@@ -47,7 +47,7 @@ class StripeSubscription implements SubscriptionContract
      */
     public function gatewayId(): string
     {
-        return $this->subscription->stripe_id;
+        return (string) $this->subscription->getAttribute('stripe_id');
     }
 
     /**
@@ -63,7 +63,7 @@ class StripeSubscription implements SubscriptionContract
      */
     public function type(): string
     {
-        return $this->subscription->type;
+        return (string) $this->subscription->getAttribute('type');
     }
 
     /**
@@ -159,7 +159,9 @@ class StripeSubscription implements SubscriptionContract
      */
     public function trialEndsAt(): ?CarbonInterface
     {
-        return $this->subscription->trial_ends_at;
+        $trialEndsAt = $this->subscription->getAttribute('trial_ends_at');
+
+        return $trialEndsAt instanceof CarbonInterface ? $trialEndsAt : null;
     }
 
     /**
@@ -167,7 +169,9 @@ class StripeSubscription implements SubscriptionContract
      */
     public function endsAt(): ?CarbonInterface
     {
-        return $this->subscription->ends_at;
+        $endsAt = $this->subscription->getAttribute('ends_at');
+
+        return $endsAt instanceof CarbonInterface ? $endsAt : null;
     }
 
     /**
@@ -193,7 +197,13 @@ class StripeSubscription implements SubscriptionContract
      */
     public function items(): Collection
     {
-        return $this->subscription->items->map(fn ($item) => new StripeSubscriptionItem($item));
+        $items = $this->subscription->items
+            ->filter(fn ($item) => $item instanceof \Laravel\Cashier\SubscriptionItem)
+            ->map(fn (\Laravel\Cashier\SubscriptionItem $item): SubscriptionItemContract => new StripeSubscriptionItem($item))
+            ->values();
+
+        /** @var Collection<int, SubscriptionItemContract> $items */
+        return $items;
     }
 
     /**
@@ -210,7 +220,9 @@ class StripeSubscription implements SubscriptionContract
      */
     public function quantity(): ?int
     {
-        return $this->subscription->quantity;
+        $quantity = $this->subscription->getAttribute('quantity');
+
+        return is_int($quantity) ? $quantity : null;
     }
 
     /**

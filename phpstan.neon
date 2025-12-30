@@ -131,12 +131,6 @@ parameters:
           paths:
               - packages/filament-authz/src/Support/Macros
 
-        # Optional dependencies (Stripe / Cashier)
-        - identifier: 'class.notFound'
-          paths:
-              - packages/cashier/src/Gateways/Stripe
-              - packages/cashier/src/Gateways/StripeGateway.php
-              - packages/filament-cashier/src
 
         # Defensive programming patterns - method_exists/instanceof checks on types that are guaranteed
         # These are intentional for forward/backward compatibility and defensive coding

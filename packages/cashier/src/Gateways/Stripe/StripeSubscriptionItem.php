@@ -25,7 +25,7 @@ class StripeSubscriptionItem implements SubscriptionItemContract
      */
     public function id(): string
     {
-        return (string) $this->item->id;
+        return (string) $this->item->getKey();
     }
 
     /**
@@ -33,7 +33,7 @@ class StripeSubscriptionItem implements SubscriptionItemContract
      */
     public function gatewayId(): string
     {
-        return $this->item->stripe_id;
+        return (string) $this->item->getAttribute('stripe_id');
     }
 
     /**
@@ -49,7 +49,7 @@ class StripeSubscriptionItem implements SubscriptionItemContract
      */
     public function priceId(): string
     {
-        return $this->item->stripe_price;
+        return (string) $this->item->getAttribute('stripe_price');
     }
 
     /**
@@ -57,7 +57,9 @@ class StripeSubscriptionItem implements SubscriptionItemContract
      */
     public function productId(): ?string
     {
-        return $this->item->stripe_product;
+        $product = $this->item->getAttribute('stripe_product');
+
+        return is_string($product) && $product !== '' ? $product : null;
     }
 
     /**
@@ -65,7 +67,9 @@ class StripeSubscriptionItem implements SubscriptionItemContract
      */
     public function quantity(): ?int
     {
-        return $this->item->quantity;
+        $quantity = $this->item->getAttribute('quantity');
+
+        return is_int($quantity) ? $quantity : null;
     }
 
     /**

@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use AIArmada\CashierChip\Facades\CashierChip;
-use App\Models\Product;
+use AIArmada\Products\Models\Product;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class BillingController extends Controller
@@ -32,7 +33,7 @@ class BillingController extends Controller
     {
         $request->validate([
             'chip_token' => 'required|string',
-            'product_id' => 'required|exists:products,id',
+            'product_id' => ['required', Rule::exists((new Product)->getTable(), 'id')],
         ]);
 
         $product = Product::findOrFail($request->product_id);
@@ -44,7 +45,7 @@ class BillingController extends Controller
 
         // Create purchase with Chip
         $purchase = CashierChip::createPurchase([
-            'amount' => $product->price_minor,
+            'amount' => $product->price,
             'currency' => 'MYR',
             'token' => $request->chip_token,
             'description' => "Purchase: {$product->name}",

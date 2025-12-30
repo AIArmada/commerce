@@ -17,16 +17,21 @@ use AIArmada\Customers\Policies\SegmentPolicy;
 use AIArmada\Customers\Policies\WishlistItemPolicy;
 use AIArmada\Customers\Policies\WishlistPolicy;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class CustomersServiceProvider extends ServiceProvider
+final class CustomersServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        $this->mergeConfigFrom(__DIR__ . '/../config/customers.php', 'customers');
+        $package
+            ->name('customers')
+            ->hasConfigFile()
+            ->hasTranslations()
+            ->discoversMigrations();
     }
 
-    public function boot(): void
+    public function bootingPackage(): void
     {
         Gate::policy(Customer::class, CustomerPolicy::class);
         Gate::policy(Segment::class, SegmentPolicy::class);
@@ -34,21 +39,5 @@ class CustomersServiceProvider extends ServiceProvider
         Gate::policy(CustomerNote::class, CustomerNotePolicy::class);
         Gate::policy(Wishlist::class, WishlistPolicy::class);
         Gate::policy(WishlistItem::class, WishlistItemPolicy::class);
-
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__ . '/../config/customers.php' => config_path('customers.php'),
-            ], 'customers-config');
-
-            $this->publishes([
-                __DIR__ . '/../database/migrations' => database_path('migrations'),
-            ], 'customers-migrations');
-
-            if (! $this->app->runningUnitTests()) {
-                $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-            }
-        }
-
-        $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'customers');
     }
 }

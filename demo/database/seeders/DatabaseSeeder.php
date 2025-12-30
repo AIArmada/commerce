@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 /**
@@ -27,35 +29,37 @@ final class DatabaseSeeder extends Seeder
         $this->command->info('═══════════════════════════════════════════════════════════════ 🎭');
         $this->command->info('');
 
+        // Global/non-owner seeders
         $this->call([
-            // 1. Permissions & Roles (must be first!)
             PermissionSeeder::class,
-
-            // 2. Users & Authentication
             UserSeeder::class,
-
-            // 3. Product Catalog
-            CategorySeeder::class,
-            ProductSeeder::class,
-
-            // 4. Inventory System (multi-location warehouses)
-            InventorySeeder::class,
-
-            // 5. Orders & Commerce
-            OrderSeeder::class,
-
-            // 6. Showcases (Vouchers, Affiliates)
-            ShowcaseSeeder::class,
-
-            // 7. Gift Cards (store credit system)
-            GiftCardSeeder::class,
-
-            // 8. J&T Express Shipping (tracking demo)
-            JntShippingSeeder::class,
-
-            // 9. Billing & Subscriptions
-            BillingShowcaseSeeder::class,
         ]);
+
+        $owners = User::query()
+            ->whereIn('email', ['admin@commerce.demo', 'manager@commerce.demo'])
+            ->get();
+
+        if ($owners->count() < 2) {
+            $owners = User::query()->limit(2)->get();
+        }
+
+        foreach ($owners as $owner) {
+            OwnerContext::withOwner($owner, function () use ($owner): void {
+                $this->command->info('');
+                $this->command->info('🏢 Seeding tenant data for: ' . $owner->email);
+
+                $this->call([
+                    CategorySeeder::class,
+                    ProductSeeder::class,
+                    InventorySeeder::class,
+                    OrderSeeder::class,
+                    ShowcaseSeeder::class,
+                    GiftCardSeeder::class,
+                    JntShippingSeeder::class,
+                    BillingShowcaseSeeder::class,
+                ]);
+            });
+        }
 
         $this->command->info('');
         $this->command->info('✨ ═══════════════════════════════════════════════════════════════');

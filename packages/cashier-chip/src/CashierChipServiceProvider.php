@@ -20,40 +20,33 @@ use AIArmada\Chip\Events\PurchasePreauthorized;
 use AIArmada\Chip\Events\PurchaseSubscriptionChargeFailure;
 use AIArmada\Docs\Services\DocService;
 use Illuminate\Support\Facades\Event;
-use Illuminate\Support\ServiceProvider;
 use RuntimeException;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class CashierChipServiceProvider extends ServiceProvider
+final class CashierChipServiceProvider extends PackageServiceProvider
 {
-    /**
-     * Bootstrap any package services.
-     */
-    public function boot(): void
+    public function configurePackage(Package $package): void
     {
-        $this->registerResources();
-        $this->registerPublishing();
-        $this->registerCommands();
-        $this->registerEventListeners();
+        $package
+            ->name('cashier-chip')
+            ->hasConfigFile('cashier-chip')
+            ->hasViews('cashier-chip')
+            ->discoversMigrations()
+            ->hasCommands([
+                RenewSubscriptionsCommand::class,
+                WebhookCommand::class,
+            ]);
     }
 
-    /**
-     * Register any application services.
-     */
-    public function register(): void
+    public function packageRegistered(): void
     {
-        $this->configure();
         $this->bindInvoiceRenderer();
     }
 
-    /**
-     * Setup the configuration for Cashier.
-     */
-    protected function configure(): void
+    public function bootingPackage(): void
     {
-        $this->mergeConfigFrom(
-            __DIR__ . '/../config/cashier-chip.php',
-            'cashier-chip'
-        );
+        $this->registerEventListeners();
     }
 
     /**
@@ -76,48 +69,6 @@ class CashierChipServiceProvider extends ServiceProvider
 
             throw new RuntimeException('Docs package is required for invoice rendering. Install aiarmada/docs.');
         });
-    }
-
-    /**
-     * Register the package resources.
-     */
-    protected function registerResources(): void
-    {
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'cashier-chip');
-    }
-
-    /**
-     * Register the package's publishable resources.
-     */
-    protected function registerPublishing(): void
-    {
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__ . '/../config/cashier-chip.php' => $this->app->configPath('cashier-chip.php'),
-            ], 'cashier-chip-config');
-
-            $this->publishesMigrations([
-                __DIR__ . '/../database/migrations' => $this->app->databasePath('migrations'),
-            ], 'cashier-chip-migrations');
-
-            $this->publishes([
-                __DIR__ . '/../resources/views' => $this->app->resourcePath('views/vendor/cashier-chip'),
-            ], 'cashier-chip-views');
-        }
-    }
-
-    /**
-     * Register the package's commands.
-     */
-    protected function registerCommands(): void
-    {
-        if ($this->app->runningInConsole()) {
-            $this->commands([
-                RenewSubscriptionsCommand::class,
-                WebhookCommand::class,
-            ]);
-        }
     }
 
     /**

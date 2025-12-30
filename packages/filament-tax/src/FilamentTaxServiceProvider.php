@@ -4,28 +4,16 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentTax;
 
-use Illuminate\Support\ServiceProvider;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
-class FilamentTaxServiceProvider extends ServiceProvider
+final class FilamentTaxServiceProvider extends PackageServiceProvider
 {
-    public function register(): void
+    public function configurePackage(Package $package): void
     {
-        //
-    }
-
-    public function boot(): void
-    {
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'filament-tax');
-        $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'filament-tax');
-
-        if ($this->app->runningInConsole()) {
-            $this->publishes([
-                __DIR__ . '/../resources/views' => resource_path('views/vendor/filament-tax'),
-            ], 'filament-tax-views');
-
-            $this->publishes([
-                __DIR__ . '/../resources/lang' => lang_path('vendor/filament-tax'),
-            ], 'filament-tax-lang');
-        }
+        $package
+            ->name('filament-tax')
+            ->hasViews('filament-tax')
+            ->hasTranslations();
     }
 }

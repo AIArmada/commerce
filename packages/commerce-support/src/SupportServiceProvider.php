@@ -26,6 +26,8 @@ final class SupportServiceProvider extends PackageServiceProvider
             ->hasCommands([
                 Commands\SetupCommand::class,
                 Commands\BoostUpdateCommand::class,
+                Commands\PublishMigrationsCommand::class,
+                Commands\InstallCommand::class,
             ]);
     }
 

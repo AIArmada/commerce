@@ -57,16 +57,20 @@ describe('FilamentAuthzServiceProvider', function (): void {
     });
 
     it('publishes config file', function (): void {
-        $provider = new FilamentAuthzServiceProvider(app());
+        $provider = app()->getProvider(FilamentAuthzServiceProvider::class);
 
+        expect($provider)->not->toBeNull();
         expect(config('filament-authz'))->toBeArray();
+        expect(Illuminate\Support\ServiceProvider::publishableGroups())
+            ->toContain('filament-authz-config');
     });
 
-    it('loads migrations from package', function (): void {
-        $provider = new FilamentAuthzServiceProvider(app());
-        $provider->boot();
+    it('exposes a publish tag for migrations', function (): void {
+        $provider = app()->getProvider(FilamentAuthzServiceProvider::class);
 
-        expect(true)->toBeTrue();
+        expect($provider)->not->toBeNull();
+        expect(Illuminate\Support\ServiceProvider::publishableGroups())
+            ->toContain('filament-authz-migrations');
     });
 
     it('registers commands when running in console', function (): void {

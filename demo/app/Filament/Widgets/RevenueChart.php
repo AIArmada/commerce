@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
-use App\Models\Order;
+use AIArmada\Orders\Models\Order;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Carbon;
 
@@ -24,7 +24,7 @@ final class RevenueChart extends ChartWidget
 
         $revenues = $days->map(function (Carbon $date) {
             return Order::whereDate('created_at', $date)
-                ->where('payment_status', 'paid')
+                ->whereNotNull('paid_at')
                 ->sum('grand_total') / 100;
         });
 

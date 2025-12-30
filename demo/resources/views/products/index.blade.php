@@ -10,8 +10,8 @@
             <p class="text-gray-600 mb-4">{{ $product->description }}</p>
             <div class="text-2xl font-bold text-green-600 mb-4">
                 RM{{ number_format($product->price / 100, 2) }}
-                @if($product->compare_at_price)
-                <span class="line-through text-gray-400">RM{{ number_format($product->compare_at_price / 100, 2) }}</span>
+                @if($product->compare_price)
+                <span class="line-through text-gray-400">RM{{ number_format($product->compare_price / 100, 2) }}</span>
                 @endif
             </div>
             <div class="flex gap-2">
