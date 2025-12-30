@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\CustomerPortal\Widgets;
 
 use AIArmada\FilamentCashier\Support\GatewayDetector;
-use Exception;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Collection;
+use ReflectionMethod;
+use ReflectionNamedType;
+use Throwable;
 
 final class RecentInvoicesWidget extends Widget
 {
@@ -34,7 +36,7 @@ final class RecentInvoicesWidget extends Widget
         // Get recent Stripe invoices
         if ($detector->isAvailable('stripe') && method_exists($user, 'invoices')) {
             try {
-                $stripeInvoices = $user->invoices(['limit' => 3]);
+                $stripeInvoices = $this->resolveStripeInvoices($user);
 
                 foreach ($stripeInvoices as $invoice) {
                     $invoices->push([
@@ -45,7 +47,7 @@ final class RecentInvoicesWidget extends Widget
                         'status' => $invoice->paid ? 'paid' : 'open',
                     ]);
                 }
-            } catch (Exception) {
+            } catch (Throwable) {
                 // Silently fail
             }
         }
@@ -64,11 +66,40 @@ final class RecentInvoicesWidget extends Widget
                         'status' => $invoice->status ?? 'unknown',
                     ]);
                 }
-            } catch (Exception) {
+            } catch (Throwable) {
                 // Silently fail
             }
         }
 
         return $invoices->take(5);
+    }
+
+    /**
+     * Support both invoice method signatures:
+     * - Cashier-style: invoices(bool $includePending, ?string $gateway)
+     * - Array-options style: invoices(array $options = [])
+     */
+    private function resolveStripeInvoices(object $user): Collection
+    {
+        try {
+            $method = new ReflectionMethod($user, 'invoices');
+            $params = $method->getParameters();
+
+            if (count($params) > 0) {
+                $first = $params[0];
+                $type = $first->getType();
+
+                if (
+                    $first->getName() === 'options'
+                    || ($type instanceof ReflectionNamedType && $type->getName() === 'array')
+                ) {
+                    return collect($user->invoices(['limit' => 3]))->take(3);
+                }
+            }
+
+            return collect($user->invoices(false, 'stripe'))->take(3);
+        } catch (Throwable) {
+            return collect();
+        }
     }
 }

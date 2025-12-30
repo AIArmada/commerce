@@ -6,6 +6,7 @@ namespace AIArmada\Cashier\Gateways\Stripe;
 
 use AIArmada\Cashier\Contracts\PaymentContract;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Arr;
 use InvalidArgumentException;
 use Laravel\Cashier\Payment;
 
@@ -33,7 +34,7 @@ class StripePayment implements PaymentContract
      */
     public function id(): string
     {
-        return $this->payment->id;
+        return (string) $this->payment->asStripePaymentIntent()->id;
     }
 
     /**
@@ -65,7 +66,9 @@ class StripePayment implements PaymentContract
      */
     public function isFailed(): bool
     {
-        return $this->payment->isFailed();
+        // Stripe PaymentIntents don't have an explicit "failed" status.
+        // A terminal failure is typically represented as "requires_payment_method".
+        return $this->status() === 'requires_payment_method';
     }
 
     /**
@@ -107,8 +110,22 @@ class StripePayment implements PaymentContract
     {
         $paymentIntent = $this->payment->asStripePaymentIntent();
 
-        return $paymentIntent->amount_refunded > 0 &&
-            $paymentIntent->amount_refunded >= $paymentIntent->amount;
+        $latestCharge = $paymentIntent->latest_charge;
+
+        if (! is_string($latestCharge) || $latestCharge === '') {
+            return false;
+        }
+
+        $secret = config('cashier.gateways.stripe.secret');
+
+        if (! is_string($secret) || $secret === '') {
+            return false;
+        }
+
+        $stripe = new \Stripe\StripeClient($secret);
+        $charge = $stripe->charges->retrieve($latestCharge);
+
+        return ($charge->amount_refunded ?? 0) > 0;
     }
 
     /**
@@ -130,7 +147,10 @@ class StripePayment implements PaymentContract
 
         $paymentIntent = $this->payment->asStripePaymentIntent();
 
-        return $paymentIntent->next_action?->redirect_to_url?->url;
+        /** @var string|null $url */
+        $url = Arr::get($paymentIntent->toArray(), 'next_action.redirect_to_url.url');
+
+        return $url;
     }
 
     /**
@@ -170,7 +190,7 @@ class StripePayment implements PaymentContract
      */
     public function currency(): string
     {
-        return mb_strtoupper($this->payment->rawAmount()->getCurrency()->getCode());
+        return mb_strtoupper((string) $this->payment->asStripePaymentIntent()->currency);
     }
 
     /**
@@ -186,7 +206,7 @@ class StripePayment implements PaymentContract
      */
     public function rawAmount(): int
     {
-        return (int) $this->payment->rawAmount()->getAmount();
+        return (int) $this->payment->rawAmount();
     }
 
     /**

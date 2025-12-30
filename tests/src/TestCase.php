@@ -333,6 +333,8 @@ abstract class TestCase extends Orchestra
     protected function defineDatabaseMigrations(): void
     {
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/chip/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/cashier-chip/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/filament-cart/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/vouchers/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/shipping/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/affiliates/database/migrations');
@@ -470,10 +472,104 @@ abstract class TestCase extends Orchestra
             $table->integer('max_collaborators')->default(5);
             $table->string('collaboration_mode', 20)->default('edit');
             $table->bigInteger('version')->default(1)->index();
+            $table->unsignedBigInteger('event_stream_position')->default(0);
+            $table->string('aggregate_version', 10)->default('1.0');
+            $table->timestamp('snapshot_at')->nullable();
             $table->timestamp('expires_at')->nullable()->index();
+            $table->timestamp('last_activity_at')->nullable();
+            $table->timestamp('checkout_started_at')->nullable();
+            $table->timestamp('checkout_abandoned_at')->nullable();
+            $table->unsignedTinyInteger('recovery_attempts')->default(0);
+            $table->timestamp('recovered_at')->nullable();
             $table->timestamps();
 
             $table->unique(['owner_type', 'owner_id', 'identifier', 'instance']);
+        });
+
+        // Cart event sourcing table
+        $cartEventsTable = config('cart.database.events_table', 'cart_events');
+        Schema::dropIfExists($cartEventsTable);
+        Schema::create($cartEventsTable, function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->foreignUuid('cart_id')->index();
+            $table->string('event_type', 100)->index();
+            $table->uuid('event_id')->unique();
+            $table->json('payload');
+            $table->json('metadata')->nullable();
+            $table->unsignedBigInteger('aggregate_version');
+            $table->unsignedBigInteger('stream_position');
+            $table->timestamp('occurred_at')->index();
+            $table->timestamps();
+
+            $table->index(['cart_id', 'stream_position'], 'idx_cart_events_stream');
+            $table->index(['cart_id', 'aggregate_version'], 'idx_cart_events_version');
+            $table->index(['event_type', 'occurred_at'], 'idx_cart_events_type_time');
+        });
+
+        // Cart fraud signals table
+        Schema::dropIfExists('cart_fraud_signals');
+        Schema::create('cart_fraud_signals', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+            $table->uuid('cart_id')->index();
+            $table->nullableUuidMorphs('owner');
+            $table->string('user_id')->nullable()->index();
+            $table->string('ip_address')->nullable()->index();
+            $table->string('session_id')->nullable()->index();
+            $table->string('signal_type')->index();
+            $table->string('detector')->index();
+            $table->unsignedSmallInteger('score')->index();
+            $table->string('message');
+            $table->json('metadata')->nullable();
+            $table->timestamp('created_at')->nullable()->index();
+        });
+
+        // Cart conditions table
+        $conditionsTable = config('cart.database.conditions_table', 'conditions');
+        Schema::dropIfExists($conditionsTable);
+        Schema::create($conditionsTable, function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+
+            $table->nullableUuidMorphs('owner');
+
+            // Core identification
+            $table->string('name')->unique();
+            $table->string('display_name')->nullable();
+            $table->text('description')->nullable();
+
+            // Condition definition
+            $table->string('type');
+            $table->string('target');
+            $table->json('target_definition');
+            $table->string('value');
+
+            // Computed fields
+            $table->string('operator')->nullable();
+            $table->boolean('is_charge')->default(false);
+            $table->boolean('is_dynamic')->default(false);
+            $table->boolean('is_discount')->default(false);
+            $table->boolean('is_percentage')->default(false);
+            $table->string('parsed_value')->nullable();
+
+            // Configuration
+            $table->integer('order')->default(0);
+            $table->json('attributes')->nullable();
+            $table->json('rules')->nullable();
+
+            // Status
+            $table->boolean('is_global')->default(false);
+            $table->boolean('is_active')->default(false);
+
+            $table->timestamps();
+
+            // Indexes for filtering and sorting
+            $table->index(['type', 'is_active']);
+            $table->index(['target', 'is_active']);
+            $table->index('is_charge');
+            $table->index('is_discount');
+            $table->index('is_percentage');
+            $table->index('is_dynamic');
+            $table->index('is_global');
+            $table->index('order');
         });
 
         // Stock tables
