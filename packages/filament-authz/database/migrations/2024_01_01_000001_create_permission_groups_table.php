@@ -13,6 +13,10 @@ return new class extends Migration
         $tableName = config('filament-authz.database.tables.permission_groups', 'authz_permission_groups');
         $jsonType = config('filament-authz.database.json_column_type', 'json');
 
+        if (Schema::hasTable($tableName)) {
+            return;
+        }
+
         Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('name');
