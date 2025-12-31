@@ -335,6 +335,7 @@ abstract class TestCase extends Orchestra
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/chip/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/cashier-chip/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/filament-cart/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/filament-authz/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/vouchers/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/shipping/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/affiliates/database/migrations');
@@ -398,7 +399,7 @@ abstract class TestCase extends Orchestra
             }
             $table->string('name');
             $table->string('guard_name');
-            // Hierarchy columns for filament-authz
+            // Hierarchy columns for filament-authz (migrations may not run in some test contexts)
             $table->foreignUuid('parent_role_id')->nullable();
             $table->foreignUuid('template_id')->nullable();
             $table->text('description')->nullable();
