@@ -38,9 +38,10 @@ it('update policy returns true when user has affiliates.payout.update permission
     ]);
 
     $payout = AffiliatePayout::create([
-        'affiliate_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
         'reference' => 'PAY-' . Str::uuid(),
-        'amount_minor' => 10000,
+        'total_minor' => 10000,
         'currency' => 'USD',
         'status' => PayoutStatus::Pending,
     ]);
@@ -67,9 +68,10 @@ it('update policy returns false when user lacks affiliates.payout.update permiss
     ]);
 
     $payout = AffiliatePayout::create([
-        'affiliate_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
         'reference' => 'PAY-' . Str::uuid(),
-        'amount_minor' => 10000,
+        'total_minor' => 10000,
         'currency' => 'USD',
         'status' => PayoutStatus::Pending,
     ]);
@@ -99,9 +101,10 @@ it('export policy returns true when user has affiliates.payout.export permission
     ]);
 
     $payout = AffiliatePayout::create([
-        'affiliate_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
         'reference' => 'PAY-' . Str::uuid(),
-        'amount_minor' => 10000,
+        'total_minor' => 10000,
         'currency' => 'USD',
         'status' => PayoutStatus::Pending,
     ]);
@@ -128,9 +131,10 @@ it('export policy returns false when user lacks affiliates.payout.export permiss
     ]);
 
     $payout = AffiliatePayout::create([
-        'affiliate_id' => $affiliate->getKey(),
+        'payee_type' => $affiliate->getMorphClass(),
+        'payee_id' => $affiliate->getKey(),
         'reference' => 'PAY-' . Str::uuid(),
-        'amount_minor' => 10000,
+        'total_minor' => 10000,
         'currency' => 'USD',
         'status' => PayoutStatus::Pending,
     ]);

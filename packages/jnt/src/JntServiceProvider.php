@@ -51,6 +51,7 @@ class JntServiceProvider extends PackageServiceProvider
             ->name('jnt')
             ->hasConfigFile()
             ->discoversMigrations()
+            ->runsMigrations()
             ->hasRoute('webhooks')
             ->hasCommands([
                 ConfigCheckCommand::class,

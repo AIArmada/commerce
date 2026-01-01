@@ -17,6 +17,14 @@ parameters:
     tmpDir: var/cache/phpstan
 
     # Ignore specific errors
+    scanFiles:
+        - stubs/phpstan/stripe.stub.php
+        - stubs/phpstan/laravel-cashier.stub.php
+
+    stubFiles:
+        - stubs/phpstan/stripe.stub.php
+        - stubs/phpstan/laravel-cashier.stub.php
+
     ignoreErrors:
         - identifier: 'missingType.generics'
         - identifier: 'larastan.noEnvCallsOutsideOfConfig'

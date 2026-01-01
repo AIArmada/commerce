@@ -81,7 +81,7 @@ test('ProgramService isMember returns false for non-member', function (): void {
         'description' => 'Test program description',
         'status' => 'active',
         'commission_type' => 'percentage',
-        'commission_rate' => 1000,
+        'default_commission_rate_basis_points' => 1000,
     ]);
 
     $isMember = $service->isMember($affiliate, $program);
@@ -107,7 +107,7 @@ test('ProgramService joinProgram creates membership', function (): void {
         'description' => 'Join program description',
         'status' => 'active',
         'commission_type' => 'percentage',
-        'commission_rate' => 1000,
+        'default_commission_rate_basis_points' => 1000,
     ]);
 
     $membership = $service->joinProgram($affiliate, $program);
@@ -134,7 +134,7 @@ test('ProgramService leaveProgram removes membership', function (): void {
         'description' => 'Leave program description',
         'status' => 'active',
         'commission_type' => 'percentage',
-        'commission_rate' => 1000,
+        'default_commission_rate_basis_points' => 1000,
     ]);
 
     // First join

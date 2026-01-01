@@ -4,10 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use Illuminate\Support\Facades\Artisan;
-use Illuminate\Support\ServiceProvider;
 
 describe('Affiliates migrations', function (): void {
-    test('are publishable but not auto-run by default', function (): void {
+    test('are auto-run by default', function (): void {
         $provider = app()->getProvider(AffiliatesServiceProvider::class);
 
         expect($provider)->not()->toBeNull();
@@ -20,24 +19,17 @@ describe('Affiliates migrations', function (): void {
         $package = $packageProperty->getValue($provider);
 
         expect(property_exists($package, 'runsMigrations'))->toBeTrue();
-        expect($package->runsMigrations)->toBeFalse();
-
-        $pathsToPublish = ServiceProvider::pathsToPublish(AffiliatesServiceProvider::class, 'affiliates-migrations');
-
-        expect($pathsToPublish)->toBeArray()->not()->toBeEmpty();
-
-        $destinationPaths = array_values($pathsToPublish);
-
-        $publishesCreateAffiliatesTable = collect($destinationPaths)
-            ->contains(fn (string $path): bool => str_ends_with($path, '_create_affiliates_table.php'));
-
-        expect($publishesCreateAffiliatesTable)->toBeTrue();
+        expect($package->runsMigrations)->toBeTrue();
     });
 
-    test('registers an install command to publish migrations', function (): void {
+    test('registers expected console commands', function (): void {
         $commands = Artisan::all();
 
         expect($commands)->toBeArray();
-        expect(array_key_exists('affiliates:install', $commands))->toBeTrue();
+        expect(array_key_exists('affiliates:payout:export', $commands))->toBeTrue();
+        expect(array_key_exists('affiliates:aggregate-daily', $commands))->toBeTrue();
+        expect(array_key_exists('affiliates:process-ranks', $commands))->toBeTrue();
+        expect(array_key_exists('affiliates:process-payouts', $commands))->toBeTrue();
+        expect(array_key_exists('affiliates:process-maturity', $commands))->toBeTrue();
     });
 });
