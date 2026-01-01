@@ -83,7 +83,6 @@ class NormalizedCartSynchronizer
      * @return array<string, CartItem>
      */
     /** @param Collection<int, BaseCartItem> $items */
-    /** @phpstan-ignore missingType.iterableValue, missingType.generics */
     private function syncItems(Cart $cartModel, Collection $items): array
     {
         $persisted = [];

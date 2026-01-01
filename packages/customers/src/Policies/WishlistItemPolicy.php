@@ -40,11 +40,16 @@ class WishlistItemPolicy
             return $item->owner_type === null && $item->owner_id === null;
         }
 
-        if ($includeGlobal && $item->isGlobal()) {
+        if ($includeGlobal && method_exists($item, 'isGlobal') && $item->isGlobal()) {
             return true;
         }
 
-        return $item->belongsToOwner($owner);
+        if (method_exists($item, 'belongsToOwner')) {
+            return $item->belongsToOwner($owner);
+        }
+
+        return $item->owner_type === $owner->getMorphClass()
+            && $item->owner_id === $owner->getKey();
     }
 
     public function viewAny(mixed $user): bool
@@ -52,9 +57,9 @@ class WishlistItemPolicy
         return $this->isAuthenticated($user);
     }
 
-    public function view(mixed $user, WishlistItem $wishlistItem): bool
+    public function view(mixed $user, WishlistItem $item): bool
     {
-        return $this->isAuthenticated($user) && $this->isAccessible($wishlistItem);
+        return $this->isAuthenticated($user) && $this->isAccessible($item);
     }
 
     public function create(mixed $user): bool
@@ -62,13 +67,13 @@ class WishlistItemPolicy
         return $this->isAuthenticated($user);
     }
 
-    public function update(mixed $user, WishlistItem $wishlistItem): bool
+    public function update(mixed $user, WishlistItem $item): bool
     {
-        return $this->isAuthenticated($user) && $this->isAccessible($wishlistItem);
+        return $this->isAuthenticated($user) && $this->isAccessible($item);
     }
 
-    public function delete(mixed $user, WishlistItem $wishlistItem): bool
+    public function delete(mixed $user, WishlistItem $item): bool
     {
-        return $this->isAuthenticated($user) && $this->isAccessible($wishlistItem);
+        return $this->isAuthenticated($user) && $this->isAccessible($item);
     }
 }
