@@ -263,7 +263,6 @@ class Cart extends Model
         return $this->cartConditions()->itemLevel();
     }
 
-    /** @phpstan-ignore-next-line */
     public function user(): BelongsTo
     {
         /** @var class-string<Model> $userModel */

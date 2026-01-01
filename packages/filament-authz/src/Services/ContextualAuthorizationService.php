@@ -60,16 +60,18 @@ class ContextualAuthorizationService
         ];
 
         // Add owner check if resource has user_id
-        if ($resource->getAttribute('user_id') !== null) {
-            $context['record_owner_id'] = $resource->getAttribute('user_id');
-        }
+        if (method_exists($resource, 'getAttribute')) {
+            if ($resource->getAttribute('user_id') !== null) {
+                $context['record_owner_id'] = $resource->getAttribute('user_id');
+            }
 
-        if ($resource->getAttribute('team_id') !== null) {
-            $context['team_id'] = $resource->getAttribute('team_id');
-        }
+            if ($resource->getAttribute('team_id') !== null) {
+                $context['team_id'] = $resource->getAttribute('team_id');
+            }
 
-        if ($resource->getAttribute('tenant_id') !== null) {
-            $context['tenant_id'] = $resource->getAttribute('tenant_id');
+            if ($resource->getAttribute('tenant_id') !== null) {
+                $context['tenant_id'] = $resource->getAttribute('tenant_id');
+            }
         }
 
         return $this->canWithContext($user, $permission, $context);

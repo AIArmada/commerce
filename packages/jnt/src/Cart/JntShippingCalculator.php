@@ -15,8 +15,6 @@ use AIArmada\Jnt\Data\AddressData;
  */
 class JntShippingCalculator
 {
-    public function __construct() {}
-
     /**
      * Calculate shipping cost for the cart to a destination address.
      *

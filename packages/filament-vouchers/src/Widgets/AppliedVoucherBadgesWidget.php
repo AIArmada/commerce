@@ -61,15 +61,8 @@ final class AppliedVoucherBadgesWidget extends Widget
             /** @phpstan-ignore-next-line - getAppliedVouchers method added via proxy */
             $vouchers = $cartInstance->getAppliedVouchers();
 
-            $voucherItems = [];
-            if (is_iterable($vouchers)) {
-                foreach ($vouchers as $voucher) {
-                    $voucherItems[] = $voucher;
-                }
-            }
-
-            /** @var Collection<int|string, mixed> $voucherCollection */
-            $voucherCollection = collect($voucherItems);
+            /** @var Collection<int, mixed> $voucherCollection */
+            $voucherCollection = collect($vouchers);
 
             return $voucherCollection->map(function ($voucher) {
                 $type = $voucher->type->value ?? 'fixed';

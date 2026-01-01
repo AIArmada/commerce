@@ -27,7 +27,6 @@ describe('CreateVoucher Action', function (): void {
             'type' => VoucherType::Percentage,
             'value' => 20,
             'description' => 'Test voucher',
-            'is_active' => true,
         ]);
 
         expect($voucher)->toBeInstanceOf(Voucher::class)
@@ -73,7 +72,6 @@ describe('CreateVoucher Action', function (): void {
             'max_uses_per_user' => 1,
             'min_order_value' => 5000,
             'max_discount_value' => 2000,
-            'is_active' => true,
             'starts_at' => now(),
             'expires_at' => now()->addMonth(),
             'metadata' => ['campaign' => 'summer'],
@@ -106,7 +104,7 @@ describe('AddVoucherToWallet Action', function (): void {
             'name' => 'Wallet Test Voucher',
             'type' => VoucherType::Fixed,
             'value' => 500,
-            'is_active' => true,
+            'status' => 'active',
         ]);
 
         $owner = new class extends Model
@@ -141,7 +139,7 @@ describe('AddVoucherToWallet Action', function (): void {
             'name' => 'Wallet Dupe Voucher',
             'type' => VoucherType::Fixed,
             'value' => 500,
-            'is_active' => true,
+            'status' => 'active',
         ]);
 
         $owner = new class extends Model
@@ -197,7 +195,7 @@ describe('AddVoucherToWallet Action', function (): void {
             'name' => 'Meta Test Voucher',
             'type' => VoucherType::Percentage,
             'value' => 10,
-            'is_active' => true,
+            'status' => 'active',
         ]);
 
         $owner = new class extends Model
@@ -229,7 +227,7 @@ describe('AddVoucherToWallet Action', function (): void {
             'name' => 'Normalize Test Voucher',
             'type' => VoucherType::Fixed,
             'value' => 100,
-            'is_active' => true,
+            'status' => 'active',
         ]);
 
         $owner = new class extends Model
@@ -263,7 +261,7 @@ describe('RecordVoucherUsage Action', function (): void {
             'name' => 'Usage Test Voucher',
             'type' => VoucherType::Fixed,
             'value' => 500,
-            'is_active' => true,
+            'status' => 'active',
         ]);
 
         $action = new RecordVoucherUsage;
@@ -287,7 +285,7 @@ describe('RecordVoucherUsage Action', function (): void {
             'name' => 'Redeem User Voucher',
             'type' => VoucherType::Percentage,
             'value' => 10,
-            'is_active' => true,
+            'status' => 'active',
         ]);
 
         $user = new class extends Model
@@ -335,7 +333,7 @@ describe('RecordVoucherUsage Action', function (): void {
             'name' => 'Preload Usage Voucher',
             'type' => VoucherType::Fixed,
             'value' => 200,
-            'is_active' => true,
+            'status' => 'active',
             'applied_count' => 5,
         ]);
 

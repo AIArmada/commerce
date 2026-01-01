@@ -6,7 +6,6 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
-use Throwable;
 
 return new class extends Migration
 {
@@ -59,7 +58,7 @@ return new class extends Migration
 
                 return false;
             }
-        } catch (Throwable) {
+        } catch (\Throwable) {
             // Best-effort only. If we can't determine, fall through.
         }
 

@@ -40,11 +40,16 @@ class WishlistPolicy
             return $wishlist->owner_type === null && $wishlist->owner_id === null;
         }
 
-        if ($includeGlobal && $wishlist->isGlobal()) {
+        if ($includeGlobal && method_exists($wishlist, 'isGlobal') && $wishlist->isGlobal()) {
             return true;
         }
 
-        return $wishlist->belongsToOwner($owner);
+        if (method_exists($wishlist, 'belongsToOwner')) {
+            return $wishlist->belongsToOwner($owner);
+        }
+
+        return $wishlist->owner_type === $owner->getMorphClass()
+            && $wishlist->owner_id === $owner->getKey();
     }
 
     public function viewAny(mixed $user): bool

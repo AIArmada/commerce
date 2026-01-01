@@ -105,16 +105,8 @@ final class VoucherSuggestionsWidget extends Widget
 
                         /** @phpstan-ignore-next-line */
                         $appliedVouchers = $cartInstance->getAppliedVouchers();
-
-                        $appliedVoucherItems = [];
-                        if (is_iterable($appliedVouchers)) {
-                            foreach ($appliedVouchers as $appliedVoucher) {
-                                $appliedVoucherItems[] = $appliedVoucher;
-                            }
-                        }
-
                         /** @var Collection<int, mixed> $appliedCollection */
-                        $appliedCollection = collect($appliedVoucherItems);
+                        $appliedCollection = collect($appliedVouchers);
                         $appliedCodes = $appliedCollection->pluck('code')->toArray();
 
                         if (in_array($voucher->code, $appliedCodes, true)) {
@@ -229,9 +221,9 @@ final class VoucherSuggestionsWidget extends Widget
             VoucherType::Percentage => (int) round(($cartTotal * $voucher->value) / 10000), // value is in basis points (1000 = 10%)
             VoucherType::Fixed => $voucher->value, // value is in cents
             VoucherType::FreeShipping => 0, // Can't calculate shipping savings
-            VoucherType::Bundle => 0,
-            VoucherType::BuyXGetY => 0,
-            VoucherType::Cashback => 0,
+            VoucherType::Bundle,
+            VoucherType::BuyXGetY,
+            VoucherType::Cashback,
             VoucherType::Tiered => 0,
         };
 

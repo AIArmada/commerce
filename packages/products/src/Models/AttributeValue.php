@@ -195,15 +195,8 @@ class AttributeValue extends Model
                     }
                 }
 
-                $ownerToAssign = null;
-
-                if (method_exists($attributable, 'owner')) {
-                    $owner = $attributable->owner()->getResults();
-
-                    if ($owner instanceof Model) {
-                        $ownerToAssign = $owner;
-                    }
-                }
+                /** @var Model|null $ownerToAssign */
+                $ownerToAssign = $attributable->getAttribute('owner');
 
                 if ($hasOwnerType && $ownerToAssign !== null && ! $attributeValue->belongsToOwner($ownerToAssign)) {
                     throw new InvalidArgumentException('Cross-tenant write blocked: attribute value owner does not match its attributable owner.');

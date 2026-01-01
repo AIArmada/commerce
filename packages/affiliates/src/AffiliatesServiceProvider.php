@@ -24,7 +24,6 @@ use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use Illuminate\Routing\Router;
-use Spatie\LaravelPackageTools\Commands\InstallCommand;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -36,6 +35,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
             ->name('affiliates')
             ->hasConfigFile('affiliates')
             ->discoversMigrations()
+            ->runsMigrations()
             ->hasRoutes(['api'])
             ->hasCommands([
                 Console\Commands\ExportAffiliatePayoutCommand::class,
@@ -43,12 +43,7 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
                 Console\Commands\ProcessRankUpgradesCommand::class,
                 Console\Commands\ProcessScheduledPayoutsCommand::class,
                 Console\Commands\ProcessCommissionMaturityCommand::class,
-            ])
-            ->hasInstallCommand(function (InstallCommand $command): void {
-                $command
-                    ->publishConfigFile()
-                    ->publishMigrations();
-            });
+            ]);
     }
 
     public function packageRegistered(): void

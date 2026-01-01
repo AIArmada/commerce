@@ -232,7 +232,10 @@ class StripeInvoice implements InvoiceContract
     public function download(array $data = []): Response
     {
         if ($this->invoice instanceof Invoice) {
-            return $this->invoice->download($data);
+            /** @var Response $response */
+            $response = $this->invoice->download($data);
+
+            return $response;
         }
 
         // Fallback to redirect to PDF URL
