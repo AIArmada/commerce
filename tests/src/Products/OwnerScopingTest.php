@@ -156,6 +156,64 @@ it('auto-assigns owner on create when enabled', function (): void {
         ->and($product->owner_id)->toBe($ownerA->getKey());
 });
 
+it('blocks cross-tenant updates to an already-loaded product', function (): void {
+    config()->set('products.features.owner.auto_assign_on_create', false);
+
+    $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
+    $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
+
+    $product = Product::query()->create([
+        'owner_type' => $ownerA->getMorphClass(),
+        'owner_id' => $ownerA->getKey(),
+        'name' => 'Owned by A',
+        'price' => 1000,
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new class($ownerB) implements OwnerResolverInterface
+    {
+        public function __construct(
+            private readonly ?Model $owner,
+        ) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    expect(fn () => $product->update(['name' => 'Hacked']))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+it('blocks updating global products from an owner context', function (): void {
+    config()->set('products.features.owner.auto_assign_on_create', false);
+    config()->set('products.features.owner.include_global', true);
+
+    $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
+
+    $productGlobal = Product::query()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'name' => 'Global',
+        'price' => 1000,
+    ]);
+
+    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
+    {
+        public function __construct(
+            private readonly ?Model $owner,
+        ) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    expect(fn () => $productGlobal->update(['name' => 'Tenant modified']))
+        ->toThrow(InvalidArgumentException::class);
+});
+
 it('scopes Category->products to the category owner plus global', function (): void {
     config()->set('products.features.owner.auto_assign_on_create', false);
 

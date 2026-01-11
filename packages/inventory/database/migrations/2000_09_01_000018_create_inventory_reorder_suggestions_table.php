@@ -6,8 +6,7 @@ use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
 
-return new class extends Migration
-{
+return new class extends Migration {
     public function up(): void
     {
         $tables = config('inventory.database.tables', []);
@@ -39,9 +38,9 @@ return new class extends Migration
             $table->addColumn($jsonType, 'metadata')->nullable();
             $table->timestamps();
 
-            $table->index(['status', 'urgency']);
-            $table->index(['inventoryable_type', 'inventoryable_id', 'status']);
-            $table->index('expected_stockout_date');
+            $table->index(['status', 'urgency'], 'inv_reorder_status_urgency_idx');
+            $table->index(['inventoryable_type', 'inventoryable_id', 'status'], 'inv_reorder_inventoryable_idx');
+            $table->index('expected_stockout_date', 'inv_reorder_stockout_date_idx');
         });
     }
 

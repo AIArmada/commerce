@@ -17,7 +17,8 @@ return new class extends Migration
 
         Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
-            $table->uuidMorphs('inventoryable');
+            $table->string('inventoryable_type');
+            $table->uuid('inventoryable_id');
             $table->foreignUuid('supplier_id')->nullable();
             $table->string('supplier_name')->nullable();
             $table->integer('lead_time_days');
@@ -34,7 +35,8 @@ return new class extends Migration
             $table->addColumn($jsonType, 'metadata')->nullable();
             $table->timestamps();
 
-            $table->index(['inventoryable_type', 'inventoryable_id', 'is_active']);
+            $table->index(['inventoryable_type', 'inventoryable_id'], 'inv_sup_lead_invable_idx');
+            $table->index(['inventoryable_type', 'inventoryable_id', 'is_active'], 'inv_sup_lead_invable_active_idx');
             $table->index('is_primary');
         });
     }

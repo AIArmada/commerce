@@ -16,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 use InvalidArgumentException;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -337,9 +338,16 @@ class Variant extends Model implements HasMedia, Priceable
             ->map(fn ($opt) => mb_strtoupper(mb_substr($opt->name, 0, 2)))
             ->implode('-');
 
+        $parentSku = $this->product->sku;
+
+        if ($parentSku === null || $parentSku === '') {
+            $productId = (string) $this->product->getKey();
+            $parentSku = 'PROD-' . Str::upper(Str::substr($productId, -12));
+        }
+
         return str_replace(
             ['{parent_sku}', '{option_codes}'],
-            [$this->product->sku ?? 'PROD', $optionCodes],
+            [$parentSku, $optionCodes],
             $pattern
         );
     }
@@ -416,6 +424,37 @@ class Variant extends Model implements HasMedia, Priceable
             }
 
             $variant->assignOwner($ownerToAssign);
+        });
+
+        static::updating(function (Variant $variant): void {
+            if (! (bool) config('products.features.owner.enabled', true)) {
+                return;
+            }
+
+            if ($variant->isDirty(['owner_type', 'owner_id'])) {
+                throw new InvalidArgumentException('Invalid owner update: owner_type and owner_id are immutable.');
+            }
+
+            $hasOwnerType = $variant->owner_type !== null;
+            $hasOwnerId = $variant->owner_id !== null;
+
+            if ($hasOwnerType !== $hasOwnerId) {
+                throw new InvalidArgumentException('Invalid owner columns: owner_type and owner_id must be both set or both null.');
+            }
+
+            $currentOwner = OwnerContext::resolve();
+
+            if ($currentOwner === null) {
+                return;
+            }
+
+            if (! $hasOwnerType) {
+                throw new InvalidArgumentException('Cross-tenant write blocked: global variants cannot be modified from an owner context.');
+            }
+
+            if (! $variant->belongsToOwner($currentOwner)) {
+                throw new InvalidArgumentException('Cross-tenant write blocked: variant owner does not match the current owner context.');
+            }
         });
 
         static::deleting(function (Variant $variant): void {

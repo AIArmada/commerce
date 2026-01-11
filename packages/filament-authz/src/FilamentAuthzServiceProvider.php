@@ -62,9 +62,13 @@ class FilamentAuthzServiceProvider extends ServiceProvider
             __DIR__ . '/../resources/views' => resource_path('views/vendor/filament-authz'),
         ], 'filament-authz-views');
 
-        $this->publishes([
-            __DIR__ . '/../database/migrations' => database_path('migrations'),
-        ], 'filament-authz-migrations');
+        // Publish migrations as individual files (consistent with discoversMigrations behavior)
+        $migrationPath = __DIR__ . '/../database/migrations';
+        $migrations = [];
+        foreach (glob($migrationPath . '/*.php') as $file) {
+            $migrations[$file] = database_path('migrations/' . basename($file));
+        }
+        $this->publishes($migrations, 'filament-authz-migrations');
 
         $this->registerGateBefore();
         $this->registerCommands();
@@ -178,7 +182,7 @@ class FilamentAuthzServiceProvider extends ServiceProvider
         // Register wildcard permission resolution
         if (config('filament-authz.features.wildcard_permissions', true)) {
             Gate::before(function ($user, string $ability) {
-                if (! method_exists($user, 'getAllPermissions')) {
+                if (!method_exists($user, 'getAllPermissions')) {
                     return null;
                 }
 

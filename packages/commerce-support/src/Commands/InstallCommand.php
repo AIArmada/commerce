@@ -208,7 +208,7 @@ final class InstallCommand extends Command
         $selected = $this->choice(
             'Which publish groups do you want to publish?',
             $choices,
-            default: '<all>',
+            default: 0,
             multiple: true,
         );
 

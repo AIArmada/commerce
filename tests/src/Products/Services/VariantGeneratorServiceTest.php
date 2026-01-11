@@ -9,6 +9,7 @@ use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use AIArmada\Products\Services\VariantGeneratorService;
+use Illuminate\Support\Facades\DB;
 
 describe('VariantGeneratorService', function (): void {
     beforeEach(function (): void {
@@ -129,6 +130,49 @@ describe('VariantGeneratorService', function (): void {
                 ->and($product->variants()->count())->toBe(1);
         });
 
+        it('does not leave orphan variant-option pivot rows when regenerating', function (): void {
+            $product = Product::create([
+                'name' => 'Pivot Cleanup Product',
+                'price' => 4000,
+                'status' => ProductStatus::Active,
+                'type' => ProductType::Configurable,
+                'sku' => 'PIVOT-CLEAN',
+            ]);
+
+            $colorOption = Option::create([
+                'product_id' => $product->id,
+                'name' => 'Color',
+                'position' => 0,
+            ]);
+
+            $sizeOption = Option::create([
+                'product_id' => $product->id,
+                'name' => 'Size',
+                'position' => 1,
+            ]);
+
+            OptionValue::create(['option_id' => $colorOption->id, 'name' => 'Red', 'position' => 0]);
+            OptionValue::create(['option_id' => $colorOption->id, 'name' => 'Blue', 'position' => 1]);
+            OptionValue::create(['option_id' => $sizeOption->id, 'name' => 'Small', 'position' => 0]);
+            OptionValue::create(['option_id' => $sizeOption->id, 'name' => 'Large', 'position' => 1]);
+
+            $this->service->generate($product);
+
+            $variants = $this->service->generate($product);
+
+            $variantIds = Variant::query()->withoutOwnerScope()->pluck('id')->all();
+
+            $orphanPivotRows = DB::table('product_variant_options')
+                ->whereNotIn('variant_id', $variantIds)
+                ->count();
+
+            $optionsCount = Option::query()->withoutOwnerScope()->where('product_id', $product->id)->count();
+            $expectedPivotRows = $variants->count() * $optionsCount;
+
+            expect($orphanPivotRows)->toBe(0)
+                ->and(DB::table('product_variant_options')->count())->toBe($expectedPivotRows);
+        });
+
         it('throws exception when too many combinations', function (): void {
             config(['products.features.variants.max_combinations' => 2]);
 
@@ -179,6 +223,34 @@ describe('VariantGeneratorService', function (): void {
             $variants = $this->service->generate($product);
 
             expect($variants->first()->sku)->toContain('SKU-TEST');
+        });
+
+        it('uses the same SKU algorithm as Variant::generateSku()', function (): void {
+            $product = Product::create([
+                'name' => 'SKU Consistency Product',
+                'price' => 6000,
+                'status' => ProductStatus::Active,
+                'type' => ProductType::Configurable,
+                'sku' => 'SKU-TEST',
+            ]);
+
+            $option = Option::create([
+                'product_id' => $product->id,
+                'name' => 'Color',
+                'position' => 0,
+            ]);
+
+            OptionValue::create([
+                'option_id' => $option->id,
+                'name' => 'Green',
+                'position' => 0,
+            ]);
+
+            $variants = $this->service->generate($product);
+
+            $variant = $variants->first();
+
+            expect($variant->sku)->toBe($variant->generateSku());
         });
     });
 
