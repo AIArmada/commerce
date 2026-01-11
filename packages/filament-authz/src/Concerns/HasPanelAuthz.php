@@ -4,106 +4,70 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Concerns;
 
-use Filament\Facades\Filament;
+use AIArmada\FilamentAuthz\Models\Role;
 use Filament\Panel;
-use Illuminate\Support\Collection;
-use Throwable;
 
 /**
- * Trait for automatic panel access control on User models.
+ * Add this trait to your User model for panel access control.
  *
- * Usage:
- *   class User extends Authenticatable
- *   {
- *       use HasRoles, HasPanelAuthz;
- *   }
+ * Features:
+ * - Auto-creates panel_user role on boot
+ * - Assigns role to new users automatically
+ * - Works with super admin bypass
  */
 trait HasPanelAuthz
 {
-    /**
-     * Boot the trait.
-     */
     public static function bootHasPanelAuthz(): void
     {
-        $panelUserRole = config('filament-authz.panel_user_role');
-
-        if ($panelUserRole !== null) {
-            // Auto-assign panel user role on creation
-            static::created(function (self $user): void {
-                $panelUserRole = config('filament-authz.panel_user_role');
-                if ($panelUserRole !== null && method_exists($user, 'assignRole')) {
-                    try {
-                        $user->assignRole($panelUserRole);
-                    } catch (Throwable) {
-                        // Role might not exist yet
-                    }
-                }
-            });
+        if (app()->runningInConsole()) {
+            return;
         }
+
+        $config = (array) config('filament-authz.panel_user', []);
+
+        if (! ($config['enabled'] ?? false)) {
+            return;
+        }
+
+        $roleName = $config['name'] ?? 'panel_user';
+        $guards = (array) config('filament-authz.guards', ['web']);
+
+        foreach ($guards as $guard) {
+            Role::findOrCreate($roleName, $guard);
+        }
+
+        static::created(function ($user) use ($roleName): void {
+            if (method_exists($user, 'assignRole')) {
+                $user->assignRole($roleName);
+            }
+        });
+
+        static::deleting(function ($user) use ($roleName): void {
+            if (method_exists($user, 'removeRole')) {
+                $user->removeRole($roleName);
+            }
+        });
     }
 
     /**
-     * Check if user can access a specific panel.
+     * Determine if the user can access the given panel.
      */
     public function canAccessPanel(Panel $panel): bool
     {
-        // Super admin has access to all panels
-        $superAdminRole = config('filament-authz.super_admin_role', 'super_admin');
-        if (method_exists($this, 'hasRole') && $this->hasRole($superAdminRole)) {
+        $superAdminRole = config('filament-authz.super_admin_role');
+
+        if ($superAdminRole && method_exists($this, 'hasRole') && $this->hasRole($superAdminRole)) {
             return true;
         }
 
-        // Check panel-specific roles
-        $panelRoles = config("filament-authz.panel_roles.{$panel->getId()}", []);
+        $config = (array) config('filament-authz.panel_user', []);
 
-        if (! empty($panelRoles)) {
-            if (! method_exists($this, 'hasAnyRole')) {
-                return false;
-            }
-
-            return $this->hasAnyRole($panelRoles);
+        if (! ($config['enabled'] ?? false)) {
+            return true;
         }
 
-        // Fallback to panel user role
-        $panelUserRole = config('filament-authz.panel_user_role');
-        if ($panelUserRole !== null && method_exists($this, 'hasRole')) {
-            return $this->hasRole($panelUserRole);
-        }
+        $roleName = $config['name'] ?? 'panel_user';
 
-        return false;
-    }
-
-    /**
-     * Get panels this user can access.
-     *
-     * @return Collection<string, Panel>
-     */
-    public function getAccessiblePanels(): Collection
-    {
-        return collect(Filament::getPanels())
-            ->filter(fn (Panel $panel): bool => $this->canAccessPanel($panel));
-    }
-
-    /**
-     * Check if user has access to any panel.
-     */
-    public function hasAnyPanelAccess(): bool
-    {
-        return $this->getAccessiblePanels()->isNotEmpty();
-    }
-
-    /**
-     * Get the default panel for this user.
-     */
-    public function getDefaultPanel(): ?Panel
-    {
-        $accessiblePanels = $this->getAccessiblePanels();
-
-        if ($accessiblePanels->isEmpty()) {
-            return null;
-        }
-
-        // Return the first accessible panel
-        return $accessiblePanels->first();
+        return method_exists($this, 'hasRole') && $this->hasRole($roleName);
     }
 }

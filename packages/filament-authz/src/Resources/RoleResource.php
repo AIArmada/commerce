@@ -4,33 +4,67 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Resources;
 
-use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
+use AIArmada\FilamentAuthz\Resources\RoleResource\Concerns\HasAuthzFormComponents;
 use AIArmada\FilamentAuthz\Resources\RoleResource\Pages;
-use AIArmada\FilamentAuthz\Resources\RoleResource\RelationManagers;
 use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
+use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
-use Filament\Tables\Filters\Filter;
 use Filament\Tables\Filters\SelectFilter;
 use Filament\Tables\Table;
-use Illuminate\Contracts\Auth\Access\Authorizable;
-use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rules\Unique;
-use Spatie\Permission\Contracts\PermissionsTeamResolver;
 
 class RoleResource extends Resource
 {
+    use HasAuthzFormComponents;
+
     protected static ?string $model = null;
 
     public static function getModel(): string
     {
         return config('permission.models.role', Role::class);
+    }
+
+    public static function canViewAny(): bool
+    {
+        return static::checkAbility('role.viewAny');
+    }
+
+    public static function canCreate(): bool
+    {
+        return static::checkAbility('role.create');
+    }
+
+    public static function canEdit(Model $record): bool
+    {
+        return static::checkAbility('role.update');
+    }
+
+    public static function canDelete(Model $record): bool
+    {
+        return static::checkAbility('role.delete');
+    }
+
+    protected static function checkAbility(string $ability): bool
+    {
+        $user = Auth::user();
+
+        if ($user === null) {
+            return false;
+        }
+
+        $superAdminRole = config('filament-authz.super_admin_role');
+
+        if (method_exists($user, 'hasRole') && $user->hasRole($superAdminRole)) {
+            return true;
+        }
+
+        return method_exists($user, 'can') && $user->can($ability);
     }
 
     public static function getNavigationGroup(): ?string
@@ -50,83 +84,35 @@ class RoleResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        $user = static::currentAuthorizable();
-
-        if ($user === null) {
-            return false;
-        }
-
-        $hasSuperRole = method_exists($user, 'hasRole') && $user->hasRole(config('filament-authz.super_admin_role'));
-
-        return $user->can('role.viewAny') || $hasSuperRole;
+        return static::canViewAny();
     }
 
     public static function form(Schema $form): Schema
     {
+        $guards = config('filament-authz.guards', ['web']);
+
         return $form->schema([
             Section::make('Role Details')->schema([
                 Forms\Components\TextInput::make('name')
                     ->required()
-                    ->unique(ignoreRecord: true, modifyRuleUsing: function (Unique $rule, Get $get): Unique {
-                        $guard = $get('guard_name');
-
-                        if (is_string($guard) && $guard !== '') {
-                            $rule->where('guard_name', $guard);
-                        }
-
-                        if (config('permission.teams')) {
-                            $teamColumn = (string) config('permission.column_names.team_foreign_key', 'team_id');
-                            $teamId = app(PermissionsTeamResolver::class)->getPermissionsTeamId();
-
-                            if ($teamId === null) {
-                                $rule->whereNull($teamColumn);
-                            } else {
-                                $rule->where($teamColumn, $teamId);
-                            }
-                        }
-
-                        return $rule;
-                    }),
+                    ->unique(ignoreRecord: true),
                 Forms\Components\Select::make('guard_name')
-                    ->options(array_combine(config('filament-authz.guards'), config('filament-authz.guards')))
-                    ->default(config('filament-authz.guards.0'))
+                    ->options(array_combine($guards, $guards))
+                    ->default($guards[0] ?? 'web')
                     ->required()
                     ->reactive(),
             ])->columns(2),
 
-            Section::make('Permissions')->schema([
-                Forms\Components\CheckboxList::make('permissions')
-                    ->label('Permissions')
-                    ->searchable()
-                    ->bulkToggleable()
-                    ->columns([
-                        'sm' => 2,
-                        'lg' => 3,
-                    ])
-                    ->options(function (callable $get): array {
-                        $guard = $get('guard_name');
-
-                        return Permission::query()
-                            ->when($guard, fn (Builder $query): Builder => $query->where('guard_name', $guard))
-                            ->orderBy('name')
-                            ->pluck('name', 'id')
-                            ->toArray();
-                    })
-                    ->default(fn (?Role $record) => $record?->permissions()->pluck('id')->toArray())
-                    ->afterStateHydrated(function (Forms\Components\CheckboxList $component, ?Role $record): void {
-                        if ($record === null) {
-                            return;
-                        }
-
-                        $component->state($record->permissions()->pluck('id')->toArray());
-                    })
-                    ->helperText('Toggle permissions. Switching guards filters available permissions.'),
-            ])->columnSpanFull(),
+            Tabs::make('Permissions')
+                ->schema(static::getPermissionTabs())
+                ->columnSpanFull(),
         ]);
     }
 
     public static function table(Table $table): Table
     {
+        $guards = config('filament-authz.guards', ['web']);
+
         return $table->columns([
             TextColumn::make('name')->searchable()->sortable(),
             TextColumn::make('guard_name')->badge()->sortable(),
@@ -140,22 +126,14 @@ class RoleResource extends Resource
         ])->filters([
             SelectFilter::make('guard_name')
                 ->label('Guard')
-                ->options(array_combine(config('filament-authz.guards'), config('filament-authz.guards')))
+                ->options(array_combine($guards, $guards))
                 ->placeholder('All guards'),
-            Filter::make('guard_name = web')->query(fn (Builder $q) => $q->where('guard_name', 'web')),
         ])->actions([
-            Actions\EditAction::make()->authorize(fn (Role $record) => static::currentAuthorizable()?->can('role.update') ?? false),
-            Actions\DeleteAction::make()->authorize(fn (Role $record) => static::currentAuthorizable()?->can('role.delete') ?? false),
+            Actions\EditAction::make(),
+            Actions\DeleteAction::make(),
         ])->bulkActions([
-            Actions\DeleteBulkAction::make()->authorize(fn () => static::currentAuthorizable()?->can('role.delete') ?? false),
+            Actions\DeleteBulkAction::make(),
         ]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            RelationManagers\PermissionsRelationManager::class,
-        ];
     }
 
     public static function getPages(): array
@@ -165,16 +143,5 @@ class RoleResource extends Resource
             'create' => Pages\CreateRole::route('/create'),
             'edit' => Pages\EditRole::route('/{record}/edit'),
         ];
-    }
-
-    protected static function currentAuthorizable(): ?Authorizable
-    {
-        $user = Auth::user();
-
-        if (! $user instanceof Authorizable) {
-            return null;
-        }
-
-        return $user;
     }
 }

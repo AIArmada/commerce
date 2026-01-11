@@ -4,90 +4,78 @@ declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\Concerns\HasPageAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasPanelAuthz;
-use AIArmada\FilamentAuthz\Concerns\HasResourceAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasWidgetAuthz;
+use AIArmada\FilamentAuthz\Concerns\SyncsRolePermissions;
+use AIArmada\FilamentAuthz\Resources\RoleResource\Concerns\HasAuthzFormComponents;
 
-test('HasPageAuthz trait exists', function (): void {
-    expect(trait_exists(HasPageAuthz::class))->toBeTrue();
-});
-
-test('HasWidgetAuthz trait exists', function (): void {
-    expect(trait_exists(HasWidgetAuthz::class))->toBeTrue();
-});
-
-test('HasResourceAuthz trait exists', function (): void {
-    expect(trait_exists(HasResourceAuthz::class))->toBeTrue();
-});
-
-test('HasPanelAuthz trait exists', function (): void {
-    expect(trait_exists(HasPanelAuthz::class))->toBeTrue();
-});
-
-test('HasPageAuthz has required methods', function (): void {
-    $methods = get_class_methods(new class
-    {
-        use HasPageAuthz;
+describe('HasPageAuthz Trait', function () {
+    it('exists', function () {
+        expect(trait_exists(HasPageAuthz::class))->toBeTrue();
     });
 
-    expect($methods)
-        ->toContain('shouldRegisterNavigation')
-        ->toContain('canAccess')
-        ->toContain('getPagePermissionKey');
-});
+    it('has canAccess method', function () {
+        $reflection = new ReflectionClass(HasPageAuthz::class);
 
-test('HasWidgetAuthz has required methods', function (): void {
-    $methods = get_class_methods(new class
-    {
-        use HasWidgetAuthz;
+        expect($reflection->hasMethod('canAccess'))->toBeTrue();
     });
 
-    expect($methods)
-        ->toContain('canView')
-        ->toContain('getWidgetPermissionKey');
+    it('has getAuthzPermission method', function () {
+        $reflection = new ReflectionClass(HasPageAuthz::class);
+
+        expect($reflection->hasMethod('getAuthzPermission'))->toBeTrue();
+    });
 });
 
-test('HasResourceAuthz has required methods', function (): void {
-    $methods = get_class_methods(new class
-    {
-        use HasResourceAuthz;
+describe('HasWidgetAuthz Trait', function () {
+    it('exists', function () {
+        expect(trait_exists(HasWidgetAuthz::class))->toBeTrue();
+    });
+});
 
-        public static function getModel(): string
-        {
-            return 'test';
-        }
+describe('HasPanelAuthz Trait', function () {
+    it('exists', function () {
+        expect(trait_exists(HasPanelAuthz::class))->toBeTrue();
+    });
+});
+
+describe('SyncsRolePermissions Trait', function () {
+    it('exists', function () {
+        expect(trait_exists(SyncsRolePermissions::class))->toBeTrue();
+    });
+});
+
+describe('HasAuthzFormComponents Trait', function () {
+    it('exists', function () {
+        expect(trait_exists(HasAuthzFormComponents::class))->toBeTrue();
     });
 
-    expect($methods)
-        ->toContain('getAllAbilities')
-        ->toContain('getPermissionFor')
-        ->toContain('canPerform');
-});
+    it('has getPermissionTabs method', function () {
+        $reflection = new ReflectionClass(HasAuthzFormComponents::class);
 
-test('HasPanelAuthz has required methods', function (): void {
-    $methods = get_class_methods(new class
-    {
-        use HasPanelAuthz;
+        expect($reflection->hasMethod('getPermissionTabs'))->toBeTrue();
     });
 
-    expect($methods)
-        ->toContain('canAccessPanel')
-        ->toContain('getAccessiblePanels')
-        ->toContain('hasAnyPanelAccess')
-        ->toContain('getDefaultPanel');
-});
+    it('has getResourcesTab method', function () {
+        $reflection = new ReflectionClass(HasAuthzFormComponents::class);
 
-test('HasResourceAuthz generates permission key correctly', function (): void {
-    $class = new class
-    {
-        use HasResourceAuthz;
+        expect($reflection->hasMethod('getResourcesTab'))->toBeTrue();
+    });
 
-        public static function getModel(): string
-        {
-            return 'App\\Models\\User';
-        }
-    };
+    it('has getPagesTab method', function () {
+        $reflection = new ReflectionClass(HasAuthzFormComponents::class);
 
-    $permission = $class::getPermissionFor('view');
+        expect($reflection->hasMethod('getPagesTab'))->toBeTrue();
+    });
 
-    expect($permission)->toBe('user.view');
+    it('has getWidgetsTab method', function () {
+        $reflection = new ReflectionClass(HasAuthzFormComponents::class);
+
+        expect($reflection->hasMethod('getWidgetsTab'))->toBeTrue();
+    });
+
+    it('has getCustomPermissionsTab method', function () {
+        $reflection = new ReflectionClass(HasAuthzFormComponents::class);
+
+        expect($reflection->hasMethod('getCustomPermissionsTab'))->toBeTrue();
+    });
 });

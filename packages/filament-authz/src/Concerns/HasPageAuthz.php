@@ -4,168 +4,68 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Concerns;
 
-use AIArmada\FilamentAuthz\Services\PermissionAggregator;
+use AIArmada\FilamentAuthz\Facades\Authz;
 use Filament\Facades\Filament;
-use Illuminate\Support\Str;
 
 /**
- * Trait for automatic authorization enforcement on Filament pages.
+ * Add this trait to Filament Pages to enforce permission checks.
  *
- * Usage:
- *   class SettingsPage extends Page
- *   {
- *       use HasPageAuthz;
- *   }
+ * Features:
+ * - Uses discovered permissions (not generated names)
+ * - Caches permission lookups
+ * - Super admin bypass built-in
+ * - Falls back gracefully if permission not found
  */
 trait HasPageAuthz
 {
-    protected static ?string $pagePermissionKey = null;
+    protected static ?string $authzPermissionKey = null;
 
-    /**
-     * @var array<string>
-     */
-    protected static array $requiredPagePermissions = [];
+    public static function canAccess(): bool
+    {
+        $user = Filament::auth()?->user();
 
-    /**
-     * @var array<string>
-     */
-    protected static array $requiredPageRoles = [];
+        if ($user === null) {
+            return false;
+        }
 
-    protected static ?string $teamPermissionScope = null;
+        $superAdminRole = config('filament-authz.super_admin_role');
 
-    /**
-     * Check if the page should appear in navigation.
-     */
+        if ($superAdminRole && method_exists($user, 'hasRole') && $user->hasRole($superAdminRole)) {
+            return true;
+        }
+
+        $permission = static::getAuthzPermission();
+
+        if ($permission === null) {
+            return parent::canAccess();
+        }
+
+        return method_exists($user, 'can') && $user->can($permission);
+    }
+
     public static function shouldRegisterNavigation(): bool
     {
         return static::canAccess() && parent::shouldRegisterNavigation();
     }
 
     /**
-     * Comprehensive access check with multiple strategies.
+     * Get the permission for this page from discovered entities.
+     * Caches the result for performance.
      */
-    public static function canAccess(): bool
+    public static function getAuthzPermission(): ?string
     {
-        $user = Filament::auth()?->user();
-
-        if (! $user) {
-            return false;
+        if (static::$authzPermissionKey === null) {
+            static::$authzPermissionKey = Authz::getPagePermission(static::class) ?? '';
         }
 
-        // Super admin bypass
-        if (static::isSuperAdmin($user)) {
-            return true;
-        }
-
-        // Role requirements
-        if (! empty(static::$requiredPageRoles)) {
-            if (! method_exists($user, 'hasAnyRole') || ! $user->hasAnyRole(static::$requiredPageRoles)) {
-                return false;
-            }
-        }
-
-        // Team scope check
-        if (static::$teamPermissionScope !== null) {
-            $team = static::getTeamFromContext();
-            if ($team !== null) {
-                $aggregator = app(PermissionAggregator::class);
-
-                return $aggregator->userHasPermission($user, static::getPagePermissionKey());
-            }
-        }
-
-        // Multiple permissions required
-        if (! empty(static::$requiredPagePermissions)) {
-            $aggregator = app(PermissionAggregator::class);
-
-            return $aggregator->userHasAllPermissions($user, static::$requiredPagePermissions);
-        }
-
-        // Standard permission check with hierarchy
-        $aggregator = app(PermissionAggregator::class);
-
-        return $aggregator->userHasPermission($user, static::getPagePermissionKey());
+        return static::$authzPermissionKey !== '' ? static::$authzPermissionKey : null;
     }
 
     /**
-     * Get the permission key for this page.
+     * Override to use a custom permission key.
      */
-    public static function getPagePermissionKey(): string
+    public static function authzPermission(): ?string
     {
-        if (static::$pagePermissionKey !== null) {
-            return static::$pagePermissionKey;
-        }
-
-        $slug = method_exists(static::class, 'getSlug')
-            ? static::getSlug()
-            : Str::kebab(class_basename(static::class));
-
-        return "page.{$slug}";
-    }
-
-    /**
-     * Configure permission key.
-     */
-    public static function setPagePermissionKey(string $key): void
-    {
-        static::$pagePermissionKey = $key;
-    }
-
-    /**
-     * Require specific permissions.
-     *
-     * @param  array<string>  $permissions
-     */
-    public static function requirePermissions(array $permissions): void
-    {
-        static::$requiredPagePermissions = $permissions;
-    }
-
-    /**
-     * Require specific roles.
-     *
-     * @param  array<string>  $roles
-     */
-    public static function requireRoles(array $roles): void
-    {
-        static::$requiredPageRoles = $roles;
-    }
-
-    /**
-     * Scope to team permissions.
-     */
-    public static function scopeToTeam(string $teamIdKey = 'team_id'): void
-    {
-        static::$teamPermissionScope = $teamIdKey;
-    }
-
-    /**
-     * Get page title with permission badge (for debugging).
-     */
-    public function getTitleWithPermissionDebug(): string
-    {
-        if (! app()->isLocal()) {
-            return $this->getTitle();
-        }
-
-        return $this->getTitle() . " [{$this->getPagePermissionKey()}]";
-    }
-
-    /**
-     * Check if user is a super admin.
-     */
-    protected static function isSuperAdmin(mixed $user): bool
-    {
-        $superAdminRole = config('filament-authz.super_admin_role', 'super_admin');
-
-        return method_exists($user, 'hasRole') && $user->hasRole($superAdminRole);
-    }
-
-    /**
-     * Get team from the current context.
-     */
-    protected static function getTeamFromContext(): mixed
-    {
-        return Filament::getTenant();
+        return null;
     }
 }

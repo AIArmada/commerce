@@ -4,158 +4,244 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Console;
 
-use AIArmada\FilamentAuthz\Enums\PolicyType;
-use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
-use AIArmada\FilamentAuthz\Services\PolicyGeneratorService;
-use AIArmada\FilamentAuthz\Support\UserModelResolver;
-use AIArmada\FilamentAuthz\ValueObjects\DiscoveredResource;
+use AIArmada\FilamentAuthz\Console\Concerns\Prohibitable;
+use AIArmada\FilamentAuthz\Facades\Authz;
+use Filament\Facades\Filament;
 use Illuminate\Console\Command;
-use Illuminate\Support\Collection;
+use Illuminate\Filesystem\Filesystem;
+use Illuminate\Support\Str;
 
+use function Laravel\Prompts\info;
+use function Laravel\Prompts\note;
 use function Laravel\Prompts\select;
+use function Laravel\Prompts\warning;
 
+/**
+ * Generate Laravel policies for Filament resources.
+ *
+ * Features:
+ * - Cleaner policy stubs
+ * - Support for UUID models
+ * - Proper type hints
+ */
 class GeneratePoliciesCommand extends Command
 {
-    /**
-     * @var string
-     */
+    use Prohibitable;
+
     protected $signature = 'authz:policies
-        {--type= : Policy type (basic, hierarchical, temporal, contextual, abac, composite)}
-        {--resource=* : Specific resources to generate for}
-        {--model=* : Specific models to generate for}
-        {--panel= : Panel to discover resources from}
-        {--namespace= : Custom policy namespace}
-        {--force : Overwrite existing policies}
-        {--dry-run : Preview without writing}
-        {--interactive : Interactive mode}';
+        {--panel= : The panel ID}
+        {--resource=* : Specific resources (class basenames)}
+        {--path= : Custom policy path}
+        {--force : Overwrite existing policies}';
 
-    /**
-     * @var string
-     */
-    protected $description = 'Generate Laravel policies for Filament resources';
+    protected $description = 'Generate Laravel policies for Filament resources.';
 
-    public function handle(
-        EntityDiscoveryService $discovery,
-        PolicyGeneratorService $generator
-    ): int {
-        $type = $this->getPolicyType();
+    public function __construct(protected Filesystem $files)
+    {
+        parent::__construct();
+    }
 
-        $resources = $this->getResources($discovery);
+    public function handle(): int
+    {
+        $this->initializeProhibitable();
 
-        if ($resources->isEmpty()) {
-            $this->warn('No resources found to generate policies for.');
+        $panelId = $this->getPanelId();
 
-            return Command::SUCCESS;
+        if ($panelId === null) {
+            return self::FAILURE;
         }
 
-        $this->info("🔧 Generating {$type->value} policies for " . $resources->count() . " resources...\n");
+        $panel = Filament::getPanel($panelId);
+        Filament::setCurrentPanel($panel);
+
+        $resources = $this->getTargetResources($panel);
+
+        if ($resources->isEmpty()) {
+            warning('No resources found to generate policies for.');
+
+            return self::SUCCESS;
+        }
+
+        $path = $this->option('path') ?: app_path('Policies');
+        $force = (bool) $this->option('force');
+
+        $this->files->ensureDirectoryExists($path);
 
         $generated = 0;
         $skipped = 0;
 
         foreach ($resources as $resource) {
-            $modelClass = $resource->model;
+            $modelClass = $resource['model'] ?? null;
 
-            $options = [
-                'namespace' => $this->option('namespace') ?? 'App\\Policies',
-                'userModel' => UserModelResolver::resolve(),
-            ];
-
-            $policy = $generator->generate($modelClass, $type, $options);
-
-            if ($this->option('dry-run')) {
-                $this->line("Would generate: {$policy->path}");
-
+            if ($modelClass === null) {
                 continue;
             }
 
-            if (file_exists($policy->path) && ! $this->option('force')) {
-                $this->line('<fg=yellow>⏭</> Skipped: ' . class_basename($modelClass) . 'Policy (exists)');
+            $policyPath = $path . '/' . class_basename($modelClass) . 'Policy.php';
+
+            if ($this->files->exists($policyPath) && ! $force) {
                 $skipped++;
 
                 continue;
             }
 
-            if ($policy->write($this->option('force'))) {
-                $this->line('<fg=green>✓</> Generated: ' . class_basename($modelClass) . 'Policy');
-                $generated++;
-            } else {
-                $this->line('<fg=red>✗</> Failed: ' . class_basename($modelClass) . 'Policy');
-            }
+            $this->generatePolicy($modelClass, $resource['permissions'], $policyPath);
+            $generated++;
         }
 
         $this->newLine();
+        note('<fg=green;options=bold>Policy Generation Summary:</>');
+        info("Generated: {$generated} policies");
 
-        if ($this->option('dry-run')) {
-            $this->info('Dry run complete. Use without --dry-run to generate policies.');
-        } else {
-            $this->info("✅ Generated {$generated} policies" . ($skipped > 0 ? ", skipped {$skipped}" : ''));
+        if ($skipped > 0) {
+            info("Skipped: {$skipped} (already exist, use --force to overwrite)");
         }
 
-        return Command::SUCCESS;
+        info("Path: {$path}");
+
+        return self::SUCCESS;
     }
 
-    protected function getPolicyType(): PolicyType
+    protected function getPanelId(): ?string
     {
-        if ($type = $this->option('type')) {
-            return PolicyType::from($type);
+        $panelId = $this->option('panel');
+
+        if ($panelId !== null) {
+            return $panelId;
         }
 
-        if ($this->option('interactive')) {
-            $selection = select(
-                label: 'What type of policies do you want to generate?',
-                options: [
-                    'basic' => PolicyType::Basic->label(),
-                    'hierarchical' => PolicyType::Hierarchical->label(),
-                    'contextual' => PolicyType::Contextual->label(),
-                    'temporal' => PolicyType::Temporal->label(),
-                    'abac' => PolicyType::Abac->label(),
-                    'composite' => PolicyType::Composite->label(),
-                ],
-                default: 'basic'
-            );
+        $panels = collect(Filament::getPanels())->keys()->all();
 
-            return PolicyType::from($selection);
+        if (count($panels) === 0) {
+            warning('No Filament panels found.');
+
+            return null;
         }
 
-        return PolicyType::from(config('filament-authz.policies.default_type', 'basic'));
+        if (count($panels) === 1) {
+            return $panels[0];
+        }
+
+        return select(
+            label: 'Which panel?',
+            options: $panels,
+        );
     }
 
     /**
-     * @return Collection<int, DiscoveredResource>
+     * @return \Illuminate\Support\Collection<int, array<string, mixed>>
      */
-    protected function getResources(EntityDiscoveryService $discovery): Collection
+    protected function getTargetResources(\Filament\Panel $panel): \Illuminate\Support\Collection
     {
-        $options = [];
+        $resources = Authz::getResources($panel);
+        $targetNames = $this->option('resource');
 
-        if ($panel = $this->option('panel')) {
-            $options['panels'] = [$panel];
+        if (empty($targetNames)) {
+            return $resources;
         }
 
-        $resources = $discovery->discoverResources($options);
+        return $resources->filter(function (array $resource) use ($targetNames): bool {
+            $basename = class_basename($resource['class']);
 
-        // Filter by specific resources if provided
-        $specificResources = $this->option('resource');
-        if (! empty($specificResources)) {
-            $resources = $resources->filter(function ($resource) use ($specificResources) {
-                $basename = class_basename($resource->fqcn);
+            return in_array($basename, $targetNames, true)
+                || in_array(str_replace('Resource', '', $basename), $targetNames, true);
+        });
+    }
 
-                return in_array($basename, $specificResources)
-                    || in_array($resource->fqcn, $specificResources);
-            });
+    /**
+     * @param  class-string  $modelClass
+     * @param  array<string, string>  $permissions
+     */
+    protected function generatePolicy(string $modelClass, array $permissions, string $path): void
+    {
+        $modelBasename = class_basename($modelClass);
+        $userModel = $this->getUserModel();
+        $userBasename = class_basename($userModel);
+
+        $stub = $this->getPolicyStub();
+
+        $methods = $this->generatePolicyMethods($modelClass, $permissions);
+
+        $content = str_replace(
+            ['{{ namespace }}', '{{ class }}', '{{ userModel }}', '{{ userClass }}', '{{ model }}', '{{ modelVariable }}', '{{ methods }}'],
+            ['App\\Policies', $modelBasename . 'Policy', $userModel, $userBasename, $modelClass, Str::camel($modelBasename), $methods],
+            $stub
+        );
+
+        $this->files->put($path, $content);
+    }
+
+    /**
+     * @param  class-string  $modelClass
+     * @param  array<string, string>  $permissions
+     */
+    protected function generatePolicyMethods(string $modelClass, array $permissions): string
+    {
+        $modelBasename = class_basename($modelClass);
+        $modelVariable = Str::camel($modelBasename);
+        $userModel = class_basename($this->getUserModel());
+
+        $methods = [];
+
+        foreach ($permissions as $permission => $label) {
+            $action = Str::afterLast($permission, config('filament-authz.permissions.separator', '.'));
+            $methodName = Str::camel($action);
+
+            $needsModel = in_array($methodName, ['view', 'update', 'delete', 'restore', 'forceDelete', 'replicate'], true);
+
+            if ($needsModel) {
+                $methods[] = <<<PHP
+    /**
+     * Determine whether the user can {$action} the model.
+     */
+    public function {$methodName}({$userModel} \$user, {$modelBasename} \${$modelVariable}): bool
+    {
+        return \$user->can('{$permission}');
+    }
+PHP;
+            } else {
+                $methods[] = <<<PHP
+    /**
+     * Determine whether the user can {$action}.
+     */
+    public function {$methodName}({$userModel} \$user): bool
+    {
+        return \$user->can('{$permission}');
+    }
+PHP;
+            }
         }
 
-        // Filter by specific models if provided
-        $specificModels = $this->option('model');
-        if (! empty($specificModels)) {
-            $resources = $resources->filter(function ($resource) use ($specificModels) {
-                $modelBasename = class_basename($resource->model);
+        return implode("\n\n", $methods);
+    }
 
-                return in_array($modelBasename, $specificModels)
-                    || in_array($resource->model, $specificModels);
-            });
-        }
+    protected function getPolicyStub(): string
+    {
+        return <<<'STUB'
+<?php
 
-        return $resources;
+declare(strict_types=1);
+
+namespace {{ namespace }};
+
+use {{ userModel }};
+use {{ model }};
+use Illuminate\Auth\Access\HandlesAuthorization;
+
+class {{ class }}
+{
+    use HandlesAuthorization;
+
+{{ methods }}
+}
+STUB;
+    }
+
+    protected function getUserModel(): string
+    {
+        $guard = config('filament-authz.guards.0', 'web');
+        $provider = config("auth.guards.{$guard}.provider");
+
+        return config("auth.providers.{$provider}.model", 'App\\Models\\User');
     }
 }

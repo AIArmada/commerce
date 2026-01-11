@@ -15,10 +15,6 @@ use AIArmada\Products\Database\Factories\ProductFactory;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
-use AIArmada\Products\Events\ProductCreated;
-use AIArmada\Products\Events\ProductDeleted;
-use AIArmada\Products\Events\ProductStatusChanged;
-use AIArmada\Products\Events\ProductUpdated;
 use AIArmada\Products\Traits\HasAttributes;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Builder;
@@ -587,22 +583,25 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
 
     public function getStockQuantity(): int
     {
+        // Will integrate with inventory package
         return 0;
     }
 
     public function isInStock(): bool
     {
+        // Will integrate with inventory package
         return true;
     }
 
     public function hasStock(int $quantity): bool
     {
+        // Will integrate with inventory package
         return true;
     }
 
     public function tracksInventory(): bool
     {
-        return false;
+        return ! $this->isDigital();
     }
 
     // =========================================================================
@@ -645,74 +644,9 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
             $product->assignOwner($owner);
         });
 
-        static::updating(function (Product $product): void {
-            if (! (bool) config('products.features.owner.enabled', true)) {
-                return;
-            }
-
-            if ($product->isDirty(['owner_type', 'owner_id'])) {
-                throw new InvalidArgumentException('Invalid owner update: owner_type and owner_id are immutable.');
-            }
-
-            $hasOwnerType = $product->owner_type !== null;
-            $hasOwnerId = $product->owner_id !== null;
-
-            if ($hasOwnerType !== $hasOwnerId) {
-                throw new InvalidArgumentException('Invalid owner columns: owner_type and owner_id must be both set or both null.');
-            }
-
-            $owner = OwnerContext::resolve();
-
-            if ($owner === null) {
-                return;
-            }
-
-            if (! $hasOwnerType) {
-                throw new InvalidArgumentException('Cross-tenant write blocked: global products cannot be modified from an owner context.');
-            }
-
-            if (! $product->belongsToOwner($owner)) {
-                throw new InvalidArgumentException('Cross-tenant write blocked: product owner does not match the current owner context.');
-            }
-        });
-
-        static::created(function (Product $product): void {
-            ProductCreated::dispatch($product);
-        });
-
-        static::updated(function (Product $product): void {
-            ProductUpdated::dispatch($product);
-
-            if (! $product->wasChanged('status')) {
-                return;
-            }
-
-            $oldStatus = $product->getRawOriginal('status');
-            $newStatus = $product->status;
-
-            if (! is_string($oldStatus) || ! ($newStatus instanceof ProductStatus)) {
-                return;
-            }
-
-            ProductStatusChanged::dispatch(
-                $product,
-                ProductStatus::from($oldStatus),
-                $newStatus,
-            );
-        });
-
-        static::deleted(function (Product $product): void {
-            ProductDeleted::dispatch($product);
-        });
-
         static::deleting(function (Product $product): void {
-            $product->options()->chunk(100, function (\Illuminate\Support\Collection $options): void {
-                $options->each(fn (Option $option) => $option->delete());
-            });
-
-            $product->variants()->chunk(100, function (\Illuminate\Support\Collection $variants): void {
-                $variants->each(fn (Variant $variant) => $variant->delete());
-            });
+            $product->options()->delete();
+            $product->variants()->delete();
             $product->categories()->detach();
             $product->collections()->detach();
         });
