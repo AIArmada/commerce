@@ -38,9 +38,9 @@ return new class extends Migration {
             $table->addColumn($jsonType, 'metadata')->nullable();
             $table->timestamps();
 
-            $table->index(['status', 'urgency'], 'inv_reorder_status_urgency_idx');
-            $table->index(['inventoryable_type', 'inventoryable_id', 'status'], 'inv_reorder_inventoryable_idx');
-            $table->index('expected_stockout_date', 'inv_reorder_stockout_date_idx');
+            $table->index(['status', 'urgency']);
+            $table->index(['inventoryable_type', 'inventoryable_id', 'status'], 'inv_reorder_invable_status_idx');
+            $table->index('expected_stockout_date');
         });
     }
 

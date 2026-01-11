@@ -217,13 +217,22 @@
                         <div class="space-y-3">
                             <div class="flex justify-between text-gray-600">
                                 <span>Subtotal</span>
-                                <span>RM {{ number_format($subtotal / 100, 2) }}</span>
+                                <span>RM {{ number_format($subtotalWithoutConditions / 100, 2) }}</span>
                             </div>
 
                             @foreach($conditions as $condition)
                             @php $conditionValue = (float) $condition->getValue(); @endphp
                             <div class="flex justify-between {{ $conditionValue < 0 ? 'text-green-600' : 'text-gray-600' }}">
-                                <span>{{ $condition->getName() }}</span>
+                                @php
+                                    $conditionName = (string) $condition->getName();
+
+                                    $displayConditionName = match (true) {
+                                        str_starts_with($conditionName, 'voucher_') => 'Voucher Discount',
+                                        str_starts_with($conditionName, 'affiliate_') => 'Affiliate Discount',
+                                        default => $conditionName,
+                                    };
+                                @endphp
+                                <span>{{ $displayConditionName }}</span>
                                 <span>
                                     @if($conditionValue < 0)
                                         -RM {{ number_format(abs($conditionValue) / 100, 2) }}

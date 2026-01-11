@@ -72,8 +72,8 @@ class EntityDiscoveryService
         $resources = $this->collectResources($options);
 
         $transformed = $resources
-            ->map(fn (string $resource, string $panel) => $this->transformResource($resource, $panel))
-            ->filter(fn (?DiscoveredResource $resource) => $resource !== null && $this->shouldInclude($resource, $options))
+            ->map(fn(string $panel, string $resource) => $this->transformResource($resource, $panel))
+            ->filter(fn(?DiscoveredResource $resource) => $resource !== null && $this->shouldInclude($resource, $options))
             ->values();
 
         if ($this->shouldUseCache()) {
@@ -101,8 +101,8 @@ class EntityDiscoveryService
         $pages = $this->collectPages($options);
 
         $transformed = $pages
-            ->map(fn (string $page, string $panel) => $this->transformPage($page, $panel))
-            ->filter(fn (?DiscoveredPage $page) => $page !== null && $this->shouldIncludePage($page, $options))
+            ->map(fn(string $panel, string $page) => $this->transformPage($page, $panel))
+            ->filter(fn(?DiscoveredPage $page) => $page !== null && $this->shouldIncludePage($page, $options))
             ->values();
 
         if ($this->shouldUseCache()) {
@@ -130,8 +130,8 @@ class EntityDiscoveryService
         $widgets = $this->collectWidgets($options);
 
         $transformed = $widgets
-            ->map(fn (string $widget, string $panel) => $this->transformWidget($widget, $panel))
-            ->filter(fn (?DiscoveredWidget $widget) => $widget !== null && $this->shouldIncludeWidget($widget, $options))
+            ->map(fn(string $panel, string $widget) => $this->transformWidget($widget, $panel))
+            ->filter(fn(?DiscoveredWidget $widget) => $widget !== null && $this->shouldIncludeWidget($widget, $options))
             ->values();
 
         if ($this->shouldUseCache()) {
@@ -244,7 +244,7 @@ class EntityDiscoveryService
             }
         }
 
-        return $resources->unique(fn ($panel, $resource) => $resource);
+        return $resources->unique(fn($panel, $resource) => $resource);
     }
 
     /**
@@ -279,7 +279,7 @@ class EntityDiscoveryService
             }
         }
 
-        return $pages->unique(fn ($panel, $page) => $page);
+        return $pages->unique(fn($panel, $page) => $page);
     }
 
     /**
@@ -314,7 +314,7 @@ class EntityDiscoveryService
             }
         }
 
-        return $widgets->unique(fn ($panel, $widget) => $widget);
+        return $widgets->unique(fn($panel, $widget) => $widget);
     }
 
     protected function transformResource(string $resourceClass, string $panel): ?DiscoveredResource
@@ -361,7 +361,7 @@ class EntityDiscoveryService
         $includeNamespaces = config('filament-authz.discovery.namespaces.include', []);
         $excludeNamespaces = config('filament-authz.discovery.namespaces.exclude', []);
 
-        if (! empty($includeNamespaces)) {
+        if (!empty($includeNamespaces)) {
             $included = false;
             foreach ($includeNamespaces as $pattern) {
                 if (Str::is($pattern, $resource->fqcn)) {
@@ -370,7 +370,7 @@ class EntityDiscoveryService
                     break;
                 }
             }
-            if (! $included) {
+            if (!$included) {
                 return false;
             }
         }
@@ -431,7 +431,7 @@ class EntityDiscoveryService
             $options['exclude'] ?? config('filament-authz.discovery.exclude', [])
         );
 
-        return ! in_array($widget->fqcn, $excludeList);
+        return !in_array($widget->fqcn, $excludeList);
     }
 
     /**

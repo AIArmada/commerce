@@ -171,25 +171,87 @@ class Category extends Model implements HasMedia
             return;
         }
 
+        $includeGlobal = (bool) config('products.features.owner.include_global', false);
+
         $query->withoutOwnerScope();
 
-        if ($this->owner_type === null || $this->owner_id === null) {
-            $query->whereNull('owner_type')->whereNull('owner_id');
+        $productTable = $query->getModel()->getTable();
+        $productOwnerTypeColumn = $productTable . '.owner_type';
+        $productOwnerIdColumn = $productTable . '.owner_id';
+
+        if ($this->getKey() !== null) {
+            if ($this->owner_type === null || $this->owner_id === null) {
+                $query->whereNull($productOwnerTypeColumn)->whereNull($productOwnerIdColumn);
+
+                return;
+            }
+
+            $ownerType = $this->owner_type;
+            $ownerId = $this->owner_id;
+
+            $query->where(function (Builder $builder) use (
+                $productOwnerTypeColumn,
+                $productOwnerIdColumn,
+                $ownerType,
+                $ownerId,
+                $includeGlobal,
+            ): void {
+                $builder->where($productOwnerTypeColumn, $ownerType)
+                    ->where($productOwnerIdColumn, $ownerId);
+
+                if ($includeGlobal) {
+                    $builder->orWhere(function (Builder $inner) use ($productOwnerTypeColumn, $productOwnerIdColumn): void {
+                        $inner->whereNull($productOwnerTypeColumn)->whereNull($productOwnerIdColumn);
+                    });
+                }
+            });
 
             return;
         }
 
-        $ownerType = $this->owner_type;
-        $ownerId = $this->owner_id;
-        $includeGlobal = (bool) config('products.features.owner.include_global', false);
+        // IMPORTANT:
+        // The relationship must work when the Category model is not hydrated (e.g. in `withCount()`),
+        // so we correlate the product owner columns to the *outer* category query columns.
+        $categoryOwnerTypeColumn = $this->qualifyColumn('owner_type');
+        $categoryOwnerIdColumn = $this->qualifyColumn('owner_id');
 
-        $query->where(function (Builder $builder) use ($ownerType, $ownerId, $includeGlobal): void {
-            $builder->where('owner_type', $ownerType)
-                ->where('owner_id', $ownerId);
+        $query->where(function (Builder $builder) use (
+            $categoryOwnerTypeColumn,
+            $categoryOwnerIdColumn,
+            $productOwnerTypeColumn,
+            $productOwnerIdColumn,
+            $includeGlobal,
+        ): void {
+            // Global category: only global products.
+            $builder->where(function (Builder $inner) use (
+                $categoryOwnerTypeColumn,
+                $categoryOwnerIdColumn,
+                $productOwnerTypeColumn,
+                $productOwnerIdColumn,
+            ): void {
+                $inner->whereNull($categoryOwnerTypeColumn)
+                    ->whereNull($categoryOwnerIdColumn)
+                    ->whereNull($productOwnerTypeColumn)
+                    ->whereNull($productOwnerIdColumn);
+            });
+
+            // Owned category: products matching the category owner.
+            $builder->orWhere(function (Builder $inner) use (
+                $categoryOwnerTypeColumn,
+                $categoryOwnerIdColumn,
+                $productOwnerTypeColumn,
+                $productOwnerIdColumn,
+            ): void {
+                $inner->whereNotNull($categoryOwnerTypeColumn)
+                    ->whereNotNull($categoryOwnerIdColumn)
+                    ->whereColumn($productOwnerTypeColumn, $categoryOwnerTypeColumn)
+                    ->whereColumn($productOwnerIdColumn, $categoryOwnerIdColumn);
+            });
 
             if ($includeGlobal) {
-                $builder->orWhere(function (Builder $inner): void {
-                    $inner->whereNull('owner_type')->whereNull('owner_id');
+                $builder->orWhere(function (Builder $inner) use ($productOwnerTypeColumn, $productOwnerIdColumn): void {
+                    $inner->whereNull($productOwnerTypeColumn)
+                        ->whereNull($productOwnerIdColumn);
                 });
             }
         });

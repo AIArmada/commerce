@@ -31,5 +31,9 @@
         <env name="PULSE_ENABLED" value="false"/>
         <env name="TELESCOPE_ENABLED" value="false"/>
         <env name="NIGHTWATCH_ENABLED" value="false"/>
+
+        <!-- CHIP (stub credentials for tests; HTTP calls are mocked) -->
+        <env name="CHIP_COLLECT_API_KEY" value="test_api_key"/>
+        <env name="CHIP_COLLECT_BRAND_ID" value="test_brand_id"/>
     </php>
 </phpunit>

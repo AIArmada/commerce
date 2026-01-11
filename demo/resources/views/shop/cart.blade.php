@@ -1,4 +1,4 @@
-` <x-shop-layout title="Shopping Cart">
+<x-shop-layout title="Shopping Cart">
     <div class="max-w-7xl mx-auto px-4 py-8 sm:px-6 lg:px-8">
         <h1 class="text-3xl font-bold text-gray-900 mb-8">Shopping Cart</h1>
 

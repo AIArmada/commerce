@@ -84,7 +84,17 @@ trait HasCommerceAudit // @phpstan-ignore trait.unused
         }
 
         // Add commerce-specific metadata
-        $data['tags'] = $this->getAuditTags();
+        $existingTags = $data['tags'] ?? null;
+
+        $tags = [];
+        if (is_string($existingTags) && $existingTags !== '') {
+            $tags = array_filter(array_map('trim', explode(',', $existingTags)));
+        }
+
+        $tags = array_merge($tags, $this->getAuditTags());
+
+        $tags = array_values(array_unique(array_filter($tags)));
+        $data['tags'] = $tags === [] ? null : implode(',', $tags);
 
         return $data;
     }
