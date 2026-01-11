@@ -4,7 +4,11 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use AIArmada\CashierChip\Cashier;
 use AIArmada\Chip\Events\PurchasePaid;
+use AIArmada\Chip\Models\Client;
+use AIArmada\Chip\Models\Payment;
+use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
@@ -23,9 +27,18 @@ use AIArmada\Inventory\Models\InventoryStandardCost;
 use AIArmada\Inventory\Models\InventorySupplierLeadtime;
 use AIArmada\Inventory\Models\InventoryValuationSnapshot;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Docs\Models\Doc;
+use AIArmada\FilamentAuthz\Models\PermissionRequest;
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Pricing\Models\Promotion;
+use AIArmada\Pricing\Models\Price;
+use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use AIArmada\Customers\Models\Customer;
+use AIArmada\Tax\Models\TaxRate;
+use AIArmada\Tax\Models\TaxZone;
 use App\Listeners\HandleChipPaymentSuccess;
 use App\Models\User;
 use Filament\Support\Facades\FilamentTimezone;
@@ -42,8 +55,19 @@ final class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         config()->set('commerce-support.owner.team_type', User::class);
+        config()->set('filament-cart.owner.enabled', true);
         config()->set('pricing.features.owner.enabled', true);
         config()->set('tax.features.owner.enabled', true);
+        config()->set('vouchers.owner.enabled', true);
+        config()->set('jnt.owner.enabled', true);
+        config()->set('affiliates.owner.enabled', true);
+        config()->set('filament-authz.owner.enabled', true);
+        config()->set('docs.owner.enabled', true);
+
+        // Demo-only: avoid requiring puppeteer (Browsershot) during simulated webhooks.
+        config()->set('chip.integrations.docs.paid_doc_type', null);
+
+        Cashier::useCustomerModel(User::class);
 
         $this->app->bind(OwnerResolverInterface::class, function (): OwnerResolverInterface {
             return new class implements OwnerResolverInterface
@@ -81,10 +105,22 @@ final class AppServiceProvider extends ServiceProvider
     {
         Relation::enforceMorphMap([
             'order' => Order::class,
+            'chip_client' => Client::class,
+            'chip_purchase' => Purchase::class,
+            'chip_payment' => Payment::class,
+            'price' => Price::class,
+            'price_list' => PriceList::class,
+            'promotion' => Promotion::class,
+            'affiliate' => Affiliate::class,
+            'affiliate_fraud_signal' => AffiliateFraudSignal::class,
+            'permission_request' => PermissionRequest::class,
+            'doc' => Doc::class,
             'product' => Product::class,
             'category' => Category::class,
             'user' => User::class,
             'customer' => Customer::class,
+            'tax_zone' => TaxZone::class,
+            'tax_rate' => TaxRate::class,
             'inventory_allocation' => InventoryAllocation::class,
             'inventory_backorder' => InventoryBackorder::class,
             'inventory_batch' => InventoryBatch::class,

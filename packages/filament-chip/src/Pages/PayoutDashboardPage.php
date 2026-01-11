@@ -43,6 +43,8 @@ class PayoutDashboardPage extends Page
 
     protected static ?int $navigationSort = 20;
 
+    protected string $view = 'filament-chip::pages.payout-dashboard';
+
     public static function getNavigationGroup(): ?string
     {
         return config('filament-chip.navigation.group', 'Payments');
@@ -93,14 +95,6 @@ class PayoutDashboardPage extends Page
     public function updatedPeriod(): void
     {
         $this->loadMetrics();
-    }
-
-    public function render(): View
-    {
-        return view('filament-chip::pages.payout-dashboard', [
-            'metrics' => $this->metrics,
-            'period' => $this->period,
-        ]);
     }
 
     /**

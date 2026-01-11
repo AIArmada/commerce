@@ -11,7 +11,7 @@ use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
-use Illuminate\Support\Collection;
+use Illuminate\Support\Str;
 
 class PermissionMatrixPage extends Page
 {
@@ -20,16 +20,17 @@ class PermissionMatrixPage extends Page
     /** @var array<string, bool> */
     public array $permissions = [];
 
-    /** @var Collection<int, Permission> */
-    public Collection $allPermissions;
+    /**
+     * @var array<string, string>
+     */
+    public array $roleOptions = [];
 
-    /** @var Collection<int, Role> */
-    public Collection $allRoles;
+    /**
+     * @var array<string, array<int, array{id: string, name: string, label: string}>>
+     */
+    public array $permissionGroups = [];
 
-    /** @var array<string, array<string, Permission>> */
-    public array $groupedPermissions = [];
-
-    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-table-cells';
+    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-table-cells';
 
     protected string $view = 'filament-authz::pages.permission-matrix';
 
@@ -46,12 +47,16 @@ class PermissionMatrixPage extends Page
 
     public function mount(): void
     {
-        $this->allPermissions = Permission::all();
-        $this->allRoles = Role::all();
-        $this->groupPermissions();
+        $this->roleOptions = Role::query()
+            ->orderBy('name')
+            ->pluck('name', 'id')
+            ->mapWithKeys(fn(string $name, mixed $id): array => [(string) $id => $name])
+            ->all();
+
+        $this->permissionGroups = $this->buildPermissionGroups();
     }
 
-    public function selectRole(string | int $roleId): void
+    public function selectRole(string|int $roleId): void
     {
         $this->selectedRole = (string) $roleId;
         $role = Role::find($roleId);
@@ -59,21 +64,67 @@ class PermissionMatrixPage extends Page
         if ($role !== null) {
             $rolePermissions = $role->permissions
                 ->pluck('id')
-                ->map(fn (mixed $id): string => (string) $id)
+                ->map(fn(mixed $id): string => (string) $id)
                 ->all();
             $this->permissions = [];
 
-            foreach ($this->allPermissions as $permission) {
-                $permissionId = (string) $permission->id;
-                $this->permissions[$permissionId] = in_array($permissionId, $rolePermissions, true);
+            foreach ($this->permissionGroups as $group) {
+                foreach ($group as $permissionRow) {
+                    $permissionId = $permissionRow['id'];
+                    $this->permissions[$permissionId] = in_array($permissionId, $rolePermissions, true);
+                }
+            }
+
+            return;
+        }
+
+        $this->permissions = [];
+    }
+
+    public function togglePermission(string|int $permissionId): void
+    {
+        $permissionId = (string) $permissionId;
+        $this->permissions[$permissionId] = !($this->permissions[$permissionId] ?? false);
+    }
+
+    public function selectAllPermissions(): void
+    {
+        foreach ($this->permissionGroups as $group) {
+            foreach ($group as $permissionRow) {
+                $this->permissions[$permissionRow['id']] = true;
             }
         }
     }
 
-    public function togglePermission(string | int $permissionId): void
+    public function deselectAllPermissions(): void
     {
-        $permissionId = (string) $permissionId;
-        $this->permissions[$permissionId] = ! ($this->permissions[$permissionId] ?? false);
+        foreach ($this->permissionGroups as $group) {
+            foreach ($group as $permissionRow) {
+                $this->permissions[$permissionRow['id']] = false;
+            }
+        }
+    }
+
+    public function selectGroupPermissions(string $groupName): void
+    {
+        if (!isset($this->permissionGroups[$groupName])) {
+            return;
+        }
+
+        foreach ($this->permissionGroups[$groupName] as $permissionRow) {
+            $this->permissions[$permissionRow['id']] = true;
+        }
+    }
+
+    public function deselectGroupPermissions(string $groupName): void
+    {
+        if (!isset($this->permissionGroups[$groupName])) {
+            return;
+        }
+
+        foreach ($this->permissionGroups[$groupName] as $permissionRow) {
+            $this->permissions[$permissionRow['id']] = false;
+        }
     }
 
     public function savePermissions(): void
@@ -89,13 +140,13 @@ class PermissionMatrixPage extends Page
         }
 
         $enabledPermissions = collect($this->permissions)
-            ->filter(fn (bool $enabled): bool => $enabled)
+            ->filter(fn(bool $enabled): bool => $enabled)
             ->keys()
             ->toArray();
 
         $role->syncPermissions($enabledPermissions);
 
-        if (! app()->runningInConsole()) {
+        if (!app()->runningInConsole()) {
             Notification::make()
                 ->title('Permissions Updated')
                 ->body("Permissions for role '{$role->name}' have been updated.")
@@ -110,7 +161,7 @@ class PermissionMatrixPage extends Page
             return null;
         }
 
-        return Role::find($this->selectedRole)?->name;
+        return $this->roleOptions[$this->selectedRole] ?? null;
     }
 
     /**
@@ -122,17 +173,17 @@ class PermissionMatrixPage extends Page
     {
         $matrix = [];
 
-        foreach ($this->groupedPermissions as $group => $permissions) {
+        foreach ($this->permissionGroups as $group => $permissions) {
             $matrix[$group] = [];
 
-            foreach ($permissions as $permission) {
-                $permissionId = (string) $permission->id;
+            foreach ($permissions as $permissionRow) {
+                $permissionId = $permissionRow['id'];
                 $has = $this->permissions[$permissionId] ?? false;
                 $source = $has ? 'direct' : 'none';
 
-                $matrix[$group][$permission->name] = [
+                $matrix[$group][$permissionRow['name']] = [
                     'id' => $permissionId,
-                    'name' => $permission->name,
+                    'name' => $permissionRow['name'],
                     'has' => $has,
                     'source' => $source,
                 ];
@@ -140,6 +191,96 @@ class PermissionMatrixPage extends Page
         }
 
         return $matrix;
+    }
+
+    /**
+     * Get the permission matrix data categorized by type (resources, pages, widgets).
+     *
+     * @return array{resources: array<string, array<string, array{id: string, name: string, has: bool}>>, pages: array<string, array{id: string, name: string, has: bool}>, widgets: array<string, array{id: string, name: string, has: bool}>}
+     */
+    public function getMatrixDataByType(): array
+    {
+        $matrixData = $this->getMatrixData();
+
+        $resources = [];
+        $pages = [];
+        $widgets = [];
+
+        foreach ($matrixData as $group => $permissions) {
+            if ($group === 'page') {
+                // All page permissions go into pages
+                foreach ($permissions as $permissionName => $permissionData) {
+                    $pages[$permissionName] = $permissionData;
+                }
+            } elseif ($group === 'widget') {
+                // All widget permissions go into widgets
+                foreach ($permissions as $permissionName => $permissionData) {
+                    $widgets[$permissionName] = $permissionData;
+                }
+            } else {
+                // Everything else is a resource permission
+                if (!isset($resources[$group])) {
+                    $resources[$group] = [];
+                }
+                foreach ($permissions as $permissionName => $permissionData) {
+                    $resources[$group][$permissionName] = $permissionData;
+                }
+            }
+        }
+
+        return [
+            'resources' => $resources,
+            'pages' => $pages,
+            'widgets' => $widgets,
+        ];
+    }
+
+    /**
+     * Select all permissions of a specific type.
+     */
+    public function selectTypePermissions(string $type): void
+    {
+        $data = $this->getMatrixDataByType();
+
+        if ($type === 'pages') {
+            foreach ($data['pages'] as $permissionData) {
+                $this->permissions[$permissionData['id']] = true;
+            }
+        } elseif ($type === 'widgets') {
+            foreach ($data['widgets'] as $permissionData) {
+                $this->permissions[$permissionData['id']] = true;
+            }
+        } elseif ($type === 'resources') {
+            foreach ($data['resources'] as $group) {
+                foreach ($group as $permissionData) {
+                    $this->permissions[$permissionData['id']] = true;
+                }
+            }
+        }
+    }
+
+    /**
+     * Deselect all permissions of a specific type.
+     */
+    public function deselectTypePermissions(string $type): void
+    {
+        $data = $this->getMatrixDataByType();
+
+        if ($type === 'pages') {
+            foreach ($data['pages'] as $permissionData) {
+                $this->permissions[$permissionData['id']] = false;
+            }
+        } elseif ($type === 'widgets') {
+            foreach ($data['widgets'] as $permissionData) {
+                $this->permissions[$permissionData['id']] = false;
+            }
+        } elseif ($type === 'resources') {
+            foreach ($data['resources'] as $group) {
+                foreach ($group as $permissionData) {
+                    $this->permissions[$permissionData['id']] = false;
+                }
+            }
+        }
     }
 
     protected function getHeaderActions(): array
@@ -150,7 +291,7 @@ class PermissionMatrixPage extends Page
                 ->form([
                     Select::make('role')
                         ->label('Role')
-                        ->options($this->allRoles->pluck('name', 'id'))
+                        ->options($this->roleOptions)
                         ->required()
                         ->searchable(),
                 ])
@@ -159,21 +300,41 @@ class PermissionMatrixPage extends Page
                 }),
             Action::make('saveChanges')
                 ->label('Save Changes')
-                ->action(fn () => $this->savePermissions())
-                ->visible(fn () => $this->selectedRole !== null)
+                ->action(fn() => $this->savePermissions())
+                ->visible(fn() => $this->selectedRole !== null)
                 ->color('primary'),
         ];
     }
 
-    protected function groupPermissions(): void
+    /**
+     * @return array<string, array<int, array{id: string, name: string, label: string}>>
+     */
+    private function buildPermissionGroups(): array
     {
-        $this->groupedPermissions = $this->allPermissions
-            ->groupBy(function (Permission $permission): string {
-                $parts = explode('.', $permission->name);
+        /** @var array<string, array<int, array{id: string, name: string, label: string}>> $groups */
+        $groups = [];
 
-                return $parts[0] ?? 'other';
-            })
-            ->map(fn (Collection $permissions): array => $permissions->keyBy('name')->all())
-            ->all();
+        $permissions = Permission::query()
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        foreach ($permissions as $permission) {
+            $name = (string) $permission->name;
+            $group = Str::before($name, '.');
+            $group = $group !== '' ? $group : 'other';
+
+            $label = Str::after($name, '.');
+            $label = $label !== '' && $label !== $name ? $label : $name;
+
+            $groups[$group][] = [
+                'id' => (string) $permission->id,
+                'name' => $name,
+                'label' => $label,
+            ];
+        }
+
+        ksort($groups);
+
+        return $groups;
     }
 }

@@ -59,6 +59,8 @@ return new class extends Migration
      */
     private function addPostgreSQLIndexes(string $tableName): void
     {
+        $jsonType = (string) config('cart.database.json_column_type', commerce_json_column_type('cart', 'json'));
+
         // Covering index for primary lookup (avoids table access)
         DB::statement("
             CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_lookup_covering
@@ -66,17 +68,10 @@ return new class extends Migration
             INCLUDE (id, version, updated_at, expires_at)
         ");
 
-        // Active-cart indexes (PostgreSQL disallows volatile functions like NOW() in index predicates)
+        // Index to support active cart lookups (PostgreSQL requires immutable predicates for partial indexes)
         DB::statement("
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_active_no_expiry
-            ON \"{$tableName}\" (identifier, instance)
-            WHERE expires_at IS NULL
-        ");
-
-        DB::statement("
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_active_with_expiry
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_active
             ON \"{$tableName}\" (identifier, instance, expires_at)
-            WHERE expires_at IS NOT NULL
         ");
 
         // Index for cleanup job (expired carts)
@@ -86,12 +81,22 @@ return new class extends Migration
             WHERE expires_at IS NOT NULL
         ");
 
-        // Index for abandonment analytics (non-empty carts)
-        DB::statement("
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_analytics
-            ON \"{$tableName}\" (updated_at, instance)
-            WHERE items IS NOT NULL AND items::jsonb != '[]'::jsonb
-        ");
+        // Index for abandonment analytics
+        if ($jsonType === 'jsonb') {
+            // jsonb supports equality operators
+            DB::statement("
+                CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_analytics
+                ON \"{$tableName}\" (updated_at, instance)
+                WHERE items IS NOT NULL AND items != '[]'::jsonb
+            ");
+        } else {
+            // json does not support equality operators in PostgreSQL
+            DB::statement("
+                CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_analytics
+                ON \"{$tableName}\" (updated_at, instance)
+                WHERE items IS NOT NULL
+            ");
+        }
     }
 
     /**

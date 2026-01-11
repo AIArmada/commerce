@@ -643,8 +643,10 @@ final class ShowcaseSeeder extends Seeder
             return $this->tenantCodeSuffix;
         }
 
+        // UUIDv7 values share a timestamp prefix; using the *start* of the ID will collide
+        // for records created around the same time. Use the tail of the ID for uniqueness.
         $normalizedOwnerId = str_replace('-', '', (string) $owner->getKey());
-        $this->tenantCodeSuffix = Str::upper(Str::substr($normalizedOwnerId, 0, 6));
+        $this->tenantCodeSuffix = Str::upper(Str::substr($normalizedOwnerId, -6));
 
         return $this->tenantCodeSuffix;
     }

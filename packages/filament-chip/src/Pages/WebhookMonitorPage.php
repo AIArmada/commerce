@@ -41,6 +41,8 @@ class WebhookMonitorPage extends Page implements HasTable
 
     protected static ?int $navigationSort = 100;
 
+    protected string $view = 'filament-chip::pages.webhook-monitor';
+
     public static function getNavigationGroup(): ?string
     {
         return config('filament-chip.navigation.group', 'Payments');
@@ -122,15 +124,6 @@ class WebhookMonitorPage extends Page implements HasTable
             ])
             ->defaultSort('created_at', 'desc')
             ->poll('10s');
-    }
-
-    public function render(): View
-    {
-        return view('filament-chip::pages.webhook-monitor', [
-            'health' => $this->health,
-            'eventDistribution' => $this->eventDistribution,
-            'failureBreakdown' => $this->failureBreakdown,
-        ]);
     }
 
     protected function getHeaderActions(): array

@@ -13,10 +13,10 @@ use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Illuminate\Contracts\View\View;
 use Throwable;
@@ -43,6 +43,8 @@ class BulkPayoutPage extends Page implements HasForms
 
     protected static ?int $navigationSort = 51;
 
+    protected string $view = 'filament-chip::pages.bulk-payout';
+
     public static function getNavigationGroup(): ?string
     {
         return config('filament-chip.navigation.group', 'Payments');
@@ -53,7 +55,7 @@ class BulkPayoutPage extends Page implements HasForms
         return true;
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $form): Schema
     {
         return $form
             ->schema([
@@ -200,14 +202,6 @@ class BulkPayoutPage extends Page implements HasForms
     {
         $this->results = [];
         $this->hasProcessed = false;
-    }
-
-    public function render(): View
-    {
-        return view('filament-chip::pages.bulk-payout', [
-            'results' => $this->results,
-            'hasProcessed' => $this->hasProcessed,
-        ]);
     }
 
     /**

@@ -71,22 +71,30 @@ describe('PermissionMatrixPage mount', function (): void {
         $page = new PermissionMatrixPage;
         $page->mount();
 
-        expect($page->allPermissions)->toHaveCount(6)
-            ->and($page->allRoles)->toHaveCount(2);
+        expect($page->permissionGroups)->toHaveCount(3)
+            ->and($page->roleOptions)->toHaveCount(2);
     });
 
     it('groups permissions by prefix', function (): void {
         $page = new PermissionMatrixPage;
         $page->mount();
 
-        expect($page->groupedPermissions)->toHaveKey('users')
+        expect($page->permissionGroups)->toHaveKey('users')
             ->toHaveKey('orders')
             ->toHaveKey('products');
 
-        expect($page->groupedPermissions['users'])->toHaveCount(3);
-        expect($page->groupedPermissions['orders'])->toHaveCount(2);
-        expect($page->groupedPermissions['products'])->toHaveCount(1);
+        expect($page->permissionGroups['users'])->toHaveCount(3);
+        expect($page->permissionGroups['orders'])->toHaveCount(2);
+        expect($page->permissionGroups['products'])->toHaveCount(1);
     });
+    
+        it('keeps Livewire state JSON-serializable', function (): void {
+            $page = new PermissionMatrixPage();
+            $page->mount();
+
+            expect(json_encode($page->roleOptions))->not()->toBeFalse();
+            expect(json_encode($page->permissionGroups))->not()->toBeFalse();
+        });
 });
 
 describe('PermissionMatrixPage selectRole', function (): void {
@@ -216,10 +224,10 @@ describe('PermissionMatrixPage getMatrixData', function (): void {
         $page = new PermissionMatrixPage;
         $page->mount();
 
-        expect($page->groupedPermissions)->toBeArray()
-            ->and($page->groupedPermissions)->toHaveKey('users')
-            ->and($page->groupedPermissions)->toHaveKey('orders')
-            ->and($page->groupedPermissions)->toHaveKey('products');
+        expect($page->permissionGroups)->toBeArray()
+            ->and($page->permissionGroups)->toHaveKey('users')
+            ->and($page->permissionGroups)->toHaveKey('orders')
+            ->and($page->permissionGroups)->toHaveKey('products');
     });
 });
 

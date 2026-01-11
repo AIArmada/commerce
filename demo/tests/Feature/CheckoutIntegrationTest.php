@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Facades\Chip;
+use AIArmada\Chip\Builders\PurchaseBuilder;
+use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
 use AIArmada\Orders\Models\Order;
@@ -15,9 +17,16 @@ use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(\Tests\TestCase::class, RefreshDatabase::class);
+uses(RefreshDatabase::class);
 
 test('checkout uses pricing + tax + customers and remains owner-isolated', function (): void {
+    config()->set('audit.enabled', true);
+    config()->set('audit.console', true);
+    config()->set('orders.audit.enabled', true);
+
+    config()->set('chip.collect.api_key', 'test-api-key');
+    config()->set('chip.collect.brand_id', 'test-brand-id');
+
     /** @var \App\Models\User $ownerA */
     $ownerA = \App\Models\User::factory()->create();
 
@@ -44,7 +53,7 @@ test('checkout uses pricing + tax + customers and remains owner-isolated', funct
         ]);
     });
 
-    OwnerContext::withOwner($ownerA, function () use ($productA): void {
+    OwnerContext::withOwner($ownerA, function () use ($ownerA, $productA): void {
         PriceList::create([
             'name' => 'Retail',
             'slug' => 'retail',
@@ -64,6 +73,8 @@ test('checkout uses pricing + tax + customers and remains owner-isolated', funct
         ]);
 
         $zone = TaxZone::create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
             'name' => 'Malaysia',
             'code' => 'MY',
             'countries' => ['MY'],
@@ -73,6 +84,8 @@ test('checkout uses pricing + tax + customers and remains owner-isolated', funct
         ]);
 
         TaxRate::create([
+            'owner_type' => $ownerA->getMorphClass(),
+            'owner_id' => $ownerA->getKey(),
             'zone_id' => $zone->id,
             'tax_class' => 'standard',
             'name' => 'SST',
@@ -81,68 +94,21 @@ test('checkout uses pricing + tax + customers and remains owner-isolated', funct
         ]);
     });
 
-    Chip::shouldReceive('purchase')->andReturn(new class
-    {
-        public function currency(string $currency): static
-        {
-            return $this;
-        }
+    $purchase = PurchaseData::from([
+        'id' => (string) \Illuminate\Support\Str::uuid(),
+        'checkout_url' => 'https://chip.test/checkout',
+        'purchase' => [
+            'total' => 0,
+            'currency' => 'MYR',
+            'products' => [],
+        ],
+        'client' => [],
+    ]);
 
-        public function reference(string $reference): static
-        {
-            return $this;
-        }
+    $chipCollectService = \Mockery::mock(ChipCollectService::class);
+    $chipCollectService->shouldReceive('createPurchase')->andReturn($purchase);
 
-        public function customer(string $email, string $fullName, string $phone, string $country): static
-        {
-            return $this;
-        }
-
-        public function billingAddress(string $streetAddress, string $city, string $zipCode, string $state, string $country): static
-        {
-            return $this;
-        }
-
-        public function addProduct(string $name, int $price, int $quantity): static
-        {
-            return $this;
-        }
-
-        public function discount(int $amount): static
-        {
-            return $this;
-        }
-
-        public function redirects(string $successUrl, string $failureUrl, string $cancelUrl): static
-        {
-            return $this;
-        }
-
-        public function webhook(string $url): static
-        {
-            return $this;
-        }
-
-        /** @param array<string, mixed> $metadata */
-        public function metadata(array $metadata): static
-        {
-            return $this;
-        }
-
-        public function create(): PurchaseData
-        {
-            return PurchaseData::from([
-                'id' => (string) \Illuminate\Support\Str::uuid(),
-                'checkout_url' => 'https://chip.test/checkout',
-                'purchase' => [
-                    'total' => 0,
-                    'currency' => 'MYR',
-                    'products' => [],
-                ],
-                'client' => [],
-            ]);
-        }
-    });
+    Chip::shouldReceive('purchase')->andReturn(new PurchaseBuilder($chipCollectService));
 
     /** @var \Tests\TestCase $this */
     $this->actingAs($ownerA);
@@ -176,6 +142,17 @@ test('checkout uses pricing + tax + customers and remains owner-isolated', funct
 
     $orderA = OwnerContext::withOwner($ownerA, fn () => Order::query()->latest('created_at')->first());
     expect($orderA)->not()->toBeNull();
+
+    $audit = \OwenIt\Auditing\Models\Audit::query()
+        ->where('auditable_type', $orderA->getMorphClass())
+        ->where('auditable_id', $orderA->id)
+        ->latest('id')
+        ->first();
+    expect($audit)->not()->toBeNull();
+
+    $tags = array_filter(array_map('trim', explode(',', (string) $audit->tags)));
+    expect($tags)->toContain('commerce');
+    expect($tags)->toContain('orders');
 
     expect($orderA->subtotal)->toBe(800_00);
     expect($orderA->tax_total)->toBe(48_00);

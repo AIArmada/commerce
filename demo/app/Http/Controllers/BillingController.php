@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Http\Controllers;
 
 use AIArmada\CashierChip\Facades\CashierChip;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Models\Product;
 use App\Models\User;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Str;
-use Illuminate\Validation\Rule;
 use Illuminate\View\View;
 
 class BillingController extends Controller
@@ -21,7 +21,16 @@ class BillingController extends Controller
      */
     public function singleChipCheckout(string $slug): View
     {
-        $product = Product::where('slug', $slug)->firstOrFail();
+        $owner = OwnerContext::resolve();
+
+        $product = Product::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->where('slug', $slug)
+            ->firstOrFail();
 
         return view('billing.single-chip', compact('product'));
     }
@@ -33,10 +42,20 @@ class BillingController extends Controller
     {
         $request->validate([
             'chip_token' => 'required|string',
-            'product_id' => ['required', Rule::exists((new Product)->getTable(), 'id')],
+            'product_id' => ['required', 'string'],
         ]);
 
-        $product = Product::findOrFail($request->product_id);
+        $owner = OwnerContext::resolve();
+
+        $product = Product::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->whereKey((string) $request->product_id)
+            ->firstOrFail();
+
         $user = Auth::user() ?? User::create([
             'name' => $request->name ?? 'Guest',
             'email' => $request->email,

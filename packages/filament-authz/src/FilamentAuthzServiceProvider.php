@@ -241,6 +241,13 @@ class FilamentAuthzServiceProvider extends ServiceProvider
 
     private function configureSpatiePermissions(): void
     {
+        // Spatie binds the PermissionRegistrar in its provider's boot() method, but it
+        // may be resolved earlier when Gate is already resolved (callAfterResolving).
+        // Binding it here ensures it is always resolvable regardless of provider order.
+        if (! $this->app->bound(PermissionRegistrar::class)) {
+            $this->app->singleton(PermissionRegistrar::class);
+        }
+
         if (config('permission.models.permission') === SpatiePermission::class) {
             config()->set('permission.models.permission', AuthzPermission::class);
         }
@@ -268,7 +275,28 @@ class FilamentAuthzServiceProvider extends ServiceProvider
 
         $this->app->afterResolving(PermissionRegistrar::class, function (PermissionRegistrar $registrar): void {
             $registrar->initializeCache();
-            $registrar->forgetCachedPermissions();
+
+            if ($this->isPackageDiscoveryRunning()) {
+                return;
+            }
+
+            try {
+                $registrar->forgetCachedPermissions();
+            } catch (\Throwable) {
+                // Cache refresh is best-effort; some environments (e.g. during install/bootstrap)
+                // may not have DB-backed cache storage ready yet.
+            }
         });
+    }
+
+    private function isPackageDiscoveryRunning(): bool
+    {
+        if (! $this->app->runningInConsole()) {
+            return false;
+        }
+
+        $argv = $_SERVER['argv'] ?? [];
+
+        return in_array('package:discover', $argv, true);
     }
 }

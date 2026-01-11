@@ -181,6 +181,37 @@ describe('Voucher Model', function (): void {
         });
     });
 
+    describe('times used attribute', function (): void {
+        it('does not throw when usages_count was not selected', function (): void {
+            $previous = Model::preventsAccessingMissingAttributes();
+            Model::preventAccessingMissingAttributes(true);
+
+            try {
+                $voucher = Voucher::create([
+                    'name' => 'Strict Missing Attribute Voucher',
+                    'code' => 'STRICT-MISSING',
+                    'type' => VoucherType::Percentage,
+                    'value' => 10,
+                    'currency' => 'MYR',
+                    'status' => VoucherStatus::Active,
+                ]);
+
+                $voucher->usages()->create([
+                    'discount_amount' => 1000,
+                    'currency' => 'MYR',
+                    'channel' => 'automatic',
+                    'used_at' => now(),
+                ]);
+
+                $voucher = Voucher::query()->whereKey($voucher->id)->firstOrFail();
+
+                expect($voucher->times_used)->toBe(1);
+            } finally {
+                Model::preventAccessingMissingAttributes($previous);
+            }
+        });
+    });
+
     describe('status checks', function (): void {
         it('isActive returns true for Active status', function (): void {
             $voucher = new Voucher;

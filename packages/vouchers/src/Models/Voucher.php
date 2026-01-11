@@ -340,10 +340,17 @@ class Voucher extends Model
 
     public function getTimesUsedAttribute(): int
     {
-        /** @var int|null $usagesCount */
-        $usagesCount = $this->getAttribute('usages_count');
+        if (array_key_exists('usages_count', $this->attributes)) {
+            $usagesCount = $this->attributes['usages_count'];
 
-        return $usagesCount ?? $this->usages()->count();
+            return is_numeric($usagesCount) ? (int) $usagesCount : 0;
+        }
+
+        if ($this->relationLoaded('usages')) {
+            return $this->usages->count();
+        }
+
+        return $this->usages()->count();
     }
 
     public function canBeRedeemed(): bool

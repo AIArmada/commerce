@@ -6,6 +6,8 @@ namespace App\Models;
 
 use AIArmada\CashierChip\Billable as ChipBillable;
 use AIArmada\Orders\Models\Order;
+use Filament\Models\Contracts\FilamentUser;
+use Filament\Panel;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -26,7 +28,7 @@ use Spatie\Permission\Traits\HasRoles;
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  */
-final class User extends Authenticatable
+final class User extends Authenticatable implements FilamentUser
 {
     use ChipBillable;
     use HasFactory;
@@ -63,6 +65,11 @@ final class User extends Authenticatable
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);
+    }
+
+    public function canAccessPanel(Panel $panel): bool
+    {
+        return true;
     }
 
     /**

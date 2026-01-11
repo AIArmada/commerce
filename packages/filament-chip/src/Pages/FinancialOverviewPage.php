@@ -47,6 +47,8 @@ class FinancialOverviewPage extends Page
 
     protected static ?int $navigationSort = 25;
 
+    protected string $view = 'filament-chip::pages.financial-overview';
+
     public static function getNavigationGroup(): ?string
     {
         return config('filament-chip.navigation.group', 'Payments');
@@ -95,16 +97,6 @@ class FinancialOverviewPage extends Page
             $this->hasError = true;
             $this->errorMessage = $e->getMessage();
         }
-    }
-
-    public function render(): View
-    {
-        return view('filament-chip::pages.financial-overview', [
-            'balance' => $this->balance,
-            'turnover' => $this->turnover,
-            'hasError' => $this->hasError,
-            'errorMessage' => $this->errorMessage,
-        ]);
     }
 
     /**

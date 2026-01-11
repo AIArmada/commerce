@@ -1,0 +1,7 @@
+includes:
+    - phpstan.neon
+
+parameters:
+    # When analysing only a subset (per-package), most global ignore patterns won't be exercised.
+    # This keeps per-package PHPStan runs usable without weakening the main CI run.
+    reportUnmatchedIgnoredErrors: false

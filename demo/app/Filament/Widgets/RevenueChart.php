@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Carbon;
@@ -20,13 +21,21 @@ final class RevenueChart extends ChartWidget
 
     protected function getData(): array
     {
+        $owner = OwnerContext::resolve();
+
         $days = collect(range(29, 0))->map(fn (int $day) => Carbon::now()->subDays($day));
 
-        $revenues = $days->map(function (Carbon $date) {
-            return Order::whereDate('created_at', $date)
-                ->whereNotNull('paid_at')
-                ->sum('grand_total') / 100;
-        });
+        if ($owner === null) {
+            $revenues = $days->map(fn () => 0);
+        } else {
+            $revenues = $days->map(function (Carbon $date) use ($owner) {
+                return Order::query()
+                    ->forOwner($owner)
+                    ->whereDate('created_at', $date)
+                    ->whereNotNull('paid_at')
+                    ->sum('grand_total') / 100;
+            });
+        }
 
         return [
             'datasets' => [

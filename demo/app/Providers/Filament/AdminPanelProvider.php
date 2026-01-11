@@ -25,16 +25,18 @@ use Filament\Http\Middleware\AuthenticateSession;
 use Filament\Http\Middleware\DisableBladeIconComponents;
 use Filament\Http\Middleware\DispatchServingFilamentEvent;
 use Filament\Navigation\NavigationGroup;
-use Filament\Pages\Dashboard;
+use App\Filament\Pages\Dashboard;
 use Filament\Panel;
 use Filament\PanelProvider;
 use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
 use Filament\Widgets\AccountWidget;
 use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
 use Illuminate\Cookie\Middleware\EncryptCookies;
 use Illuminate\Foundation\Http\Middleware\VerifyCsrfToken;
 use Illuminate\Routing\Middleware\SubstituteBindings;
 use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\HtmlString;
 use Illuminate\View\Middleware\ShareErrorsFromSession;
 
 final class AdminPanelProvider extends PanelProvider
@@ -46,6 +48,38 @@ final class AdminPanelProvider extends PanelProvider
             ->id('admin')
             ->path('admin')
             ->login()
+            ->renderHook(PanelsRenderHook::HEAD_START, static fn (): HtmlString => new HtmlString(<<<'HTML'
+                <script>
+                    (function () {
+                        function patchLivewireInterceptMessage() {
+                            if (! window.Livewire?.interceptMessage) {
+                                return;
+                            }
+
+                            if (window.Livewire.__filamentInterceptMessageShimApplied) {
+                                return;
+                            }
+
+                            var original = window.Livewire.interceptMessage;
+
+                            window.Livewire.interceptMessage = function (callback) {
+                                return original(function (params) {
+                                    if (params && params.message && ! params.component) {
+                                        params.component = params.message.component;
+                                    }
+
+                                    return callback(params);
+                                });
+                            };
+
+                            window.Livewire.__filamentInterceptMessageShimApplied = true;
+                        }
+
+                        document.addEventListener('livewire:init', patchLivewireInterceptMessage);
+                        patchLivewireInterceptMessage();
+                    })();
+                </script>
+                HTML))
             ->colors([
                 'primary' => Color::Amber,
                 'danger' => Color::Rose,
@@ -84,8 +118,6 @@ final class AdminPanelProvider extends PanelProvider
                     ->label('Settings')
                     ->collapsed(),
             ])
-            ->discoverResources(in: app_path('Filament/Resources'), for: 'App\Filament\Resources')
-            ->discoverPages(in: app_path('Filament/Pages'), for: 'App\Filament\Pages')
             ->pages([
                 Dashboard::class,
             ])

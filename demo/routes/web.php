@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Events\PurchasePaid;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use App\Http\Controllers\BillingController;
 use App\Http\Controllers\ShopController;
@@ -110,6 +111,21 @@ Route::get('/checkout/success/{id}', function (string $id) {
 // This route simulates receiving a webhook from CHIP for demo purposes.
 // In production, CHIP sends webhooks to a public URL with signature verification.
 Route::post('/demo/simulate-payment/{order}', function (Order $order) {
+    $owner = OwnerContext::resolve();
+
+    if ($owner === null) {
+        abort(404);
+    }
+
+    if (
+        $order->owner_type === null
+        || $order->owner_id === null
+        || $order->owner_type !== $owner->getMorphClass()
+        || (string) $order->owner_id !== (string) $owner->getKey()
+    ) {
+        abort(404);
+    }
+
     $shippingAddress = $order->shippingAddress;
 
     $customerEmail = $shippingAddress?->email ?? 'demo@example.com';

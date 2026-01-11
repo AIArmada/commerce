@@ -9,8 +9,8 @@ use BackedEnum;
 use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
-use Filament\Forms\Form;
 use Filament\Pages\Page;
+use Filament\Schemas\Schema;
 use UnitEnum;
 
 final class ReportsPage extends Page implements HasForms
@@ -45,9 +45,9 @@ final class ReportsPage extends Page implements HasForms
         $this->generateReport();
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form->schema([
+        return $schema->schema([
             Forms\Components\Grid::make(4)
                 ->schema([
                     Forms\Components\Select::make('period')

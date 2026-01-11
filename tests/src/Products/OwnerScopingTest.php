@@ -257,6 +257,61 @@ it('scopes Category->products to the category owner plus global', function (): v
         ->not->toContain($productB->id);
 });
 
+it('counts Category::withCount(products) using owner-correlated scoping', function (): void {
+    config()->set('products.features.owner.auto_assign_on_create', false);
+
+    $ownerA = TestOwner::query()->create(['name' => 'Owner A']);
+    $ownerB = TestOwner::query()->create(['name' => 'Owner B']);
+
+    $category = Category::query()->create([
+        'owner_type' => $ownerA->getMorphClass(),
+        'owner_id' => $ownerA->getKey(),
+        'name' => 'A Category',
+    ]);
+
+    $productA = Product::query()->create([
+        'owner_type' => $ownerA->getMorphClass(),
+        'owner_id' => $ownerA->getKey(),
+        'name' => 'A',
+        'price' => 1000,
+    ]);
+
+    $productB = Product::query()->create([
+        'owner_type' => $ownerB->getMorphClass(),
+        'owner_id' => $ownerB->getKey(),
+        'name' => 'B',
+        'price' => 1000,
+    ]);
+
+    $productGlobal = Product::query()->create([
+        'owner_type' => null,
+        'owner_id' => null,
+        'name' => 'G',
+        'price' => 1000,
+    ]);
+
+    $category->products()->attach([$productA->id, $productB->id, $productGlobal->id]);
+
+    app()->instance(OwnerResolverInterface::class, new class($ownerA) implements OwnerResolverInterface
+    {
+        public function __construct(
+            private readonly ?Model $owner,
+        ) {}
+
+        public function resolve(): ?Model
+        {
+            return $this->owner;
+        }
+    });
+
+    $categoryWithCount = Category::query()
+        ->whereKey($category->id)
+        ->withCount('products')
+        ->firstOrFail();
+
+    expect($categoryWithCount->products_count)->toBe(2);
+});
+
 it('scopes Collection->products to the collection owner plus global', function (): void {
     config()->set('products.features.owner.auto_assign_on_create', false);
 

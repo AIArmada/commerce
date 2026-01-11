@@ -114,8 +114,8 @@
         <!-- Demo Note -->
         <div class="mt-8 p-4 bg-blue-50 rounded-lg">
             <p class="text-sm text-blue-700">
-                <strong>🎭 Demo Note:</strong> This page shows all orders for demonstration purposes. 
-                In production, users would only see their own orders after logging in.
+                <strong>🎭 Demo Note:</strong> This page shows orders for the current demo owner context.
+                Switch owners to see tenant isolation in action.
             </p>
         </div>
     </div>
