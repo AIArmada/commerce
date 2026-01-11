@@ -1,21 +1,36 @@
 providers:
   - Laravel\Boost\BoostServiceProvider
   - AIArmada\CommerceSupport\SupportServiceProvider
+  - AIArmada\Affiliates\AffiliatesServiceProvider
   - AIArmada\Cart\CartServiceProvider
   - AIArmada\Chip\ChipServiceProvider
   - AIArmada\CashierChip\CashierChipServiceProvider
-  # Note: AIArmada\Cashier\CashierServiceProvider conflicts with CashierChip (both add chip_id column)
-  # - AIArmada\Cashier\CashierServiceProvider
+  - AIArmada\Cashier\CashierServiceProvider
   - AIArmada\Docs\DocsServiceProvider
   - AIArmada\Jnt\JntServiceProvider
   - AIArmada\Inventory\InventoryServiceProvider
   - AIArmada\Products\ProductsServiceProvider
+  - AIArmada\Orders\OrdersServiceProvider
+  - AIArmada\Pricing\PricingServiceProvider
+  - AIArmada\Tax\TaxServiceProvider
   - AIArmada\Vouchers\VoucherServiceProvider
   - AIArmada\Shipping\ShippingServiceProvider
   - AIArmada\Customers\CustomersServiceProvider
+  - AIArmada\FilamentAffiliates\FilamentAffiliatesServiceProvider
+  - AIArmada\FilamentAuthz\FilamentAuthzServiceProvider
   - AIArmada\FilamentCart\FilamentCartServiceProvider
+  - AIArmada\FilamentCashier\FilamentCashierServiceProvider
+  - AIArmada\FilamentCashierChip\FilamentCashierChipServiceProvider
   - AIArmada\FilamentChip\FilamentChipServiceProvider
+  - AIArmada\FilamentCustomers\FilamentCustomersServiceProvider
+  - AIArmada\FilamentDocs\FilamentDocsServiceProvider
   - AIArmada\FilamentInventory\FilamentInventoryServiceProvider
+  - AIArmada\FilamentJnt\FilamentJntServiceProvider
+  - AIArmada\FilamentOrders\FilamentOrdersServiceProvider
+  - AIArmada\FilamentPricing\FilamentPricingServiceProvider
+  - AIArmada\FilamentProducts\FilamentProductsServiceProvider
+  - AIArmada\FilamentShipping\FilamentShippingServiceProvider
+  - AIArmada\FilamentTax\FilamentTaxServiceProvider
   - AIArmada\FilamentVouchers\FilamentVouchersServiceProvider
 
 env:
@@ -24,17 +39,21 @@ env:
   - CACHE_STORE=file
 
 migrations:
+  - packages/affiliates/database/migrations
   - packages/cart/database/migrations
-  # Note: packages/cashier/database/migrations conflicts with cashier-chip (both add chip_id column)
-  # Use cashier-chip migrations instead which has full CHIP support
   - packages/cashier-chip/database/migrations
   - packages/chip/database/migrations
   - packages/customers/database/migrations
   - packages/docs/database/migrations
+  - packages/filament-authz/database/migrations
+  - packages/filament-cart/database/migrations
   - packages/jnt/database/migrations
   - packages/inventory/database/migrations
   - packages/shipping/database/migrations
   - packages/products/database/migrations
+  - packages/orders/database/migrations
+  - packages/pricing/database/migrations
+  - packages/tax/database/migrations
   - packages/vouchers/database/migrations
 
 workbench:

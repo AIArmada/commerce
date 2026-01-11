@@ -139,6 +139,61 @@ final class PermissionSeeder extends Seeder
                 'guard_name' => 'web',
             ]);
         }
+
+        // ============================================
+        // PACKAGE POLICY PERMISSIONS (exact strings)
+        // ============================================
+        // Some packages use explicit permission strings (often namespaced)
+        // in policies/actions. Ensure they exist to prevent Spatie from
+        // throwing PermissionDoesNotExist during permission checks.
+        $packagePermissionNames = [
+            // Shipping
+            'shipping.shipments.view',
+            'shipping.shipments.create',
+            'shipping.shipments.update',
+            'shipping.shipments.delete',
+            'shipping.shipments.ship',
+            'shipping.shipments.cancel',
+            'shipping.shipments.print-label',
+            'shipping.shipments.sync-tracking',
+
+            'shipping.zones.view',
+            'shipping.zones.create',
+            'shipping.zones.update',
+            'shipping.zones.delete',
+            'shipping.zones.manage-rates',
+
+            'shipping.returns.view',
+            'shipping.returns.create',
+            'shipping.returns.update',
+            'shipping.returns.delete',
+            'shipping.returns.approve',
+            'shipping.returns.reject',
+            'shipping.returns.receive',
+            'shipping.returns.complete',
+
+            // Orders
+            'view_any_order',
+            'view_order',
+            'create_order',
+            'update_order',
+            'delete_order',
+            'cancel_order',
+            'refund_order',
+            'add_order_note',
+
+            // Affiliates (Filament operational pages)
+            'affiliates.payout.update',
+            'affiliates.payout.export',
+            'affiliates.fraud.update',
+        ];
+
+        foreach ($packagePermissionNames as $name) {
+            Permission::firstOrCreate([
+                'name' => $name,
+                'guard_name' => 'web',
+            ]);
+        }
     }
 
     private function createRoles(): void

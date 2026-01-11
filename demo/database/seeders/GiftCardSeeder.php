@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardStatus;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardTransactionType;
 use AIArmada\Vouchers\GiftCards\Enums\GiftCardType;
@@ -24,6 +25,8 @@ use Illuminate\Support\Str;
  */
 final class GiftCardSeeder extends Seeder
 {
+    private ?string $tenantCodeSuffix = null;
+
     public function run(): void
     {
         $this->command->info('🎁 Creating Gift Card System...');
@@ -288,6 +291,10 @@ final class GiftCardSeeder extends Seeder
 
         $createdCount = 0;
         foreach ($allCards as $cardData) {
+            if (isset($cardData['code']) && is_string($cardData['code'])) {
+                $cardData['code'] = $this->withTenantSuffix($cardData['code']);
+            }
+
             $randomUser = $users->random();
 
             $giftCard = GiftCard::create(array_merge([
@@ -307,6 +314,31 @@ final class GiftCardSeeder extends Seeder
         }
 
         $this->command->info("   ✓ Created {$createdCount} gift cards across " . count(['Standard', 'Open Value', 'Promotional', 'Reward', 'Corporate']) . ' types');
+    }
+
+    private function withTenantSuffix(string $code): string
+    {
+        return $code . '-' . $this->tenantCodeSuffix();
+    }
+
+    private function tenantCodeSuffix(): string
+    {
+        if ($this->tenantCodeSuffix !== null) {
+            return $this->tenantCodeSuffix;
+        }
+
+        $owner = OwnerContext::resolve();
+
+        if ($owner === null) {
+            $this->tenantCodeSuffix = Str::upper(Str::random(6));
+
+            return $this->tenantCodeSuffix;
+        }
+
+        $normalizedOwnerId = str_replace('-', '', (string) $owner->getKey());
+        $this->tenantCodeSuffix = Str::upper(Str::substr($normalizedOwnerId, -6));
+
+        return $this->tenantCodeSuffix;
     }
 
     /**

@@ -8,9 +8,9 @@ use AIArmada\FilamentAuthz\Models\AccessPolicy;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms;
-use Filament\Forms\Form;
 use Filament\Notifications\Notification;
 use Filament\Pages\Page;
+use Filament\Schemas\Schema;
 
 class PolicyDesignerPage extends Page
 {
@@ -118,9 +118,9 @@ class PolicyDesignerPage extends Page
         $this->addCondition();
     }
 
-    public function form(Form $form): Form
+    public function form(Schema $schema): Schema
     {
-        return $form
+        return $schema
             ->schema([
                 Forms\Components\Section::make('Policy Details')
                     ->schema([

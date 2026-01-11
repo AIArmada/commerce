@@ -92,12 +92,13 @@ class TaxZone extends Model
      */
     public static function zeroRate(): self
     {
-        return new self([
-            'id' => (string) Str::uuid(),
-            'name' => 'Zero Rate Zone',
-            'code' => 'ZERO',
-            'is_active' => true,
-        ]);
+        $zone = new self();
+        $zone->id = (string) Str::uuid();
+        $zone->name = 'Zero Rate Zone';
+        $zone->code = 'ZERO';
+        $zone->is_active = true;
+
+        return $zone;
     }
 
     public function getTable(): string

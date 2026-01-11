@@ -6,6 +6,7 @@ namespace AIArmada\CommerceSupport;
 
 use AIArmada\CommerceSupport\Contracts\NullOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use Illuminate\Support\Facades\Schema;
 use InvalidArgumentException;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -34,6 +35,19 @@ final class SupportServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->registerOwnerResolver();
+    }
+
+    public function bootingPackage(): void
+    {
+        $morphKeyType = (string) config('commerce-support.database.morph_key_type', 'uuid');
+
+        if (! in_array($morphKeyType, ['int', 'uuid', 'ulid'], true)) {
+            throw new InvalidArgumentException(
+                sprintf('Invalid morph key type: %s (allowed: int, uuid, ulid)', $morphKeyType)
+            );
+        }
+
+        Schema::defaultMorphKeyType($morphKeyType);
     }
 
     /**

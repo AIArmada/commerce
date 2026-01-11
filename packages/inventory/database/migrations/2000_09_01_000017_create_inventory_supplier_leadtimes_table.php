@@ -35,8 +35,7 @@ return new class extends Migration
             $table->addColumn($jsonType, 'metadata')->nullable();
             $table->timestamps();
 
-            $table->index(['inventoryable_type', 'inventoryable_id'], 'inv_sup_lead_invable_idx');
-            $table->index(['inventoryable_type', 'inventoryable_id', 'is_active'], 'inv_sup_lead_invable_active_idx');
+            $table->index(['inventoryable_type', 'inventoryable_id', 'is_active'], 'inv_supp_lead_invable_active_idx');
             $table->index('is_primary');
         });
     }

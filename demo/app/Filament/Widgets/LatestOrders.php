@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Filament\Widgets;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
+use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -20,14 +22,26 @@ final class LatestOrders extends BaseWidget
 
     protected static ?string $heading = 'Latest Orders';
 
+    /**
+     * @return Builder<Order>
+     */
+    protected function getTableQuery(): Builder
+    {
+        $owner = OwnerContext::resolve();
+
+        return Order::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->latest()
+            ->limit(5);
+    }
+
     public function table(Table $table): Table
     {
         return $table
-            ->query(
-                Order::query()
-                    ->latest()
-                    ->limit(5)
-            )
             ->columns([
                 TextColumn::make('order_number')
                     ->label('Order')

@@ -32,6 +32,8 @@ class WebhookConfigPage extends Page
 
     protected static ?int $navigationSort = 40;
 
+    protected string $view = 'filament-chip::pages.webhook-config';
+
     public static function getNavigationGroup(): ?string
     {
         return config('filament-chip.navigation.group', 'Payments');
@@ -84,15 +86,6 @@ class WebhookConfigPage extends Page
         }
     }
 
-    public function render(): View
-    {
-        return view('filament-chip::pages.webhook-config', [
-            'webhooks' => $this->webhooks,
-            'hasError' => $this->hasError,
-            'errorMessage' => $this->errorMessage,
-        ]);
-    }
-
     /**
      * @return array<Action>
      */
@@ -114,7 +107,7 @@ class WebhookConfigPage extends Page
                 ->label('View Webhook Logs')
                 ->icon(Heroicon::QueueList)
                 ->color('info')
-                ->url(fn (): string => route('filament.admin.pages.chip-webhook-monitor')),
+                ->url(fn (): string => route('filament.admin.pages.chip.webhook-monitor')),
         ];
     }
 }

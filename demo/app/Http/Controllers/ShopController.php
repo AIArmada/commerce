@@ -6,6 +6,7 @@ namespace App\Http\Controllers;
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Facades\Chip;
 use AIArmada\Chip\Testing\WebhookSimulator;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -23,6 +24,7 @@ use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\GiftCards\Models\GiftCard;
 use AIArmada\Vouchers\Models\Voucher;
+use App\Listeners\HandleChipPaymentSuccess;
 use Exception;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -39,15 +41,36 @@ final class ShopController extends Controller
      */
     public function home(): View
     {
-        $categories = Category::withCount('products')->get();
+        $owner = OwnerContext::resolve();
 
-        $featuredProducts = Product::with('categories')
+        $categories = Category::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->withCount('products')
+            ->get();
+
+        $featuredProducts = Product::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->with('categories')
             ->where('status', ProductStatus::Active)
             ->inRandomOrder()
             ->take(8)
             ->get();
 
-        $activeVouchers = Voucher::where('status', VoucherStatus::Active)
+        $activeVouchers = Voucher::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->where('status', VoucherStatus::Active)
             ->where(function ($query) {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
@@ -67,14 +90,37 @@ final class ShopController extends Controller
      */
     public function products(Request $request): View
     {
-        $categories = Category::withCount('products')->get();
+        $owner = OwnerContext::resolve();
+
+        $categories = Category::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->withCount('products')
+            ->get();
         $currentCategory = null;
 
-        $query = Product::with('categories')->where('status', ProductStatus::Active);
+        $query = Product::query()
+            ->when(
+                $owner,
+                fn ($builder) => $builder->forOwner($owner),
+                fn ($builder) => $builder->whereRaw('1 = 0'),
+            )
+            ->with('categories')
+            ->where('status', ProductStatus::Active);
 
         // Category filter
         if ($request->filled('category')) {
-            $currentCategory = Category::where('slug', $request->category)->first();
+            $currentCategory = Category::query()
+                ->when(
+                    $owner,
+                    fn ($builder) => $builder->forOwner($owner),
+                    fn ($builder) => $builder->whereRaw('1 = 0'),
+                )
+                ->where('slug', $request->category)
+                ->first();
             if ($currentCategory) {
                 $query->whereHas('categories', fn ($q) => $q->whereKey($currentCategory->id));
             }
@@ -118,7 +164,16 @@ final class ShopController extends Controller
      */
     public function categories(): View
     {
-        $categories = Category::withCount('products')->get();
+        $owner = OwnerContext::resolve();
+
+        $categories = Category::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->withCount('products')
+            ->get();
 
         return view('shop.categories', compact('categories'));
     }
@@ -128,11 +183,21 @@ final class ShopController extends Controller
      */
     public function product(Product $product): View
     {
+        $this->ensureProductAccessible($product);
+
         $product->load('categories');
 
         $primaryCategoryId = $product->categories->first()?->getKey();
 
-        $relatedProducts = Product::with('categories')
+        $owner = OwnerContext::resolve();
+
+        $relatedProducts = Product::query()
+            ->when(
+                $owner,
+                fn ($builder) => $builder->forOwner($owner),
+                fn ($builder) => $builder->whereRaw('1 = 0'),
+            )
+            ->with('categories')
             ->where('status', ProductStatus::Active)
             ->where('id', '!=', $product->id)
             ->when($primaryCategoryId, fn ($q) => $q->whereHas('categories', fn ($sub) => $sub->whereKey($primaryCategoryId)))
@@ -154,7 +219,15 @@ final class ShopController extends Controller
         $cartQuantity = Cart::getTotalQuantity();
         $appliedVoucher = session('applied_voucher');
 
-        $activeVouchers = Voucher::where('status', VoucherStatus::Active)
+        $owner = OwnerContext::resolve();
+
+        $activeVouchers = Voucher::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->where('status', VoucherStatus::Active)
             ->where(function ($query): void {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());
@@ -179,7 +252,16 @@ final class ShopController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $product = Product::query()->whereKey($request->product_id)->firstOrFail();
+        $owner = OwnerContext::resolve();
+
+        $product = Product::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->whereKey($request->product_id)
+            ->firstOrFail();
 
         if (! $product->isPurchasable()) {
             return back()->with('error', 'Sorry, this product is not available for purchase.');
@@ -222,7 +304,16 @@ final class ShopController extends Controller
 
         $quantity = max(1, (int) $request->quantity);
 
-        $product = Product::query()->whereKey($itemId)->first();
+        $owner = OwnerContext::resolve();
+
+        $product = Product::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->whereKey($itemId)
+            ->first();
 
         $unitPrice = null;
 
@@ -307,11 +398,12 @@ final class ShopController extends Controller
         }
 
         $items = Cart::getItems();
+        $subtotalWithoutConditions = Cart::getRawSubtotalWithoutConditions();
         $subtotal = Cart::getRawSubtotal();
         $total = Cart::getRawTotal();
         $conditions = Cart::getConditions();
 
-        return view('shop.checkout', compact('items', 'subtotal', 'total', 'conditions'));
+        return view('shop.checkout', compact('items', 'subtotalWithoutConditions', 'subtotal', 'total', 'conditions'));
     }
 
     /**
@@ -345,7 +437,12 @@ final class ShopController extends Controller
 
         $owner = OwnerContext::resolve();
 
+        if ($owner === null) {
+            abort(404);
+        }
+
         $customer = Customer::query()
+            ->forOwner($owner)
             ->where('email', $request->email)
             ->first();
 
@@ -397,7 +494,10 @@ final class ShopController extends Controller
         $itemsSubtotal = 0;
 
         foreach (Cart::getItems() as $item) {
-            $product = Product::query()->whereKey((string) $item->id)->firstOrFail();
+            $product = Product::query()
+                ->forOwner($owner)
+                ->whereKey((string) $item->id)
+                ->firstOrFail();
             $quantity = max(1, (int) $item->quantity);
 
             $priceResult = $priceCalculator->calculate($product, $quantity, $pricingContext);
@@ -543,6 +643,25 @@ final class ShopController extends Controller
             'pending_voucher_code' => session('applied_voucher'),
         ]);
 
+        $chipApiKey = config('chip.collect.api_key');
+        $chipBrandId = config('chip.collect.brand_id');
+
+        if ($chipApiKey === null || $chipBrandId === null) {
+            Log::warning('CHIP is not configured; using demo payment simulation.', [
+                'order_id' => $order->id,
+                'chip_api_key_set' => $chipApiKey !== null,
+                'chip_brand_id_set' => $chipBrandId !== null,
+            ]);
+
+            $order->update([
+                'metadata' => array_merge($order->metadata ?? [], [
+                    'chip_purchase_id' => 'demo-'.$order->order_number,
+                ]),
+            ]);
+
+            return redirect()->route('shop.payment.success', $order);
+        }
+
         // Create CHIP purchase
         try {
             $purchase = Chip::purchase()
@@ -644,6 +763,8 @@ final class ShopController extends Controller
      */
     public function paymentSuccess(Order $order): View
     {
+        $this->ensureOrderAccessible($order);
+
         // Clear cart and session
         Cart::clear();
         Cart::clearConditions();
@@ -666,6 +787,8 @@ final class ShopController extends Controller
      */
     public function paymentFailed(Order $order): View
     {
+        $this->ensureOrderAccessible($order);
+
         $order->update(['status' => 'payment_failed']);
 
         return view('shop.payment-failed', compact('order'));
@@ -676,6 +799,8 @@ final class ShopController extends Controller
      */
     public function paymentCancelled(Order $order): View
     {
+        $this->ensureOrderAccessible($order);
+
         $order->update(['status' => 'cancelled']);
 
         return view('shop.payment-cancelled', compact('order'));
@@ -686,6 +811,8 @@ final class ShopController extends Controller
      */
     public function orderSuccess(Order $order): View
     {
+        $this->ensureOrderAccessible($order);
+
         $order->load('items', 'shippingAddress', 'billingAddress');
 
         return view('shop.order-success', compact('order'));
@@ -696,7 +823,14 @@ final class ShopController extends Controller
      */
     public function trackAffiliate(Request $request, string $code): RedirectResponse
     {
+        $owner = OwnerContext::resolve();
+
         $affiliate = Affiliate::where('code', mb_strtoupper($code))
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
             ->where('status', 'active')
             ->first();
 
@@ -720,7 +854,16 @@ final class ShopController extends Controller
             'quantity' => 'required|integer|min:1',
         ]);
 
-        $product = Product::query()->whereKey($request->product_id)->firstOrFail();
+        $owner = OwnerContext::resolve();
+
+        $product = Product::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->whereKey($request->product_id)
+            ->firstOrFail();
 
         if (! $product->isInStock()) {
             return back()->with('error', 'Sorry, this product is out of stock.');
@@ -761,7 +904,15 @@ final class ShopController extends Controller
      */
     public function orders(): View
     {
-        $orders = Order::with('items', 'shippingAddress')
+        $owner = OwnerContext::resolve();
+
+        $orders = Order::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->with('items', 'shippingAddress')
             ->orderBy('created_at', 'desc')
             ->paginate(10);
 
@@ -778,12 +929,60 @@ final class ShopController extends Controller
         }
 
         $user = Auth::user();
-        $recentOrders = Order::with('items', 'shippingAddress')
+        $owner = OwnerContext::resolve();
+
+        $recentOrders = Order::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->with('items', 'shippingAddress')
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
 
         return view('shop.account', compact('user', 'recentOrders'));
+    }
+
+    private function ensureOrderAccessible(Order $order): void
+    {
+        $owner = OwnerContext::resolve();
+
+        if ($owner === null) {
+            abort(404);
+        }
+
+        if ($order->owner_type === null || $order->owner_id === null) {
+            abort(404);
+        }
+
+        if (
+            $order->owner_type !== $owner->getMorphClass()
+            || (string) $order->owner_id !== (string) $owner->getKey()
+        ) {
+            abort(404);
+        }
+    }
+
+    private function ensureProductAccessible(Product $product): void
+    {
+        $owner = OwnerContext::resolve();
+
+        if ($owner === null) {
+            abort(404);
+        }
+
+        if ($product->owner_type === null || $product->owner_id === null) {
+            abort(404);
+        }
+
+        if (
+            $product->owner_type !== $owner->getMorphClass()
+            || (string) $product->owner_id !== (string) $owner->getKey()
+        ) {
+            abort(404);
+        }
     }
 
     /**
@@ -794,13 +993,28 @@ final class ShopController extends Controller
         $giftCard = null;
         $availableCards = null;
 
+        $owner = OwnerContext::resolve();
+
         // Check balance if code provided
         if ($request->filled('code')) {
-            $giftCard = GiftCard::where('code', mb_strtoupper($request->code))->first();
+            $giftCard = GiftCard::query()
+                ->when(
+                    $owner,
+                    fn ($query) => $query->forOwner($owner),
+                    fn ($query) => $query->whereRaw('1 = 0'),
+                )
+                ->where('code', mb_strtoupper($request->code))
+                ->first();
         }
 
         // Get demo gift cards for display
-        $availableCards = GiftCard::where('status', 'active')
+        $availableCards = GiftCard::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->where('status', 'active')
             ->where('current_balance', '>', 0)
             ->orderBy('initial_balance', 'asc')
             ->take(6)
@@ -827,18 +1041,36 @@ final class ShopController extends Controller
         $shipment = null;
         $recentShipments = null;
 
-        // Search for shipment if query provided
-        if ($request->filled('q')) {
-            $query = mb_strtoupper($request->q);
+        $owner = OwnerContext::resolve();
 
-            // Search by tracking number or order number
-            $shipment = JntOrder::where('tracking_number', $query)
-                ->orWhere('order_number', $query)
+        // Search for shipment if query provided
+        $search = $request->get('tracking_number', $request->get('q', ''));
+
+        if (is_string($search) && $search !== '') {
+            $query = mb_strtoupper($search);
+
+            $shipment = JntOrder::query()
+                ->when(
+                    $owner,
+                    fn ($builder) => $builder->forOwner($owner),
+                    fn ($builder) => $builder->whereRaw('1 = 0'),
+                )
+                ->where(function ($builder) use ($query): void {
+                    $builder->where('tracking_number', $query)
+                        ->orWhere('order_id', $query);
+                })
+                ->with('trackingEvents')
                 ->first();
         }
 
         // Get recent shipments for display
-        $recentShipments = JntOrder::whereNotNull('tracking_number')
+        $recentShipments = JntOrder::query()
+            ->when(
+                $owner,
+                fn ($builder) => $builder->forOwner($owner),
+                fn ($builder) => $builder->whereRaw('1 = 0'),
+            )
+            ->whereNotNull('tracking_number')
             ->orderBy('created_at', 'desc')
             ->take(5)
             ->get();
@@ -853,7 +1085,7 @@ final class ShopController extends Controller
     {
         $q = $request->get('tracking_number', '');
 
-        return redirect()->route('shop.tracking', ['q' => $q]);
+        return redirect()->route('shop.tracking', ['tracking_number' => $q]);
     }
 
     /**
@@ -865,7 +1097,7 @@ final class ShopController extends Controller
         $shipping = $order->shippingAddress;
         $streetAddress = $shipping?->line1 ?? '';
 
-        WebhookSimulator::paid()
+        $simulator = WebhookSimulator::paid()
             ->purchaseId($order->metadata['chip_purchase_id'])
             ->reference($order->order_number)
             ->amount($order->grand_total)
@@ -910,7 +1142,16 @@ final class ShopController extends Controller
                 ],
             ])
             ->fpx()
-            ->isTest()
-            ->dispatch();
+            ->isTest();
+
+        $payload = $simulator->getPayload();
+        $purchase = $simulator->toPurchase();
+
+        app(HandleChipPaymentSuccess::class)->handle(
+            new PurchasePaid(
+                purchase: $purchase,
+                payload: $payload,
+            ),
+        );
     }
 }

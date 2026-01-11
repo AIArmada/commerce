@@ -32,6 +32,8 @@ class AnalyticsDashboardPage extends Page
 
     protected static ?int $navigationSort = 99;
 
+    protected string $view = 'filament-chip::pages.analytics-dashboard';
+
     public static function getNavigationGroup(): ?string
     {
         return config('filament-chip.navigation.group', 'Payments');
@@ -60,15 +62,6 @@ class AnalyticsDashboardPage extends Page
     public function updatedPeriod(): void
     {
         $this->loadMetrics();
-    }
-
-    public function render(): View
-    {
-        return view('filament-chip::pages.analytics-dashboard', [
-            'metrics' => $this->metrics,
-            'revenueTrend' => $this->revenueTrend,
-            'period' => $this->period,
-        ]);
     }
 
     protected function getHeaderActions(): array

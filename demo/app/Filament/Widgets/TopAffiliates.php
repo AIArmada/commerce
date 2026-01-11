@@ -6,9 +6,11 @@ namespace App\Filament\Widgets;
 
 use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Number;
 
 final class TopAffiliates extends BaseWidget
@@ -22,17 +24,29 @@ final class TopAffiliates extends BaseWidget
 
     protected static ?string $heading = '🏆 Top Affiliates';
 
+    /**
+     * @return Builder<Affiliate>
+     */
+    protected function getTableQuery(): Builder
+    {
+        $owner = OwnerContext::resolve();
+
+        return Affiliate::query()
+            ->when(
+                $owner,
+                fn ($query) => $query->forOwner($owner),
+                fn ($query) => $query->whereRaw('1 = 0'),
+            )
+            ->where('status', AffiliateStatus::Active)
+            ->withCount('conversions')
+            ->withSum('conversions', 'commission_minor')
+            ->orderByDesc('conversions_sum_commission_minor')
+            ->limit(5);
+    }
+
     public function table(Table $table): Table
     {
         return $table
-            ->query(
-                Affiliate::query()
-                    ->where('status', AffiliateStatus::Active)
-                    ->withCount('conversions')
-                    ->withSum('conversions', 'commission_minor')
-                    ->orderByDesc('conversions_sum_commission_minor')
-                    ->limit(5)
-            )
             ->columns([
                 TextColumn::make('name')
                     ->label('Affiliate')

@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Products\Models\Product;
 use AIArmada\Vouchers\Enums\VoucherStatus;
@@ -26,17 +27,65 @@ final class StatsOverview extends BaseWidget
 
     protected function getStats(): array
     {
+        $owner = OwnerContext::resolve();
+
+        if ($owner === null) {
+            return [
+                Stat::make('Total Revenue', 'RM ' . Number::format(0, 2))
+                    ->description('From paid orders')
+                    ->descriptionIcon('heroicon-m-banknotes')
+                    ->color('success')
+                    ->chart([0, 0, 0, 0, 0, 0, 0]),
+
+                Stat::make('Pending Orders', 0)
+                    ->description('Awaiting processing')
+                    ->descriptionIcon('heroicon-m-clock')
+                    ->color('success'),
+
+                Stat::make('Products', 0)
+                    ->description('Inventory healthy')
+                    ->descriptionIcon('heroicon-m-cube')
+                    ->color('info'),
+
+                Stat::make('Active Vouchers', 0)
+                    ->description('0 redemptions')
+                    ->descriptionIcon('heroicon-m-ticket')
+                    ->color('primary'),
+
+                Stat::make('Affiliates', 0)
+                    ->description('RM ' . Number::format(0, 2) . ' pending')
+                    ->descriptionIcon('heroicon-m-users')
+                    ->color('success'),
+
+                Stat::make('Customers', 0)
+                    ->description('0 with orders')
+                    ->descriptionIcon('heroicon-m-user-group')
+                    ->color('info'),
+            ];
+        }
+
         // Calculate revenue
-        $totalRevenue = Order::whereNotNull('paid_at')->sum('grand_total');
-        $pendingOrders = Order::whereNull('paid_at')->count();
+        $totalRevenue = Order::query()->forOwner($owner)->whereNotNull('paid_at')->sum('grand_total');
+        $pendingOrders = Order::query()->forOwner($owner)->whereNull('paid_at')->count();
+
+        $uniqueCustomersWithOrders = Order::query()
+            ->forOwner($owner)
+            ->whereNotNull('customer_id')
+            ->distinct('customer_id')
+            ->count('customer_id');
 
         // Voucher stats
-        $activeVouchers = Voucher::where('status', VoucherStatus::Active)->count();
-        $voucherRedemptions = VoucherUsage::count();
+        $activeVouchers = Voucher::query()->forOwner($owner)->where('status', VoucherStatus::Active)->count();
+        $voucherRedemptions = VoucherUsage::query()
+            ->whereIn('voucher_id', Voucher::query()->forOwner($owner)->select('id'))
+            ->count();
 
         // Affiliate stats
-        $activeAffiliates = Affiliate::where('status', AffiliateStatus::Active)->count();
-        $pendingCommissions = AffiliateConversion::where('status', ConversionStatus::Pending)->sum('commission_minor');
+        $activeAffiliates = Affiliate::query()->forOwner($owner)->where('status', AffiliateStatus::Active)->count();
+        $pendingCommissions = AffiliateConversion::query()
+            ->whereIn('affiliate_id', Affiliate::query()->forOwner($owner)->select('id'))
+            ->where('status', ConversionStatus::Pending)
+            ->sum('commission_minor');
 
         $lowStockProducts = 0;
 
@@ -52,7 +101,7 @@ final class StatsOverview extends BaseWidget
                 ->descriptionIcon('heroicon-m-clock')
                 ->color($pendingOrders > 0 ? 'warning' : 'success'),
 
-            Stat::make('Products', Product::count())
+            Stat::make('Products', Product::query()->forOwner($owner)->count())
                 ->description($lowStockProducts > 0 ? $lowStockProducts . ' low inventory' : 'Inventory healthy')
                 ->descriptionIcon($lowStockProducts > 0 ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-cube')
                 ->color($lowStockProducts > 0 ? 'warning' : 'info'),
@@ -67,8 +116,8 @@ final class StatsOverview extends BaseWidget
                 ->descriptionIcon('heroicon-m-users')
                 ->color('success'),
 
-            Stat::make('Customers', User::count())
-                ->description(Order::distinct('customer_id')->count() . ' with orders')
+            Stat::make('Customers', $uniqueCustomersWithOrders)
+                ->description($uniqueCustomersWithOrders . ' with orders')
                 ->descriptionIcon('heroicon-m-user-group')
                 ->color('info'),
         ];
