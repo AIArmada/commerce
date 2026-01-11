@@ -7,6 +7,7 @@ use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
+use Illuminate\Support\Facades\Schema;
 
 describe('Variant Model', function (): void {
     describe('Variant Creation', function (): void {
@@ -77,6 +78,7 @@ describe('Variant Model', function (): void {
             $variant = Variant::create([
                 'product_id' => $product->id,
                 'name' => 'Large Black',
+                'sku' => 'JACKET-LB-' . uniqid(),
                 'price' => 8000,
                 'is_enabled' => true,
             ]);
@@ -93,8 +95,8 @@ describe('Variant Model', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            Variant::create(['product_id' => $product->id, 'name' => 'Enabled', 'price' => 3000, 'is_enabled' => true]);
-            Variant::create(['product_id' => $product->id, 'name' => 'Disabled', 'price' => 3000, 'is_enabled' => false]);
+            Variant::create(['product_id' => $product->id, 'name' => 'Enabled', 'sku' => 'BAG-EN-' . uniqid(), 'price' => 3000, 'is_enabled' => true]);
+            Variant::create(['product_id' => $product->id, 'name' => 'Disabled', 'sku' => 'BAG-DIS-' . uniqid(), 'price' => 3000, 'is_enabled' => false]);
 
             expect(Variant::where('product_id', $product->id)->enabled()->count())->toBe(1);
         });
@@ -106,30 +108,18 @@ describe('Variant Model', function (): void {
                 'status' => ProductStatus::Active,
             ]);
 
-            Variant::create(['product_id' => $product->id, 'name' => 'Default', 'price' => 1500, 'is_default' => true, 'is_enabled' => true]);
-            Variant::create(['product_id' => $product->id, 'name' => 'Other', 'price' => 1500, 'is_default' => false, 'is_enabled' => true]);
+            Variant::create(['product_id' => $product->id, 'name' => 'Default', 'sku' => 'HAT-DEF-' . uniqid(), 'price' => 1500, 'is_default' => true, 'is_enabled' => true]);
+            Variant::create(['product_id' => $product->id, 'name' => 'Other', 'sku' => 'HAT-OTH-' . uniqid(), 'price' => 1500, 'is_default' => false, 'is_enabled' => true]);
 
             expect(Variant::where('product_id', $product->id)->default()->count())->toBe(1);
         });
     });
 
     describe('Variant Inventory', function (): void {
-        it('can track stock quantity', function (): void {
-            $product = Product::create([
-                'name' => 'Watch',
-                'price' => 20000,
-                'status' => ProductStatus::Active,
-            ]);
+        it('does not store stock_quantity directly', function (): void {
+            $variant = new Variant;
 
-            $variant = Variant::create([
-                'product_id' => $product->id,
-                'name' => 'Gold',
-                'price' => 25000,
-                'stock_quantity' => 50,
-                'is_enabled' => true,
-            ]);
-
-            expect($variant->stock_quantity)->toBe(50);
+            expect(Schema::hasColumn($variant->getTable(), 'stock_quantity'))->toBeFalse();
         });
     });
 
@@ -449,6 +439,46 @@ describe('Variant Model', function (): void {
 
             expect($generatedSku)->toContain('SKU-GEN')
                 ->and($generatedSku)->toContain('BL');
+        });
+
+        it('generates different SKUs for different products when the parent SKU is missing', function (): void {
+            $productA = Product::create([
+                'name' => 'SKU Missing A',
+                'price' => 10000,
+                'status' => ProductStatus::Active,
+                'sku' => null,
+            ]);
+
+            $productB = Product::create([
+                'name' => 'SKU Missing B',
+                'price' => 10000,
+                'status' => ProductStatus::Active,
+                'sku' => null,
+            ]);
+
+            $optionA = Option::create(['product_id' => $productA->id, 'name' => 'Color', 'position' => 0]);
+            $optionB = Option::create(['product_id' => $productB->id, 'name' => 'Color', 'position' => 0]);
+
+            $redA = OptionValue::create(['option_id' => $optionA->id, 'name' => 'Red', 'position' => 0]);
+            $redB = OptionValue::create(['option_id' => $optionB->id, 'name' => 'Red', 'position' => 0]);
+
+            $variantA = Variant::create([
+                'product_id' => $productA->id,
+                'name' => 'Variant A',
+                'sku' => 'PLACEHOLDER-' . uniqid(),
+            ]);
+
+            $variantB = Variant::create([
+                'product_id' => $productB->id,
+                'name' => 'Variant B',
+                'sku' => 'PLACEHOLDER-' . uniqid(),
+            ]);
+
+            $variantA->optionValues()->attach($redA->id);
+            $variantB->optionValues()->attach($redB->id);
+
+            expect($variantA->generateSku())
+                ->not->toBe($variantB->generateSku());
         });
     });
 

@@ -7,8 +7,10 @@ use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Collection;
+use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use Akaunting\Money\Money;
+use Illuminate\Support\Facades\DB;
 
 describe('Product Model', function (): void {
     describe('Product Creation', function (): void {
@@ -607,11 +609,11 @@ describe('Product Model', function (): void {
             expect($product->hasStock(5))->toBeTrue();
         });
 
-        it('checks tracks inventory for physical', function (): void {
+        it('does not track inventory by default', function (): void {
             $physical = Product::create(['name' => 'Physical', 'price' => 1000, 'type' => ProductType::Simple]);
             $digital = Product::create(['name' => 'Digital', 'price' => 1000, 'type' => ProductType::Digital]);
 
-            expect($physical->tracksInventory())->toBeTrue()
+            expect($physical->tracksInventory())->toBeFalse()
                 ->and($digital->tracksInventory())->toBeFalse();
         });
     });
@@ -624,8 +626,11 @@ describe('Product Model', function (): void {
                 'type' => ProductType::Configurable,
             ]);
 
-            $product->variants()->create(['name' => 'Delete Variant', 'sku' => 'DEL-VAR', 'price' => 1000]);
-            $product->options()->create(['name' => 'Color', 'position' => 1]);
+            $variant = $product->variants()->create(['name' => 'Delete Variant', 'sku' => 'DEL-VAR', 'price' => 1000]);
+
+            $option = $product->options()->create(['name' => 'Color', 'position' => 1]);
+            $optionValue = OptionValue::create(['option_id' => $option->id, 'name' => 'Red', 'position' => 0]);
+            $variant->optionValues()->attach($optionValue->id);
 
             $category = Category::create(['name' => 'Del Cat', 'slug' => 'del-cat']);
             $product->categories()->attach($category->id);
@@ -634,10 +639,12 @@ describe('Product Model', function (): void {
             $product->collections()->attach($collection->id);
 
             $productId = $product->id;
+            $variantId = $variant->id;
             $product->delete();
 
             expect(AIArmada\Products\Models\Variant::where('product_id', $productId)->count())->toBe(0)
-                ->and(AIArmada\Products\Models\Option::where('product_id', $productId)->count())->toBe(0);
+                ->and(AIArmada\Products\Models\Option::where('product_id', $productId)->count())->toBe(0)
+                ->and(DB::table('product_variant_options')->where('variant_id', $variantId)->count())->toBe(0);
         });
     });
 });

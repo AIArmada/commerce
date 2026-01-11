@@ -43,6 +43,8 @@ return new class extends Migration
         if ($driver === 'pgsql') {
             DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_lookup_covering');
             DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_active');
+            DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_active_no_expiry');
+            DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_active_with_expiry');
             DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_expired');
             DB::statement('DROP INDEX CONCURRENTLY IF EXISTS idx_carts_analytics');
         } else {
@@ -64,11 +66,17 @@ return new class extends Migration
             INCLUDE (id, version, updated_at, expires_at)
         ");
 
-        // Partial index for active (non-expired) carts
+        // Active-cart indexes (PostgreSQL disallows volatile functions like NOW() in index predicates)
         DB::statement("
-            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_active
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_active_no_expiry
             ON \"{$tableName}\" (identifier, instance)
-            WHERE expires_at IS NULL OR expires_at > NOW()
+            WHERE expires_at IS NULL
+        ");
+
+        DB::statement("
+            CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_active_with_expiry
+            ON \"{$tableName}\" (identifier, instance, expires_at)
+            WHERE expires_at IS NOT NULL
         ");
 
         // Index for cleanup job (expired carts)
@@ -82,7 +90,7 @@ return new class extends Migration
         DB::statement("
             CREATE INDEX CONCURRENTLY IF NOT EXISTS idx_carts_analytics
             ON \"{$tableName}\" (updated_at, instance)
-            WHERE items IS NOT NULL AND items != '[]'::jsonb
+            WHERE items IS NOT NULL AND items::jsonb != '[]'::jsonb
         ");
     }
 

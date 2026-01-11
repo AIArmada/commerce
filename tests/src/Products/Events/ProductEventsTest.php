@@ -8,8 +8,11 @@ use AIArmada\Products\Events\ProductDeleted;
 use AIArmada\Products\Events\ProductStatusChanged;
 use AIArmada\Products\Events\ProductUpdated;
 use AIArmada\Products\Events\VariantsGenerated;
+use AIArmada\Products\Models\Option;
+use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
+use AIArmada\Products\Services\VariantGeneratorService;
 
 describe('Product Events', function (): void {
     describe('ProductCreated Event', function (): void {
@@ -207,6 +210,108 @@ describe('Product Events', function (): void {
             $event = new VariantsGenerated($product, collect());
 
             expect($event->variants)->toBeEmpty();
+        });
+    });
+
+    describe('Automatic event dispatch', function (): void {
+        it('dispatches ProductCreated when a product is created', function (): void {
+            Event::fake([
+                ProductCreated::class,
+            ]);
+
+            $product = Product::create([
+                'name' => 'Auto Dispatch Product',
+                'price' => 1000,
+                'status' => ProductStatus::Draft,
+            ]);
+
+            Event::assertDispatched(ProductCreated::class, function (ProductCreated $event) use ($product): bool {
+                return $event->product->is($product);
+            });
+        });
+
+        it('dispatches ProductUpdated when a product is updated', function (): void {
+            $product = Product::create([
+                'name' => 'Auto Updated Product',
+                'price' => 1000,
+                'status' => ProductStatus::Draft,
+            ]);
+
+            Event::fake([
+                ProductUpdated::class,
+            ]);
+
+            $product->update(['name' => 'Auto Updated Product v2']);
+
+            Event::assertDispatched(ProductUpdated::class, function (ProductUpdated $event) use ($product): bool {
+                return $event->product->is($product);
+            });
+        });
+
+        it('dispatches ProductStatusChanged when a product status changes', function (): void {
+            $product = Product::create([
+                'name' => 'Status Change Product',
+                'price' => 1000,
+                'status' => ProductStatus::Draft,
+            ]);
+
+            Event::fake([
+                ProductStatusChanged::class,
+            ]);
+
+            $product->update(['status' => ProductStatus::Active]);
+
+            Event::assertDispatched(ProductStatusChanged::class, function (ProductStatusChanged $event) use ($product): bool {
+                return $event->product->is($product)
+                    && $event->oldStatus === ProductStatus::Draft
+                    && $event->newStatus === ProductStatus::Active;
+            });
+        });
+
+        it('dispatches ProductDeleted when a product is deleted', function (): void {
+            $product = Product::create([
+                'name' => 'Auto Delete Product',
+                'price' => 1000,
+                'status' => ProductStatus::Draft,
+            ]);
+
+            Event::fake([
+                ProductDeleted::class,
+            ]);
+
+            $product->delete();
+
+            Event::assertDispatched(ProductDeleted::class);
+        });
+
+        it('dispatches VariantsGenerated when variants are regenerated', function (): void {
+            $product = Product::create([
+                'name' => 'Variant Generator Product',
+                'price' => 1000,
+                'status' => ProductStatus::Active,
+                'sku' => 'GEN',
+            ]);
+
+            $color = Option::create([
+                'product_id' => $product->id,
+                'name' => 'Color',
+                'position' => 0,
+            ]);
+
+            OptionValue::create(['option_id' => $color->id, 'name' => 'Red', 'position' => 0]);
+            OptionValue::create(['option_id' => $color->id, 'name' => 'Blue', 'position' => 1]);
+
+            Event::fake([
+                VariantsGenerated::class,
+            ]);
+
+            $variants = (new VariantGeneratorService)->generate($product);
+
+            expect($variants)->toHaveCount(2);
+
+            Event::assertDispatched(VariantsGenerated::class, function (VariantsGenerated $event) use ($product): bool {
+                return $event->product->is($product) && $event->variants->count() === 2;
+            });
         });
     });
 });

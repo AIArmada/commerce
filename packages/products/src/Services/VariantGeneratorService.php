@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Products\Services;
 
+use AIArmada\Products\Events\VariantsGenerated;
 use AIArmada\Products\Models\Option;
 use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use RuntimeException;
 
 /**
@@ -34,23 +37,34 @@ class VariantGeneratorService
             return collect();
         }
 
-        // Get all combinations
-        $combinations = $this->generateCombinations($options);
+        $maxCombinations = (int) config('products.features.variants.max_combinations', 1000);
 
-        // Check safety limit
-        $maxCombinations = config('products.features.variants.max_combinations', 1000);
-        if ($combinations->count() > $maxCombinations) {
+        $combinationCount = $options
+            ->map(fn (Option $option) => $option->values->count())
+            ->reduce(fn (int $carry, int $count) => $carry * $count, 1);
+
+        if ($combinationCount === 0) {
+            return collect();
+        }
+
+        if ($combinationCount > $maxCombinations) {
             throw new RuntimeException(
-                "Too many variant combinations ({$combinations->count()}). " .
+                "Too many variant combinations ({$combinationCount}). " .
                 "Maximum allowed is {$maxCombinations}."
             );
         }
 
-        return DB::transaction(function () use ($product, $combinations): Collection {
-            // Delete existing variants
-            $product->variants()->delete();
+        // Get all combinations
+        $combinations = $this->generateCombinations($options);
 
-            $variants = collect();
+        /** @var Collection<int, Variant> $variants */
+        $variants = DB::transaction(function () use ($product, $combinations): Collection {
+            // Delete existing variants
+            $product->variants()->chunk(100, function (Collection $variants): void {
+                $variants->each(fn (Variant $variant) => $variant->delete());
+            });
+
+            $variants = new EloquentCollection;
             $isFirst = true;
 
             foreach ($combinations as $combination) {
@@ -61,6 +75,10 @@ class VariantGeneratorService
 
             return $variants;
         });
+
+        VariantsGenerated::dispatch($product, $variants);
+
+        return $variants;
     }
 
     /**
@@ -156,41 +174,21 @@ class VariantGeneratorService
     protected function createVariant(Product $product, Collection $optionValues, bool $isDefault): Variant
     {
         $variant = $product->variants()->create([
-            'sku' => $this->generateSku($product, $optionValues),
+            // Temporary SKU to satisfy non-null and unique constraints before option values are attached.
+            'sku' => 'TMP-' . Str::uuid()->toString(),
             'is_default' => $isDefault,
             'is_enabled' => true,
         ]);
 
+        $variant->setRelation('product', $product);
+
         // Attach option values
         $variant->optionValues()->attach($optionValues->pluck('id'));
 
-        return $variant;
-    }
+        $variant->forceFill([
+            'sku' => $variant->generateSku(),
+        ])->save();
 
-    /**
-     * Generate SKU for a variant.
-     *
-     * @param  Collection<int, OptionValue>  $optionValues
-     */
-    protected function generateSku(Product $product, Collection $optionValues): string
-    {
-        $pattern = config('products.features.variants.sku_pattern', '{parent_sku}-{option_codes}');
-
-        $optionCodes = $optionValues
-            ->sortBy(fn ($val) => $val->option->position)
-            ->map(function ($val): string {
-                $cleaned = preg_replace('/[^a-zA-Z0-9]/', '', $val->name) ?? '';
-
-                return mb_strtoupper(mb_substr($cleaned, 0, 3));
-            })
-            ->implode('-');
-
-        $parentSku = $product->sku ?? 'PROD-' . mb_strtoupper(mb_substr((string) $product->id, 0, 8));
-
-        return str_replace(
-            ['{parent_sku}', '{option_codes}'],
-            [$parentSku, $optionCodes],
-            $pattern
-        );
+        return $variant->refresh();
     }
 }
