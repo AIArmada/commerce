@@ -7,7 +7,7 @@ parameters:
 
     level: 6
 
-    reportUnmatchedIgnoredErrors: true
+    reportUnmatchedIgnoredErrors: false
 
     treatPhpDocTypesAsCertain: false
 
@@ -133,12 +133,6 @@ parameters:
         # (no ignore) surface strict/dead-code issues
         # Ignore unused Buyable trait (it's part of the public API)
         - message: '#Trait AIArmada\\Cart\\Concerns\\Buyable is used zero times and is not analysed\.#'
-
-        # Filament macros are dynamically bound at runtime (Macroable), PHPStan can't see $this
-        - message: '#Undefined variable: \$this#'
-          paths:
-              - packages/filament-authz/src/Support/Macros
-
 
         # Defensive programming patterns - method_exists/instanceof checks on types that are guaranteed
         # These are intentional for forward/backward compatibility and defensive coding

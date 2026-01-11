@@ -1,23 +1,20 @@
-# Filament Permissions
+# Filament Authz
 
-A comprehensive Filament v4 permissions suite powered by Spatie laravel-permission with multi-guard support, panel-aware gating, and rich admin UX.
+A simple, focused Filament v5 authorization package extending Spatie laravel-permission with wildcard permissions and audit logging.
 
 ## Features
 
-- **Multi-Guard Support** — Configure multiple authentication guards with automatic permission generation per guard
-- **Panel-Aware Authorization** — Per-panel role mapping with middleware-based access control
-- **Complete CRUD Resources** — Role, Permission, and User management with relation managers
-- **Developer Macros** — `requiresPermission()` and `requiresRole()` for Actions, Navigation, Columns, and Filters
-- **Super Admin Bypass** — Automatic `Gate::before` for unrestricted access
-- **Permission Explorer** — Grouped permission viewer with role assignments
-- **Stats Widget** — Dashboard widget showing permission statistics and unused permissions
-- **CLI Tools** — Sync, doctor, import/export commands for permission management
+- **Super Admin Bypass** — Configure a role that automatically bypasses all permission checks via `Gate::before`
+- **Wildcard Permissions** — Support for patterns like `orders.*` to match `orders.view`, `orders.create`, etc.
+- **Role & Permission Resources** — Clean Filament UI for managing roles and permissions
+- **Audit Logging** — Track permission changes (optional)
+- **Action Macros** — `->requiresPermission()` and `->requiresRole()` for Filament Actions
 
 ## Requirements
 
-- PHP 8.2+
+- PHP 8.4+
 - Laravel 12+
-- Filament 4.2+
+- Filament 5.0+
 - Spatie laravel-permission 6.0+
 
 ## Installation
@@ -59,78 +56,49 @@ class User extends Authenticatable
 Register the plugin in your Filament panel provider:
 
 ```php
-use AIArmada\FilamentPermissions\FilamentPermissionsPlugin;
+use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
 
 public function panel(Panel $panel): Panel
 {
     return $panel
         ->plugins([
-            FilamentPermissionsPlugin::make(),
+            FilamentAuthzPlugin::make(),
         ]);
 }
 ```
 
 ## Configuration
 
-The configuration file (`config/filament-authz.php`) provides extensive customization:
-
 ```php
+// config/filament-authz.php
 return [
-    // Supported authentication guards
-    'guards' => ['web', 'admin'],
+    // Authentication guards to support
+    'guards' => ['web'],
+    'default_guard' => 'web',
 
-    // User model class
-    'user_model' => App\Models\User::class,
+    // Role that bypasses all permission checks
+    'super_admin_role' => 'super_admin',
 
-    // Map panel IDs to specific guards
-    'panel_guard_map' => [
-        'admin' => 'admin',
-        'member' => 'web',
+    // Enable wildcard permission patterns like 'orders.*'
+    'wildcard_permissions' => true,
+
+    // Audit logging
+    'audit' => [
+        'enabled' => true,
+        'async' => false,         // Queue audit writes
+        'retention_days' => 90,
     ],
-
-    // Roles allowed per panel (empty = guard-only restriction)
-    'panel_roles' => [
-        'admin' => ['Super Admin', 'Admin'],
-        'member' => ['Super Admin', 'Member'],
-    ],
-
-    // Role name that bypasses all permission checks
-    'super_admin_role' => 'Super Admin',
-
-    // Enable built-in User resource
-    'enable_user_resource' => true,
 
     // Navigation settings
     'navigation' => [
-        'group' => 'Access Control',
-        'sort' => 90,
-        'icons' => [
-            'roles' => 'heroicon-o-key',
-            'permissions' => 'heroicon-o-shield-check',
-            'users' => 'heroicon-o-user-group',
-        ],
+        'group' => 'Settings',
+        'sort' => 99,
     ],
 
-    // Define roles and permissions to sync from config
+    // Sync roles/permissions from config
     'sync' => [
-        'roles' => [
-            'Admin' => ['user.viewAny', 'user.create', 'user.update'],
-        ],
-        'permissions' => [
-            'user.viewAny', 'user.view', 'user.create', 'user.update', 'user.delete',
-        ],
-    ],
-
-    // Feature toggles
-    'features' => [
-        'doctor' => true,
-        'policy_generator' => true,
-        'impersonation_banner' => true,
-        'permission_explorer' => true,
-        'diff_widget' => true,
-        'export_import' => true,
-        'auto_panel_middleware' => true,
-        'panel_role_authorization' => true,
+        'permissions' => [],
+        'roles' => [],
     ],
 ];
 ```
@@ -139,82 +107,45 @@ return [
 
 ### Permission Macros
 
-The package provides convenient macros for common Filament components:
-
-#### Actions
-
 ```php
 use Filament\Actions\Action;
 
+// Require a specific permission
 Action::make('export')
     ->requiresPermission('order.export');
 
+// Require a role
 Action::make('admin-settings')
     ->requiresRole('Admin');
 
+// Require any of multiple roles
 Action::make('analytics')
     ->requiresRole(['Admin', 'Analyst']);
+
+// Require any of multiple permissions
+Action::make('reports')
+    ->requiresAnyPermission(['report.view', 'report.export']);
 ```
 
-#### Table Columns
+### Wildcard Permissions
 
 ```php
-use Filament\Tables\Columns\TextColumn;
+// Grant 'orders.*' to a role
+$role->givePermissionTo('orders.*');
 
-TextColumn::make('internal_notes')
-    ->requiresPermission('order.view_internal');
-
-TextColumn::make('profit_margin')
-    ->requiresRole('Finance');
+// This now passes for any 'orders.X' check
+$user->can('orders.view');   // true
+$user->can('orders.create'); // true
+$user->can('orders.delete'); // true
 ```
-
-#### Table Filters
-
-```php
-use Filament\Tables\Filters\Filter;
-
-Filter::make('high_value')
-    ->requiresPermission('order.filter_high_value');
-```
-
-#### Navigation Items
-
-```php
-use Filament\Navigation\NavigationItem;
-
-NavigationItem::make('Reports')
-    ->requiresPermission('report.viewAny');
-
-NavigationItem::make('Settings')
-    ->requiresRole(['Admin', 'Super Admin']);
-```
-
-### Multi-Panel Setup
-
-Configure panel-specific access with role restrictions:
-
-```php
-// config/filament-authz.php
-'panel_guard_map' => [
-    'admin' => 'admin',
-    'customer' => 'web',
-],
-
-'panel_roles' => [
-    'admin' => ['Super Admin', 'Admin', 'Staff'],
-    'customer' => ['Super Admin', 'Customer'],
-],
-```
-
-The `AuthorizePanelRoles` middleware automatically enforces these restrictions. Super Admin role always has universal access.
 
 ### Super Admin Bypass
 
-Users with the configured super admin role automatically bypass all permission checks via `Gate::before`:
+Users with the configured super admin role automatically bypass all permission checks:
 
 ```php
-// Any user with 'Super Admin' role passes all gates
-Gate::allows('any-permission'); // true for Super Admin
+// User with 'super_admin' role passes all gates
+Gate::allows('any-permission'); // true
 ```
 
 ## Commands
@@ -224,10 +155,7 @@ Gate::allows('any-permission'); // true for Super Admin
 Sync roles and permissions from configuration:
 
 ```bash
-php artisan permissions:sync
-
-# Clear cache after sync
-php artisan permissions:sync --flush-cache
+php artisan authz:sync
 ```
 
 ### Doctor
@@ -235,82 +163,29 @@ php artisan permissions:sync --flush-cache
 Diagnose permission configuration issues:
 
 ```bash
-php artisan permissions:doctor
+php artisan authz:doctor
 ```
 
-Detects:
-- Roles/permissions with invalid guards
-- Unused permissions (not attached to any role)
-- Empty roles (no permissions assigned)
+### Cache
 
-### Export
-
-Export current roles and permissions to JSON:
+Manage permission cache:
 
 ```bash
-php artisan permissions:export
-
-# Custom path
-php artisan permissions:export storage/backup/permissions.json
+php artisan authz:cache --flush
+php artisan authz:cache --warm
 ```
-
-### Import
-
-Import roles and permissions from JSON:
-
-```bash
-php artisan permissions:import storage/permissions.json
-
-# Flush cache after import
-php artisan permissions:import storage/permissions.json --flush-cache
-```
-
-### Generate Policies
-
-Generate policy stubs with permission-based authorization:
-
-```bash
-php artisan permissions:generate-policies Post
-```
-
-Creates a policy with methods mapping to permissions like `post.viewAny`, `post.create`, etc.
 
 ## Permission Naming Convention
 
-The package uses a consistent `{model}.{ability}` naming convention:
+Use `{resource}.{ability}` format:
 
 | Permission | Description |
-|-----------|-------------|
+|------------|-------------|
 | `user.viewAny` | View user list |
 | `user.view` | View individual user |
-| `user.create` | Create new users |
-| `user.update` | Update existing users |
+| `user.create` | Create users |
+| `user.update` | Update users |
 | `user.delete` | Delete users |
-| `user.restore` | Restore soft-deleted users |
-| `user.forceDelete` | Permanently delete users |
-
-## UI Components
-
-### Permission Explorer
-
-A dedicated page showing all permissions grouped by domain with role assignments:
-
-- Navigate to **Access Control → Permission Explorer**
-- View permissions organized by prefix (e.g., `user.*`, `order.*`)
-- See which roles have each permission
-
-### Stats Widget
-
-Dashboard widget displaying:
-- Total permissions count
-- Total roles count
-- Unused permissions (warning indicator)
-
-## Testing
-
-```bash
-./vendor/bin/pest tests/src/FilamentPermissions --parallel
-```
 
 ## License
 

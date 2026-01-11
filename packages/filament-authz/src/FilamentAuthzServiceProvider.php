@@ -4,185 +4,77 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz;
 
-use AIArmada\FilamentAuthz\Listeners\PermissionEventSubscriber;
+use AIArmada\FilamentAuthz\Console\DiscoverCommand;
+use AIArmada\FilamentAuthz\Console\GeneratePoliciesCommand;
+use AIArmada\FilamentAuthz\Console\SeederCommand;
+use AIArmada\FilamentAuthz\Console\SuperAdminCommand;
+use AIArmada\FilamentAuthz\Console\SyncAuthzCommand;
 use AIArmada\FilamentAuthz\Models\Permission as AuthzPermission;
-use AIArmada\FilamentAuthz\Models\Permission as SpatiePermission;
 use AIArmada\FilamentAuthz\Models\Role as AuthzRole;
-use AIArmada\FilamentAuthz\Models\Role as SpatieRole;
-use AIArmada\FilamentAuthz\Services\AuditLogger;
-use AIArmada\FilamentAuthz\Services\ComplianceReportService;
-use AIArmada\FilamentAuthz\Services\ContextualAuthorizationService;
-use AIArmada\FilamentAuthz\Services\DelegationService;
 use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
-use AIArmada\FilamentAuthz\Services\ImplicitPermissionService;
-use AIArmada\FilamentAuthz\Services\PermissionAggregator;
-use AIArmada\FilamentAuthz\Services\PermissionCacheService;
-use AIArmada\FilamentAuthz\Services\PermissionGroupService;
-use AIArmada\FilamentAuthz\Services\PermissionImpactAnalyzer;
-use AIArmada\FilamentAuthz\Services\PermissionRegistry;
-use AIArmada\FilamentAuthz\Services\PermissionTester;
-use AIArmada\FilamentAuthz\Services\PermissionVersioningService;
-use AIArmada\FilamentAuthz\Services\PolicyEngine;
-use AIArmada\FilamentAuthz\Services\PolicyGeneratorService;
-use AIArmada\FilamentAuthz\Services\RoleComparer;
-use AIArmada\FilamentAuthz\Services\RoleInheritanceService;
-use AIArmada\FilamentAuthz\Services\RoleTemplateService;
-use AIArmada\FilamentAuthz\Services\TeamPermissionService;
-use AIArmada\FilamentAuthz\Services\TemporalPermissionService;
+use AIArmada\FilamentAuthz\Services\PermissionKeyBuilder;
 use AIArmada\FilamentAuthz\Services\WildcardPermissionResolver;
 use AIArmada\FilamentAuthz\Support\OwnerContextTeamResolver;
-use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\ServiceProvider;
 use Spatie\Permission\Contracts\PermissionsTeamResolver;
-use Spatie\Permission\DefaultTeamResolver;
-use Spatie\Permission\PermissionRegistrar;
+use Spatie\Permission\Models\Permission as SpatiePermission;
+use Spatie\Permission\Models\Role as SpatieRole;
 
+/**
+ * Authz Service Provider.
+ *
+ * Features:
+ * - Cleaner service registration
+ * - Proper singleton bindings
+ * - Modular command registration
+ */
 class FilamentAuthzServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
-        $this->app->singleton(FilamentAuthzPlugin::class);
         $this->mergeConfigFrom(__DIR__ . '/../config/filament-authz.php', 'filament-authz');
 
         $this->configureSpatiePermissions();
-        $this->registerServices();
+
+        $this->app->singleton(FilamentAuthzPlugin::class);
+        $this->app->singleton(WildcardPermissionResolver::class);
+        $this->app->singleton(EntityDiscoveryService::class);
+        $this->app->singleton(PermissionKeyBuilder::class);
+
+        $this->app->singleton(Authz::class, function ($app): Authz {
+            return new Authz(
+                $app->make(EntityDiscoveryService::class),
+                $app->make(PermissionKeyBuilder::class)
+            );
+        });
+
+        $this->registerTeamResolver();
     }
 
     public function boot(): void
     {
-        $this->loadViewsFrom(__DIR__ . '/../resources/views', 'filament-authz');
-        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
-
         $this->publishes([
             __DIR__ . '/../config/filament-authz.php' => config_path('filament-authz.php'),
         ], 'filament-authz-config');
 
-        $this->publishes([
-            __DIR__ . '/../resources/views' => resource_path('views/vendor/filament-authz'),
-        ], 'filament-authz-views');
-
-        // Publish migrations as individual files (consistent with discoversMigrations behavior)
-        $migrationPath = __DIR__ . '/../database/migrations';
-        $migrations = [];
-        foreach (glob($migrationPath . '/*.php') as $file) {
-            $migrations[$file] = database_path('migrations/' . basename($file));
-        }
-        $this->publishes($migrations, 'filament-authz-migrations');
-
-        $this->registerGateBefore();
+        $this->registerGateHooks();
         $this->registerCommands();
-        $this->registerMacros();
-        $this->registerEventSubscriber();
     }
 
-    protected function registerServices(): void
+    protected function registerGateHooks(): void
     {
-        // Core services as singletons
-        $this->app->singleton(WildcardPermissionResolver::class);
-        $this->app->singleton(ImplicitPermissionService::class);
-        $this->app->singleton(PermissionGroupService::class);
-        $this->app->singleton(PermissionRegistry::class);
-        $this->app->singleton(RoleInheritanceService::class);
-        $this->app->singleton(RoleTemplateService::class);
-        $this->app->singleton(PolicyEngine::class);
-        $this->app->singleton(PermissionCacheService::class);
+        $superAdminRole = (string) config('filament-authz.super_admin_role');
 
-        // Services with dependencies
-        $this->app->singleton(PermissionAggregator::class, function ($app) {
-            return new PermissionAggregator(
-                $app->make(RoleInheritanceService::class),
-                $app->make(WildcardPermissionResolver::class),
-                $app->make(ImplicitPermissionService::class)
-            );
-        });
-
-        $this->app->singleton(ContextualAuthorizationService::class, function ($app) {
-            return new ContextualAuthorizationService(
-                $app->make(PermissionAggregator::class)
-            );
-        });
-
-        $this->app->singleton(TeamPermissionService::class, function ($app) {
-            return new TeamPermissionService(
-                $app->make(ContextualAuthorizationService::class)
-            );
-        });
-
-        $this->app->singleton(TemporalPermissionService::class, function ($app) {
-            return new TemporalPermissionService(
-                $app->make(ContextualAuthorizationService::class)
-            );
-        });
-
-        $this->app->singleton(PermissionTester::class, function ($app) {
-            return new PermissionTester(
-                $app->make(PermissionAggregator::class),
-                $app->make(PolicyEngine::class),
-                $app->make(ContextualAuthorizationService::class)
-            );
-        });
-
-        $this->app->singleton(RoleComparer::class, function ($app) {
-            return new RoleComparer(
-                $app->make(RoleInheritanceService::class)
-            );
-        });
-
-        $this->app->singleton(PermissionImpactAnalyzer::class, function ($app) {
-            return new PermissionImpactAnalyzer(
-                $app->make(RoleInheritanceService::class)
-            );
-        });
-
-        $this->app->singleton(AuditLogger::class);
-        $this->app->singleton(ComplianceReportService::class);
-
-        // Entity Discovery
-        $this->app->singleton(EntityDiscoveryService::class);
-
-        // Policy Generator
-        $this->app->singleton(PolicyGeneratorService::class);
-
-        // Permission Versioning
-        $this->app->singleton(PermissionVersioningService::class, function ($app) {
-            return new PermissionVersioningService(
-                $app->make(AuditLogger::class)
-            );
-        });
-
-        // Delegation Service
-        $this->app->singleton(DelegationService::class, function ($app) {
-            return new DelegationService(
-                $app->make(AuditLogger::class)
-            );
-        });
-
-        // Compliance Report Generator
-        $this->app->singleton(Services\ComplianceReportGenerator::class);
-
-        // Identity Provider Sync
-        $this->app->singleton(Services\IdentityProviderSync::class);
-
-        // Code Manipulator (not singleton, new instance per file)
-        $this->app->bind(Services\CodeManipulator::class, function ($app, $params) {
-            return new Services\CodeManipulator($params['path'] ?? '');
-        });
-    }
-
-    protected function registerGateBefore(): void
-    {
-        $role = (string) config('filament-authz.super_admin_role');
-        if ($role !== '') {
-            Gate::before(static function ($user, string $ability) use ($role) {
-                return method_exists($user, 'hasRole') && $user->hasRole($role) ? true : null;
+        if ($superAdminRole !== '') {
+            Gate::before(static function ($user, string $ability) use ($superAdminRole) {
+                return method_exists($user, 'hasRole') && $user->hasRole($superAdminRole) ? true : null;
             });
         }
 
-        // Register wildcard permission resolution
-        if (config('filament-authz.features.wildcard_permissions', true)) {
+        if (config('filament-authz.wildcard_permissions', true)) {
             Gate::before(function ($user, string $ability) {
-                if (!method_exists($user, 'getAllPermissions')) {
+                if (! method_exists($user, 'getAllPermissions')) {
                     return null;
                 }
 
@@ -204,50 +96,17 @@ class FilamentAuthzServiceProvider extends ServiceProvider
     {
         if ($this->app->runningInConsole()) {
             $this->commands([
-                Console\SyncAuthzCommand::class,
-                Console\DoctorAuthzCommand::class,
-                Console\ExportAuthzCommand::class,
-                Console\ImportAuthzCommand::class,
-                Console\GeneratePoliciesCommand::class,
-                Console\PermissionGroupsCommand::class,
-                Console\RoleHierarchyCommand::class,
-                Console\RoleTemplateCommand::class,
-                Console\AuthzCacheCommand::class,
-                Console\SetupCommand::class,
-                Console\DiscoverCommand::class,
-                Console\SnapshotCommand::class,
-                Console\InstallTraitCommand::class,
+                DiscoverCommand::class,
+                GeneratePoliciesCommand::class,
+                SeederCommand::class,
+                SuperAdminCommand::class,
+                SyncAuthzCommand::class,
             ]);
-        }
-    }
-
-    protected function registerMacros(): void
-    {
-        Support\Macros\ActionMacros::register();
-        Support\Macros\NavigationItemMacros::register();
-        Support\Macros\TableComponentMacros::register();
-        Support\Macros\ColumnMacros::register();
-        Support\Macros\FilterMacros::register();
-        Support\Macros\NavigationMacros::register();
-        Support\Macros\FormMacros::register();
-    }
-
-    protected function registerEventSubscriber(): void
-    {
-        if (config('filament-authz.audit.enabled', true)) {
-            Event::subscribe(PermissionEventSubscriber::class);
         }
     }
 
     private function configureSpatiePermissions(): void
     {
-        // Spatie binds the PermissionRegistrar in its provider's boot() method, but it
-        // may be resolved earlier when Gate is already resolved (callAfterResolving).
-        // Binding it here ensures it is always resolvable regardless of provider order.
-        if (! $this->app->bound(PermissionRegistrar::class)) {
-            $this->app->singleton(PermissionRegistrar::class);
-        }
-
         if (config('permission.models.permission') === SpatiePermission::class) {
             config()->set('permission.models.permission', AuthzPermission::class);
         }
@@ -255,48 +114,18 @@ class FilamentAuthzServiceProvider extends ServiceProvider
         if (config('permission.models.role') === SpatieRole::class) {
             config()->set('permission.models.role', AuthzRole::class);
         }
-
-        if (config('filament-authz.owner.enabled', false)) {
-            config()->set('permission.teams', true);
-        }
-
-        if (config('permission.team_resolver') === DefaultTeamResolver::class) {
-            config()->set('permission.team_resolver', OwnerContextTeamResolver::class);
-        }
-
-        // Ensure the contract is always resolvable, even when Spatie's provider
-        // isn't the component resolving it (e.g. during isolated tests).
-        $this->app->singleton(PermissionsTeamResolver::class, function ($app): PermissionsTeamResolver {
-            /** @var class-string<PermissionsTeamResolver> $resolverClass */
-            $resolverClass = config('permission.team_resolver', DefaultTeamResolver::class);
-
-            return $app->make($resolverClass);
-        });
-
-        $this->app->afterResolving(PermissionRegistrar::class, function (PermissionRegistrar $registrar): void {
-            $registrar->initializeCache();
-
-            if ($this->isPackageDiscoveryRunning()) {
-                return;
-            }
-
-            try {
-                $registrar->forgetCachedPermissions();
-            } catch (\Throwable) {
-                // Cache refresh is best-effort; some environments (e.g. during install/bootstrap)
-                // may not have DB-backed cache storage ready yet.
-            }
-        });
     }
 
-    private function isPackageDiscoveryRunning(): bool
+    private function registerTeamResolver(): void
     {
-        if (! $this->app->runningInConsole()) {
-            return false;
+        if (! class_exists(\AIArmada\CommerceSupport\Support\OwnerContext::class)) {
+            return;
         }
 
-        $argv = $_SERVER['argv'] ?? [];
+        if (! config('permission.teams', false)) {
+            return;
+        }
 
-        return in_array('package:discover', $argv, true);
+        $this->app->singleton(PermissionsTeamResolver::class, OwnerContextTeamResolver::class);
     }
 }

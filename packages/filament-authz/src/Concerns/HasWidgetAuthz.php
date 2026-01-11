@@ -4,156 +4,63 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAuthz\Concerns;
 
-use AIArmada\FilamentAuthz\Services\PermissionAggregator;
+use AIArmada\FilamentAuthz\Facades\Authz;
 use Filament\Facades\Filament;
-use Illuminate\Support\Str;
 
 /**
- * Trait for automatic authorization enforcement on Filament widgets.
+ * Add this trait to Filament Widgets to enforce permission checks.
  *
- * Usage:
- *   class RevenueWidget extends Widget
- *   {
- *       use HasWidgetAuthz;
- *   }
+ * Features:
+ * - Uses discovered permissions (not generated names)
+ * - Caches permission lookups
+ * - Super admin bypass built-in
+ * - Falls back gracefully if permission not found
  */
 trait HasWidgetAuthz
 {
-    protected static ?string $widgetPermissionKey = null;
+    protected static ?string $authzPermissionKey = null;
 
-    /**
-     * @var array<string>
-     */
-    protected static array $requiredWidgetPermissions = [];
-
-    /**
-     * @var array<string>
-     */
-    protected static array $requiredWidgetRoles = [];
-
-    protected static ?string $widgetTeamScope = null;
-
-    protected static bool $hideWhenUnauthorized = true;
-
-    /**
-     * Check if widget can be viewed.
-     */
     public static function canView(): bool
     {
         $user = Filament::auth()?->user();
 
-        if (! $user) {
+        if ($user === null) {
             return false;
         }
 
-        if (static::isSuperAdmin($user)) {
+        $superAdminRole = config('filament-authz.super_admin_role');
+
+        if ($superAdminRole && method_exists($user, 'hasRole') && $user->hasRole($superAdminRole)) {
             return true;
         }
 
-        // Role check
-        if (! empty(static::$requiredWidgetRoles)) {
-            if (! method_exists($user, 'hasAnyRole') || ! $user->hasAnyRole(static::$requiredWidgetRoles)) {
-                return false;
-            }
+        $permission = static::getAuthzPermission();
+
+        if ($permission === null) {
+            return parent::canView();
         }
 
-        // Team scope
-        if (static::$widgetTeamScope !== null) {
-            $teamId = static::getCurrentTeamId();
-            if ($teamId !== null) {
-                $aggregator = app(PermissionAggregator::class);
+        return method_exists($user, 'can') && $user->can($permission);
+    }
 
-                return $aggregator->userHasPermission($user, static::getWidgetPermissionKey());
-            }
+    /**
+     * Get the permission for this widget from discovered entities.
+     * Caches the result for performance.
+     */
+    public static function getAuthzPermission(): ?string
+    {
+        if (static::$authzPermissionKey === null) {
+            static::$authzPermissionKey = Authz::getWidgetPermission(static::class) ?? '';
         }
 
-        // Permission check with aggregation
-        if (! empty(static::$requiredWidgetPermissions)) {
-            $aggregator = app(PermissionAggregator::class);
-
-            return $aggregator->userHasAllPermissions($user, static::$requiredWidgetPermissions);
-        }
-
-        $aggregator = app(PermissionAggregator::class);
-
-        return $aggregator->userHasPermission($user, static::getWidgetPermissionKey());
+        return static::$authzPermissionKey !== '' ? static::$authzPermissionKey : null;
     }
 
     /**
-     * Get permission key using naming convention.
+     * Override to use a custom permission key.
      */
-    public static function getWidgetPermissionKey(): string
+    public static function authzPermission(): ?string
     {
-        if (static::$widgetPermissionKey !== null) {
-            return static::$widgetPermissionKey;
-        }
-
-        $name = Str::snake(class_basename(static::class));
-
-        return "widget.{$name}";
-    }
-
-    /**
-     * Set the widget permission key.
-     */
-    public static function setWidgetPermissionKey(string $key): void
-    {
-        static::$widgetPermissionKey = $key;
-    }
-
-    /**
-     * Require specific permissions.
-     *
-     * @param  array<string>  $permissions
-     */
-    public static function requireWidgetPermissions(array $permissions): void
-    {
-        static::$requiredWidgetPermissions = $permissions;
-    }
-
-    /**
-     * Require specific roles.
-     *
-     * @param  array<string>  $roles
-     */
-    public static function requireWidgetRoles(array $roles): void
-    {
-        static::$requiredWidgetRoles = $roles;
-    }
-
-    /**
-     * Scope widget to a team.
-     */
-    public static function scopeWidgetToTeam(string $teamIdKey = 'team_id'): void
-    {
-        static::$widgetTeamScope = $teamIdKey;
-    }
-
-    /**
-     * Configure widget visibility behavior.
-     */
-    public static function showPlaceholderWhenUnauthorized(): void
-    {
-        static::$hideWhenUnauthorized = false;
-    }
-
-    /**
-     * Check if user is a super admin.
-     */
-    protected static function isSuperAdmin(mixed $user): bool
-    {
-        $superAdminRole = config('filament-authz.super_admin_role', 'super_admin');
-
-        return method_exists($user, 'hasRole') && $user->hasRole($superAdminRole);
-    }
-
-    /**
-     * Get the current team ID.
-     */
-    protected static function getCurrentTeamId(): mixed
-    {
-        $tenant = Filament::getTenant();
-
-        return $tenant?->id ?? null;
+        return null;
     }
 }
