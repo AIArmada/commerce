@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Http\Controllers\WebhookController;
 use AIArmada\Chip\Http\Middleware\VerifyWebhookSignature;
+use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Services\WebhookService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Event;
@@ -13,15 +14,26 @@ describe('WebhookController', function (): void {
         // Disable listeners that require database
         Event::fake();
         config(['chip.webhooks.store_data' => false]);
+        
+        // Mock the dispatcher
+        $this->dispatcher = Mockery::mock(WebhookEventDispatcher::class);
+        $this->dispatcher->shouldReceive('dispatch')->andReturn(null);
+        $this->dispatcher->shouldReceive('extractPurchase')->andReturn(null);
+        $this->dispatcher->shouldReceive('extractPayout')->andReturn(null);
+        $this->dispatcher->shouldReceive('extractBillingTemplateClient')->andReturn(null);
+    });
+
+    afterEach(function (): void {
+        Mockery::close();
     });
 
     it('can be instantiated', function (): void {
-        $controller = new WebhookController;
+        $controller = new WebhookController($this->dispatcher);
         expect($controller)->toBeInstanceOf(WebhookController::class);
     });
 
     it('handles purchase.paid webhook', function (): void {
-        $controller = new WebhookController;
+        $controller = new WebhookController($this->dispatcher);
 
         $payload = [
             'id' => 'purch_test123',
@@ -48,7 +60,7 @@ describe('WebhookController', function (): void {
     });
 
     it('handles payout webhook', function (): void {
-        $controller = new WebhookController;
+        $controller = new WebhookController($this->dispatcher);
 
         $payload = [
             'id' => 'payout_test123',
@@ -70,7 +82,7 @@ describe('WebhookController', function (): void {
     });
 
     it('handles billing template client webhook', function (): void {
-        $controller = new WebhookController;
+        $controller = new WebhookController($this->dispatcher);
 
         $payload = [
             'id' => 'btc_test123',
@@ -92,7 +104,7 @@ describe('WebhookController', function (): void {
     });
 
     it('handles unknown event type gracefully', function (): void {
-        $controller = new WebhookController;
+        $controller = new WebhookController($this->dispatcher);
 
         $payload = [
             'id' => 'unknown_123',
@@ -108,7 +120,7 @@ describe('WebhookController', function (): void {
     });
 
     it('handles missing event_type', function (): void {
-        $controller = new WebhookController;
+        $controller = new WebhookController($this->dispatcher);
 
         $request = Request::create('/webhook', 'POST', []);
         $response = $controller->handle($request);
@@ -119,6 +131,10 @@ describe('WebhookController', function (): void {
 });
 
 describe('VerifyWebhookSignature middleware', function (): void {
+    afterEach(function (): void {
+        Mockery::close();
+    });
+
     it('can be instantiated', function (): void {
         $webhookService = Mockery::mock(WebhookService::class);
         $middleware = new VerifyWebhookSignature($webhookService);

@@ -9,17 +9,19 @@ use AIArmada\Chip\Data\RevenueMetrics;
 use AIArmada\Chip\Data\TransactionMetrics;
 use AIArmada\Chip\Models\DailyMetric;
 use AIArmada\Chip\Models\Purchase;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 /**
  * Local analytics service - computes metrics from local data.
+ *
+ * All SQL queries are database-agnostic and work with MySQL, PostgreSQL, and SQLite.
  */
 class LocalAnalyticsService
 {
     /**
      * Get comprehensive dashboard metrics from LOCAL data.
      */
-    public function getDashboardMetrics(Carbon $startDate, Carbon $endDate): DashboardMetrics
+    public function getDashboardMetrics(CarbonImmutable $startDate, CarbonImmutable $endDate): DashboardMetrics
     {
         return new DashboardMetrics(
             revenue: $this->getRevenueMetrics($startDate, $endDate),
@@ -32,24 +34,24 @@ class LocalAnalyticsService
     /**
      * Revenue metrics from local purchases.
      */
-    public function getRevenueMetrics(Carbon $startDate, Carbon $endDate): RevenueMetrics
+    public function getRevenueMetrics(CarbonImmutable $startDate, CarbonImmutable $endDate): RevenueMetrics
     {
         $metrics = Purchase::query()
             ->forOwner()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->toBase()
-            ->selectRaw('
-                SUM(CASE WHEN status = "paid" THEN total_minor ELSE 0 END) as revenue,
-                SUM(CASE WHEN status = "refunded" THEN refund_amount_minor ELSE 0 END) as refunds,
-                COUNT(CASE WHEN status = "paid" THEN 1 END) as paid_count,
-                AVG(CASE WHEN status = "paid" THEN total_minor END) as avg_transaction
-            ')
+            ->selectRaw("
+                SUM(CASE WHEN status = 'paid' THEN total_minor ELSE 0 END) as revenue,
+                SUM(CASE WHEN status = 'refunded' THEN refund_amount_minor ELSE 0 END) as refunds,
+                COUNT(CASE WHEN status = 'paid' THEN 1 END) as paid_count,
+                AVG(CASE WHEN status = 'paid' THEN total_minor END) as avg_transaction
+            ")
             ->first();
 
         // Get previous period for comparison
         $periodLength = $startDate->diffInDays($endDate);
-        $previousStart = $startDate->copy()->subDays($periodLength + 1);
-        $previousEnd = $startDate->copy()->subDay();
+        $previousStart = $startDate->subDays($periodLength + 1);
+        $previousEnd = $startDate->subDay();
 
         $previous = Purchase::query()
             ->forOwner()
@@ -75,19 +77,19 @@ class LocalAnalyticsService
     /**
      * Transaction metrics from local data.
      */
-    public function getTransactionMetrics(Carbon $startDate, Carbon $endDate): TransactionMetrics
+    public function getTransactionMetrics(CarbonImmutable $startDate, CarbonImmutable $endDate): TransactionMetrics
     {
         $metrics = Purchase::query()
             ->forOwner()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->toBase()
-            ->selectRaw('
+            ->selectRaw("
                 COUNT(*) as total,
-                SUM(CASE WHEN status = "paid" THEN 1 ELSE 0 END) as successful,
-                SUM(CASE WHEN status IN ("failed", "error") THEN 1 ELSE 0 END) as failed,
-                SUM(CASE WHEN status IN ("pending", "created") THEN 1 ELSE 0 END) as pending,
-                SUM(CASE WHEN status = "refunded" THEN 1 ELSE 0 END) as refunded
-            ')
+                SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as successful,
+                SUM(CASE WHEN status IN ('failed', 'error') THEN 1 ELSE 0 END) as failed,
+                SUM(CASE WHEN status IN ('pending', 'created') THEN 1 ELSE 0 END) as pending,
+                SUM(CASE WHEN status = 'refunded' THEN 1 ELSE 0 END) as refunded
+            ")
             ->first();
 
         $total = $metrics->total ?? 0;
@@ -109,18 +111,18 @@ class LocalAnalyticsService
      *
      * @return array<int, array{method: string, attempts: int, successful: int, success_rate: float, revenue: int}>
      */
-    public function getPaymentMethodBreakdown(Carbon $startDate, Carbon $endDate): array
+    public function getPaymentMethodBreakdown(CarbonImmutable $startDate, CarbonImmutable $endDate): array
     {
         return Purchase::query()
             ->forOwner()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->toBase()
-            ->selectRaw('
-                COALESCE(payment_method, "unknown") as payment_method,
+            ->selectRaw("
+                COALESCE(payment_method, 'unknown') as payment_method,
                 COUNT(*) as total_attempts,
-                SUM(CASE WHEN status = "paid" THEN 1 ELSE 0 END) as successful,
-                SUM(CASE WHEN status = "paid" THEN total_minor ELSE 0 END) as revenue
-            ')
+                SUM(CASE WHEN status = 'paid' THEN 1 ELSE 0 END) as successful,
+                SUM(CASE WHEN status = 'paid' THEN total_minor ELSE 0 END) as revenue
+            ")
             ->groupBy('payment_method')
             ->get()
             ->map(fn (object $row): array => [
@@ -142,18 +144,18 @@ class LocalAnalyticsService
      *
      * @return array<int, array{reason: string, count: int, lost_revenue: int}>
      */
-    public function getFailureAnalysis(Carbon $startDate, Carbon $endDate): array
+    public function getFailureAnalysis(CarbonImmutable $startDate, CarbonImmutable $endDate): array
     {
         return Purchase::query()
             ->forOwner()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->whereIn('status', ['failed', 'error'])
             ->toBase()
-            ->selectRaw('
-                COALESCE(failure_reason, "Unknown") as failure_reason,
+            ->selectRaw("
+                COALESCE(failure_reason, 'Unknown') as failure_reason,
                 COUNT(*) as count,
                 SUM(total_minor) as lost_revenue
-            ')
+            ")
             ->groupBy('failure_reason')
             ->orderByDesc('count')
             ->get()
@@ -168,35 +170,46 @@ class LocalAnalyticsService
     /**
      * Revenue trend for charts.
      *
+     * Uses database-agnostic date truncation via PHP grouping.
+     *
      * @return array<int, array{period: string, count: int, revenue: int}>
      */
-    public function getRevenueTrend(Carbon $startDate, Carbon $endDate, string $groupBy = 'day'): array
+    public function getRevenueTrend(CarbonImmutable $startDate, CarbonImmutable $endDate, string $groupBy = 'day'): array
     {
-        $interval = match ($groupBy) {
-            'hour' => 'DATE_FORMAT(created_at, "%Y-%m-%d %H:00:00")',
-            'day' => 'DATE(created_at)',
-            'week' => 'YEARWEEK(created_at, 1)',
-            'month' => 'DATE_FORMAT(created_at, "%Y-%m-01")',
-            default => 'DATE(created_at)',
-        };
-
-        return Purchase::query()
+        // Fetch raw data and group in PHP for database portability
+        $purchases = Purchase::query()
             ->forOwner()
             ->whereBetween('created_at', [$startDate, $endDate])
             ->where('status', 'paid')
-            ->toBase()
-            ->selectRaw("{$interval} as period, 
-                COUNT(*) as count,
-                SUM(total_minor) as revenue")
-            ->groupBy('period')
-            ->orderBy('period')
-            ->get()
-            ->map(fn (object $row): array => [
-                'period' => (string) $row->period,
-                'count' => (int) $row->count,
-                'revenue' => (int) $row->revenue,
+            ->select(['created_at', 'total_minor'])
+            ->get();
+
+        return $purchases
+            ->groupBy(fn ($purchase): string => $this->formatPeriod($purchase->created_at, $groupBy))
+            ->map(fn ($group, string $period): array => [
+                'period' => $period,
+                'count' => $group->count(),
+                'revenue' => (int) $group->sum('total_minor'),
             ])
+            ->sortKeys()
+            ->values()
             ->toArray();
+    }
+
+    /**
+     * Format a date into a period string based on the grouping.
+     */
+    private function formatPeriod(mixed $date, string $groupBy): string
+    {
+        $carbon = $date instanceof CarbonImmutable ? $date : CarbonImmutable::parse($date);
+
+        return match ($groupBy) {
+            'hour' => $carbon->format('Y-m-d H:00:00'),
+            'day' => $carbon->format('Y-m-d'),
+            'week' => $carbon->startOfWeek()->format('Y-m-d'),
+            'month' => $carbon->format('Y-m-01'),
+            default => $carbon->format('Y-m-d'),
+        };
     }
 
     /**
@@ -204,7 +217,7 @@ class LocalAnalyticsService
      *
      * @return array<int, DailyMetric>
      */
-    public function getAggregatedMetrics(Carbon $startDate, Carbon $endDate, ?string $paymentMethod = null): array
+    public function getAggregatedMetrics(CarbonImmutable $startDate, CarbonImmutable $endDate, ?string $paymentMethod = null): array
     {
         $query = DailyMetric::query()
             ->forOwner()

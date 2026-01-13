@@ -6,11 +6,11 @@ namespace AIArmada\Chip\Models;
 
 use AIArmada\Chip\Enums\RecurringInterval;
 use AIArmada\Chip\Enums\RecurringStatus;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
-use Illuminate\Support\Carbon;
 
 /**
  * App-layer recurring payment schedule using Chip's token + charge APIs.
@@ -25,14 +25,14 @@ use Illuminate\Support\Carbon;
  * @property string $currency
  * @property RecurringInterval $interval
  * @property int $interval_count
- * @property Carbon|null $next_charge_at
- * @property Carbon|null $last_charged_at
+ * @property CarbonImmutable|null $next_charge_at
+ * @property CarbonImmutable|null $last_charged_at
  * @property int $failure_count
  * @property int $max_failures
- * @property Carbon|null $cancelled_at
+ * @property CarbonImmutable|null $cancelled_at
  * @property array<string, mixed>|null $metadata
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
  * @property-read Collection<int, RecurringCharge> $charges
  */
 class RecurringSchedule extends ChipModel
@@ -84,15 +84,20 @@ class RecurringSchedule extends ChipModel
         return $this->next_charge_at !== null && $this->next_charge_at->isPast();
     }
 
-    public function calculateNextChargeDate(): Carbon
+    public function calculateNextChargeDate(): CarbonImmutable
     {
-        $base = $this->last_charged_at ?? now();
+        $base = $this->last_charged_at ?? CarbonImmutable::now();
+
+        // Ensure we're working with CarbonImmutable
+        if (! $base instanceof CarbonImmutable) {
+            $base = CarbonImmutable::parse($base);
+        }
 
         return match ($this->interval) {
-            RecurringInterval::Daily => $base->copy()->addDays($this->interval_count),
-            RecurringInterval::Weekly => $base->copy()->addWeeks($this->interval_count),
-            RecurringInterval::Monthly => $base->copy()->addMonths($this->interval_count),
-            RecurringInterval::Yearly => $base->copy()->addYears($this->interval_count),
+            RecurringInterval::Daily => $base->addDays($this->interval_count),
+            RecurringInterval::Weekly => $base->addWeeks($this->interval_count),
+            RecurringInterval::Monthly => $base->addMonths($this->interval_count),
+            RecurringInterval::Yearly => $base->addYears($this->interval_count),
         };
     }
 

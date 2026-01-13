@@ -6,13 +6,13 @@ use AIArmada\Chip\Data\DashboardMetrics;
 use AIArmada\Chip\Data\RevenueMetrics;
 use AIArmada\Chip\Data\TransactionMetrics;
 use AIArmada\Chip\Services\LocalAnalyticsService;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 describe('LocalAnalyticsService', function (): void {
     beforeEach(function (): void {
         $this->service = new LocalAnalyticsService;
-        $this->startDate = Carbon::now()->subDays(30);
-        $this->endDate = Carbon::now();
+        $this->startDate = CarbonImmutable::now()->subDays(30);
+        $this->endDate = CarbonImmutable::now();
     });
 
     it('can be instantiated', function (): void {

@@ -12,6 +12,10 @@ use AIArmada\Chip\Models\SendInstruction;
 
 /**
  * Handles send_instruction.rejected and payout.failed webhook events.
+ *
+ * Note: Webhooks arrive without tenant context, so we use withoutOwnerScope()
+ * to find the instruction by its unique ID. This is safe because webhook
+ * payloads are cryptographically signed and the ID is globally unique.
  */
 class SendRejectedHandler implements WebhookHandler
 {
@@ -23,6 +27,8 @@ class SendRejectedHandler implements WebhookHandler
             return WebhookResult::skipped('No send instruction ID in payload');
         }
 
+        // Webhooks have no tenant context - lookup by unique ID is safe
+        // because the payload signature verifies authenticity
         $instruction = SendInstruction::query()
             ->withoutOwnerScope()
             ->where('id', $sendInstructionId)
@@ -43,11 +49,11 @@ class SendRejectedHandler implements WebhookHandler
             'state' => SendInstructionState::REJECTED,
         ]);
 
-        // Emit Laravel event
-        event(new PayoutFailed(
-            payout: \AIArmada\Chip\Data\PayoutData::from($payload->rawPayload),
-            payload: $payload->rawPayload,
-        ));
+        // Dispatch Laravel event using Dispatchable trait
+        PayoutFailed::dispatch(
+            \AIArmada\Chip\Data\PayoutData::from($payload->rawPayload),
+            $payload->rawPayload,
+        );
 
         return WebhookResult::handled("Send instruction {$instruction->id} marked as rejected");
     }

@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Services\MetricsAggregator;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 describe('MetricsAggregator', function (): void {
     beforeEach(function (): void {
@@ -24,7 +24,7 @@ describe('MetricsAggregator', function (): void {
             $params = $reflection->getParameters();
 
             expect($params)->toHaveCount(1);
-            expect($params[0]->getType()->getName())->toBe(Carbon::class);
+            expect($params[0]->getType()->getName())->toBe(CarbonImmutable::class);
         });
 
         it('aggregateForDate returns void', function (): void {
@@ -45,7 +45,7 @@ describe('MetricsAggregator', function (): void {
             $params = $reflection->getParameters();
 
             expect($params)->toHaveCount(1);
-            expect($params[0]->getType()->getName())->toBe(Carbon::class);
+            expect($params[0]->getType()->getName())->toBe(CarbonImmutable::class);
         });
     });
 
@@ -72,15 +72,15 @@ describe('MetricsAggregator', function (): void {
 
         it('can calculate backfill days correctly', function (): void {
             // Using reflection to test the calculation without actually hitting the database
-            $startDate = Carbon::parse('2024-01-01');
-            $endDate = Carbon::parse('2024-01-10');
+            $startDate = CarbonImmutable::parse('2024-01-01');
+            $endDate = CarbonImmutable::parse('2024-01-10');
 
             $expectedDays = 10; // Jan 1-10 inclusive
             $calculatedDays = 0;
             $current = $startDate->copy();
 
             while ($current->lte($endDate)) {
-                $current->addDay();
+                $current = $current->addDay(); // CarbonImmutable returns new instance
                 $calculatedDays++;
             }
 

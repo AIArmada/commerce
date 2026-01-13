@@ -6,9 +6,11 @@ namespace AIArmada\Tax\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Tax\Database\Factories\TaxExemptionFactory;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -38,6 +40,9 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class TaxExemption extends Model
 {
+    /** @use HasFactory<TaxExemptionFactory> */
+    use HasFactory;
+
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasUuids;
@@ -114,6 +119,14 @@ class TaxExemption extends Model
                 }
             }
         });
+    }
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): TaxExemptionFactory
+    {
+        return TaxExemptionFactory::new();
     }
 
     public function getTable(): string

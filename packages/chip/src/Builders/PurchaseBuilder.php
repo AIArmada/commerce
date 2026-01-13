@@ -127,45 +127,31 @@ final class PurchaseBuilder
     }
 
     /**
-     * Add a product to the purchase (legacy method, accepts cents).
+     * Add a product using price in cents (convenience method).
      *
-     * @deprecated Use addProductMoney() for type-safe Money handling
+     * This creates a Money object internally using the purchase currency.
+     * Use addProductMoney() for explicit currency control.
      *
      * @throws ChipValidationException If price is negative
      */
-    public function addProduct(
+    public function addProductCents(
         string $name,
-        int $price,
+        int $priceInCents,
         string | float | int $quantity = 1,
-        int $discount = 0,
+        int $discountInCents = 0,
         float $taxPercent = 0,
         ?string $category = null
     ): self {
-        if ($price < 0) {
-            throw new ChipValidationException('Product price cannot be negative', ['price' => $price]);
-        }
+        $currency = $this->data['purchase']['currency'] ?? config('chip.defaults.currency', 'MYR');
 
-        $product = [
-            'name' => $name,
-            'price' => $price,
-            'quantity' => (string) $quantity,
-        ];
-
-        if ($discount > 0) {
-            $product['discount'] = $discount;
-        }
-
-        if ($taxPercent > 0) {
-            $product['tax_percent'] = $taxPercent;
-        }
-
-        if ($category !== null) {
-            $product['category'] = $category;
-        }
-
-        $this->data['purchase']['products'][] = $product;
-
-        return $this;
+        return $this->addProductMoney(
+            name: $name,
+            price: Money::{$currency}($priceInCents),
+            quantity: $quantity,
+            discount: $discountInCents > 0 ? Money::{$currency}($discountInCents) : null,
+            taxPercent: $taxPercent,
+            category: $category
+        );
     }
 
     /**

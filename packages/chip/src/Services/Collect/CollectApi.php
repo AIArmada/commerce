@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Services\Collect;
 
 use AIArmada\Chip\Clients\ChipCollectClient;
-use Exception;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 abstract class CollectApi
 {
@@ -23,7 +23,7 @@ abstract class CollectApi
     {
         try {
             return $operation();
-        } catch (Exception $exception) {
+        } catch (Throwable $exception) {
             Log::error($message, array_merge($context, [
                 'error' => $exception->getMessage(),
             ]));

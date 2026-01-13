@@ -12,7 +12,7 @@ use AIArmada\CommerceSupport\Contracts\Payment\PaymentStatus;
 use AIArmada\CommerceSupport\Contracts\Payment\WebhookHandlerInterface;
 use AIArmada\CommerceSupport\Contracts\Payment\WebhookPayload;
 use AIArmada\CommerceSupport\Exceptions\WebhookVerificationException;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Http\Request;
 use Throwable;
 
@@ -52,8 +52,8 @@ final class ChipWebhookHandler implements WebhookHandlerInterface
             reference: $data['reference'] ?? null,
             gatewayName: 'chip',
             occurredAt: isset($data['updated_on'])
-                ? Carbon::createFromTimestamp($data['updated_on'])
-                : Carbon::now(),
+                ? CarbonImmutable::createFromTimestamp($data['updated_on'])
+                : CarbonImmutable::now(),
             rawData: $data
         );
     }

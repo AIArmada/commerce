@@ -10,10 +10,10 @@ use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Akaunting\Money\Money;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 use Override;
 use OwenIt\Auditing\Contracts\Auditable;
 
@@ -127,9 +127,9 @@ abstract class ChipModel extends Model implements Auditable
         return \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
     }
 
-    protected function toTimestamp(?int $value): ?Carbon
+    protected function toTimestamp(?int $value): ?CarbonImmutable
     {
-        return $value !== null ? Carbon::createFromTimestampUTC($value) : null;
+        return $value !== null ? CarbonImmutable::createFromTimestampUTC($value) : null;
     }
 
     /**

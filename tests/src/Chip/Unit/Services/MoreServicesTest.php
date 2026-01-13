@@ -7,7 +7,7 @@ use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\Chip\Services\LocalAnalyticsService;
 use AIArmada\Chip\Services\MetricsAggregator;
 use AIArmada\Chip\Services\RecurringService;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 describe('LocalAnalyticsService', function (): void {
     it('can be instantiated', function (): void {
@@ -17,6 +17,10 @@ describe('LocalAnalyticsService', function (): void {
 });
 
 describe('MetricsAggregator', function (): void {
+    afterEach(function (): void {
+        Mockery::close();
+    });
+
     it('can be instantiated', function (): void {
         $aggregator = new MetricsAggregator;
         expect($aggregator)->toBeInstanceOf(MetricsAggregator::class);
@@ -27,8 +31,8 @@ describe('MetricsAggregator', function (): void {
         $aggregator->shouldReceive('aggregateForDate')
             ->times(7);
 
-        $startDate = Carbon::parse('2024-01-01');
-        $endDate = Carbon::parse('2024-01-07');
+        $startDate = CarbonImmutable::parse('2024-01-01');
+        $endDate = CarbonImmutable::parse('2024-01-07');
 
         $days = $aggregator->backfill($startDate, $endDate);
 
@@ -37,6 +41,10 @@ describe('MetricsAggregator', function (): void {
 });
 
 describe('RecurringService', function (): void {
+    afterEach(function (): void {
+        Mockery::close();
+    });
+
     it('can be instantiated', function (): void {
         $chipService = Mockery::mock(ChipCollectService::class);
         $service = new RecurringService($chipService);

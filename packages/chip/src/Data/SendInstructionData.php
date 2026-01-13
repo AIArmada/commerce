@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 
 final class SendInstructionData extends ChipData
 {
@@ -41,14 +41,14 @@ final class SendInstructionData extends ChipData
         );
     }
 
-    public function getCreatedAt(): Carbon
+    public function getCreatedAt(): CarbonImmutable
     {
-        return Carbon::parse($this->created_at);
+        return CarbonImmutable::parse($this->created_at);
     }
 
-    public function getUpdatedAt(): Carbon
+    public function getUpdatedAt(): CarbonImmutable
     {
-        return Carbon::parse($this->updated_at);
+        return CarbonImmutable::parse($this->updated_at);
     }
 
     public function getAmountInMinorUnits(): int

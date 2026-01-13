@@ -4,17 +4,29 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
+use AIArmada\Chip\Data\Casts\MoneyCast;
+use AIArmada\Chip\Data\Transformers\MoneyTransformer;
 use Akaunting\Money\Money;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
+use Spatie\LaravelData\Attributes\WithCast;
+use Spatie\LaravelData\Attributes\WithTransformer;
 
 final class PaymentData extends ChipData
 {
     public function __construct(
         public readonly bool $is_outgoing,
         public readonly string $payment_type,
+        #[WithCast(MoneyCast::class)]
+        #[WithTransformer(MoneyTransformer::class)]
         public readonly Money $amount,
+        #[WithCast(MoneyCast::class)]
+        #[WithTransformer(MoneyTransformer::class)]
         public readonly Money $net_amount,
+        #[WithCast(MoneyCast::class)]
+        #[WithTransformer(MoneyTransformer::class)]
         public readonly Money $fee_amount,
+        #[WithCast(MoneyCast::class)]
+        #[WithTransformer(MoneyTransformer::class)]
         public readonly Money $pending_amount,
         public readonly ?int $pending_unfreeze_on,
         public readonly ?string $description,
@@ -87,19 +99,19 @@ final class PaymentData extends ChipData
         return (int) $this->pending_amount->getAmount();
     }
 
-    public function getPaidAt(): ?Carbon
+    public function getPaidAt(): ?CarbonImmutable
     {
-        return $this->paid_on ? Carbon::createFromTimestamp($this->paid_on) : null;
+        return $this->paid_on ? CarbonImmutable::createFromTimestamp($this->paid_on) : null;
     }
 
-    public function getRemotePaidAt(): ?Carbon
+    public function getRemotePaidAt(): ?CarbonImmutable
     {
-        return $this->remote_paid_on ? Carbon::createFromTimestamp($this->remote_paid_on) : null;
+        return $this->remote_paid_on ? CarbonImmutable::createFromTimestamp($this->remote_paid_on) : null;
     }
 
-    public function getPendingUnfreezeAt(): ?Carbon
+    public function getPendingUnfreezeAt(): ?CarbonImmutable
     {
-        return $this->pending_unfreeze_on ? Carbon::createFromTimestamp($this->pending_unfreeze_on) : null;
+        return $this->pending_unfreeze_on ? CarbonImmutable::createFromTimestamp($this->pending_unfreeze_on) : null;
     }
 
     public function isPaid(): bool

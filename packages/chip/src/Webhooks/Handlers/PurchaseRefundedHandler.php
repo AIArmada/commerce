@@ -31,11 +31,11 @@ class PurchaseRefundedHandler implements WebhookHandler
             'refunded_at' => now(),
         ]);
 
-        // Emit Laravel event
-        event(new PaymentRefunded(
-            purchase: \AIArmada\Chip\Data\PurchaseData::from($payload->rawPayload),
-            payload: $payload->rawPayload,
-        ));
+        // Dispatch Laravel event
+        PaymentRefunded::dispatch(
+            \AIArmada\Chip\Data\PurchaseData::from($payload->rawPayload),
+            $payload->rawPayload,
+        );
 
         return WebhookResult::handled("Purchase {$localPurchase->id} marked as refunded");
     }

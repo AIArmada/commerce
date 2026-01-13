@@ -337,8 +337,8 @@ describe('EnrichedWebhookPayload data object', function (): void {
             ->and($enriched->rawPayload)->toBe($payload)
             ->and($enriched->purchaseId)->toBe('purch_123')
             ->and($enriched->clientId)->toBe('client_abc')
-            ->and($enriched->receivedAt)->toBeInstanceOf(Illuminate\Support\Carbon::class)
-            ->and($enriched->eventTimestamp)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+            ->and($enriched->receivedAt)->toBeInstanceOf(Carbon\CarbonImmutable::class)
+            ->and($enriched->eventTimestamp)->toBeInstanceOf(Carbon\CarbonImmutable::class);
     });
 
     it('handles nested data structure', function (): void {
@@ -363,7 +363,7 @@ describe('EnrichedWebhookPayload data object', function (): void {
 
         $enriched = EnrichedWebhookPayload::fromPayload('purchase.paid', $payload);
 
-        expect($enriched->eventTimestamp)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+        expect($enriched->eventTimestamp)->toBeInstanceOf(Carbon\CarbonImmutable::class);
     });
 
     it('checks for local purchase and owner', function (): void {

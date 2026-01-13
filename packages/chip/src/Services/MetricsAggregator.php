@@ -7,8 +7,8 @@ namespace AIArmada\Chip\Services;
 use AIArmada\Chip\Models\DailyMetric;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 
 /**
  * Aggregates purchase data into daily metrics.
@@ -18,7 +18,7 @@ class MetricsAggregator
     /**
      * Aggregate metrics for a specific date.
      */
-    public function aggregateForDate(Carbon $date): void
+    public function aggregateForDate(CarbonImmutable $date): void
     {
         $owner = $this->resolveOwner();
 
@@ -76,7 +76,7 @@ class MetricsAggregator
     /**
      * Aggregate total metrics for the date (across all payment methods).
      */
-    public function aggregateTotals(Carbon $date): void
+    public function aggregateTotals(CarbonImmutable $date): void
     {
         $owner = $this->resolveOwner();
 
@@ -126,14 +126,14 @@ class MetricsAggregator
     /**
      * Backfill metrics for a date range.
      */
-    public function backfill(Carbon $startDate, Carbon $endDate): int
+    public function backfill(CarbonImmutable $startDate, CarbonImmutable $endDate): int
     {
         $days = 0;
         $current = $startDate->copy();
 
         while ($current->lte($endDate)) {
             $this->aggregateForDate($current);
-            $current->addDay();
+            $current = $current->addDay();
             $days++;
         }
 
@@ -145,7 +145,7 @@ class MetricsAggregator
      *
      * @return array<string, int>
      */
-    protected function getFailureBreakdown(Carbon $startDate, Carbon $endDate, ?string $paymentMethod): array
+    protected function getFailureBreakdown(CarbonImmutable $startDate, CarbonImmutable $endDate, ?string $paymentMethod): array
     {
         $owner = $this->resolveOwner();
 

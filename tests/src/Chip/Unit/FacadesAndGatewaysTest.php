@@ -47,6 +47,10 @@ describe('ChipWebhookHandler', function (): void {
         $this->handler = new ChipWebhookHandler($this->webhookService, $this->collectService);
     });
 
+    afterEach(function (): void {
+        Mockery::close();
+    });
+
     describe('getEventType', function (): void {
         it('returns payment.paid for paid status', function (): void {
             $request = Request::create('/webhook', 'POST', [], [], [], [], json_encode([

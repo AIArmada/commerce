@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Services\LocalAnalyticsService;
+use Carbon\CarbonImmutable;
 
 beforeEach(function (): void {
     $this->service = new LocalAnalyticsService;
@@ -27,7 +28,7 @@ function createPurchase(array $attributes): Purchase
 }
 
 it('calculates revenue metrics', function (): void {
-    $now = now();
+    $now = CarbonImmutable::now();
 
     // Current period purchase (Paid)
     createPurchase([
@@ -61,7 +62,7 @@ it('calculates revenue metrics', function (): void {
 });
 
 it('calculates transaction metrics', function (): void {
-    $now = now();
+    $now = CarbonImmutable::now();
 
     createPurchase(['status' => 'paid', 'created_at' => $now]);
     createPurchase(['status' => 'failed', 'created_at' => $now]);
@@ -79,7 +80,7 @@ it('calculates transaction metrics', function (): void {
 });
 
 it('calculates payment method breakdown', function (): void {
-    $now = now();
+    $now = CarbonImmutable::now();
 
     createPurchase(['status' => 'paid', 'payment_method' => 'card', 'total_minor' => 1000, 'created_at' => $now]);
     createPurchase(['status' => 'paid', 'payment_method' => 'card', 'total_minor' => 2000, 'created_at' => $now]);
@@ -106,7 +107,7 @@ it('calculates payment method breakdown', function (): void {
 });
 
 it('calculates failure analysis', function (): void {
-    $now = now();
+    $now = CarbonImmutable::now();
 
     createPurchase([
         'status' => 'failed',
@@ -143,7 +144,7 @@ it('calculates failure analysis', function (): void {
 });
 
 it('gets dashboard metrics', function (): void {
-    $now = now();
+    $now = CarbonImmutable::now();
     createPurchase(['status' => 'paid', 'total_minor' => 1000, 'created_at' => $now]);
 
     $dashboard = $this->service->getDashboardMetrics($now->copy()->subDay(), $now->copy()->addDay());

@@ -8,9 +8,9 @@ use AIArmada\Chip\Models\Concerns\AutoAssignOwnerOnCreate;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Akaunting\Money\Money;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 use Override;
 
 /**
@@ -82,9 +82,9 @@ abstract class ChipIntegerModel extends Model
         return \AIArmada\CommerceSupport\Support\OwnerContext::resolve();
     }
 
-    protected function toTimestamp(?int $value): ?Carbon
+    protected function toTimestamp(?int $value): ?CarbonImmutable
     {
-        return $value !== null ? Carbon::createFromTimestampUTC($value) : null;
+        return $value !== null ? CarbonImmutable::createFromTimestampUTC($value) : null;
     }
 
     /**

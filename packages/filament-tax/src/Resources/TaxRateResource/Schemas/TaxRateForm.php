@@ -50,13 +50,19 @@ final class TaxRateForm
 
                                 Select::make('tax_class')
                                     ->label('Tax Class')
-                                    ->options([
-                                        'standard' => 'Standard',
-                                        'reduced' => 'Reduced',
-                                        'zero' => 'Zero Rate',
-                                        'exempt' => 'Exempt',
-                                    ])
+                                    ->options(
+                                        fn (): array => \AIArmada\Tax\Models\TaxClass::query()
+                                            ->when(
+                                                config('tax.features.owner.enabled', false),
+                                                fn ($q) => TaxOwnerScope::applyToOwnedQuery($q)
+                                            )
+                                            ->active()
+                                            ->ordered()
+                                            ->pluck('name', 'slug')
+                                            ->toArray() ?: ['standard' => 'Standard', 'reduced' => 'Reduced', 'zero' => 'Zero Rate', 'exempt' => 'Exempt']
+                                    )
                                     ->default('standard')
+                                    ->searchable()
                                     ->required(),
 
                                 TextInput::make('rate')

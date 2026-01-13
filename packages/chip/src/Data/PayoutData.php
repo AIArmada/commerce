@@ -4,15 +4,17 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
+use AIArmada\Chip\Data\Casts\MoneyCast;
+use AIArmada\Chip\Data\Transformers\MoneyTransformer;
 use Akaunting\Money\Money;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
+use Spatie\LaravelData\Attributes\WithCast;
+use Spatie\LaravelData\Attributes\WithTransformer;
 
 /**
- * CHIP Payout data object.
- *
  * Represents a payout/disbursement from CHIP.
  */
-class PayoutData extends ChipData
+final class PayoutData extends ChipData
 {
     public function __construct(
         public readonly string $id,
@@ -20,6 +22,8 @@ class PayoutData extends ChipData
         public readonly int $created_on,
         public readonly int $updated_on,
         public readonly string $status,
+        #[WithCast(MoneyCast::class)]
+        #[WithTransformer(MoneyTransformer::class)]
         public readonly Money $amount,
         public readonly string $currency,
         public readonly ?string $reference,
@@ -41,8 +45,7 @@ class PayoutData extends ChipData
         $currency = $data['currency'] ?? 'MYR';
         $amount = $data['amount'] ?? 0;
 
-        // @phpstan-ignore-next-line new.static
-        return new static(
+        return new self(
             id: (string) ($data['id'] ?? ''),
             type: $data['type'] ?? 'payout',
             created_on: $data['created_on'] ?? time(),
@@ -62,14 +65,14 @@ class PayoutData extends ChipData
         );
     }
 
-    public function getCreatedAt(): Carbon
+    public function getCreatedAt(): CarbonImmutable
     {
-        return Carbon::createFromTimestamp($this->created_on);
+        return CarbonImmutable::createFromTimestamp($this->created_on);
     }
 
-    public function getUpdatedAt(): Carbon
+    public function getUpdatedAt(): CarbonImmutable
     {
-        return Carbon::createFromTimestamp($this->updated_on);
+        return CarbonImmutable::createFromTimestamp($this->updated_on);
     }
 
     public function getAmountInCents(): int

@@ -87,7 +87,7 @@ $purchase = Chip::createPurchase([
 // Fluent builder
 $purchase = Chip::purchase()
     ->customer('customer@example.com', 'John Doe')
-    ->addProduct('Product', 9900)
+    ->addProductCents('Product', 9900)
     ->successUrl(route('success'))
     ->create();
 ```

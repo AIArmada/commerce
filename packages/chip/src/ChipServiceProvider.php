@@ -145,6 +145,8 @@ final class ChipServiceProvider extends PackageServiceProvider
             );
         });
 
+        $this->app->singleton(Services\WebhookEventDispatcher::class);
+
         $this->app->alias(ChipCollectService::class, 'chip.collect');
         $this->app->alias(ChipSendService::class, 'chip.send');
         $this->app->alias(WebhookService::class, 'chip.webhook');
@@ -189,7 +191,7 @@ final class ChipServiceProvider extends PackageServiceProvider
                 apiSecret: $apiSecret,
                 environment: $environment,
                 baseUrl: config("chip.send.base_url.{$environment}")
-                    ?? config('chip.send.base_url.sandbox', 'https://staging-api.chip-in.asia/api'),
+                ?? config('chip.send.base_url.sandbox', 'https://staging-api.chip-in.asia/api'),
                 timeout: config('chip.http.timeout', 30),
                 retryConfig: config('chip.http.retry', [
                     'attempts' => 3,

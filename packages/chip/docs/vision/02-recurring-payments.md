@@ -242,7 +242,7 @@ class ChipRecurringService
             // Create and charge purchase using Chip API
             $purchase = Chip::purchase()
                 ->clientId($schedule->chip_client_id)
-                ->addProduct('Recurring Payment', $schedule->amount_minor)
+                ->addProductCents('Recurring Payment', $schedule->amount_minor)
                 ->currency($schedule->currency)
                 ->create();
             
@@ -432,7 +432,7 @@ Schema::create('chip_recurring_charges', function (Blueprint $table) {
 // After initial purchase with recurring token
 $purchase = Chip::purchase()
     ->customer($user->email)
-    ->addProduct('Monthly Subscription', 9900)
+    ->addProductCents('Monthly Subscription', 9900)
     ->forceRecurring(true)
     ->create();
 

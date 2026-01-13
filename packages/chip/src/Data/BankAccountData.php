@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 
 final class BankAccountData extends ChipData
 {
@@ -45,19 +45,19 @@ final class BankAccountData extends ChipData
         );
     }
 
-    public function getCreatedAt(): Carbon
+    public function getCreatedAt(): CarbonImmutable
     {
-        return Carbon::parse($this->created_at);
+        return CarbonImmutable::parse($this->created_at);
     }
 
-    public function getUpdatedAt(): Carbon
+    public function getUpdatedAt(): CarbonImmutable
     {
-        return Carbon::parse($this->updated_at);
+        return CarbonImmutable::parse($this->updated_at);
     }
 
-    public function getDeletedAt(): ?Carbon
+    public function getDeletedAt(): ?CarbonImmutable
     {
-        return $this->deleted_at ? Carbon::parse($this->deleted_at) : null;
+        return $this->deleted_at ? CarbonImmutable::parse($this->deleted_at) : null;
     }
 
     public function isVerified(): bool

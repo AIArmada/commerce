@@ -64,11 +64,10 @@ describe('ChipModel base class', function (): void {
 
     it('can assign owner to model', function (): void {
         $purchase = new Purchase;
-        $mockOwner = new class extends Model
-        {
+        $mockOwner = new class extends Model {
             protected $guarded = [];
 
-            public function getKey(): string | int | null
+            public function getKey(): string|int|null
             {
                 return 'owner-123';
             }
@@ -301,10 +300,10 @@ describe('Payment model', function (): void {
             'currency' => 'MYR',
         ]);
 
-        expect($payment->paidOn)->toBeInstanceOf(Illuminate\Support\Carbon::class);
-        expect($payment->remotePaidOn)->toBeInstanceOf(Illuminate\Support\Carbon::class);
-        expect($payment->createdOn)->toBeInstanceOf(Illuminate\Support\Carbon::class);
-        expect($payment->updatedOn)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+        expect($payment->paidOn)->toBeInstanceOf(Carbon\CarbonImmutable::class);
+        expect($payment->remotePaidOn)->toBeInstanceOf(Carbon\CarbonImmutable::class);
+        expect($payment->createdOn)->toBeInstanceOf(Carbon\CarbonImmutable::class);
+        expect($payment->updatedOn)->toBeInstanceOf(Carbon\CarbonImmutable::class);
     });
 });
 
@@ -322,8 +321,8 @@ describe('Webhook model', function (): void {
             'updated_on' => time(),
         ]);
 
-        expect($webhook->createdOn)->toBeInstanceOf(Illuminate\Support\Carbon::class);
-        expect($webhook->updatedOn)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+        expect($webhook->createdOn)->toBeInstanceOf(Carbon\CarbonImmutable::class);
+        expect($webhook->updatedOn)->toBeInstanceOf(Carbon\CarbonImmutable::class);
     });
 
     it('has correct casts', function (): void {
@@ -395,28 +394,28 @@ describe('RecurringSchedule model', function (): void {
         ]);
 
         $nextCharge = $schedule->calculateNextChargeDate();
-        expect($nextCharge)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+        expect($nextCharge)->toBeInstanceOf(Carbon\CarbonImmutable::class);
 
         $schedule->forceFill([
             'interval' => RecurringInterval::Weekly,
             'interval_count' => 2,
         ]);
         $nextChargeWeekly = $schedule->calculateNextChargeDate();
-        expect($nextChargeWeekly)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+        expect($nextChargeWeekly)->toBeInstanceOf(Carbon\CarbonImmutable::class);
 
         $schedule->forceFill([
             'interval' => RecurringInterval::Monthly,
             'interval_count' => 1,
         ]);
         $nextChargeMonthly = $schedule->calculateNextChargeDate();
-        expect($nextChargeMonthly)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+        expect($nextChargeMonthly)->toBeInstanceOf(Carbon\CarbonImmutable::class);
 
         $schedule->forceFill([
             'interval' => RecurringInterval::Yearly,
             'interval_count' => 1,
         ]);
         $nextChargeYearly = $schedule->calculateNextChargeDate();
-        expect($nextChargeYearly)->toBeInstanceOf(Illuminate\Support\Carbon::class);
+        expect($nextChargeYearly)->toBeInstanceOf(Carbon\CarbonImmutable::class);
     });
 
     it('can format amount', function (): void {

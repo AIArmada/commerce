@@ -1,8 +1,9 @@
 # Chip Vision Progress
 
 > **Package:** `aiarmada/chip` + `aiarmada/filament-chip`  
-> **Last Updated:** December 13, 2025  
+> **Last Updated:** January 12, 2026  
 > **Scope:** API-Constrained (Chip API only)
+> **PHPStan:** Level 6 - 0 errors ✓
 
 ---
 

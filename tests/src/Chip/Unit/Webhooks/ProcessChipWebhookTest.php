@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Enums\WebhookEventType;
+use AIArmada\Chip\Services\WebhookEventDispatcher;
 use AIArmada\Chip\Webhooks\ProcessChipWebhook;
 use AIArmada\CommerceSupport\Webhooks\CommerceWebhookProcessor;
 
@@ -15,17 +16,23 @@ describe('ProcessChipWebhook class structure', function (): void {
     it('has processEvent method', function (): void {
         expect(method_exists(ProcessChipWebhook::class, 'processEvent'))->toBeTrue();
     });
+});
+
+describe('WebhookEventDispatcher service', function (): void {
+    it('has dispatch method', function (): void {
+        expect(method_exists(WebhookEventDispatcher::class, 'dispatch'))->toBeTrue();
+    });
 
     it('has extractPurchase method', function (): void {
-        expect(method_exists(ProcessChipWebhook::class, 'extractPurchase'))->toBeTrue();
+        expect(method_exists(WebhookEventDispatcher::class, 'extractPurchase'))->toBeTrue();
     });
 
     it('has extractPayout method', function (): void {
-        expect(method_exists(ProcessChipWebhook::class, 'extractPayout'))->toBeTrue();
+        expect(method_exists(WebhookEventDispatcher::class, 'extractPayout'))->toBeTrue();
     });
 
     it('has extractBillingTemplateClient method', function (): void {
-        expect(method_exists(ProcessChipWebhook::class, 'extractBillingTemplateClient'))->toBeTrue();
+        expect(method_exists(WebhookEventDispatcher::class, 'extractBillingTemplateClient'))->toBeTrue();
     });
 });
 

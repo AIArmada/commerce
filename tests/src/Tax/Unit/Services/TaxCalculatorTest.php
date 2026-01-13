@@ -45,7 +45,7 @@ class TaxCalculatorTest extends TaxTestCase
 
         $this->assertInstanceOf(TaxResultData::class, $result);
         $this->assertEquals(600, $result->taxAmount); // 6% of 10000 cents = 600 cents
-        $this->assertEquals($zone->id, $result->zone->id);
+        $this->assertEquals($zone->id, $result->zoneId);
         $this->assertFalse($result->includedInPrice);
     }
 
@@ -77,7 +77,7 @@ class TaxCalculatorTest extends TaxTestCase
         $result = $this->calculator->calculateTax(10000, 'standard', null, $context);
 
         $this->assertEquals(600, $result->taxAmount);
-        $this->assertEquals($zone->id, $result->zone->id);
+        $this->assertEquals($zone->id, $result->zoneId);
     }
 
     public function test_calculate_tax_with_default_zone_fallback(): void
@@ -101,7 +101,7 @@ class TaxCalculatorTest extends TaxTestCase
         $result = $this->calculator->calculateTax(20000, 'standard');
 
         $this->assertEquals(2000, $result->taxAmount); // 10% of 20000
-        $this->assertEquals($zone->id, $result->zone->id);
+        $this->assertEquals($zone->id, $result->zoneId);
     }
 
     public function test_calculate_tax_with_zero_rate_fallback(): void
@@ -110,7 +110,7 @@ class TaxCalculatorTest extends TaxTestCase
         $result = $this->calculator->calculateTax(10000, 'standard');
 
         $this->assertEquals(0, $result->taxAmount);
-        $this->assertEquals('ZERO', $result->zone->code);
+        $this->assertEquals('Zero Rate Zone', $result->zoneName);
     }
 
     public function test_calculate_tax_with_tax_inclusive_pricing(): void
@@ -351,8 +351,10 @@ class TaxCalculatorTest extends TaxTestCase
 
         $result = $this->calculator->calculateTax(10000, 'standard', $zone->id);
 
-        // Should use higher priority rate
-        $this->assertEquals(800, $result->taxAmount);
+        // With compound tax support, both rates apply: 600 + 800 = 1400
+        // If you want only the higher priority to apply, make one compound or use different tax classes
+        $this->assertEquals(1400, $result->taxAmount);
+        $this->assertTrue($result->hasCompoundTaxes()); // Now tracking compound taxes
     }
 
     public function test_calculate_tax_with_unknown_zone_error_behavior(): void
@@ -373,7 +375,7 @@ class TaxCalculatorTest extends TaxTestCase
         $result = $this->calculator->calculateTax(10000, 'standard');
 
         $this->assertEquals(0, $result->taxAmount);
-        $this->assertEquals('ZERO', $result->zone->code);
+        $this->assertEquals('Zero Rate Zone', $result->zoneName);
     }
 
     public function test_calculate_tax_with_unknown_zone_zero_behavior(): void
@@ -383,7 +385,7 @@ class TaxCalculatorTest extends TaxTestCase
         $result = $this->calculator->calculateTax(10000, 'standard');
 
         $this->assertEquals(0, $result->taxAmount);
-        $this->assertEquals('ZERO', $result->zone->code);
+        $this->assertEquals('Zero Rate Zone', $result->zoneName);
     }
 
     public function test_calculate_tax_with_address_priority(): void

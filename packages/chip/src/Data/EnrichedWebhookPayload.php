@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Data;
 
 use AIArmada\Chip\Models\Purchase;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 use Spatie\LaravelData\Data;
 
 /**
@@ -46,15 +46,15 @@ final class EnrichedWebhookPayload extends Data
         }
 
         $eventTimestamp = isset($payload['created'])
-            ? Carbon::parse($payload['created'])
-            : (isset($payload['created_on']) ? Carbon::parse($payload['created_on']) : null);
+            ? CarbonImmutable::parse($payload['created'])
+            : (isset($payload['created_on']) ? CarbonImmutable::parse($payload['created_on']) : null);
 
         return new self(
             event: $event,
             rawPayload: $payload,
             localPurchase: $localPurchase,
             owner: $owner,
-            receivedAt: now(),
+            receivedAt: CarbonImmutable::now(),
             eventTimestamp: $eventTimestamp,
             purchaseId: $purchaseId,
             clientId: $clientId,

@@ -6,9 +6,11 @@ namespace AIArmada\Tax\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Tax\Database\Factories\TaxRateFactory;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Spatie\Activitylog\LogOptions;
@@ -28,6 +30,9 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class TaxRate extends Model
 {
+    /** @use HasFactory<TaxRateFactory> */
+    use HasFactory;
+
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasUuids;
@@ -108,6 +113,14 @@ class TaxRate extends Model
     // =========================================================================
     // STATIC HELPERS
     // =========================================================================
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): TaxRateFactory
+    {
+        return TaxRateFactory::new();
+    }
 
     /**
      * Create a zero-rate instance.
