@@ -6,10 +6,12 @@ namespace AIArmada\Tax\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Tax\Database\Factories\TaxClassFactory;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Spatie\Activitylog\LogOptions;
@@ -30,6 +32,9 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class TaxClass extends Model
 {
+    /** @use HasFactory<TaxClassFactory> */
+    use HasFactory;
+
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
@@ -99,6 +104,14 @@ class TaxClass extends Model
     // =========================================================================
     // STATIC HELPERS
     // =========================================================================
+
+    /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): TaxClassFactory
+    {
+        return TaxClassFactory::new();
+    }
 
     /**
      * Get the default tax class.

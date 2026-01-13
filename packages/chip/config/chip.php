@@ -102,6 +102,11 @@ return [
             'attempts' => env('CHIP_HTTP_RETRY_ATTEMPTS', 3),
             'delay' => env('CHIP_HTTP_RETRY_DELAY', 1000),
         ],
+        'rate_limit' => [
+            'enabled' => env('CHIP_RATE_LIMIT_ENABLED', true),
+            'max_attempts' => env('CHIP_RATE_LIMIT_MAX', 60),
+            'decay_seconds' => env('CHIP_RATE_LIMIT_DECAY', 60),
+        ],
     ],
 
     /*
@@ -145,5 +150,6 @@ return [
         'mask_sensitive_data' => env('CHIP_LOGGING_MASK_SENSITIVE', true),
         'log_requests' => env('CHIP_LOG_REQUESTS', true),
         'log_responses' => env('CHIP_LOG_RESPONSES', true),
+        'sensitive_fields' => [], // Additional fields to mask (merged with defaults)
     ],
 ];

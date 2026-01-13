@@ -16,6 +16,10 @@ describe('WebhookRetryManager', function (): void {
         $this->manager = new WebhookRetryManager($this->enricher, $this->router);
     });
 
+    afterEach(function (): void {
+        Mockery::close();
+    });
+
     describe('shouldRetry', function (): void {
         it('returns false for non-failed webhooks', function (): void {
             $webhook = Webhook::create([

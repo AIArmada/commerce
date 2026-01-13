@@ -6,7 +6,7 @@ namespace AIArmada\Chip\Webhooks;
 
 use AIArmada\Chip\Data\WebhookHealth;
 use AIArmada\Chip\Models\Webhook;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 /**
  * Monitors webhook health and provides statistics.
@@ -16,7 +16,7 @@ class WebhookMonitor
     /**
      * Get webhook health metrics for the last 24 hours.
      */
-    public function getHealth(?Carbon $since = null): WebhookHealth
+    public function getHealth(?CarbonImmutable $since = null): WebhookHealth
     {
         $since ??= now()->subDay();
 
@@ -46,7 +46,7 @@ class WebhookMonitor
      *
      * @return array<string, int>
      */
-    public function getEventDistribution(?Carbon $since = null): array
+    public function getEventDistribution(?CarbonImmutable $since = null): array
     {
         $since ??= now()->subDay();
 
@@ -64,7 +64,7 @@ class WebhookMonitor
      *
      * @return array<string, int>
      */
-    public function getFailureBreakdown(?Carbon $since = null): array
+    public function getFailureBreakdown(?CarbonImmutable $since = null): array
     {
         $since ??= now()->subDay();
 
@@ -81,36 +81,29 @@ class WebhookMonitor
     /**
      * Get hourly webhook volume for the last 24 hours.
      *
+     * Uses PHP-based grouping for database portability (works with MySQL, PostgreSQL, SQLite).
+     *
      * @return array<string, array{total: int, processed: int, failed: int}>
      */
-    public function getHourlyVolume(?Carbon $since = null): array
+    public function getHourlyVolume(?CarbonImmutable $since = null): array
     {
         $since ??= now()->subDay();
 
-        // Use a generic date format logic compatible with simple grouping if possible,
-        // but for now we keep the original logic but fix quotes.
-        // Note: DATE_FORMAT is MySQL specific. For multi-db support, this needs abstraction.
-        // We will leave it as is but fix quotes, acknowledging it might fail on SQLite if tested.
-
-        return Webhook::query()
+        // Fetch raw data and group in PHP for database portability
+        $webhooks = Webhook::query()
             ->forOwner()
             ->where('created_at', '>=', $since)
-            ->selectRaw("
-                DATE_FORMAT(created_at, '%Y-%m-%d %H:00:00') as hour,
-                COUNT(*) as total,
-                SUM(CASE WHEN status = 'processed' THEN 1 ELSE 0 END) as processed,
-                SUM(CASE WHEN status = 'failed' THEN 1 ELSE 0 END) as failed
-            ")
-            ->groupBy('hour')
-            ->orderBy('hour')
-            ->toBase()
-            ->get()
-            ->keyBy('hour')
-            ->map(fn (object $row): array => [
-                'total' => (int) $row->total,
-                'processed' => (int) $row->processed,
-                'failed' => (int) $row->failed,
+            ->select(['created_at', 'status'])
+            ->get();
+
+        return $webhooks
+            ->groupBy(fn ($webhook): string => CarbonImmutable::parse($webhook->created_at)->format('Y-m-d H:00:00'))
+            ->map(fn ($group): array => [
+                'total' => $group->count(),
+                'processed' => $group->where('status', 'processed')->count(),
+                'failed' => $group->where('status', 'failed')->count(),
             ])
+            ->sortKeys()
             ->toArray();
     }
 

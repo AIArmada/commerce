@@ -27,11 +27,11 @@ class PurchasePaidHandler implements WebhookHandler
             'status' => PurchaseStatus::PAID,
         ]);
 
-        // Emit Laravel event
-        event(new PurchasePaid(
-            purchase: \AIArmada\Chip\Data\PurchaseData::from($payload->rawPayload),
-            payload: $payload->rawPayload,
-        ));
+        // Dispatch Laravel event
+        PurchasePaid::dispatch(
+            \AIArmada\Chip\Data\PurchaseData::from($payload->rawPayload),
+            $payload->rawPayload,
+        );
 
         return WebhookResult::handled("Purchase {$localPurchase->id} marked as paid");
     }

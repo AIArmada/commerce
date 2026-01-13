@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\Tax\Data;
 
-use AIArmada\Tax\Models\TaxRate;
-use AIArmada\Tax\Models\TaxZone;
 use Spatie\LaravelData\Data;
 
 /**
@@ -13,12 +11,19 @@ use Spatie\LaravelData\Data;
  */
 class TaxResultData extends Data
 {
+    /**
+     * @param  array<int, array{name: string, rate: int, amount: int, is_compound: bool}>  $breakdown
+     */
     public function __construct(
         public int $taxAmount,
-        public TaxRate $rate,
-        public TaxZone $zone,
+        public string $rateId,
+        public string $rateName,
+        public int $ratePercentage,
+        public string $zoneId,
+        public string $zoneName,
         public bool $includedInPrice = false,
         public ?string $exemptionReason = null,
+        public array $breakdown = [],
     ) {}
 
     /**
@@ -26,15 +31,23 @@ class TaxResultData extends Data
      */
     public function isExempt(): bool
     {
-        return $this->exemptionReason !== null || $this->rate->rate === 0;
+        return $this->exemptionReason !== null || $this->ratePercentage === 0;
     }
 
     /**
      * Get the formatted tax amount.
      */
-    public function getFormattedAmount(): string
+    public function getFormattedAmount(string $currency = 'RM'): string
     {
-        return 'RM ' . number_format($this->taxAmount / 100, 2);
+        return $currency . ' ' . number_format($this->taxAmount / 100, 2);
+    }
+
+    /**
+     * Get the rate as a formatted percentage.
+     */
+    public function getFormattedRate(): string
+    {
+        return number_format($this->ratePercentage / 100, 2) . '%';
     }
 
     /**
@@ -48,8 +61,16 @@ class TaxResultData extends Data
 
         return sprintf(
             '%s (%s)',
-            $this->rate->name,
-            $this->rate->getFormattedRate()
+            $this->rateName,
+            $this->getFormattedRate()
         );
+    }
+
+    /**
+     * Check if this result has compound taxes.
+     */
+    public function hasCompoundTaxes(): bool
+    {
+        return count($this->breakdown) > 1;
     }
 }

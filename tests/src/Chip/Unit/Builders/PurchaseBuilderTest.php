@@ -16,10 +16,14 @@ describe('PurchaseBuilder', function (): void {
         $this->builder = new PurchaseBuilder($this->service);
     });
 
+    afterEach(function (): void {
+        Mockery::close();
+    });
+
     it('can build a basic purchase with required fields', function (): void {
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Test Product', 5000)
+            ->addProductCents('Test Product', 5000)
             ->email('test@example.com')
             ->toArray();
 
@@ -38,8 +42,8 @@ describe('PurchaseBuilder', function (): void {
     it('can add multiple products', function (): void {
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Product 1', 1000, 2)
-            ->addProduct('Product 2', 2000, 1, 100, 6.0)
+            ->addProductCents('Product 1', 1000, 2)
+            ->addProductCents('Product 2', 2000, 1, 100, 6.0)
             ->email('test@example.com')
             ->toArray();
 
@@ -61,7 +65,7 @@ describe('PurchaseBuilder', function (): void {
     it('can set customer details using customer method', function (): void {
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->customer('john@example.com', 'John Doe', '+60123456789', 'MY')
             ->toArray();
 
@@ -76,7 +80,7 @@ describe('PurchaseBuilder', function (): void {
     it('can set billing address', function (): void {
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->email('test@example.com')
             ->billingAddress('123 Main St', 'Kuala Lumpur', '50000', 'Selangor', 'MY')
             ->toArray();
@@ -91,7 +95,7 @@ describe('PurchaseBuilder', function (): void {
     it('can set shipping address', function (): void {
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->email('test@example.com')
             ->shippingAddress('456 Oak Ave', 'Penang', '10000', 'Penang', 'MY')
             ->toArray();
@@ -106,7 +110,7 @@ describe('PurchaseBuilder', function (): void {
     it('can set all redirect URLs at once', function (): void {
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->email('test@example.com')
             ->redirects(
                 'https://example.com/success',
@@ -123,7 +127,7 @@ describe('PurchaseBuilder', function (): void {
     it('can set individual redirect URLs', function (): void {
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->email('test@example.com')
             ->successUrl('https://example.com/success')
             ->failureUrl('https://example.com/failure')
@@ -138,7 +142,7 @@ describe('PurchaseBuilder', function (): void {
     it('can set webhook callback URL', function (): void {
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->email('test@example.com')
             ->webhook('https://example.com/webhooks/chip')
             ->toArray();
@@ -149,7 +153,7 @@ describe('PurchaseBuilder', function (): void {
     it('can set reference', function (): void {
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->email('test@example.com')
             ->reference('ORDER-2025-001')
             ->toArray();
@@ -160,7 +164,7 @@ describe('PurchaseBuilder', function (): void {
     it('can enable send receipt', function (): void {
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->email('test@example.com')
             ->sendReceipt(true)
             ->toArray();
@@ -171,7 +175,7 @@ describe('PurchaseBuilder', function (): void {
     it('can enable pre-authorization', function (): void {
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->email('test@example.com')
             ->preAuthorize(true)
             ->toArray();
@@ -182,7 +186,7 @@ describe('PurchaseBuilder', function (): void {
     it('can force recurring', function (): void {
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->email('test@example.com')
             ->forceRecurring(true)
             ->toArray();
@@ -195,7 +199,7 @@ describe('PurchaseBuilder', function (): void {
 
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->email('test@example.com')
             ->due($dueDate)
             ->toArray();
@@ -206,7 +210,7 @@ describe('PurchaseBuilder', function (): void {
     it('can set notes', function (): void {
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->email('test@example.com')
             ->notes('This is a test purchase')
             ->toArray();
@@ -218,7 +222,7 @@ describe('PurchaseBuilder', function (): void {
         $data = $this->builder
             ->brand('custom-brand-id')
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->email('test@example.com')
             ->toArray();
 
@@ -228,7 +232,7 @@ describe('PurchaseBuilder', function (): void {
     it('can set client ID', function (): void {
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->email('test@example.com')
             ->clientId('existing-client-id')
             ->toArray();
@@ -239,7 +243,7 @@ describe('PurchaseBuilder', function (): void {
     it('supports method chaining for fluent API', function (): void {
         $data = $this->builder
             ->currency('MYR')
-            ->addProduct('Premium Plan', 9900, 1, 0, 6.0, 'subscription')
+            ->addProductCents('Premium Plan', 9900, 1, 0, 6.0, 'subscription')
             ->customer('customer@example.com', 'John Doe', '+60123456789', 'MY')
             ->billingAddress('123 Main St', 'KL', '50000', 'Selangor', 'MY')
             ->reference('ORDER-2025-001')
@@ -255,34 +259,44 @@ describe('PurchaseBuilder', function (): void {
     });
 
     it('can create purchase using create method', function (): void {
-        $mockPurchase = Mockery::mock(PurchaseData::class);
+        $purchaseData = PurchaseData::from([
+            'id' => 'test-purchase-id',
+            'client' => ['email' => 'test@example.com'],
+            'purchase' => ['total' => 1000, 'currency' => 'MYR', 'products' => []],
+        ]);
 
         $this->service->shouldReceive('createPurchase')
             ->once()
-            ->andReturn($mockPurchase);
+            ->andReturn($purchaseData);
 
         $result = $this->builder
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->email('test@example.com')
             ->create();
 
-        expect($result)->toBeInstanceOf(PurchaseData::class);
+        expect($result)->toBeInstanceOf(PurchaseData::class)
+            ->and($result->id)->toBe('test-purchase-id');
     });
 
     it('can create purchase using save method alias', function (): void {
-        $mockPurchase = Mockery::mock(PurchaseData::class);
+        $purchaseData = PurchaseData::from([
+            'id' => 'test-purchase-id',
+            'client' => ['email' => 'test@example.com'],
+            'purchase' => ['total' => 1000, 'currency' => 'MYR', 'products' => []],
+        ]);
 
         $this->service->shouldReceive('createPurchase')
             ->once()
-            ->andReturn($mockPurchase);
+            ->andReturn($purchaseData);
 
         $result = $this->builder
             ->currency('MYR')
-            ->addProduct('Test', 1000)
+            ->addProductCents('Test', 1000)
             ->email('test@example.com')
             ->save();
 
-        expect($result)->toBeInstanceOf(PurchaseData::class);
+        expect($result)->toBeInstanceOf(PurchaseData::class)
+            ->and($result->id)->toBe('test-purchase-id');
     });
 });

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 
 final class ClientData extends ChipData
 {
@@ -120,14 +120,14 @@ final class ClientData extends ChipData
         );
     }
 
-    public function getCreatedAt(): Carbon
+    public function getCreatedAt(): CarbonImmutable
     {
-        return Carbon::createFromTimestamp($this->created_on);
+        return CarbonImmutable::createFromTimestamp($this->created_on);
     }
 
-    public function getUpdatedAt(): Carbon
+    public function getUpdatedAt(): CarbonImmutable
     {
-        return Carbon::createFromTimestamp($this->updated_on);
+        return CarbonImmutable::createFromTimestamp($this->updated_on);
     }
 
     public function isCompany(): bool

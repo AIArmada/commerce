@@ -80,7 +80,7 @@ it('blocks cross-tenant reads and writes when owner scoping is enabled', functio
 
     $result = $calculator->calculateTax(10000, 'standard', $zoneB->id);
 
-    expect($result->zone->id)
+    expect($result->zoneId)
         ->toBe($zoneA->id);
 
     expect(fn () => TaxRate::query()->create([

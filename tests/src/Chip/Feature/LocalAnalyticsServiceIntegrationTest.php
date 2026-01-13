@@ -7,13 +7,13 @@ use AIArmada\Chip\Data\RevenueMetrics;
 use AIArmada\Chip\Data\TransactionMetrics;
 use AIArmada\Chip\Models\DailyMetric;
 use AIArmada\Chip\Services\LocalAnalyticsService;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 describe('LocalAnalyticsService', function (): void {
     beforeEach(function (): void {
         $this->service = new LocalAnalyticsService;
-        $this->startDate = Carbon::now()->subDays(30);
-        $this->endDate = Carbon::now();
+        $this->startDate = CarbonImmutable::now()->subDays(30);
+        $this->endDate = CarbonImmutable::now();
     });
 
     describe('instantiation', function (): void {
@@ -115,8 +115,8 @@ describe('LocalAnalyticsService', function (): void {
 
         it('returns empty array when no metrics', function (): void {
             $result = $this->service->getAggregatedMetrics(
-                Carbon::now()->subDays(100),
-                Carbon::now()->subDays(90)
+                CarbonImmutable::now()->subDays(100),
+                CarbonImmutable::now()->subDays(90)
             );
 
             expect($result)->toBeArray();

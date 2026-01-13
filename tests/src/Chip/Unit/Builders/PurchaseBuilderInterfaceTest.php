@@ -19,6 +19,10 @@ describe('PurchaseBuilder Interface Integration', function (): void {
         $this->builder = new PurchaseBuilder($this->service);
     });
 
+    afterEach(function (): void {
+        Mockery::close();
+    });
+
     describe('addProductMoney', function (): void {
         it('adds product with Money price', function (): void {
             $data = $this->builder
@@ -167,7 +171,7 @@ describe('PurchaseBuilder Interface Integration', function (): void {
 
             $data = $this->builder
                 ->currency('MYR')
-                ->addProduct('Test Product', 1000)
+                ->addProductCents('Test Product', 1000)
                 ->fromCustomer($customer)
                 ->toArray();
 
@@ -198,7 +202,7 @@ describe('PurchaseBuilder Interface Integration', function (): void {
 
             $data = $this->builder
                 ->currency('MYR')
-                ->addProduct('Test Product', 1000)
+                ->addProductCents('Test Product', 1000)
                 ->fromCustomer($customer)
                 ->toArray();
 
@@ -219,7 +223,7 @@ describe('PurchaseBuilder Interface Integration', function (): void {
 
             $data = $this->builder
                 ->currency('MYR')
-                ->addProduct('Test Product', 1000)
+                ->addProductCents('Test Product', 1000)
                 ->fromCustomer($customer)
                 ->toArray();
 

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Models;
 
 use AIArmada\Chip\Enums\ChargeStatus;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * Record of each recurring charge attempt.
@@ -18,9 +18,9 @@ use Illuminate\Support\Carbon;
  * @property string $currency
  * @property ChargeStatus $status
  * @property string|null $failure_reason
- * @property Carbon $attempted_at
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property CarbonImmutable $attempted_at
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
  * @property-read RecurringSchedule $schedule
  */
 class RecurringCharge extends ChipModel

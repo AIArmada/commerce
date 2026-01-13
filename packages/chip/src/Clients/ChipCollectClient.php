@@ -120,13 +120,14 @@ class ChipCollectClient extends BaseHttpClient
         $responseData = $response->json() ?? [];
         $message = $responseData['message'] ?? $responseData['error'] ?? "API request failed with status {$statusCode}";
 
-        // Log the full error response for debugging
-        Log::error('CHIP API Error Response', [
-            'status' => $statusCode,
-            'message' => $message,
-            'response_data' => $responseData,
-            'response_body' => $response->body(),
-        ]);
+        // Only log if logging is enabled, and mask sensitive data
+        if ($this->loggingEnabled()) {
+            Log::channel($this->logChannel())->error('CHIP API Error Response', [
+                'status' => $statusCode,
+                'message' => $message,
+                'response_data' => $this->maskSensitiveData($responseData),
+            ]);
+        }
 
         throw new ChipApiException($message, $statusCode, $responseData);
     }

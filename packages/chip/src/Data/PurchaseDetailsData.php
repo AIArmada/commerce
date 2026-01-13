@@ -4,21 +4,39 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
+use AIArmada\Chip\Data\Casts\MoneyCast;
+use AIArmada\Chip\Data\Transformers\MoneyTransformer;
 use Akaunting\Money\Money;
+use Spatie\LaravelData\Attributes\DataCollectionOf;
+use Spatie\LaravelData\Attributes\WithCast;
+use Spatie\LaravelData\Attributes\WithTransformer;
 
 final class PurchaseDetailsData extends ChipData
 {
     public function __construct(
         public readonly string $currency,
         /** @var array<int, ProductData> */
+        #[DataCollectionOf(ProductData::class)]
         public readonly array $products,
+        #[WithCast(MoneyCast::class)]
+        #[WithTransformer(MoneyTransformer::class)]
         public readonly Money $total,
         public readonly string $language,
         public readonly ?string $notes,
+        #[WithCast(MoneyCast::class)]
+        #[WithTransformer(MoneyTransformer::class)]
         public readonly Money $debt,
+        #[WithCast(MoneyCast::class)]
+        #[WithTransformer(MoneyTransformer::class)]
         public readonly ?Money $subtotal_override,
+        #[WithCast(MoneyCast::class)]
+        #[WithTransformer(MoneyTransformer::class)]
         public readonly ?Money $total_tax_override,
+        #[WithCast(MoneyCast::class)]
+        #[WithTransformer(MoneyTransformer::class)]
         public readonly ?Money $total_discount_override,
+        #[WithCast(MoneyCast::class)]
+        #[WithTransformer(MoneyTransformer::class)]
         public readonly ?Money $total_override,
         /** @var array<string, mixed> */
         public readonly array $request_client_details,

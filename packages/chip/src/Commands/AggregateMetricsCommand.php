@@ -7,9 +7,9 @@ namespace AIArmada\Chip\Commands;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Chip\Services\MetricsAggregator;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 
 final class AggregateMetricsCommand extends Command
 {
@@ -55,7 +55,7 @@ final class AggregateMetricsCommand extends Command
     {
         // Specific date
         if ($dateOption = $this->option('date')) {
-            $date = Carbon::parse($dateOption);
+            $date = CarbonImmutable::parse($dateOption);
             $this->info("Aggregating metrics for {$date->toDateString()}...");
 
             $aggregator->aggregateForDate($date);
@@ -67,8 +67,8 @@ final class AggregateMetricsCommand extends Command
 
         // Date range (backfill)
         if ($this->option('from') && $this->option('to')) {
-            $from = Carbon::parse($this->option('from'));
-            $to = Carbon::parse($this->option('to'));
+            $from = CarbonImmutable::parse($this->option('from'));
+            $to = CarbonImmutable::parse($this->option('to'));
 
             $this->info("Backfilling metrics from {$from->toDateString()} to {$to->toDateString()}...");
 
@@ -80,7 +80,7 @@ final class AggregateMetricsCommand extends Command
         }
 
         // Default: aggregate yesterday
-        $yesterday = Carbon::yesterday();
+        $yesterday = CarbonImmutable::yesterday();
         $this->info("Aggregating metrics for {$yesterday->toDateString()} (yesterday)...");
 
         $aggregator->aggregateForDate($yesterday);

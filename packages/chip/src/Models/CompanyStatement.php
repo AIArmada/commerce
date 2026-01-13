@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Models;
 
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string|null $status
@@ -14,10 +14,10 @@ use Illuminate\Support\Carbon;
  * @property int|null $updated_on
  * @property int|null $began_on
  * @property int|null $finished_on
- * @property-read Carbon|null $createdOn
- * @property-read Carbon|null $updatedOn
- * @property-read Carbon|null $beganOn
- * @property-read Carbon|null $finishedOn
+ * @property-read CarbonImmutable|null $createdOn
+ * @property-read CarbonImmutable|null $updatedOn
+ * @property-read CarbonImmutable|null $beganOn
+ * @property-read CarbonImmutable|null $finishedOn
  */
 class CompanyStatement extends ChipModel
 {
@@ -25,22 +25,22 @@ class CompanyStatement extends ChipModel
 
     public function createdOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['created_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['created_on'] ?? null));
     }
 
     public function updatedOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['updated_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['updated_on'] ?? null));
     }
 
     public function beganOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['began_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['began_on'] ?? null));
     }
 
     public function finishedOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['finished_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['finished_on'] ?? null));
     }
 
     public function statusColor(): string

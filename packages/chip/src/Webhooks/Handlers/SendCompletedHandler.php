@@ -12,6 +12,10 @@ use AIArmada\Chip\Models\SendInstruction;
 
 /**
  * Handles send_instruction.completed and payout.success webhook events.
+ *
+ * Note: Webhooks arrive without tenant context, so we use withoutOwnerScope()
+ * to find the instruction by its unique ID. This is safe because webhook
+ * payloads are cryptographically signed and the ID is globally unique.
  */
 class SendCompletedHandler implements WebhookHandler
 {
@@ -23,6 +27,8 @@ class SendCompletedHandler implements WebhookHandler
             return WebhookResult::skipped('No send instruction ID in payload');
         }
 
+        // Webhooks have no tenant context - lookup by unique ID is safe
+        // because the payload signature verifies authenticity
         $instruction = SendInstruction::query()
             ->withoutOwnerScope()
             ->where('id', $sendInstructionId)
@@ -37,11 +43,11 @@ class SendCompletedHandler implements WebhookHandler
             'state' => SendInstructionState::COMPLETED,
         ]);
 
-        // Emit Laravel event
-        event(new PayoutSuccess(
-            payout: \AIArmada\Chip\Data\PayoutData::from($payload->rawPayload),
-            payload: $payload->rawPayload,
-        ));
+        // Dispatch Laravel event using standard helper
+        PayoutSuccess::dispatch(
+            \AIArmada\Chip\Data\PayoutData::from($payload->rawPayload),
+            $payload->rawPayload,
+        );
 
         return WebhookResult::handled("Send instruction {$instruction->id} marked as completed");
     }

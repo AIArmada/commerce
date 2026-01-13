@@ -19,6 +19,7 @@ use AIArmada\Chip\Models\RecurringSchedule;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 use Throwable;
 
 /**
@@ -45,24 +46,37 @@ class RecurringService
         int $maxFailures = 3,
         ?array $metadata = null,
     ): RecurringSchedule {
-        $schedule = RecurringSchedule::create([
-            'chip_client_id' => $chipClientId,
-            'recurring_token_id' => $recurringToken,
-            'subscriber_type' => $subscriber?->getMorphClass(),
-            'subscriber_id' => $subscriber?->getKey(),
-            'status' => RecurringStatus::Active,
-            'amount_minor' => $amountMinor,
-            'currency' => $currency,
-            'interval' => $interval,
-            'interval_count' => $intervalCount,
-            'next_charge_at' => $firstChargeAt ?? $this->calculateFirstCharge($interval, $intervalCount),
-            'max_failures' => $maxFailures,
-            'metadata' => $metadata,
-        ]);
+        return DB::transaction(function () use (
+            $chipClientId,
+            $recurringToken,
+            $amountMinor,
+            $interval,
+            $intervalCount,
+            $subscriber,
+            $currency,
+            $firstChargeAt,
+            $maxFailures,
+            $metadata
+        ): RecurringSchedule {
+            $schedule = RecurringSchedule::create([
+                'chip_client_id' => $chipClientId,
+                'recurring_token_id' => $recurringToken,
+                'subscriber_type' => $subscriber?->getMorphClass(),
+                'subscriber_id' => $subscriber?->getKey(),
+                'status' => RecurringStatus::Active,
+                'amount_minor' => $amountMinor,
+                'currency' => $currency,
+                'interval' => $interval,
+                'interval_count' => $intervalCount,
+                'next_charge_at' => $firstChargeAt ?? $this->calculateFirstCharge($interval, $intervalCount),
+                'max_failures' => $maxFailures,
+                'metadata' => $metadata,
+            ]);
 
-        event(new RecurringScheduleCreated($schedule));
+            RecurringScheduleCreated::dispatch($schedule);
 
-        return $schedule;
+            return $schedule;
+        });
     }
 
     /**
@@ -104,49 +118,51 @@ class RecurringService
      */
     public function processCharge(RecurringSchedule $schedule): RecurringCharge
     {
-        $charge = RecurringCharge::create([
-            'schedule_id' => $schedule->id,
-            'amount_minor' => $schedule->amount_minor,
-            'currency' => $schedule->currency,
-            'status' => ChargeStatus::Pending,
-            'attempted_at' => now(),
-        ]);
-
-        try {
-            // Create a new purchase using Chip API
-            $purchase = $this->chip->purchase()
-                ->clientId($schedule->chip_client_id)
-                ->addProduct('Recurring Payment', $schedule->amount_minor)
-                ->currency($schedule->currency)
-                ->forceRecurring(true)
-                ->create();
-
-            // Charge using the saved token
-            $result = $this->chip->chargePurchase($purchase->id, $schedule->recurring_token_id);
-
-            $charge->update([
-                'chip_purchase_id' => $result->id,
-                'status' => ChargeStatus::Success,
+        return DB::transaction(function () use ($schedule): RecurringCharge {
+            $charge = RecurringCharge::create([
+                'schedule_id' => $schedule->id,
+                'amount_minor' => $schedule->amount_minor,
+                'currency' => $schedule->currency,
+                'status' => ChargeStatus::Pending,
+                'attempted_at' => now(),
             ]);
 
-            $schedule->update([
-                'last_charged_at' => now(),
-                'next_charge_at' => $schedule->calculateNextChargeDate(),
-                'failure_count' => 0,
-            ]);
+            try {
+                // Create a new purchase using Chip API
+                $purchase = $this->chip->purchase()
+                    ->clientId($schedule->chip_client_id)
+                    ->addProductCents('Recurring Payment', $schedule->amount_minor)
+                    ->currency($schedule->currency)
+                    ->forceRecurring(true)
+                    ->create();
 
-            event(new RecurringChargeSucceeded($schedule, $charge));
+                // Charge using the saved token
+                $result = $this->chip->chargePurchase($purchase->id, $schedule->recurring_token_id);
 
-        } catch (ChipApiException $e) {
-            $charge->update([
-                'status' => ChargeStatus::Failed,
-                'failure_reason' => $e->getMessage(),
-            ]);
+                $charge->update([
+                    'chip_purchase_id' => $result->id,
+                    'status' => ChargeStatus::Success,
+                ]);
 
-            $this->handleFailure($schedule, $e);
-        }
+                $schedule->update([
+                    'last_charged_at' => now(),
+                    'next_charge_at' => $schedule->calculateNextChargeDate(),
+                    'failure_count' => 0,
+                ]);
 
-        return $charge;
+                RecurringChargeSucceeded::dispatch($schedule, $charge);
+
+            } catch (ChipApiException $e) {
+                $charge->update([
+                    'status' => ChargeStatus::Failed,
+                    'failure_reason' => $e->getMessage(),
+                ]);
+
+                $this->handleFailure($schedule, $e);
+            }
+
+            return $charge;
+        });
     }
 
     /**
@@ -154,14 +170,16 @@ class RecurringService
      */
     public function cancel(RecurringSchedule $schedule): RecurringSchedule
     {
-        $schedule->update([
-            'status' => RecurringStatus::Cancelled,
-            'cancelled_at' => now(),
-        ]);
+        return DB::transaction(function () use ($schedule): RecurringSchedule {
+            $schedule->update([
+                'status' => RecurringStatus::Cancelled,
+                'cancelled_at' => now(),
+            ]);
 
-        event(new RecurringScheduleCancelled($schedule));
+            RecurringScheduleCancelled::dispatch($schedule);
 
-        return $schedule;
+            return $schedule;
+        });
     }
 
     /**
@@ -269,14 +287,14 @@ class RecurringService
 
         if ($schedule->failure_count >= $schedule->max_failures) {
             $schedule->update(['status' => RecurringStatus::Failed]);
-            event(new RecurringScheduleFailed($schedule));
+            RecurringScheduleFailed::dispatch($schedule);
         } else {
             // Exponential backoff: 2^failure_count * 24 hours
             $retryDelayHours = (int) pow(2, $schedule->failure_count) * 24;
             $schedule->update([
                 'next_charge_at' => now()->addHours($retryDelayHours),
             ]);
-            event(new RecurringChargeRetryScheduled($schedule, $retryDelayHours));
+            RecurringChargeRetryScheduled::dispatch($schedule, $retryDelayHours);
         }
     }
 

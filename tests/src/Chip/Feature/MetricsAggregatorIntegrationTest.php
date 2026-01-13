@@ -3,7 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\Chip\Services\MetricsAggregator;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 describe('MetricsAggregator', function (): void {
     beforeEach(function (): void {
@@ -22,7 +22,7 @@ describe('MetricsAggregator', function (): void {
             $params = $reflection->getParameters();
 
             expect($params)->toHaveCount(1);
-            expect($params[0]->getType()->getName())->toBe(Carbon::class);
+            expect($params[0]->getType()->getName())->toBe(CarbonImmutable::class);
         });
 
         it('aggregateTotals accepts Carbon date', function (): void {
@@ -30,7 +30,7 @@ describe('MetricsAggregator', function (): void {
             $params = $reflection->getParameters();
 
             expect($params)->toHaveCount(1);
-            expect($params[0]->getType()->getName())->toBe(Carbon::class);
+            expect($params[0]->getType()->getName())->toBe(CarbonImmutable::class);
         });
 
         it('backfill accepts start and end dates', function (): void {
@@ -68,7 +68,7 @@ describe('MetricsAggregator', function (): void {
 
     describe('aggregateTotals execution', function (): void {
         it('does not throw when called with date having no metrics', function (): void {
-            $date = Carbon::now()->subDays(50);
+            $date = CarbonImmutable::now()->subDays(50);
 
             // This should not throw even with no input metrics
             $exception = null;
@@ -83,7 +83,7 @@ describe('MetricsAggregator', function (): void {
         });
 
         it('does not throw when called with recent date', function (): void {
-            $date = Carbon::now()->subDays(1);
+            $date = CarbonImmutable::now()->subDays(1);
 
             $exception = null;
 

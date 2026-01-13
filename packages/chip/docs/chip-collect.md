@@ -39,8 +39,8 @@ return redirect($purchase->checkout_url);
 ```php
 $purchase = Chip::purchase()
     ->customer('customer@example.com', 'John Doe', '+60123456789')
-    ->addProduct('Product A', 5000, 2)
-    ->addProduct('Product B', 3000, 1)
+    ->addProductCents('Product A', 5000, 2)
+    ->addProductCents('Product B', 3000, 1)
     ->successUrl(route('checkout.success'))
     ->failureUrl(route('checkout.failed'))
     ->sendReceipt(true)
@@ -139,7 +139,7 @@ $purchase = Chip::resendInvoice('pur_abc123');
 ```php
 $purchase = Chip::purchase()
     ->customer('customer@example.com')
-    ->addProduct('Subscription', 9900)
+    ->addProductCents('Subscription', 9900)
     ->forceRecurring(true)
     ->create();
 ```

@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Models;
 
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 /**
  * Pre-aggregated daily metrics from local data.
  *
  * @property string $id
- * @property Carbon $date
+ * @property CarbonImmutable $date
  * @property string|null $payment_method
  * @property int $total_attempts
  * @property int $successful_count
@@ -21,8 +21,8 @@ use Illuminate\Support\Carbon;
  * @property float $success_rate
  * @property float $avg_transaction_minor
  * @property array<string, int>|null $failure_breakdown
- * @property Carbon|null $created_at
- * @property Carbon|null $updated_at
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
  */
 class DailyMetric extends ChipModel
 {

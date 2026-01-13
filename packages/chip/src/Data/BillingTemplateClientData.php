@@ -4,14 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 
 /**
- * CHIP BillingTemplateClientData data object.
- *
  * Represents a client subscribed to a billing template (subscription).
  */
-class BillingTemplateClientData extends ChipData
+final class BillingTemplateClientData extends ChipData
 {
     public function __construct(
         public readonly string $id,
@@ -34,8 +32,7 @@ class BillingTemplateClientData extends ChipData
     {
         $data = self::resolvePayload(...$payloads);
 
-        // @phpstan-ignore-next-line new.static
-        return new static(
+        return new self(
             id: $data['id'] ?? '',
             type: $data['type'] ?? 'billing_template_client',
             created_on: $data['created_on'] ?? time(),
@@ -52,24 +49,24 @@ class BillingTemplateClientData extends ChipData
         );
     }
 
-    public function getCreatedAt(): Carbon
+    public function getCreatedAt(): CarbonImmutable
     {
-        return Carbon::createFromTimestamp($this->created_on);
+        return CarbonImmutable::createFromTimestamp($this->created_on);
     }
 
-    public function getUpdatedAt(): Carbon
+    public function getUpdatedAt(): CarbonImmutable
     {
-        return Carbon::createFromTimestamp($this->updated_on);
+        return CarbonImmutable::createFromTimestamp($this->updated_on);
     }
 
-    public function getNextBillingAt(): ?Carbon
+    public function getNextBillingAt(): ?CarbonImmutable
     {
-        return $this->next_billing_on ? Carbon::createFromTimestamp($this->next_billing_on) : null;
+        return $this->next_billing_on ? CarbonImmutable::createFromTimestamp($this->next_billing_on) : null;
     }
 
-    public function getLastBillingAt(): ?Carbon
+    public function getLastBillingAt(): ?CarbonImmutable
     {
-        return $this->last_billing_on ? Carbon::createFromTimestamp($this->last_billing_on) : null;
+        return $this->last_billing_on ? CarbonImmutable::createFromTimestamp($this->last_billing_on) : null;
     }
 
     public function isActive(): bool

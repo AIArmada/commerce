@@ -13,30 +13,30 @@ use AIArmada\Chip\Services\MetricsAggregator;
 use AIArmada\Chip\Services\RecurringService;
 use AIArmada\Chip\Webhooks\WebhookRetryManager;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 
 describe('AggregateMetricsCommand', function (): void {
     it('aggregates for yesterday by default', function (): void {
         $aggregator = Mockery::mock(MetricsAggregator::class);
         $aggregator->shouldReceive('aggregateForDate')
             ->once()
-            ->with(Mockery::on(fn ($date) => $date instanceof Carbon && $date->isYesterday()));
+            ->with(Mockery::on(fn ($date) => $date instanceof CarbonImmutable && $date->isYesterday()));
 
         $this->app->instance(MetricsAggregator::class, $aggregator);
 
         $this->artisan(AggregateMetricsCommand::class)
-            ->expectsOutput('Aggregating metrics for ' . Carbon::yesterday()->toDateString() . ' (yesterday)...')
+            ->expectsOutput('Aggregating metrics for ' . CarbonImmutable::yesterday()->toDateString() . ' (yesterday)...')
             ->expectsOutput('Done.')
             ->assertSuccessful();
     });
 
     it('aggregates for specific date with --date option', function (): void {
-        $specificDate = Carbon::parse('2025-01-15');
+        $specificDate = CarbonImmutable::parse('2025-01-15');
 
         $aggregator = Mockery::mock(MetricsAggregator::class);
         $aggregator->shouldReceive('aggregateForDate')
             ->once()
-            ->with(Mockery::on(fn ($date) => $date instanceof Carbon && $date->toDateString() === '2025-01-15'));
+            ->with(Mockery::on(fn ($date) => $date instanceof CarbonImmutable && $date->toDateString() === '2025-01-15'));
 
         $this->app->instance(MetricsAggregator::class, $aggregator);
 
@@ -51,8 +51,8 @@ describe('AggregateMetricsCommand', function (): void {
         $aggregator->shouldReceive('backfill')
             ->once()
             ->with(
-                Mockery::on(fn ($from) => $from instanceof Carbon && $from->toDateString() === '2025-01-01'),
-                Mockery::on(fn ($to) => $to instanceof Carbon && $to->toDateString() === '2025-01-10')
+                Mockery::on(fn ($from) => $from instanceof CarbonImmutable && $from->toDateString() === '2025-01-01'),
+                Mockery::on(fn ($to) => $to instanceof CarbonImmutable && $to->toDateString() === '2025-01-10')
             )
             ->andReturn(10);
 

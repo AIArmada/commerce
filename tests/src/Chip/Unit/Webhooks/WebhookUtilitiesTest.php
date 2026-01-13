@@ -83,21 +83,28 @@ describe('ChipWebhookProfile', function (): void {
 });
 
 describe('WebhookValidator', function (): void {
+    afterEach(function (): void {
+        // Ensure OpenSSL resources are freed
+        if (isset($this->keyPair)) {
+            openssl_free_key($this->keyPair);
+        }
+    });
+
     it('can be instantiated', function (): void {
         $validator = new WebhookValidator;
         expect($validator)->toBeInstanceOf(WebhookValidator::class);
     });
 
     it('returns false when signature header is missing', function (): void {
-        $keyPair = openssl_pkey_new([
+        $this->keyPair = openssl_pkey_new([
             'private_key_type' => OPENSSL_KEYTYPE_RSA,
             'private_key_bits' => 2048,
         ]);
 
-        expect($keyPair)->not->toBeFalse();
+        expect($this->keyPair)->not->toBeFalse();
 
-        openssl_pkey_export($keyPair, $privateKey);
-        $publicKeyDetails = openssl_pkey_get_details($keyPair);
+        openssl_pkey_export($this->keyPair, $privateKey);
+        $publicKeyDetails = openssl_pkey_get_details($this->keyPair);
 
         expect($publicKeyDetails)->toBeArray()
             ->and($publicKeyDetails)->toHaveKey('key');
@@ -128,14 +135,14 @@ describe('WebhookValidator', function (): void {
     });
 
     it('returns false for invalid signature', function (): void {
-        $keyPair = openssl_pkey_new([
+        $this->keyPair = openssl_pkey_new([
             'private_key_type' => OPENSSL_KEYTYPE_RSA,
             'private_key_bits' => 2048,
         ]);
 
-        expect($keyPair)->not->toBeFalse();
+        expect($this->keyPair)->not->toBeFalse();
 
-        $publicKeyDetails = openssl_pkey_get_details($keyPair);
+        $publicKeyDetails = openssl_pkey_get_details($this->keyPair);
         expect($publicKeyDetails)->toBeArray()
             ->and($publicKeyDetails)->toHaveKey('key');
 
@@ -154,15 +161,15 @@ describe('WebhookValidator', function (): void {
     });
 
     it('returns true for valid signature', function (): void {
-        $keyPair = openssl_pkey_new([
+        $this->keyPair = openssl_pkey_new([
             'private_key_type' => OPENSSL_KEYTYPE_RSA,
             'private_key_bits' => 2048,
         ]);
 
-        expect($keyPair)->not->toBeFalse();
+        expect($this->keyPair)->not->toBeFalse();
 
-        openssl_pkey_export($keyPair, $privateKey);
-        $publicKeyDetails = openssl_pkey_get_details($keyPair);
+        openssl_pkey_export($this->keyPair, $privateKey);
+        $publicKeyDetails = openssl_pkey_get_details($this->keyPair);
 
         expect($publicKeyDetails)->toBeArray()
             ->and($publicKeyDetails)->toHaveKey('key');

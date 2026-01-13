@@ -6,10 +6,12 @@ namespace AIArmada\Tax\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Tax\Database\Factories\TaxZoneFactory;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -36,6 +38,9 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class TaxZone extends Model
 {
+    /** @use HasFactory<TaxZoneFactory> */
+    use HasFactory;
+
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
@@ -88,11 +93,19 @@ class TaxZone extends Model
     // =========================================================================
 
     /**
+     * Create a new factory instance for the model.
+     */
+    protected static function newFactory(): TaxZoneFactory
+    {
+        return TaxZoneFactory::new();
+    }
+
+    /**
      * Get a zero-rate zone (for tax-free calculations).
      */
     public static function zeroRate(): self
     {
-        $zone = new self();
+        $zone = new self;
         $zone->id = (string) Str::uuid();
         $zone->name = 'Zero Rate Zone';
         $zone->code = 'ZERO';

@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Models;
 
 use Akaunting\Money\Money;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Arr;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string|null $status
@@ -32,8 +32,10 @@ use Illuminate\Support\Carbon;
  * @property int|null $updated_on
  * @property int|null $due
  * @property int|null $viewed_on
+ * @property CarbonImmutable|null $created_at
+ * @property CarbonImmutable|null $updated_at
  * @property-read Money|null $totalMoney
- * @property-read array<int, array{status: string, timestamp: Carbon|null, translated: string}> $timeline
+ * @property-read array<int, array{status: string, timestamp: CarbonImmutable|null, translated: string}> $timeline
  */
 class Purchase extends ChipModel
 {
@@ -57,22 +59,22 @@ class Purchase extends ChipModel
 
     public function createdOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['created_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['created_on'] ?? null));
     }
 
     public function updatedOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['updated_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['updated_on'] ?? null));
     }
 
     public function dueOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['due'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['due'] ?? null));
     }
 
     public function viewedOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['viewed_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['viewed_on'] ?? null));
     }
 
     public function clientEmail(): Attribute
@@ -142,7 +144,7 @@ class Purchase extends ChipModel
             return collect($history)
                 ->map(fn (array $entry): array => [
                     'status' => (string) ($entry['status'] ?? 'unknown'),
-                    'timestamp' => isset($entry['timestamp']) ? Carbon::createFromTimestampUTC((int) $entry['timestamp']) : null,
+                    'timestamp' => isset($entry['timestamp']) ? CarbonImmutable::createFromTimestampUTC((int) $entry['timestamp']) : null,
                     'translated' => (string) str((string) ($entry['status'] ?? 'unknown'))->headline(),
                 ])
                 ->all();

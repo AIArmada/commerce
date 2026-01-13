@@ -12,7 +12,7 @@ use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Webhooks\ProcessChipWebhook;
 use AIArmada\Chip\Webhooks\WebhookMonitor;
 use Illuminate\Database\Schema\Blueprint;
-use Illuminate\Support\Carbon;
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\Schema;
 use Spatie\WebhookClient\Models\WebhookCall;
@@ -397,14 +397,8 @@ describe('ProcessChipWebhook', function (): void {
                 'client' => ['email' => 'test@example.com'],
             ];
 
-            $webhookCall = WebhookCall::create(['name' => 'chip', 'payload' => $payload]);
-            $processor = new ProcessChipWebhook($webhookCall);
-
-            // Use reflection to test protected method
-            $reflection = new ReflectionMethod($processor, 'extractPurchase');
-            $reflection->setAccessible(true);
-
-            $result = $reflection->invoke($processor, $payload);
+            $dispatcher = app(\AIArmada\Chip\Services\WebhookEventDispatcher::class);
+            $result = $dispatcher->extractPurchase($payload);
 
             expect($result)->toBeInstanceOf(PurchaseData::class);
         });
@@ -416,13 +410,8 @@ describe('ProcessChipWebhook', function (): void {
                 'id' => 'payout-123',
             ];
 
-            $webhookCall = WebhookCall::create(['name' => 'chip', 'payload' => $payload]);
-            $processor = new ProcessChipWebhook($webhookCall);
-
-            $reflection = new ReflectionMethod($processor, 'extractPurchase');
-            $reflection->setAccessible(true);
-
-            $result = $reflection->invoke($processor, $payload);
+            $dispatcher = app(\AIArmada\Chip\Services\WebhookEventDispatcher::class);
+            $result = $dispatcher->extractPurchase($payload);
 
             expect($result)->toBeNull();
         });
@@ -516,7 +505,7 @@ describe('WebhookMonitor', function (): void {
                 'callback' => 'http://example.com/webhook',
             ]);
 
-            $health = $this->monitor->getHealth(Carbon::now()->subDay());
+            $health = $this->monitor->getHealth(CarbonImmutable::now()->subDay());
 
             expect($health->total)->toBe(1);
         });

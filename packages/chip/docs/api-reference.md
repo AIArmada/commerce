@@ -168,7 +168,7 @@ Chip::purchase()
     ->clientId(string $clientId): self
     ->billingAddress(string $street, string $city, string $zip, ?string $state, ?string $country): self
     ->shippingAddress(string $street, string $city, string $zip, ?string $state, ?string $country): self
-    ->addProduct(string $name, int $price, int $quantity = 1, int $discount = 0, float $taxPercent = 0): self
+    ->addProductCents(string $name, int $price, int $quantity = 1, int $discount = 0, float $taxPercent = 0): self
     ->addProductMoney(string $name, Money $price, int $quantity = 1, ?Money $discount = null, float $taxPercent = 0): self
     ->addProductObject(Product $product): self
     ->addLineItem(LineItemInterface $item): self

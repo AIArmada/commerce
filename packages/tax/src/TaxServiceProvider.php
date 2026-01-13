@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Tax;
 
+use AIArmada\Tax\Contracts\TaxCalculatorInterface;
+use AIArmada\Tax\Services\TaxCalculator;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -19,7 +21,8 @@ final class TaxServiceProvider extends PackageServiceProvider
 
     public function packageRegistered(): void
     {
-        $this->app->singleton(Services\TaxCalculator::class);
+        $this->app->singleton(TaxCalculatorInterface::class, TaxCalculator::class);
+        $this->app->alias(TaxCalculatorInterface::class, 'tax');
     }
 
     public function bootingPackage(): void

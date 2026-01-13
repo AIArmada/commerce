@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Tax\Services;
 
+use AIArmada\Tax\Contracts\TaxCalculatorInterface;
 use AIArmada\Tax\Data\TaxResultData;
 use AIArmada\Tax\Exceptions\TaxZoneNotFoundException;
 use AIArmada\Tax\Models\TaxExemption;
@@ -14,7 +15,7 @@ use AIArmada\Tax\Settings\TaxZoneSettings;
 use AIArmada\Tax\Support\TaxOwnerScope;
 use Throwable;
 
-class TaxCalculator
+class TaxCalculator implements TaxCalculatorInterface
 {
     /**
      * Calculate tax for an amount.
@@ -37,31 +38,32 @@ class TaxCalculator
         // Check for exemption first
         $exemption = $this->checkExemption($context);
         if ($exemption) {
-            return $this->createExemptResult($exemption);
+            return $this->createExemptResult($exemption, $zoneId);
         }
 
         // Resolve zone
         $zone = $this->resolveZone($zoneId, $context);
 
-        // Get applicable rate
-        $rate = $this->getRate($taxClass, $zone);
+        // Get applicable rates (including compound)
+        $rates = $this->getRates($taxClass, $zone, $context['is_shipping'] ?? false);
 
-        // Calculate tax
-        $pricesIncludeTax = $this->getPricesIncludeTax();
-        $taxAmount = $pricesIncludeTax
-            ? $rate->extractTax($amountInCents)
-            : $rate->calculateTax($amountInCents);
-
-        // Round if configured
-        if (config('tax.defaults.round_at_subtotal', true)) {
-            $taxAmount = (int) round($taxAmount);
+        if ($rates->isEmpty()) {
+            return $this->createZeroResult($zone->id);
         }
 
+        // Calculate tax (with compound support)
+        $pricesIncludeTax = $this->getPricesIncludeTax();
+        $result = $this->calculateWithRates($amountInCents, $rates, $pricesIncludeTax);
+
         return new TaxResultData(
-            taxAmount: $taxAmount,
-            rate: $rate,
-            zone: $zone,
+            taxAmount: $result['total'],
+            rateId: $result['primary_rate']->id,
+            rateName: $result['primary_rate']->name,
+            ratePercentage: $result['primary_rate']->rate,
+            zoneId: $zone->id,
+            zoneName: $zone->name,
             includedInPrice: $pricesIncludeTax,
+            breakdown: $result['breakdown'],
         );
     }
 
@@ -73,6 +75,9 @@ class TaxCalculator
         if (! $this->isShippingTaxable()) {
             return $this->createZeroResult($zoneId);
         }
+
+        // Mark context as shipping to filter rates properly
+        $context['is_shipping'] = true;
 
         // Use standard tax class for shipping
         return $this->calculateTax($shippingAmountInCents, 'standard', $zoneId, $context);
@@ -151,18 +156,89 @@ class TaxCalculator
     }
 
     /**
-     * Get the tax rate for a class and zone.
+     * Get all applicable tax rates for a class and zone.
+     *
+     * @return \Illuminate\Database\Eloquent\Collection<int, TaxRate>
      */
-    protected function getRate(string $taxClass, TaxZone $zone): TaxRate
+    protected function getRates(string $taxClass, TaxZone $zone, bool $isShipping = false): \Illuminate\Database\Eloquent\Collection
     {
-        $rate = TaxOwnerScope::applyToOwnedQuery(TaxRate::query())
+        $query = TaxOwnerScope::applyToOwnedQuery(TaxRate::query())
             ->where('zone_id', $zone->id)
             ->where('tax_class', $taxClass)
             ->active()
-            ->orderBy('priority', 'desc')
-            ->first();
+            ->orderBy('is_compound', 'asc') // Non-compound first
+            ->orderBy('priority', 'desc');
 
-        return $rate ?? TaxRate::zeroRate($taxClass, $zone);
+        // Filter for shipping rates if calculating shipping tax
+        if ($isShipping) {
+            $query->where('is_shipping', true);
+        }
+
+        return $query->get();
+    }
+
+    /**
+     * Calculate tax with multiple rates (compound support).
+     *
+     * @param  \Illuminate\Database\Eloquent\Collection<int, TaxRate>  $rates
+     * @return array{total: int, primary_rate: TaxRate, breakdown: array<int, array{name: string, rate: int, amount: int, is_compound: bool}>}
+     */
+    protected function calculateWithRates(
+        int $amountInCents,
+        \Illuminate\Database\Eloquent\Collection $rates,
+        bool $pricesIncludeTax
+    ): array {
+        $breakdown = [];
+        $totalTax = 0;
+
+        // Separate compound and non-compound rates
+        $nonCompoundRates = $rates->where('is_compound', false);
+        $compoundRates = $rates->where('is_compound', true);
+
+        // Calculate non-compound taxes first
+        foreach ($nonCompoundRates as $rate) {
+            $taxAmount = $pricesIncludeTax
+                ? $rate->extractTax($amountInCents)
+                : $rate->calculateTax($amountInCents);
+
+            if (config('tax.defaults.round_at_subtotal', true)) {
+                $taxAmount = (int) round($taxAmount);
+            }
+
+            $totalTax += $taxAmount;
+            $breakdown[] = [
+                'name' => $rate->name,
+                'rate' => $rate->rate,
+                'amount' => $taxAmount,
+                'is_compound' => false,
+            ];
+        }
+
+        // Calculate compound taxes on (base + previous taxes)
+        foreach ($compoundRates as $rate) {
+            $compoundBase = $pricesIncludeTax ? $amountInCents : ($amountInCents + $totalTax);
+            $taxAmount = $rate->calculateTax($compoundBase);
+
+            if (config('tax.defaults.round_at_subtotal', true)) {
+                $taxAmount = (int) round($taxAmount);
+            }
+
+            $totalTax += $taxAmount;
+            $breakdown[] = [
+                'name' => $rate->name,
+                'rate' => $rate->rate,
+                'amount' => $taxAmount,
+                'is_compound' => true,
+            ];
+        }
+
+        $primaryRate = $rates->first() ?? TaxRate::zeroRate('standard', new TaxZone);
+
+        return [
+            'total' => $totalTax,
+            'primary_rate' => $primaryRate,
+            'breakdown' => $breakdown,
+        ];
     }
 
     /**
@@ -177,6 +253,8 @@ class TaxCalculator
         }
 
         $customerId = $context['customer_id'] ?? null;
+        $customerType = $context['customer_type'] ?? 'App\\Models\\Customer';
+
         if (! $customerId) {
             return null;
         }
@@ -185,6 +263,7 @@ class TaxCalculator
 
         $query = TaxOwnerScope::applyToOwnedQuery(TaxExemption::query())
             ->where('exemptable_id', $customerId)
+            ->where('exemptable_type', $customerType)
             ->active()
             ->forZone($zoneId);
 
@@ -194,15 +273,26 @@ class TaxCalculator
     /**
      * Create an exempt result.
      */
-    protected function createExemptResult(TaxExemption $exemption): TaxResultData
+    protected function createExemptResult(TaxExemption $exemption, ?string $zoneId): TaxResultData
     {
-        $zone = TaxZone::zeroRate();
-        $rate = TaxRate::zeroRate('exempt', $zone);
+        $zone = null;
+        if ($zoneId !== null) {
+            $zone = TaxOwnerScope::applyToOwnedQuery(TaxZone::query())
+                ->whereKey($zoneId)
+                ->first();
+        }
+
+        if ($zone === null) {
+            $zone = TaxZone::zeroRate();
+        }
 
         return new TaxResultData(
             taxAmount: 0,
-            rate: $rate,
-            zone: $zone,
+            rateId: 'exempt',
+            rateName: 'Tax Exempt',
+            ratePercentage: 0,
+            zoneId: $zone->id,
+            zoneName: $zone->name,
             includedInPrice: false,
             exemptionReason: $exemption->reason,
         );
@@ -222,12 +312,14 @@ class TaxCalculator
         }
 
         $zone ??= TaxZone::zeroRate();
-        $rate = TaxRate::zeroRate('zero', $zone);
 
         return new TaxResultData(
             taxAmount: 0,
-            rate: $rate,
-            zone: $zone,
+            rateId: 'zero',
+            rateName: 'No Tax',
+            ratePercentage: 0,
+            zoneId: $zone->id,
+            zoneName: $zone->name,
             includedInPrice: false,
         );
     }

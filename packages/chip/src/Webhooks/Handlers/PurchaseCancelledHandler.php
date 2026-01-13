@@ -27,11 +27,11 @@ class PurchaseCancelledHandler implements WebhookHandler
             'status' => PurchaseStatus::CANCELLED,
         ]);
 
-        // Emit Laravel event
-        event(new PurchaseCancelled(
-            purchase: \AIArmada\Chip\Data\PurchaseData::from($payload->rawPayload),
-            payload: $payload->rawPayload,
-        ));
+        // Dispatch Laravel event
+        PurchaseCancelled::dispatch(
+            \AIArmada\Chip\Data\PurchaseData::from($payload->rawPayload),
+            $payload->rawPayload,
+        );
 
         return WebhookResult::handled("Purchase {$localPurchase->id} marked as cancelled");
     }

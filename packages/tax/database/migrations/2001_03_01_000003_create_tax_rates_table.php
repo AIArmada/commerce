@@ -12,15 +12,20 @@ return new class extends Migration
     {
         Schema::create((string) config('tax.database.tables.tax_rates', 'tax_rates'), function (Blueprint $table): void {
             $table->uuid('id')->primary();
+            $table->nullableMorphs('owner');
             $table->uuid('zone_id');
             $table->string('tax_class')->default('standard');
             $table->string('name');
+            $table->text('description')->nullable();
 
             // Rate as basis points (600 = 6.00%)
             $table->unsignedInteger('rate');
 
             // Compound tax (applied after other taxes)
             $table->boolean('is_compound')->default(false);
+
+            // Applies to shipping calculations
+            $table->boolean('is_shipping')->default(true);
 
             // Priority for compound tax ordering
             $table->integer('priority')->default(0);

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 
 final class SendLimitData extends ChipData
 {
@@ -40,17 +40,17 @@ final class SendLimitData extends ChipData
             approvals_required: (int) ($data['approvals_required'] ?? 0),
             approvals_received: (int) ($data['approvals_received'] ?? 0),
             from_settlement: $data['from_settlement'] ?? null,
-            created_at: (string) ($data['created_at'] ?? Carbon::now()->toISOString()),
-            updated_at: (string) ($data['updated_at'] ?? Carbon::now()->toISOString()),
+            created_at: (string) ($data['created_at'] ?? CarbonImmutable::now()->toISOString()),
+            updated_at: (string) ($data['updated_at'] ?? CarbonImmutable::now()->toISOString()),
         );
     }
 
-    public function getCreatedAt(): Carbon
+    public function getCreatedAt(): CarbonImmutable
     {
         return $this->parseTimestamp($this->created_at);
     }
 
-    public function getUpdatedAt(): Carbon
+    public function getUpdatedAt(): CarbonImmutable
     {
         return $this->parseTimestamp($this->updated_at);
     }
@@ -77,12 +77,12 @@ final class SendLimitData extends ChipData
         ];
     }
 
-    private function parseTimestamp(string $value): Carbon
+    private function parseTimestamp(string $value): CarbonImmutable
     {
         if (is_numeric($value)) {
-            return Carbon::createFromTimestamp((int) $value);
+            return CarbonImmutable::createFromTimestamp((int) $value);
         }
 
-        return Carbon::parse($value);
+        return CarbonImmutable::parse($value);
     }
 }

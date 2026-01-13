@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 
 final class SendWebhookData extends ChipData
 {
@@ -38,8 +38,8 @@ final class SendWebhookData extends ChipData
             callback_url: (string) ($data[$callbackKey] ?? ''),
             email: $data['email'] ?? '',
             event_hooks: $eventHooks,
-            created_at: (string) ($data['created_at'] ?? Carbon::now()->toISOString()),
-            updated_at: (string) ($data['updated_at'] ?? Carbon::now()->toISOString()),
+            created_at: (string) ($data['created_at'] ?? CarbonImmutable::now()->toISOString()),
+            updated_at: (string) ($data['updated_at'] ?? CarbonImmutable::now()->toISOString()),
         );
     }
 
@@ -48,12 +48,12 @@ final class SendWebhookData extends ChipData
         return in_array($hook, $this->event_hooks, true);
     }
 
-    public function getCreatedAt(): Carbon
+    public function getCreatedAt(): CarbonImmutable
     {
         return $this->parseTimestamp($this->created_at);
     }
 
-    public function getUpdatedAt(): Carbon
+    public function getUpdatedAt(): CarbonImmutable
     {
         return $this->parseTimestamp($this->updated_at);
     }
@@ -75,12 +75,12 @@ final class SendWebhookData extends ChipData
         ];
     }
 
-    private function parseTimestamp(string $value): Carbon
+    private function parseTimestamp(string $value): CarbonImmutable
     {
         if (is_numeric($value)) {
-            return Carbon::createFromTimestamp((int) $value);
+            return CarbonImmutable::createFromTimestamp((int) $value);
         }
 
-        return Carbon::parse($value);
+        return CarbonImmutable::parse($value);
     }
 }

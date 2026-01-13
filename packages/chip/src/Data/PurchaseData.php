@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
+use AIArmada\Chip\Data\Casts\MoneyCast;
+use AIArmada\Chip\Data\Transformers\MoneyTransformer;
 use Akaunting\Money\Money;
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
+use Spatie\LaravelData\Attributes\WithCast;
+use Spatie\LaravelData\Attributes\WithTransformer;
 
-class PurchaseData extends ChipData
+final class PurchaseData extends ChipData
 {
     public function __construct(
         public readonly string $id, // UUID as string
@@ -40,6 +44,8 @@ class PurchaseData extends ChipData
         public readonly ?string $issued, // ISO 8601 date string
         public readonly ?int $due, // Unix timestamp or null
         public readonly string $refund_availability,
+        #[WithCast(MoneyCast::class)]
+        #[WithTransformer(MoneyTransformer::class)]
         public readonly Money $refundable_amount,
         public readonly ?CurrencyConversionData $currency_conversion,
         /** @var array<string, mixed> */
@@ -112,8 +118,7 @@ class PurchaseData extends ChipData
                 'metadata' => $data['metadata'] ?? null,
             ]);
 
-        // @phpstan-ignore-next-line new.static
-        return new static(
+        return new self(
             id: $data['id'],
             type: $data['type'] ?? 'purchase',
             created_on: $created_on,
@@ -232,24 +237,24 @@ class PurchaseData extends ChipData
         return $this->purchase->getTotalInCents();
     }
 
-    public function getCreatedAt(): Carbon
+    public function getCreatedAt(): CarbonImmutable
     {
-        return Carbon::createFromTimestamp($this->created_on);
+        return CarbonImmutable::createFromTimestamp($this->created_on);
     }
 
-    public function getUpdatedAt(): Carbon
+    public function getUpdatedAt(): CarbonImmutable
     {
-        return Carbon::createFromTimestamp($this->updated_on);
+        return CarbonImmutable::createFromTimestamp($this->updated_on);
     }
 
-    public function getViewedAt(): ?Carbon
+    public function getViewedAt(): ?CarbonImmutable
     {
-        return $this->viewed_on ? Carbon::createFromTimestamp($this->viewed_on) : null;
+        return $this->viewed_on ? CarbonImmutable::createFromTimestamp($this->viewed_on) : null;
     }
 
-    public function getDueDate(): ?Carbon
+    public function getDueDate(): ?CarbonImmutable
     {
-        return $this->due ? Carbon::createFromTimestamp($this->due) : null;
+        return $this->due ? CarbonImmutable::createFromTimestamp($this->due) : null;
     }
 
     public function isPaid(): bool

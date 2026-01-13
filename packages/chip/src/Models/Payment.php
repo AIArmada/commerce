@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Chip\Models;
 
 use Akaunting\Money\Money;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Support\Carbon;
 
 /**
  * @property string $purchase_id
@@ -33,22 +33,22 @@ class Payment extends ChipModel
 {
     public function paidOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['paid_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['paid_on'] ?? null));
     }
 
     public function remotePaidOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['remote_paid_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['remote_paid_on'] ?? null));
     }
 
     public function createdOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['created_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['created_on'] ?? null));
     }
 
     public function updatedOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['updated_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['updated_on'] ?? null));
     }
 
     public function amountMoney(): Attribute
@@ -93,7 +93,7 @@ class Payment extends ChipModel
 
     public function pendingUnfreezeOn(): Attribute
     {
-        return Attribute::get(fn (?int $value, array $attributes): ?Carbon => $this->toTimestamp($attributes['pending_unfreeze_on'] ?? null));
+        return Attribute::get(fn (?int $value, array $attributes): ?CarbonImmutable => $this->toTimestamp($attributes['pending_unfreeze_on'] ?? null));
     }
 
     /**

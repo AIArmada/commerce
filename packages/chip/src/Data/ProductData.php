@@ -4,14 +4,22 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
+use AIArmada\Chip\Data\Casts\MoneyCast;
+use AIArmada\Chip\Data\Transformers\MoneyTransformer;
 use Akaunting\Money\Money;
+use Spatie\LaravelData\Attributes\WithCast;
+use Spatie\LaravelData\Attributes\WithTransformer;
 
 final class ProductData extends ChipData
 {
     public function __construct(
         public readonly string $name,
         public readonly string $quantity,
+        #[WithCast(MoneyCast::class)]
+        #[WithTransformer(MoneyTransformer::class)]
         public readonly Money $price,
+        #[WithCast(MoneyCast::class)]
+        #[WithTransformer(MoneyTransformer::class)]
         public readonly Money $discount,
         public readonly float $tax_percent,
         public readonly ?string $category,

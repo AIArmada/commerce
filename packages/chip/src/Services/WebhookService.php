@@ -6,10 +6,10 @@ namespace AIArmada\Chip\Services;
 
 use AIArmada\Chip\Clients\ChipCollectClient;
 use AIArmada\Chip\Exceptions\WebhookVerificationException;
-use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Throwable;
 
 class WebhookService
 {
@@ -71,13 +71,13 @@ class WebhookService
             $verified = openssl_verify($payload, $decodedSignature, $publicKeyResource, OPENSSL_ALGO_SHA256);
 
             return $verified === 1;
-        } catch (Exception $e) {
+        } catch (Throwable $e) {
             Log::channel(config('chip.logging.channel'))
                 ->error('Webhook signature verification failed', [
                     'error' => $e->getMessage(),
                 ]);
 
-            throw new WebhookVerificationException('Signature verification failed: ' . $e->getMessage());
+            throw new WebhookVerificationException('Signature verification failed: ' . $e->getMessage(), 0, $e);
         }
     }
 
@@ -138,7 +138,7 @@ class WebhookService
                     }
                 } catch (WebhookVerificationException $e) {
                     throw $e;
-                } catch (Exception $e) {
+                } catch (Throwable $e) {
                     Log::channel(config('chip.logging.channel'))
                         ->warning('Unable to resolve CHIP public key from API, using fallback', [
                             'webhook_id' => $webhookId,

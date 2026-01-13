@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Chip\Data;
 
-use Carbon\Carbon;
+use Carbon\CarbonImmutable;
 
 /**
  * Value object representing both stored webhook configurations and individual webhook event deliveries.
@@ -181,19 +181,19 @@ final class WebhookData extends ChipData
         return null;
     }
 
-    public function getCreatedAt(): Carbon
+    public function getCreatedAt(): CarbonImmutable
     {
-        return Carbon::createFromTimestamp($this->created_on);
+        return CarbonImmutable::createFromTimestamp($this->created_on);
     }
 
-    public function getUpdatedAt(): Carbon
+    public function getUpdatedAt(): CarbonImmutable
     {
-        return Carbon::createFromTimestamp($this->updated_on);
+        return CarbonImmutable::createFromTimestamp($this->updated_on);
     }
 
-    public function getProcessedAt(): ?Carbon
+    public function getProcessedAt(): ?CarbonImmutable
     {
-        return $this->processed_at ? Carbon::parse($this->processed_at) : null;
+        return $this->processed_at ? CarbonImmutable::parse($this->processed_at) : null;
     }
 
     public function handlesEvent(string $eventType): bool

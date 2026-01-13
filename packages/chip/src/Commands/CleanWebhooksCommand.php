@@ -6,9 +6,9 @@ namespace AIArmada\Chip\Commands;
 
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use Carbon\CarbonImmutable;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Carbon;
 
 final class CleanWebhooksCommand extends Command
 {
@@ -23,7 +23,7 @@ final class CleanWebhooksCommand extends Command
     {
         $days = (int) $this->option('days');
         $status = $this->option('status');
-        $cutoffDate = Carbon::now()->subDays($days);
+        $cutoffDate = CarbonImmutable::now()->subDays($days);
         $dryRun = (bool) $this->option('dry-run');
 
         if ((bool) config('chip.owner.enabled', false) && OwnerContext::resolve() === null) {
@@ -33,7 +33,7 @@ final class CleanWebhooksCommand extends Command
         return $this->handleForOwner($cutoffDate, (string) $status, $days, $dryRun, OwnerContext::resolve());
     }
 
-    private function handleAllOwners(Carbon $cutoffDate, string $status, int $days, bool $dryRun): int
+    private function handleAllOwners(CarbonImmutable $cutoffDate, string $status, int $days, bool $dryRun): int
     {
         $owners = Webhook::query()
             ->withoutOwnerScope()
@@ -93,7 +93,7 @@ final class CleanWebhooksCommand extends Command
         return self::SUCCESS;
     }
 
-    private function handleForOwner(Carbon $cutoffDate, string $status, int $days, bool $dryRun, ?Model $owner): int
+    private function handleForOwner(CarbonImmutable $cutoffDate, string $status, int $days, bool $dryRun, ?Model $owner): int
     {
         $query = $this->buildQuery($cutoffDate, $status, $owner);
         $count = $query->count();
@@ -125,7 +125,7 @@ final class CleanWebhooksCommand extends Command
         return self::SUCCESS;
     }
 
-    private function buildQuery(Carbon $cutoffDate, string $status, ?Model $owner): \Illuminate\Database\Eloquent\Builder
+    private function buildQuery(CarbonImmutable $cutoffDate, string $status, ?Model $owner): \Illuminate\Database\Eloquent\Builder
     {
         $query = Webhook::query()
             ->forOwner($owner, false)

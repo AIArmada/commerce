@@ -6,60 +6,41 @@ namespace AIArmada\Tax\Tests\Unit\Data;
 
 use AIArmada\Commerce\Tests\Tax\TaxTestCase;
 use AIArmada\Tax\Data\TaxResultData;
-use AIArmada\Tax\Models\TaxRate;
-use AIArmada\Tax\Models\TaxZone;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class TaxResultDataTest extends TaxTestCase
 {
-    use RefreshDatabase;
-
     public function test_can_create_tax_result(): void
     {
-        $zone = TaxZone::create([
-            'name' => 'Test Zone',
-            'code' => 'TEST',
-            'is_active' => true,
-        ]);
-
-        $rate = TaxRate::create([
-            'zone_id' => $zone->id,
-            'name' => 'Test Rate',
-            'rate' => 600,
-            'tax_class' => 'standard',
-            'is_active' => true,
-        ]);
-
         $result = new TaxResultData(
             taxAmount: 600,
-            rate: $rate,
-            zone: $zone,
+            rateId: 'rate-123',
+            rateName: 'Test Rate',
+            ratePercentage: 600,
+            zoneId: 'zone-123',
+            zoneName: 'Test Zone',
             includedInPrice: false,
             exemptionReason: null,
         );
 
         $this->assertEquals(600, $result->taxAmount);
-        $this->assertSame($rate, $result->rate);
-        $this->assertSame($zone, $result->zone);
+        $this->assertEquals('rate-123', $result->rateId);
+        $this->assertEquals('Test Rate', $result->rateName);
+        $this->assertEquals(600, $result->ratePercentage);
+        $this->assertEquals('zone-123', $result->zoneId);
+        $this->assertEquals('Test Zone', $result->zoneName);
         $this->assertFalse($result->includedInPrice);
         $this->assertNull($result->exemptionReason);
     }
 
     public function test_is_exempt_with_exemption_reason(): void
     {
-        $zone = TaxZone::create(['name' => 'Zone', 'code' => 'Z', 'is_active' => true]);
-        $rate = TaxRate::create([
-            'zone_id' => $zone->id,
-            'name' => 'Rate',
-            'rate' => 0,
-            'tax_class' => 'standard',
-            'is_active' => true,
-        ]);
-
         $exemptResult = new TaxResultData(
             taxAmount: 0,
-            rate: $rate,
-            zone: $zone,
+            rateId: 'exempt',
+            rateName: 'Exempt',
+            ratePercentage: 0,
+            zoneId: 'zone-123',
+            zoneName: 'Zone',
             includedInPrice: false,
             exemptionReason: 'Non-profit organization',
         );
@@ -69,19 +50,13 @@ class TaxResultDataTest extends TaxTestCase
 
     public function test_is_exempt_with_zero_rate(): void
     {
-        $zone = TaxZone::create(['name' => 'Zone', 'code' => 'Z', 'is_active' => true]);
-        $rate = TaxRate::create([
-            'zone_id' => $zone->id,
-            'name' => 'Zero Rate',
-            'rate' => 0,
-            'tax_class' => 'standard',
-            'is_active' => true,
-        ]);
-
         $zeroResult = new TaxResultData(
             taxAmount: 0,
-            rate: $rate,
-            zone: $zone,
+            rateId: 'zero',
+            rateName: 'Zero Rate',
+            ratePercentage: 0,
+            zoneId: 'zone-123',
+            zoneName: 'Zone',
             includedInPrice: false,
         );
 
@@ -90,19 +65,13 @@ class TaxResultDataTest extends TaxTestCase
 
     public function test_is_exempt_with_normal_tax(): void
     {
-        $zone = TaxZone::create(['name' => 'Zone', 'code' => 'Z', 'is_active' => true]);
-        $rate = TaxRate::create([
-            'zone_id' => $zone->id,
-            'name' => 'Normal Rate',
-            'rate' => 600,
-            'tax_class' => 'standard',
-            'is_active' => true,
-        ]);
-
         $normalResult = new TaxResultData(
             taxAmount: 600,
-            rate: $rate,
-            zone: $zone,
+            rateId: 'rate-123',
+            rateName: 'Normal Rate',
+            ratePercentage: 600,
+            zoneId: 'zone-123',
+            zoneName: 'Zone',
             includedInPrice: false,
         );
 
@@ -111,39 +80,55 @@ class TaxResultDataTest extends TaxTestCase
 
     public function test_get_formatted_amount(): void
     {
-        $zone = TaxZone::create(['name' => 'Zone', 'code' => 'Z', 'is_active' => true]);
-        $rate = TaxRate::create([
-            'zone_id' => $zone->id,
-            'name' => 'Rate',
-            'rate' => 600,
-            'tax_class' => 'standard',
-            'is_active' => true,
-        ]);
-
         $result = new TaxResultData(
             taxAmount: 1234, // $12.34
-            rate: $rate,
-            zone: $zone,
+            rateId: 'rate-123',
+            rateName: 'Rate',
+            ratePercentage: 600,
+            zoneId: 'zone-123',
+            zoneName: 'Zone',
         );
 
         $this->assertEquals('RM 12.34', $result->getFormattedAmount());
     }
 
+    public function test_get_formatted_amount_with_custom_currency(): void
+    {
+        $result = new TaxResultData(
+            taxAmount: 1234,
+            rateId: 'rate-123',
+            rateName: 'Rate',
+            ratePercentage: 600,
+            zoneId: 'zone-123',
+            zoneName: 'Zone',
+        );
+
+        $this->assertEquals('USD 12.34', $result->getFormattedAmount('USD'));
+    }
+
+    public function test_get_formatted_rate(): void
+    {
+        $result = new TaxResultData(
+            taxAmount: 600,
+            rateId: 'rate-123',
+            rateName: 'Rate',
+            ratePercentage: 650, // 6.50%
+            zoneId: 'zone-123',
+            zoneName: 'Zone',
+        );
+
+        $this->assertEquals('6.50%', $result->getFormattedRate());
+    }
+
     public function test_get_summary_with_exemption(): void
     {
-        $zone = TaxZone::create(['name' => 'Zone', 'code' => 'Z', 'is_active' => true]);
-        $rate = TaxRate::create([
-            'zone_id' => $zone->id,
-            'name' => 'Rate',
-            'rate' => 0,
-            'tax_class' => 'standard',
-            'is_active' => true,
-        ]);
-
         $exemptResult = new TaxResultData(
             taxAmount: 0,
-            rate: $rate,
-            zone: $zone,
+            rateId: 'exempt',
+            rateName: 'Exempt',
+            ratePercentage: 0,
+            zoneId: 'zone-123',
+            zoneName: 'Zone',
             exemptionReason: 'Tax Exempt Organization',
         );
 
@@ -152,19 +137,13 @@ class TaxResultDataTest extends TaxTestCase
 
     public function test_get_summary_with_normal_tax(): void
     {
-        $zone = TaxZone::create(['name' => 'Zone', 'code' => 'Z', 'is_active' => true]);
-        $rate = TaxRate::create([
-            'zone_id' => $zone->id,
-            'name' => 'GST',
-            'rate' => 600,
-            'tax_class' => 'standard',
-            'is_active' => true,
-        ]);
-
         $normalResult = new TaxResultData(
             taxAmount: 600,
-            rate: $rate,
-            zone: $zone,
+            rateId: 'rate-123',
+            rateName: 'GST',
+            ratePercentage: 600,
+            zoneId: 'zone-123',
+            zoneName: 'Zone',
         );
 
         $this->assertEquals('GST (6.00%)', $normalResult->getSummary());
@@ -172,21 +151,50 @@ class TaxResultDataTest extends TaxTestCase
 
     public function test_get_summary_with_zero_rate(): void
     {
-        $zone = TaxZone::create(['name' => 'Zone', 'code' => 'Z', 'is_active' => true]);
-        $rate = TaxRate::create([
-            'zone_id' => $zone->id,
-            'name' => 'Zero Rate',
-            'rate' => 0,
-            'tax_class' => 'standard',
-            'is_active' => true,
-        ]);
-
         $zeroResult = new TaxResultData(
             taxAmount: 0,
-            rate: $rate,
-            zone: $zone,
+            rateId: 'zero',
+            rateName: 'Zero Rate',
+            ratePercentage: 0,
+            zoneId: 'zone-123',
+            zoneName: 'Zone',
         );
 
         $this->assertEquals('Tax Exempt', $zeroResult->getSummary());
+    }
+
+    public function test_has_compound_taxes_with_single_rate(): void
+    {
+        $result = new TaxResultData(
+            taxAmount: 600,
+            rateId: 'rate-123',
+            rateName: 'Standard',
+            ratePercentage: 600,
+            zoneId: 'zone-123',
+            zoneName: 'Zone',
+            breakdown: [
+                ['name' => 'Standard', 'rate' => 600, 'amount' => 600, 'is_compound' => false],
+            ],
+        );
+
+        $this->assertFalse($result->hasCompoundTaxes());
+    }
+
+    public function test_has_compound_taxes_with_multiple_rates(): void
+    {
+        $result = new TaxResultData(
+            taxAmount: 1400,
+            rateId: 'rate-123',
+            rateName: 'Standard',
+            ratePercentage: 600,
+            zoneId: 'zone-123',
+            zoneName: 'Zone',
+            breakdown: [
+                ['name' => 'Base Tax', 'rate' => 600, 'amount' => 600, 'is_compound' => false],
+                ['name' => 'Additional Tax', 'rate' => 800, 'amount' => 800, 'is_compound' => true],
+            ],
+        );
+
+        $this->assertTrue($result->hasCompoundTaxes());
     }
 }
