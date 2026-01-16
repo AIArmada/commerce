@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Events\Concerns\HasCartEventData;
 use AIArmada\Cart\Events\MetadataBatchAdded;
-use Tests\Support\Cart\InMemoryStorage;
 use AIArmada\CommerceSupport\Contracts\Events\CartEventInterface;
+use Tests\Support\Cart\InMemoryStorage;
 
 describe('HasCartEventData trait', function (): void {
     beforeEach(function (): void {

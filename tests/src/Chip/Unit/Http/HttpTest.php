@@ -14,7 +14,7 @@ describe('WebhookController', function (): void {
         // Disable listeners that require database
         Event::fake();
         config(['chip.webhooks.store_data' => false]);
-        
+
         // Mock the dispatcher
         $this->dispatcher = Mockery::mock(WebhookEventDispatcher::class);
         $this->dispatcher->shouldReceive('dispatch')->andReturn(null);

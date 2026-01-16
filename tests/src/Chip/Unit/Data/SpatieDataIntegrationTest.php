@@ -21,14 +21,14 @@ describe('MoneyCast', function (): void {
     });
 
     it('can be instantiated without arguments', function (): void {
-        $cast = new MoneyCast();
+        $cast = new MoneyCast;
         expect($cast)->toBeInstanceOf(MoneyCast::class);
     });
 });
 
 describe('MoneyTransformer', function (): void {
     it('can be instantiated', function (): void {
-        $transformer = new MoneyTransformer();
+        $transformer = new MoneyTransformer;
         expect($transformer)->toBeInstanceOf(MoneyTransformer::class);
     });
 });

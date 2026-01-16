@@ -24,12 +24,12 @@ it('prevents adding dynamic conditions using addCondition', function (): void {
         target: 'cart@cart_subtotal/aggregate',
         value: '-10%',
         rules: [
-            fn($cart) => $cart->getRawSubtotalWithoutConditions() >= 10000,
+            fn ($cart) => $cart->getRawSubtotalWithoutConditions() >= 10000,
         ]
     );
 
     // Attempting to add it via addCondition should throw exception
-    expect(fn() => $this->cart->addCondition($dynamicCondition))
+    expect(fn () => $this->cart->addCondition($dynamicCondition))
         ->toThrow(
             InvalidCartConditionException::class,
             'Cannot add dynamic condition "dynamic_discount" using addCondition(). Dynamic conditions (with validation rules) must be registered using registerDynamicCondition() instead.'
@@ -62,7 +62,7 @@ it('correctly registers dynamic conditions using registerDynamicCondition', func
         target: 'cart@cart_subtotal/aggregate',
         value: '-10%',
         rules: [
-            fn($cart) => $cart->getRawSubtotalWithoutConditions() >= 10000,
+            fn ($cart) => $cart->getRawSubtotalWithoutConditions() >= 10000,
         ]
     );
 
@@ -87,7 +87,7 @@ it('provides helpful error message about using withoutRules', function (): void 
         type: 'fee',
         target: 'cart@grand_total/aggregate',
         value: '+5',
-        rules: [fn($cart) => true]
+        rules: [fn ($cart) => true]
     );
 
     try {
@@ -107,7 +107,7 @@ it('allows adding static copy of dynamic condition via withoutRules', function (
         target: 'cart@cart_subtotal/aggregate',
         value: '-15%',
         rules: [
-            fn($cart) => $cart->getRawSubtotalWithoutConditions() >= 20000,
+            fn ($cart) => $cart->getRawSubtotalWithoutConditions() >= 20000,
         ]
     );
 
@@ -135,11 +135,11 @@ it('handles array of conditions with mixed static and dynamic', function (): voi
         type: 'discount',
         target: 'cart@cart_subtotal/aggregate',
         value: '-5',
-        rules: [fn($cart) => true]
+        rules: [fn ($cart) => true]
     );
 
     // Attempting to add array with dynamic condition should fail
-    expect(fn() => $this->cart->addCondition([$staticCondition, $dynamicCondition]))
+    expect(fn () => $this->cart->addCondition([$staticCondition, $dynamicCondition]))
         ->toThrow(
             InvalidCartConditionException::class,
             'Cannot add dynamic condition "dynamic_discount"'
@@ -173,7 +173,7 @@ it('works correctly with VoucherCondition pattern', function (): void {
         target: 'cart@cart_subtotal/aggregate',
         value: '-10%',
         rules: [
-            fn($cart) => $cart->getRawSubtotalWithoutConditions() >= 10000,
+            fn ($cart) => $cart->getRawSubtotalWithoutConditions() >= 10000,
         ]
     );
 

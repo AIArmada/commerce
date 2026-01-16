@@ -99,7 +99,7 @@ final class CartIntegrationRegistrar
             return;
         }
 
-        \Illuminate\Support\Facades\DB::transaction(function () use ($cartId, $event) {
+        \Illuminate\Support\Facades\DB::transaction(function () use ($cartId, $event): void {
             /** @var CartManagerInterface $cartManager */
             $cartManager = $this->app->make('cart');
 

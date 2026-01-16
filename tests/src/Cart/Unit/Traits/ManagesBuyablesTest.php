@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Contracts\BuyableInterface;
 use AIArmada\Cart\Exceptions\ProductNotPurchasableException;
-use Tests\Support\Cart\InMemoryStorage;
 use Akaunting\Money\Money;
+use Tests\Support\Cart\InMemoryStorage;
 
 /**
  * Create a mock buyable product for testing

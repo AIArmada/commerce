@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
 
 /**
  * In-memory storage implementation for testing purposes.
- * 
+ *
  * This class was moved from packages/cart/src/Testing to tests/Support
  * as part of the cart package simplification.
  */
@@ -20,7 +20,7 @@ final class InMemoryStorage implements StorageInterface
 
     private ?string $ownerType = null;
 
-    private string|int|null $ownerId = null;
+    private string | int | null $ownerId = null;
 
     public function has(string $identifier, string $instance): bool
     {
@@ -59,7 +59,7 @@ final class InMemoryStorage implements StorageInterface
     }
 
     /**
-     * @param array<string, array<string, mixed>> $items
+     * @param  array<string, array<string, mixed>>  $items
      */
     public function putItems(string $identifier, string $instance, array $items): void
     {
@@ -75,7 +75,7 @@ final class InMemoryStorage implements StorageInterface
     }
 
     /**
-     * @param array<string, array<string, mixed>> $conditions
+     * @param  array<string, array<string, mixed>>  $conditions
      */
     public function putConditions(string $identifier, string $instance, array $conditions): void
     {
@@ -83,8 +83,8 @@ final class InMemoryStorage implements StorageInterface
     }
 
     /**
-     * @param array<string, array<string, mixed>> $items
-     * @param array<string, array<string, mixed>> $conditions
+     * @param  array<string, array<string, mixed>>  $items
+     * @param  array<string, array<string, mixed>>  $conditions
      */
     public function putBoth(string $identifier, string $instance, array $items, array $conditions): void
     {
@@ -98,7 +98,7 @@ final class InMemoryStorage implements StorageInterface
     }
 
     /**
-     * @param array<string, mixed> $metadata
+     * @param  array<string, mixed>  $metadata
      */
     public function putMetadataBatch(string $identifier, string $instance, array $metadata): void
     {
@@ -193,7 +193,7 @@ final class InMemoryStorage implements StorageInterface
         return $this->ownerType;
     }
 
-    public function getOwnerId(): string|int|null
+    public function getOwnerId(): string | int | null
     {
         return $this->ownerId;
     }

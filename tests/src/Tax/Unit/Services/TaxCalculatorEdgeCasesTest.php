@@ -10,6 +10,7 @@ use AIArmada\Tax\Models\TaxZone;
 use AIArmada\Tax\Services\TaxCalculator;
 use AIArmada\Tax\Settings\TaxSettings;
 use AIArmada\Tax\Settings\TaxZoneSettings;
+use Exception;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Mockery;
 
@@ -255,7 +256,7 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
 
     public function test_settings_fallback_when_settings_throw(): void
     {
-        $this->app->bind(TaxSettings::class, fn () => throw new \Exception('Settings not configured'));
+        $this->app->bind(TaxSettings::class, fn () => throw new Exception('Settings not configured'));
 
         config(['tax.features.enabled' => true]);
         config(['tax.defaults.prices_include_tax' => false]);
@@ -283,7 +284,7 @@ class TaxCalculatorEdgeCasesTest extends TaxTestCase
 
     public function test_zone_settings_fallback_when_settings_throw(): void
     {
-        $this->app->bind(TaxZoneSettings::class, fn () => throw new \Exception('Zone settings not configured'));
+        $this->app->bind(TaxZoneSettings::class, fn () => throw new Exception('Zone settings not configured'));
 
         config(['tax.features.zone_resolution.use_customer_address' => true]);
         config(['tax.features.zone_resolution.unknown_zone_behavior' => 'zero']);

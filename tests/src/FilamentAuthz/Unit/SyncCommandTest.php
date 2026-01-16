@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
 
-beforeEach(function () {
+beforeEach(function (): void {
     // Use single guard for predictable test output
     config()->set('filament-authz.guards', ['web']);
     config()->set('filament-authz.sync', [
@@ -23,8 +23,8 @@ beforeEach(function () {
     ]);
 });
 
-describe('authz:sync command', function () {
-    it('creates permissions from config', function () {
+describe('authz:sync command', function (): void {
+    it('creates permissions from config', function (): void {
         $this->artisan('authz:sync')
             ->expectsOutput('Synced 5 permissions and 2 roles.')
             ->assertExitCode(0);
@@ -36,7 +36,7 @@ describe('authz:sync command', function () {
         expect(Permission::where('name', 'products.view')->exists())->toBeTrue();
     });
 
-    it('creates roles with permissions from config', function () {
+    it('creates roles with permissions from config', function (): void {
         $this->artisan('authz:sync')->assertExitCode(0);
 
         $admin = Role::findByName('admin', 'web');
@@ -53,7 +53,7 @@ describe('authz:sync command', function () {
         expect($viewer->hasPermissionTo('orders.delete'))->toBeFalse();
     });
 
-    it('is idempotent', function () {
+    it('is idempotent', function (): void {
         $this->artisan('authz:sync')->assertExitCode(0);
         $this->artisan('authz:sync')->assertExitCode(0);
 
@@ -61,7 +61,7 @@ describe('authz:sync command', function () {
         expect(Role::where('name', 'admin')->count())->toBe(1);
     });
 
-    it('can flush cache after sync', function () {
+    it('can flush cache after sync', function (): void {
         $this->artisan('authz:sync', ['--flush-cache' => true])
             ->expectsOutput('Permission cache flushed.')
             ->assertExitCode(0);

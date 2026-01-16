@@ -7,7 +7,7 @@ use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
 use Illuminate\Support\Facades\Gate;
 
-beforeEach(function () {
+beforeEach(function (): void {
     $this->user = User::create([
         'name' => 'Test User',
         'email' => 'gate-test-' . uniqid() . '@example.com',
@@ -15,8 +15,8 @@ beforeEach(function () {
     ]);
 });
 
-describe('super admin bypass', function () {
-    it('grants all permissions to super admin role', function () {
+describe('super admin bypass', function (): void {
+    it('grants all permissions to super admin role', function (): void {
         $superAdminRole = config('filament-authz.super_admin_role');
         $role = Role::findOrCreate($superAdminRole, 'web');
         $this->user->assignRole($role);
@@ -28,7 +28,7 @@ describe('super admin bypass', function () {
         expect(Gate::allows('nonexistent.ability'))->toBeTrue();
     });
 
-    it('does not grant permissions to regular users', function () {
+    it('does not grant permissions to regular users', function (): void {
         $role = Role::findOrCreate('editor', 'web');
         $this->user->assignRole($role);
 
@@ -38,8 +38,8 @@ describe('super admin bypass', function () {
     });
 });
 
-describe('wildcard permissions', function () {
-    it('grants access via prefix wildcard', function () {
+describe('wildcard permissions', function (): void {
+    it('grants access via prefix wildcard', function (): void {
         $permission = Permission::findOrCreate('orders.*', 'web');
         $this->user->givePermissionTo($permission);
 
@@ -50,7 +50,7 @@ describe('wildcard permissions', function () {
         expect(Gate::allows('orders.delete'))->toBeTrue();
     });
 
-    it('does not grant access to different prefix', function () {
+    it('does not grant access to different prefix', function (): void {
         $permission = Permission::findOrCreate('orders.*', 'web');
         $this->user->givePermissionTo($permission);
 
@@ -60,7 +60,7 @@ describe('wildcard permissions', function () {
         expect(Gate::allows('products.create'))->toBeFalse();
     });
 
-    it('grants access via universal wildcard', function () {
+    it('grants access via universal wildcard', function (): void {
         $permission = Permission::findOrCreate('*', 'web');
         $this->user->givePermissionTo($permission);
 
@@ -70,7 +70,7 @@ describe('wildcard permissions', function () {
         expect(Gate::allows('orders.view'))->toBeTrue();
     });
 
-    it('grants access via suffix wildcard', function () {
+    it('grants access via suffix wildcard', function (): void {
         $permission = Permission::findOrCreate('*.view', 'web');
         $this->user->givePermissionTo($permission);
 

@@ -35,7 +35,7 @@ class InMemoryStorage implements StorageInterface
 
     private ?string $ownerType = null;
 
-    private string|int|null $ownerId = null;
+    private string | int | null $ownerId = null;
 
     public function withOwner(?Model $owner): static
     {
@@ -56,7 +56,7 @@ class InMemoryStorage implements StorageInterface
         return $this->ownerType;
     }
 
-    public function getOwnerId(): string|int|null
+    public function getOwnerId(): string | int | null
     {
         return $this->ownerId;
     }
@@ -195,7 +195,7 @@ class InMemoryStorage implements StorageInterface
         $oldKey = $this->key($oldIdentifier, $instance);
         $newKey = $this->key($newIdentifier, $instance);
 
-        if (!isset($this->carts[$oldKey])) {
+        if (! isset($this->carts[$oldKey])) {
             return false;
         }
 
@@ -215,7 +215,7 @@ class InMemoryStorage implements StorageInterface
         $instances = [];
         foreach (array_keys($this->carts) as $key) {
             if (str_starts_with((string) $key, $identifier . ':')) {
-                $instances[] = substr((string) $key, strlen($identifier) + 1);
+                $instances[] = mb_substr((string) $key, mb_strlen($identifier) + 1);
             }
         }
 
@@ -247,7 +247,7 @@ class InMemoryStorage implements StorageInterface
     private function ensureCart(string $identifier, string $instance): void
     {
         $key = $this->key($identifier, $instance);
-        if (!isset($this->carts[$key])) {
+        if (! isset($this->carts[$key])) {
             $now = CarbonImmutable::now()->toIso8601String();
             $this->carts[$key] = [
                 'id' => Str::uuid()->toString(),
