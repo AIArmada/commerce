@@ -12,7 +12,7 @@ use Spatie\LaravelPdf\PdfBuilder;
 /**
  * Generate PDF invoice for an order.
  */
-class GenerateInvoice
+final class GenerateInvoice
 {
     /**
      * Generate and save invoice to a path.

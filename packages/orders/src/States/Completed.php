@@ -7,7 +7,7 @@ namespace AIArmada\Orders\States;
 /**
  * Order successfully completed - terminal state.
  */
-class Completed extends OrderStatus
+final class Completed extends OrderStatus
 {
     public static string $name = 'completed';
 

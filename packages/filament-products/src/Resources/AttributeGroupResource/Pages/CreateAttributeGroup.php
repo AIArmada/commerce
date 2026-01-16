@@ -9,7 +9,7 @@ use AIArmada\FilamentProducts\Support\OwnerScope;
 use AIArmada\Products\Models\Attribute;
 use Filament\Resources\Pages\CreateRecord;
 
-class CreateAttributeGroup extends CreateRecord
+final class CreateAttributeGroup extends CreateRecord
 {
     protected static string $resource = AttributeGroupResource::class;
 

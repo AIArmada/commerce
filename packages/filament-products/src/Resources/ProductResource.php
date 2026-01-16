@@ -31,7 +31,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
-class ProductResource extends Resource
+final class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 

@@ -6,7 +6,7 @@ namespace AIArmada\FilamentPricing\Pages;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;
-use AIArmada\Pricing\Services\PriceCalculator;
+use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use BackedEnum;
@@ -26,7 +26,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use UnitEnum;
 
-class PriceSimulator extends Page
+final class PriceSimulator extends Page
 {
     public ?array $data = [];
 
@@ -353,7 +353,7 @@ class PriceSimulator extends Page
         }
 
         // Calculate price using PriceCalculator
-        $pricingService = app(PriceCalculator::class);
+        $pricingService = app(PriceCalculatorInterface::class);
         $context = $customer ? ['customer_id' => (string) $customer->getKey()] : [];
 
         $effectiveAt = Arr::get($data, 'effective_date');

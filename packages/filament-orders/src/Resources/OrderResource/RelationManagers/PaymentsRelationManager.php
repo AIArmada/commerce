@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers;
 
+use AIArmada\Orders\Enums\PaymentStatus;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class PaymentsRelationManager extends RelationManager
+final class PaymentsRelationManager extends RelationManager
 {
     protected static string $relationship = 'payments';
 
@@ -45,13 +46,7 @@ class PaymentsRelationManager extends RelationManager
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn (string $state) => match ($state) {
-                        'completed' => 'success',
-                        'pending' => 'warning',
-                        'failed' => 'danger',
-                        'refunded' => 'gray',
-                        default => 'gray',
-                    }),
+                    ->color(fn (PaymentStatus $state) => $state->color()),
 
                 Tables\Columns\TextColumn::make('paid_at')
                     ->label('Paid At')

@@ -10,6 +10,10 @@
     "require": {
         "aiarmada/commerce-support": "self.version"
     },
+    "suggest": {
+        "aiarmada/cart": "Required for free shipping evaluation with cart subtotals",
+        "aiarmada/orders": "Required for order fulfillment handler integration"
+    },
     "autoload": {
         "psr-4": {
             "AIArmada\\Shipping\\": "src/",

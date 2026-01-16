@@ -7,7 +7,7 @@ namespace AIArmada\Orders\States;
 /**
  * Payment received, order is being prepared for fulfillment.
  */
-class Processing extends OrderStatus
+final class Processing extends OrderStatus
 {
     public static string $name = 'processing';
 

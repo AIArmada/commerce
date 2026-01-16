@@ -8,7 +8,7 @@ use AIArmada\FilamentPricing\Resources\PromotionResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 
-class ViewPromotion extends ViewRecord
+final class ViewPromotion extends ViewRecord
 {
     protected static string $resource = PromotionResource::class;
 

@@ -11,6 +11,10 @@ use Illuminate\Support\Str;
 
 describe('Pricing owner scoping', function (): void {
     beforeEach(function (): void {
+        if (! class_exists('AIArmada\Promotions\Models\Promotion')) {
+            $this->markTestSkipped('Promotions package is not installed.');
+        }
+
         config()->set('pricing.features.owner.enabled', true);
         config()->set('promotions.features.owner.enabled', true);
     });

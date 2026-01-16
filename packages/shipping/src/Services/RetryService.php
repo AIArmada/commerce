@@ -17,12 +17,21 @@ final class RetryService
     /**
      * Default maximum retry attempts.
      */
-    protected int $maxAttempts = 3;
+    protected int $maxAttempts;
 
     /**
      * Base delay between retries in milliseconds.
      */
-    protected int $baseDelayMs = 100;
+    protected int $baseDelayMs;
+
+    /**
+     * Create a new RetryService instance.
+     */
+    public function __construct()
+    {
+        $this->maxAttempts = (int) config('shipping.api_retries', 3);
+        $this->baseDelayMs = (int) config('shipping.api_base_delay_ms', 100);
+    }
 
     /**
      * Maximum delay between retries in milliseconds.

@@ -6,6 +6,7 @@ namespace AIArmada\Orders\Models;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
@@ -37,8 +38,9 @@ use InvalidArgumentException;
  * @property Carbon $updated_at
  * @property-read Order $order
  */
-class OrderItem extends Model
+final class OrderItem extends Model
 {
+    use FormatsMoney;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
@@ -197,19 +199,5 @@ class OrderItem extends Model
             'options' => 'array',
             'metadata' => 'array',
         ];
-    }
-
-    protected function formatMoney(int $amountInCents): string
-    {
-        $decimalPlaces = config('orders.currency.decimal_places', 2);
-        $symbol = match ($this->currency) {
-            'MYR' => 'RM',
-            'USD' => '$',
-            'EUR' => '€',
-            'GBP' => '£',
-            default => $this->currency . ' ',
-        };
-
-        return $symbol . number_format($amountInCents / 100, $decimalPlaces);
     }
 }

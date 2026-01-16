@@ -70,11 +70,11 @@ describe('PricingSettings', function (): void {
 
             // Test SGD
             $defaultCurrencyProp->setValue($instance, 'SGD');
-            expect($method->invoke($instance))->toBe('S$');
+            expect($method->invoke($instance))->toBe('$');
 
-            // Test unknown currency
+            // Test THB (known to Akaunting Money)
             $defaultCurrencyProp->setValue($instance, 'THB');
-            expect($method->invoke($instance))->toBe('THB ');
+            expect($method->invoke($instance))->toBe('฿');
         });
     });
 
@@ -132,7 +132,7 @@ describe('PricingSettings', function (): void {
             $decimalPlacesProp->setAccessible(true);
             $decimalPlacesProp->setValue($instance, 0);
 
-            expect($method->invoke($instance, 100))->toBe('JPY 100');
+            expect($method->invoke($instance, 100))->toBe('¥100');
         });
     });
 });

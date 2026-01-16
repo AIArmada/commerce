@@ -10,7 +10,7 @@ use AIArmada\Products\Models\Category;
 use Filament\Resources\Pages\CreateRecord;
 use Illuminate\Support\Str;
 
-class CreateCategory extends CreateRecord
+final class CreateCategory extends CreateRecord
 {
     protected static string $resource = CategoryResource::class;
 

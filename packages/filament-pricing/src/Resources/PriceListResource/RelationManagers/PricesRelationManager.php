@@ -15,7 +15,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
-class PricesRelationManager extends RelationManager
+final class PricesRelationManager extends RelationManager
 {
     protected static string $relationship = 'prices';
 

@@ -13,7 +13,7 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Support\Facades\Gate;
 
-class NotesRelationManager extends RelationManager
+final class NotesRelationManager extends RelationManager
 {
     protected static string $relationship = 'orderNotes';
 

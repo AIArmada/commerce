@@ -8,7 +8,7 @@ use AIArmada\Products\Models\Product;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class ProductDeleted
+final class ProductDeleted
 {
     use Dispatchable;
     use SerializesModels;

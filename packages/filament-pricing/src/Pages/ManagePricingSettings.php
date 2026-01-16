@@ -18,7 +18,7 @@ use UnitEnum;
 /**
  * Filament settings page for managing pricing configuration.
  */
-class ManagePricingSettings extends Page
+final class ManagePricingSettings extends Page
 {
     public ?array $data = [];
 

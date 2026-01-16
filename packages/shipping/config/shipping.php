@@ -34,6 +34,7 @@ return [
     */
     'defaults' => [
         'currency' => 'MYR',
+        'weight_unit' => 'g',
         'reference_prefix' => env('SHIPPING_REFERENCE_PREFIX', 'SHP-'),
         'origin' => [
             'name' => env('SHIPPING_ORIGIN_NAME', env('APP_NAME', 'Store')),
@@ -128,4 +129,13 @@ return [
         'sync_interval' => 3600, // 1 hour in seconds
         'max_tracking_age' => 30, // days to keep syncing
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | API Settings
+    |--------------------------------------------------------------------------
+    */
+    'api_timeout' => env('SHIPPING_API_TIMEOUT', 30),
+    'api_retries' => env('SHIPPING_API_RETRIES', 3),
+    'api_base_delay_ms' => env('SHIPPING_API_BASE_DELAY_MS', 100),
 ];

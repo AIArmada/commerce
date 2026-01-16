@@ -10,6 +10,12 @@ use AIArmada\FilamentPricing\Widgets\PricingStatsWidget;
 use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\Promotion;
 
+beforeEach(function (): void {
+    if (! class_exists(Promotion::class)) {
+        $this->markTestSkipped('Promotions package is not installed.');
+    }
+});
+
 it('builds pricing stats with correct counts', function (): void {
     PriceList::query()->create([
         'name' => 'List A',

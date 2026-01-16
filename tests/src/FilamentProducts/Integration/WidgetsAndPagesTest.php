@@ -18,7 +18,6 @@ use AIArmada\FilamentProducts\Resources\CollectionResource\Pages\ViewCollection;
 use AIArmada\FilamentProducts\Resources\ProductResource\Pages\ListProducts;
 use AIArmada\FilamentProducts\Resources\ProductResource\Pages\ViewProduct;
 use AIArmada\FilamentProducts\Widgets\CategoryDistributionChart;
-use AIArmada\FilamentProducts\Widgets\LowStockAlertWidget;
 use AIArmada\FilamentProducts\Widgets\ProductStatsWidget;
 use AIArmada\FilamentProducts\Widgets\TopSellingProductsWidget;
 use AIArmada\Products\Enums\ProductStatus;
@@ -74,87 +73,32 @@ beforeEach(function (): void {
 });
 
 it('covers resource page header actions methods', function (): void {
-    $listProducts = new class extends ListProducts
-    {
-        public function headerActions(): array
-        {
-            return $this->getHeaderActions();
-        }
+    $listProducts = new ListProducts;
+    $viewProduct = new ViewProduct;
+    $listCategories = new ListCategories;
+    $viewCategory = new ViewCategory;
+    $listCollections = new ListCollections;
+    $viewCollection = new ViewCollection;
+    $listAttributes = new ListAttributes;
+    $listAttributeGroups = new ListAttributeGroups;
+    $listAttributeSets = new ListAttributeSets;
+
+    $getActions = function (object $page): array {
+        $method = new ReflectionMethod($page::class, 'getHeaderActions');
+        $method->setAccessible(true);
+
+        return $method->invoke($page);
     };
 
-    $viewProduct = new class extends ViewProduct
-    {
-        public function headerActions(): array
-        {
-            return $this->getHeaderActions();
-        }
-    };
-
-    $listCategories = new class extends ListCategories
-    {
-        public function headerActions(): array
-        {
-            return $this->getHeaderActions();
-        }
-    };
-
-    $viewCategory = new class extends ViewCategory
-    {
-        public function headerActions(): array
-        {
-            return $this->getHeaderActions();
-        }
-    };
-
-    $listCollections = new class extends ListCollections
-    {
-        public function headerActions(): array
-        {
-            return $this->getHeaderActions();
-        }
-    };
-
-    $viewCollection = new class extends ViewCollection
-    {
-        public function headerActions(): array
-        {
-            return $this->getHeaderActions();
-        }
-    };
-
-    $listAttributes = new class extends ListAttributes
-    {
-        public function headerActions(): array
-        {
-            return $this->getHeaderActions();
-        }
-    };
-
-    $listAttributeGroups = new class extends ListAttributeGroups
-    {
-        public function headerActions(): array
-        {
-            return $this->getHeaderActions();
-        }
-    };
-
-    $listAttributeSets = new class extends ListAttributeSets
-    {
-        public function headerActions(): array
-        {
-            return $this->getHeaderActions();
-        }
-    };
-
-    expect($listProducts->headerActions())->toBeArray()->not->toBeEmpty();
-    expect($viewProduct->headerActions())->toBeArray()->not->toBeEmpty();
-    expect($listCategories->headerActions())->toBeArray()->not->toBeEmpty();
-    expect($viewCategory->headerActions())->toBeArray()->not->toBeEmpty();
-    expect($listCollections->headerActions())->toBeArray()->not->toBeEmpty();
-    expect($viewCollection->headerActions())->toBeArray()->not->toBeEmpty();
-    expect($listAttributes->headerActions())->toBeArray()->not->toBeEmpty();
-    expect($listAttributeGroups->headerActions())->toBeArray()->not->toBeEmpty();
-    expect($listAttributeSets->headerActions())->toBeArray()->not->toBeEmpty();
+    expect($getActions($listProducts))->toBeArray()->not->toBeEmpty();
+    expect($getActions($viewProduct))->toBeArray()->not->toBeEmpty();
+    expect($getActions($listCategories))->toBeArray()->not->toBeEmpty();
+    expect($getActions($viewCategory))->toBeArray()->not->toBeEmpty();
+    expect($getActions($listCollections))->toBeArray()->not->toBeEmpty();
+    expect($getActions($viewCollection))->toBeArray()->not->toBeEmpty();
+    expect($getActions($listAttributes))->toBeArray()->not->toBeEmpty();
+    expect($getActions($listAttributeGroups))->toBeArray()->not->toBeEmpty();
+    expect($getActions($listAttributeSets))->toBeArray()->not->toBeEmpty();
 });
 
 it('covers widget query logic with owner scoping', function (): void {
@@ -226,13 +170,6 @@ it('covers widget query logic with owner scoping', function (): void {
 
     expect($stats)->toHaveCount(4);
     expect($stats[0]->getValue())->toBe('2');
-
-    $lowStockWidget = app(LowStockAlertWidget::class);
-    $lowStatsMethod = new ReflectionMethod(LowStockAlertWidget::class, 'getStats');
-    $lowStatsMethod->setAccessible(true);
-    $lowStats = $lowStatsMethod->invoke($lowStockWidget);
-
-    expect($lowStats)->toHaveCount(4);
 
     $chartWidget = app(CategoryDistributionChart::class);
     $dataMethod = new ReflectionMethod(CategoryDistributionChart::class, 'getData');

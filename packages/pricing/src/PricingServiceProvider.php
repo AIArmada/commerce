@@ -21,6 +21,7 @@ final class PricingServiceProvider extends PackageServiceProvider
     public function packageRegistered(): void
     {
         $this->app->singleton(Services\PriceCalculator::class);
+        $this->app->alias(Services\PriceCalculator::class, Contracts\PriceCalculatorInterface::class);
     }
 
     public function bootingPackage(): void

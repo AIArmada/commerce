@@ -8,7 +8,7 @@ use AIArmada\Orders\Models\OrderItem;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Foundation\Auth\User;
 
-class OrderItemPolicy
+final class OrderItemPolicy
 {
     use HandlesAuthorization;
 

@@ -34,7 +34,6 @@ class VariantFactory extends Factory
             'height' => null,
             'is_enabled' => true,
             'is_default' => false,
-            'position' => 0,
         ];
     }
 

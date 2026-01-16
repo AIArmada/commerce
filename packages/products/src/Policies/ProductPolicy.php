@@ -9,7 +9,7 @@ use AIArmada\Products\Models\Product;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Database\Eloquent\Model;
 
-class ProductPolicy
+final class ProductPolicy
 {
     use HandlesAuthorization;
 

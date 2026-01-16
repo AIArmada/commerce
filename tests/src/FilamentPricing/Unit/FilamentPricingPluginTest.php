@@ -47,10 +47,16 @@ it('resolves via filament() helper in get()', function (): void {
 
 it('registers resources and widgets on the panel', function (): void {
     $panel = Mockery::mock(Panel::class);
-    $panel->shouldReceive('resources')->once()->with([
+
+    $expectedResources = [
         AIArmada\FilamentPricing\Resources\PriceListResource::class,
-        AIArmada\FilamentPricing\Resources\PromotionResource::class,
-    ])->andReturnSelf();
+    ];
+
+    if (class_exists('\\AIArmada\\Promotions\\Models\\Promotion')) {
+        $expectedResources[] = AIArmada\FilamentPricing\Resources\PromotionResource::class;
+    }
+
+    $panel->shouldReceive('resources')->once()->with($expectedResources)->andReturnSelf();
 
     $expectedPages = [
         AIArmada\FilamentPricing\Pages\ManagePricingSettings::class,

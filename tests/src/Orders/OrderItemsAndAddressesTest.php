@@ -177,7 +177,8 @@ describe('OrderItem Model', function (): void {
                 'currency' => 'EUR',
             ]);
 
-            expect($item->getFormattedTotal())->toBe('€50.00');
+            // EUR uses European formatting (comma as decimal separator)
+            expect($item->getFormattedTotal())->toBe('€50,00');
         });
 
         it('can format with GBP currency', function (): void {

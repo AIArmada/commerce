@@ -21,6 +21,7 @@ final class FilamentOrdersServiceProvider extends PackageServiceProvider
     {
         $package
             ->name('filament-orders')
+            ->hasConfigFile()
             ->hasViews('filament-orders');
     }
 
