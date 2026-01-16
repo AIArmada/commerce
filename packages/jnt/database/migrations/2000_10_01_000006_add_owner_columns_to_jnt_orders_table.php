@@ -14,6 +14,10 @@ return new class extends Migration
         $prefix = config('jnt.database.table_prefix', 'jnt_');
         $tableName = $tables['orders'] ?? $prefix . 'orders';
 
+        if (Schema::hasColumn($tableName, 'owner_type')) {
+            return;
+        }
+
         Schema::table($tableName, function (Blueprint $table): void {
             // nullableMorphs already creates an index on owner_type and owner_id
             $table->nullableMorphs('owner');

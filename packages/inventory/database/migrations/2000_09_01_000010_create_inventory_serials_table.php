@@ -58,6 +58,8 @@ return new class extends Migration
             $jsonType = config('inventory.database.json_column_type', config('inventory.json_column_type', 'json'));
             $table->{$jsonType}('metadata')->nullable();
 
+            $table->nullableUuidMorphs('owner');
+
             $table->timestamps();
 
             // Indexes
@@ -69,6 +71,7 @@ return new class extends Migration
             $table->index('order_id');
             $table->index('customer_id');
             $table->index(['inventoryable_type', 'inventoryable_id', 'status'], 'inventory_serials_item_status_idx');
+            $table->index(['owner_type', 'owner_id'], 'inventory_serials_owner_idx');
         });
     }
 

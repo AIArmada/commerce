@@ -47,6 +47,20 @@ return new class extends Migration
                 ->default('created')
                 ->comment('Backed by AIArmada\\Chip\\Enums\\PurchaseStatus enum.');
 
+            // Analytics denormalized columns for efficient querying
+            $table->string('payment_method', 32)->nullable()
+                ->comment('Denormalized from transaction_data for analytics queries.');
+            $table->integer('total_minor')->default(0)
+                ->comment('Denormalized total amount in minor units for analytics.');
+            $table->integer('refund_amount_minor')->default(0)
+                ->comment('Tracks refund amount in minor units.');
+            $table->string('failure_reason')->nullable()
+                ->comment('Stores payment failure reason for analytics.');
+            $table->timestamp('failed_at')->nullable()
+                ->comment('Timestamp when payment failed.');
+            $table->timestamp('refunded_at')->nullable()
+                ->comment('Timestamp when payment was refunded.');
+
             // Timestamps
             $table->integer('viewed_on')->nullable();
 
@@ -103,6 +117,9 @@ return new class extends Migration
             // Metadata for additional application-specific data
             $table->{$jsonType}('metadata')->nullable();
 
+            // Owner scoping
+            $table->nullableMorphs('owner');
+
             // Laravel timestamps for internal use
             $table->timestamps();
 
@@ -114,6 +131,8 @@ return new class extends Migration
             $table->index('viewed_on');
             $table->index('due');
             $table->index('order_id'); // For order lookup queries
+            $table->index(['payment_method', 'status', 'created_at']);
+            $table->index(['status', 'created_at']);
         });
 
         // Optional: create GIN index for metadata when using jsonb on PostgreSQL

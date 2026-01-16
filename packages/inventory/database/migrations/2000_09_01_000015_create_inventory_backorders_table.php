@@ -15,7 +15,7 @@ return new class extends Migration
 
         $tableName = $tables['backorders'] ?? $prefix . 'backorders';
 
-        Schema::create($tableName, function (Blueprint $table): void {
+        Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
             $table->uuidMorphs('inventoryable');
             $table->foreignUuid('location_id')->nullable();
@@ -33,12 +33,14 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $jsonType = config('inventory.database.json_column_type', 'json');
             $table->addColumn($jsonType, 'metadata')->nullable();
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
             $table->index(['inventoryable_type', 'inventoryable_id', 'status']);
             $table->index(['status', 'priority']);
             $table->index('requested_at');
             $table->index('promised_at');
+            $table->index(['owner_type', 'owner_id'], $tableName . '_owner_idx');
         });
     }
 

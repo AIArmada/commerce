@@ -48,6 +48,8 @@ return new class extends Migration
             $table->boolean('is_global')->default(false);
             $table->boolean('is_active')->default(false);
 
+            $table->nullableUuidMorphs('owner');
+
             $table->timestamps();
 
             // Indexes for filtering and sorting

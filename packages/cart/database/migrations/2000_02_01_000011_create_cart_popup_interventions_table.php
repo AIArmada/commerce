@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('strategy_id')->index();
             $table->boolean('show_discount')->default(false);
             $table->unsignedTinyInteger('discount_percentage')->nullable();
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
         });
     }

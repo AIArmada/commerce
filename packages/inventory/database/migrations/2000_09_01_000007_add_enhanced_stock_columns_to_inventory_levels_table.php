@@ -13,7 +13,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table(config('inventory.table_names.levels', 'inventory_levels'), function (Blueprint $table): void {
+        $tableName = config('inventory.table_names.levels', 'inventory_levels');
+
+        if (Schema::hasColumn($tableName, 'safety_stock')) {
+            return;
+        }
+
+        Schema::table($tableName, function (Blueprint $table): void {
             // Enhanced stock thresholds
             $table->integer('safety_stock')->nullable()->after('reorder_point');
             $table->integer('max_stock')->nullable()->after('safety_stock');

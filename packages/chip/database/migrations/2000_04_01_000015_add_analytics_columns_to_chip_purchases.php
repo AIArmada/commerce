@@ -15,6 +15,10 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
+        if (Schema::hasColumn($tablePrefix . 'purchases', 'payment_method')) {
+            return;
+        }
+
         Schema::table($tablePrefix . 'purchases', function (Blueprint $table): void {
             // Analytics denormalized columns for efficient querying
             $table->string('payment_method', 32)->nullable()->after('status')

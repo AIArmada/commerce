@@ -15,6 +15,10 @@ return new class extends Migration
         $prefix = (string) config('vouchers.database.table_prefix', '');
         $tableName = $tables['vouchers'] ?? $prefix . 'vouchers';
 
+        if (Schema::hasColumn($tableName, 'affiliate_id')) {
+            return;
+        }
+
         Schema::table($tableName, function (Blueprint $table): void {
             $table->foreignUuid('affiliate_id')->nullable()->after('stacking_priority');
             $table->index('affiliate_id');

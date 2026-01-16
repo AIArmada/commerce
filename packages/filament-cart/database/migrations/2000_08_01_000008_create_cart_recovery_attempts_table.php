@@ -58,6 +58,8 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->text('failure_reason')->nullable();
 
+            $table->nullableUuidMorphs('owner');
+
             $table->timestamps();
 
             $table->index(['campaign_id', 'status']);

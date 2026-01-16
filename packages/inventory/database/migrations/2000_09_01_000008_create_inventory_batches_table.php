@@ -63,6 +63,8 @@ return new class extends Migration
             $jsonType = config('inventory.database.json_column_type', config('inventory.json_column_type', 'json'));
             $table->{$jsonType}('metadata')->nullable();
 
+            $table->nullableUuidMorphs('owner');
+
             $table->timestamps();
 
             // Unique constraint for batch within inventoryable and location
@@ -78,6 +80,7 @@ return new class extends Migration
             $table->index('is_recalled');
             $table->index(['expires_at', 'status'], 'inventory_batches_expiry_status_idx');
             $table->index(['inventoryable_type', 'inventoryable_id', 'status'], 'inventory_batches_item_status_idx');
+            $table->index(['owner_type', 'owner_id'], 'inventory_batches_owner_idx');
         });
     }
 

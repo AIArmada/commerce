@@ -14,6 +14,10 @@ return new class extends Migration
         $prefix = config('jnt.database.table_prefix', 'jnt_');
         $tableName = $tables['orders'] ?? $prefix . 'orders';
 
+        if (Schema::hasColumn($tableName, 'cancelled_at')) {
+            return;
+        }
+
         Schema::table($tableName, function (Blueprint $table): void {
             $table->timestamp('cancelled_at')->nullable()->index();
             $table->string('cancellation_reason', 255)->nullable();

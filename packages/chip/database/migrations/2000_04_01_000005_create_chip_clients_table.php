@@ -56,6 +56,9 @@ return new class extends Migration
             $table->string('bank_account', 34)->nullable(); // Bank account (e.g. IBAN)
             $table->string('bank_code', 11)->nullable(); // SWIFT/BIC code
 
+            // Owner scoping
+            $table->nullableMorphs('owner');
+
             // Laravel timestamps for internal use
             $table->timestamps();
 

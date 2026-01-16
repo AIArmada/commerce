@@ -32,6 +32,9 @@ return new class extends Migration
             $table->integer('created_on');
             $table->integer('updated_on');
 
+            // Owner scoping
+            $table->nullableMorphs('owner');
+
             // Laravel timestamps for internal bookkeeping
             $table->timestamps();
 

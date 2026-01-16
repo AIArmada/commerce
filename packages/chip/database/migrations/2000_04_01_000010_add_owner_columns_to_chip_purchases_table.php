@@ -12,6 +12,10 @@ return new class extends Migration
     {
         $tableName = config('chip.database.table_prefix', 'chip_') . 'purchases';
 
+        if (Schema::hasColumn($tableName, 'owner_type')) {
+            return;
+        }
+
         Schema::table($tableName, function (Blueprint $table): void {
             // nullableMorphs already creates an index on owner_type, owner_id
             $table->nullableMorphs('owner');

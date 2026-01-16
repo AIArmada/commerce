@@ -34,6 +34,7 @@ return new class extends Migration
 
             $table->{$jsonType}('metadata')->nullable();
             $table->timestamp('refunded_at')->nullable();
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
             // Indexes

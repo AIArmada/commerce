@@ -16,6 +16,10 @@ return new class extends Migration
         $prefix = (string) config('vouchers.database.table_prefix', '');
         $tableName = $tables['vouchers'] ?? $prefix . 'vouchers';
 
+        if (Schema::hasColumn($tableName, 'stacking_rules')) {
+            return;
+        }
+
         Schema::table($tableName, function (Blueprint $table): void {
             $jsonType = (string) commerce_json_column_type('vouchers', 'json');
 

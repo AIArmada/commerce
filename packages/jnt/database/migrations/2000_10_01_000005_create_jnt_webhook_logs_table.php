@@ -27,6 +27,7 @@ return new class extends Migration
             $table->string('processing_status', 32)->default('pending')->index();
             $table->text('processing_error')->nullable();
             $table->timestamp('processed_at')->nullable();
+            $table->nullableMorphs('owner');
             $table->timestamps();
 
             $table->index(['processing_status', 'created_at'], 'jnt_webhook_logs_pending_idx');

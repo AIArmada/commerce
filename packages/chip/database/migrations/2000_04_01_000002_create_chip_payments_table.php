@@ -40,6 +40,9 @@ return new class extends Migration
             $table->integer('created_on'); // When payment was created
             $table->integer('updated_on'); // When payment was last updated
 
+            // Owner scoping
+            $table->nullableMorphs('owner');
+
             // Laravel timestamps for internal use
             $table->timestamps();
 

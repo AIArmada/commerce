@@ -12,6 +12,10 @@ return new class extends Migration
     {
         $affiliatesTable = config('affiliates.database.tables.affiliates', 'affiliates');
 
+        if (Schema::hasColumn($affiliatesTable, 'rank_id')) {
+            return;
+        }
+
         Schema::table($affiliatesTable, function (Blueprint $table): void {
             $table->foreignUuid('rank_id')->nullable()->after('parent_affiliate_id');
             $table->integer('network_depth')->default(0)->after('rank_id');

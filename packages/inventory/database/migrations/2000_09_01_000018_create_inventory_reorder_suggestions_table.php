@@ -15,7 +15,7 @@ return new class extends Migration
 
         $tableName = $tables['reorder_suggestions'] ?? $prefix . 'reorder_suggestions';
 
-        Schema::create($tableName, function (Blueprint $table): void {
+        Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
             $table->uuidMorphs('inventoryable');
             $table->foreignUuid('location_id')->nullable();
@@ -37,11 +37,13 @@ return new class extends Migration
             $jsonType = config('inventory.database.json_column_type', 'json');
             $table->addColumn($jsonType, 'calculation_details')->nullable();
             $table->addColumn($jsonType, 'metadata')->nullable();
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
             $table->index(['status', 'urgency']);
             $table->index(['inventoryable_type', 'inventoryable_id', 'status'], 'inv_reorder_invable_status_idx');
             $table->index('expected_stockout_date');
+            $table->index(['owner_type', 'owner_id'], $tableName . '_owner_idx');
         });
     }
 

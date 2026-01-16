@@ -24,6 +24,10 @@ return new class extends Migration
         $tables = $databaseConfig['tables'] ?? [];
         $tableName = $tables['snapshots'] ?? $tablePrefix . 'snapshots';
 
+        if (Schema::hasColumn($tableName, 'last_activity_at')) {
+            return;
+        }
+
         Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
             // AI/Analytics - Abandonment Tracking
             $table->timestamp('last_activity_at')->nullable()->after('metadata');

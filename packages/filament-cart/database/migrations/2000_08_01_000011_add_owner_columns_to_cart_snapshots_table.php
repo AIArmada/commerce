@@ -15,6 +15,10 @@ return new class extends Migration
         $tables = $databaseConfig['tables'] ?? [];
         $tableName = $tables['snapshots'] ?? $tablePrefix . 'snapshots';
 
+        if (Schema::hasColumn($tableName, 'owner_key')) {
+            return;
+        }
+
         Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
             $table->string('owner_key', 191)->default('global')->after('instance');
             $table->nullableUuidMorphs('owner');

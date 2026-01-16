@@ -15,7 +15,7 @@ return new class extends Migration
 
         $tableName = $tables['cost_layers'] ?? $prefix . 'cost_layers';
 
-        Schema::create($tableName, function (Blueprint $table): void {
+        Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
             $table->uuidMorphs('inventoryable');
             $table->foreignUuid('location_id')->nullable();
@@ -28,11 +28,13 @@ return new class extends Migration
             $table->string('reference')->nullable();
             $table->string('costing_method');
             $table->timestamp('layer_date');
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
             $table->index(['inventoryable_type', 'inventoryable_id', 'layer_date']);
             $table->index('remaining_quantity');
             $table->index('costing_method');
+            $table->index(['owner_type', 'owner_id'], $tableName . '_owner_idx');
         });
     }
 

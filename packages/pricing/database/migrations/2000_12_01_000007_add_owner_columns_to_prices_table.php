@@ -10,7 +10,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table((string) config('pricing.database.tables.prices', 'prices'), function (Blueprint $table): void {
+        $tableName = (string) config('pricing.database.tables.prices', 'prices');
+
+        if (Schema::hasColumn($tableName, 'owner_type')) {
+            return;
+        }
+
+        Schema::table($tableName, function (Blueprint $table): void {
             $table->nullableMorphs('owner');
         });
     }

@@ -16,6 +16,7 @@ return new class extends Migration
         Schema::create($tableName, function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('code', 64)->unique();
+            $table->string('api_token', 64)->nullable()->unique();
             $table->string('name', 120);
             $table->text('description')->nullable();
             $table->string('status', 32)->default('draft')->index();
@@ -23,6 +24,10 @@ return new class extends Migration
             $table->unsignedInteger('commission_rate')->default(0); // cents or basis points
             $table->string('currency', 3)->default(config('affiliates.currency.default', 'USD'))->index();
             $table->uuid('parent_affiliate_id')->nullable()->index();
+            $table->foreignUuid('rank_id')->nullable();
+            $table->integer('network_depth')->default(0);
+            $table->integer('direct_downline_count')->default(0);
+            $table->integer('total_downline_count')->default(0);
             $table->string('default_voucher_code', 64)->nullable();
             $table->string('contact_email')->nullable();
             $table->string('website_url')->nullable();

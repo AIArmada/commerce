@@ -15,7 +15,7 @@ return new class extends Migration
 
         $tableName = $tables['supplier_leadtimes'] ?? $prefix . 'supplier_leadtimes';
 
-        Schema::create($tableName, function (Blueprint $table): void {
+        Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
             $table->string('inventoryable_type');
             $table->uuid('inventoryable_id');
@@ -33,10 +33,12 @@ return new class extends Migration
             $table->timestamp('last_received_at')->nullable();
             $jsonType = config('inventory.database.json_column_type', 'json');
             $table->addColumn($jsonType, 'metadata')->nullable();
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
             $table->index(['inventoryable_type', 'inventoryable_id', 'is_active'], 'inv_supp_lead_invable_active_idx');
             $table->index('is_primary');
+            $table->index(['owner_type', 'owner_id'], $tableName . '_owner_idx');
         });
     }
 

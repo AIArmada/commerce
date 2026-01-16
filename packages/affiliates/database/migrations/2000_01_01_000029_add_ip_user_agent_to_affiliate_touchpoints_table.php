@@ -12,6 +12,10 @@ return new class extends Migration
     {
         $tableName = config('affiliates.database.tables.touchpoints', 'affiliate_touchpoints');
 
+        if (Schema::hasColumn($tableName, 'ip_address')) {
+            return;
+        }
+
         Schema::table($tableName, function (Blueprint $table): void {
             $table->string('ip_address', 45)->nullable()->after('content')->index();
             $table->string('user_agent', 512)->nullable()->after('ip_address');

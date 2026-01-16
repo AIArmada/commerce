@@ -39,6 +39,8 @@ return new class extends Migration
             $table->string('action_type')->nullable();
             $table->timestamp('action_at')->nullable();
 
+            $table->nullableUuidMorphs('owner');
+
             $table->timestamps();
 
             $table->index(['alert_rule_id', 'created_at']);
