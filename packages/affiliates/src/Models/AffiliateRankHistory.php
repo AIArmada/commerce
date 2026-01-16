@@ -47,16 +47,25 @@ class AffiliateRankHistory extends Model
         return config('affiliates.database.tables.rank_histories', 'affiliate_rank_histories');
     }
 
+    /**
+     * @return BelongsTo<Affiliate, $this>
+     */
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);
     }
 
+    /**
+     * @return BelongsTo<AffiliateRank, $this>
+     */
     public function fromRank(): BelongsTo
     {
         return $this->belongsTo(AffiliateRank::class, 'from_rank_id');
     }
 
+    /**
+     * @return BelongsTo<AffiliateRank, $this>
+     */
     public function toRank(): BelongsTo
     {
         return $this->belongsTo(AffiliateRank::class, 'to_rank_id');

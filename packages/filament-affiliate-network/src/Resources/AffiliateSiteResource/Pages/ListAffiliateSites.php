@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource\Pages;
+
+use AIArmada\FilamentAffiliateNetwork\Resources\AffiliateSiteResource;
+use Filament\Actions;
+use Filament\Resources\Pages\ListRecords;
+
+final class ListAffiliateSites extends ListRecords
+{
+    protected static string $resource = AffiliateSiteResource::class;
+
+    protected function getHeaderActions(): array
+    {
+        return [
+            Actions\CreateAction::make(),
+        ];
+    }
+}

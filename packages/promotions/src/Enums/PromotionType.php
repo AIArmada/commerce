@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Promotions\Enums;
 
-use Filament\Support\Contracts\HasColor;
-use Filament\Support\Contracts\HasIcon;
-use Filament\Support\Contracts\HasLabel;
-
-enum PromotionType: string implements HasColor, HasIcon, HasLabel
+/**
+ * Promotion discount type.
+ */
+enum PromotionType: string
 {
     case Percentage = 'percentage';
     case Fixed = 'fixed';
@@ -23,11 +22,6 @@ enum PromotionType: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function getLabel(): ?string
-    {
-        return $this->label();
-    }
-
     public function icon(): string
     {
         return match ($this) {
@@ -37,11 +31,6 @@ enum PromotionType: string implements HasColor, HasIcon, HasLabel
         };
     }
 
-    public function getIcon(): ?string
-    {
-        return $this->icon();
-    }
-
     public function color(): string
     {
         return match ($this) {
@@ -49,11 +38,6 @@ enum PromotionType: string implements HasColor, HasIcon, HasLabel
             self::Fixed => 'primary',
             self::BuyXGetY => 'warning',
         };
-    }
-
-    public function getColor(): string | array | null
-    {
-        return $this->color();
     }
 
     public function formatValue(int $value): string

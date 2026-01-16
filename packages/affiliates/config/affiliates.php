@@ -367,13 +367,4 @@ return [
         'default_commission_type' => env('AFFILIATES_REGISTRATION_COMMISSION_TYPE', 'percentage'),
         'default_commission_rate' => env('AFFILIATES_REGISTRATION_COMMISSION_RATE', 1000), // 10% in basis points
     ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Database Options
-    |--------------------------------------------------------------------------
-    |
-    | Respect the monorepo helper for JSON column type (json/jsonb).
-    |
-    */
 ];

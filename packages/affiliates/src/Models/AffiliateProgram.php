@@ -6,6 +6,9 @@ namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -33,14 +36,23 @@ use Illuminate\Support\Str;
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property-read Collection<int, AffiliateProgramTier> $tiers
  * @property-read Collection<int, Affiliate> $affiliates
  * @property-read Collection<int, AffiliateProgramCreative> $creatives
+ * @property-read Model|null $owner
  */
 class AffiliateProgram extends Model
 {
     use \AIArmada\CommerceSupport\Traits\CachesComputedValues;
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
     protected $fillable = [
         'name',
@@ -57,6 +69,8 @@ class AffiliateProgram extends Model
         'terms_url',
         'eligibility_rules',
         'metadata',
+        'owner_type',
+        'owner_id',
     ];
 
     protected $casts = [
@@ -179,12 +193,51 @@ class AffiliateProgram extends Model
         return $query->where('is_public', true);
     }
 
+    public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
+    {
+        if (! config('affiliates.owner.enabled', false)) {
+            return $query;
+        }
+
+        $includeGlobal = $includeGlobal && (bool) config('affiliates.owner.include_global', false);
+
+        /** @var Builder<static> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
+
+        return $scoped;
+    }
+
     protected static function booted(): void
     {
         static::creating(function (self $program): void {
             if (empty($program->slug)) {
                 $program->slug = Str::slug($program->name);
             }
+
+            if (! config('affiliates.owner.enabled', false)) {
+                return;
+            }
+
+            if ($program->owner_id !== null) {
+                return;
+            }
+
+            if (! config('affiliates.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            if ($owner) {
+                $program->owner_type = $owner->getMorphClass();
+                $program->owner_id = $owner->getKey();
+            }
+        });
+
+        static::deleting(function (self $program): void {
+            $program->tiers()->delete();
+            $program->memberships()->delete();
+            $program->creatives()->delete();
         });
     }
 

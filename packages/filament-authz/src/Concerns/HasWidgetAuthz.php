@@ -10,11 +10,26 @@ use Filament\Facades\Filament;
 /**
  * Add this trait to Filament Widgets to enforce permission checks.
  *
+ * This trait automatically checks if the current user has the required
+ * permission to view the widget. Super admin users bypass all checks.
+ *
  * Features:
- * - Uses discovered permissions (not generated names)
- * - Caches permission lookups
- * - Super admin bypass built-in
+ * - Uses discovered permissions (not hardcoded names)
+ * - Caches permission lookups for performance
+ * - Super admin bypass built-in via Gate::before
  * - Falls back gracefully if permission not found
+ *
+ * @example
+ * ```php
+ * class StatsWidget extends Widget
+ * {
+ *     use HasWidgetAuthz;
+ * }
+ * ```
+ *
+ * The widget will require the permission: `widget.stats-widget` (kebab-cased by default)
+ *
+ * @requires The parent class must implement `canView(): bool`
  */
 trait HasWidgetAuthz
 {

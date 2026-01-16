@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -24,13 +28,21 @@ use Illuminate\Support\Carbon;
  * @property int $sort_order
  * @property bool $is_required
  * @property bool $is_active
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
  * @property-read Collection<int, AffiliateTrainingProgress> $progress
  */
 class AffiliateTrainingModule extends Model
 {
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
     protected $fillable = [
         'title',
@@ -45,6 +57,8 @@ class AffiliateTrainingModule extends Model
         'sort_order',
         'is_required',
         'is_active',
+        'owner_type',
+        'owner_id',
     ];
 
     protected $casts = [
@@ -63,6 +77,21 @@ class AffiliateTrainingModule extends Model
     }
 
     /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
+    {
+        if (! config('affiliates.owner.enabled', false)) {
+            return $query;
+        }
+
+        $includeGlobal = $includeGlobal && (bool) config('affiliates.owner.include_global', false);
+
+        return $this->baseScopeForOwner($query, $owner, $includeGlobal);
+    }
+
+    /**
      * @return HasMany<AffiliateTrainingProgress, $this>
      */
     public function progress(): HasMany
@@ -72,7 +101,28 @@ class AffiliateTrainingModule extends Model
 
     protected static function booted(): void
     {
-        self::deleting(function (self $module): void {
+        static::creating(function (self $module): void {
+            if (! config('affiliates.owner.enabled', false)) {
+                return;
+            }
+
+            if ($module->owner_id !== null) {
+                return;
+            }
+
+            if (! config('affiliates.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            if ($owner) {
+                $module->owner_type = $owner->getMorphClass();
+                $module->owner_id = $owner->getKey();
+            }
+        });
+
+        static::deleting(function (self $module): void {
             $module->progress()->delete();
         });
     }

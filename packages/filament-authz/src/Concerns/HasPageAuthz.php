@@ -10,11 +10,24 @@ use Filament\Facades\Filament;
 /**
  * Add this trait to Filament Pages to enforce permission checks.
  *
+ * This trait automatically checks if the current user has the required
+ * permission to access the page. Super admin users bypass all checks.
+ *
  * Features:
- * - Uses discovered permissions (not generated names)
- * - Caches permission lookups
- * - Super admin bypass built-in
+ * - Uses discovered permissions (not hardcoded names)
+ * - Caches permission lookups for performance
+ * - Super admin bypass built-in via Gate::before
  * - Falls back gracefully if permission not found
+ *
+ * @example
+ * ```php
+ * class SettingsPage extends Page
+ * {
+ *     use HasPageAuthz;
+ * }
+ * ```
+ *
+ * The page will require the permission: `page.settings-page` (kebab-cased by default)
  */
 trait HasPageAuthz
 {

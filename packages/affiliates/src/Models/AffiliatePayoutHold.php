@@ -46,6 +46,9 @@ class AffiliatePayoutHold extends Model
         return config('affiliates.database.tables.payout_holds', 'affiliate_payout_holds');
     }
 
+    /**
+     * @return BelongsTo<Affiliate, $this>
+     */
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);

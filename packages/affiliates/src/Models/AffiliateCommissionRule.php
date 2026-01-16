@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -32,6 +33,7 @@ use Illuminate\Support\Carbon;
 class AffiliateCommissionRule extends Model
 {
     use HasUuids;
+    use ScopesByProgramOwner;
 
     protected $fillable = [
         'program_id',
@@ -64,6 +66,9 @@ class AffiliateCommissionRule extends Model
         return config('affiliates.database.tables.commission_rules', 'affiliate_commission_rules');
     }
 
+    /**
+     * @return BelongsTo<AffiliateProgram, $this>
+     */
     public function program(): BelongsTo
     {
         return $this->belongsTo(AffiliateProgram::class, 'program_id');

@@ -9,6 +9,8 @@ use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Shared permission sync logic for Role create/edit pages.
+ *
+ * @property \AIArmada\FilamentAuthz\Models\Role $record
  */
 trait SyncsRolePermissions
 {

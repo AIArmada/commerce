@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalConversions;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalDashboard;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalLinks;
@@ -20,11 +21,19 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
+    OwnerContext::clearOverride();
+    config(['affiliates.owner.enabled' => false]);
+
     AffiliatePayout::query()->delete();
     AffiliateConversion::query()->delete();
     AffiliateAttribution::query()->delete();
     Affiliate::query()->delete();
     User::query()->delete();
+});
+
+afterEach(function (): void {
+    OwnerContext::clearOverride();
+    config(['affiliates.owner.enabled' => false]);
 });
 
 it('portal pages do not leak cross-tenant data when owner mode enabled', function (): void {
@@ -217,6 +226,8 @@ it('portal pages only return current owner affiliate stats when multiple owners 
         'paid_at' => now(),
     ]);
 
+    $this->actingAs($ownerA);
+
     $dashboard = new PortalDashboard;
     $dashboardData = $dashboard->getViewData();
 
@@ -317,6 +328,25 @@ it('portal pages return scoped view data when affiliate exists', function (): vo
 });
 
 it('PortalConversions configures its table', function (): void {
+    $user = User::create([
+        'name' => 'Conversions User',
+        'email' => 'conversions-user-' . Str::uuid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    $affiliate = Affiliate::create([
+        'code' => 'CONV-' . Str::uuid(),
+        'name' => 'Conversions Affiliate',
+        'status' => AffiliateStatus::Active,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+        'owner_type' => $user->getMorphClass(),
+        'owner_id' => (string) $user->getKey(),
+    ]);
+
+    $this->actingAs($user);
+
     $table = Mockery::mock(Table::class);
     $table->shouldReceive('query')->once()->andReturnSelf();
     $table->shouldReceive('columns')->once()->andReturnSelf();
@@ -330,6 +360,25 @@ it('PortalConversions configures its table', function (): void {
 });
 
 it('PortalPayouts configures its table', function (): void {
+    $user = User::create([
+        'name' => 'Payouts User',
+        'email' => 'payouts-user-' . Str::uuid() . '@example.com',
+        'password' => 'secret',
+    ]);
+
+    $affiliate = Affiliate::create([
+        'code' => 'PAY-' . Str::uuid(),
+        'name' => 'Payouts Affiliate',
+        'status' => AffiliateStatus::Active,
+        'commission_type' => 'percentage',
+        'commission_rate' => 500,
+        'currency' => 'USD',
+        'owner_type' => $user->getMorphClass(),
+        'owner_id' => (string) $user->getKey(),
+    ]);
+
+    $this->actingAs($user);
+
     $table = Mockery::mock(Table::class);
     $table->shouldReceive('query')->once()->andReturnSelf();
     $table->shouldReceive('columns')->once()->andReturnSelf();

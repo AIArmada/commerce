@@ -6,6 +6,9 @@ namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -23,12 +26,20 @@ use Illuminate\Support\Str;
  * @property bool $is_active
  * @property array<string, mixed> $rules
  * @property array<string, mixed>|null $metadata
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property \Carbon\CarbonInterface|null $created_at
  * @property \Carbon\CarbonInterface|null $updated_at
  */
 class AffiliateCommissionTemplate extends Model
 {
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
     protected $fillable = [
         'name',
@@ -38,6 +49,8 @@ class AffiliateCommissionTemplate extends Model
         'is_active',
         'rules',
         'metadata',
+        'owner_type',
+        'owner_id',
     ];
 
     /**
@@ -147,11 +160,6 @@ class AffiliateCommissionTemplate extends Model
                 'mlm_overrides' => $overrides,
             ],
         ]);
-    }
-
-    public function getTable(): string
-    {
-        return config('affiliates.database.tables.commission_templates', 'affiliate_commission_templates');
     }
 
     /**
@@ -282,21 +290,67 @@ class AffiliateCommissionTemplate extends Model
         });
     }
 
+    public function getTable(): string
+    {
+        return config('affiliates.database.tables.commission_templates', 'affiliate_commission_templates');
+    }
+
+    /**
+     * @param  Builder<static>  $query
+     * @return Builder<static>
+     */
+    public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
+    {
+        if (! config('affiliates.owner.enabled', false)) {
+            return $query;
+        }
+
+        $includeGlobal = $includeGlobal && (bool) config('affiliates.owner.include_global', false);
+
+        return $this->baseScopeForOwner($query, $owner, $includeGlobal);
+    }
+
     protected static function booted(): void
     {
-        self::creating(function (self $template): void {
+        static::creating(function (self $template): void {
             if (empty($template->slug)) {
                 $template->slug = Str::slug($template->name);
             }
+
+            if (! config('affiliates.owner.enabled', false)) {
+                return;
+            }
+
+            if ($template->owner_id !== null) {
+                return;
+            }
+
+            if (! config('affiliates.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            if ($owner) {
+                $template->owner_type = $owner->getMorphClass();
+                $template->owner_id = $owner->getKey();
+            }
         });
 
-        self::saving(function (self $template): void {
-            // If this template is being set as default, unset other defaults
+        static::saving(function (self $template): void {
+            // If this template is being set as default, unset other defaults within same owner
             if ($template->is_default && $template->isDirty('is_default')) {
-                static::query()
+                $query = static::query()
                     ->where('id', '!=', $template->id)
-                    ->where('is_default', true)
-                    ->update(['is_default' => false]);
+                    ->where('is_default', true);
+
+                // Scope to same owner when owner mode is enabled
+                if (config('affiliates.owner.enabled', false)) {
+                    $query->where('owner_type', $template->owner_type)
+                        ->where('owner_id', $template->owner_id);
+                }
+
+                $query->update(['is_default' => false]);
             }
         });
     }

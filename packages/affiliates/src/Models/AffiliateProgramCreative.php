@@ -53,6 +53,9 @@ class AffiliateProgramCreative extends Model
         return config('affiliates.database.tables.program_creatives', 'affiliate_program_creatives');
     }
 
+    /**
+     * @return BelongsTo<AffiliateProgram, $this>
+     */
     public function program(): BelongsTo
     {
         return $this->belongsTo(AffiliateProgram::class, 'program_id');

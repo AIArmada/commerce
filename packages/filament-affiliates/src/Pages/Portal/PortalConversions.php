@@ -15,7 +15,6 @@ use Filament\Tables\Concerns\InteractsWithTable;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
 use Illuminate\Contracts\Support\Htmlable;
-use Illuminate\Database\Eloquent\Builder;
 
 class PortalConversions extends Page implements HasTable
 {
@@ -42,11 +41,18 @@ class PortalConversions extends Page implements HasTable
     {
         $affiliate = $this->getAffiliate();
 
+        if (! $affiliate) {
+            return $table
+                ->query(AffiliateConversion::query()->whereNull('id'))
+                ->columns([])
+                ->emptyStateHeading(__('No affiliate account'))
+                ->emptyStateDescription(__('You need an affiliate account to view conversions.'));
+        }
+
         return $table
             ->query(
                 AffiliateConversion::query()
-                    ->when($affiliate, fn (Builder $query) => $query->where('affiliate_id', $affiliate->getKey()))
-                    ->when(! $affiliate, fn (Builder $query) => $query->whereRaw('1 = 0'))
+                    ->where('affiliate_id', $affiliate->getKey())
             )
             ->columns([
                 TextColumn::make('occurred_at')

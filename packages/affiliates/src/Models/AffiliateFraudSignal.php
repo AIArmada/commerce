@@ -67,16 +67,25 @@ class AffiliateFraudSignal extends Model
         return config('affiliates.database.tables.fraud_signals', 'affiliate_fraud_signals');
     }
 
+    /**
+     * @return BelongsTo<Affiliate, $this>
+     */
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);
     }
 
+    /**
+     * @return BelongsTo<AffiliateConversion, $this>
+     */
     public function conversion(): BelongsTo
     {
         return $this->belongsTo(AffiliateConversion::class);
     }
 
+    /**
+     * @return BelongsTo<AffiliateTouchpoint, $this>
+     */
     public function touchpoint(): BelongsTo
     {
         return $this->belongsTo(AffiliateTouchpoint::class);

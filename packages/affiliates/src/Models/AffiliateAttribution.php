@@ -94,6 +94,9 @@ class AffiliateAttribution extends Model
         return config('affiliates.database.tables.attributions', parent::getTable());
     }
 
+    /**
+     * @return BelongsTo<Affiliate, $this>
+     */
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);

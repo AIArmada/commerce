@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -32,6 +33,7 @@ use Illuminate\Support\Carbon;
 class AffiliateCommissionPromotion extends Model
 {
     use HasUuids;
+    use ScopesByProgramOwner;
 
     protected $fillable = [
         'program_id',
@@ -62,6 +64,9 @@ class AffiliateCommissionPromotion extends Model
         return config('affiliates.database.tables.commission_promotions', 'affiliate_commission_promotions');
     }
 
+    /**
+     * @return BelongsTo<AffiliateProgram, $this>
+     */
     public function program(): BelongsTo
     {
         return $this->belongsTo(AffiliateProgram::class, 'program_id');

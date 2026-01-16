@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\Affiliates\Models\Concerns\ScopesByProgramOwner;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,6 +27,7 @@ use Illuminate\Support\Carbon;
 class AffiliateVolumeTier extends Model
 {
     use HasUuids;
+    use ScopesByProgramOwner;
 
     protected $fillable = [
         'program_id',
@@ -47,6 +49,9 @@ class AffiliateVolumeTier extends Model
         return config('affiliates.database.tables.volume_tiers', 'affiliate_volume_tiers');
     }
 
+    /**
+     * @return BelongsTo<AffiliateProgram, $this>
+     */
     public function program(): BelongsTo
     {
         return $this->belongsTo(AffiliateProgram::class, 'program_id');
