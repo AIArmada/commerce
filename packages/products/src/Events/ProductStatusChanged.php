@@ -9,7 +9,7 @@ use AIArmada\Products\Models\Product;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class ProductStatusChanged
+final class ProductStatusChanged
 {
     use Dispatchable;
     use SerializesModels;

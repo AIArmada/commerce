@@ -6,9 +6,11 @@ namespace AIArmada\Orders\Models;
 
 use AIArmada\CommerceSupport\Concerns\HasCommerceAudit;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Orders\Database\Factories\OrderFactory;
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\States\OrderStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -56,6 +58,7 @@ use Spatie\ModelStates\HasStates;
  */
 class Order extends Model implements Auditable
 {
+    use FormatsMoney;
     use HasCommerceAudit {
         getAuditThreshold as protected getAuditThresholdFromTrait;
         readyForAuditing as protected readyForAuditingFromTrait;
@@ -302,14 +305,14 @@ class Order extends Model implements Auditable
     public function getTotalPaid(): int
     {
         return $this->payments()
-            ->where('status', 'completed')
+            ->where('status', PaymentStatus::Completed)
             ->sum('amount');
     }
 
     public function getTotalRefunded(): int
     {
         return $this->refunds()
-            ->where('status', 'completed')
+            ->where('status', PaymentStatus::Completed)
             ->sum('amount');
     }
 
@@ -466,20 +469,6 @@ class Order extends Model implements Auditable
             'delivered_at' => 'datetime',
             'canceled_at' => 'datetime',
         ];
-    }
-
-    protected function formatMoney(int $amountInCents): string
-    {
-        $decimalPlaces = config('orders.currency.decimal_places', 2);
-        $symbol = match ($this->currency) {
-            'MYR' => 'RM',
-            'USD' => '$',
-            'EUR' => '€',
-            'GBP' => '£',
-            default => $this->currency . ' ',
-        };
-
-        return $symbol . number_format($amountInCents / 100, $decimalPlaces);
     }
 
     /**

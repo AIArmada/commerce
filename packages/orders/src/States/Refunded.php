@@ -7,7 +7,7 @@ namespace AIArmada\Orders\States;
 /**
  * Order has been fully refunded - terminal state.
  */
-class Refunded extends OrderStatus
+final class Refunded extends OrderStatus
 {
     public static string $name = 'refunded';
 

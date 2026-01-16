@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Pricing\Services;
 
 use AIArmada\Pricing\Contracts\Priceable;
+use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Pricing\Data\PriceResultData;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
@@ -16,7 +17,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Arr;
 use Throwable;
 
-class PriceCalculator
+final class PriceCalculator implements PriceCalculatorInterface
 {
     /**
      * @param  array<string, mixed>  $context

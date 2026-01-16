@@ -36,7 +36,7 @@ describe('PriceResultData', function (): void {
                 discountAmount: 2000,
             );
 
-            expect($result->getFormattedSavings())->toBe('RM 20.00');
+            expect($result->getFormattedSavings())->toBe('RM20.00');
         });
 
         it('formats zero savings', function (): void {
@@ -46,7 +46,7 @@ describe('PriceResultData', function (): void {
                 discountAmount: 0,
             );
 
-            expect($result->getFormattedSavings())->toBe('RM 0.00');
+            expect($result->getFormattedSavings())->toBe('RM0.00');
         });
     });
 
@@ -58,7 +58,7 @@ describe('PriceResultData', function (): void {
                 discountAmount: 1500,
             );
 
-            expect($result->getFormattedFinalPrice())->toBe('RM 85.00');
+            expect($result->getFormattedFinalPrice())->toBe('RM85.00');
         });
 
         it('formats large amounts', function (): void {
@@ -68,7 +68,7 @@ describe('PriceResultData', function (): void {
                 discountAmount: 1,
             );
 
-            expect($result->getFormattedFinalPrice())->toBe('RM 9,999.99');
+            expect($result->getFormattedFinalPrice())->toBe('RM9,999.99');
         });
     });
 
@@ -80,7 +80,7 @@ describe('PriceResultData', function (): void {
                 discountAmount: 3000,
             );
 
-            expect($result->getFormattedOriginalPrice())->toBe('RM 150.00');
+            expect($result->getFormattedOriginalPrice())->toBe('RM150.00');
         });
     });
 

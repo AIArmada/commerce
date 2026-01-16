@@ -255,7 +255,7 @@ describe('Price Model - Extended Tests', function (): void {
                 'currency' => 'SGD',
             ]);
 
-            expect($price->getFormattedAmount())->toBe('S$30.00');
+            expect($price->getFormattedAmount())->toBe('$30.00');
         });
 
         it('formats unknown currency with code', function (): void {
@@ -274,7 +274,7 @@ describe('Price Model - Extended Tests', function (): void {
                 'currency' => 'THB',
             ]);
 
-            expect($price->getFormattedAmount())->toBe('THB 100.00');
+            expect($price->getFormattedAmount())->toBe('฿100.00');
         });
     });
 

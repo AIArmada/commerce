@@ -138,7 +138,6 @@ class ShipmentResource extends Resource
 
     public static function table(Table $table): Table
     {
-        $currency = (string) config('shipping.defaults.currency', 'MYR');
         $weightUnit = (string) config('shipping.defaults.weight_unit', 'g');
 
         return $table
@@ -173,7 +172,7 @@ class ShipmentResource extends Resource
 
                 Tables\Columns\TextColumn::make('shipping_cost')
                     ->label('Cost')
-                    ->money($currency, divideBy: 100)
+                    ->money(fn (Shipment $record): string => $record->currency, divideBy: 100)
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('shipped_at')

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentShipping\Actions;
 
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Services\ShipmentService;
 use Filament\Actions\Action;
@@ -26,11 +25,7 @@ class CancelShipmentAction extends Action
             ->requiresConfirmation()
             ->modalHeading('Cancel Shipment')
             ->modalDescription('Are you sure you want to cancel this shipment? This action cannot be undone.')
-            ->visible(fn (Shipment $record): bool => in_array($record->status, [
-                ShipmentStatus::Draft,
-                ShipmentStatus::Pending,
-                ShipmentStatus::Shipped,
-            ], true))
+            ->visible(fn (Shipment $record): bool => $record->isCancellable())
             ->authorize(fn (Shipment $record): bool => auth()->user()?->can('cancel', $record) ?? false)
             ->action(function (Shipment $record): void {
                 try {

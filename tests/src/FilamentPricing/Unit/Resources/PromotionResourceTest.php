@@ -6,6 +6,12 @@ use AIArmada\Commerce\Tests\TestCase;
 
 uses(TestCase::class);
 
+beforeEach(function (): void {
+    if (! class_exists('AIArmada\Promotions\Models\Promotion')) {
+        $this->markTestSkipped('Promotions package is not installed.');
+    }
+});
+
 use AIArmada\FilamentPricing\Resources\PromotionResource;
 use AIArmada\Pricing\Models\Promotion;
 use Filament\Schemas\Schema;

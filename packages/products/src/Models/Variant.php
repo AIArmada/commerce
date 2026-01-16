@@ -7,7 +7,8 @@ namespace AIArmada\Products\Models;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Pricing\Contracts\Priceable;
+use AIArmada\Pricing\Contracts\Priceable as PricingPriceable;
+use AIArmada\Products\Contracts\Priceable;
 use AIArmada\Products\Traits\HasAttributes;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -45,7 +46,7 @@ use Spatie\MediaLibrary\InteractsWithMedia;
  * @property-read Collection<int, \Spatie\MediaLibrary\MediaCollections\Models\Media> $display_images
  * @property-read \Illuminate\Database\Eloquent\Collection<int, AttributeValue> $attributeValues
  */
-class Variant extends Model implements HasMedia, Priceable
+class Variant extends Model implements HasMedia, Priceable, PricingPriceable
 {
     use HasAttributes;
     use HasFactory;
@@ -228,6 +229,16 @@ class Variant extends Model implements HasMedia, Priceable
         return $this->getEffectivePrice();
     }
 
+    /**
+     * Get the calculated price after applying rules.
+     *
+     * @param  array<string, mixed>  $context  Context for pricing (customer, quantity, etc.)
+     */
+    public function getCalculatedPrice(array $context = []): int
+    {
+        return $this->getBasePrice();
+    }
+
     public function getComparePrice(): ?int
     {
         return $this->getEffectiveComparePrice();
@@ -337,9 +348,16 @@ class Variant extends Model implements HasMedia, Priceable
             ->map(fn ($opt) => mb_strtoupper(mb_substr($opt->name, 0, 2)))
             ->implode('-');
 
+        // Use product SKU or fallback to 'PROD' with unique suffix from product ID
+        $parentSku = $this->product->sku;
+        if ($parentSku === null || $parentSku === '') {
+            // Use last 8 chars of UUID (more unique for sequentially generated UUIDs)
+            $parentSku = 'PROD-' . mb_strtoupper(mb_substr((string) $this->product->id, -8));
+        }
+
         return str_replace(
             ['{parent_sku}', '{option_codes}'],
-            [$this->product->sku ?? 'PROD', $optionCodes],
+            [$parentSku, $optionCodes],
             $pattern
         );
     }

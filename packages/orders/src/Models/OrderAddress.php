@@ -37,7 +37,7 @@ use InvalidArgumentException;
  * @property Carbon $updated_at
  * @property-read Order $order
  */
-class OrderAddress extends Model
+final class OrderAddress extends Model
 {
     use HasOwner {
         scopeForOwner as baseScopeForOwner;

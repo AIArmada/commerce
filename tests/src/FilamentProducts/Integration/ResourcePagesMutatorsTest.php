@@ -13,48 +13,32 @@ use AIArmada\Products\Models\Category;
 
 uses(TestCase::class);
 
-it('converts monetary fields in CreateProduct to cents', function (): void {
-    $page = new class extends CreateProduct
-    {
-        public function mutate(array $data): array
-        {
-            return $this->mutateFormDataBeforeCreate($data);
-        }
-    };
+it('passes through form data in CreateProduct mutator', function (): void {
+    $page = new CreateProduct;
 
-    $data = $page->mutate([
-        'price' => 12.34,
-        'compare_price' => 99.99,
-        'cost' => 1.23,
+    $method = new ReflectionMethod(CreateProduct::class, 'mutateFormDataBeforeCreate');
+    $method->setAccessible(true);
+
+    $data = $method->invoke($page, [
+        'name' => 'Test Product',
+        'price' => 1234,
     ]);
 
+    expect($data['name'])->toBe('Test Product');
     expect($data['price'])->toBe(1234);
-    expect($data['compare_price'])->toBe(9999);
-    expect($data['cost'])->toBe(123);
 });
 
-it('converts monetary fields in EditProduct between cents and display values', function (): void {
-    $page = new class extends EditProduct
-    {
-        public function mutateFill(array $data): array
-        {
-            return $this->mutateFormDataBeforeFill($data);
-        }
+it('passes through form data in EditProduct mutator', function (): void {
+    $page = new EditProduct;
 
-        public function mutateSave(array $data): array
-        {
-            return $this->mutateFormDataBeforeSave($data);
-        }
+    $saveMethod = new ReflectionMethod(EditProduct::class, 'mutateFormDataBeforeSave');
+    $saveMethod->setAccessible(true);
 
-        public function headerActions(): array
-        {
-            return $this->getHeaderActions();
-        }
-    };
+    $headerMethod = new ReflectionMethod(EditProduct::class, 'getHeaderActions');
+    $headerMethod->setAccessible(true);
 
-    expect($page->mutateFill(['price' => 1000]))->toBe(['price' => 10]);
-    expect($page->mutateSave(['price' => 10.0]))->toBe(['price' => 1000]);
-    expect($page->headerActions())->toBeArray()->not->toBeEmpty();
+    expect($saveMethod->invoke($page, ['price' => 1000]))->toBe(['price' => 1000]);
+    expect($headerMethod->invoke($page))->toBeArray()->not->toBeEmpty();
 });
 
 it('uses parent id from request query in CreateCategory', function (): void {
@@ -62,15 +46,12 @@ it('uses parent id from request query in CreateCategory', function (): void {
 
     request()->query->set('parent', $parent->id);
 
-    $page = new class extends CreateCategory
-    {
-        public function mutate(array $data): array
-        {
-            return $this->mutateFormDataBeforeCreate($data);
-        }
-    };
+    $page = new CreateCategory;
 
-    $data = $page->mutate([]);
+    $method = new ReflectionMethod(CreateCategory::class, 'mutateFormDataBeforeCreate');
+    $method->setAccessible(true);
+
+    $data = $method->invoke($page, []);
 
     expect($data['parent_id'])->toBe($parent->id);
 });

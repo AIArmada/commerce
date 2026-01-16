@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Transitions;
 
+use AIArmada\Orders\Enums\PaymentStatus;
+use AIArmada\Orders\Events\CommissionAttributionRequired;
+use AIArmada\Orders\Events\InventoryDeductionRequired;
 use AIArmada\Orders\Events\OrderPaid;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Processing;
@@ -16,7 +19,7 @@ use Spatie\ModelStates\Transition;
  * It records the payment, triggers optional integrations
  * (inventory deduction, affiliate commission), and updates the order state.
  */
-class PaymentConfirmed extends Transition
+final class PaymentConfirmed extends Transition
 {
     public function __construct(
         private Order $order,
@@ -35,7 +38,7 @@ class PaymentConfirmed extends Transition
             'gateway' => $this->gateway,
             'amount' => $this->amount,
             'currency' => $this->order->currency,
-            'status' => 'completed',
+            'status' => PaymentStatus::Completed,
             'paid_at' => now(),
             'metadata' => $this->metadata,
         ]);
@@ -72,9 +75,7 @@ class PaymentConfirmed extends Transition
      */
     protected function deductInventory(): void
     {
-        // This would integrate with the inventory package
-        // For now, we'll dispatch an event that the inventory package can listen to
-        // event(new \AIArmada\Orders\Events\InventoryDeductionRequired($this->order));
+        event(new InventoryDeductionRequired($this->order));
     }
 
     /**
@@ -82,8 +83,6 @@ class PaymentConfirmed extends Transition
      */
     protected function attributeCommission(): void
     {
-        // This would integrate with the affiliates package
-        // For now, we'll dispatch an event that the affiliates package can listen to
-        // event(new \AIArmada\Orders\Events\CommissionAttributionRequired($this->order));
+        event(new CommissionAttributionRequired($this->order));
     }
 }

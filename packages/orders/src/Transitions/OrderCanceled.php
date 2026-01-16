@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Transitions;
 
+use AIArmada\Orders\Enums\PaymentStatus;
+use AIArmada\Orders\Events\InventoryReleaseRequired;
 use AIArmada\Orders\Events\OrderCanceled as OrderCanceledEvent;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Canceled;
@@ -16,7 +18,7 @@ use Spatie\ModelStates\Transition;
  * Processing, OnHold). It records the cancellation reason and optionally
  * releases inventory reservations and issues refunds.
  */
-class OrderCanceled extends Transition
+final class OrderCanceled extends Transition
 {
     public function __construct(
         private Order $order,
@@ -58,8 +60,7 @@ class OrderCanceled extends Transition
 
     protected function releaseInventory(): void
     {
-        // This would integrate with the inventory package
-        // event(new \AIArmada\Orders\Events\InventoryReleaseRequired($this->order));
+        event(new InventoryReleaseRequired($this->order));
     }
 
     protected function initiateRefund(): void
@@ -67,14 +68,14 @@ class OrderCanceled extends Transition
         // Create pending refund record
         $totalPaid = $this->order->getTotalPaid();
         if ($totalPaid > 0) {
-            $payment = $this->order->payments()->where('status', 'completed')->first();
+            $payment = $this->order->payments()->where('status', PaymentStatus::Completed)->first();
             if ($payment) {
                 $this->order->refunds()->create([
                     'payment_id' => $payment->id,
                     'gateway' => $payment->gateway,
                     'amount' => $totalPaid,
                     'currency' => $this->order->currency,
-                    'status' => 'pending',
+                    'status' => PaymentStatus::Pending,
                     'reason' => 'Order canceled: ' . $this->reason,
                 ]);
             }

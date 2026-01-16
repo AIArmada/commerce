@@ -12,7 +12,7 @@ use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Support\Facades\Gate;
 
-class RecentOrdersWidget extends BaseWidget
+final class RecentOrdersWidget extends BaseWidget
 {
     protected static ?int $sort = 2;
 

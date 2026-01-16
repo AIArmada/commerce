@@ -10,7 +10,7 @@ use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use Filament\Resources\Pages\CreateRecord;
 
-class CreateCollection extends CreateRecord
+final class CreateCollection extends CreateRecord
 {
     protected static string $resource = CollectionResource::class;
 

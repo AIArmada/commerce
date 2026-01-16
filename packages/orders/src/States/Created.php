@@ -7,7 +7,7 @@ namespace AIArmada\Orders\States;
 /**
  * Initial state when order is first created.
  */
-class Created extends OrderStatus
+final class Created extends OrderStatus
 {
     public static string $name = 'created';
 

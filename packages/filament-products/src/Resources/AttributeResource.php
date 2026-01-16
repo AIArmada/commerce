@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use UnitEnum;
 
-class AttributeResource extends Resource
+final class AttributeResource extends Resource
 {
     protected static ?string $model = Attribute::class;
 

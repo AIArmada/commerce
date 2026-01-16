@@ -11,7 +11,7 @@ use AIArmada\Products\Models\AttributeGroup;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
-class EditAttributeSet extends EditRecord
+final class EditAttributeSet extends EditRecord
 {
     protected static string $resource = AttributeSetResource::class;
 

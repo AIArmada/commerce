@@ -29,3 +29,27 @@ if (! function_exists('commerce_json_column_type')) {
         return $default;
     }
 }
+
+if (! function_exists('currency_symbol')) {
+    /**
+     * Get currency symbol for display in forms/tables.
+     *
+     * @param  string|null  $code  Currency code, defaults to config
+     * @return string Currency symbol (RM, $, €, etc.)
+     */
+    function currency_symbol(?string $code = null): string
+    {
+        $code ??= config('commerce-support.currency.default', 'MYR');
+
+        return match ($code) {
+            'MYR' => 'RM',
+            'USD' => '$',
+            'EUR' => '€',
+            'GBP' => '£',
+            'JPY' => '¥',
+            'SGD' => 'S$',
+            'AUD' => 'A$',
+            default => mb_strtoupper($code),
+        };
+    }
+}

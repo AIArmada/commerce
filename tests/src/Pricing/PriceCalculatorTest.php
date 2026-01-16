@@ -336,6 +336,12 @@ describe('PriceCalculator Service', function (): void {
     });
 
     describe('promotional pricing', function (): void {
+        beforeEach(function (): void {
+            if (! class_exists('AIArmada\Promotions\Models\Promotion')) {
+                $this->markTestSkipped('Promotions package is not installed.');
+            }
+        });
+
         it('applies promotion when item is attached', function (): void {
             $itemId = 'promo-item-' . uniqid();
 
@@ -689,6 +695,12 @@ describe('TestPriceableItem', function (): void {
 });
 
 describe('Promotion calculateDiscount', function (): void {
+    beforeEach(function (): void {
+        if (! class_exists('AIArmada\Promotions\Models\Promotion')) {
+            $this->markTestSkipped('Promotions package is not installed.');
+        }
+    });
+
     it('calculates percentage discount correctly', function (): void {
         $promotion = new Promotion([
             'type' => PromotionType::Percentage,

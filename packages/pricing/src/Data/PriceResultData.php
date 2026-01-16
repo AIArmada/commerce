@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Data;
 
+use Akaunting\Money\Currency;
 use Spatie\LaravelData\Data;
 
 /**
  * Data Transfer Object representing a calculated price result.
  */
-class PriceResultData extends Data
+final class PriceResultData extends Data
 {
     public function __construct(
         public int $originalPrice,
@@ -59,13 +60,12 @@ class PriceResultData extends Data
 
     private function currencySymbol(): string
     {
-        return match ($this->currency) {
-            'MYR' => 'RM ',
-            'USD' => '$',
-            'EUR' => '€',
-            'GBP' => '£',
-            'SGD' => 'S$',
-            default => $this->currency . ' ',
-        };
+        $currencies = Currency::getCurrencies();
+
+        if (isset($currencies[$this->currency])) {
+            return $currencies[$this->currency]['symbol'] ?? $this->currency;
+        }
+
+        return $this->currency . ' ';
     }
 }

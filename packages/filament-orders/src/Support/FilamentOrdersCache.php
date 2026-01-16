@@ -15,8 +15,6 @@ final class FilamentOrdersCache
         $ownerKey = self::ownerKeyFromOrder($order);
 
         foreach (['owner-only', 'with-global'] as $scopeKey) {
-            Cache::forget(sprintf('filament-orders.fulfillment-queue.badge.%s.%s', $ownerKey, $scopeKey));
-            Cache::forget(sprintf('filament-orders.fulfillment-queue.badge-color.%s.%s', $ownerKey, $scopeKey));
             Cache::forget(sprintf('filament-orders.status-distribution.%s.%s', $ownerKey, $scopeKey));
 
             $now = CarbonImmutable::now();

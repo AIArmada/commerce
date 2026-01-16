@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentOrders\FilamentOrdersPlugin;
-use AIArmada\FilamentOrders\Pages\FulfillmentQueue;
 use AIArmada\FilamentOrders\Resources\OrderResource;
 use AIArmada\FilamentOrders\Resources\OrderResource\Pages\EditOrder;
 use AIArmada\FilamentOrders\Resources\OrderResource\Pages\ListOrders;
@@ -12,6 +11,7 @@ use AIArmada\FilamentOrders\Resources\OrderResource\Pages\ViewOrder;
 use AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers\ItemsRelationManager;
 use AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers\NotesRelationManager;
 use AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers\PaymentsRelationManager;
+use AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers\RefundsRelationManager;
 use AIArmada\FilamentOrders\Widgets\RecentOrdersWidget;
 use Filament\Panel;
 use Filament\Schemas\Schema;
@@ -48,24 +48,18 @@ it('builds OrderResource form, table, and infolist schemas', function (): void {
         ->toHaveKeys(['index', 'create', 'view', 'edit']);
 
     expect(OrderResource::getRelations())
-        ->toContain(ItemsRelationManager::class, PaymentsRelationManager::class, NotesRelationManager::class);
-});
-
-it('builds fulfillment queue table configuration', function (): void {
-    $page = app(FulfillmentQueue::class);
-
-    $table = $page->table(makeFilamentOrdersTable());
-
-    expect($table)->toBeInstanceOf(Table::class);
+        ->toContain(ItemsRelationManager::class, PaymentsRelationManager::class, RefundsRelationManager::class, NotesRelationManager::class);
 });
 
 it('builds relation manager schemas and tables', function (): void {
     $items = app(ItemsRelationManager::class);
     $payments = app(PaymentsRelationManager::class);
+    $refunds = app(RefundsRelationManager::class);
     $notes = app(NotesRelationManager::class);
 
     expect($items->table(makeFilamentOrdersTable()))->toBeInstanceOf(Table::class);
     expect($payments->table(makeFilamentOrdersTable()))->toBeInstanceOf(Table::class);
+    expect($refunds->table(makeFilamentOrdersTable()))->toBeInstanceOf(Table::class);
 
     expect($notes->form(Schema::make()))->toBeInstanceOf(Schema::class);
     expect($notes->table(makeFilamentOrdersTable()))->toBeInstanceOf(Table::class);

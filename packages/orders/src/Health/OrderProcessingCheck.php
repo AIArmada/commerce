@@ -15,7 +15,7 @@ use Spatie\Health\Checks\Result;
 /**
  * Health check for order processing metrics.
  */
-class OrderProcessingCheck extends CommerceHealthCheck
+final class OrderProcessingCheck extends CommerceHealthCheck
 {
     public ?string $name = 'Order Processing';
 

@@ -15,7 +15,6 @@ use AIArmada\FilamentProducts\Resources\ProductResource;
 use AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers\OptionsRelationManager;
 use AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers\VariantsRelationManager;
 use AIArmada\FilamentProducts\Widgets\CategoryDistributionChart;
-use AIArmada\FilamentProducts\Widgets\LowStockAlertWidget;
 use AIArmada\FilamentProducts\Widgets\ProductStatsWidget;
 use AIArmada\FilamentProducts\Widgets\TopSellingProductsWidget;
 use Filament\Panel;
@@ -70,7 +69,6 @@ it('builds standalone pages', function (): void {
 it('builds widgets', function (): void {
     foreach ([
         ProductStatsWidget::class,
-        LowStockAlertWidget::class,
         CategoryDistributionChart::class,
         TopSellingProductsWidget::class,
     ] as $widget) {

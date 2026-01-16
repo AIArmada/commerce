@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Models;
 
+use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Shipping\Enums\ShipmentStatus;
@@ -47,6 +48,7 @@ use Illuminate\Support\Str;
  */
 class Shipment extends Model
 {
+    use FormatsMoney;
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasUuids;
@@ -190,7 +192,22 @@ class Shipment extends Model
 
     public function getFormattedShippingCost(): string
     {
-        return number_format($this->shipping_cost / 100, 2) . ' ' . $this->currency;
+        return $this->formatMoney($this->shipping_cost);
+    }
+
+    public function getFormattedDeclaredValue(): string
+    {
+        return $this->formatMoney($this->declared_value);
+    }
+
+    public function getFormattedInsuranceCost(): string
+    {
+        return $this->formatMoney($this->insurance_cost);
+    }
+
+    public function getFormattedCodAmount(): string
+    {
+        return $this->formatMoney($this->cod_amount ?? 0);
     }
 
     public function getTotalWeightKg(): float

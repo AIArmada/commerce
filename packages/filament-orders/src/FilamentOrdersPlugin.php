@@ -7,7 +7,7 @@ namespace AIArmada\FilamentOrders;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
-class FilamentOrdersPlugin implements Plugin
+final class FilamentOrdersPlugin implements Plugin
 {
     public static function make(): static
     {
@@ -31,9 +31,6 @@ class FilamentOrdersPlugin implements Plugin
             ->resources([
                 Resources\OrderResource::class,
             ])
-            ->pages([
-                Pages\FulfillmentQueue::class,
-            ])
             ->widgets([
                 Widgets\OrderStatsWidget::class,
                 Widgets\RecentOrdersWidget::class,
@@ -41,8 +38,5 @@ class FilamentOrdersPlugin implements Plugin
             ]);
     }
 
-    public function boot(Panel $panel): void
-    {
-        // Boot logic here
-    }
+    public function boot(Panel $panel): void {}
 }

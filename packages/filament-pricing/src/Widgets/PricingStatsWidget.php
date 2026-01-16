@@ -11,7 +11,7 @@ use AIArmada\Promotions\Support\PromotionsOwnerScope;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
-class PricingStatsWidget extends BaseWidget
+final class PricingStatsWidget extends BaseWidget
 {
     protected ?string $pollingInterval = '30s';
 

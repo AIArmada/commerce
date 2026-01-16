@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Settings;
 
+use Akaunting\Money\Currency;
 use Spatie\LaravelSettings\Settings;
 
 /**
@@ -69,14 +70,13 @@ class PricingSettings extends Settings
      */
     public function getCurrencySymbol(): string
     {
-        return match ($this->defaultCurrency) {
-            'MYR' => 'RM',
-            'USD' => '$',
-            'EUR' => '€',
-            'GBP' => '£',
-            'SGD' => 'S$',
-            default => $this->defaultCurrency . ' ',
-        };
+        $currencies = Currency::getCurrencies();
+
+        if (isset($currencies[$this->defaultCurrency])) {
+            return $currencies[$this->defaultCurrency]['symbol'] ?? $this->defaultCurrency;
+        }
+
+        return $this->defaultCurrency . ' ';
     }
 
     /**

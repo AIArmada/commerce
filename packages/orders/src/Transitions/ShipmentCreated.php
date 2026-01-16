@@ -16,7 +16,7 @@ use Spatie\ModelStates\Transition;
  * This transition is triggered when a shipment is created.
  * It records the shipping details and updates the order state.
  */
-class ShipmentCreated extends Transition
+final class ShipmentCreated extends Transition
 {
     public function __construct(
         private Order $order,

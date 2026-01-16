@@ -7,7 +7,7 @@ namespace AIArmada\Orders\States;
 /**
  * Payment failed - terminal state.
  */
-class PaymentFailed extends OrderStatus
+final class PaymentFailed extends OrderStatus
 {
     public static string $name = 'payment_failed';
 

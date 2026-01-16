@@ -15,6 +15,10 @@ use AIArmada\Products\Database\Factories\ProductFactory;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
+use AIArmada\Products\Events\ProductCreated;
+use AIArmada\Products\Events\ProductDeleted;
+use AIArmada\Products\Events\ProductStatusChanged;
+use AIArmada\Products\Events\ProductUpdated;
 use AIArmada\Products\Traits\HasAttributes;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Builder;
@@ -86,6 +90,15 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
     protected static string $ownerScopeConfigKey = 'products.features.owner';
 
     protected $guarded = ['id'];
+
+    /**
+     * @var array<string, class-string>
+     */
+    protected $dispatchesEvents = [
+        'created' => ProductCreated::class,
+        'updated' => ProductUpdated::class,
+        'deleted' => ProductDeleted::class,
+    ];
 
     /**
      * @var array<string, string>
@@ -644,11 +657,50 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
             $product->assignOwner($owner);
         });
 
+        static::updating(function (Product $product): void {
+            if (! (bool) config('products.features.owner.enabled', true)) {
+                return;
+            }
+
+            $currentOwner = OwnerContext::resolve();
+
+            // No owner context = system/admin operation, allow it
+            if ($currentOwner === null) {
+                return;
+            }
+
+            $productIsGlobal = $product->owner_type === null && $product->owner_id === null;
+
+            // Block tenant from updating global products
+            if ($productIsGlobal) {
+                throw new InvalidArgumentException('Cross-tenant write blocked: cannot update global product from an owner context.');
+            }
+
+            // Block cross-tenant updates
+            if (! $product->belongsToOwner($currentOwner)) {
+                throw new InvalidArgumentException('Cross-tenant write blocked: product does not belong to the current owner context.');
+            }
+        });
+
         static::deleting(function (Product $product): void {
+            // Delete variants individually to trigger model events (for pivot cleanup)
+            $product->variants()->each(fn ($variant) => $variant->delete());
+
             $product->options()->delete();
-            $product->variants()->delete();
             $product->categories()->detach();
             $product->collections()->detach();
+        });
+
+        static::updated(function (Product $product): void {
+            if ($product->wasChanged('status')) {
+                /** @var ProductStatus|null $oldStatus */
+                $oldStatus = $product->getOriginal('status');
+                $newStatus = $product->status;
+
+                if ($oldStatus instanceof ProductStatus && $newStatus instanceof ProductStatus) {
+                    event(new ProductStatusChanged($product, $oldStatus, $newStatus));
+                }
+            }
         });
     }
 

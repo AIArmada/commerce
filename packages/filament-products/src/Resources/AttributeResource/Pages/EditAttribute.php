@@ -10,7 +10,7 @@ use AIArmada\Products\Models\AttributeGroup;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
-class EditAttribute extends EditRecord
+final class EditAttribute extends EditRecord
 {
     protected static string $resource = AttributeResource::class;
 

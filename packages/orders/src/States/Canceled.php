@@ -7,7 +7,7 @@ namespace AIArmada\Orders\States;
 /**
  * Order canceled by customer or admin - terminal state.
  */
-class Canceled extends OrderStatus
+final class Canceled extends OrderStatus
 {
     public static string $name = 'canceled';
 

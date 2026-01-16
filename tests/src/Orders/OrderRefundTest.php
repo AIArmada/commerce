@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\Models\OrderRefund;
@@ -24,14 +25,14 @@ describe('OrderRefund Model', function (): void {
                 'amount' => 5000,
                 'currency' => 'MYR',
                 'reason' => 'Customer request',
-                'status' => 'pending',
+                'status' => PaymentStatus::Pending,
             ]);
 
             expect($refund)->toBeInstanceOf(OrderRefund::class)
                 ->and($refund->gateway)->toBe('stripe')
                 ->and($refund->amount)->toBe(5000)
                 ->and($refund->reason)->toBe('Customer request')
-                ->and($refund->status)->toBe('pending');
+                ->and($refund->status)->toBe(PaymentStatus::Pending);
         });
 
         it('belongs to an order', function (): void {
@@ -49,7 +50,7 @@ describe('OrderRefund Model', function (): void {
                 'amount' => 2000,
                 'currency' => 'MYR',
                 'reason' => 'Partial refund',
-                'status' => 'completed',
+                'status' => PaymentStatus::Completed,
             ]);
 
             expect($refund->order->id)->toBe($order->id);
@@ -69,7 +70,7 @@ describe('OrderRefund Model', function (): void {
                 'gateway' => 'stripe',
                 'amount' => 10000,
                 'currency' => 'MYR',
-                'status' => 'completed',
+                'status' => PaymentStatus::Completed,
             ]);
 
             $refund = OrderRefund::create([
@@ -79,7 +80,7 @@ describe('OrderRefund Model', function (): void {
                 'amount' => 3000,
                 'currency' => 'MYR',
                 'reason' => 'Item return',
-                'status' => 'completed',
+                'status' => PaymentStatus::Completed,
             ]);
 
             expect($refund->payment->id)->toBe($payment->id);
@@ -102,7 +103,7 @@ describe('OrderRefund Model', function (): void {
                 'amount' => 2000,
                 'currency' => 'MYR',
                 'reason' => 'Test',
-                'status' => 'pending',
+                'status' => PaymentStatus::Pending,
             ]);
 
             $completed = OrderRefund::create([
@@ -111,7 +112,7 @@ describe('OrderRefund Model', function (): void {
                 'amount' => 3000,
                 'currency' => 'MYR',
                 'reason' => 'Test',
-                'status' => 'completed',
+                'status' => PaymentStatus::Completed,
             ]);
 
             $failed = OrderRefund::create([
@@ -120,7 +121,7 @@ describe('OrderRefund Model', function (): void {
                 'amount' => 1000,
                 'currency' => 'MYR',
                 'reason' => 'Test',
-                'status' => 'failed',
+                'status' => PaymentStatus::Failed,
             ]);
 
             expect($pending->isPending())->toBeTrue()
@@ -153,13 +154,13 @@ describe('OrderRefund Model', function (): void {
                 'amount' => 5000,
                 'currency' => 'MYR',
                 'reason' => 'Customer request',
-                'status' => 'pending',
+                'status' => PaymentStatus::Pending,
             ]);
 
             $result = $refund->markAsCompleted('ref_txn_123');
 
             expect($result)->toBe($refund)
-                ->and($refund->status)->toBe('completed')
+                ->and($refund->status)->toBe(PaymentStatus::Completed)
                 ->and($refund->transaction_id)->toBe('ref_txn_123')
                 ->and($refund->refunded_at)->not->toBeNull();
         });
@@ -179,13 +180,13 @@ describe('OrderRefund Model', function (): void {
                 'amount' => 5000,
                 'currency' => 'MYR',
                 'reason' => 'Customer request',
-                'status' => 'pending',
+                'status' => PaymentStatus::Pending,
             ]);
 
             $result = $refund->markAsFailed('Gateway error');
 
             expect($result)->toBe($refund)
-                ->and($refund->status)->toBe('failed')
+                ->and($refund->status)->toBe(PaymentStatus::Failed)
                 ->and($refund->notes)->toBe('Gateway error');
         });
     });
@@ -206,7 +207,7 @@ describe('OrderRefund Model', function (): void {
                 'amount' => 7500,
                 'currency' => 'MYR',
                 'reason' => 'Test',
-                'status' => 'completed',
+                'status' => PaymentStatus::Completed,
             ]);
 
             $usdRefund = OrderRefund::create([
@@ -215,7 +216,7 @@ describe('OrderRefund Model', function (): void {
                 'amount' => 2500,
                 'currency' => 'USD',
                 'reason' => 'Test',
-                'status' => 'completed',
+                'status' => PaymentStatus::Completed,
             ]);
 
             $eurRefund = OrderRefund::create([
@@ -224,7 +225,7 @@ describe('OrderRefund Model', function (): void {
                 'amount' => 1500,
                 'currency' => 'EUR',
                 'reason' => 'Test',
-                'status' => 'completed',
+                'status' => PaymentStatus::Completed,
             ]);
 
             $gbpRefund = OrderRefund::create([
@@ -233,12 +234,13 @@ describe('OrderRefund Model', function (): void {
                 'amount' => 500,
                 'currency' => 'GBP',
                 'reason' => 'Test',
-                'status' => 'completed',
+                'status' => PaymentStatus::Completed,
             ]);
 
             expect($myrRefund->getFormattedAmount())->toBe('RM75.00');
             expect($usdRefund->getFormattedAmount())->toBe('$25.00');
-            expect($eurRefund->getFormattedAmount())->toBe('€15.00');
+            // EUR uses European formatting (comma as decimal separator)
+            expect($eurRefund->getFormattedAmount())->toBe('€15,00');
             expect($gbpRefund->getFormattedAmount())->toBe('£5.00');
         });
     });

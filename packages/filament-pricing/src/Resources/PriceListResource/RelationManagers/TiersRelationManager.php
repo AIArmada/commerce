@@ -18,7 +18,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 
-class TiersRelationManager extends RelationManager
+final class TiersRelationManager extends RelationManager
 {
     protected static string $relationship = 'tiers';
 

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentPricing\Pages\PriceSimulator;
+use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
 use AIArmada\Pricing\Data\PriceResultData;
-use AIArmada\Pricing\Services\PriceCalculator;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
 use Carbon\CarbonImmutable;
@@ -17,14 +17,14 @@ it('calculates pricing for a product using the bound PriceCalculator', function 
 
     $effectiveAt = CarbonImmutable::parse('2025-01-01 12:00:00');
 
-    $calculator = new class extends PriceCalculator
-    {
-        /** @var array<string, mixed> */
-        public array $lastContext = [];
+    $capturedContext = null;
 
-        public function calculate(\AIArmada\Pricing\Contracts\Priceable $item, int $quantity = 1, array $context = []): PriceResultData
-        {
-            $this->lastContext = $context;
+    $calculator = Mockery::mock(PriceCalculatorInterface::class)
+        ->shouldIgnoreMissing();
+    $calculator->shouldReceive('calculate')
+        ->once()
+        ->andReturnUsing(function ($item, $quantity, $context) use (&$capturedContext): PriceResultData {
+            $capturedContext = $context;
 
             return new PriceResultData(
                 originalPrice: 1000,
@@ -40,10 +40,9 @@ it('calculates pricing for a product using the bound PriceCalculator', function 
                     ['step' => 'Promotion', 'value' => 900],
                 ],
             );
-        }
-    };
+        });
 
-    app()->instance(PriceCalculator::class, $calculator);
+    app()->instance(PriceCalculatorInterface::class, $calculator);
 
     $page = app(PriceSimulator::class);
 
@@ -57,8 +56,8 @@ it('calculates pricing for a product using the bound PriceCalculator', function 
 
     $page->calculate();
 
-    expect($calculator->lastContext)->toHaveKey('effective_at')
-        ->and($calculator->lastContext['effective_at'])->toBeInstanceOf(DateTimeInterface::class);
+    expect($capturedContext)->toHaveKey('effective_at')
+        ->and($capturedContext['effective_at'])->toBeInstanceOf(DateTimeInterface::class);
 
     expect($page->result)->not->toBeNull();
     expect($page->result['final_price'])->toBe(900);
@@ -85,14 +84,14 @@ it('passes customer_id in context when a customer is provided', function (): voi
         'last_login_at' => null,
     ]);
 
-    $calculator = new class extends PriceCalculator
-    {
-        /** @var array<string, mixed> */
-        public array $lastContext = [];
+    $capturedContext = null;
 
-        public function calculate(\AIArmada\Pricing\Contracts\Priceable $item, int $quantity = 1, array $context = []): PriceResultData
-        {
-            $this->lastContext = $context;
+    $calculator = Mockery::mock(PriceCalculatorInterface::class)
+        ->shouldIgnoreMissing();
+    $calculator->shouldReceive('calculate')
+        ->once()
+        ->andReturnUsing(function ($item, $quantity, $context) use (&$capturedContext): PriceResultData {
+            $capturedContext = $context;
 
             return new PriceResultData(
                 originalPrice: 1000,
@@ -105,10 +104,9 @@ it('passes customer_id in context when a customer is provided', function (): voi
                 promotionName: null,
                 breakdown: [],
             );
-        }
-    };
+        });
 
-    app()->instance(PriceCalculator::class, $calculator);
+    app()->instance(PriceCalculatorInterface::class, $calculator);
 
     $page = app(PriceSimulator::class);
 
@@ -122,8 +120,8 @@ it('passes customer_id in context when a customer is provided', function (): voi
 
     $page->calculate();
 
-    expect($calculator->lastContext)->toMatchArray(['customer_id' => $customer->getKey()])
-        ->and($calculator->lastContext)->toHaveKey('effective_at');
+    expect($capturedContext)->toMatchArray(['customer_id' => $customer->getKey()])
+        ->and($capturedContext)->toHaveKey('effective_at');
     expect($page->result)->not->toBeNull();
 });
 
@@ -162,23 +160,23 @@ it('calculates pricing for a variant', function (): void {
         'metadata' => null,
     ]);
 
-    app()->instance(PriceCalculator::class, new class extends PriceCalculator
-    {
-        public function calculate(\AIArmada\Pricing\Contracts\Priceable $item, int $quantity = 1, array $context = []): PriceResultData
-        {
-            return new PriceResultData(
-                originalPrice: 1500,
-                finalPrice: 1500,
-                discountAmount: 0,
-                discountSource: null,
-                discountPercentage: null,
-                priceListName: null,
-                tierDescription: null,
-                promotionName: null,
-                breakdown: [],
-            );
-        }
-    });
+    $calculator = Mockery::mock(PriceCalculatorInterface::class)
+        ->shouldIgnoreMissing();
+    $calculator->shouldReceive('calculate')
+        ->once()
+        ->andReturn(new PriceResultData(
+            originalPrice: 1500,
+            finalPrice: 1500,
+            discountAmount: 0,
+            discountSource: null,
+            discountPercentage: null,
+            priceListName: null,
+            tierDescription: null,
+            promotionName: null,
+            breakdown: [],
+        ));
+
+    app()->instance(PriceCalculatorInterface::class, $calculator);
 
     $page = app(PriceSimulator::class);
 

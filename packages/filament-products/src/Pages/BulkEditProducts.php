@@ -24,7 +24,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
-class BulkEditProducts extends Page implements HasForms, HasTable
+final class BulkEditProducts extends Page implements HasForms, HasTable
 {
     use InteractsWithForms;
     use InteractsWithTable;

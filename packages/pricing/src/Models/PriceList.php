@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Pricing\Models;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Pricing\Support\PricingOwnerScope;
@@ -35,6 +36,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class PriceList extends Model
 {
+    use FormatsMoney;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
@@ -196,6 +198,18 @@ class PriceList extends Model
 
     protected static function booted(): void
     {
+        static::updating(function (PriceList $priceList): void {
+            if (! PricingOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $owner = PricingOwnerScope::resolveOwner();
+
+            if ($owner !== null && ! $priceList->belongsToOwner($owner)) {
+                throw new AuthorizationException('Cannot update price lists outside the current owner scope.');
+            }
+        });
+
         static::saving(function (PriceList $priceList): void {
             if (! PricingOwnerScope::isEnabled()) {
                 return;

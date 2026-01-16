@@ -11,7 +11,7 @@ use AIArmada\Products\Models\Product;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 
-class ProductStatsWidget extends BaseWidget
+final class ProductStatsWidget extends BaseWidget
 {
     protected ?string $pollingInterval = '30s';
 

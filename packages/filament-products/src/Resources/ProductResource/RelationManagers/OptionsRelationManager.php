@@ -13,7 +13,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class OptionsRelationManager extends RelationManager
+final class OptionsRelationManager extends RelationManager
 {
     protected static string $relationship = 'options';
 

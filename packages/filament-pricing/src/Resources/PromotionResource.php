@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use UnitEnum;
 
-class PromotionResource extends Resource
+final class PromotionResource extends Resource
 {
     protected static ?string $model = Promotion::class;
 

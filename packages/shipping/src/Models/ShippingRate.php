@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Models;
 
+use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\Shipping\Data\PackageData;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -35,6 +36,7 @@ use Illuminate\Support\Carbon;
  */
 class ShippingRate extends Model
 {
+    use FormatsMoney;
     use HasUuids;
 
     public $incrementing = false;

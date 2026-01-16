@@ -18,7 +18,7 @@ use RuntimeException;
 /**
  * Service for generating product variants from option combinations.
  */
-class VariantGeneratorService
+final class VariantGeneratorService
 {
     /**
      * Generate all possible variants for a product based on its options.

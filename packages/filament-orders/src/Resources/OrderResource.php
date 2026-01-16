@@ -7,8 +7,18 @@ namespace AIArmada\FilamentOrders\Resources;
 use AIArmada\FilamentOrders\Resources\OrderResource\Pages;
 use AIArmada\FilamentOrders\Resources\OrderResource\RelationManagers;
 use AIArmada\Orders\Models\Order;
+use AIArmada\Orders\States\Canceled;
+use AIArmada\Orders\States\Completed;
+use AIArmada\Orders\States\Created;
+use AIArmada\Orders\States\Delivered;
+use AIArmada\Orders\States\Fraud;
+use AIArmada\Orders\States\OnHold;
+use AIArmada\Orders\States\PaymentFailed;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
+use AIArmada\Orders\States\Refunded;
+use AIArmada\Orders\States\Returned;
+use AIArmada\Orders\States\Shipped;
 use BackedEnum;
 use Filament\Forms;
 use Filament\Infolists\Components\TextEntry;
@@ -19,17 +29,22 @@ use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\HtmlString;
-use UnitEnum;
 
-class OrderResource extends Resource
+final class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
 
     protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-shopping-bag';
 
-    protected static string | UnitEnum | null $navigationGroup = 'Commerce';
+    public static function getNavigationGroup(): ?string
+    {
+        return (string) config('filament-orders.navigation.group', 'Sales');
+    }
 
-    protected static ?int $navigationSort = 1;
+    public static function getNavigationSort(): ?int
+    {
+        return (int) config('filament-orders.navigation.sort', 1);
+    }
 
     protected static ?string $recordTitleAttribute = 'order_number';
 
@@ -54,6 +69,37 @@ class OrderResource extends Resource
         return 'warning';
     }
 
+    /**
+     * Get all available order status options for forms/filters.
+     *
+     * @return array<string, string>
+     */
+    public static function getStatusOptions(): array
+    {
+        $states = [
+            Created::class,
+            PendingPayment::class,
+            Processing::class,
+            OnHold::class,
+            Fraud::class,
+            Shipped::class,
+            Delivered::class,
+            Completed::class,
+            Canceled::class,
+            Returned::class,
+            Refunded::class,
+            PaymentFailed::class,
+        ];
+
+        $options = [];
+        foreach ($states as $stateClass) {
+            $instance = new $stateClass(new Order);
+            $options[$stateClass::$name] = $instance->label();
+        }
+
+        return $options;
+    }
+
     public static function form(Schema $schema): Schema
     {
         return $schema
@@ -67,17 +113,7 @@ class OrderResource extends Resource
 
                         Forms\Components\Select::make('status')
                             ->label('Status')
-                            ->options([
-                                'pending_payment' => 'Pending Payment',
-                                'processing' => 'Processing',
-                                'on_hold' => 'On Hold',
-                                'shipped' => 'Shipped',
-                                'delivered' => 'Delivered',
-                                'completed' => 'Completed',
-                                'canceled' => 'Canceled',
-                                'returned' => 'Returned',
-                                'refunded' => 'Refunded',
-                            ])
+                            ->options(self::getStatusOptions())
                             ->disabled()
                             ->columnSpan(1),
 
@@ -185,19 +221,7 @@ class OrderResource extends Resource
             ->defaultSort('created_at', 'desc')
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
-                    ->options([
-                        'pending_payment' => 'Pending Payment',
-                        'processing' => 'Processing',
-                        'on_hold' => 'On Hold',
-                        'fraud' => 'Fraud',
-                        'shipped' => 'Shipped',
-                        'delivered' => 'Delivered',
-                        'completed' => 'Completed',
-                        'canceled' => 'Canceled',
-                        'returned' => 'Returned',
-                        'refunded' => 'Refunded',
-                        'payment_failed' => 'Payment Failed',
-                    ])
+                    ->options(self::getStatusOptions())
                     ->multiple(),
 
                 Tables\Filters\Filter::make('paid')
@@ -366,6 +390,7 @@ class OrderResource extends Resource
         return [
             RelationManagers\ItemsRelationManager::class,
             RelationManagers\PaymentsRelationManager::class,
+            RelationManagers\RefundsRelationManager::class,
             RelationManagers\NotesRelationManager::class,
         ];
     }

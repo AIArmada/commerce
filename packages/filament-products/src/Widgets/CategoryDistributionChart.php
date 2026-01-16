@@ -10,7 +10,7 @@ use AIArmada\Products\Models\Product;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Database\Eloquent\Builder;
 
-class CategoryDistributionChart extends ChartWidget
+final class CategoryDistributionChart extends ChartWidget
 {
     protected ?string $heading = 'Products by Category';
 

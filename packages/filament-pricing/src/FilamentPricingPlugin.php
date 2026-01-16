@@ -7,7 +7,7 @@ namespace AIArmada\FilamentPricing;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
-class FilamentPricingPlugin implements Plugin
+final class FilamentPricingPlugin implements Plugin
 {
     public static function make(): static
     {
@@ -33,15 +33,21 @@ class FilamentPricingPlugin implements Plugin
             Pages\ManagePricingSettings::class,
         ];
 
+        $resources = [
+            Resources\PriceListResource::class,
+        ];
+
+        // Only register PromotionResource if promotions package is installed
+        if (class_exists('\\AIArmada\\Promotions\\Models\\Promotion')) {
+            $resources[] = Resources\PromotionResource::class;
+        }
+
         if (class_exists('\\AIArmada\\Products\\Models\\Product') && class_exists('\\AIArmada\\Products\\Models\\Variant')) {
             $pages[] = Pages\PriceSimulator::class;
         }
 
         $panel
-            ->resources([
-                Resources\PriceListResource::class,
-                Resources\PromotionResource::class,
-            ])
+            ->resources($resources)
             ->pages($pages)
             ->widgets([
                 Widgets\PricingStatsWidget::class,

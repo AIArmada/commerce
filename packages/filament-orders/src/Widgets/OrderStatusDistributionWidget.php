@@ -12,7 +12,7 @@ use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 
-class OrderStatusDistributionWidget extends ChartWidget
+final class OrderStatusDistributionWidget extends ChartWidget
 {
     protected ?string $heading = 'Order Status Distribution';
 

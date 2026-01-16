@@ -6,8 +6,10 @@ namespace AIArmada\Orders\Models;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerWriteGuard;
+use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Orders\Enums\PaymentStatus;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -24,7 +26,7 @@ use InvalidArgumentException;
  * @property string|null $transaction_id
  * @property int $amount
  * @property string $currency
- * @property string $status
+ * @property PaymentStatus $status
  * @property string $reason
  * @property string|null $notes
  * @property array|null $metadata
@@ -34,8 +36,9 @@ use InvalidArgumentException;
  * @property-read Order $order
  * @property-read OrderPayment|null $payment
  */
-class OrderRefund extends Model
+final class OrderRefund extends Model
 {
+    use FormatsMoney;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
@@ -68,7 +71,7 @@ class OrderRefund extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
-        'status' => 'pending',
+        'status' => PaymentStatus::Pending,
         'currency' => 'MYR',
     ];
 
@@ -115,22 +118,22 @@ class OrderRefund extends Model
 
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return $this->status === PaymentStatus::Pending;
     }
 
     public function isCompleted(): bool
     {
-        return $this->status === 'completed';
+        return $this->status === PaymentStatus::Completed;
     }
 
     public function isFailed(): bool
     {
-        return $this->status === 'failed';
+        return $this->status === PaymentStatus::Failed;
     }
 
     public function markAsCompleted(?string $transactionId = null): self
     {
-        $this->status = 'completed';
+        $this->status = PaymentStatus::Completed;
         $this->refunded_at = now();
 
         if ($transactionId !== null) {
@@ -144,7 +147,7 @@ class OrderRefund extends Model
 
     public function markAsFailed(string $reason): self
     {
-        $this->status = 'failed';
+        $this->status = PaymentStatus::Failed;
         $this->notes = $reason;
         $this->save();
 
@@ -157,21 +160,14 @@ class OrderRefund extends Model
 
     public function getFormattedAmount(): string
     {
-        $symbol = match ($this->currency) {
-            'MYR' => 'RM',
-            'USD' => '$',
-            'EUR' => '€',
-            'GBP' => '£',
-            default => $this->currency . ' ',
-        };
-
-        return $symbol . number_format($this->amount / 100, 2);
+        return $this->formatMoney($this->amount);
     }
 
     protected function casts(): array
     {
         return [
             'amount' => 'integer',
+            'status' => PaymentStatus::class,
             'metadata' => 'array',
             'refunded_at' => 'datetime',
         ];

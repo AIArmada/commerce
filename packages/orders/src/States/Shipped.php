@@ -7,7 +7,7 @@ namespace AIArmada\Orders\States;
 /**
  * Order has been shipped and is in transit.
  */
-class Shipped extends OrderStatus
+final class Shipped extends OrderStatus
 {
     public static string $name = 'shipped';
 

@@ -15,8 +15,19 @@ class ItemsRelationManager extends RelationManager
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    private function resolveCurrency(): string
+    {
+        if (! isset($this->ownerRecord)) {
+            return (string) config('shipping.defaults.currency', 'MYR');
+        }
+
+        return $this->getOwnerRecord()->currency ?? (string) config('shipping.defaults.currency', 'MYR');
+    }
+
     public function table(Table $table): Table
     {
+        $weightUnit = (string) config('shipping.defaults.weight_unit', 'g');
+
         return $table
             ->columns([
                 Tables\Columns\TextColumn::make('sku')
@@ -29,10 +40,14 @@ class ItemsRelationManager extends RelationManager
                     ->numeric(),
 
                 Tables\Columns\TextColumn::make('weight')
-                    ->formatStateUsing(fn ($state) => number_format($state / 1000, 2) . ' kg'),
+                    ->formatStateUsing(fn ($state): string => $state === null
+                        ? '-'
+                        : ($weightUnit === 'kg'
+                            ? number_format($state / 1000, 2) . ' kg'
+                            : number_format($state) . ' g')),
 
                 Tables\Columns\TextColumn::make('declared_value')
-                    ->money('MYR', divideBy: 100),
+                    ->money(fn (): string => $this->resolveCurrency(), divideBy: 100),
             ])
             ->filters([
                 //

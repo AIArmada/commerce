@@ -23,7 +23,7 @@ use League\Csv\Reader;
 use League\Csv\Writer;
 use UnitEnum;
 
-class ImportExportProducts extends Page
+final class ImportExportProducts extends Page
 {
     public ?array $importData = [];
 

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Services;
 
+use AIArmada\Orders\Contracts\OrderServiceInterface;
 use AIArmada\Orders\Events\OrderCreated;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
@@ -15,7 +16,7 @@ use RuntimeException;
 /**
  * Order service for order lifecycle management.
  */
-class OrderService
+final class OrderService implements OrderServiceInterface
 {
     /**
      * Create a new order from cart data.

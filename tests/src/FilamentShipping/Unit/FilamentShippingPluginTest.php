@@ -3,6 +3,7 @@
 declare(strict_types=1);
 
 use AIArmada\FilamentShipping\FilamentShippingPlugin;
+use AIArmada\FilamentShipping\Pages\FulfillmentQueue;
 use AIArmada\FilamentShipping\Pages\ManifestPage;
 use AIArmada\FilamentShipping\Pages\ShippingDashboard;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource;
@@ -114,6 +115,7 @@ it('registers resources, pages, and widgets by default', function (): void {
         ->with([
             ShippingDashboard::class,
             ManifestPage::class,
+            FulfillmentQueue::class,
         ])
         ->andReturnSelf();
 
@@ -137,7 +139,8 @@ it('registers nothing when all features are disabled', function (): void {
         ->returnAuthorizationResource(false)
         ->dashboardWidgets(false)
         ->shippingDashboard(false)
-        ->manifestPage(false);
+        ->manifestPage(false)
+        ->fulfillmentQueue(false);
 
     $panel = Mockery::mock(Panel::class);
     $panel->shouldReceive('resources')->once()->with([])->andReturnSelf();

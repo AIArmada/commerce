@@ -7,7 +7,7 @@ namespace AIArmada\Orders\States;
 /**
  * Awaiting payment confirmation from customer.
  */
-class PendingPayment extends OrderStatus
+final class PendingPayment extends OrderStatus
 {
     public static string $name = 'pending_payment';
 

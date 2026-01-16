@@ -9,6 +9,7 @@ use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\SupportServiceProvider as CommerceSupportServiceProvider;
 use AIArmada\Products\ProductsServiceProvider;
+use DateInterval;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
@@ -106,6 +107,24 @@ abstract class ProductsTestCase extends Orchestra
         $app['config']->set('products.features.owner.enabled', true);
         $app['config']->set('products.features.owner.include_global', false);
         $app['config']->set('products.features.owner.auto_assign_on_create', true);
+
+        // Spatie Permission config (required by commerce-support via team resolver)
+        $app['config']->set('permission.models.permission', \Spatie\Permission\Models\Permission::class);
+        $app['config']->set('permission.models.role', \Spatie\Permission\Models\Role::class);
+        $app['config']->set('permission.table_names.roles', 'roles');
+        $app['config']->set('permission.table_names.permissions', 'permissions');
+        $app['config']->set('permission.table_names.model_has_permissions', 'model_has_permissions');
+        $app['config']->set('permission.table_names.model_has_roles', 'model_has_roles');
+        $app['config']->set('permission.table_names.role_has_permissions', 'role_has_permissions');
+        $app['config']->set('permission.column_names.role_pivot_key', 'role_id');
+        $app['config']->set('permission.column_names.permission_pivot_key', 'permission_id');
+        $app['config']->set('permission.column_names.model_morph_key', 'model_id');
+        $app['config']->set('permission.column_names.team_foreign_key', 'team_id');
+        $app['config']->set('permission.teams', false);
+        $app['config']->set('permission.register_permission_check_method', true);
+        $app['config']->set('permission.cache.expiration_time', DateInterval::createFromDateString('24 hours'));
+        $app['config']->set('permission.cache.key', 'spatie.permission.cache');
+        $app['config']->set('permission.cache.store', 'default');
     }
 
     protected function getPackageProviders($app): array

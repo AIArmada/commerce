@@ -11,7 +11,7 @@ use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
 use Illuminate\Database\Eloquent\Builder;
 
-class TopSellingProductsWidget extends BaseWidget
+final class TopSellingProductsWidget extends BaseWidget
 {
     protected static ?int $sort = 3;
 

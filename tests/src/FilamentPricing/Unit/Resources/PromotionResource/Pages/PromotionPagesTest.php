@@ -11,6 +11,12 @@ use AIArmada\FilamentPricing\Resources\PromotionResource\Pages\ViewPromotion;
 
 uses(TestCase::class);
 
+beforeEach(function (): void {
+    if (! class_exists('AIArmada\Promotions\Models\Promotion')) {
+        $this->markTestSkipped('Promotions package is not installed.');
+    }
+});
+
 it('wires promotion pages to the correct resource', function (): void {
     expect(CreatePromotion::getResource())->toBe(PromotionResource::class);
     expect(ListPromotions::getResource())->toBe(PromotionResource::class);

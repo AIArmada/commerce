@@ -7,7 +7,7 @@ namespace AIArmada\Orders\States;
 /**
  * Fraud detected - terminal state requiring investigation.
  */
-class Fraud extends OrderStatus
+final class Fraud extends OrderStatus
 {
     public static string $name = 'fraud';
 

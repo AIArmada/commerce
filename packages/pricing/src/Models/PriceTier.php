@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Models;
 
+use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Pricing\Support\PricingOwnerScope;
@@ -33,6 +34,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class PriceTier extends Model
 {
+    use FormatsMoney;
     use HasOwner;
     use HasOwnerScopeConfig;
     use HasUuids;
@@ -77,6 +79,18 @@ class PriceTier extends Model
 
     protected static function booted(): void
     {
+        static::updating(function (self $tier): void {
+            if (! PricingOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $owner = PricingOwnerScope::resolveOwner();
+
+            if ($owner !== null && ! $tier->belongsToOwner($owner)) {
+                throw new AuthorizationException('Cannot update price tiers outside the current owner scope.');
+            }
+        });
+
         static::saving(function (self $tier): void {
             if (! PricingOwnerScope::isEnabled()) {
                 return;
@@ -217,7 +231,7 @@ class PriceTier extends Model
 
         return match ($this->discount_type) {
             'percentage' => "{$this->discount_value}% off",
-            'fixed' => 'RM ' . number_format($this->discount_value / 100, 2) . ' off',
+            'fixed' => $this->formatMoney($this->discount_value, $this->currency) . ' off',
             default => null,
         };
     }

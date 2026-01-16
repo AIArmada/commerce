@@ -10,7 +10,7 @@ use AIArmada\Products\Models\Attribute;
 use AIArmada\Products\Models\AttributeGroup;
 use Filament\Resources\Pages\CreateRecord;
 
-class CreateAttributeSet extends CreateRecord
+final class CreateAttributeSet extends CreateRecord
 {
     protected static string $resource = AttributeSetResource::class;
 

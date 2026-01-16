@@ -11,7 +11,7 @@ use AIArmada\Products\Models\Product;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
-class EditCollection extends EditRecord
+final class EditCollection extends EditRecord
 {
     protected static string $resource = CollectionResource::class;
 

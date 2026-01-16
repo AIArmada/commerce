@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use UnitEnum;
 
-class AttributeGroupResource extends Resource
+final class AttributeGroupResource extends Resource
 {
     protected static ?string $model = AttributeGroup::class;
 
@@ -90,11 +90,11 @@ class AttributeGroupResource extends Resource
 
                 Section::make(__('filament-products::resources.attribute_groups.sections.attributes'))
                     ->schema([
-                        Forms\Components\Select::make('attributes')
+                        Forms\Components\Select::make('groupAttributes')
                             ->label(__('filament-products::resources.attribute_groups.fields.attributes'))
                             ->multiple()
                             ->relationship(
-                                'attributes',
+                                'groupAttributes',
                                 'name',
                                 modifyQueryUsing: function (Builder $query): Builder {
                                     /** @var Builder<\AIArmada\Products\Models\Attribute> $query */
@@ -122,9 +122,9 @@ class AttributeGroupResource extends Resource
                     ->searchable()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('attributes_count')
+                Tables\Columns\TextColumn::make('group_attributes_count')
                     ->label(__('filament-products::resources.attribute_groups.fields.attributes_count'))
-                    ->counts('attributes')
+                    ->counts('groupAttributes')
                     ->badge()
                     ->alignCenter(),
 
