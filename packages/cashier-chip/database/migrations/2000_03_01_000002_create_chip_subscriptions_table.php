@@ -37,6 +37,10 @@ return new class extends Migration
             $table->timestamp('trial_ends_at')->nullable();
             $table->timestamp('next_billing_at')->nullable();
             $table->timestamp('ends_at')->nullable();
+            $table->string('coupon_id')->nullable();
+            $table->integer('coupon_discount')->nullable();
+            $table->string('coupon_duration')->nullable();
+            $table->timestamp('coupon_applied_at')->nullable();
             $table->timestamps();
 
             $table->index(['user_id', 'chip_status']);
@@ -46,6 +50,7 @@ return new class extends Migration
             $table->index('trial_ends_at');
             $table->index('next_billing_at');
             $table->index('ends_at');
+            $table->index('coupon_id');
             $table->index(['user_id', 'type'], $tableName . '_user_type_idx');
         });
     }

@@ -10,13 +10,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('cart_recovery_outcomes', function (Blueprint $table): void {
-            $table->nullableUuidMorphs('owner');
-        });
+        if (! Schema::hasColumn('cart_recovery_outcomes', 'owner_type')) {
+            Schema::table('cart_recovery_outcomes', function (Blueprint $table): void {
+                $table->nullableUuidMorphs('owner');
+            });
+        }
 
-        Schema::table('cart_popup_interventions', function (Blueprint $table): void {
-            $table->nullableUuidMorphs('owner');
-        });
+        if (! Schema::hasColumn('cart_popup_interventions', 'owner_type')) {
+            Schema::table('cart_popup_interventions', function (Blueprint $table): void {
+                $table->nullableUuidMorphs('owner');
+            });
+        }
     }
 
     public function down(): void

@@ -58,6 +58,8 @@ return new class extends Migration
             $table->timestamp('ends_at')->nullable();
             $table->timestamp('last_run_at')->nullable();
 
+            $table->nullableUuidMorphs('owner');
+
             $table->timestamps();
 
             $table->index(['status', 'trigger_type']);

@@ -29,11 +29,13 @@ return new class extends Migration
             $jsonType = config('inventory.database.json_column_type', 'json');
             $table->addColumn($jsonType, 'breakdown')->nullable();
             $table->addColumn($jsonType, 'metadata')->nullable();
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
             $table->index(['snapshot_date', 'location_id']);
             $table->index('costing_method');
             $table->unique(['location_id', 'costing_method', 'snapshot_date']);
+            $table->index(['owner_type', 'owner_id'], 'inventory_valuation_snapshots_owner_idx');
         });
     }
 

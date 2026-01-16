@@ -27,6 +27,7 @@ return new class extends Migration
             $table->decimal('unit_price', 12, 2);
             $table->string('currency', 3)->default('MYR')->index();
             $table->{$jsonType}('metadata')->nullable();
+            $table->nullableMorphs('owner');
             $table->timestamps();
 
             $table->index(['order_id', 'name']);

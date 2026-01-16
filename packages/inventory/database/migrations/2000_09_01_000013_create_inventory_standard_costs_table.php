@@ -15,7 +15,7 @@ return new class extends Migration
 
         $tableName = $tables['standard_costs'] ?? $prefix . 'standard_costs';
 
-        Schema::create($tableName, function (Blueprint $table): void {
+        Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
             $table->uuidMorphs('inventoryable');
             $table->integer('standard_cost_minor');
@@ -26,11 +26,13 @@ return new class extends Migration
             $table->text('notes')->nullable();
             $jsonType = config('inventory.database.json_column_type', 'json');
             $table->addColumn($jsonType, 'metadata')->nullable();
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
             $table->index(['inventoryable_type', 'inventoryable_id', 'effective_from']);
             $table->index('effective_from');
             $table->index('effective_to');
+            $table->index(['owner_type', 'owner_id'], $tableName . '_owner_idx');
         });
     }
 

@@ -19,6 +19,10 @@ return new class extends Migration
         $webhookLogsTable = $tables['webhook_logs'] ?? $prefix . 'webhook_logs';
 
         foreach ([$orderItemsTable, $orderParcelsTable, $trackingEventsTable, $webhookLogsTable] as $tableName) {
+            if (Schema::hasColumn($tableName, 'owner_type')) {
+                continue;
+            }
+
             Schema::table($tableName, function (Blueprint $table): void {
                 $table->nullableMorphs('owner');
             });

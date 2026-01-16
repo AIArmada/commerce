@@ -10,7 +10,13 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table(config('cart.database.conditions_table', 'conditions'), function (Blueprint $table): void {
+        $tableName = config('cart.database.conditions_table', 'conditions');
+
+        if (Schema::hasColumn($tableName, 'owner_type')) {
+            return;
+        }
+
+        Schema::table($tableName, function (Blueprint $table): void {
             $table->nullableUuidMorphs('owner');
         });
     }

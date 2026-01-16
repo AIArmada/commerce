@@ -29,6 +29,9 @@ return new class extends Migration
             $table->timestamp('created_at');
             $table->timestamp('updated_at');
 
+            // Owner scoping
+            $table->nullableMorphs('owner');
+
             // Useful indexes for processing incoming webhook deliveries
             $table->index('email');
             $table->index('created_at');

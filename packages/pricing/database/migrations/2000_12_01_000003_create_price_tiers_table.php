@@ -29,6 +29,8 @@ return new class extends Migration
             $table->string('discount_type')->nullable(); // 'percentage', 'fixed'
             $table->unsignedBigInteger('discount_value')->nullable();
 
+            $table->nullableMorphs('owner');
+
             $table->timestamps();
 
             // Indexes

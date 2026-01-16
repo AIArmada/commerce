@@ -27,6 +27,8 @@ return new class extends Migration
             $table->string('campaign', 64)->nullable()->index();
             $table->string('term', 64)->nullable();
             $table->string('content', 64)->nullable();
+            $table->string('ip_address', 45)->nullable()->index();
+            $table->string('user_agent', 512)->nullable();
             $table->{$jsonType}('metadata')->nullable();
             $table->timestamp('touched_at')->nullable()->index();
             $table->timestamps();

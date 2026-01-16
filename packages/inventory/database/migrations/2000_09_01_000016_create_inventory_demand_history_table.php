@@ -15,7 +15,7 @@ return new class extends Migration
 
         $tableName = $tables['demand_history'] ?? $prefix . 'demand_history';
 
-        Schema::create($tableName, function (Blueprint $table): void {
+        Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
             $table->uuidMorphs('inventoryable');
             $table->foreignUuid('location_id')->nullable();
@@ -27,10 +27,12 @@ return new class extends Migration
             $table->integer('order_count')->default(0);
             $jsonType = config('inventory.database.json_column_type', 'json');
             $table->addColumn($jsonType, 'metadata')->nullable();
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
             $table->unique(['inventoryable_type', 'inventoryable_id', 'location_id', 'period_date', 'period_type'], 'demand_unique');
             $table->index(['period_date', 'period_type']);
+            $table->index(['owner_type', 'owner_id'], $tableName . '_owner_idx');
         });
     }
 

@@ -30,6 +30,7 @@ return new class extends Migration
 
             $table->{$jsonType}('metadata')->nullable();
             $table->timestamp('paid_at')->nullable();
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
             // Indexes

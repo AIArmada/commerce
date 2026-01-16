@@ -37,6 +37,7 @@ return new class extends Migration
             $table->string('email')->nullable();
 
             $table->{$jsonType}('metadata')->nullable();
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
             // Indexes

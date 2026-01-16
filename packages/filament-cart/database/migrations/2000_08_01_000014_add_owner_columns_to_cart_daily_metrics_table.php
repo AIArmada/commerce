@@ -12,6 +12,10 @@ return new class extends Migration
     {
         $prefix = config('filament-cart.database.table_prefix', 'cart_');
 
+        if (Schema::hasColumn($prefix . 'daily_metrics', 'owner_type')) {
+            return;
+        }
+
         Schema::table($prefix . 'daily_metrics', function (Blueprint $table): void {
             $table->nullableUuidMorphs('owner');
         });

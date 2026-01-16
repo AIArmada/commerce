@@ -56,6 +56,7 @@ return new class extends Migration
             $table->string('electronic_signature_pic_url', 500)->nullable();
             $jsonType = (string) commerce_json_column_type('jnt', 'json');
             $table->{$jsonType}('payload')->nullable();
+            $table->nullableMorphs('owner');
             $table->timestamps();
 
             $table->index(['tracking_number', 'scan_time'], 'jnt_tracking_events_timeline_idx');

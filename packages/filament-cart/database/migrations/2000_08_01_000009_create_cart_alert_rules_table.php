@@ -42,6 +42,7 @@ return new class extends Migration
             $table->unsignedInteger('priority')->default(0);
 
             $table->boolean('is_active')->default(true);
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
             $table->index(['event_type', 'is_active']);

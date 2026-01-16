@@ -13,7 +13,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table(config('inventory.table_names.locations', 'inventory_locations'), function (Blueprint $table): void {
+        $tableName = config('inventory.table_names.locations', 'inventory_locations');
+
+        if (Schema::hasColumn($tableName, 'owner_type')) {
+            return;
+        }
+
+        Schema::table($tableName, function (Blueprint $table): void {
             $table->nullableUuidMorphs('owner');
 
             $table->index(['owner_type', 'owner_id'], 'inventory_locations_owner_idx');

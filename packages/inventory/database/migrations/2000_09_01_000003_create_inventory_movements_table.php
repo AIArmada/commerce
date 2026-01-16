@@ -18,6 +18,7 @@ return new class extends Migration
             $table->uuidMorphs('inventoryable');
             $table->foreignUuid('from_location_id')->nullable();
             $table->foreignUuid('to_location_id')->nullable();
+            $table->foreignUuid('batch_id')->nullable();
             $table->integer('quantity');
             $table->string('type');
             $table->string('reason')->nullable();
@@ -25,6 +26,7 @@ return new class extends Migration
             $table->foreignUuid('user_id')->nullable();
             $table->text('note')->nullable();
             $table->timestamp('occurred_at')->useCurrent();
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
             $table->index('type');
@@ -33,9 +35,11 @@ return new class extends Migration
             $table->index('occurred_at');
             $table->index('from_location_id');
             $table->index('to_location_id');
+            $table->index('batch_id');
             $table->index('user_id');
             $table->index(['inventoryable_type', 'inventoryable_id', 'type'], 'inventory_movements_inventoryable_type_idx');
             $table->index(['inventoryable_type', 'inventoryable_id', 'occurred_at'], 'inventory_movements_inventoryable_history_idx');
+            $table->index(['owner_type', 'owner_id'], 'inventory_movements_owner_idx');
         });
     }
 

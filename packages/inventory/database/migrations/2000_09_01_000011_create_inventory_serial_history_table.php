@@ -40,6 +40,8 @@ return new class extends Migration
             $jsonType = config('inventory.database.json_column_type', config('inventory.json_column_type', 'json'));
             $table->{$jsonType}('metadata')->nullable();
 
+            $table->nullableUuidMorphs('owner');
+
             $table->timestamp('occurred_at')->useCurrent();
             $table->timestamps();
 
@@ -49,6 +51,7 @@ return new class extends Migration
             $table->index('occurred_at');
             $table->index('reference');
             $table->index(['serial_id', 'occurred_at'], 'inventory_serial_history_timeline_idx');
+            $table->index(['owner_type', 'owner_id'], 'inventory_serial_history_owner_idx');
         });
     }
 

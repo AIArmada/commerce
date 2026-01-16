@@ -36,6 +36,9 @@ return new class extends Migration
             $table->timestamp('created_at'); // API: created_at
             $table->timestamp('updated_at'); // API: updated_at
 
+            // Owner scoping
+            $table->nullableMorphs('owner');
+
             // Indexes for optimal query performance
             $table->index(['state', 'created_at']);
             $table->index('bank_account_id');

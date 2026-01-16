@@ -16,6 +16,10 @@ return new class extends Migration
         $table = config('cart.database.table', 'carts');
         $jsonType = (string) commerce_json_column_type('cart', 'json');
 
+        if (Schema::hasColumn($table, 'is_collaborative')) {
+            return;
+        }
+
         Schema::table($table, function (Blueprint $table) use ($jsonType): void {
             $table->boolean('is_collaborative')->default(false)->after('metadata');
             $table->foreignUuid('owner_user_id')->nullable()->after('is_collaborative');

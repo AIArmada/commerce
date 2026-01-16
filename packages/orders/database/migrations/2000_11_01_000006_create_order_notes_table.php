@@ -18,6 +18,8 @@ return new class extends Migration
             $table->text('content');
             $table->boolean('is_customer_visible')->default(false);
 
+            $table->nullableUuidMorphs('owner');
+
             $table->timestamps();
 
             // Indexes

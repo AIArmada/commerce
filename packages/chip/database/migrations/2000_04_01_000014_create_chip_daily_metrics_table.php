@@ -35,6 +35,9 @@ return new class extends Migration
             $jsonType = (string) commerce_json_column_type('chip', 'json');
             $table->{$jsonType}('failure_breakdown')->nullable();
 
+            // Owner scoping
+            $table->nullableMorphs('owner');
+
             $table->timestamps();
 
             $table->unique(['date', 'payment_method']);

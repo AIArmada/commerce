@@ -17,6 +17,10 @@ return new class extends Migration
     {
         $tableName = config('cart.database.table', 'carts');
 
+        if (Schema::hasColumn($tableName, 'owner_type')) {
+            return;
+        }
+
         Schema::table($tableName, function (Blueprint $table): void {
             $table->string('owner_type')->default('')->after('identifier');
             $table->string('owner_id')->default('')->after('owner_type');

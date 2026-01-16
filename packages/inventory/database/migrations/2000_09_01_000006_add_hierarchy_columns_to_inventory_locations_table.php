@@ -13,7 +13,13 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::table(config('inventory.table_names.locations', 'inventory_locations'), function (Blueprint $table): void {
+        $tableName = config('inventory.table_names.locations', 'inventory_locations');
+
+        if (Schema::hasColumn($tableName, 'parent_id')) {
+            return;
+        }
+
+        Schema::table($tableName, function (Blueprint $table): void {
             // Hierarchy columns
             $table->foreignUuid('parent_id')->nullable()->after('priority');
             $table->string('path')->nullable()->after('parent_id');

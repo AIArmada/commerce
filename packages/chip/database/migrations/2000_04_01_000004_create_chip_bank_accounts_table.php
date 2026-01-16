@@ -41,6 +41,9 @@ return new class extends Migration
             // Rejection details
             $table->text('rejection_reason')->nullable(); // Why account was rejected
 
+            // Owner scoping
+            $table->nullableMorphs('owner');
+
             // Indexes for optimal query performance
             $table->index(['bank_code', 'account_number']);
             $table->index(['status', 'created_at']);

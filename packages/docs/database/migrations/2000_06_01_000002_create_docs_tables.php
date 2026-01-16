@@ -21,8 +21,10 @@ return new class extends Migration
         Schema::create($templatesTable, function (Blueprint $table) use ($templatesTable): void {
             $jsonType = (string) commerce_json_column_type('docs', 'json');
             $table->uuid('id')->primary();
+            $table->string('owner_type')->nullable()->index();
+            $table->uuid('owner_id')->nullable()->index();
             $table->string('name');
-            $table->string('slug')->unique($templatesTable . '_slug_unique');
+            $table->string('slug');
             $table->text('description')->nullable();
             $table->string('view_name');
             $table->string('doc_type')->default('invoice');
@@ -32,11 +34,14 @@ return new class extends Migration
 
             $table->index('is_default', $templatesTable . '_is_default_index');
             $table->index('doc_type', $templatesTable . '_doc_type_index');
+            $table->unique(['owner_type', 'owner_id', 'slug'], $templatesTable . '_owner_slug_unique');
         });
 
         Schema::create($docsTable, function (Blueprint $table) use ($docsTable): void {
             $jsonType = (string) commerce_json_column_type('docs', 'json');
             $table->uuid('id')->primary();
+            $table->string('owner_type')->nullable()->index();
+            $table->uuid('owner_id')->nullable()->index();
             $table->string('doc_number')->unique($docsTable . '_doc_number_unique');
             $table->string('doc_type')->default('invoice');
             $table->foreignUuid('doc_template_id')->nullable();

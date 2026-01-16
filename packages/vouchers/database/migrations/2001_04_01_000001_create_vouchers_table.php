@@ -26,6 +26,10 @@ return new class extends Migration
             // Discount configuration
             $table->string('type'); // percentage, fixed, free_shipping
             $table->bigInteger('value'); // For percentage: store as basis points (e.g., 10.50% = 1050). For fixed: store as cents
+            $jsonType = (string) commerce_json_column_type('vouchers', 'json');
+            $table->{$jsonType}('value_config')->nullable();
+            $table->string('credit_destination', 50)->nullable();
+            $table->integer('credit_delay_hours')->default(0);
             $table->string('currency', 3)->default('MYR');
 
             // Constraints (in cents)
@@ -44,9 +48,12 @@ return new class extends Migration
             $table->string('status')->default('active'); // active, paused, expired, depleted
 
             // Metadata
-            $jsonType = (string) commerce_json_column_type('vouchers', 'json');
             $table->{$jsonType}('target_definition')->nullable();
             $table->{$jsonType}('metadata')->nullable();
+            $table->{$jsonType}('stacking_rules')->nullable();
+            $table->{$jsonType}('exclusion_groups')->nullable();
+            $table->integer('stacking_priority')->default(100);
+            $table->foreignUuid('affiliate_id')->nullable();
 
             $table->timestamps();
 
@@ -59,6 +66,8 @@ return new class extends Migration
             $table->index('expires_at'); // For expiration checks
             $table->index(['status', 'starts_at', 'expires_at'], 'vouchers_active_lookup_idx');
             $table->index('currency');
+            $table->index('stacking_priority');
+            $table->index('affiliate_id');
         });
 
         // Optional: create GIN indexes when using jsonb on PostgreSQL
@@ -70,6 +79,8 @@ return new class extends Migration
         ) {
             DB::statement("CREATE INDEX IF NOT EXISTS vouchers_metadata_gin_index ON \"{$tableName}\" USING GIN (\"metadata\")");
             DB::statement("CREATE INDEX IF NOT EXISTS vouchers_target_definition_gin_index ON \"{$tableName}\" USING GIN (\"target_definition\")");
+            DB::statement("CREATE INDEX IF NOT EXISTS vouchers_stacking_rules_gin_index ON \"{$tableName}\" USING GIN (\"stacking_rules\")");
+            DB::statement("CREATE INDEX IF NOT EXISTS vouchers_exclusion_groups_gin_index ON \"{$tableName}\" USING GIN (\"exclusion_groups\")");
         }
     }
 

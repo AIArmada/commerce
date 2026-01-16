@@ -45,6 +45,8 @@ return new class extends Migration
             $table->integer('times_clicked')->default(0);
             $table->integer('times_converted')->default(0);
 
+            $table->nullableUuidMorphs('owner');
+
             $table->timestamps();
 
             $table->index(['type', 'status']);

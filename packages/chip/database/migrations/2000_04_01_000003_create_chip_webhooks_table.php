@@ -40,6 +40,19 @@ return new class extends Migration
             $table->text('processing_error')->nullable();
             $table->integer('processing_attempts')->default(0);
 
+            // Enhanced webhook fields for retry and monitoring
+            $table->string('status')->default('pending');
+            $table->string('idempotency_key')->nullable()->unique();
+            $table->integer('retry_count')->default(0);
+            $table->timestamp('last_retry_at')->nullable();
+            $table->text('last_error')->nullable();
+            $table->decimal('processing_time_ms', 10, 3)->nullable();
+            $table->string('ip_address')->nullable();
+            $table->string('event')->nullable();
+
+            // Owner scoping
+            $table->nullableMorphs('owner');
+
             // Laravel timestamps for internal use
             $table->timestamps();
 
@@ -48,6 +61,8 @@ return new class extends Migration
             $table->index(['verified', 'processed']);
             $table->index('created_on');
             $table->index('callback');
+            $table->index('status');
+            $table->index(['status', 'retry_count']);
         });
     }
 

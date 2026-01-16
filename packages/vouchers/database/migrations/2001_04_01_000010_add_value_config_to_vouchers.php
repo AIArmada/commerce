@@ -16,6 +16,10 @@ return new class extends Migration
         $tableName = $tables['vouchers'] ?? $prefix . 'vouchers';
         $jsonColumnType = config('vouchers.database.json_column_type', 'json');
 
+        if (Schema::hasColumn($tableName, 'value_config')) {
+            return;
+        }
+
         Schema::table($tableName, function (Blueprint $table) use ($jsonColumnType): void {
             // Compound voucher configuration (for BOGO, Tiered, Bundle, Cashback)
             $table->{$jsonColumnType}('value_config')->nullable()->after('value');

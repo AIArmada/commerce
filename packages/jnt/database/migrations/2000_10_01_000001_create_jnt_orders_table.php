@@ -45,6 +45,8 @@ return new class extends Migration
             $table->timestamp('last_synced_at')->nullable();
             $table->timestamp('last_tracked_at')->nullable();
             $table->timestamp('delivered_at')->nullable()->index();
+            $table->timestamp('cancelled_at')->nullable()->index();
+            $table->string('cancellation_reason', 255)->nullable();
             $table->string('last_status_code', 32)->nullable()->index();
             $table->string('last_status', 128)->nullable();
             $table->boolean('has_problem')->default(false)->index();
@@ -57,6 +59,7 @@ return new class extends Migration
             $table->{$jsonType}('request_payload')->nullable();
             $table->{$jsonType}('response_payload')->nullable();
             $table->{$jsonType}('metadata')->nullable();
+            $table->nullableMorphs('owner');
             $table->timestamps();
 
             $table->index(['status', 'customer_code'], 'jnt_orders_customer_status_idx');

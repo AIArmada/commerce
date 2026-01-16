@@ -16,13 +16,17 @@ return new class extends Migration
         $alertRules = $tables['alert_rules'] ?? $prefix . 'alert_rules';
         $alertLogs = $tables['alert_logs'] ?? $prefix . 'alert_logs';
 
-        Schema::table($alertRules, function (Blueprint $table): void {
-            $table->nullableUuidMorphs('owner');
-        });
+        if (! Schema::hasColumn($alertRules, 'owner_type')) {
+            Schema::table($alertRules, function (Blueprint $table): void {
+                $table->nullableUuidMorphs('owner');
+            });
+        }
 
-        Schema::table($alertLogs, function (Blueprint $table): void {
-            $table->nullableUuidMorphs('owner');
-        });
+        if (! Schema::hasColumn($alertLogs, 'owner_type')) {
+            Schema::table($alertLogs, function (Blueprint $table): void {
+                $table->nullableUuidMorphs('owner');
+            });
+        }
     }
 
     public function down(): void

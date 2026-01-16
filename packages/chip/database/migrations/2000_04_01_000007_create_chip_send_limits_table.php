@@ -36,6 +36,9 @@ return new class extends Migration
             $table->timestamp('created_at');
             $table->timestamp('updated_at');
 
+            // Owner scoping
+            $table->nullableMorphs('owner');
+
             // Indexes for efficient querying by status and currency buckets
             $table->index(['status', 'transaction_type']);
             $table->index(['currency', 'from_settlement']);

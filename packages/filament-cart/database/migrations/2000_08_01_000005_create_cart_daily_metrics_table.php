@@ -46,6 +46,8 @@ return new class extends Migration
             $table->unsignedInteger('collaborative_carts')->default(0);
             $table->unsignedInteger('total_collaborators')->default(0);
 
+            $table->nullableUuidMorphs('owner');
+
             $table->timestamps();
 
             $table->unique(['date', 'segment']);

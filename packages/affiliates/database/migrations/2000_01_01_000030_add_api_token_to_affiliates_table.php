@@ -12,6 +12,10 @@ return new class extends Migration
     {
         $tableName = config('affiliates.database.tables.affiliates', 'affiliates');
 
+        if (Schema::hasColumn($tableName, 'api_token')) {
+            return;
+        }
+
         Schema::table($tableName, function (Blueprint $table): void {
             $table->string('api_token', 64)->nullable()->unique();
         });

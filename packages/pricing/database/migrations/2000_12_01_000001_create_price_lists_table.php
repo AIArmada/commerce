@@ -28,6 +28,8 @@ return new class extends Migration
             $table->timestamp('starts_at')->nullable();
             $table->timestamp('ends_at')->nullable();
 
+            $table->nullableMorphs('owner');
+
             $table->timestamps();
 
             // Indexes

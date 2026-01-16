@@ -36,6 +36,8 @@ return new class extends Migration
             $table->{$jsonType}('options')->nullable();
             $table->{$jsonType}('metadata')->nullable();
 
+            $table->nullableUuidMorphs('owner');
+
             $table->timestamps();
 
             // Indexes

@@ -17,6 +17,7 @@ return new class extends Migration
             $table->boolean('recovered')->default(false)->index();
             $table->unsignedInteger('time_to_recovery_minutes')->nullable();
             $table->unsignedInteger('discount_used_cents')->nullable();
+            $table->nullableUuidMorphs('owner');
             $table->timestamps();
         });
     }
