@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\CommerceSupport\Traits\HasOwner;
+use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -24,11 +28,20 @@ use Illuminate\Support\Carbon;
  * @property array<string, mixed>|null $metadata
  * @property Carbon|null $created_at
  * @property Carbon|null $updated_at
+ * @property string|null $owner_type
+ * @property string|null $owner_id
  * @property-read Collection<int, Affiliate> $affiliates
+ * @property-read Model|null $owner
  */
 class AffiliateRank extends Model
 {
+    use HasOwner {
+        scopeForOwner as baseScopeForOwner;
+    }
+    use HasOwnerScopeConfig;
     use HasUuids;
+
+    protected static string $ownerScopeConfigKey = 'affiliates.owner';
 
     protected $fillable = [
         'name',
@@ -41,6 +54,8 @@ class AffiliateRank extends Model
         'override_rates',
         'benefits',
         'metadata',
+        'owner_type',
+        'owner_id',
     ];
 
     protected $casts = [
@@ -106,10 +121,44 @@ class AffiliateRank extends Model
         return true;
     }
 
+    public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
+    {
+        if (! config('affiliates.owner.enabled', false)) {
+            return $query;
+        }
+
+        $includeGlobal = $includeGlobal && (bool) config('affiliates.owner.include_global', false);
+
+        /** @var Builder<static> $scoped */
+        $scoped = $this->baseScopeForOwner($query, $owner, $includeGlobal);
+
+        return $scoped;
+    }
+
     protected static function booted(): void
     {
+        static::creating(function (self $rank): void {
+            if (! config('affiliates.owner.enabled', false)) {
+                return;
+            }
+
+            if ($rank->owner_id !== null) {
+                return;
+            }
+
+            if (! config('affiliates.owner.auto_assign_on_create', true)) {
+                return;
+            }
+
+            $owner = OwnerContext::resolve();
+
+            if ($owner) {
+                $rank->owner_type = $owner->getMorphClass();
+                $rank->owner_id = $owner->getKey();
+            }
+        });
+
         static::deleting(function (self $rank): void {
-            // Set rank_id to null on affiliates when rank is deleted
             $rank->affiliates()->update(['rank_id' => null]);
         });
     }

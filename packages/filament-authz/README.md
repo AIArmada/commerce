@@ -1,14 +1,16 @@
 # Filament Authz
 
-A simple, focused Filament v5 authorization package extending Spatie laravel-permission with wildcard permissions and audit logging.
+A comprehensive Filament v5 authorization package extending Spatie laravel-permission with wildcard permissions, multi-panel support, and automatic entity discovery.
 
 ## Features
 
 - **Super Admin Bypass** — Configure a role that automatically bypasses all permission checks via `Gate::before`
 - **Wildcard Permissions** — Support for patterns like `orders.*` to match `orders.view`, `orders.create`, etc.
-- **Role & Permission Resources** — Clean Filament UI for managing roles and permissions
-- **Audit Logging** — Track permission changes (optional)
-- **Action Macros** — `->requiresPermission()` and `->requiresRole()` for Filament Actions
+- **Role & Permission Resources** — Clean Filament UI for managing roles and permissions with tabbed interface
+- **Automatic Discovery** — Discovers Resources, Pages, and Widgets to generate permissions automatically
+- **Multi-Panel Support** — Configure different authorization settings per Filament panel
+- **Policy Generation** — CLI command to scaffold Laravel Policies based on discovered permissions
+- **Tenant Scoping** — Optional integration with commerce-support for multi-tenant applications
 
 ## Requirements
 
@@ -74,7 +76,6 @@ public function panel(Panel $panel): Panel
 return [
     // Authentication guards to support
     'guards' => ['web'],
-    'default_guard' => 'web',
 
     // Role that bypasses all permission checks
     'super_admin_role' => 'super_admin',
@@ -82,11 +83,10 @@ return [
     // Enable wildcard permission patterns like 'orders.*'
     'wildcard_permissions' => true,
 
-    // Audit logging
-    'audit' => [
-        'enabled' => true,
-        'async' => false,         // Queue audit writes
-        'retention_days' => 90,
+    // Permission key format
+    'permissions' => [
+        'separator' => '.',
+        'case' => 'kebab', // snake, kebab, camel, pascal, upper_snake, lower
     ],
 
     // Navigation settings
@@ -95,10 +95,9 @@ return [
         'sort' => 99,
     ],
 
-    // Sync roles/permissions from config
-    'sync' => [
-        'permissions' => [],
-        'roles' => [],
+    // Custom permissions beyond resources/pages/widgets
+    'custom_permissions' => [
+        // 'approve_posts' => 'Approve Posts',
     ],
 ];
 ```

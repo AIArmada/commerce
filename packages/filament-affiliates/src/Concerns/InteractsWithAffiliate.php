@@ -10,7 +10,6 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Database\Eloquent\Model;
 
 trait InteractsWithAffiliate
 {
@@ -18,6 +17,9 @@ trait InteractsWithAffiliate
 
     /**
      * Get the current user's affiliate.
+     *
+     * In owner mode: looks up affiliate owned by the current tenant.
+     * In non-owner mode: looks up affiliate where the user is the owner.
      */
     public function getAffiliate(): ?Affiliate
     {
@@ -25,32 +27,28 @@ trait InteractsWithAffiliate
             return $this->affiliate;
         }
 
-        $owner = $this->getAffiliateOwner();
+        $user = auth()->user();
 
-        if (! $owner) {
+        if (! $user) {
             return null;
         }
 
-        $this->affiliate = (bool) config('affiliates.owner.enabled', false)
-            ? Affiliate::query()->forOwner($owner, false)->first()
-            : Affiliate::query()
-                ->where('owner_type', $owner->getMorphClass())
-                ->where('owner_id', $owner->getKey())
-                ->first();
-
-        return $this->affiliate;
-    }
-
-    /**
-     * Get the affiliate owner (typically the authenticated user).
-     */
-    public function getAffiliateOwner(): ?Model
-    {
         if ((bool) config('affiliates.owner.enabled', false)) {
-            return OwnerContext::resolve();
+            $owner = OwnerContext::resolve();
+
+            $this->affiliate = Affiliate::query()
+                ->forOwner($owner, false)
+                ->where('owner_type', $user->getMorphClass())
+                ->where('owner_id', $user->getKey())
+                ->first();
+        } else {
+            $this->affiliate = Affiliate::query()
+                ->where('owner_type', $user->getMorphClass())
+                ->where('owner_id', $user->getKey())
+                ->first();
         }
 
-        return auth()->user();
+        return $this->affiliate;
     }
 
     /**

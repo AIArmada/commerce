@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Commerce\Tests;
 
+use AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Cart\CartServiceProvider;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\FilamentAffiliateNetwork\FilamentAffiliateNetworkServiceProvider;
 use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
@@ -142,6 +144,8 @@ abstract class TestCase extends Orchestra
             FilamentVouchersServiceProvider::class,
             AffiliatesServiceProvider::class,
             FilamentAffiliatesServiceProvider::class,
+            AffiliateNetworkServiceProvider::class,
+            FilamentAffiliateNetworkServiceProvider::class,
             \AIArmada\Shipping\ShippingServiceProvider::class,
             \AIArmada\Products\ProductsServiceProvider::class,
             FilamentShippingServiceProvider::class,
@@ -292,6 +296,13 @@ abstract class TestCase extends Orchestra
             'manual_channel' => 'manual',
         ]);
 
+        // Configure affiliate-network settings for testing
+        $app['config']->set('affiliate-network.owner.enabled', false);
+        $app['config']->set('affiliate-network.owner.include_global', false);
+        $app['config']->set('affiliate-network.owner.auto_assign_on_create', true);
+        $app['config']->set('affiliate-network.database.table_prefix', 'affiliate_network_');
+        $app['config']->set('affiliate-network.database.json_column_type', 'json');
+
         // Configure Spatie Permission settings for testing
         $app['config']->set('permission.models.permission', Permission::class);
         $app['config']->set('permission.models.role', Role::class);
@@ -336,6 +347,7 @@ abstract class TestCase extends Orchestra
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/vouchers/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/shipping/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/affiliates/database/migrations');
+        $this->loadMigrationsFrom(__DIR__ . '/../../packages/affiliate-network/database/migrations');
         $this->loadMigrationsFrom(__DIR__ . '/../../packages/docs/database/migrations');
     }
 

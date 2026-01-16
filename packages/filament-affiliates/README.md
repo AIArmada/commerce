@@ -19,13 +19,13 @@ composer require aiarmada/filament-affiliates
 Register the plugin with your Filament panel:
 
 ```php
-use AIArmada\FilamentAffiliates\FilamentAffiliates;
+use AIArmada\FilamentAffiliates\FilamentAffiliatesPlugin;
 
 public function panel(Panel $panel): Panel
 {
     return $panel
         ->plugins([
-            FilamentAffiliates::make(),
+            FilamentAffiliatesPlugin::make(),
         ]);
 }
 ```

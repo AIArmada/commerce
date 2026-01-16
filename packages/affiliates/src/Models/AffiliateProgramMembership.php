@@ -62,16 +62,25 @@ class AffiliateProgramMembership extends Pivot
         return config('affiliates.database.tables.program_memberships', 'affiliate_program_memberships');
     }
 
+    /**
+     * @return BelongsTo<Affiliate, $this>
+     */
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);
     }
 
+    /**
+     * @return BelongsTo<AffiliateProgram, $this>
+     */
     public function program(): BelongsTo
     {
         return $this->belongsTo(AffiliateProgram::class, 'program_id');
     }
 
+    /**
+     * @return BelongsTo<AffiliateProgramTier, $this>
+     */
     public function tier(): BelongsTo
     {
         return $this->belongsTo(AffiliateProgramTier::class, 'tier_id');
