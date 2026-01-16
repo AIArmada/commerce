@@ -167,8 +167,8 @@ class ShippingManager
             return $this->callCustomCreator($driver);
         }
 
-        // Check for built-in drivers
-        $method = 'create' . ucfirst($driver) . 'Driver';
+        // Check for built-in drivers (convert snake_case to PascalCase)
+        $method = 'create' . str_replace('_', '', ucwords($driver, '_')) . 'Driver';
 
         if (method_exists($this, $method)) {
             return $this->{$method}();
@@ -206,7 +206,7 @@ class ShippingManager
     /**
      * Create the flat rate shipping driver.
      */
-    protected function createFlat_rateDriver(): ShippingDriverInterface
+    protected function createFlatRateDriver(): ShippingDriverInterface
     {
         $config = $this->container->get('config')->get('shipping.drivers.flat_rate', []);
 

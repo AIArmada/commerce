@@ -15,7 +15,7 @@ use Spatie\ModelStates\Transition;
  *
  * This transition is triggered when delivery is confirmed.
  */
-class DeliveryConfirmed extends Transition
+final class DeliveryConfirmed extends Transition
 {
     public function __construct(
         private Order $order,

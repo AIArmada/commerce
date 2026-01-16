@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping;
 
+use AIArmada\Shipping\Integrations\OrderFulfillmentHandler;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShippingZone;
@@ -12,6 +13,7 @@ use AIArmada\Shipping\Policies\ShipmentPolicy;
 use AIArmada\Shipping\Policies\ShippingZonePolicy;
 use AIArmada\Shipping\Services\FreeShippingEvaluator;
 use AIArmada\Shipping\Services\RateShoppingEngine;
+use AIArmada\Shipping\Services\ShipmentService;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -48,6 +50,28 @@ final class ShippingServiceProvider extends PackageServiceProvider
 
             return new FreeShippingEvaluator($config);
         });
+
+        $this->registerOrdersIntegration();
+    }
+
+    /**
+     * Register the orders package integration when available.
+     */
+    protected function registerOrdersIntegration(): void
+    {
+        if (! interface_exists(\AIArmada\Orders\Contracts\FulfillmentHandler::class)) {
+            return;
+        }
+
+        $this->app->bind(
+            \AIArmada\Orders\Contracts\FulfillmentHandler::class,
+            function ($app): OrderFulfillmentHandler {
+                return new OrderFulfillmentHandler(
+                    $app->make(ShippingManager::class),
+                    $app->make(ShipmentService::class),
+                );
+            }
+        );
     }
 
     public function bootingPackage(): void

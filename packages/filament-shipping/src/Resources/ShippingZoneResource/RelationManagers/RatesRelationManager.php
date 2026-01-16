@@ -58,33 +58,33 @@ class RatesRelationManager extends RelationManager
 
                 Forms\Components\TextInput::make('base_rate')
                     ->numeric()
-                    ->prefix('RM')
+                    ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
                     ->required()
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                     ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : 0),
 
                 Forms\Components\TextInput::make('per_unit_rate')
                     ->numeric()
-                    ->prefix('RM')
+                    ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                     ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : 0)
                     ->visible(fn (Get $get) => in_array($get('calculation_type'), ['per_kg', 'per_item', 'percentage'])),
 
                 Forms\Components\TextInput::make('min_charge')
                     ->numeric()
-                    ->prefix('RM')
+                    ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                     ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : null),
 
                 Forms\Components\TextInput::make('max_charge')
                     ->numeric()
-                    ->prefix('RM')
+                    ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                     ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : null),
 
                 Forms\Components\TextInput::make('free_shipping_threshold')
                     ->numeric()
-                    ->prefix('RM')
+                    ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
                     ->helperText('Orders above this amount get free shipping')
                     ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                     ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : null),
@@ -101,7 +101,7 @@ class RatesRelationManager extends RelationManager
                             ->required(),
                         Forms\Components\TextInput::make('rate')
                             ->numeric()
-                            ->prefix('RM')
+                            ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
                             ->required()
                             ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
                             ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : 0),
@@ -172,7 +172,7 @@ class RatesRelationManager extends RelationManager
                     }),
 
                 Tables\Columns\TextColumn::make('base_rate')
-                    ->money('MYR', divideBy: 100)
+                    ->formatStateUsing(fn (ShippingRate $record): string => $record->formatted_base_rate)
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('delivery_estimate')

@@ -8,7 +8,7 @@ use AIArmada\FilamentPricing\Resources\PriceListResource;
 use Filament\Actions;
 use Filament\Resources\Pages\EditRecord;
 
-class EditPriceList extends EditRecord
+final class EditPriceList extends EditRecord
 {
     protected static string $resource = PriceListResource::class;
 

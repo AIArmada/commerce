@@ -18,7 +18,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Str;
 use UnitEnum;
 
-class AttributeSetResource extends Resource
+final class AttributeSetResource extends Resource
 {
     protected static ?string $model = AttributeSet::class;
 

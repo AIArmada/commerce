@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderPayment;
 use AIArmada\Orders\States\Completed;
@@ -23,13 +24,13 @@ describe('OrderPayment Model', function (): void {
                 'gateway' => 'stripe',
                 'amount' => 10000,
                 'currency' => 'MYR',
-                'status' => 'pending',
+                'status' => PaymentStatus::Pending,
             ]);
 
             expect($payment)->toBeInstanceOf(OrderPayment::class)
                 ->and($payment->gateway)->toBe('stripe')
                 ->and($payment->amount)->toBe(10000)
-                ->and($payment->status)->toBe('pending');
+                ->and($payment->status)->toBe(PaymentStatus::Pending);
         });
 
         it('belongs to an order', function (): void {
@@ -46,7 +47,7 @@ describe('OrderPayment Model', function (): void {
                 'gateway' => 'manual',
                 'amount' => 5000,
                 'currency' => 'MYR',
-                'status' => 'completed',
+                'status' => PaymentStatus::Completed,
             ]);
 
             expect($payment->order->id)->toBe($order->id);
@@ -68,7 +69,7 @@ describe('OrderPayment Model', function (): void {
                 'gateway' => 'stripe',
                 'amount' => 5000,
                 'currency' => 'MYR',
-                'status' => 'pending',
+                'status' => PaymentStatus::Pending,
             ]);
 
             $completed = OrderPayment::create([
@@ -76,7 +77,7 @@ describe('OrderPayment Model', function (): void {
                 'gateway' => 'stripe',
                 'amount' => 3000,
                 'currency' => 'MYR',
-                'status' => 'completed',
+                'status' => PaymentStatus::Completed,
             ]);
 
             $failed = OrderPayment::create([
@@ -84,7 +85,7 @@ describe('OrderPayment Model', function (): void {
                 'gateway' => 'stripe',
                 'amount' => 2000,
                 'currency' => 'MYR',
-                'status' => 'failed',
+                'status' => PaymentStatus::Failed,
             ]);
 
             expect($pending->isPending())->toBeTrue()
@@ -119,13 +120,13 @@ describe('OrderPayment Model', function (): void {
                 'gateway' => 'stripe',
                 'amount' => 10000,
                 'currency' => 'MYR',
-                'status' => 'pending',
+                'status' => PaymentStatus::Pending,
             ]);
 
             $result = $payment->markAsCompleted('txn_123');
 
             expect($result)->toBe($payment)
-                ->and($payment->status)->toBe('completed')
+                ->and($payment->status)->toBe(PaymentStatus::Completed)
                 ->and($payment->transaction_id)->toBe('txn_123')
                 ->and($payment->paid_at)->not->toBeNull();
         });
@@ -144,13 +145,13 @@ describe('OrderPayment Model', function (): void {
                 'gateway' => 'stripe',
                 'amount' => 10000,
                 'currency' => 'MYR',
-                'status' => 'pending',
+                'status' => PaymentStatus::Pending,
             ]);
 
             $result = $payment->markAsFailed('Card declined');
 
             expect($result)->toBe($payment)
-                ->and($payment->status)->toBe('failed')
+                ->and($payment->status)->toBe(PaymentStatus::Failed)
                 ->and($payment->failure_reason)->toBe('Card declined');
         });
     });
@@ -170,7 +171,7 @@ describe('OrderPayment Model', function (): void {
                 'gateway' => 'stripe',
                 'amount' => 10000,
                 'currency' => 'MYR',
-                'status' => 'completed',
+                'status' => PaymentStatus::Completed,
             ]);
 
             $usdPayment = OrderPayment::create([
@@ -178,7 +179,7 @@ describe('OrderPayment Model', function (): void {
                 'gateway' => 'stripe',
                 'amount' => 5000,
                 'currency' => 'USD',
-                'status' => 'completed',
+                'status' => PaymentStatus::Completed,
             ]);
 
             $eurPayment = OrderPayment::create([
@@ -186,7 +187,7 @@ describe('OrderPayment Model', function (): void {
                 'gateway' => 'stripe',
                 'amount' => 7500,
                 'currency' => 'EUR',
-                'status' => 'completed',
+                'status' => PaymentStatus::Completed,
             ]);
 
             $gbpPayment = OrderPayment::create([
@@ -194,12 +195,13 @@ describe('OrderPayment Model', function (): void {
                 'gateway' => 'stripe',
                 'amount' => 2500,
                 'currency' => 'GBP',
-                'status' => 'completed',
+                'status' => PaymentStatus::Completed,
             ]);
 
             expect($myrPayment->getFormattedAmount())->toBe('RM100.00');
             expect($usdPayment->getFormattedAmount())->toBe('$50.00');
-            expect($eurPayment->getFormattedAmount())->toBe('€75.00');
+            // EUR uses European formatting (comma as decimal separator)
+            expect($eurPayment->getFormattedAmount())->toBe('€75,00');
             expect($gbpPayment->getFormattedAmount())->toBe('£25.00');
         });
     });

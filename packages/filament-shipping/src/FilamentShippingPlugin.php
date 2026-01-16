@@ -6,6 +6,7 @@ namespace AIArmada\FilamentShipping;
 
 use Filament\Contracts\Plugin;
 use Filament\Panel;
+use Throwable;
 
 class FilamentShippingPlugin implements Plugin
 {
@@ -20,6 +21,8 @@ class FilamentShippingPlugin implements Plugin
     protected bool $hasShippingDashboard = true;
 
     protected bool $hasManifestPage = true;
+
+    protected bool $hasFulfillmentQueue = true;
 
     public static function make(): static
     {
@@ -60,6 +63,10 @@ class FilamentShippingPlugin implements Plugin
 
         if ($this->hasManifestPage) {
             $pages[] = Pages\ManifestPage::class;
+        }
+
+        if ($this->hasFulfillmentQueue && $this->isFeatureEnabled('enable_fulfillment_queue', true)) {
+            $pages[] = Pages\FulfillmentQueue::class;
         }
 
         if ($this->hasDashboardWidgets) {
@@ -120,5 +127,24 @@ class FilamentShippingPlugin implements Plugin
         $this->hasManifestPage = $condition;
 
         return $this;
+    }
+
+    public function fulfillmentQueue(bool $condition = true): static
+    {
+        $this->hasFulfillmentQueue = $condition;
+
+        return $this;
+    }
+
+    /**
+     * Check if a feature is enabled in config, with safe fallback for tests.
+     */
+    protected function isFeatureEnabled(string $key, bool $default = true): bool
+    {
+        try {
+            return (bool) config("filament-shipping.features.{$key}", $default);
+        } catch (Throwable) {
+            return $default;
+        }
     }
 }

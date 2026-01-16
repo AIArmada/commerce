@@ -613,7 +613,8 @@ describe('Product Model', function (): void {
             $physical = Product::create(['name' => 'Physical', 'price' => 1000, 'type' => ProductType::Simple]);
             $digital = Product::create(['name' => 'Digital', 'price' => 1000, 'type' => ProductType::Digital]);
 
-            expect($physical->tracksInventory())->toBeFalse()
+            // Physical products track inventory, digital do not
+            expect($physical->tracksInventory())->toBeTrue()
                 ->and($digital->tracksInventory())->toBeFalse();
         });
     });

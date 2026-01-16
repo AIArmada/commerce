@@ -15,7 +15,7 @@ use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Gate;
 
-class OrderStatsWidget extends StatsOverviewWidget
+final class OrderStatsWidget extends StatsOverviewWidget
 {
     protected static ?int $sort = 1;
 

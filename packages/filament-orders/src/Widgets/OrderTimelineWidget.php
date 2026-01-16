@@ -15,7 +15,7 @@ use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Gate;
 use Throwable;
 
-class OrderTimelineWidget extends Widget implements HasForms
+final class OrderTimelineWidget extends Widget implements HasForms
 {
     use InteractsWithForms;
 
@@ -90,31 +90,36 @@ class OrderTimelineWidget extends Widget implements HasForms
         // Payment events
         foreach ($this->record->payments ?? [] as $payment) {
             $currency = $this->record->currency ?? (string) config('orders.currency.default', 'MYR');
+            $statusLabel = $payment->status->label();
 
             $events->push([
                 'type' => 'payment',
-                'title' => 'Payment ' . ucfirst($payment->status),
+                'title' => 'Payment ' . $statusLabel,
                 'description' => sprintf(
                     '%s payment of %s via %s',
-                    ucfirst($payment->status),
+                    $statusLabel,
                     $currency . ' ' . number_format($payment->amount / 100, 2),
                     $payment->gateway
                 ),
-                'icon' => $payment->status === 'completed' ? 'heroicon-o-check-circle' : 'heroicon-o-credit-card',
-                'color' => $payment->status === 'completed' ? 'success' : 'warning',
+                'icon' => $payment->status->isFinal() ? 'heroicon-o-check-circle' : 'heroicon-o-credit-card',
+                'color' => $payment->status->color(),
                 'timestamp' => $payment->created_at,
             ]);
         }
 
         // Shipment events
         if ($this->record->shipped_at) {
+            $shippingData = $this->record->metadata['shipping'] ?? [];
+            $carrier = is_array($shippingData) ? ($shippingData['carrier'] ?? 'Unknown') : 'Unknown';
+            $trackingNumber = is_array($shippingData) ? ($shippingData['tracking_number'] ?? 'N/A') : 'N/A';
+
             $events->push([
                 'type' => 'shipped',
                 'title' => 'Order Shipped',
                 'description' => sprintf(
                     'Shipped via %s (Tracking: %s)',
-                    $this->record->shipping_carrier ?? 'Unknown',
-                    $this->record->tracking_number ?? 'N/A'
+                    $carrier,
+                    $trackingNumber
                 ),
                 'icon' => 'heroicon-o-truck',
                 'color' => 'info',

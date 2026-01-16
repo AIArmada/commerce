@@ -30,7 +30,7 @@ use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
 use UnitEnum;
 
-class CollectionResource extends Resource
+final class CollectionResource extends Resource
 {
     protected static ?string $model = Collection::class;
 

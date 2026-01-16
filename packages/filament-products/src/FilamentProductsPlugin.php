@@ -7,7 +7,7 @@ namespace AIArmada\FilamentProducts;
 use Filament\Contracts\Plugin;
 use Filament\Panel;
 
-class FilamentProductsPlugin implements Plugin
+final class FilamentProductsPlugin implements Plugin
 {
     public static function make(): static
     {
@@ -43,7 +43,7 @@ class FilamentProductsPlugin implements Plugin
             ->widgets([
                 Widgets\ProductStatsWidget::class,
                 Widgets\CategoryDistributionChart::class,
-                Widgets\LowStockAlertWidget::class,
+                Widgets\ProductTypeDistributionWidget::class,
                 Widgets\TopSellingProductsWidget::class,
             ]);
     }

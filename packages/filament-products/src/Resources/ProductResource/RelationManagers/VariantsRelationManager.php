@@ -14,7 +14,7 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 
-class VariantsRelationManager extends RelationManager
+final class VariantsRelationManager extends RelationManager
 {
     protected static string $relationship = 'variants';
 

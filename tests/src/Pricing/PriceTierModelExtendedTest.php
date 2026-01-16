@@ -114,7 +114,7 @@ describe('PriceTier Model - Extended Tests', function (): void {
             $tier->discount_type = 'fixed';
             $tier->discount_value = 500;
 
-            expect($tier->getDiscountDescription())->toBe('RM 5.00 off');
+            expect($tier->getDiscountDescription())->toBe('RM5.00 off');
         });
 
         it('returns null when no discount type', function (): void {

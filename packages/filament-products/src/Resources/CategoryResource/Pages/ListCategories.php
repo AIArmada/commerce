@@ -8,7 +8,7 @@ use AIArmada\FilamentProducts\Resources\CategoryResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
-class ListCategories extends ListRecords
+final class ListCategories extends ListRecords
 {
     protected static string $resource = CategoryResource::class;
 

@@ -8,7 +8,7 @@ use AIArmada\FilamentProducts\Resources\ProductResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ViewRecord;
 
-class ViewProduct extends ViewRecord
+final class ViewProduct extends ViewRecord
 {
     protected static string $resource = ProductResource::class;
 

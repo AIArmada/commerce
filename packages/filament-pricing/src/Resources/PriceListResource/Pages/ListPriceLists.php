@@ -8,7 +8,7 @@ use AIArmada\FilamentPricing\Resources\PriceListResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
-class ListPriceLists extends ListRecords
+final class ListPriceLists extends ListRecords
 {
     protected static string $resource = PriceListResource::class;
 

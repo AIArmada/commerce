@@ -44,11 +44,11 @@ class ViewOrder extends ViewRecord
                         ->required(),
                     \Filament\Forms\Components\Select::make('gateway')
                         ->label('Payment Gateway')
-                        ->options([
+                        ->options((array) config('filament-orders.payment_gateways', [
                             'stripe' => 'Stripe',
                             'chip' => 'CHIP',
                             'manual' => 'Manual',
-                        ])
+                        ]))
                         ->required(),
                 ])
                 ->action(function (Order $record, array $data): void {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Pricing\Models;
 
+use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Pricing\Support\PricingOwnerScope;
@@ -32,6 +33,7 @@ use Spatie\Activitylog\Traits\LogsActivity;
  */
 class Price extends Model
 {
+    use FormatsMoney;
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
     }
@@ -79,6 +81,18 @@ class Price extends Model
 
     protected static function booted(): void
     {
+        static::updating(function (self $price): void {
+            if (! PricingOwnerScope::isEnabled()) {
+                return;
+            }
+
+            $owner = PricingOwnerScope::resolveOwner();
+
+            if ($owner !== null && ! $price->belongsToOwner($owner)) {
+                throw new AuthorizationException('Cannot update prices outside the current owner scope.');
+            }
+        });
+
         static::saving(function (self $price): void {
             if (! PricingOwnerScope::isEnabled()) {
                 return;
@@ -210,14 +224,7 @@ class Price extends Model
 
     public function getFormattedAmount(): string
     {
-        $symbol = match ($this->currency) {
-            'MYR' => 'RM',
-            'USD' => '$',
-            'SGD' => 'S$',
-            default => $this->currency . ' ',
-        };
-
-        return $symbol . number_format($this->amount / 100, 2);
+        return $this->formatMoney($this->amount, $this->currency);
     }
 
     // =========================================================================

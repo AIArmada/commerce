@@ -7,7 +7,7 @@ namespace AIArmada\Orders\States;
 /**
  * Order items have been returned by customer.
  */
-class Returned extends OrderStatus
+final class Returned extends OrderStatus
 {
     public static string $name = 'returned';
 

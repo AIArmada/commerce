@@ -7,7 +7,7 @@ namespace AIArmada\Orders\States;
 /**
  * Order is on hold pending manual review.
  */
-class OnHold extends OrderStatus
+final class OnHold extends OrderStatus
 {
     public static string $name = 'on_hold';
 

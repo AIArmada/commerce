@@ -28,7 +28,7 @@ use InvalidArgumentException;
  * @property-read Order $order
  * @property-read Model|null $user
  */
-class OrderNote extends Model
+final class OrderNote extends Model
 {
     use HasOwner {
         scopeForOwner as baseScopeForOwner;
@@ -105,10 +105,6 @@ class OrderNote extends Model
     /**
      * Scope to only internal notes.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<OrderNote>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<OrderNote>
-     */
-    /**
      * @param  Builder<static>  $query
      * @return Builder<static>
      */
@@ -120,10 +116,6 @@ class OrderNote extends Model
     /**
      * Scope to only customer-visible notes.
      *
-     * @param  \Illuminate\Database\Eloquent\Builder<OrderNote>  $query
-     * @return \Illuminate\Database\Eloquent\Builder<OrderNote>
-     */
-    /**
      * @param  Builder<static>  $query
      * @return Builder<static>
      */

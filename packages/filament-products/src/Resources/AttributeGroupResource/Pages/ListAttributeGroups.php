@@ -8,7 +8,7 @@ use AIArmada\FilamentProducts\Resources\AttributeGroupResource;
 use Filament\Actions;
 use Filament\Resources\Pages\ListRecords;
 
-class ListAttributeGroups extends ListRecords
+final class ListAttributeGroups extends ListRecords
 {
     protected static string $resource = AttributeGroupResource::class;
 

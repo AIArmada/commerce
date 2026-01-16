@@ -567,7 +567,8 @@ describe('Order Model', function (): void {
             ]);
 
             expect($usdOrder->getFormattedGrandTotal())->toBe('$100.00');
-            expect($eurOrder->getFormattedGrandTotal())->toBe('€100.00');
+            // EUR uses European formatting (comma as decimal separator)
+            expect($eurOrder->getFormattedGrandTotal())->toBe('€100,00');
         });
     });
 
@@ -678,7 +679,8 @@ describe('Order Model', function (): void {
                 'grand_total' => 10000,
             ]);
 
-            expect($order->getFormattedGrandTotal())->toBe('JPY 100.00');
+            // JPY has no subunits, so 10000 minor units = ¥10,000
+            expect($order->getFormattedGrandTotal())->toBe('¥10,000');
         });
     });
 });

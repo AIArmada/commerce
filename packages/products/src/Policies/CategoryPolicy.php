@@ -9,7 +9,7 @@ use AIArmada\Products\Models\Category;
 use Illuminate\Auth\Access\HandlesAuthorization;
 use Illuminate\Database\Eloquent\Model;
 
-class CategoryPolicy
+final class CategoryPolicy
 {
     use HandlesAuthorization;
 

@@ -1,0 +1,232 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\Shipping\Integrations;
+
+use AIArmada\Orders\Contracts\FulfillmentHandler;
+use AIArmada\Orders\Models\Order;
+use AIArmada\Shipping\Data\AddressData;
+use AIArmada\Shipping\Data\PackageData;
+use AIArmada\Shipping\Data\ShipmentData;
+use AIArmada\Shipping\Data\ShipmentItemData;
+use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\Services\ShipmentService;
+use AIArmada\Shipping\ShippingManager;
+use DateTimeInterface;
+use Throwable;
+
+/**
+ * Bridges the orders package with shipping functionality.
+ *
+ * This handler implements the FulfillmentHandler contract from the orders
+ * package, allowing orders to create shipments and track deliveries through
+ * the shipping package infrastructure.
+ */
+final class OrderFulfillmentHandler implements FulfillmentHandler
+{
+    public function __construct(
+        private readonly ShippingManager $shippingManager,
+        private readonly ShipmentService $shipmentService,
+    ) {}
+
+    /**
+     * {@inheritDoc}
+     */
+    public function createShipment(Order $order, array $shipmentData): array
+    {
+        try {
+            $shippingAddress = $order->shippingAddress;
+
+            if ($shippingAddress === null) {
+                return [
+                    'success' => false,
+                    'shipment_id' => null,
+                    'tracking_number' => null,
+                    'error' => 'Order has no shipping address',
+                ];
+            }
+
+            $originAddress = $this->getOriginAddress();
+            $destinationAddress = AddressData::from([
+                'name' => mb_trim($shippingAddress->first_name . ' ' . $shippingAddress->last_name),
+                'company' => $shippingAddress->company,
+                'line1' => $shippingAddress->line1,
+                'line2' => $shippingAddress->line2,
+                'city' => $shippingAddress->city,
+                'state' => $shippingAddress->state,
+                'postcode' => $shippingAddress->postcode,
+                'countryCode' => $shippingAddress->country_code,
+                'phone' => $shippingAddress->phone,
+                'email' => $shippingAddress->email,
+            ]);
+
+            $items = $order->items->map(fn ($item) => ShipmentItemData::from([
+                'name' => $item->name,
+                'sku' => $item->sku,
+                'quantity' => $item->quantity,
+                'weight' => $item->metadata['weight'] ?? 100,
+                'declaredValue' => $item->total,
+            ]))->toArray();
+
+            $data = ShipmentData::from([
+                'reference' => $order->order_number,
+                'carrierCode' => $shipmentData['carrier'] ?? config('shipping.default', 'manual'),
+                'serviceCode' => $shipmentData['service'] ?? 'standard',
+                'origin' => $originAddress,
+                'destination' => $destinationAddress,
+                'items' => $items,
+                'declaredValue' => $order->grand_total,
+                'currency' => $order->currency,
+                'metadata' => [
+                    'order_id' => $order->id,
+                    'order_number' => $order->order_number,
+                ],
+            ]);
+
+            $shipment = $this->shipmentService->create(
+                $data,
+                $order->owner_id,
+                $order->owner_type,
+            );
+
+            $this->shipmentService->markPending($shipment);
+            $shipment = $this->shipmentService->ship($shipment);
+
+            return [
+                'success' => true,
+                'shipment_id' => $shipment->id,
+                'tracking_number' => $shipment->tracking_number,
+                'error' => null,
+            ];
+        } catch (Throwable $e) {
+            report($e);
+
+            return [
+                'success' => false,
+                'shipment_id' => null,
+                'tracking_number' => null,
+                'error' => $e->getMessage(),
+            ];
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getRates(Order $order): array
+    {
+        $shippingAddress = $order->shippingAddress;
+
+        if ($shippingAddress === null) {
+            return [];
+        }
+
+        $destination = AddressData::from([
+            'name' => mb_trim($shippingAddress->first_name . ' ' . $shippingAddress->last_name),
+            'line1' => $shippingAddress->line1,
+            'city' => $shippingAddress->city,
+            'state' => $shippingAddress->state,
+            'postcode' => $shippingAddress->postcode,
+            'countryCode' => $shippingAddress->country_code,
+        ]);
+
+        $packages = [
+            PackageData::from([
+                'weight' => $this->calculateTotalWeight($order),
+                'declaredValue' => $order->grand_total,
+            ]),
+        ];
+
+        $rates = [];
+        $drivers = $this->shippingManager->getDriversForDestination($destination);
+
+        foreach ($drivers as $driver) {
+            try {
+                $driverRates = $driver->getRates(
+                    $this->getOriginAddress(),
+                    $destination,
+                    $packages,
+                );
+
+                foreach ($driverRates as $rate) {
+                    $rates[] = [
+                        'carrier' => $rate->carrier,
+                        'service' => $rate->service,
+                        'rate' => $rate->rate,
+                        'currency' => $rate->currency,
+                    ];
+                }
+            } catch (Throwable $e) {
+                report($e);
+            }
+        }
+
+        return $rates;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public function getTracking(string $trackingNumber): array
+    {
+        try {
+            $shipment = Shipment::where('tracking_number', $trackingNumber)->first();
+
+            if ($shipment === null) {
+                return [
+                    'status' => 'unknown',
+                    'events' => [],
+                ];
+            }
+
+            $driver = $this->shippingManager->driver($shipment->carrier_code);
+            $trackingData = $driver->track($trackingNumber);
+
+            return [
+                'status' => $trackingData->status->value,
+                'events' => $trackingData->events->map(fn ($event) => [
+                    'date' => $event->timestamp->format(DateTimeInterface::ATOM),
+                    'description' => $event->description,
+                    'location' => $event->location,
+                ])->toArray(),
+            ];
+        } catch (Throwable $e) {
+            report($e);
+
+            return [
+                'status' => 'unknown',
+                'events' => [],
+            ];
+        }
+    }
+
+    /**
+     * Get origin address from config.
+     */
+    private function getOriginAddress(): AddressData
+    {
+        $origin = (array) config('shipping.origin', []);
+
+        return AddressData::from([
+            'name' => $origin['name'] ?? config('app.name'),
+            'company' => $origin['company'] ?? null,
+            'line1' => $origin['line1'] ?? '',
+            'line2' => $origin['line2'] ?? null,
+            'city' => $origin['city'] ?? '',
+            'state' => $origin['state'] ?? '',
+            'postcode' => $origin['postcode'] ?? '',
+            'countryCode' => $origin['country_code'] ?? 'MY',
+            'phone' => $origin['phone'] ?? null,
+            'email' => $origin['email'] ?? null,
+        ]);
+    }
+
+    /**
+     * Calculate total weight from order items.
+     */
+    private function calculateTotalWeight(Order $order): int
+    {
+        return (int) $order->items->sum(fn ($item) => ($item->metadata['weight'] ?? 100) * $item->quantity);
+    }
+}

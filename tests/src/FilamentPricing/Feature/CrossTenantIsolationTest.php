@@ -13,6 +13,12 @@ use AIArmada\Pricing\Models\PriceList;
 use AIArmada\Pricing\Models\Promotion;
 use Illuminate\Database\Eloquent\Model;
 
+beforeEach(function (): void {
+    if (! class_exists(Promotion::class)) {
+        $this->markTestSkipped('Promotions package is not installed.');
+    }
+});
+
 function bindFilamentPricingOwner(?Model $owner): void
 {
     app()->bind(OwnerResolverInterface::class, fn () => new class($owner) implements OwnerResolverInterface

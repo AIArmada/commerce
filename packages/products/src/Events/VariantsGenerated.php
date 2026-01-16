@@ -9,7 +9,7 @@ use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 use Illuminate\Support\Collection;
 
-class VariantsGenerated
+final class VariantsGenerated
 {
     use Dispatchable;
     use SerializesModels;

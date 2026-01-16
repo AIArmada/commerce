@@ -9,7 +9,7 @@ use Illuminate\Broadcasting\InteractsWithSockets;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 
-class OrderRefunded
+final class OrderRefunded
 {
     use Dispatchable;
     use InteractsWithSockets;

@@ -13,6 +13,12 @@ use Illuminate\Database\Eloquent\Model;
 
 uses(TestCase::class);
 
+beforeEach(function (): void {
+    if (! class_exists(Promotion::class)) {
+        $this->markTestSkipped('Promotions package is not installed.');
+    }
+});
+
 it('scopes filament pricing resources to the resolved owner (including global)', function (): void {
     config()->set('pricing.features.owner.enabled', true);
     config()->set('pricing.features.owner.include_global', true);

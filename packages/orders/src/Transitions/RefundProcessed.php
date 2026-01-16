@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders\Transitions;
 
+use AIArmada\Orders\Enums\PaymentStatus;
 use AIArmada\Orders\Events\OrderRefunded;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\Refunded;
@@ -14,7 +15,7 @@ use Spatie\ModelStates\Transition;
  *
  * This transition is triggered when a refund is processed for returned items.
  */
-class RefundProcessed extends Transition
+final class RefundProcessed extends Transition
 {
     public function __construct(
         private Order $order,
@@ -28,7 +29,7 @@ class RefundProcessed extends Transition
     public function handle(): Order
     {
         // Find the original payment
-        $payment = $this->order->payments()->where('status', 'completed')->first();
+        $payment = $this->order->payments()->where('status', PaymentStatus::Completed)->first();
 
         // Record refund
         $this->order->refunds()->create([
@@ -37,7 +38,7 @@ class RefundProcessed extends Transition
             'transaction_id' => $this->transactionId,
             'amount' => $this->amount,
             'currency' => $this->order->currency,
-            'status' => 'completed',
+            'status' => PaymentStatus::Completed,
             'reason' => $this->reason,
             'refunded_at' => now(),
             'metadata' => $this->metadata,

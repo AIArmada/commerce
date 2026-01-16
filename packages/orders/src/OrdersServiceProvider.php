@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Orders;
 
+use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Services\OrderService;
 use Illuminate\Support\Facades\Gate;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
@@ -18,6 +20,11 @@ final class OrdersServiceProvider extends PackageServiceProvider
             ->hasTranslations()
             ->hasViews()
             ->discoversMigrations();
+    }
+
+    public function registeringPackage(): void
+    {
+        $this->app->bind(OrderServiceInterface::class, OrderService::class);
     }
 
     public function bootingPackage(): void
