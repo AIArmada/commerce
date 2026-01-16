@@ -5,7 +5,6 @@ declare(strict_types=1);
 use AIArmada\Chip\Models\BankAccount;
 use AIArmada\Chip\Models\SendInstruction;
 use AIArmada\Chip\Services\ChipSendService;
-use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentChip\Actions\PurchaseExporter;
 use AIArmada\FilamentChip\Actions\SendInstructionExporter;
 use AIArmada\FilamentChip\Resources\BankAccountResource\Pages\CreateBankAccount;

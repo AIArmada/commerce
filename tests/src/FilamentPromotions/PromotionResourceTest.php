@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentPromotions\Enums\PromotionType;
 use AIArmada\FilamentPromotions\Models\Promotion;
 use AIArmada\FilamentPromotions\Resources\PromotionResource;
 

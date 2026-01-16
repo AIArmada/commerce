@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
-use Tests\Support\Cart\InMemoryStorage;
 use Illuminate\Support\Facades\Config;
+use Tests\Support\Cart\InMemoryStorage;
 
 describe('HasLazyPipeline trait', function (): void {
     beforeEach(function (): void {

@@ -4,49 +4,49 @@ declare(strict_types=1);
 
 use AIArmada\FilamentAuthz\FilamentAuthzPlugin;
 
-describe('Multi-Panel Support', function () {
-    it('can be scoped to tenant', function () {
+describe('Multi-Panel Support', function (): void {
+    it('can be scoped to tenant', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->scopedToTenant();
 
         expect($plugin->isScopedToTenant())->toBeTrue();
     });
 
-    it('can disable tenant scoping', function () {
+    it('can disable tenant scoping', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->scopedToTenant(false);
 
         expect($plugin->isScopedToTenant())->toBeFalse();
     });
 
-    it('can set tenant ownership relationship', function () {
+    it('can set tenant ownership relationship', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->tenantOwnershipRelationship('team');
 
         expect($plugin->getTenantOwnershipRelationship())->toBe('team');
     });
 
-    it('can use closure for tenant scoping', function () {
+    it('can use closure for tenant scoping', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->scopedToTenant(fn () => true);
 
         expect($plugin->isScopedToTenant())->toBeTrue();
     });
 
-    it('can use closure for tenant relationship', function () {
+    it('can use closure for tenant relationship', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->tenantOwnershipRelationship(fn () => 'organization');
 
         expect($plugin->getTenantOwnershipRelationship())->toBe('organization');
     });
 
-    it('returns null panel when not registered', function () {
+    it('returns null panel when not registered', function (): void {
         $plugin = FilamentAuthzPlugin::make();
 
         expect($plugin->getPanel())->toBeNull();
     });
 
-    it('has fluent API for tenant methods', function () {
+    it('has fluent API for tenant methods', function (): void {
         $plugin = FilamentAuthzPlugin::make();
 
         $result = $plugin->scopedToTenant()
@@ -56,69 +56,69 @@ describe('Multi-Panel Support', function () {
     });
 });
 
-describe('Plugin Configuration', function () {
-    it('can enable role resource', function () {
+describe('Plugin Configuration', function (): void {
+    it('can enable role resource', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->roleResource();
 
         expect($plugin)->toBeInstanceOf(FilamentAuthzPlugin::class);
     });
 
-    it('can disable role resource', function () {
+    it('can disable role resource', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->roleResource(false);
 
         expect($plugin)->toBeInstanceOf(FilamentAuthzPlugin::class);
     });
 
-    it('can set navigation group', function () {
+    it('can set navigation group', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->navigationGroup('Settings');
 
         expect($plugin->getNavigationGroup())->toBe('Settings');
     });
 
-    it('can set navigation icon', function () {
+    it('can set navigation icon', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->navigationIcon('heroicon-o-shield-check');
 
         expect($plugin->getNavigationIcon())->toBe('heroicon-o-shield-check');
     });
 
-    it('can set navigation sort', function () {
+    it('can set navigation sort', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->navigationSort(10);
 
         expect($plugin->getNavigationSort())->toBe(10);
     });
 
-    it('can set grid columns', function () {
+    it('can set grid columns', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->gridColumns(3);
 
         expect($plugin->getGridColumns())->toBe(3);
     });
 
-    it('can set checkbox columns', function () {
+    it('can set checkbox columns', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->checkboxColumns(4);
 
         expect($plugin->getCheckboxColumns())->toBe(4);
     });
 
-    it('has correct plugin id', function () {
+    it('has correct plugin id', function (): void {
         $plugin = FilamentAuthzPlugin::make();
 
         expect($plugin->getId())->toBe('aiarmada-filament-authz');
     });
 
-    it('can be instantiated via make method', function () {
+    it('can be instantiated via make method', function (): void {
         $plugin = FilamentAuthzPlugin::make();
 
         expect($plugin)->toBeInstanceOf(FilamentAuthzPlugin::class);
     });
 
-    it('can use fluent interface chaining', function () {
+    it('can use fluent interface chaining', function (): void {
         $plugin = FilamentAuthzPlugin::make()
             ->roleResource()
             ->permissionResource()

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use Illuminate\Database\Eloquent\Builder;

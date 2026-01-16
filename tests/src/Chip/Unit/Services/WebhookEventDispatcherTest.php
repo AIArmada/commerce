@@ -7,7 +7,6 @@ use AIArmada\Chip\Data\PayoutData;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Events\PurchaseCreated;
 use AIArmada\Chip\Events\PurchasePaid;
-use AIArmada\Chip\Events\PayoutSuccess;
 use AIArmada\Chip\Services\WebhookEventDispatcher;
 use Illuminate\Support\Facades\Event;
 
@@ -17,7 +16,7 @@ beforeEach(function (): void {
 
 describe('WebhookEventDispatcher structure', function (): void {
     it('can be instantiated', function (): void {
-        $dispatcher = new WebhookEventDispatcher();
+        $dispatcher = new WebhookEventDispatcher;
         expect($dispatcher)->toBeInstanceOf(WebhookEventDispatcher::class);
     });
 
@@ -30,7 +29,7 @@ describe('WebhookEventDispatcher structure', function (): void {
 
 describe('WebhookEventDispatcher::extractPurchase', function (): void {
     it('extracts PurchaseData for purchase type', function (): void {
-        $dispatcher = new WebhookEventDispatcher();
+        $dispatcher = new WebhookEventDispatcher;
         $payload = createMinimalPurchasePayload();
         $payload['type'] = 'purchase';
 
@@ -40,7 +39,7 @@ describe('WebhookEventDispatcher::extractPurchase', function (): void {
     });
 
     it('extracts PurchaseData for purchase.* events', function (): void {
-        $dispatcher = new WebhookEventDispatcher();
+        $dispatcher = new WebhookEventDispatcher;
         $payload = createMinimalPurchasePayload();
         $payload['event_type'] = 'purchase.paid';
 
@@ -50,7 +49,7 @@ describe('WebhookEventDispatcher::extractPurchase', function (): void {
     });
 
     it('extracts PurchaseData for payment.* events', function (): void {
-        $dispatcher = new WebhookEventDispatcher();
+        $dispatcher = new WebhookEventDispatcher;
         $payload = createMinimalPurchasePayload();
         $payload['event_type'] = 'payment.refunded';
 
@@ -60,7 +59,7 @@ describe('WebhookEventDispatcher::extractPurchase', function (): void {
     });
 
     it('returns null for non-purchase payloads', function (): void {
-        $dispatcher = new WebhookEventDispatcher();
+        $dispatcher = new WebhookEventDispatcher;
         $payload = ['type' => 'payout', 'event_type' => 'payout.success'];
 
         $result = $dispatcher->extractPurchase($payload);
@@ -71,7 +70,7 @@ describe('WebhookEventDispatcher::extractPurchase', function (): void {
 
 describe('WebhookEventDispatcher::extractPayout', function (): void {
     it('extracts PayoutData for payout type', function (): void {
-        $dispatcher = new WebhookEventDispatcher();
+        $dispatcher = new WebhookEventDispatcher;
         $payload = createMinimalPayoutPayload();
         $payload['type'] = 'payout';
 
@@ -81,7 +80,7 @@ describe('WebhookEventDispatcher::extractPayout', function (): void {
     });
 
     it('extracts PayoutData for payout.* events', function (): void {
-        $dispatcher = new WebhookEventDispatcher();
+        $dispatcher = new WebhookEventDispatcher;
         $payload = createMinimalPayoutPayload();
         $payload['event_type'] = 'payout.success';
 
@@ -91,7 +90,7 @@ describe('WebhookEventDispatcher::extractPayout', function (): void {
     });
 
     it('returns null for non-payout payloads', function (): void {
-        $dispatcher = new WebhookEventDispatcher();
+        $dispatcher = new WebhookEventDispatcher;
         $payload = ['type' => 'purchase', 'event_type' => 'purchase.paid'];
 
         $result = $dispatcher->extractPayout($payload);
@@ -102,7 +101,7 @@ describe('WebhookEventDispatcher::extractPayout', function (): void {
 
 describe('WebhookEventDispatcher::extractBillingTemplateClient', function (): void {
     it('extracts BillingTemplateClientData for billing_template_client type', function (): void {
-        $dispatcher = new WebhookEventDispatcher();
+        $dispatcher = new WebhookEventDispatcher;
         $payload = createMinimalBillingTemplateClientPayload();
         $payload['type'] = 'billing_template_client';
 
@@ -112,7 +111,7 @@ describe('WebhookEventDispatcher::extractBillingTemplateClient', function (): vo
     });
 
     it('extracts BillingTemplateClientData for billing_template_client.* events', function (): void {
-        $dispatcher = new WebhookEventDispatcher();
+        $dispatcher = new WebhookEventDispatcher;
         $payload = createMinimalBillingTemplateClientPayload();
         $payload['event_type'] = 'billing_template_client.subscription_billing_cancelled';
 
@@ -122,7 +121,7 @@ describe('WebhookEventDispatcher::extractBillingTemplateClient', function (): vo
     });
 
     it('returns null for non-billing payloads', function (): void {
-        $dispatcher = new WebhookEventDispatcher();
+        $dispatcher = new WebhookEventDispatcher;
         $payload = ['type' => 'purchase', 'event_type' => 'purchase.paid'];
 
         $result = $dispatcher->extractBillingTemplateClient($payload);
@@ -133,7 +132,7 @@ describe('WebhookEventDispatcher::extractBillingTemplateClient', function (): vo
 
 describe('WebhookEventDispatcher::dispatch', function (): void {
     it('dispatches PurchaseCreated event for purchase.created', function (): void {
-        $dispatcher = new WebhookEventDispatcher();
+        $dispatcher = new WebhookEventDispatcher;
         $payload = createMinimalPurchasePayload();
         $payload['event_type'] = 'purchase.created';
         $payload['type'] = 'purchase';
@@ -144,7 +143,7 @@ describe('WebhookEventDispatcher::dispatch', function (): void {
     });
 
     it('dispatches PurchasePaid event for purchase.paid', function (): void {
-        $dispatcher = new WebhookEventDispatcher();
+        $dispatcher = new WebhookEventDispatcher;
         $payload = createMinimalPurchasePayload();
         $payload['event_type'] = 'purchase.paid';
         $payload['type'] = 'purchase';
@@ -155,7 +154,7 @@ describe('WebhookEventDispatcher::dispatch', function (): void {
     });
 
     it('logs warning for unknown event type', function (): void {
-        $dispatcher = new WebhookEventDispatcher();
+        $dispatcher = new WebhookEventDispatcher;
         $payload = ['event_type' => 'unknown.event'];
 
         // Should not throw, just log warning

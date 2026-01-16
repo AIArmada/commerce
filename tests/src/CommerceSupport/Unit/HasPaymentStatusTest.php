@@ -99,4 +99,3 @@ it('identifies refundable statuses', function (): void {
         ->and(PaymentStatus::PENDING->isRefundable())->toBeFalse()
         ->and(PaymentStatus::REFUNDED->isRefundable())->toBeFalse();
 });
-

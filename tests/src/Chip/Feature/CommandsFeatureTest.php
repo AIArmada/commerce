@@ -8,8 +8,8 @@ use AIArmada\Chip\Commands\RetryWebhooksCommand;
 use AIArmada\Chip\Models\Webhook;
 use AIArmada\Chip\Services\MetricsAggregator;
 use AIArmada\Chip\Webhooks\WebhookRetryManager;
-use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 
 describe('AggregateMetricsCommand', function (): void {
     it('aggregates for yesterday by default', function (): void {

@@ -59,10 +59,11 @@ describe('ChipModel base class', function (): void {
 
     it('can assign owner to model', function (): void {
         $purchase = new Purchase;
-        $mockOwner = new class extends Model {
+        $mockOwner = new class extends Model
+        {
             protected $guarded = [];
 
-            public function getKey(): string|int|null
+            public function getKey(): string | int | null
             {
                 return 'owner-123';
             }

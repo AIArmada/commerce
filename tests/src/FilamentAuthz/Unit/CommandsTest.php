@@ -9,18 +9,18 @@ use AIArmada\FilamentAuthz\Console\SeederCommand;
 use AIArmada\FilamentAuthz\Console\SuperAdminCommand;
 use AIArmada\FilamentAuthz\Console\SyncAuthzCommand;
 
-describe('GeneratePoliciesCommand', function () {
-    it('exists', function () {
+describe('GeneratePoliciesCommand', function (): void {
+    it('exists', function (): void {
         expect(class_exists(GeneratePoliciesCommand::class))->toBeTrue();
     });
 
-    it('uses prohibitable trait', function () {
+    it('uses prohibitable trait', function (): void {
         $traits = class_uses_recursive(GeneratePoliciesCommand::class);
 
         expect($traits)->toHaveKey(Prohibitable::class);
     });
 
-    it('has correct command signature', function () {
+    it('has correct command signature', function (): void {
         $command = app(GeneratePoliciesCommand::class);
         $reflection = new ReflectionClass($command);
 
@@ -31,18 +31,18 @@ describe('GeneratePoliciesCommand', function () {
     });
 });
 
-describe('SeederCommand', function () {
-    it('exists', function () {
+describe('SeederCommand', function (): void {
+    it('exists', function (): void {
         expect(class_exists(SeederCommand::class))->toBeTrue();
     });
 
-    it('uses prohibitable trait', function () {
+    it('uses prohibitable trait', function (): void {
         $traits = class_uses_recursive(SeederCommand::class);
 
         expect($traits)->toHaveKey(Prohibitable::class);
     });
 
-    it('has correct command signature', function () {
+    it('has correct command signature', function (): void {
         $command = app(SeederCommand::class);
         $reflection = new ReflectionClass($command);
 
@@ -53,18 +53,18 @@ describe('SeederCommand', function () {
     });
 });
 
-describe('SuperAdminCommand', function () {
-    it('exists', function () {
+describe('SuperAdminCommand', function (): void {
+    it('exists', function (): void {
         expect(class_exists(SuperAdminCommand::class))->toBeTrue();
     });
 
-    it('uses prohibitable trait', function () {
+    it('uses prohibitable trait', function (): void {
         $traits = class_uses_recursive(SuperAdminCommand::class);
 
         expect($traits)->toHaveKey(Prohibitable::class);
     });
 
-    it('has correct command signature', function () {
+    it('has correct command signature', function (): void {
         $command = app(SuperAdminCommand::class);
         $reflection = new ReflectionClass($command);
 
@@ -75,18 +75,18 @@ describe('SuperAdminCommand', function () {
     });
 });
 
-describe('SyncAuthzCommand', function () {
-    it('exists', function () {
+describe('SyncAuthzCommand', function (): void {
+    it('exists', function (): void {
         expect(class_exists(SyncAuthzCommand::class))->toBeTrue();
     });
 
-    it('uses prohibitable trait', function () {
+    it('uses prohibitable trait', function (): void {
         $traits = class_uses_recursive(SyncAuthzCommand::class);
 
         expect($traits)->toHaveKey(Prohibitable::class);
     });
 
-    it('has correct command signature', function () {
+    it('has correct command signature', function (): void {
         $command = app(SyncAuthzCommand::class);
         $reflection = new ReflectionClass($command);
 
@@ -97,12 +97,12 @@ describe('SyncAuthzCommand', function () {
     });
 });
 
-describe('DiscoverCommand', function () {
-    it('exists', function () {
+describe('DiscoverCommand', function (): void {
+    it('exists', function (): void {
         expect(class_exists(DiscoverCommand::class))->toBeTrue();
     });
 
-    it('has correct command signature', function () {
+    it('has correct command signature', function (): void {
         $command = app(DiscoverCommand::class);
         $reflection = new ReflectionClass($command);
 
