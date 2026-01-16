@@ -349,8 +349,6 @@ class FilamentAuthzPlugin implements Plugin
 
     protected function applyConfigOverrides(Panel $panel): void
     {
-        $panelId = $panel->getId();
-
         if ($this->navigationGroup !== null) {
             config()->set('filament-authz.navigation.group', $this->evaluate($this->navigationGroup));
         }

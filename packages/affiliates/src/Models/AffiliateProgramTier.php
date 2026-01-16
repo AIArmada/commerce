@@ -52,6 +52,9 @@ class AffiliateProgramTier extends Model
         return config('affiliates.database.tables.program_tiers', 'affiliate_program_tiers');
     }
 
+    /**
+     * @return BelongsTo<AffiliateProgram, $this>
+     */
     public function program(): BelongsTo
     {
         return $this->belongsTo(AffiliateProgram::class, 'program_id');

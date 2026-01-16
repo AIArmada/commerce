@@ -64,11 +64,17 @@ class AffiliateLink extends Model
         return config('affiliates.database.tables.links', 'affiliate_links');
     }
 
+    /**
+     * @return BelongsTo<Affiliate, $this>
+     */
     public function affiliate(): BelongsTo
     {
         return $this->belongsTo(Affiliate::class);
     }
 
+    /**
+     * @return BelongsTo<AffiliateProgram, $this>
+     */
     public function program(): BelongsTo
     {
         return $this->belongsTo(AffiliateProgram::class, 'program_id');
