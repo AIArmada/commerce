@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart;
 
+use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Listeners\HandleUserLogin;
 use AIArmada\Cart\Listeners\HandleUserLoginAttempt;
 use AIArmada\Cart\Services\CartConditionResolver;
@@ -40,6 +41,9 @@ final class CartServiceProvider extends PackageServiceProvider
         $this->app->singleton(CartConditionResolver::class);
         $this->app->alias(CartConditionResolver::class, 'cart.condition_resolver');
 
+        $this->app->singleton(ConditionProviderRegistry::class);
+        $this->app->alias(ConditionProviderRegistry::class, 'cart.condition_providers');
+
         $this->registerStorage();
         $this->registerCartManager();
         $this->registerMigrationService();
@@ -67,6 +71,8 @@ final class CartServiceProvider extends PackageServiceProvider
             CartMigrationService::class,
             CartConditionResolver::class,
             'cart.condition_resolver',
+            ConditionProviderRegistry::class,
+            'cart.condition_providers',
             'cart.storage',
         ];
     }

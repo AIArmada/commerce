@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart;
 
+use AIArmada\Cart\Conditions\CartCondition;
+use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipeline;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineContext;
 use AIArmada\Cart\Conditions\Pipeline\ConditionPipelineResult;
@@ -37,6 +39,8 @@ final class Cart
 
     private CartConditionResolver $conditionResolver;
 
+    private ?ConditionProviderRegistry $conditionProviderRegistry = null;
+
     public function __construct(
         private StorageInterface $storage,
         private string $identifier,
@@ -44,9 +48,16 @@ final class Cart
         private string $instanceName = 'default',
         private bool $eventsEnabled = true,
         ?CartConditionResolver $conditionResolver = null,
+        ?ConditionProviderRegistry $conditionProviderRegistry = null,
     ) {
         $this->conditionResolver = $conditionResolver
             ?? (function_exists('app') ? app(CartConditionResolver::class) : new CartConditionResolver);
+
+        if ($conditionProviderRegistry !== null) {
+            $this->conditionProviderRegistry = $conditionProviderRegistry;
+        } elseif (function_exists('app') && app()->bound(ConditionProviderRegistry::class)) {
+            $this->conditionProviderRegistry = app(ConditionProviderRegistry::class);
+        }
     }
 
     /**
@@ -82,6 +93,91 @@ final class Cart
     public function getConditionResolver(): CartConditionResolver
     {
         return $this->conditionResolver;
+    }
+
+    public function getConditionProviderRegistry(): ?ConditionProviderRegistry
+    {
+        return $this->conditionProviderRegistry;
+    }
+
+    /**
+     * Sync registered condition providers with stored cart conditions.
+     */
+    public function syncConditionProviders(): void
+    {
+        $registry = $this->getConditionProviderRegistry();
+
+        if ($registry === null) {
+            return;
+        }
+
+        $providers = $registry->all();
+
+        if ($providers === []) {
+            return;
+        }
+
+        $conditions = $this->getConditionsFromStorage();
+        $original = $conditions->toArray();
+        $providerKeys = $registry->providerKeys();
+
+        foreach ($conditions as $condition) {
+            $providerKey = $condition->getAttribute('__provider');
+
+            if (is_string($providerKey) && $providerKey !== '' && ! in_array($providerKey, $providerKeys, true)) {
+                $conditions->forget($condition->getName());
+            }
+        }
+
+        foreach ($providers as $provider) {
+            $providerKey = $provider::class;
+
+            foreach ($conditions as $condition) {
+                if ($condition->getAttribute('__provider') !== $providerKey) {
+                    continue;
+                }
+
+                if (! $provider->validate($condition, $this)) {
+                    $conditions->forget($condition->getName());
+                }
+            }
+
+            foreach ($provider->getConditionsFor($this) as $condition) {
+                if (! $provider->validate($condition, $this)) {
+                    continue;
+                }
+
+                $condition = $this->withProviderAttribute($condition, $providerKey);
+                $conditions->put($condition->getName(), $condition);
+            }
+        }
+
+        $updated = $conditions->toArray();
+
+        if ($original !== $updated) {
+            $this->storage->putConditions($this->getIdentifier(), $this->instance(), $updated);
+            $this->invalidatePipelineCache();
+        }
+    }
+
+    private function withProviderAttribute(CartCondition $condition, string $providerKey): CartCondition
+    {
+        if ($condition->getAttribute('__provider') === $providerKey) {
+            return $condition;
+        }
+
+        $attributes = $condition->getAttributes();
+        $attributes['__provider'] = $providerKey;
+
+        return new CartCondition(
+            name: $condition->getName(),
+            type: $condition->getType(),
+            target: $condition->getTargetDefinition(),
+            value: $condition->getValue(),
+            attributes: $attributes,
+            order: $condition->getOrder(),
+            rules: $condition->getRules(),
+        );
     }
 
     /**

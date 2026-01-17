@@ -53,6 +53,10 @@ trait ManagesConditions
      */
     public function getConditions(): CartConditionCollection
     {
+        if (method_exists($this, 'syncConditionProviders')) {
+            $this->syncConditionProviders();
+        }
+
         // Ensure dynamic conditions are evaluated before returning
         if (method_exists($this, 'evaluateDynamicConditionsIfDirty')) {
             $this->evaluateDynamicConditionsIfDirty();

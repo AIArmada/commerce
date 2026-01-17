@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates;
 
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
+use AIArmada\Affiliates\Listeners\RecordCommissionForOrder;
 use AIArmada\Affiliates\Services\AffiliatePayoutService;
 use AIArmada\Affiliates\Services\AffiliateRegistrationService;
 use AIArmada\Affiliates\Services\AffiliateService;
@@ -23,7 +24,11 @@ use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
+use AIArmada\Cart\CartManager;
+use AIArmada\Cart\Conditions\ConditionProviderRegistry;
+use AIArmada\Orders\Events\CommissionAttributionRequired;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\Event;
 use Spatie\LaravelPackageTools\Package;
 use Spatie\LaravelPackageTools\PackageServiceProvider;
 
@@ -77,6 +82,15 @@ final class AffiliatesServiceProvider extends PackageServiceProvider
         }
 
         app(VoucherIntegrationRegistrar::class)->register();
+
+        if (class_exists(ConditionProviderRegistry::class)) {
+            $this->app->make(ConditionProviderRegistry::class)
+                ->register(AffiliateDiscountConditionProvider::class);
+        }
+
+        if (class_exists(CommissionAttributionRequired::class) && class_exists(CartManager::class)) {
+            Event::listen(CommissionAttributionRequired::class, RecordCommissionForOrder::class);
+        }
 
         if (config('affiliates.cookies.enabled', true)) {
             $this->registerCookieTrackingMiddleware();

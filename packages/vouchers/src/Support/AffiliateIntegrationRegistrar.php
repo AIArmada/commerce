@@ -30,7 +30,7 @@ final class AffiliateIntegrationRegistrar
             return;
         }
 
-        if (! config('vouchers.integrations.affiliates.enabled', true)) {
+        if (! config('vouchers.affiliates.enabled', true)) {
             return;
         }
 
@@ -43,7 +43,7 @@ final class AffiliateIntegrationRegistrar
      */
     private function registerAffiliateCreatedListener(): void
     {
-        if (! config('vouchers.integrations.affiliates.auto_create_voucher', false)) {
+        if (! config('vouchers.affiliates.auto_create_voucher', false)) {
             return;
         }
 
@@ -60,7 +60,7 @@ final class AffiliateIntegrationRegistrar
      */
     private function registerAffiliateActivatedListener(): void
     {
-        if (! config('vouchers.integrations.affiliates.create_on_activation', true)) {
+        if (! config('vouchers.affiliates.create_on_activation', true)) {
             return;
         }
 
@@ -87,7 +87,7 @@ final class AffiliateIntegrationRegistrar
     private function createVoucherForAffiliate(object $affiliate): void
     {
         /** @var array<string, mixed> $voucherConfig */
-        $voucherConfig = config('vouchers.integrations.affiliates.voucher_defaults', []);
+        $voucherConfig = config('vouchers.affiliates.voucher_defaults', []);
 
         $code = $this->generateAffiliateVoucherCode($affiliate);
 
@@ -110,7 +110,7 @@ final class AffiliateIntegrationRegistrar
         ]);
 
         // Update affiliate with default voucher code if configured
-        if (config('vouchers.integrations.affiliates.set_default_voucher_code', true)) {
+        if (config('vouchers.affiliates.set_default_voucher_code', true)) {
             $affiliate->update(['default_voucher_code' => $voucher->code]);
         }
     }
@@ -121,10 +121,10 @@ final class AffiliateIntegrationRegistrar
     private function generateAffiliateVoucherCode(object $affiliate): string
     {
         /** @var string $prefix */
-        $prefix = config('vouchers.integrations.affiliates.code_prefix', 'REF');
+        $prefix = config('vouchers.affiliates.code_prefix', 'REF');
 
         /** @var string $format */
-        $format = config('vouchers.integrations.affiliates.code_format', 'prefix_code');
+        $format = config('vouchers.affiliates.code_format', 'prefix_code');
 
         return match ($format) {
             'prefix_code' => mb_strtoupper($prefix . $affiliate->code),

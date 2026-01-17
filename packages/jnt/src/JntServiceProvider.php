@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Jnt;
 
+use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Jnt\Cart\JntShippingCalculator;
 use AIArmada\Jnt\Cart\JntShippingConditionProvider;
 use AIArmada\Jnt\Console\Commands\ConfigCheckCommand;
@@ -93,6 +94,7 @@ class JntServiceProvider extends PackageServiceProvider
     public function bootingPackage(): void
     {
         $this->registerCartIntegration();
+        $this->registerCartConditionProvider();
         $this->registerShippingDriver();
         $this->registerEventListeners();
     }
@@ -221,6 +223,20 @@ class JntServiceProvider extends PackageServiceProvider
                 )
             );
         }
+    }
+
+    protected function registerCartConditionProvider(): void
+    {
+        if (! class_exists(ConditionProviderRegistry::class)) {
+            return;
+        }
+
+        if (! class_exists('AIArmada\\Cart\\CartManager')) {
+            return;
+        }
+
+        $this->app->make(ConditionProviderRegistry::class)
+            ->register(JntShippingConditionProvider::class);
     }
 
     /**
