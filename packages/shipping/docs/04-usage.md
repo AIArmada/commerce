@@ -15,6 +15,32 @@ use AIArmada\Shipping\Facades\Shipping;
 $shipping = app('shipping');
 ```
 
+## Cart Condition Provider
+
+When `aiarmada/cart` is installed, the shipping package registers a condition provider that can
+add shipping conditions based on cart metadata. Set the shipping address and (optionally) a
+selected method on the cart, then read totals/conditions.
+
+```php
+use AIArmada\Cart\Facades\Cart;
+
+Cart::setMetadata('shipping_address', [
+    'name' => 'John Doe',
+    'line1' => '456 Customer Ave',
+    'city' => 'Petaling Jaya',
+    'state' => 'Selangor',
+    'postcode' => '47800',
+    'countryCode' => 'MY',
+]);
+
+Cart::setMetadata('selected_shipping_method', [
+    'carrier' => 'manual',
+    'service' => 'standard',
+]);
+
+$total = Cart::total();
+```
+
 ### Getting Rates
 
 ```php

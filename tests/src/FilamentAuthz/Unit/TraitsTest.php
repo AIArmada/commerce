@@ -7,6 +7,32 @@ use AIArmada\FilamentAuthz\Concerns\HasPanelAuthz;
 use AIArmada\FilamentAuthz\Concerns\HasWidgetAuthz;
 use AIArmada\FilamentAuthz\Concerns\SyncsRolePermissions;
 use AIArmada\FilamentAuthz\Resources\RoleResource\Concerns\HasAuthzFormComponents;
+use Filament\Pages\Page;
+use Filament\Widgets\Widget;
+
+class CustomAuthzPage extends Page
+{
+    use HasPageAuthz;
+
+    protected string $view = 'filament-authz::tests.page';
+
+    public static function authzPermission(): ?string
+    {
+        return 'page.custom-access';
+    }
+}
+
+class CustomAuthzWidget extends Widget
+{
+    use HasWidgetAuthz;
+
+    protected string $view = 'filament-authz::tests.widget';
+
+    public static function authzPermission(): ?string
+    {
+        return 'widget.custom-access';
+    }
+}
 
 describe('HasPageAuthz Trait', function (): void {
     it('exists', function (): void {
@@ -24,11 +50,19 @@ describe('HasPageAuthz Trait', function (): void {
 
         expect($reflection->hasMethod('getAuthzPermission'))->toBeTrue();
     });
+
+    it('uses custom permission override', function (): void {
+        expect(CustomAuthzPage::getAuthzPermission())->toBe('page.custom-access');
+    });
 });
 
 describe('HasWidgetAuthz Trait', function (): void {
     it('exists', function (): void {
         expect(trait_exists(HasWidgetAuthz::class))->toBeTrue();
+    });
+
+    it('uses custom permission override', function (): void {
+        expect(CustomAuthzWidget::getAuthzPermission())->toBe('widget.custom-access');
     });
 });
 

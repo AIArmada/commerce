@@ -73,6 +73,7 @@ trait HasAuthzFormComponents
             ->label('Resources')
             ->icon('heroicon-o-cube')
             ->badge($count)
+            ->visible($resources->isNotEmpty())
             ->schema([
                 static::getSelectAllResourcesToggle($resources),
                 Grid::make()
@@ -94,6 +95,10 @@ trait HasAuthzFormComponents
             ->label('Select All Resources')
             ->helperText('Toggle all resource permissions at once')
             ->live()
+            ->afterStateHydrated(function ($state, callable $set, callable $get) use ($allPermissions): void {
+                $current = $get('permissions') ?? [];
+                $set('select_all_resources', static::shouldSelectAll($allPermissions, $current));
+            })
             ->afterStateUpdated(function ($state, callable $set, callable $get) use ($allPermissions): void {
                 $current = $get('permissions') ?? [];
                 if ($state) {
@@ -123,6 +128,10 @@ trait HasAuthzFormComponents
                 Toggle::make($sectionKey)
                     ->label('Select All')
                     ->live()
+                    ->afterStateHydrated(function ($state, callable $set, callable $get) use ($sectionKey, $permissionKeys): void {
+                        $current = $get('permissions') ?? [];
+                        $set($sectionKey, static::shouldSelectAll($permissionKeys, $current));
+                    })
                     ->afterStateUpdated(function ($state, callable $set, callable $get) use ($permissionKeys): void {
                         $current = $get('permissions') ?? [];
                         if ($state) {
@@ -137,6 +146,7 @@ trait HasAuthzFormComponents
                     ->options($permissions)
                     ->columns(config('filament-authz.role_resource.checkbox_columns', 3))
                     ->bulkToggleable()
+                    ->searchable()
                     ->gridDirection('row'),
             ]);
     }
@@ -233,6 +243,10 @@ trait HasAuthzFormComponents
         return Toggle::make('select_all_' . $category)
             ->label('Select All ' . ucfirst($category))
             ->live()
+            ->afterStateHydrated(function ($state, callable $set, callable $get) use ($category, $permissionKeys): void {
+                $current = $get('permissions') ?? [];
+                $set('select_all_' . $category, static::shouldSelectAll($permissionKeys, $current));
+            })
             ->afterStateUpdated(function ($state, callable $set, callable $get) use ($permissionKeys): void {
                 $current = $get('permissions') ?? [];
                 if ($state) {
@@ -262,5 +276,18 @@ trait HasAuthzFormComponents
 
         $permissionNames = $record->permissions()->pluck('name')->toArray();
         $component->state($permissionNames);
+    }
+
+    /**
+     * @param  list<string>  $permissionKeys
+     * @param  list<string>  $selected
+     */
+    protected static function shouldSelectAll(array $permissionKeys, array $selected): bool
+    {
+        if ($permissionKeys === []) {
+            return false;
+        }
+
+        return array_diff($permissionKeys, $selected) === [];
     }
 }
