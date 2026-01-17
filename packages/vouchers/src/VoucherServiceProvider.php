@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers;
 
 use AIArmada\Cart\CartManager;
+use AIArmada\Cart\Conditions\ConditionProviderRegistry;
 use AIArmada\Cart\Contracts\CartManagerInterface;
 use AIArmada\Cart\Facades\Cart as CartFacade;
 use AIArmada\Cart\Services\CartConditionResolver;
+use AIArmada\Vouchers\Cart\VoucherConditionProvider;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Events\VoucherApplied;
@@ -39,6 +41,10 @@ final class VoucherServiceProvider extends PackageServiceProvider
         $this->app->singleton(VoucherValidator::class);
         $this->app->singleton(VoucherRulesFactory::class, static fn () => new VoucherRulesFactory);
         $this->app->singleton(AffiliateIntegrationRegistrar::class);
+
+        if (class_exists(ConditionProviderRegistry::class)) {
+            $this->app->singleton(VoucherConditionProvider::class);
+        }
 
         $this->app->resolving(CartConditionResolver::class, function (CartConditionResolver $resolver): void {
             $resolver->register(function (mixed $payload) {
@@ -89,6 +95,11 @@ final class VoucherServiceProvider extends PackageServiceProvider
         Event::listen(VoucherApplied::class, IncrementVoucherAppliedCount::class);
 
         $this->app->make(AffiliateIntegrationRegistrar::class)->register();
+
+        if (class_exists(ConditionProviderRegistry::class)) {
+            $this->app->make(ConditionProviderRegistry::class)
+                ->register(VoucherConditionProvider::class);
+        }
 
         $this->app->extend('cart', function (CartManagerInterface $manager, $app): CartManagerInterface {
             if ($manager instanceof CartManagerWithVouchers) {

@@ -3,7 +3,6 @@
 declare(strict_types=1);
 
 use AIArmada\Vouchers\Models\Voucher;
-use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Support\AffiliateIntegrationRegistrar;
 use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\Config;
@@ -11,11 +10,10 @@ use Illuminate\Support\Facades\Config;
 describe('AffiliateIntegrationRegistrar', function (): void {
     describe('register', function (): void {
         it('does nothing when affiliates integration is disabled', function (): void {
-            Config::set('vouchers.integrations.affiliates.enabled', false);
+            Config::set('vouchers.affiliates.enabled', false);
 
             $dispatcher = Mockery::mock(Dispatcher::class);
-            $voucherService = Mockery::mock(VoucherService::class);
-            $registrar = new AffiliateIntegrationRegistrar($dispatcher, $voucherService);
+            $registrar = new AffiliateIntegrationRegistrar($dispatcher);
 
             // Should return early without registering any listeners
             $result = $registrar->register();
@@ -25,19 +23,19 @@ describe('AffiliateIntegrationRegistrar', function (): void {
 
         it('is enabled by default', function (): void {
             // Default config value
-            $enabled = config('vouchers.integrations.affiliates.enabled', true);
+            $enabled = config('vouchers.affiliates.enabled', true);
 
             expect($enabled)->toBeTrue();
         });
 
         it('auto_create_voucher is disabled by default', function (): void {
-            $autoCreate = config('vouchers.integrations.affiliates.auto_create_voucher', false);
+            $autoCreate = config('vouchers.affiliates.auto_create_voucher', false);
 
             expect($autoCreate)->toBeFalse();
         });
 
         it('create_on_activation is enabled by default', function (): void {
-            $createOnActivation = config('vouchers.integrations.affiliates.create_on_activation', true);
+            $createOnActivation = config('vouchers.affiliates.create_on_activation', true);
 
             expect($createOnActivation)->toBeTrue();
         });
@@ -45,19 +43,19 @@ describe('AffiliateIntegrationRegistrar', function (): void {
 
     describe('voucher code generation formats', function (): void {
         it('uses prefix_code format by default', function (): void {
-            $format = config('vouchers.integrations.affiliates.code_format', 'prefix_code');
+            $format = config('vouchers.affiliates.code_format', 'prefix_code');
 
             expect($format)->toBe('prefix_code');
         });
 
         it('uses REF prefix by default', function (): void {
-            $prefix = config('vouchers.integrations.affiliates.code_prefix', 'REF');
+            $prefix = config('vouchers.affiliates.code_prefix', 'REF');
 
             expect($prefix)->toBe('REF');
         });
 
         it('set_default_voucher_code is enabled by default', function (): void {
-            $setDefault = config('vouchers.integrations.affiliates.set_default_voucher_code', true);
+            $setDefault = config('vouchers.affiliates.set_default_voucher_code', true);
 
             expect($setDefault)->toBeTrue();
         });
@@ -65,19 +63,19 @@ describe('AffiliateIntegrationRegistrar', function (): void {
 
     describe('voucher defaults configuration', function (): void {
         it('uses percentage type by default', function (): void {
-            $defaults = config('vouchers.integrations.affiliates.voucher_defaults', []);
+            $defaults = config('vouchers.affiliates.voucher_defaults', []);
 
             expect($defaults['type'] ?? 'percentage')->toBe('percentage');
         });
 
         it('uses 1000 (10%) value by default', function (): void {
-            $defaults = config('vouchers.integrations.affiliates.voucher_defaults', []);
+            $defaults = config('vouchers.affiliates.voucher_defaults', []);
 
             expect($defaults['value'] ?? 1000)->toBe(1000);
         });
 
         it('uses active status by default', function (): void {
-            $defaults = config('vouchers.integrations.affiliates.voucher_defaults', []);
+            $defaults = config('vouchers.affiliates.voucher_defaults', []);
 
             expect($defaults['status'] ?? 'active')->toBe('active');
         });
@@ -86,9 +84,7 @@ describe('AffiliateIntegrationRegistrar', function (): void {
     describe('registrar instantiation', function (): void {
         it('can be instantiated with dependencies', function (): void {
             $dispatcher = app(Dispatcher::class);
-            $voucherService = app(VoucherService::class);
-
-            $registrar = new AffiliateIntegrationRegistrar($dispatcher, $voucherService);
+            $registrar = new AffiliateIntegrationRegistrar($dispatcher);
 
             expect($registrar)->toBeInstanceOf(AffiliateIntegrationRegistrar::class);
         });
@@ -185,12 +181,11 @@ describe('AffiliateIntegrationRegistrar affiliate voucher creation', function ()
 
 describe('AffiliateIntegrationRegistrar private methods via reflection', function (): void {
     it('generates affiliate voucher code using prefix_code format', function (): void {
-        Config::set('vouchers.integrations.affiliates.code_prefix', 'REF');
-        Config::set('vouchers.integrations.affiliates.code_format', 'prefix_code');
+        Config::set('vouchers.affiliates.code_prefix', 'REF');
+        Config::set('vouchers.affiliates.code_format', 'prefix_code');
 
         $dispatcher = app(Dispatcher::class);
-        $voucherService = app(VoucherService::class);
-        $registrar = new AffiliateIntegrationRegistrar($dispatcher, $voucherService);
+        $registrar = new AffiliateIntegrationRegistrar($dispatcher);
 
         $affiliate = new stdClass;
         $affiliate->code = 'TESTPARTNER';
@@ -207,12 +202,11 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
     });
 
     it('generates affiliate voucher code using code_only format', function (): void {
-        Config::set('vouchers.integrations.affiliates.code_prefix', 'REF');
-        Config::set('vouchers.integrations.affiliates.code_format', 'code_only');
+        Config::set('vouchers.affiliates.code_prefix', 'REF');
+        Config::set('vouchers.affiliates.code_format', 'code_only');
 
         $dispatcher = app(Dispatcher::class);
-        $voucherService = app(VoucherService::class);
-        $registrar = new AffiliateIntegrationRegistrar($dispatcher, $voucherService);
+        $registrar = new AffiliateIntegrationRegistrar($dispatcher);
 
         $affiliate = new stdClass;
         $affiliate->code = 'testpartner';
@@ -229,12 +223,11 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
     });
 
     it('generates affiliate voucher code using prefix_random format', function (): void {
-        Config::set('vouchers.integrations.affiliates.code_prefix', 'REF');
-        Config::set('vouchers.integrations.affiliates.code_format', 'prefix_random');
+        Config::set('vouchers.affiliates.code_prefix', 'REF');
+        Config::set('vouchers.affiliates.code_format', 'prefix_random');
 
         $dispatcher = app(Dispatcher::class);
-        $voucherService = app(VoucherService::class);
-        $registrar = new AffiliateIntegrationRegistrar($dispatcher, $voucherService);
+        $registrar = new AffiliateIntegrationRegistrar($dispatcher);
 
         $affiliate = new stdClass;
         $affiliate->code = 'testpartner';
@@ -252,12 +245,11 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
     });
 
     it('generates affiliate voucher code using default format for unknown format', function (): void {
-        Config::set('vouchers.integrations.affiliates.code_prefix', 'REF');
-        Config::set('vouchers.integrations.affiliates.code_format', 'unknown_format');
+        Config::set('vouchers.affiliates.code_prefix', 'REF');
+        Config::set('vouchers.affiliates.code_format', 'unknown_format');
 
         $dispatcher = app(Dispatcher::class);
-        $voucherService = app(VoucherService::class);
-        $registrar = new AffiliateIntegrationRegistrar($dispatcher, $voucherService);
+        $registrar = new AffiliateIntegrationRegistrar($dispatcher);
 
         $affiliate = new stdClass;
         $affiliate->code = 'testpartner';
@@ -276,8 +268,7 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
 
     it('checks if affiliate has voucher returns true when voucher exists', function (): void {
         $dispatcher = app(Dispatcher::class);
-        $voucherService = app(VoucherService::class);
-        $registrar = new AffiliateIntegrationRegistrar($dispatcher, $voucherService);
+        $registrar = new AffiliateIntegrationRegistrar($dispatcher);
 
         // Create a voucher with specific affiliate_id
         $affiliateId = 'affiliate-' . uniqid();
@@ -308,8 +299,7 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
 
     it('checks if affiliate has voucher returns false when no voucher exists', function (): void {
         $dispatcher = app(Dispatcher::class);
-        $voucherService = app(VoucherService::class);
-        $registrar = new AffiliateIntegrationRegistrar($dispatcher, $voucherService);
+        $registrar = new AffiliateIntegrationRegistrar($dispatcher);
 
         $affiliate = new stdClass;
         $affiliate->id = 'nonexistent-affiliate-' . uniqid();
@@ -324,13 +314,12 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
     });
 
     it('registerAffiliateCreatedListener does nothing when auto_create_voucher is disabled', function (): void {
-        Config::set('vouchers.integrations.affiliates.auto_create_voucher', false);
+        Config::set('vouchers.affiliates.auto_create_voucher', false);
 
         $dispatcher = Mockery::mock(Dispatcher::class);
         $dispatcher->shouldNotReceive('listen');
 
-        $voucherService = app(VoucherService::class);
-        $registrar = new AffiliateIntegrationRegistrar($dispatcher, $voucherService);
+        $registrar = new AffiliateIntegrationRegistrar($dispatcher);
 
         $reflection = new ReflectionClass($registrar);
         $method = $reflection->getMethod('registerAffiliateCreatedListener');
@@ -342,13 +331,12 @@ describe('AffiliateIntegrationRegistrar private methods via reflection', functio
     });
 
     it('registerAffiliateActivatedListener does nothing when create_on_activation is disabled', function (): void {
-        Config::set('vouchers.integrations.affiliates.create_on_activation', false);
+        Config::set('vouchers.affiliates.create_on_activation', false);
 
         $dispatcher = Mockery::mock(Dispatcher::class);
         $dispatcher->shouldNotReceive('listen');
 
-        $voucherService = app(VoucherService::class);
-        $registrar = new AffiliateIntegrationRegistrar($dispatcher, $voucherService);
+        $registrar = new AffiliateIntegrationRegistrar($dispatcher);
 
         $reflection = new ReflectionClass($registrar);
         $method = $reflection->getMethod('registerAffiliateActivatedListener');

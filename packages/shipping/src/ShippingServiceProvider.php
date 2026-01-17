@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping;
 
+use AIArmada\Cart\Conditions\ConditionProviderRegistry;
+use AIArmada\Shipping\Cart\ShippingConditionProvider;
 use AIArmada\Shipping\Integrations\OrderFulfillmentHandler;
 use AIArmada\Shipping\Models\ReturnAuthorization;
 use AIArmada\Shipping\Models\Shipment;
@@ -50,6 +52,12 @@ final class ShippingServiceProvider extends PackageServiceProvider
 
             return new FreeShippingEvaluator($config);
         });
+
+        if (class_exists(ConditionProviderRegistry::class)) {
+            $this->app->singleton(ShippingConditionProvider::class);
+            $this->app->make(ConditionProviderRegistry::class)
+                ->register(ShippingConditionProvider::class);
+        }
 
         $this->registerOrdersIntegration();
     }
