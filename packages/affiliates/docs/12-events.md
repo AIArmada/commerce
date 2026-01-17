@@ -62,6 +62,12 @@ class AffiliateConversionRecorded
 }
 ```
 
+### Orders Integration Event
+
+When the Orders package is installed, it dispatches a `CommissionAttributionRequired` event
+after payment. The Affiliates package listens for this event and records conversions when the
+order metadata contains a `cart_id`.
+
 **Example Listener:**
 
 ```php

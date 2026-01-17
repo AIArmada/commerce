@@ -21,6 +21,8 @@ class PermissionResource extends Resource
 {
     protected static ?string $model = null;
 
+    protected static ?string $recordTitleAttribute = 'name';
+
     public static function getModel(): string
     {
         return config('permission.models.permission', Permission::class);
@@ -82,7 +84,7 @@ class PermissionResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return static::canViewAny();
+        return (bool) config('filament-authz.navigation.register', true) && static::canViewAny();
     }
 
     public static function form(Schema $form): Schema
@@ -93,6 +95,7 @@ class PermissionResource extends Resource
             Section::make('Permission Details')->schema([
                 Forms\Components\TextInput::make('name')
                     ->required()
+                    ->maxLength(255)
                     ->unique(ignoreRecord: true),
                 Forms\Components\Select::make('guard_name')
                     ->options(array_combine($guards, $guards))
@@ -120,7 +123,7 @@ class PermissionResource extends Resource
             Actions\DeleteAction::make(),
         ])->bulkActions([
             Actions\DeleteBulkAction::make(),
-        ]);
+        ])->defaultSort('name');
     }
 
     public static function getPages(): array
