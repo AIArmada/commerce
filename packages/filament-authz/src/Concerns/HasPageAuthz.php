@@ -68,7 +68,13 @@ trait HasPageAuthz
     public static function getAuthzPermission(): ?string
     {
         if (static::$authzPermissionKey === null) {
-            static::$authzPermissionKey = Authz::getPagePermission(static::class) ?? '';
+            $customPermission = static::authzPermission();
+
+            if (is_string($customPermission) && $customPermission !== '') {
+                static::$authzPermissionKey = $customPermission;
+            } else {
+                static::$authzPermissionKey = Authz::getPagePermission(static::class) ?? '';
+            }
         }
 
         return static::$authzPermissionKey !== '' ? static::$authzPermissionKey : null;

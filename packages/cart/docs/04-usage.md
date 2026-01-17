@@ -193,6 +193,9 @@ Cart::removeConditionsByType('discount');
 Cart::clearConditions();
 ```
 
+> Provider-managed conditions (from vouchers, affiliates, shipping, etc.) are synced automatically
+> when conditions are read. Avoid manually mutating those conditions; use the provider APIs instead.
+
 ## Working with Metadata
 
 ```php

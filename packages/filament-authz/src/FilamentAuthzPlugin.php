@@ -361,6 +361,8 @@ class FilamentAuthzPlugin implements Plugin
             config()->set('filament-authz.navigation.sort', $this->evaluate($this->navigationSort));
         }
 
+        config()->set('filament-authz.navigation.register', $this->evaluate($this->registerNavigation));
+
         if ($this->excludeResources !== null) {
             config()->set('filament-authz.resources.exclude', $this->evaluate($this->excludeResources));
         }

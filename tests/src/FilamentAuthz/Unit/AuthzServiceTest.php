@@ -8,7 +8,7 @@ use AIArmada\FilamentAuthz\Services\PermissionKeyBuilder;
 
 beforeEach(function (): void {
     $this->keyBuilder = new PermissionKeyBuilder;
-    $this->discovery = new EntityDiscoveryService;
+    $this->discovery = new EntityDiscoveryService($this->keyBuilder);
     $this->authz = new Authz($this->discovery, $this->keyBuilder);
 });
 

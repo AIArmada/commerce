@@ -230,3 +230,26 @@ Cart::applyVoucher('SUMMER2024');
 // Voucher is still applied
 Cart::hasVoucher('SUMMER2024'); // true
 ```
+
+## Affiliates Integration
+
+When `aiarmada/affiliates` is installed, the vouchers package can auto-create vouchers for
+affiliates and attach affiliate data from voucher metadata.
+
+```php
+// config/vouchers.php
+'affiliates' => [
+    'enabled' => true,
+    'auto_create_voucher' => false,
+    'create_on_activation' => true,
+    'set_default_voucher_code' => true,
+    'code_format' => 'prefix_code',
+    'code_prefix' => 'REF',
+    'voucher_defaults' => [
+        'type' => 'percentage',
+        'value' => 1000,
+        'currency' => null,
+        'status' => 'active',
+    ],
+],
+```

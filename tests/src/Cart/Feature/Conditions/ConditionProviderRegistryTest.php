@@ -13,7 +13,8 @@ use AIArmada\Cart\Facades\Cart;
 it('syncs condition providers into cart conditions', function (): void {
     $registry = app(ConditionProviderRegistry::class);
 
-    $provider = new class implements ConditionProviderInterface {
+    $provider = new class implements ConditionProviderInterface
+    {
         public function getConditionsFor(\AIArmada\Cart\Cart $cart): array
         {
             return [new CartCondition(

@@ -11,7 +11,6 @@ use Filament\Actions;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\SelectFilter;
@@ -24,6 +23,8 @@ class RoleResource extends Resource
     use HasAuthzFormComponents;
 
     protected static ?string $model = null;
+
+    protected static ?string $recordTitleAttribute = 'name';
 
     public static function getModel(): string
     {
@@ -84,7 +85,12 @@ class RoleResource extends Resource
 
     public static function shouldRegisterNavigation(): bool
     {
-        return static::canViewAny();
+        return (bool) config('filament-authz.navigation.register', true) && static::canViewAny();
+    }
+
+    public static function getSlug(?\Filament\Panel $panel = null): string
+    {
+        return (string) config('filament-authz.role_resource.slug', 'authz/roles');
     }
 
     public static function form(Schema $form): Schema
@@ -95,6 +101,7 @@ class RoleResource extends Resource
             Section::make('Role Details')->schema([
                 Forms\Components\TextInput::make('name')
                     ->required()
+                    ->maxLength(255)
                     ->unique(ignoreRecord: true),
                 Forms\Components\Select::make('guard_name')
                     ->options(array_combine($guards, $guards))
@@ -103,8 +110,7 @@ class RoleResource extends Resource
                     ->reactive(),
             ])->columns(2),
 
-            Tabs::make('Permissions')
-                ->schema(static::getPermissionTabs())
+            static::getAuthzFormComponents()
                 ->columnSpanFull(),
         ]);
     }
@@ -133,7 +139,7 @@ class RoleResource extends Resource
             Actions\DeleteAction::make(),
         ])->bulkActions([
             Actions\DeleteBulkAction::make(),
-        ]);
+        ])->defaultSort('name');
     }
 
     public static function getPages(): array

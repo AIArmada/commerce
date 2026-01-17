@@ -95,6 +95,23 @@ Cart::recordAffiliateConversion([
 ]);
 ```
 
+### Orders Integration (Auto Attribution)
+
+When the Orders package is installed, it can emit a commission attribution event on payment.
+The Affiliates package listens for this and records conversions automatically **if** the order
+metadata includes a `cart_id` pointing to the original cart.
+
+```php
+use AIArmada\Orders\Models\Order;
+
+$order = Order::create([
+    // ...
+    'metadata' => [
+        'cart_id' => $cart->getId(),
+    ],
+]);
+```
+
 ### Direct Recording
 
 ```php

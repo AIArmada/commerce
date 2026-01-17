@@ -289,6 +289,28 @@ ConditionPresets::inclusiveTax('VAT', 20);
 ConditionPresets::compoundTax('Combined', [['State', 6], ['Local', 2]]);
 ```
 
+## Condition Providers (Integrations)
+
+The Cart package can auto-attach conditions from other packages via the `ConditionProviderRegistry`.
+These providers are registered by integrations (e.g., Vouchers, Affiliates, Shipping, JNT) and
+are synced when you read conditions or totals.
+
+### Registering a Provider
+
+```php
+use AIArmada\Cart\Conditions\ConditionProviderRegistry;
+use AIArmada\Cart\Contracts\ConditionProviderInterface;
+
+app(ConditionProviderRegistry::class)->register(MyConditionProvider::class);
+```
+
+### Provider Lifecycle
+
+- Conditions are added on-demand during `Cart::getConditions()` and totals.
+- Providers can invalidate their conditions via `validate()`.
+- Provider-managed conditions are tagged with a `__provider` attribute so stale
+    conditions can be removed when a provider is no longer available.
+
 ## Item-Level Conditions
 
 Add conditions to specific items:

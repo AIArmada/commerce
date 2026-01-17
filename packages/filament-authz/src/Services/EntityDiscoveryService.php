@@ -16,6 +16,10 @@ use Illuminate\Support\Collection;
  */
 class EntityDiscoveryService
 {
+    public function __construct(
+        protected PermissionKeyBuilder $keyBuilder
+    ) {}
+
     /**
      * @return Collection<int, array{type: string, class: class-string, permission: string, label: string}>
      */
@@ -45,20 +49,19 @@ class EntityDiscoveryService
         }
 
         $excludedResources = config('filament-authz.resources.exclude', []);
-        $separator = config('filament-authz.permissions.separator', '.');
 
         return collect($panel->getResources())
             ->filter(fn (string $resource): bool => ! in_array($resource, $excludedResources, true))
-            ->flatMap(function (string $resource) use ($separator): array {
+            ->flatMap(function (string $resource): array {
                 /** @var class-string<resource> $resource */
-                $key = $this->getResourceKey($resource);
+                $subject = $this->getResourceSubject($resource);
                 $label = $this->getResourceLabel($resource);
 
                 return collect($this->getResourceActions())
                     ->map(fn (string $action): array => [
                         'type' => 'resource',
                         'class' => $resource,
-                        'permission' => $key . $separator . $action,
+                        'permission' => $this->keyBuilder->build($subject, $action),
                         'label' => $label . ' - ' . str($action)->headline()->toString(),
                     ])
                     ->all();
@@ -79,18 +82,17 @@ class EntityDiscoveryService
 
         $excludedPages = config('filament-authz.pages.exclude', []);
         $prefix = config('filament-authz.pages.prefix', 'page');
-        $separator = config('filament-authz.permissions.separator', '.');
 
         return collect($panel->getPages())
             ->filter(fn (string $page): bool => ! in_array($page, $excludedPages, true))
-            ->map(function (string $page) use ($prefix, $separator): array {
+            ->map(function (string $page) use ($prefix): array {
                 /** @var class-string<Page> $page */
-                $key = str(class_basename($page))->kebab()->toString();
+                $subject = str(class_basename($page))->toString();
 
                 return [
                     'type' => 'page',
                     'class' => $page,
-                    'permission' => $prefix . $separator . $key,
+                    'permission' => $this->keyBuilder->build($prefix, $subject),
                     'label' => str(class_basename($page))->headline()->toString(),
                 ];
             })
@@ -110,18 +112,17 @@ class EntityDiscoveryService
 
         $excludedWidgets = config('filament-authz.widgets.exclude', []);
         $prefix = config('filament-authz.widgets.prefix', 'widget');
-        $separator = config('filament-authz.permissions.separator', '.');
 
         return collect($panel->getWidgets())
             ->filter(fn (string $widget): bool => ! in_array($widget, $excludedWidgets, true))
-            ->map(function (string $widget) use ($prefix, $separator): array {
+            ->map(function (string $widget) use ($prefix): array {
                 /** @var class-string<Widget> $widget */
-                $key = str(class_basename($widget))->kebab()->toString();
+                $subject = str(class_basename($widget))->toString();
 
                 return [
                     'type' => 'widget',
                     'class' => $widget,
-                    'permission' => $prefix . $separator . $key,
+                    'permission' => $this->keyBuilder->build($prefix, $subject),
                     'label' => str(class_basename($widget))->headline()->toString(),
                 ];
             })
@@ -161,17 +162,16 @@ class EntityDiscoveryService
     /**
      * @param  class-string<resource>  $resource
      */
-    protected function getResourceKey(string $resource): string
+    protected function getResourceSubject(string $resource): string
     {
         $subject = config('filament-authz.resources.subject', 'model');
 
         if ($subject === 'model' && method_exists($resource, 'getModel')) {
-            return str(class_basename($resource::getModel()))->kebab()->toString();
+            return class_basename($resource::getModel());
         }
 
         return str(class_basename($resource))
             ->beforeLast('Resource')
-            ->kebab()
             ->toString();
     }
 

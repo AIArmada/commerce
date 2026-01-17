@@ -6,6 +6,26 @@ title: Usage
 
 This guide covers creating, managing, and printing orders with J&T Express.
 
+## Cart Shipping Conditions
+
+When `aiarmada/cart` is installed, the JNT package registers a cart condition provider. Store a
+shipping address in cart metadata and read totals to apply a JNT shipping condition.
+
+```php
+use AIArmada\Cart\Facades\Cart;
+
+Cart::setMetadata('jnt_shipping_address', [
+    'name' => 'John Doe',
+    'phone' => '60198765432',
+    'address' => '456 Customer Road',
+    'postCode' => '81100',
+    'city' => 'Johor Bahru',
+    'state' => 'Johor',
+]);
+
+$total = Cart::total();
+```
+
 ## Creating Orders
 
 ### Using the Fluent Builder
