@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources;
 
-use AIArmada\FilamentCart\Models\RecoveryTemplate;
+use AIArmada\Cart\Models\RecoveryTemplate;
 use AIArmada\FilamentCart\Resources\RecoveryTemplateResource\Pages\CreateRecoveryTemplate;
 use AIArmada\FilamentCart\Resources\RecoveryTemplateResource\Pages\EditRecoveryTemplate;
 use AIArmada\FilamentCart\Resources\RecoveryTemplateResource\Pages\ListRecoveryTemplates;

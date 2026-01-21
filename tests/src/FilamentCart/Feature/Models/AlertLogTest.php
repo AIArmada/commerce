@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Models\AlertLog;
-use AIArmada\FilamentCart\Models\AlertRule;
+use AIArmada\Cart\Models\AlertLog;
+use AIArmada\Cart\Models\AlertRule;
 use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
@@ -182,9 +182,9 @@ describe('AlertLog', function (): void {
 
         $criticalLog = AlertLog::create([
             'alert_rule_id' => $rule->id,
-            'event_type' => 'fraud',
+            'event_type' => 'abandonment',
             'severity' => 'critical',
-            'title' => 'Fraud Detected',
+            'title' => 'Critical Abandonment',
             'event_data' => [],
             'channels_notified' => [],
         ]);

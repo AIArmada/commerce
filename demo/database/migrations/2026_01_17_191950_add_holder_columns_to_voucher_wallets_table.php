@@ -14,9 +14,9 @@ return new class extends Migration
         /** @var array<string, string> $tables */
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
-        $tableName = $tables['voucher_wallets'] ?? $prefix . 'voucher_wallets';
+        $tableName = $tables['voucher_wallets'] ?? $prefix.'voucher_wallets';
 
-        $vouchersTable = $tables['vouchers'] ?? $prefix . 'vouchers';
+        $vouchersTable = $tables['vouchers'] ?? $prefix.'vouchers';
 
         if (Schema::hasColumn($tableName, 'holder_type')) {
             return;

@@ -24,7 +24,11 @@ trait ManagesPaymentMethods // @phpstan-ignore trait.unused
             return collect();
         }
 
-        $tokens = Cashier::chip()->listClientRecurringTokens($this->chip_id);
+        try {
+            $tokens = Cashier::chip()->listClientRecurringTokens($this->chip_id);
+        } catch (Throwable) {
+            return collect();
+        }
 
         if (isset($tokens['results']) && is_array($tokens['results'])) {
             $tokens = $tokens['results'];

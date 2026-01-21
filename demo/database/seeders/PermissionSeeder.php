@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use Illuminate\Database\Seeder;
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
+use App\Models\User;
+use Illuminate\Database\Seeder;
 use Spatie\Permission\PermissionRegistrar;
 
 /**

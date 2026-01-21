@@ -25,7 +25,7 @@ it('returns 404 when viewing a single-product checkout for another owner', funct
     });
 
     OwnerContext::withOwner($ownerB, function () use ($productA): void {
-        $this->get('/checkout/single/' . $productA->slug)
+        $this->get('/checkout/single/'.$productA->slug)
             ->assertNotFound();
     });
 });

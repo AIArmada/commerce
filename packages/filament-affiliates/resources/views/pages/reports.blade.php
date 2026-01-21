@@ -59,13 +59,27 @@
             <x-slot name="heading">Traffic Sources</x-slot>
             
             <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                @foreach($reportData['traffic_sources'] as $source => $count)
+                @foreach($reportData['traffic_sources']['sources'] ?? [] as $source => $count)
                     <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded">
                         <span>{{ $source ?: 'Direct' }}</span>
-                        <span class="font-medium">{{ number_format($count) }}</span>
+                        <span class="font-medium">{{ number_format((int) $count) }}</span>
                     </div>
                 @endforeach
             </div>
+
+            @if(! empty($reportData['traffic_sources']['campaigns'] ?? []))
+                <div class="mt-6">
+                    <div class="text-sm font-medium text-gray-600 dark:text-gray-300 mb-2">Campaigns</div>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        @foreach($reportData['traffic_sources']['campaigns'] as $campaign => $count)
+                            <div class="flex justify-between items-center p-3 bg-gray-50 dark:bg-gray-800 rounded">
+                                <span>{{ $campaign ?: 'Unknown' }}</span>
+                                <span class="font-medium">{{ number_format((int) $count) }}</span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
         </x-filament::section>
     @endif
 </x-filament-panels::page>

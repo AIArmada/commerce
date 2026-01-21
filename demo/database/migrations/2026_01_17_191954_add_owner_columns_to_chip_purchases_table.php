@@ -10,7 +10,7 @@ return new class extends Migration
 {
     public function up(): void
     {
-        $tableName = config('chip.database.table_prefix', 'chip_') . 'purchases';
+        $tableName = config('chip.database.table_prefix', 'chip_').'purchases';
 
         if (Schema::hasColumn($tableName, 'owner_type')) {
             return;
@@ -24,7 +24,7 @@ return new class extends Migration
 
     public function down(): void
     {
-        $tableName = config('chip.database.table_prefix', 'chip_') . 'purchases';
+        $tableName = config('chip.database.table_prefix', 'chip_').'purchases';
 
         Schema::table($tableName, function (Blueprint $table): void {
             $table->dropMorphs('owner');

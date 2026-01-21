@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        Schema::create($tablePrefix . 'company_statements', function (Blueprint $table): void {
+        Schema::create($tablePrefix.'company_statements', function (Blueprint $table): void {
             // CHIP Collect statement identifiers
             $table->uuid('id')->primary();
             $table->string('type', 32);
@@ -49,6 +49,6 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        Schema::dropIfExists($tablePrefix . 'company_statements');
+        Schema::dropIfExists($tablePrefix.'company_statements');
     }
 };

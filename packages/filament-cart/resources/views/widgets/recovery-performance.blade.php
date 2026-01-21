@@ -2,7 +2,7 @@
     <x-filament::section>
         <x-slot name="heading">
             <div class="flex items-center gap-2">
-                <x-heroicon-o-arrow-path class="h-5 w-5 text-success-500" />
+                <x-heroicon-o-arrow-path class="fi-icon fi-size-md text-success-500" />
                 <span>Recovery Performance</span>
             </div>
         </x-slot>
@@ -74,7 +74,7 @@
             @if($data['potentialRevenue'] > 0)
                 <div class="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
                     <div class="flex items-center gap-3">
-                        <x-heroicon-o-currency-dollar class="h-8 w-8 text-yellow-500" />
+                        <x-heroicon-o-currency-dollar class="text-yellow-500" style="width: 2rem; height: 2rem" />
                         <div>
                             <div class="text-sm font-medium text-yellow-800 dark:text-yellow-200">
                                 Potential Revenue Opportunity
@@ -145,7 +145,7 @@
                 </div>
             @else
                 <div class="text-center text-gray-500 dark:text-gray-400 py-8">
-                    <x-heroicon-o-arrow-path class="h-12 w-12 mx-auto mb-3 opacity-50" />
+                    <x-heroicon-o-arrow-path class="mx-auto mb-3 opacity-50" style="width: 3rem; height: 3rem" />
                     <p>No recovery strategy data available for this period.</p>
                     <p class="text-sm mt-1">Recovery attempts will appear here once campaigns are active.</p>
                 </div>

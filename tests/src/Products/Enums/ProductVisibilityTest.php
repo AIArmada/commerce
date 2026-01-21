@@ -110,4 +110,14 @@ describe('ProductVisibility Enum', function (): void {
             expect(ProductVisibility::Hidden->isDirectlyAccessible())->toBeFalse();
         });
     });
+
+    describe('color()', function (): void {
+        it('returns a color for each visibility', function (): void {
+            expect(ProductVisibility::Catalog->color())->toBe('info')
+                ->and(ProductVisibility::Search->color())->toBe('primary')
+                ->and(ProductVisibility::CatalogSearch->color())->toBe('success')
+                ->and(ProductVisibility::Individual->color())->toBe('warning')
+                ->and(ProductVisibility::Hidden->color())->toBe('gray');
+        });
+    });
 });

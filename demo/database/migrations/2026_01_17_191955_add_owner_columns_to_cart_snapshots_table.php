@@ -13,7 +13,7 @@ return new class extends Migration
         $databaseConfig = config('filament-cart.database', []);
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cart_';
         $tables = $databaseConfig['tables'] ?? [];
-        $tableName = $tables['snapshots'] ?? $tablePrefix . 'snapshots';
+        $tableName = $tables['snapshots'] ?? $tablePrefix.'snapshots';
 
         if (Schema::hasColumn($tableName, 'owner_key')) {
             return;
@@ -25,9 +25,9 @@ return new class extends Migration
 
             // This table is addressed by owner + identifier + instance.
             $table->dropUnique(['identifier', 'instance']);
-            $table->unique(['owner_key', 'identifier', 'instance'], $tableName . '_owner_key_identifier_instance_unique');
+            $table->unique(['owner_key', 'identifier', 'instance'], $tableName.'_owner_key_identifier_instance_unique');
 
-            $table->index('owner_key', $tableName . '_owner_key_index');
+            $table->index('owner_key', $tableName.'_owner_key_index');
         });
     }
 
@@ -36,13 +36,13 @@ return new class extends Migration
         $databaseConfig = config('filament-cart.database', []);
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cart_';
         $tables = $databaseConfig['tables'] ?? [];
-        $tableName = $tables['snapshots'] ?? $tablePrefix . 'snapshots';
+        $tableName = $tables['snapshots'] ?? $tablePrefix.'snapshots';
 
         Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
-            $table->dropUnique($tableName . '_owner_key_identifier_instance_unique');
+            $table->dropUnique($tableName.'_owner_key_identifier_instance_unique');
             $table->unique(['identifier', 'instance']);
 
-            $table->dropIndex($tableName . '_owner_key_index');
+            $table->dropIndex($tableName.'_owner_key_index');
             $table->dropColumn('owner_key');
             $table->dropMorphs('owner');
         });

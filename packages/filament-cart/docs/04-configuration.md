@@ -106,15 +106,6 @@ return [
         
         // Track cart abandonment
         'abandonment_tracking' => true,
-        
-        // Fraud detection features
-        'fraud_detection' => true,
-        
-        // Collaborative/shared carts
-        'collaborative_carts' => true,
-        
-        // AI-powered recovery optimization
-        'ai_recovery' => true,
     ],
 
     /*
@@ -154,26 +145,18 @@ return [
     'widgets' => [
         'stats_overview' => true,
         'abandoned_carts' => true,
-        'fraud_detection' => true,
         'recovery_optimizer' => true,
-        'collaborative_carts' => true,
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | AI/Analytics Settings
+    | Analytics Settings
     |--------------------------------------------------------------------------
     |
-    | Configure thresholds and limits for AI features.
+    | Configure thresholds and limits for analytics features.
     |
     */
-    'ai' => [
-        // Maximum recovery attempts per abandoned cart
-        'max_recovery_attempts' => 3,
-        
-        // Days to consider for abandonment window
-        'abandonment_window_days' => 7,
-        
+    'analytics' => [
         // Cart value threshold for "high value" designation (in cents)
         'high_value_threshold_cents' => 10000, // $100
     ],
@@ -295,9 +278,7 @@ Control which widgets appear on dashboards:
 'widgets' => [
     'stats_overview' => true,
     'abandoned_carts' => true,
-    'fraud_detection' => false,  // Hide fraud widget
     'recovery_optimizer' => true,
-    'collaborative_carts' => false,
 ],
 ```
 

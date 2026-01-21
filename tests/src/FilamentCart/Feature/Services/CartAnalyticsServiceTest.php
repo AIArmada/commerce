@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Models\CartDailyMetrics;
 use AIArmada\FilamentCart\Data\AbandonmentAnalysis;
 use AIArmada\FilamentCart\Data\ConversionFunnel;
 use AIArmada\FilamentCart\Data\DashboardMetrics;
 use AIArmada\FilamentCart\Data\RecoveryMetrics;
 use AIArmada\FilamentCart\Models\Cart;
-use AIArmada\FilamentCart\Models\CartDailyMetrics;
 use AIArmada\FilamentCart\Services\CartAnalyticsService;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;

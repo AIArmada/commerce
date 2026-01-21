@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Models\CartDailyMetrics;
+use AIArmada\Cart\Models\CartDailyMetrics;
 use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {

@@ -20,7 +20,7 @@ test('payment success simulates CHIP webhook without morph map violations', func
 
     $order = OwnerContext::withOwner($owner, function () use ($owner): Order {
         $order = Order::create([
-            'order_number' => 'ORD-DEMO-' . Str::upper(Str::random(8)),
+            'order_number' => 'ORD-DEMO-'.Str::upper(Str::random(8)),
             'status' => 'pending_payment',
             'subtotal' => 10_00,
             'discount_total' => 0,

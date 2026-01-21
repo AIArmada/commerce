@@ -22,6 +22,10 @@ return [
     | Defaults
     |--------------------------------------------------------------------------
     */
+    'models' => [
+        'cart' => env('CART_MODEL_CLASS', \AIArmada\Cart\Models\CartModel::class),
+    ],
+
     'money' => [
         'default_currency' => env('CART_DEFAULT_CURRENCY', 'MYR'),
         'rounding_mode' => env('CART_ROUNDING_MODE', 'half_up'), // half_up, half_even, floor, ceil

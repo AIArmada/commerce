@@ -13,7 +13,7 @@ return new class extends Migration
         $tables = config('inventory.database.tables', []);
         $prefix = config('inventory.database.table_prefix', 'inventory_');
 
-        $tableName = $tables['cost_layers'] ?? $prefix . 'cost_layers';
+        $tableName = $tables['cost_layers'] ?? $prefix.'cost_layers';
 
         Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
@@ -34,7 +34,7 @@ return new class extends Migration
             $table->index(['inventoryable_type', 'inventoryable_id', 'layer_date']);
             $table->index('remaining_quantity');
             $table->index('costing_method');
-            $table->index(['owner_type', 'owner_id'], $tableName . '_owner_idx');
+            $table->index(['owner_type', 'owner_id'], $tableName.'_owner_idx');
         });
     }
 
@@ -42,7 +42,7 @@ return new class extends Migration
     {
         $tables = config('inventory.database.tables', []);
         $prefix = config('inventory.database.table_prefix', 'inventory_');
-        $tableName = $tables['cost_layers'] ?? $prefix . 'cost_layers';
+        $tableName = $tables['cost_layers'] ?? $prefix.'cost_layers';
 
         Schema::dropIfExists($tableName);
     }

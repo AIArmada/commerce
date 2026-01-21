@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $tables = config('jnt.database.tables', []);
         $prefix = config('jnt.database.table_prefix', 'jnt_');
-        $tableName = $tables['orders'] ?? $prefix . 'orders';
+        $tableName = $tables['orders'] ?? $prefix.'orders';
 
         if (Schema::hasColumn($tableName, 'cancelled_at')) {
             return;
@@ -28,7 +28,7 @@ return new class extends Migration
     {
         $tables = config('jnt.database.tables', []);
         $prefix = config('jnt.database.table_prefix', 'jnt_');
-        $tableName = $tables['orders'] ?? $prefix . 'orders';
+        $tableName = $tables['orders'] ?? $prefix.'orders';
 
         Schema::table($tableName, function (Blueprint $table): void {
             $table->dropIndex(['cancelled_at']);

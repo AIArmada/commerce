@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Services;
 
-use AIArmada\FilamentCart\Models\CartDailyMetrics;
+use AIArmada\Cart\Models\CartDailyMetrics;
 use Illuminate\Support\Carbon;
 use OpenSpout\Common\Entity\Style\CellAlignment;
 use OpenSpout\Common\Entity\Style\Style;
@@ -46,11 +46,6 @@ class ExportService
             'Average Cart Value',
             'Total Items',
             'Avg Items/Cart',
-            'Fraud High',
-            'Fraud Medium',
-            'Carts Blocked',
-            'Collaborative Carts',
-            'Collaborators',
             'Conversion Rate',
             'Abandonment Rate',
             'Recovery Rate',
@@ -75,11 +70,6 @@ class ExportService
                 number_format($metric->average_cart_value_cents / 100, 2),
                 $metric->total_items,
                 $metric->average_items_per_cart,
-                $metric->fraud_alerts_high,
-                $metric->fraud_alerts_medium,
-                $metric->carts_blocked,
-                $metric->collaborative_carts,
-                $metric->total_collaborators,
                 number_format($metric->getConversionRate() * 100, 2) . '%',
                 number_format($metric->getAbandonmentRate() * 100, 2) . '%',
                 number_format($metric->getRecoveryRate() * 100, 2) . '%',

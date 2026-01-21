@@ -10,6 +10,8 @@ use Filament\Forms;
 use Filament\Forms\Concerns\InteractsWithForms;
 use Filament\Forms\Contracts\HasForms;
 use Filament\Pages\Page;
+use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use UnitEnum;
 
@@ -48,7 +50,7 @@ final class ReportsPage extends Page implements HasForms
     public function form(Schema $schema): Schema
     {
         return $schema->schema([
-            Forms\Components\Grid::make(4)
+            Grid::make(4)
                 ->schema([
                     Forms\Components\Select::make('period')
                         ->options([
@@ -64,12 +66,12 @@ final class ReportsPage extends Page implements HasForms
 
                     Forms\Components\DatePicker::make('startDate')
                         ->label('Start Date')
-                        ->visible(fn (Forms\Get $get) => $get('period') === 'custom')
+                        ->visible(fn (Get $get) => $get('period') === 'custom')
                         ->afterStateUpdated(fn () => $this->generateReport()),
 
                     Forms\Components\DatePicker::make('endDate')
                         ->label('End Date')
-                        ->visible(fn (Forms\Get $get) => $get('period') === 'custom')
+                        ->visible(fn (Get $get) => $get('period') === 'custom')
                         ->afterStateUpdated(fn () => $this->generateReport()),
                 ]),
         ]);

@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Models\RecoveryCampaign;
+use AIArmada\Cart\Models\RecoveryTemplate;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\FilamentCart\Models\RecoveryCampaign;
-use AIArmada\FilamentCart\Models\RecoveryTemplate;
 use AIArmada\FilamentCart\Resources\RecoveryCampaignResource;
 use AIArmada\FilamentCart\Resources\RecoveryTemplateResource;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -14,7 +14,11 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 it('scopes recovery resources by owner and blocks cross-tenant template references', function (): void {
+    config()->set('cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', false);
+    config()->set('cart.owner.enabled', true);
     config()->set('filament-cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', false);
     config()->set('filament-cart.owner.include_global', false);
 
     $ownerA = User::query()->create([

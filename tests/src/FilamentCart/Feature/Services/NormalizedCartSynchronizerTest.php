@@ -146,6 +146,7 @@ describe('NormalizedCartSynchronizer', function (): void {
     });
 
     it('does not overwrite another owners cart snapshot when owner mode is enabled', function (): void {
+        config()->set('cart.owner.enabled', true);
         config()->set('filament-cart.owner.enabled', true);
 
         $ownerA = User::query()->create([

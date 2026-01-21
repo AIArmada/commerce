@@ -15,7 +15,7 @@ it('shows only orders for the current owner context', function (): void {
     $ownerA = User::factory()->create();
     $ownerB = User::factory()->create();
 
-    $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
+    $orderA = OwnerContext::withOwner($ownerA, function (): Order {
         $order = Order::create([
             'order_number' => 'ORD-OWNER-A-0001',
             'status' => Created::class,
@@ -41,7 +41,7 @@ it('shows only orders for the current owner context', function (): void {
         return $order;
     });
 
-    $orderB = OwnerContext::withOwner($ownerB, function () use ($ownerB): Order {
+    $orderB = OwnerContext::withOwner($ownerB, function (): Order {
         $order = Order::create([
             'order_number' => 'ORD-OWNER-B-0001',
             'status' => Created::class,
@@ -79,7 +79,7 @@ it('returns 404 when viewing another owner\'s order success page', function (): 
     $ownerA = User::factory()->create();
     $ownerB = User::factory()->create();
 
-    $orderA = OwnerContext::withOwner($ownerA, function () use ($ownerA): Order {
+    $orderA = OwnerContext::withOwner($ownerA, function (): Order {
         $order = Order::create([
             'order_number' => 'ORD-OWNER-A-DETAILS',
             'status' => Created::class,

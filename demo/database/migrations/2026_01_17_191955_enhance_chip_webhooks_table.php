@@ -12,11 +12,11 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        if (Schema::hasColumn($tablePrefix . 'webhooks', 'status')) {
+        if (Schema::hasColumn($tablePrefix.'webhooks', 'status')) {
             return;
         }
 
-        Schema::table($tablePrefix . 'webhooks', function (Blueprint $table): void {
+        Schema::table($tablePrefix.'webhooks', function (Blueprint $table): void {
             // Enhanced webhook fields for retry and monitoring
             $table->string('status')->default('pending')->after('processed');
             $table->string('idempotency_key')->nullable()->unique()->after('status');
@@ -37,7 +37,7 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        Schema::table($tablePrefix . 'webhooks', function (Blueprint $table): void {
+        Schema::table($tablePrefix.'webhooks', function (Blueprint $table): void {
             $table->dropIndex(['status']);
             $table->dropIndex(['status', 'retry_count']);
             $table->dropColumn([

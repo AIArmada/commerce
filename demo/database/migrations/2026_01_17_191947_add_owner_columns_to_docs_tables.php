@@ -19,8 +19,8 @@ return new class extends Migration
         $tablePrefix = $database['table_prefix'] ?? 'docs_';
         $tables = $database['tables'] ?? [];
 
-        $docsTable = $tables['docs'] ?? $tablePrefix . 'docs';
-        $templatesTable = $tables['doc_templates'] ?? $tablePrefix . 'doc_templates';
+        $docsTable = $tables['docs'] ?? $tablePrefix.'docs';
+        $templatesTable = $tables['doc_templates'] ?? $tablePrefix.'doc_templates';
 
         // Add owner columns to docs table
         if (! Schema::hasColumn($docsTable, 'owner_type')) {
@@ -36,8 +36,8 @@ return new class extends Migration
                 $table->string('owner_type')->nullable()->after('id')->index();
                 $table->uuid('owner_id')->nullable()->after('owner_type')->index();
 
-                $table->dropUnique($templatesTable . '_slug_unique');
-                $table->unique(['owner_type', 'owner_id', 'slug'], $templatesTable . '_owner_slug_unique');
+                $table->dropUnique($templatesTable.'_slug_unique');
+                $table->unique(['owner_type', 'owner_id', 'slug'], $templatesTable.'_owner_slug_unique');
             });
         }
     }
@@ -51,8 +51,8 @@ return new class extends Migration
         $tablePrefix = $database['table_prefix'] ?? 'docs_';
         $tables = $database['tables'] ?? [];
 
-        $docsTable = $tables['docs'] ?? $tablePrefix . 'docs';
-        $templatesTable = $tables['doc_templates'] ?? $tablePrefix . 'doc_templates';
+        $docsTable = $tables['docs'] ?? $tablePrefix.'docs';
+        $templatesTable = $tables['doc_templates'] ?? $tablePrefix.'doc_templates';
 
         if (Schema::hasColumn($docsTable, 'owner_type')) {
             Schema::table($docsTable, function (Blueprint $table): void {
@@ -62,8 +62,8 @@ return new class extends Migration
 
         if (Schema::hasColumn($templatesTable, 'owner_type')) {
             Schema::table($templatesTable, function (Blueprint $table) use ($templatesTable): void {
-                $table->dropUnique($templatesTable . '_owner_slug_unique');
-                $table->unique(['slug'], $templatesTable . '_slug_unique');
+                $table->dropUnique($templatesTable.'_owner_slug_unique');
+                $table->unique(['slug'], $templatesTable.'_slug_unique');
                 $table->dropColumn(['owner_type', 'owner_id']);
             });
         }

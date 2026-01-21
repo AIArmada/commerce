@@ -15,8 +15,8 @@ return new class extends Migration
         $tables = $database['tables'] ?? [];
         $jsonColumnType = $database['json_column_type'] ?? 'json';
 
-        $workflowsTable = $tables['workflows'] ?? $prefix . 'workflows';
-        $workflowStepsTable = $tables['workflow_steps'] ?? $prefix . 'workflow_steps';
+        $workflowsTable = $tables['workflows'] ?? $prefix.'workflows';
+        $workflowStepsTable = $tables['workflow_steps'] ?? $prefix.'workflow_steps';
 
         Schema::create($workflowsTable, function (Blueprint $table) use ($jsonColumnType): void {
             $table->uuid('id')->primary();
@@ -53,8 +53,8 @@ return new class extends Migration
         $prefix = $database['table_prefix'] ?? 'docs_';
         $tables = $database['tables'] ?? [];
 
-        $workflowsTable = $tables['workflows'] ?? $prefix . 'workflows';
-        $workflowStepsTable = $tables['workflow_steps'] ?? $prefix . 'workflow_steps';
+        $workflowsTable = $tables['workflows'] ?? $prefix.'workflows';
+        $workflowStepsTable = $tables['workflow_steps'] ?? $prefix.'workflow_steps';
 
         Schema::dropIfExists($workflowStepsTable);
         Schema::dropIfExists($workflowsTable);

@@ -5,12 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCart\Widgets;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\CommerceSupport\Support\OwnerQuery;
-use AIArmada\FilamentCart\Services\CartMonitor;
+use AIArmada\FilamentCart\Models\Cart;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
-use Illuminate\Database\Query\Builder;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Recent cart activity feed widget.
@@ -25,8 +24,6 @@ class RecentActivityWidget extends BaseWidget
 
     public function table(Table $table): Table
     {
-        $monitor = app(CartMonitor::class);
-
         return $table
             ->query(fn () => $this->getActivityQuery())
             ->columns([
@@ -62,11 +59,12 @@ class RecentActivityWidget extends BaseWidget
             ->paginated([10]);
     }
 
+    /**
+     * @return Builder<Cart>
+     */
     private function getActivityQuery(): Builder
     {
-        $snapshotsTable = $this->getSnapshotsTable();
-
-        $query = \Illuminate\Support\Facades\DB::table($snapshotsTable)
+        $query = Cart::query()
             ->selectRaw("
                 id,
                 identifier as session_id,
@@ -86,23 +84,9 @@ class RecentActivityWidget extends BaseWidget
             $owner = OwnerContext::resolve();
             $includeGlobal = (bool) config('filament-cart.owner.include_global', false);
 
-            OwnerQuery::applyToQueryBuilder(
-                $query,
-                $owner,
-                $includeGlobal,
-                "{$snapshotsTable}.owner_type",
-                "{$snapshotsTable}.owner_id"
-            );
+            $query->forOwner($owner, $includeGlobal);
         }
 
         return $query;
-    }
-
-    private function getSnapshotsTable(): string
-    {
-        $tables = config('filament-cart.database.tables', []);
-        $prefix = config('filament-cart.database.table_prefix', 'cart_');
-
-        return $tables['snapshots'] ?? $prefix . 'snapshots';
     }
 }

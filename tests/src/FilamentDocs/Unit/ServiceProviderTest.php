@@ -18,6 +18,7 @@ it('configures the package name, config, and routes', function (): void {
     /** @var Package&MockInterface $package */
     $package = Mockery::mock(Package::class);
     $package->shouldReceive('name')->once()->with('filament-docs')->andReturnSelf();
+    $package->shouldReceive('hasViews')->once()->andReturnSelf();
     $package->shouldReceive('hasConfigFile')->once()->with('filament-docs')->andReturnSelf();
     $package->shouldReceive('hasRoute')->once()->with('filament-docs')->andReturnSelf();
 

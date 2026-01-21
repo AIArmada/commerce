@@ -4,12 +4,16 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\CashierChip\Cashier;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Models\Client;
 use AIArmada\Chip\Models\Payment;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
+use AIArmada\Customers\Models\Customer;
+use AIArmada\Docs\Models\Doc;
 use AIArmada\FilamentAuthz\Models\Permission;
 use AIArmada\FilamentAuthz\Models\Role;
 use AIArmada\Inventory\Models\InventoryAllocation;
@@ -27,15 +31,14 @@ use AIArmada\Inventory\Models\InventoryStandardCost;
 use AIArmada\Inventory\Models\InventorySupplierLeadtime;
 use AIArmada\Inventory\Models\InventoryValuationSnapshot;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Docs\Models\Doc;
-use AIArmada\Promotions\Models\Promotion;
-use AIArmada\Affiliates\Models\Affiliate;
-use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Pricing\Models\Price;
 use AIArmada\Pricing\Models\PriceList;
+use AIArmada\Pricing\Models\PriceTier;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
-use AIArmada\Customers\Models\Customer;
+use AIArmada\Promotions\Models\Promotion;
+use AIArmada\Tax\Models\TaxClass;
+use AIArmada\Tax\Models\TaxExemption;
 use AIArmada\Tax\Models\TaxRate;
 use AIArmada\Tax\Models\TaxZone;
 use App\Listeners\HandleChipPaymentSuccess;
@@ -45,6 +48,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\ServiceProvider;
+
 final class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -113,6 +117,7 @@ final class AppServiceProvider extends ServiceProvider
             'chip_payment' => Payment::class,
             'price' => Price::class,
             'price_list' => PriceList::class,
+            'price_tier' => PriceTier::class,
             'promotion' => Promotion::class,
             'affiliate' => Affiliate::class,
             'affiliate_fraud_signal' => AffiliateFraudSignal::class,
@@ -123,6 +128,8 @@ final class AppServiceProvider extends ServiceProvider
             'customer' => Customer::class,
             'tax_zone' => TaxZone::class,
             'tax_rate' => TaxRate::class,
+            'tax_class' => TaxClass::class,
+            'tax_exemption' => TaxExemption::class,
             'inventory_allocation' => InventoryAllocation::class,
             'inventory_backorder' => InventoryBackorder::class,
             'inventory_batch' => InventoryBatch::class,

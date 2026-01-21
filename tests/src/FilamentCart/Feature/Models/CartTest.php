@@ -256,20 +256,6 @@ describe('Cart Model', function (): void {
         expect($checkout->isInCheckout())->toBeTrue();
     });
 
-    it('detects fraud risk', function (): void {
-        $high = Cart::create(['identifier' => 'h', 'instance' => 'default', 'fraud_risk_level' => 'high']);
-        $medium = Cart::create(['identifier' => 'm', 'instance' => 'default', 'fraud_risk_level' => 'medium']);
-        $low = Cart::create(['identifier' => 'l', 'instance' => 'default', 'fraud_risk_level' => 'low']);
-
-        expect($high->hasFraudRisk())->toBeTrue();
-        expect($medium->hasFraudRisk())->toBeTrue();
-        expect($low->hasFraudRisk())->toBeFalse();
-
-        expect($high->getFraudRiskColor())->toBe('danger');
-        expect($medium->getFraudRiskColor())->toBe('warning');
-        expect($low->getFraudRiskColor())->toBe('info');
-    });
-
     it('checks if empty', function (): void {
         $empty = Cart::create(['identifier' => 'e', 'instance' => 'default', 'items_count' => 0]);
         $filled = Cart::create(['identifier' => 'f', 'instance' => 'default', 'items_count' => 5, 'quantity' => 5]);

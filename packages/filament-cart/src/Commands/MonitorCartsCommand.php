@@ -20,7 +20,7 @@ class MonitorCartsCommand extends Command
                             {--once : Run a single monitoring pass instead of continuous}
                             {--interval=10 : Monitoring interval in seconds (for continuous mode)}';
 
-    protected $description = 'Monitor carts for abandonments, fraud signals, and alert triggers';
+    protected $description = 'Monitor carts for abandonments, high-value carts, and alert triggers';
 
     public function __construct(
         private readonly CartMonitor $monitor,
@@ -93,13 +93,6 @@ class MonitorCartsCommand extends Command
             $this->processEvents('abandonment', $abandonments);
         }
 
-        // Detect fraud signals
-        $fraudSignals = $this->monitor->detectFraudSignals();
-        if ($fraudSignals->isNotEmpty()) {
-            $this->error("[{$timestamp}] Detected {$fraudSignals->count()} fraud signals");
-            $this->processEvents('fraud', $fraudSignals);
-        }
-
         // Detect recovery opportunities
         $recoveryOpportunities = $this->monitor->detectRecoveryOpportunities();
         if ($recoveryOpportunities->isNotEmpty()) {
@@ -110,7 +103,8 @@ class MonitorCartsCommand extends Command
         // High value carts
         $highValueCarts = $this->monitor->getHighValueCarts();
         if ($highValueCarts->isNotEmpty()) {
-            $this->info("[{$timestamp}] Monitoring {$highValueCarts->count()} high-value carts");
+            $this->info("[{$timestamp}] Detected {$highValueCarts->count()} high-value carts");
+            $this->processEvents('high_value', $highValueCarts);
         }
     }
 
@@ -129,11 +123,6 @@ class MonitorCartsCommand extends Command
                 // Create appropriate event
                 $event = match ($eventType) {
                     'abandonment' => AlertEvent::fromAbandonment(
-                        $item->id,
-                        $item->session_id ?? '',
-                        $eventData,
-                    ),
-                    'fraud' => AlertEvent::fromFraud(
                         $item->id,
                         $item->session_id ?? '',
                         $eventData,

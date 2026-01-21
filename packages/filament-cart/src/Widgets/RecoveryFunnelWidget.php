@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Widgets;
 
-use AIArmada\FilamentCart\Models\RecoveryCampaign;
+use AIArmada\Cart\Models\RecoveryCampaign;
 use Filament\Widgets\Widget;
 
 /**

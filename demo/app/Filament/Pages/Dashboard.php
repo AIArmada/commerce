@@ -34,11 +34,11 @@ use Filament\Support\Icons\Heroicon;
  */
 final class Dashboard extends BaseDashboard
 {
-    protected static string | BackedEnum | null $navigationIcon = Heroicon::Home;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::Home;
 
     protected static ?int $navigationSort = -2;
 
-    protected int | string | array $columns = [
+    protected int|string|array $columns = [
         'default' => 1,
         'sm' => 2,
         'md' => 3,

@@ -225,6 +225,11 @@ trait ManagesDynamicConditions
             'dynamic_conditions'
         );
 
+        \Illuminate\Support\Facades\Log::info('Restoring dynamic conditions', [
+            'count' => is_array($metadata) ? count($metadata) : 0,
+            'identifier' => $this->getIdentifier(),
+        ]);
+
         if (empty($metadata) || ! is_array($metadata)) {
             return $this; // No conditions to restore
         }
@@ -642,6 +647,10 @@ trait ManagesDynamicConditions
     {
         try {
             $shouldApply = $condition->shouldApply($this);
+            \Illuminate\Support\Facades\Log::info('Condition evaluation result', [
+                'name' => $condition->getName(),
+                'shouldApply' => $shouldApply,
+            ]);
         } catch (Throwable $exception) {
             $this->handleDynamicConditionFailure('evaluate', $condition, $exception, [
                 'scope' => $condition->getTargetDefinition()->scope->value,

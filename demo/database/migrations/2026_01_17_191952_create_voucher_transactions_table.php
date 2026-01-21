@@ -13,7 +13,7 @@ return new class extends Migration
         /** @var array<string, string> $tables */
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
-        $tableName = $tables['voucher_transactions'] ?? $prefix . 'voucher_transactions';
+        $tableName = $tables['voucher_transactions'] ?? $prefix.'voucher_transactions';
 
         Schema::create($tableName, function (Blueprint $table): void {
             $table->uuid('id')->primary();
@@ -42,7 +42,7 @@ return new class extends Migration
         /** @var array<string, string> $tables */
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
-        $tableName = $tables['voucher_transactions'] ?? $prefix . 'voucher_transactions';
+        $tableName = $tables['voucher_transactions'] ?? $prefix.'voucher_transactions';
 
         Schema::dropIfExists($tableName);
     }

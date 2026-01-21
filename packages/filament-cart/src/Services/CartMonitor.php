@@ -32,7 +32,7 @@ class CartMonitor
         $alertLogsTable = $this->getAlertLogsTable();
 
         $abandonmentMinutes = (int) config('filament-cart.monitoring.abandonment_detection_minutes', 30);
-        $highValueThreshold = (int) config('filament-cart.ai.high_value_threshold_cents', 10000);
+        $highValueThreshold = (int) config('filament-cart.analytics.high_value_threshold_cents', 10000);
 
         $abandonedBefore = now()->subMinutes($abandonmentMinutes);
 
@@ -56,13 +56,6 @@ class CartMonitor
             ->where('is_read', false)
             ->count();
 
-        // Get fraud signals (recent critical alerts)
-        $fraudSignals = $this->alertLogsQuery()
-            ->where('event_type', 'fraud')
-            ->where('is_read', false)
-            ->where('created_at', '>=', now()->subHours(24))
-            ->count();
-
         return new LiveStats(
             active_carts: (int) ($cartStats->total_carts ?? 0),
             carts_with_items: (int) ($cartStats->with_items ?? 0),
@@ -71,7 +64,6 @@ class CartMonitor
             pending_alerts: $pendingAlerts,
             total_value_cents: (int) ($cartStats->total_value ?? 0),
             high_value_carts: (int) ($cartStats->high_value ?? 0),
-            fraud_signals: $fraudSignals,
             updated_at: now(),
         );
     }
@@ -112,7 +104,7 @@ class CartMonitor
      */
     public function getHighValueCarts(?int $threshold = null): Collection
     {
-        $threshold ??= (int) config('filament-cart.ai.high_value_threshold_cents', 10000);
+        $threshold ??= (int) config('filament-cart.analytics.high_value_threshold_cents', 10000);
 
         return $this->snapshotsQuery()
             ->whereNull('checkout_abandoned_at')
@@ -148,45 +140,6 @@ class CartMonitor
                 $this->applyOwnerScope($query, $this->getAlertLogsTable());
             })
             ->orderByDesc('total')
-            ->get();
-    }
-
-    /**
-     * Detect fraud signals based on cart patterns.
-     *
-     * @return Collection<int, stdClass>
-     */
-    public function detectFraudSignals(): Collection
-    {
-        // Get carts with suspicious patterns
-        // This is a simplified detection - real implementation would be more sophisticated
-        return $this->snapshotsQuery()
-            ->whereNull('checkout_abandoned_at')
-            ->whereNull('recovered_at')
-            ->where(function ($query): void {
-                $query
-                    ->where(function ($query): void {
-                        // High value + new session
-                        $query->where('total', '>=', 50000)
-                            ->where('created_at', '>=', now()->subMinutes(10));
-                    })
-                    ->orWhere(function ($query): void {
-                        // Multiple high-quantity items
-                        $query->where('items_count', '>=', 10)
-                            ->where('total', '>=', 100000);
-                    });
-            })
-            ->whereNotExists(function (Builder $query): void {
-                $query->select(DB::raw(1))
-                    ->from($this->getAlertLogsTable())
-                    ->whereColumn('cart_id', $this->getSnapshotsTable() . '.id')
-                    ->where('event_type', 'fraud')
-                    ->where('created_at', '>=', now()->subHours(1));
-
-                $this->applyOwnerScope($query, $this->getAlertLogsTable());
-            })
-            ->orderByDesc('total')
-            ->limit(20)
             ->get();
     }
 

@@ -13,7 +13,7 @@ return new class extends Migration
         $tables = config('inventory.database.tables', []);
         $prefix = config('inventory.database.table_prefix', 'inventory_');
 
-        $tableName = $tables['reorder_suggestions'] ?? $prefix . 'reorder_suggestions';
+        $tableName = $tables['reorder_suggestions'] ?? $prefix.'reorder_suggestions';
 
         Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
@@ -43,7 +43,7 @@ return new class extends Migration
             $table->index(['status', 'urgency']);
             $table->index(['inventoryable_type', 'inventoryable_id', 'status'], 'inv_reorder_invable_status_idx');
             $table->index('expected_stockout_date');
-            $table->index(['owner_type', 'owner_id'], $tableName . '_owner_idx');
+            $table->index(['owner_type', 'owner_id'], $tableName.'_owner_idx');
         });
     }
 
@@ -51,7 +51,7 @@ return new class extends Migration
     {
         $tables = config('inventory.database.tables', []);
         $prefix = config('inventory.database.table_prefix', 'inventory_');
-        $tableName = $tables['reorder_suggestions'] ?? $prefix . 'reorder_suggestions';
+        $tableName = $tables['reorder_suggestions'] ?? $prefix.'reorder_suggestions';
 
         Schema::dropIfExists($tableName);
     }

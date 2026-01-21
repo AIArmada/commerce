@@ -2,7 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Models\AlertRule;
+use AIArmada\Cart\Models\AlertLog;
+use AIArmada\Cart\Models\AlertRule;
 use AIArmada\FilamentCart\Services\AlertDispatcher;
 use AIArmada\FilamentCart\Services\AlertEvaluator;
 use AIArmada\FilamentCart\Services\CartMonitor;
@@ -12,7 +13,6 @@ describe('MonitorCartsCommand', function (): void {
     it('runs single monitoring pass with --once option and no events', function (): void {
         $monitor = Mockery::mock(CartMonitor::class);
         $monitor->shouldReceive('detectAbandonments')->once()->andReturn(new Collection);
-        $monitor->shouldReceive('detectFraudSignals')->once()->andReturn(new Collection);
         $monitor->shouldReceive('detectRecoveryOpportunities')->once()->andReturn(new Collection);
         $monitor->shouldReceive('getHighValueCarts')->once()->andReturn(new Collection);
 
@@ -48,7 +48,6 @@ describe('MonitorCartsCommand', function (): void {
 
         $monitor = Mockery::mock(CartMonitor::class);
         $monitor->shouldReceive('detectAbandonments')->once()->andReturn(new Collection([$abandonedCart]));
-        $monitor->shouldReceive('detectFraudSignals')->once()->andReturn(new Collection);
         $monitor->shouldReceive('detectRecoveryOpportunities')->once()->andReturn(new Collection);
         $monitor->shouldReceive('getHighValueCarts')->once()->andReturn(new Collection);
 
@@ -56,7 +55,7 @@ describe('MonitorCartsCommand', function (): void {
         $evaluator->shouldReceive('getMatchingRules')->andReturn(new Collection([$rule]));
 
         $dispatcher = Mockery::mock(AlertDispatcher::class);
-        $alertLog = Mockery::mock(\AIArmada\FilamentCart\Models\AlertLog::class);
+        $alertLog = Mockery::mock(AlertLog::class);
         $dispatcher->shouldReceive('dispatch')->once()->andReturn($alertLog);
 
         $this->app->instance(CartMonitor::class, $monitor);

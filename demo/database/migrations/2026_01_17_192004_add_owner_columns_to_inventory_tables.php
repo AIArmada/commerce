@@ -26,8 +26,8 @@ return new class extends Migration
         ];
 
         foreach ($tables as $key => $defaultTableName) {
-            $tableName = config('inventory.table_names.' . $key, $defaultTableName);
-            $indexName = $tableName . '_owner_idx';
+            $tableName = config('inventory.table_names.'.$key, $defaultTableName);
+            $indexName = $tableName.'_owner_idx';
 
             if (Schema::hasColumn($tableName, 'owner_type') || Schema::hasColumn($tableName, 'owner_id')) {
                 continue;
@@ -58,8 +58,8 @@ return new class extends Migration
         ];
 
         foreach ($tables as $key => $defaultTableName) {
-            $tableName = config('inventory.table_names.' . $key, $defaultTableName);
-            $indexName = $tableName . '_owner_idx';
+            $tableName = config('inventory.table_names.'.$key, $defaultTableName);
+            $indexName = $tableName.'_owner_idx';
 
             if (! Schema::hasColumn($tableName, 'owner_type') || ! Schema::hasColumn($tableName, 'owner_id')) {
                 continue;

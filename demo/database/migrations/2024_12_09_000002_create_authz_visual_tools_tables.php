@@ -14,7 +14,7 @@ return new class extends Migration
         $jsonType = (string) config('filament-authz.database.json_column_type', 'json');
 
         // Identity Provider mappings table
-        Schema::create($tablePrefix . 'identity_provider_mappings', function (Blueprint $table) use ($jsonType): void {
+        Schema::create($tablePrefix.'identity_provider_mappings', function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->string('provider_type'); // ldap, saml, oauth
             $table->string('provider_name');
@@ -33,6 +33,6 @@ return new class extends Migration
     {
         $tablePrefix = config('filament-authz.database.table_prefix', 'authz_');
 
-        Schema::dropIfExists($tablePrefix . 'identity_provider_mappings');
+        Schema::dropIfExists($tablePrefix.'identity_provider_mappings');
     }
 };

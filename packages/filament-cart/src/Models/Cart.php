@@ -44,10 +44,6 @@ use Throwable;
  * @property Carbon|null $checkout_abandoned_at
  * @property int $recovery_attempts
  * @property Carbon|null $recovered_at
- * @property bool $is_collaborative
- * @property int $collaborator_count
- * @property string|null $fraud_risk_level
- * @property float|null $fraud_score
  */
 class Cart extends Model
 {
@@ -88,10 +84,6 @@ class Cart extends Model
         'checkout_abandoned_at',
         'recovery_attempts',
         'recovered_at',
-        'is_collaborative',
-        'collaborator_count',
-        'fraud_risk_level',
-        'fraud_score',
     ];
 
     protected $casts = [
@@ -110,9 +102,6 @@ class Cart extends Model
         'checkout_abandoned_at' => 'datetime',
         'recovery_attempts' => 'integer',
         'recovered_at' => 'datetime',
-        'is_collaborative' => 'boolean',
-        'collaborator_count' => 'integer',
-        'fraud_score' => 'float',
     ];
 
     protected $attributes = [
@@ -127,8 +116,6 @@ class Cart extends Model
         'savings' => 0,
         'currency' => 'USD',
         'recovery_attempts' => 0,
-        'is_collaborative' => false,
-        'collaborator_count' => 0,
     ];
 
     public function getTable(): string
@@ -308,27 +295,6 @@ class Cart extends Model
     }
 
     /**
-     * Check if cart has fraud risk.
-     */
-    public function hasFraudRisk(): bool
-    {
-        return in_array($this->fraud_risk_level, ['high', 'medium'], true);
-    }
-
-    /**
-     * Get fraud risk color for display.
-     */
-    public function getFraudRiskColor(): string
-    {
-        return match ($this->fraud_risk_level) {
-            'high' => 'danger',
-            'medium' => 'warning',
-            'low' => 'info',
-            default => 'gray',
-        };
-    }
-
-    /**
      * @param  Builder<self>  $query
      */
     #[Scope]
@@ -400,24 +366,6 @@ class Cart extends Model
     {
         $query->whereNotNull('checkout_started_at')
             ->whereNull('checkout_abandoned_at');
-    }
-
-    /**
-     * @param  Builder<self>  $query
-     */
-    #[Scope]
-    protected function collaborative(Builder $query): void
-    {
-        $query->where('is_collaborative', true);
-    }
-
-    /**
-     * @param  Builder<self>  $query
-     */
-    #[Scope]
-    protected function highFraudRisk(Builder $query): void
-    {
-        $query->whereIn('fraud_risk_level', ['high', 'medium']);
     }
 
     /**

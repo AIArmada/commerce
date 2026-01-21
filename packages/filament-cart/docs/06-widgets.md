@@ -336,33 +336,6 @@ use AIArmada\FilamentCart\Widgets\FraudDetectionWidget;
 - 7-day window
 - High/medium risk only
 
-### CollaborativeCartsWidget
-
-Table of shared carts with multiple collaborators.
-
-```php
-use AIArmada\FilamentCart\Widgets\CollaborativeCartsWidget;
-```
-
-**Columns:**
-- Cart ID — Truncated identifier
-- Owner — Email from metadata
-- Collaborators — Count with badge
-- Items — Count
-- Cart Value — Money formatted
-- Activity — Status badge
-- Last Activity — Timestamp
-- Created — Date
-
-**Actions:**
-- View Cart
-- View Collaborators (modal)
-
-**Features:**
-- Full-width layout
-- 30-day window
-- Activity status detection
-
 ### RecoveryOptimizerWidget
 
 AI-powered recovery queue with strategy recommendations.
@@ -431,7 +404,6 @@ Several widgets use custom Blade views located in `resources/views/widgets/`:
 - `recovery-funnel.blade.php`
 - `abandonment-analysis.blade.php`
 - `recovery-performance.blade.php`
-- `collaborators-modal.blade.php`
 
 ### Publishing Views
 
@@ -504,9 +476,7 @@ Widgets are assigned to specific pages:
 
 - CartStatsOverviewWidget
 - AbandonedCartsWidget
-- FraudDetectionWidget
 - RecoveryOptimizerWidget
-- CollaborativeCartsWidget
 
 ### AnalyticsPage
 

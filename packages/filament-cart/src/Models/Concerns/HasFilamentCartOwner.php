@@ -18,6 +18,8 @@ use RuntimeException;
  * - Uses commerce-support HasOwner columns: owner_type / owner_id
  * - When filament-cart.owner.enabled=true, scopeForOwner() resolves owner via OwnerContext
  * - When enabled and no owner context exists, saves are blocked (fail-fast)
+ *
+ * @phpstan-ignore trait.unused
  */
 trait HasFilamentCartOwner
 {

@@ -2,12 +2,63 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Models\RecoveryAttempt;
+use AIArmada\Cart\Models\RecoveryCampaign;
 use AIArmada\FilamentCart\Models\Cart;
-use AIArmada\FilamentCart\Models\RecoveryAttempt;
-use AIArmada\FilamentCart\Models\RecoveryCampaign;
 use AIArmada\FilamentCart\Services\RecoveryDispatcher;
 use AIArmada\FilamentCart\Services\RecoveryScheduler;
+use AIArmada\FilamentCart\Settings\CartRecoverySettings;
 use Illuminate\Support\Carbon;
+use Spatie\LaravelSettings\SettingsRepositories\DatabaseSettingsRepository;
+
+function makeRecoverySettings(array $overrides = []): CartRecoverySettings
+{
+    if (config('settings.repositories') === null) {
+        config()->set('settings.default_repository', 'database');
+        config()->set('settings.repositories', [
+            'database' => [
+                'type' => DatabaseSettingsRepository::class,
+                'model' => null,
+                'table' => 'settings',
+                'connection' => 'testing',
+            ],
+        ]);
+        config()->set('settings.cache.enabled', false);
+        config()->set('settings.global_casts', []);
+    }
+
+    $defaults = [
+        'recoveryEnabled' => true,
+        'defaultAbandonmentThresholdMinutes' => 60,
+        'maxRecoveryAttempts' => 3,
+        'cooldownBetweenAttemptsHours' => 24,
+        'emailEnabled' => true,
+        'emailFromName' => 'Demo',
+        'emailFromAddress' => 'demo@example.com',
+        'emailReplyTo' => null,
+        'emailTrackOpens' => true,
+        'emailTrackClicks' => true,
+        'smsEnabled' => false,
+        'smsProvider' => null,
+        'smsFromNumber' => null,
+        'smsMaxLength' => 160,
+        'pushEnabled' => false,
+        'pushProvider' => null,
+        'pushIconUrl' => null,
+        'pushRequireInteraction' => false,
+        'sendStartHour' => 9,
+        'sendEndHour' => 21,
+        'respectUserTimezone' => true,
+        'blockedDays' => [],
+        'minCartValue' => 0,
+        'maxMessagesPerCustomerPerWeek' => 3,
+        'excludeRepeatRecoveries' => true,
+        'excludeIfOrderedWithinDays' => 7,
+        'customExclusionRules' => [],
+    ];
+
+    return CartRecoverySettings::fake(array_merge($defaults, $overrides), false);
+}
 
 beforeEach(function (): void {
     Carbon::setTestNow(Carbon::create(2025, 1, 15, 12, 0, 0));
@@ -224,5 +275,70 @@ describe('RecoveryScheduler', function (): void {
         $cancelled = $this->scheduler->cancelAttemptsForCart('non-existent-cart');
 
         expect($cancelled)->toBe(0);
+    });
+
+    it('does not schedule when recovery is disabled in settings', function (): void {
+        $settings = makeRecoverySettings(['recoveryEnabled' => false]);
+        $this->app->instance(CartRecoverySettings::class, $settings);
+
+        $campaign = RecoveryCampaign::create([
+            'name' => 'Active Campaign',
+            'trigger_type' => 'abandoned',
+            'status' => 'active',
+            'trigger_delay_minutes' => 30,
+            'max_attempts' => 3,
+            'attempt_interval_hours' => 24,
+            'strategy' => 'email',
+        ]);
+
+        Cart::create([
+            'identifier' => 'abandoned-disabled',
+            'instance' => 'default',
+            'items_count' => 2,
+            'subtotal' => 20_00,
+            'checkout_abandoned_at' => now()->subHours(2),
+            'metadata' => ['email' => 'buyer@example.com'],
+        ]);
+
+        $scheduled = $this->scheduler->scheduleForCampaign($campaign->refresh());
+
+        expect($scheduled)->toBe(0);
+        expect(RecoveryAttempt::query()->count())->toBe(0);
+    });
+
+    it('limits next attempts based on settings maxRecoveryAttempts', function (): void {
+        $settings = makeRecoverySettings(['maxRecoveryAttempts' => 1]);
+        $this->app->instance(CartRecoverySettings::class, $settings);
+
+        $campaign = RecoveryCampaign::create([
+            'name' => 'Active Campaign',
+            'trigger_type' => 'abandoned',
+            'status' => 'active',
+            'max_attempts' => 3,
+            'attempt_interval_hours' => 24,
+            'strategy' => 'email',
+        ]);
+
+        $cart = Cart::create([
+            'identifier' => 'abandoned-max',
+            'instance' => 'default',
+            'items_count' => 1,
+            'subtotal' => 20_00,
+            'checkout_abandoned_at' => now()->subHours(2),
+            'metadata' => ['email' => 'buyer@example.com'],
+        ]);
+
+        $previousAttempt = RecoveryAttempt::create([
+            'campaign_id' => $campaign->id,
+            'cart_id' => $cart->id,
+            'channel' => 'email',
+            'status' => 'failed',
+            'attempt_number' => 1,
+            'scheduled_for' => now()->subDay(),
+        ]);
+
+        $nextAttempt = $this->scheduler->scheduleNextAttempt($previousAttempt->refresh());
+
+        expect($nextAttempt)->toBeNull();
     });
 });

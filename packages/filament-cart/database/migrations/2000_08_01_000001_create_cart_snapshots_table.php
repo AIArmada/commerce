@@ -37,10 +37,6 @@ return new class extends Migration
             $table->timestamp('checkout_abandoned_at')->nullable();
             $table->unsignedTinyInteger('recovery_attempts')->default(0);
             $table->timestamp('recovered_at')->nullable();
-            $table->boolean('is_collaborative')->default(false);
-            $table->unsignedSmallInteger('collaborator_count')->default(0);
-            $table->string('fraud_risk_level', 10)->nullable();
-            $table->decimal('fraud_score', 5, 2)->nullable();
             $table->timestamps();
 
             $table->unique(['owner_key', 'identifier', 'instance'], $tableName . '_owner_key_identifier_instance_unique');
@@ -56,8 +52,6 @@ return new class extends Migration
             $table->index('checkout_started_at');
             $table->index('checkout_abandoned_at');
             $table->index('recovered_at');
-            $table->index('is_collaborative');
-            $table->index('fraud_risk_level');
             $table->index(['checkout_abandoned_at', 'recovered_at'], $tableName . '_abandonment_idx');
             $table->index('created_at');
             $table->index('updated_at');

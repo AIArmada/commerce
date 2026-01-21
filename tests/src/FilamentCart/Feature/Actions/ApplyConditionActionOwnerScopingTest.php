@@ -13,6 +13,8 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 it('scopes ApplyConditionAction condition options and lookups by resolved owner', function (): void {
+    config()->set('cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', true);
     config()->set('filament-cart.owner.enabled', true);
     config()->set('filament-cart.owner.include_global', true);
 

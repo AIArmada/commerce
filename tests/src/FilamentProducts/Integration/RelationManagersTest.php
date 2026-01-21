@@ -11,7 +11,6 @@ use AIArmada\Products\Models\Product;
 use Filament\Schemas\Schema;
 use Filament\Tables\Contracts\HasTable;
 use Filament\Tables\Table;
-use Illuminate\Support\Collection;
 
 uses(TestCase::class);
 
@@ -84,14 +83,6 @@ it('exercises variant relation manager actions and bulk actions', function (): v
         'is_default' => false,
     ]);
 
-    app()->instance(\AIArmada\Products\Services\VariantGeneratorService::class, new class
-    {
-        public function generate(Product $product): Collection
-        {
-            return collect([1, 2, 3]);
-        }
-    });
-
     $manager = app(VariantsRelationManager::class);
     invade($manager)->ownerRecord = $product;
 
@@ -100,14 +91,6 @@ it('exercises variant relation manager actions and bulk actions', function (): v
     /** @var HasTable $livewire */
     $livewire = Mockery::mock(HasTable::class);
     $table = $manager->table(Table::make($livewire));
-
-    $generate = $table->getAction('generate_variants');
-    $generateHandler = $generate?->getActionFunction();
-
-    expect($generateHandler)->not->toBeNull();
-
-    // Ensure handler can run without a Livewire mount.
-    $generateHandler();
 
     /** @var \Filament\Actions\EditAction $edit */
     $edit = $table->getAction('edit');

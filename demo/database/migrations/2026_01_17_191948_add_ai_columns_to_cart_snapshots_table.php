@@ -22,7 +22,7 @@ return new class extends Migration
         $databaseConfig = config('filament-cart.database', []);
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cart_';
         $tables = $databaseConfig['tables'] ?? [];
-        $tableName = $tables['snapshots'] ?? $tablePrefix . 'snapshots';
+        $tableName = $tables['snapshots'] ?? $tablePrefix.'snapshots';
 
         if (Schema::hasColumn($tableName, 'last_activity_at')) {
             return;
@@ -53,7 +53,7 @@ return new class extends Migration
             $table->index('fraud_risk_level');
 
             // Composite index for abandonment analysis
-            $table->index(['checkout_abandoned_at', 'recovered_at'], $tableName . '_abandonment_idx');
+            $table->index(['checkout_abandoned_at', 'recovered_at'], $tableName.'_abandonment_idx');
         });
     }
 
@@ -62,10 +62,10 @@ return new class extends Migration
         $databaseConfig = config('filament-cart.database', []);
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cart_';
         $tables = $databaseConfig['tables'] ?? [];
-        $tableName = $tables['snapshots'] ?? $tablePrefix . 'snapshots';
+        $tableName = $tables['snapshots'] ?? $tablePrefix.'snapshots';
 
         Schema::table($tableName, function (Blueprint $table) use ($tableName): void {
-            $table->dropIndex($tableName . '_abandonment_idx');
+            $table->dropIndex($tableName.'_abandonment_idx');
             $table->dropIndex(['last_activity_at']);
             $table->dropIndex(['checkout_started_at']);
             $table->dropIndex(['checkout_abandoned_at']);

@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Services;
 
+use AIArmada\Cart\Models\CartDailyMetrics;
 use AIArmada\FilamentCart\Models\Cart;
-use AIArmada\FilamentCart\Models\CartDailyMetrics;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -53,9 +53,7 @@ class MetricsAggregator
                 SUM(carts_recovered) as total_carts_recovered,
                 SUM(recovered_revenue_cents) as total_recovered_revenue,
                 SUM(total_cart_value_cents) as total_cart_value,
-                AVG(average_cart_value_cents) as avg_cart_value,
-                SUM(fraud_alerts_high) as total_fraud_high,
-                SUM(fraud_alerts_medium) as total_fraud_medium
+                AVG(average_cart_value_cents) as avg_cart_value
             ')
             ->first()
             ?->toArray() ?? [];
@@ -147,33 +145,6 @@ class MetricsAggregator
 
         $avgItemsPerCart = $cartsWithItems > 0 ? $totalItems / $cartsWithItems : 0;
 
-        // Fraud metrics
-        $fraudHigh = Cart::query()->forOwner()
-            ->whereBetween('updated_at', [$start, $end])
-            ->where('fraud_risk_level', 'high')
-            ->count();
-
-        $fraudMedium = Cart::query()->forOwner()
-            ->whereBetween('updated_at', [$start, $end])
-            ->where('fraud_risk_level', 'medium')
-            ->count();
-
-        $cartsBlocked = Cart::query()->forOwner()
-            ->whereBetween('updated_at', [$start, $end])
-            ->whereRaw("JSON_EXTRACT(metadata, '$.blocked') = true")
-            ->count();
-
-        // Collaborative metrics
-        $collaborativeCarts = Cart::query()->forOwner()
-            ->whereBetween('updated_at', [$start, $end])
-            ->where('is_collaborative', true)
-            ->count();
-
-        $totalCollaborators = (int) Cart::query()->forOwner()
-            ->whereBetween('updated_at', [$start, $end])
-            ->where('is_collaborative', true)
-            ->sum('collaborator_count');
-
         return [
             'carts_created' => $cartsCreated,
             'carts_active' => $cartsActive,
@@ -189,11 +160,6 @@ class MetricsAggregator
             'average_cart_value_cents' => $avgCartValue,
             'total_items' => $totalItems,
             'average_items_per_cart' => round($avgItemsPerCart, 2),
-            'fraud_alerts_high' => $fraudHigh,
-            'fraud_alerts_medium' => $fraudMedium,
-            'carts_blocked' => $cartsBlocked,
-            'collaborative_carts' => $collaborativeCarts,
-            'total_collaborators' => $totalCollaborators,
         ];
     }
 }

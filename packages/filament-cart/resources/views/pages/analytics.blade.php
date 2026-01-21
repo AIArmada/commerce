@@ -16,22 +16,22 @@
         {{-- Main content grid --}}
         <div class="grid grid-cols-1 gap-6 lg:grid-cols-2">
             {{-- Conversion Funnel --}}
-            @livewire(\AIArmada\FilamentCart\Widgets\ConversionFunnelWidget::class)
+            @livewire(\AIArmada\FilamentCart\Widgets\ConversionFunnelWidget::class, ['dateFrom' => $this->dateFrom, 'dateTo' => $this->dateTo, 'interval' => $this->interval], key('conversion-funnel-'.$this->dateFrom.'-'.$this->dateTo.'-'.$this->interval))
 
             {{-- Value Trends Chart --}}
-            @livewire(\AIArmada\FilamentCart\Widgets\ValueTrendChartWidget::class)
+            @livewire(\AIArmada\FilamentCart\Widgets\ValueTrendChartWidget::class, ['dateFrom' => $this->dateFrom, 'dateTo' => $this->dateTo, 'interval' => $this->interval], key('value-trend-'.$this->dateFrom.'-'.$this->dateTo.'-'.$this->interval))
         </div>
 
         {{-- Abandonment Analysis --}}
         @if(config('filament-cart.features.abandonment_tracking', true))
             <div class="grid grid-cols-1 gap-6 lg:grid-cols-1">
-                @livewire(\AIArmada\FilamentCart\Widgets\AbandonmentAnalysisWidget::class)
+                @livewire(\AIArmada\FilamentCart\Widgets\AbandonmentAnalysisWidget::class, ['dateFrom' => $this->dateFrom, 'dateTo' => $this->dateTo, 'interval' => $this->interval], key('abandonment-'.$this->dateFrom.'-'.$this->dateTo.'-'.$this->interval))
             </div>
         @endif
 
         {{-- Recovery Performance --}}
-        @if(config('filament-cart.features.ai_recovery', true))
-            @livewire(\AIArmada\FilamentCart\Widgets\RecoveryPerformanceWidget::class)
+        @if(config('filament-cart.features.recovery', true))
+            @livewire(\AIArmada\FilamentCart\Widgets\RecoveryPerformanceWidget::class, ['dateFrom' => $this->dateFrom, 'dateTo' => $this->dateTo, 'interval' => $this->interval], key('recovery-'.$this->dateFrom.'-'.$this->dateTo.'-'.$this->interval))
         @endif
     </div>
 </x-filament-panels::page>

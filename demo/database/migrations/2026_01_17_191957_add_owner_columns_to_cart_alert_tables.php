@@ -13,8 +13,8 @@ return new class extends Migration
         $tables = config('filament-cart.database.tables', []);
         $prefix = config('filament-cart.database.table_prefix', 'cart_');
 
-        $alertRules = $tables['alert_rules'] ?? $prefix . 'alert_rules';
-        $alertLogs = $tables['alert_logs'] ?? $prefix . 'alert_logs';
+        $alertRules = $tables['alert_rules'] ?? $prefix.'alert_rules';
+        $alertLogs = $tables['alert_logs'] ?? $prefix.'alert_logs';
 
         if (! Schema::hasColumn($alertRules, 'owner_type')) {
             Schema::table($alertRules, function (Blueprint $table): void {
@@ -34,8 +34,8 @@ return new class extends Migration
         $tables = config('filament-cart.database.tables', []);
         $prefix = config('filament-cart.database.table_prefix', 'cart_');
 
-        $alertRules = $tables['alert_rules'] ?? $prefix . 'alert_rules';
-        $alertLogs = $tables['alert_logs'] ?? $prefix . 'alert_logs';
+        $alertRules = $tables['alert_rules'] ?? $prefix.'alert_rules';
+        $alertLogs = $tables['alert_logs'] ?? $prefix.'alert_logs';
 
         Schema::table($alertLogs, function (Blueprint $table): void {
             $table->dropMorphs('owner');

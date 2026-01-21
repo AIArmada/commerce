@@ -47,11 +47,6 @@ class LiveStatsWidget extends StatsOverviewWidget
                 ->description('Unread')
                 ->icon('heroicon-o-bell')
                 ->color($stats->pending_alerts > 0 ? 'danger' : 'gray'),
-
-            Stat::make('Fraud Signals', (string) $stats->fraud_signals)
-                ->description('Last 24 hours')
-                ->icon('heroicon-o-shield-exclamation')
-                ->color($stats->fraud_signals > 0 ? 'danger' : 'success'),
         ];
     }
 }

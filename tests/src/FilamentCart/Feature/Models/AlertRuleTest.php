@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Models\AlertLog;
-use AIArmada\FilamentCart\Models\AlertRule;
+use AIArmada\Cart\Models\AlertLog;
+use AIArmada\Cart\Models\AlertRule;
 use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {

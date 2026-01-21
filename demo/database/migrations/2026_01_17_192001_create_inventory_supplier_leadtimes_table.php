@@ -13,7 +13,7 @@ return new class extends Migration
         $tables = config('inventory.database.tables', []);
         $prefix = config('inventory.database.table_prefix', 'inventory_');
 
-        $tableName = $tables['supplier_leadtimes'] ?? $prefix . 'supplier_leadtimes';
+        $tableName = $tables['supplier_leadtimes'] ?? $prefix.'supplier_leadtimes';
 
         Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
@@ -38,7 +38,7 @@ return new class extends Migration
 
             $table->index(['inventoryable_type', 'inventoryable_id', 'is_active'], 'inv_supp_lead_invable_active_idx');
             $table->index('is_primary');
-            $table->index(['owner_type', 'owner_id'], $tableName . '_owner_idx');
+            $table->index(['owner_type', 'owner_id'], $tableName.'_owner_idx');
         });
     }
 
@@ -46,7 +46,7 @@ return new class extends Migration
     {
         $tables = config('inventory.database.tables', []);
         $prefix = config('inventory.database.table_prefix', 'inventory_');
-        $tableName = $tables['supplier_leadtimes'] ?? $prefix . 'supplier_leadtimes';
+        $tableName = $tables['supplier_leadtimes'] ?? $prefix.'supplier_leadtimes';
 
         Schema::dropIfExists($tableName);
     }

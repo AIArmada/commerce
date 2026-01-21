@@ -157,7 +157,7 @@ it('lists CHIP purchases as unified invoices and applies tabs and filters', func
 
     $filtered = $page->getTableRecords();
     expect($filtered)->toHaveCount(1);
-    expect((string) $filtered->first()->id)->toBe((string) $purchaseA->getKey());
+    expect((string) $filtered->first()->source_id)->toBe((string) $purchaseA->getKey());
 
     filamentCashier_setProtectedProperty($page, 'tableFilters', [
         'gateway' => ['value' => 'chip'],
@@ -165,7 +165,7 @@ it('lists CHIP purchases as unified invoices and applies tabs and filters', func
 
     $gatewayFiltered = $page->getTableRecords();
     expect($gatewayFiltered)->toHaveCount(2);
-    expect($gatewayFiltered->pluck('id')->all())->toContain((string) $purchaseA->getKey(), (string) $purchaseB->getKey());
+    expect($gatewayFiltered->pluck('source_id')->all())->toContain((string) $purchaseA->getKey(), (string) $purchaseB->getKey());
 });
 
 it('returns no invoices when the configured billable model does not exist', function (): void {

@@ -123,11 +123,15 @@ final class FilamentCashierChipPlugin implements Plugin
 
     public function register(Panel $panel): void
     {
+        $hasUnifiedCashier = $panel->hasPlugin('filament-cashier');
+        $billingPanelId = (string) config('filament-cashier-chip.billing.panel_id', 'billing');
+        $isBillingPanel = $panel->getId() === $billingPanelId;
+
         $resources = [];
         $widgets = [];
         $pages = [];
 
-        if ($this->hasSubscriptions && config('filament-cashier-chip.features.subscriptions', true)) {
+        if ($this->hasSubscriptions && config('filament-cashier-chip.features.subscriptions', true) && ! $hasUnifiedCashier) {
             $resources[] = SubscriptionResource::class;
         }
 
@@ -135,7 +139,7 @@ final class FilamentCashierChipPlugin implements Plugin
             $resources[] = CustomerResource::class;
         }
 
-        if ($this->hasInvoices && config('filament-cashier-chip.features.invoices', true)) {
+        if ($this->hasInvoices && config('filament-cashier-chip.features.invoices', true) && ! $hasUnifiedCashier) {
             $resources[] = InvoiceResource::class;
         }
 
@@ -163,11 +167,11 @@ final class FilamentCashierChipPlugin implements Plugin
             }
         }
 
-        if ($this->hasBillingDashboard) {
+        if ($this->hasBillingDashboard && ! $hasUnifiedCashier) {
             $pages[] = BillingDashboard::class;
         }
 
-        if ($this->hasBillingPortal) {
+        if ($this->hasBillingPortal && $isBillingPanel && ! $hasUnifiedCashier) {
             if (config('filament-cashier-chip.billing.features.subscriptions', true)) {
                 $pages[] = Subscriptions::class;
             }

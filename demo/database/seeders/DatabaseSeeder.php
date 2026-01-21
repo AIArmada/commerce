@@ -47,7 +47,7 @@ final class DatabaseSeeder extends Seeder
 
         OwnerContext::withOwner($singleTenantOwner, function () use ($singleTenantOwner): void {
             $this->command->info('');
-            $this->command->info('🏢 Seeding single tenant data for: ' . $singleTenantOwner->email);
+            $this->command->info('🏢 Seeding single tenant data for: '.$singleTenantOwner->email);
             $this->command->info('   (All users will share access to this data)');
 
             $this->call([

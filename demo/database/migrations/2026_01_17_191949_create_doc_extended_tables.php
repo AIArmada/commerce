@@ -16,7 +16,7 @@ return new class extends Migration
         $jsonType = (string) commerce_json_column_type('docs', 'json');
 
         // Phase 2: Payments
-        $paymentsTable = $tables['doc_payments'] ?? $tablePrefix . 'payments';
+        $paymentsTable = $tables['doc_payments'] ?? $tablePrefix.'payments';
         if (! Schema::hasTable($paymentsTable)) {
             Schema::create($paymentsTable, function (Blueprint $table) use ($paymentsTable, $jsonType): void {
                 $table->uuid('id')->primary();
@@ -32,18 +32,18 @@ return new class extends Migration
                 $table->{$jsonType}('metadata')->nullable();
                 $table->timestamps();
 
-                $table->index('doc_id', $paymentsTable . '_doc_id_index');
-                $table->index('paid_at', $paymentsTable . '_paid_at_index');
+                $table->index('doc_id', $paymentsTable.'_doc_id_index');
+                $table->index('paid_at', $paymentsTable.'_paid_at_index');
             });
         }
 
         // Phase 3: Email Templates
-        $emailTemplatesTable = $tables['doc_email_templates'] ?? $tablePrefix . 'email_templates';
+        $emailTemplatesTable = $tables['doc_email_templates'] ?? $tablePrefix.'email_templates';
         if (! Schema::hasTable($emailTemplatesTable)) {
             Schema::create($emailTemplatesTable, function (Blueprint $table) use ($emailTemplatesTable): void {
                 $table->uuid('id')->primary();
                 $table->string('name');
-                $table->string('slug')->unique($emailTemplatesTable . '_slug_unique');
+                $table->string('slug')->unique($emailTemplatesTable.'_slug_unique');
                 $table->string('doc_type');
                 $table->string('trigger'); // created, sent, paid, overdue, reminder
                 $table->string('subject');
@@ -52,12 +52,12 @@ return new class extends Migration
                 $table->nullableUuidMorphs('owner');
                 $table->timestamps();
 
-                $table->index(['doc_type', 'trigger'], $emailTemplatesTable . '_type_trigger_index');
+                $table->index(['doc_type', 'trigger'], $emailTemplatesTable.'_type_trigger_index');
             });
         }
 
         // Phase 3: Email Logs
-        $emailsTable = $tables['doc_emails'] ?? $tablePrefix . 'emails';
+        $emailsTable = $tables['doc_emails'] ?? $tablePrefix.'emails';
         if (! Schema::hasTable($emailsTable)) {
             Schema::create($emailsTable, function (Blueprint $table) use ($emailsTable, $jsonType): void {
                 $table->uuid('id')->primary();
@@ -78,14 +78,14 @@ return new class extends Migration
                 $table->{$jsonType}('metadata')->nullable();
                 $table->timestamps();
 
-                $table->index('doc_id', $emailsTable . '_doc_id_index');
-                $table->index('status', $emailsTable . '_status_index');
-                $table->index('sent_at', $emailsTable . '_sent_at_index');
+                $table->index('doc_id', $emailsTable.'_doc_id_index');
+                $table->index('status', $emailsTable.'_status_index');
+                $table->index('sent_at', $emailsTable.'_sent_at_index');
             });
         }
 
         // Phase 4: Versions
-        $versionsTable = $tables['doc_versions'] ?? $tablePrefix . 'versions';
+        $versionsTable = $tables['doc_versions'] ?? $tablePrefix.'versions';
         if (! Schema::hasTable($versionsTable)) {
             Schema::create($versionsTable, function (Blueprint $table) use ($versionsTable, $jsonType): void {
                 $table->uuid('id')->primary();
@@ -99,14 +99,14 @@ return new class extends Migration
 
                 $table->unique(
                     ['doc_id', 'version_number'],
-                    $versionsTable . '_doc_version_unique'
+                    $versionsTable.'_doc_version_unique'
                 );
-                $table->index('doc_id', $versionsTable . '_doc_id_index');
+                $table->index('doc_id', $versionsTable.'_doc_id_index');
             });
         }
 
         // Phase 4: Approvals
-        $approvalsTable = $tables['doc_approvals'] ?? $tablePrefix . 'approvals';
+        $approvalsTable = $tables['doc_approvals'] ?? $tablePrefix.'approvals';
         if (! Schema::hasTable($approvalsTable)) {
             Schema::create($approvalsTable, function (Blueprint $table) use ($approvalsTable): void {
                 $table->uuid('id')->primary();
@@ -121,14 +121,14 @@ return new class extends Migration
                 $table->timestamp('expires_at')->nullable();
                 $table->timestamps();
 
-                $table->index('doc_id', $approvalsTable . '_doc_id_index');
-                $table->index('status', $approvalsTable . '_status_index');
-                $table->index('assigned_to', $approvalsTable . '_assigned_to_index');
+                $table->index('doc_id', $approvalsTable.'_doc_id_index');
+                $table->index('status', $approvalsTable.'_status_index');
+                $table->index('assigned_to', $approvalsTable.'_assigned_to_index');
             });
         }
 
         // Phase 5: E-Invoice Submissions
-        $einvoiceTable = $tables['doc_einvoice_submissions'] ?? $tablePrefix . 'einvoice_submissions';
+        $einvoiceTable = $tables['doc_einvoice_submissions'] ?? $tablePrefix.'einvoice_submissions';
         if (! Schema::hasTable($einvoiceTable)) {
             Schema::create($einvoiceTable, function (Blueprint $table) use ($einvoiceTable, $jsonType): void {
                 $table->uuid('id')->primary();
@@ -147,9 +147,9 @@ return new class extends Migration
                 $table->timestamp('validated_at')->nullable();
                 $table->timestamps();
 
-                $table->index('doc_id', $einvoiceTable . '_doc_id_index');
-                $table->index('submission_uid', $einvoiceTable . '_submission_uid_index');
-                $table->index('status', $einvoiceTable . '_status_index');
+                $table->index('doc_id', $einvoiceTable.'_doc_id_index');
+                $table->index('submission_uid', $einvoiceTable.'_submission_uid_index');
+                $table->index('status', $einvoiceTable.'_status_index');
             });
         }
     }
@@ -160,11 +160,11 @@ return new class extends Migration
         $tablePrefix = $database['table_prefix'] ?? 'docs_';
         $tables = $database['tables'] ?? [];
 
-        Schema::dropIfExists($tables['doc_einvoice_submissions'] ?? $tablePrefix . 'einvoice_submissions');
-        Schema::dropIfExists($tables['doc_approvals'] ?? $tablePrefix . 'approvals');
-        Schema::dropIfExists($tables['doc_versions'] ?? $tablePrefix . 'versions');
-        Schema::dropIfExists($tables['doc_emails'] ?? $tablePrefix . 'emails');
-        Schema::dropIfExists($tables['doc_email_templates'] ?? $tablePrefix . 'email_templates');
-        Schema::dropIfExists($tables['doc_payments'] ?? $tablePrefix . 'payments');
+        Schema::dropIfExists($tables['doc_einvoice_submissions'] ?? $tablePrefix.'einvoice_submissions');
+        Schema::dropIfExists($tables['doc_approvals'] ?? $tablePrefix.'approvals');
+        Schema::dropIfExists($tables['doc_versions'] ?? $tablePrefix.'versions');
+        Schema::dropIfExists($tables['doc_emails'] ?? $tablePrefix.'emails');
+        Schema::dropIfExists($tables['doc_email_templates'] ?? $tablePrefix.'email_templates');
+        Schema::dropIfExists($tables['doc_payments'] ?? $tablePrefix.'payments');
     }
 };

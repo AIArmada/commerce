@@ -38,7 +38,7 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->timestamps();
 
-            $table->index(['owner_id', 'owner_type', 'status'], $tableName . '_owner_status');
+            $table->index(['owner_id', 'owner_type', 'status'], $tableName.'_owner_status');
         });
 
         Schema::create($itemsTable, function (Blueprint $table) use ($itemsTable, $jsonType): void {
@@ -59,7 +59,7 @@ return new class extends Migration
             $table->{$jsonType}('metadata')->nullable();
             $table->timestamps();
 
-            $table->index('return_authorization_id', $itemsTable . '_ra_id');
+            $table->index('return_authorization_id', $itemsTable.'_ra_id');
         });
     }
 

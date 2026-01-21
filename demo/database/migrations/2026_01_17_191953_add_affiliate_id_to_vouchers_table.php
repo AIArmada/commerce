@@ -13,7 +13,7 @@ return new class extends Migration
         /** @var array<string, string> $tables */
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
-        $tableName = $tables['vouchers'] ?? $prefix . 'vouchers';
+        $tableName = $tables['vouchers'] ?? $prefix.'vouchers';
 
         if (Schema::hasColumn($tableName, 'affiliate_id')) {
             return;
@@ -30,7 +30,7 @@ return new class extends Migration
         /** @var array<string, string> $tables */
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
-        $tableName = $tables['vouchers'] ?? $prefix . 'vouchers';
+        $tableName = $tables['vouchers'] ?? $prefix.'vouchers';
 
         Schema::table($tableName, function (Blueprint $table): void {
             $table->dropIndex(['affiliate_id']);

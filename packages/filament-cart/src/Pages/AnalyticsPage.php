@@ -83,6 +83,18 @@ class AnalyticsPage extends Page
         return $this->interval;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    public function getWidgetData(): array
+    {
+        return [
+            'dateFrom' => $this->dateFrom,
+            'dateTo' => $this->dateTo,
+            'interval' => $this->interval,
+        ];
+    }
+
     protected function getHeaderActions(): array
     {
         return [
@@ -165,7 +177,7 @@ class AnalyticsPage extends Page
             $widgets[] = AbandonmentAnalysisWidget::class;
         }
 
-        if (config('filament-cart.features.ai_recovery', true)) {
+        if (config('filament-cart.features.recovery', true)) {
             $widgets[] = RecoveryPerformanceWidget::class;
         }
 

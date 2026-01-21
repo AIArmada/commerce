@@ -51,19 +51,20 @@ final readonly class UnifiedSubscription
      */
     public static function fromStripe(Model $subscription): self
     {
-        $trialEndsAt = $subscription->getAttribute('trial_ends_at');
-        $endsAt = $subscription->getAttribute('ends_at');
-        $createdAt = $subscription->getAttribute('created_at');
+        $attributes = $subscription->getAttributes();
+        $trialEndsAt = $attributes['trial_ends_at'] ?? null;
+        $endsAt = $attributes['ends_at'] ?? null;
+        $createdAt = $attributes['created_at'] ?? now();
 
         return new self(
             id: (string) $subscription->getKey(),
             gateway: 'stripe',
-            userId: (string) $subscription->getAttribute('user_id'),
-            type: (string) $subscription->getAttribute('type'),
-            planId: (string) ($subscription->getAttribute('stripe_price') ?? $subscription->getAttribute('name')),
+            userId: (string) ($attributes['user_id'] ?? ''),
+            type: (string) ($attributes['type'] ?? 'default'),
+            planId: (string) ($attributes['stripe_price'] ?? ($attributes['name'] ?? ($attributes['type'] ?? 'default'))),
             amount: self::getStripeAmount($subscription),
             currency: 'USD',
-            quantity: (int) ($subscription->getAttribute('quantity') ?? 1),
+            quantity: (int) ($attributes['quantity'] ?? 1),
             status: self::normalizeStripeStatus($subscription),
             trialEndsAt: $trialEndsAt ? CarbonImmutable::parse($trialEndsAt) : null,
             endsAt: $endsAt ? CarbonImmutable::parse($endsAt) : null,
@@ -78,20 +79,21 @@ final readonly class UnifiedSubscription
      */
     public static function fromChip(Model $subscription): self
     {
-        $trialEndsAt = $subscription->getAttribute('trial_ends_at');
-        $endsAt = $subscription->getAttribute('ends_at');
-        $nextBillingAt = $subscription->getAttribute('next_billing_at');
-        $createdAt = $subscription->getAttribute('created_at');
+        $attributes = $subscription->getAttributes();
+        $trialEndsAt = $attributes['trial_ends_at'] ?? null;
+        $endsAt = $attributes['ends_at'] ?? null;
+        $nextBillingAt = $attributes['next_billing_at'] ?? null;
+        $createdAt = $attributes['created_at'] ?? now();
 
         return new self(
             id: (string) $subscription->getKey(),
             gateway: 'chip',
-            userId: (string) $subscription->getAttribute('user_id'),
-            type: (string) $subscription->getAttribute('type'),
-            planId: (string) ($subscription->getAttribute('plan_id') ?? $subscription->getAttribute('name')),
+            userId: (string) ($attributes['user_id'] ?? ''),
+            type: (string) ($attributes['type'] ?? 'default'),
+            planId: (string) ($attributes['plan_id'] ?? ($attributes['name'] ?? ($attributes['type'] ?? 'default'))),
             amount: self::getChipAmount($subscription),
             currency: 'MYR',
-            quantity: (int) ($subscription->getAttribute('quantity') ?? 1),
+            quantity: (int) ($attributes['quantity'] ?? 1),
             status: self::normalizeChipStatus($subscription),
             trialEndsAt: $trialEndsAt ? CarbonImmutable::parse($trialEndsAt) : null,
             endsAt: $endsAt ? CarbonImmutable::parse($endsAt) : null,
@@ -176,9 +178,11 @@ final readonly class UnifiedSubscription
      */
     public function getExternalId(): string
     {
+        $attributes = $this->original->getAttributes();
+
         return match ($this->gateway) {
-            'stripe' => (string) ($this->original->stripe_id ?? $this->id),
-            'chip' => (string) ($this->original->chip_id ?? $this->original->chip_subscription_id ?? $this->id),
+            'stripe' => (string) ($attributes['stripe_id'] ?? $this->id),
+            'chip' => (string) ($attributes['chip_id'] ?? ($attributes['chip_subscription_id'] ?? $this->id)),
             default => $this->id,
         };
     }
@@ -235,8 +239,10 @@ final readonly class UnifiedSubscription
     private static function getChipAmount(Model $subscription): int
     {
         // CHIP stores amount directly or in items
-        if (isset($subscription->amount)) {
-            return (int) $subscription->amount;
+        $attributes = $subscription->getAttributes();
+
+        if (isset($attributes['amount'])) {
+            return (int) $attributes['amount'];
         }
 
         if ($subscription->relationLoaded('items')) {
@@ -304,7 +310,7 @@ final readonly class UnifiedSubscription
         }
 
         // Fallback to checking stripe_status
-        $stripeStatus = $subscription->stripe_status ?? 'active';
+        $stripeStatus = $subscription->getAttributes()['stripe_status'] ?? 'active';
 
         return match ($stripeStatus) {
             'active' => SubscriptionStatus::Active,
@@ -338,7 +344,7 @@ final readonly class UnifiedSubscription
         }
 
         // Fallback to status column
-        $status = $subscription->status ?? 'active';
+        $status = $subscription->getAttributes()['status'] ?? 'active';
 
         return match ($status) {
             'active' => SubscriptionStatus::Active,
@@ -353,23 +359,27 @@ final readonly class UnifiedSubscription
 
     private static function calculateStripeNextBilling(Model $subscription): ?CarbonImmutable
     {
+        $attributes = $subscription->getAttributes();
+
         // If subscription has ends_at, no next billing
-        if ($subscription->getAttribute('ends_at') !== null) {
+        if (($attributes['ends_at'] ?? null) !== null) {
             return null;
         }
 
         // If on trial, next billing is after trial
-        $trialEndsAt = $subscription->getAttribute('trial_ends_at');
+        $trialEndsAt = $attributes['trial_ends_at'] ?? null;
 
         if ($trialEndsAt !== null && CarbonImmutable::parse($trialEndsAt)->isFuture()) {
             return CarbonImmutable::parse($trialEndsAt);
         }
 
         // Try to get from Stripe API metadata if available
-        $currentPeriodEnd = $subscription->getAttribute('current_period_end');
+        $currentPeriodEnd = $attributes['current_period_end'] ?? null;
 
-        if (is_int($currentPeriodEnd)) {
-            return CarbonImmutable::createFromTimestamp($currentPeriodEnd);
+        if ($currentPeriodEnd !== null) {
+            return is_numeric($currentPeriodEnd)
+                ? CarbonImmutable::createFromTimestamp((int) $currentPeriodEnd)
+                : CarbonImmutable::parse((string) $currentPeriodEnd);
         }
 
         return null;

@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Models\AlertRule;
+use AIArmada\Cart\Models\AlertRule;
 use AIArmada\FilamentCart\Services\AlertEvaluator;
 
 describe('AlertEvaluator', function (): void {

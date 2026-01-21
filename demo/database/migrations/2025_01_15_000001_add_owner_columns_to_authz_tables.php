@@ -33,7 +33,7 @@ return new class extends Migration
             });
         }
 
-        $identityTable = $tablePrefix . 'identity_provider_mappings';
+        $identityTable = $tablePrefix.'identity_provider_mappings';
 
         if (! Schema::hasTable($identityTable)) {
             return;

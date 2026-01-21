@@ -63,6 +63,6 @@ return new class extends Migration
     {
         $prefix = config('filament-cart.database.table_prefix', 'cart_');
 
-        return $prefix . 'daily_metrics';
+        return $prefix.'daily_metrics';
     }
 };

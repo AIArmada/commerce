@@ -16,7 +16,9 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 it('scopes filament-cart snapshots and child resources by resolved owner', function (): void {
+    config()->set('cart.owner.enabled', true);
     config()->set('filament-cart.owner.enabled', true);
+    config()->set('cart.owner.include_global', false);
     config()->set('filament-cart.owner.include_global', false);
 
     $ownerA = User::query()->create([

@@ -23,6 +23,7 @@ use AIArmada\Shipping\ShippingManager;
 use AIArmada\Shipping\Support\ShippingOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use RuntimeException;
+use Throwable;
 
 /**
  * Manages shipment lifecycle operations.
@@ -152,7 +153,7 @@ class ShipmentService
             if ($result->labelUrl === null && $driver->supports(DriverCapability::LabelGeneration)) {
                 try {
                     $this->generateLabel($shipment);
-                } catch (\Throwable $e) {
+                } catch (Throwable $e) {
                     // Log warning but don't fail the shipment
                     \Illuminate\Support\Facades\Log::warning('Label generation failed for shipment', [
                         'shipment_id' => $shipment->id,

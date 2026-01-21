@@ -8,11 +8,8 @@ use AIArmada\Products\Events\ProductDeleted;
 use AIArmada\Products\Events\ProductStatusChanged;
 use AIArmada\Products\Events\ProductUpdated;
 use AIArmada\Products\Events\VariantsGenerated;
-use AIArmada\Products\Models\Option;
-use AIArmada\Products\Models\OptionValue;
 use AIArmada\Products\Models\Product;
 use AIArmada\Products\Models\Variant;
-use AIArmada\Products\Services\VariantGeneratorService;
 
 describe('Product Events', function (): void {
     describe('ProductCreated Event', function (): void {
@@ -282,36 +279,6 @@ describe('Product Events', function (): void {
             $product->delete();
 
             Event::assertDispatched(ProductDeleted::class);
-        });
-
-        it('dispatches VariantsGenerated when variants are regenerated', function (): void {
-            $product = Product::create([
-                'name' => 'Variant Generator Product',
-                'price' => 1000,
-                'status' => ProductStatus::Active,
-                'sku' => 'GEN',
-            ]);
-
-            $color = Option::create([
-                'product_id' => $product->id,
-                'name' => 'Color',
-                'position' => 0,
-            ]);
-
-            OptionValue::create(['option_id' => $color->id, 'name' => 'Red', 'position' => 0]);
-            OptionValue::create(['option_id' => $color->id, 'name' => 'Blue', 'position' => 1]);
-
-            Event::fake([
-                VariantsGenerated::class,
-            ]);
-
-            $variants = (new VariantGeneratorService)->generate($product);
-
-            expect($variants)->toHaveCount(2);
-
-            Event::assertDispatched(VariantsGenerated::class, function (VariantsGenerated $event) use ($product): bool {
-                return $event->product->is($product) && $event->variants->count() === 2;
-            });
         });
     });
 });

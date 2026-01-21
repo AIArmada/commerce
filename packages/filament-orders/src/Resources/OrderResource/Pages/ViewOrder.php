@@ -16,6 +16,7 @@ use Filament\Facades\Filament;
 use Filament\Notifications\Notification;
 use Filament\Resources\Pages\ViewRecord;
 use Illuminate\Support\Facades\Gate;
+use RuntimeException;
 use Throwable;
 
 class ViewOrder extends ViewRecord
@@ -141,7 +142,7 @@ class ViewOrder extends ViewRecord
                             ]);
 
                             if (! $result['success']) {
-                                throw new \RuntimeException($result['error'] ?? 'Failed to create shipment via carrier API');
+                                throw new RuntimeException($result['error'] ?? 'Failed to create shipment via carrier API');
                             }
 
                             // Update order with tracking info from API
