@@ -60,14 +60,17 @@ class PaymentMethods extends Page
             return '#';
         }
 
-        $panelId = $this->getBillingPanelId();
         $successUrl = config('filament-cashier-chip.billing.redirects.after_payment_method_added')
-            ?? route("filament.{$panelId}.pages.payment-methods");
+            ?? $this->billingRoute('pages.billing.payment-methods');
 
-        return $billable->setupPaymentMethodUrl([
-            'success_url' => $successUrl,
-            'cancel_url' => route("filament.{$panelId}.pages.payment-methods"),
-        ]);
+        try {
+            return $billable->setupPaymentMethodUrl([
+                'success_url' => $successUrl,
+                'cancel_url' => $this->billingRoute('pages.billing.payment-methods'),
+            ]);
+        } catch (Exception) {
+            return '#';
+        }
     }
 
     public function setAsDefault(string $paymentMethodId): void

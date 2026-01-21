@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources;
 
-use AIArmada\FilamentCart\Models\RecoveryCampaign;
-use AIArmada\FilamentCart\Models\RecoveryTemplate;
+use AIArmada\Cart\Models\RecoveryCampaign;
+use AIArmada\Cart\Models\RecoveryTemplate;
 use AIArmada\FilamentCart\Resources\RecoveryCampaignResource\Pages\CreateRecoveryCampaign;
 use AIArmada\FilamentCart\Resources\RecoveryCampaignResource\Pages\EditRecoveryCampaign;
 use AIArmada\FilamentCart\Resources\RecoveryCampaignResource\Pages\ListRecoveryCampaigns;

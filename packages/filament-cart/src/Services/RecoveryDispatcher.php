@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Services;
 
+use AIArmada\Cart\Models\RecoveryAttempt;
+use AIArmada\Cart\Models\RecoveryCampaign;
+use AIArmada\Cart\Models\RecoveryTemplate;
 use AIArmada\FilamentCart\Events\CartRecovered;
 use AIArmada\FilamentCart\Events\RecoveryAttemptClicked;
 use AIArmada\FilamentCart\Events\RecoveryAttemptOpened;
 use AIArmada\FilamentCart\Events\RecoveryAttemptSent;
-use AIArmada\FilamentCart\Models\RecoveryAttempt;
-use AIArmada\FilamentCart\Models\RecoveryCampaign;
-use AIArmada\FilamentCart\Models\RecoveryTemplate;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\URL;
 use InvalidArgumentException;
@@ -246,7 +246,9 @@ class RecoveryDispatcher
         $urls = $this->generateTrackingUrls($attempt);
 
         $cartItems = '';
+        // @phpstan-ignore property.notFound
         if ($cart && is_array($cart->items)) {
+            // @phpstan-ignore property.notFound
             $cartItems = collect($cart->items)
                 ->map(fn ($item) => sprintf(
                     '%s x %d - $%.2f',

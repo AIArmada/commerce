@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages;
 
 use AIArmada\Chip\Models\Purchase;
+use AIArmada\FilamentCashier\Models\UnifiedInvoiceRecord;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource;
 use AIArmada\FilamentCashier\Support\CashierOwnerScope;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\UnifiedInvoice;
 use Filament\Resources\Pages\ListRecords;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Tables\Table;
 use Illuminate\Contracts\Pagination\CursorPaginator;
 use Illuminate\Contracts\Pagination\Paginator;
 use Illuminate\Database\Eloquent\Model;
@@ -22,9 +24,39 @@ final class ListInvoices extends ListRecords
     protected static string $resource = UnifiedInvoiceResource::class;
 
     /**
-     * @var Collection<int, UnifiedInvoice>|null
+     * @var Collection<int, UnifiedInvoiceRecord>|null
      */
     protected ?Collection $allInvoices = null;
+
+    protected function makeTable(): Table
+    {
+        $table = parent::makeTable();
+
+        return $table->recordAction(function ($record, Table $table): ?string {
+            foreach (['view', 'edit'] as $action) {
+                $action = $table->getAction($action);
+
+                if (! $action) {
+                    continue;
+                }
+
+                $action->record($record);
+                $action->getGroup()?->record($record);
+
+                if ($action->isHidden()) {
+                    continue;
+                }
+
+                if ($action->getUrl()) {
+                    continue;
+                }
+
+                return $action->getName();
+            }
+
+            return null;
+        });
+    }
 
     public function getTabs(): array
     {
@@ -59,10 +91,6 @@ final class ListInvoices extends ListRecords
      */
     public function getTableRecordKey(Model | array | UnifiedInvoice $record): string
     {
-        if ($record instanceof UnifiedInvoice) {
-            return $record->gateway . '-' . $record->id;
-        }
-
         if ($record instanceof Model) {
             return (string) $record->getKey();
         }
@@ -73,7 +101,7 @@ final class ListInvoices extends ListRecords
     /**
      * Get all invoices across all gateways.
      *
-     * @return Collection<int, UnifiedInvoice>
+     * @return Collection<int, UnifiedInvoiceRecord>
      */
     protected function getAllInvoices(): Collection
     {
@@ -111,7 +139,7 @@ final class ListInvoices extends ListRecords
                     try {
                         $stripeInvoices = $user->invoices(['limit' => 50]);
                         foreach ($stripeInvoices as $invoice) {
-                            $invoices->push(UnifiedInvoice::fromStripe($invoice, (string) $user->getKey()));
+                            $invoices->push($this->mapUnifiedInvoice(UnifiedInvoice::fromStripe($invoice, (string) $user->getKey())));
                         }
                     } catch (Throwable) {
                         // Silently fail if API is not configured
@@ -129,7 +157,7 @@ final class ListInvoices extends ListRecords
                 ->get();
 
             foreach ($chipPurchases as $purchase) {
-                $invoices->push(UnifiedInvoice::fromChip($purchase, (string) ($purchase->user_id ?? '')));
+                $invoices->push($this->mapUnifiedInvoice(UnifiedInvoice::fromChip($purchase, (string) ($purchase->user_id ?? ''))));
             }
         }
 
@@ -141,7 +169,7 @@ final class ListInvoices extends ListRecords
     /**
      * Filter invoices based on active tab.
      *
-     * @return Collection<int, UnifiedInvoice>
+     * @return Collection<int, UnifiedInvoiceRecord>
      */
     protected function getFilteredInvoices(): Collection
     {
@@ -161,10 +189,35 @@ final class ListInvoices extends ListRecords
 
         if (isset($filterData['status']['value']) && $filterData['status']['value']) {
             $invoices = $invoices->filter(
-                fn (UnifiedInvoice $inv) => $inv->status->value === $filterData['status']['value']
+                fn (UnifiedInvoiceRecord $inv) => $inv->getAttribute('status')->value === $filterData['status']['value']
             );
         }
 
         return $invoices->values();
+    }
+
+    protected function mapUnifiedInvoice(UnifiedInvoice $invoice): UnifiedInvoiceRecord
+    {
+        $record = new UnifiedInvoiceRecord;
+        $record->forceFill([
+            'id' => $invoice->gateway . '-' . $invoice->id,
+            'source_id' => $invoice->id,
+            'gateway' => $invoice->gateway,
+            'userId' => $invoice->userId,
+            'number' => $invoice->number,
+            'amount' => $invoice->amount,
+            'formatted_amount' => $invoice->formattedAmount(),
+            'currency' => $invoice->currency,
+            'status' => $invoice->status,
+            'date' => $invoice->date,
+            'dueDate' => $invoice->dueDate,
+            'paidAt' => $invoice->paidAt,
+            'pdf_url' => $invoice->pdfUrl,
+            'gateway_config' => $invoice->gatewayConfig(),
+            'external_dashboard_url' => $invoice->externalDashboardUrl(),
+            'original' => $invoice->original,
+        ]);
+
+        return $record;
     }
 }

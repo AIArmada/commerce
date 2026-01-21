@@ -22,7 +22,7 @@ final class BillingDashboard extends Page
 
     protected string $view = 'filament-cashier-chip::pages.billing-dashboard';
 
-    protected static ?string $slug = 'billing-dashboard';
+    protected static ?string $slug = 'cashier-chip-dashboard';
 
     protected static ?int $navigationSort = 0;
 

@@ -113,6 +113,10 @@ it('registers resources, widgets, and pages based on feature flags', function ()
     $panel = Mockery::mock(Panel::class);
 
     // @phpstan-ignore method.notFound
+    $panel->shouldReceive('getId')->andReturn('admin');
+    // @phpstan-ignore method.notFound
+    $panel->shouldReceive('hasPlugin')->with('filament-cashier')->andReturn(false);
+    // @phpstan-ignore method.notFound
     $panel->shouldReceive('resources')->once()->andReturnSelf();
     // @phpstan-ignore method.notFound
     $panel->shouldReceive('widgets')->once()->andReturnSelf();

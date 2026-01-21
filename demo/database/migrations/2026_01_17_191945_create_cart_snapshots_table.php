@@ -14,7 +14,7 @@ return new class extends Migration
         $databaseConfig = config('filament-cart.database', []);
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cart_';
         $tables = $databaseConfig['tables'] ?? [];
-        $tableName = $tables['snapshots'] ?? $tablePrefix . 'snapshots';
+        $tableName = $tables['snapshots'] ?? $tablePrefix.'snapshots';
         $jsonType = (string) ($databaseConfig['json_column_type'] ?? commerce_json_column_type('cart', 'json'));
 
         Schema::create($tableName, function (Blueprint $table) use ($jsonType, $tableName): void {
@@ -43,10 +43,10 @@ return new class extends Migration
             $table->decimal('fraud_score', 5, 2)->nullable();
             $table->timestamps();
 
-            $table->unique(['owner_key', 'identifier', 'instance'], $tableName . '_owner_key_identifier_instance_unique');
+            $table->unique(['owner_key', 'identifier', 'instance'], $tableName.'_owner_key_identifier_instance_unique');
             $table->index('identifier');
             $table->index('instance');
-            $table->index('owner_key', $tableName . '_owner_key_index');
+            $table->index('owner_key', $tableName.'_owner_key_index');
             $table->index('items_count');
             $table->index('quantity');
             $table->index('subtotal');
@@ -58,7 +58,7 @@ return new class extends Migration
             $table->index('recovered_at');
             $table->index('is_collaborative');
             $table->index('fraud_risk_level');
-            $table->index(['checkout_abandoned_at', 'recovered_at'], $tableName . '_abandonment_idx');
+            $table->index(['checkout_abandoned_at', 'recovered_at'], $tableName.'_abandonment_idx');
             $table->index('created_at');
             $table->index('updated_at');
         });
@@ -77,7 +77,7 @@ return new class extends Migration
         $databaseConfig = config('filament-cart.database', []);
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cart_';
         $tables = $databaseConfig['tables'] ?? [];
-        $tableName = $tables['snapshots'] ?? $tablePrefix . 'snapshots';
+        $tableName = $tables['snapshots'] ?? $tablePrefix.'snapshots';
 
         Schema::dropIfExists($tableName);
     }

@@ -13,7 +13,7 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        Schema::create($tablePrefix . 'purchases', function (Blueprint $table): void {
+        Schema::create($tablePrefix.'purchases', function (Blueprint $table): void {
             // Core API fields - exact match with CHIP API
             $table->uuid('id')->primary();
             $table->string('type')->default('purchase');
@@ -140,7 +140,7 @@ return new class extends Migration
             commerce_json_column_type('chip', 'json') === 'jsonb'
             && Schema::getConnection()->getDriverName() === 'pgsql'
         ) {
-            $tableName = $tablePrefix . 'purchases';
+            $tableName = $tablePrefix.'purchases';
             DB::statement("CREATE INDEX IF NOT EXISTS chip_purchases_metadata_gin_index ON \"{$tableName}\" USING GIN (\"metadata\")");
 
             // Add optimized expression indexes for cart_id lookups (PostgreSQL only)
@@ -160,6 +160,6 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        Schema::dropIfExists($tablePrefix . 'purchases');
+        Schema::dropIfExists($tablePrefix.'purchases');
     }
 };

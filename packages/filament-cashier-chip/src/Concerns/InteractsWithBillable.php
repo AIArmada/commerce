@@ -91,6 +91,12 @@ trait InteractsWithBillable
      */
     protected function getBillingPanelId(): string
     {
+        $panel = filament()->getCurrentPanel();
+
+        if ($panel !== null) {
+            return $panel->getId();
+        }
+
         return (string) config('filament-cashier-chip.billing.panel_id', 'billing');
     }
 

@@ -24,8 +24,6 @@ Recovery features are controlled by configuration:
 // config/filament-cart.php
 'features' => [
     'recovery' => true,           // Enable recovery system
-    'ai_recovery' => true,        // Enable AI-powered recovery
-    'recovery_campaigns' => true, // Enable campaign management
 ],
 ```
 

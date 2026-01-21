@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        Schema::create($tablePrefix . 'send_instructions', function (Blueprint $table): void {
+        Schema::create($tablePrefix.'send_instructions', function (Blueprint $table): void {
             // Core API fields - Send Instruction structure from CHIP Send API
             $table->integer('id')->primary(); // API uses integer IDs, not UUIDs
             $table->integer('bank_account_id'); // Reference to bank account (integer)
@@ -51,6 +51,6 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        Schema::dropIfExists($tablePrefix . 'send_instructions');
+        Schema::dropIfExists($tablePrefix.'send_instructions');
     }
 };

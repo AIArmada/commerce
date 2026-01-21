@@ -2,7 +2,7 @@
     <x-filament::section>
         <x-slot name="heading">
             <div class="flex items-center gap-2">
-                <x-heroicon-o-funnel class="h-5 w-5 text-primary-500" />
+                <x-heroicon-o-funnel class="fi-icon fi-size-md text-primary-500" />
                 <span>Conversion Funnel</span>
             </div>
         </x-slot>
@@ -52,7 +52,7 @@
                         @if(isset($stage['dropoff']) && $stage['dropoff'] > 0)
                             <div class="absolute -right-2 top-1/2 transform translate-x-full -translate-y-1/2">
                                 <div class="flex items-center gap-1 text-xs text-red-500 dark:text-red-400">
-                                    <x-heroicon-s-arrow-down class="h-3 w-3" />
+                                    <x-heroicon-s-arrow-down class="fi-icon" style="width: 0.75rem; height: 0.75rem" />
                                     <span>-{{ number_format($stage['dropoff']) }}</span>
                                 </div>
                             </div>
@@ -62,7 +62,7 @@
                     {{-- Arrow between stages --}}
                     @if($index < count($data['stages']) - 1)
                         <div class="flex justify-center">
-                            <x-heroicon-o-chevron-down class="h-4 w-4 text-gray-400" />
+                            <x-heroicon-o-chevron-down class="fi-icon fi-size-sm text-gray-400" />
                         </div>
                     @endif
                 @endforeach

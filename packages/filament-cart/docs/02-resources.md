@@ -87,12 +87,6 @@ Cart::query()->recovered()->get();
 // Carts in checkout
 Cart::query()->inCheckout()->get();
 
-// Collaborative carts
-Cart::query()->collaborative()->get();
-
-// High fraud risk
-Cart::query()->highFraudRisk()->get();
-
 // Needs recovery attention
 Cart::query()->needsRecovery()->get();
 ```

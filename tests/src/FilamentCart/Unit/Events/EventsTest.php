@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Models\RecoveryAttempt;
 use AIArmada\FilamentCart\Events\CartRecovered;
 use AIArmada\FilamentCart\Events\RecoveryAttemptClicked;
 use AIArmada\FilamentCart\Events\RecoveryAttemptOpened;
 use AIArmada\FilamentCart\Events\RecoveryAttemptSent;
-use AIArmada\FilamentCart\Models\RecoveryAttempt;
 
 describe('CartRecovered', function (): void {
     it('can be constructed with attempt and order value', function (): void {

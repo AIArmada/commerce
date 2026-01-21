@@ -8,9 +8,7 @@ use AIArmada\FilamentCart\Widgets\AnalyticsStatsWidget;
 use AIArmada\FilamentCart\Widgets\CampaignPerformanceWidget;
 use AIArmada\FilamentCart\Widgets\CartStatsOverviewWidget;
 use AIArmada\FilamentCart\Widgets\CartStatsWidget;
-use AIArmada\FilamentCart\Widgets\CollaborativeCartsWidget;
 use AIArmada\FilamentCart\Widgets\ConversionFunnelWidget;
-use AIArmada\FilamentCart\Widgets\FraudDetectionWidget;
 use AIArmada\FilamentCart\Widgets\LiveStatsWidget;
 use AIArmada\FilamentCart\Widgets\PendingAlertsWidget;
 use AIArmada\FilamentCart\Widgets\RecentActivityWidget;
@@ -53,18 +51,8 @@ describe('Widgets Instantiation', function (): void {
         expect($widget)->toBeInstanceOf(StatsOverviewWidget::class);
     });
 
-    it('can instantiate CollaborativeCartsWidget', function (): void {
-        $widget = new CollaborativeCartsWidget;
-        expect($widget)->toBeInstanceOf(Widget::class);
-    });
-
     it('can instantiate ConversionFunnelWidget', function (): void {
         $widget = new ConversionFunnelWidget;
-        expect($widget)->toBeInstanceOf(Widget::class);
-    });
-
-    it('can instantiate FraudDetectionWidget', function (): void {
-        $widget = new FraudDetectionWidget;
         expect($widget)->toBeInstanceOf(Widget::class);
     });
 

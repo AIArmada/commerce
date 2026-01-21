@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Widgets;
 
-use AIArmada\FilamentCart\Pages\AnalyticsPage;
 use AIArmada\FilamentCart\Services\CartAnalyticsService;
 use Filament\Widgets\Widget;
 use Illuminate\Support\Carbon;
@@ -15,6 +14,12 @@ use Livewire\Attributes\On;
  */
 class ConversionFunnelWidget extends Widget
 {
+    public ?string $dateFrom = null;
+
+    public ?string $dateTo = null;
+
+    public ?string $interval = null;
+
     protected string $view = 'filament-cart::widgets.conversion-funnel';
 
     protected int | string | array $columnSpan = 1;
@@ -27,9 +32,8 @@ class ConversionFunnelWidget extends Widget
 
     public function getData(): array
     {
-        $page = $this->getPageInstance();
-        $from = $page?->getDateFrom() ?? Carbon::now()->subDays(30);
-        $to = $page?->getDateTo() ?? Carbon::now();
+        $from = $this->resolveDateFrom();
+        $to = $this->resolveDateTo();
 
         $service = app(CartAnalyticsService::class);
         $funnel = $service->getConversionFunnel($from, $to);
@@ -81,14 +85,28 @@ class ConversionFunnelWidget extends Widget
         ];
     }
 
-    private function getPageInstance(): ?AnalyticsPage
+    private function resolveDateFrom(): Carbon
     {
-        $livewire = $this->getLivewire();
+        $value = $this->resolveQueryValue('dateFrom', $this->dateFrom);
 
-        if ($livewire instanceof AnalyticsPage) {
-            return $livewire;
+        return $value !== '' ? Carbon::parse($value) : Carbon::now()->subDays(30);
+    }
+
+    private function resolveDateTo(): Carbon
+    {
+        $value = $this->resolveQueryValue('dateTo', $this->dateTo);
+
+        return $value !== '' ? Carbon::parse($value) : Carbon::now();
+    }
+
+    private function resolveQueryValue(string $key, ?string $fallback): string
+    {
+        $queryValue = request()->query($key);
+
+        if (is_string($queryValue) && $queryValue !== '') {
+            return $queryValue;
         }
 
-        return null;
+        return $fallback ?? '';
     }
 }

@@ -8,6 +8,7 @@ use AIArmada\AffiliateNetwork\Models\AffiliateOffer;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferCategory;
 use AIArmada\AffiliateNetwork\Models\AffiliateSite;
 use BackedEnum;
+use Filament\Actions;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
@@ -252,14 +253,14 @@ final class AffiliateOfferResource extends Resource
                     ->label('Public'),
             ])
             ->actions([
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('activate')
+                Actions\EditAction::make(),
+                Actions\Action::make('activate')
                     ->icon('heroicon-o-play')
                     ->color('success')
                     ->requiresConfirmation()
                     ->visible(fn (AffiliateOffer $record): bool => $record->status !== AffiliateOffer::STATUS_ACTIVE)
                     ->action(fn (AffiliateOffer $record) => $record->update(['status' => AffiliateOffer::STATUS_ACTIVE])),
-                Tables\Actions\Action::make('pause')
+                Actions\Action::make('pause')
                     ->icon('heroicon-o-pause')
                     ->color('warning')
                     ->requiresConfirmation()
@@ -267,8 +268,8 @@ final class AffiliateOfferResource extends Resource
                     ->action(fn (AffiliateOffer $record) => $record->update(['status' => AffiliateOffer::STATUS_PAUSED])),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make(),
                 ]),
             ]);
     }

@@ -63,29 +63,6 @@ describe('AlertEvent', function (): void {
         expect($event->message)->toContain('$150.00');
     });
 
-    it('can be created from fraud signal with low risk', function (): void {
-        $event = AlertEvent::fromFraud(
-            cartId: 'cart-123',
-            sessionId: 'session-456',
-            fraudData: ['risk_score' => 0.5],
-        );
-
-        expect($event->event_type)->toBe('fraud');
-        expect($event->severity)->toBe('warning'); // < 0.8
-        expect($event->title)->toBe('Fraud Signal Detected');
-        expect($event->message)->toContain('0.5');
-    });
-
-    it('can be created from fraud signal with high risk', function (): void {
-        $event = AlertEvent::fromFraud(
-            cartId: 'cart-123',
-            sessionId: 'session-456',
-            fraudData: ['risk_score' => 0.9],
-        );
-
-        expect($event->severity)->toBe('critical'); // >= 0.8
-    });
-
     it('can be created from high value cart', function (): void {
         $event = AlertEvent::fromHighValue(
             cartId: 'cart-123',

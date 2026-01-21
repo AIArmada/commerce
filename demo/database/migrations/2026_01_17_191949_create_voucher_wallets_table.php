@@ -13,7 +13,7 @@ return new class extends Migration
         /** @var array<string, string> $tables */
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
-        $tableName = $tables['voucher_wallets'] ?? $prefix . 'voucher_wallets';
+        $tableName = $tables['voucher_wallets'] ?? $prefix.'voucher_wallets';
 
         Schema::create($tableName, function (Blueprint $table): void {
             $jsonType = (string) commerce_json_column_type('vouchers', 'json');
@@ -50,7 +50,7 @@ return new class extends Migration
         /** @var array<string, string> $tables */
         $tables = config('vouchers.database.tables', []);
         $prefix = (string) config('vouchers.database.table_prefix', '');
-        $tableName = $tables['voucher_wallets'] ?? $prefix . 'voucher_wallets';
+        $tableName = $tables['voucher_wallets'] ?? $prefix.'voucher_wallets';
 
         Schema::dropIfExists($tableName);
     }

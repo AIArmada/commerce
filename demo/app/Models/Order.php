@@ -85,7 +85,7 @@ final class Order extends Model
      */
     public function getFormattedTotalAttribute(): string
     {
-        return 'RM ' . number_format($this->grand_total / 100, 2);
+        return 'RM '.number_format($this->grand_total / 100, 2);
     }
 
     /**

@@ -24,22 +24,11 @@ return new class extends Migration
             $table->{$jsonType}('items')->nullable();
             $table->{$jsonType}('conditions')->nullable();
             $table->{$jsonType}('metadata')->nullable();
-            $table->boolean('is_collaborative')->default(false);
-            $table->foreignUuid('owner_user_id')->nullable();
-            $table->{$jsonType}('collaborators')->nullable();
-            $table->integer('max_collaborators')->default(5);
-            $table->string('collaboration_mode', 20)->default('edit');
-            $table->string('share_token', 64)->nullable()->unique();
-            $table->timestamp('share_expires_at')->nullable();
-            $table->bigInteger('crdt_version')->default(0);
-            $table->{$jsonType}('crdt_vector_clock')->nullable();
             $table->integer('version')->default(1)->index();
             $table->timestamp('expires_at')->nullable()->index();
             $table->timestamps();
 
             $table->unique(['owner_type', 'owner_id', 'identifier', 'instance']);
-            $table->index('is_collaborative', 'idx_carts_collaborative');
-            $table->index('owner_user_id', 'idx_carts_owner');
         });
 
         // Optional: create GIN indexes when using jsonb on PostgreSQL

@@ -58,19 +58,19 @@ return new class extends Migration
 
             if ($driver === 'mysql') {
                 DB::statement(
-                    "UPDATE {$tableName} AS child \n" .
-                    "JOIN {$ordersTable} AS parent ON parent.id = child.order_id \n" .
-                    "SET child.owner_type = parent.owner_type, child.owner_id = parent.owner_id \n" .
+                    "UPDATE {$tableName} AS child \n".
+                    "JOIN {$ordersTable} AS parent ON parent.id = child.order_id \n".
+                    "SET child.owner_type = parent.owner_type, child.owner_id = parent.owner_id \n".
                     'WHERE child.owner_type IS NULL AND child.owner_id IS NULL'
                 );
             }
 
             if ($driver === 'pgsql') {
                 DB::statement(
-                    "UPDATE {$tableName} AS child \n" .
-                    "SET owner_type = parent.owner_type, owner_id = parent.owner_id \n" .
-                    "FROM {$ordersTable} AS parent \n" .
-                    "WHERE parent.id = child.order_id \n" .
+                    "UPDATE {$tableName} AS child \n".
+                    "SET owner_type = parent.owner_type, owner_id = parent.owner_id \n".
+                    "FROM {$ordersTable} AS parent \n".
+                    "WHERE parent.id = child.order_id \n".
                     'AND child.owner_type IS NULL AND child.owner_id IS NULL'
                 );
             }

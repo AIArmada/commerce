@@ -37,4 +37,15 @@ enum ProductVisibility: string
     {
         return $this !== self::Hidden;
     }
+
+    public function color(): string
+    {
+        return match ($this) {
+            self::Catalog => 'info',
+            self::Search => 'primary',
+            self::CatalogSearch => 'success',
+            self::Individual => 'warning',
+            self::Hidden => 'gray',
+        };
+    }
 }

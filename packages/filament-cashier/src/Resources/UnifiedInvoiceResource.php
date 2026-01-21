@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCashier\Resources;
 
+use AIArmada\Chip\Models\Purchase;
 use AIArmada\FilamentCashier\FilamentCashierPlugin;
 use AIArmada\FilamentCashier\Resources\UnifiedInvoiceResource\Pages;
 use AIArmada\FilamentCashier\Support\GatewayDetector;
 use AIArmada\FilamentCashier\Support\InvoiceStatus;
-use AIArmada\FilamentCashier\Support\UnifiedInvoice;
 use BackedEnum;
 use Closure;
 use Filament\Actions\Action;
@@ -24,7 +24,20 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 final class UnifiedInvoiceResource extends Resource
 {
-    protected static ?string $model = null;
+    public static function getModel(): string
+    {
+        if (class_exists(Purchase::class)) {
+            return Purchase::class;
+        }
+
+        $userModel = config('auth.providers.users.model');
+
+        if (is_string($userModel)) {
+            return $userModel;
+        }
+
+        return \Illuminate\Foundation\Auth\User::class;
+    }
 
     protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedDocumentText;
 
@@ -86,7 +99,7 @@ final class UnifiedInvoiceResource extends Resource
 
                 Tables\Columns\TextColumn::make('formattedAmount')
                     ->label(__('filament-cashier::invoices.table.amount'))
-                    ->getStateUsing(fn (UnifiedInvoice $record): string => $record->formattedAmount()),
+                    ->getStateUsing(fn (Model $record): string => (string) $record->getAttribute('formatted_amount')),
 
                 Tables\Columns\TextColumn::make('date')
                     ->label(__('filament-cashier::invoices.table.date'))
@@ -116,16 +129,16 @@ final class UnifiedInvoiceResource extends Resource
                 Action::make('download')
                     ->label(__('filament-cashier::invoices.actions.download'))
                     ->icon('heroicon-o-arrow-down-tray')
-                    ->url(fn (UnifiedInvoice $record): ?string => $record->pdfUrl)
+                    ->url(fn (Model $record): ?string => $record->getAttribute('pdf_url'))
                     ->openUrlInNewTab()
-                    ->visible(fn (UnifiedInvoice $record): bool => $record->pdfUrl !== null),
+                    ->visible(fn (Model $record): bool => $record->getAttribute('pdf_url') !== null),
 
                 Action::make('view_external')
-                    ->label(fn (UnifiedInvoice $record): string => __('filament-cashier::invoices.actions.view_external', [
-                        'gateway' => $record->gatewayConfig()['label'],
+                    ->label(fn (Model $record): string => __('filament-cashier::invoices.actions.view_external', [
+                        'gateway' => $record->getAttribute('gateway_config')['label'],
                     ]))
                     ->icon('heroicon-o-arrow-top-right-on-square')
-                    ->url(fn (UnifiedInvoice $record): string => $record->externalDashboardUrl())
+                    ->url(fn (Model $record): string => (string) $record->getAttribute('external_dashboard_url'))
                     ->openUrlInNewTab(),
             ])
             ->bulkActions([
@@ -140,12 +153,12 @@ final class UnifiedInvoiceResource extends Resource
 
                                 foreach ($records as $invoice) {
                                     fputcsv($output, [
-                                        $invoice->number,
-                                        $invoice->gateway,
-                                        $invoice->formattedAmount(),
-                                        $invoice->status->value,
-                                        $invoice->date->format('Y-m-d'),
-                                        $invoice->paidAt?->format('Y-m-d') ?? '',
+                                        $invoice->getAttribute('number'),
+                                        $invoice->getAttribute('gateway'),
+                                        $invoice->getAttribute('formatted_amount'),
+                                        $invoice->getAttribute('status')->value,
+                                        $invoice->getAttribute('date')->format('Y-m-d'),
+                                        $invoice->getAttribute('paidAt')?->format('Y-m-d') ?? '',
                                     ]);
                                 }
 

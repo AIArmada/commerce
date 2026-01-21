@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Commands;
 
+use AIArmada\Cart\Models\RecoveryAttempt;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Services\RecoveryScheduler;
 use Illuminate\Console\Command;
@@ -45,7 +46,7 @@ class ProcessRecoveryCommand extends Command
      */
     private function processForOwners(RecoveryScheduler $scheduler): array
     {
-        if (! \AIArmada\FilamentCart\Models\RecoveryAttempt::ownerScopingEnabled()) {
+        if (! RecoveryAttempt::ownerScopingEnabled()) {
             return $scheduler->processScheduledAttempts();
         }
 
@@ -53,7 +54,7 @@ class ProcessRecoveryCommand extends Command
             return $scheduler->processScheduledAttempts();
         }
 
-        $owners = \AIArmada\FilamentCart\Models\RecoveryAttempt::query()
+        $owners = RecoveryAttempt::query()
             ->withoutOwnerScope()
             ->select(['owner_type', 'owner_id'])
             ->distinct()

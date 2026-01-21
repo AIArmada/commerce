@@ -6,16 +6,16 @@ namespace App\Filament\Widgets;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
-use Illuminate\Database\Eloquent\Builder;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
+use Illuminate\Database\Eloquent\Builder;
 
 final class LatestOrders extends BaseWidget
 {
     protected static ?int $sort = -1;
 
-    protected int | string | array $columnSpan = [
+    protected int|string|array $columnSpan = [
         'default' => 'full',
         // 'lg' => 1,
     ];

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Cart\Models\AlertRule;
 use AIArmada\FilamentCart\Data\AlertEvent;
-use AIArmada\FilamentCart\Models\AlertRule;
 use AIArmada\FilamentCart\Services\AlertDispatcher;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;

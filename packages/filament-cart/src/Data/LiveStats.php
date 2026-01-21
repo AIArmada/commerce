@@ -20,7 +20,6 @@ class LiveStats extends Data
         public int $pending_alerts,
         public int $total_value_cents,
         public int $high_value_carts,
-        public int $fraud_signals,
         public CarbonInterface $updated_at,
     ) {}
 
@@ -37,7 +36,6 @@ class LiveStats extends Data
             pending_alerts: 0,
             total_value_cents: 0,
             high_value_carts: 0,
-            fraud_signals: 0,
             updated_at: now(),
         );
     }
@@ -63,6 +61,6 @@ class LiveStats extends Data
      */
     public function hasUrgentAlerts(): bool
     {
-        return $this->pending_alerts > 0 || $this->fraud_signals > 0;
+        return $this->pending_alerts > 0;
     }
 }

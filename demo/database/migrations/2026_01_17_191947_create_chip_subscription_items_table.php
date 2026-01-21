@@ -16,7 +16,7 @@ return new class extends Migration
         $databaseConfig = config('cashier-chip.database', []);
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
         $tables = $databaseConfig['tables'] ?? [];
-        $tableName = $tables['subscription_items'] ?? $tablePrefix . 'subscription_items';
+        $tableName = $tables['subscription_items'] ?? $tablePrefix.'subscription_items';
 
         if (Schema::hasTable($tableName)) {
             return;
@@ -47,7 +47,7 @@ return new class extends Migration
         $databaseConfig = config('cashier-chip.database', []);
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
         $tables = $databaseConfig['tables'] ?? [];
-        $tableName = $tables['subscription_items'] ?? $tablePrefix . 'subscription_items';
+        $tableName = $tables['subscription_items'] ?? $tablePrefix.'subscription_items';
 
         Schema::dropIfExists($tableName);
     }

@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Models\AlertLog;
-use AIArmada\FilamentCart\Models\AlertRule;
+use AIArmada\Cart\Models\AlertLog;
+use AIArmada\Cart\Models\AlertRule;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\CartMonitor;
 use Illuminate\Support\Carbon;
@@ -88,19 +88,6 @@ describe('CartMonitor', function (): void {
             'is_read' => false,
         ]);
 
-        AlertLog::create([
-            'alert_rule_id' => $rule->id,
-            'event_type' => 'fraud',
-            'severity' => 'critical',
-            'title' => 'Fraud detected',
-            'message' => 'Suspicious activity.',
-            'event_data' => [],
-            'channels_notified' => ['database'],
-            'cart_id' => $activeCart->id,
-            'session_id' => $activeCart->identifier,
-            'is_read' => false,
-        ]);
-
         $monitor = new CartMonitor;
         $stats = $monitor->getLiveStats();
 
@@ -108,9 +95,8 @@ describe('CartMonitor', function (): void {
         expect($stats->carts_with_items)->toBe(4);
         expect($stats->checkouts_in_progress)->toBe(1);
         expect($stats->recent_abandonments)->toBe(1);
-        expect($stats->pending_alerts)->toBeGreaterThanOrEqual(2);
+        expect($stats->pending_alerts)->toBeGreaterThanOrEqual(1);
         expect($stats->high_value_carts)->toBe(1);
-        expect($stats->fraud_signals)->toBe(1);
     });
 
     it('detects abandonments without prior alerts', function (): void {
@@ -202,60 +188,6 @@ describe('CartMonitor', function (): void {
         expect($bySessionId[$checkout->identifier]->status)->toBe('checkout');
         expect($bySessionId[$abandoned->identifier]->status)->toBe('abandoned');
         expect((int) $bySessionId[$abandoned->identifier]->total_cents)->toBe(30_00);
-    });
-
-    it('detects fraud signals and excludes already-alerted carts', function (): void {
-        $rule = AlertRule::create([
-            'name' => 'Fraud Rule',
-            'event_type' => 'fraud',
-            'conditions' => [],
-            'notify_email' => false,
-            'notify_slack' => false,
-            'notify_webhook' => false,
-            'notify_database' => true,
-            'cooldown_minutes' => 60,
-            'severity' => 'critical',
-            'priority' => 1,
-            'is_active' => true,
-        ]);
-
-        $highValueNew = Cart::create([
-            'identifier' => 'fraud-highvalue-new',
-            'instance' => 'default',
-            'items_count' => 1,
-            'total' => 60_000,
-            'last_activity_at' => now(),
-        ]);
-        $highValueNew->forceFill(['created_at' => now()->subMinutes(5)])->saveQuietly();
-
-        $bulkHighQty = Cart::create([
-            'identifier' => 'fraud-bulk',
-            'instance' => 'default',
-            'items_count' => 12,
-            'total' => 150_000,
-            'last_activity_at' => now(),
-        ]);
-
-        AlertLog::create([
-            'alert_rule_id' => $rule->id,
-            'event_type' => 'fraud',
-            'severity' => 'critical',
-            'title' => 'Already alerted',
-            'message' => 'Excluded by whereNotExists.',
-            'event_data' => [],
-            'channels_notified' => ['database'],
-            'cart_id' => $highValueNew->id,
-            'session_id' => $highValueNew->identifier,
-            'is_read' => false,
-            'created_at' => now()->subMinutes(10),
-            'updated_at' => now()->subMinutes(10),
-        ]);
-
-        $monitor = new CartMonitor;
-        $signals = $monitor->detectFraudSignals();
-
-        expect($signals->pluck('id')->all())->toContain($bulkHighQty->id);
-        expect($signals->pluck('id')->all())->not->toContain($highValueNew->id);
     });
 
     it('detects recovery opportunities based on value and inactivity window', function (): void {

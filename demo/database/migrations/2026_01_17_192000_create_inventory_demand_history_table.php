@@ -13,7 +13,7 @@ return new class extends Migration
         $tables = config('inventory.database.tables', []);
         $prefix = config('inventory.database.table_prefix', 'inventory_');
 
-        $tableName = $tables['demand_history'] ?? $prefix . 'demand_history';
+        $tableName = $tables['demand_history'] ?? $prefix.'demand_history';
 
         Schema::create($tableName, function (Blueprint $table) use ($tableName): void {
             $table->uuid('id')->primary();
@@ -32,7 +32,7 @@ return new class extends Migration
 
             $table->unique(['inventoryable_type', 'inventoryable_id', 'location_id', 'period_date', 'period_type'], 'demand_unique');
             $table->index(['period_date', 'period_type']);
-            $table->index(['owner_type', 'owner_id'], $tableName . '_owner_idx');
+            $table->index(['owner_type', 'owner_id'], $tableName.'_owner_idx');
         });
     }
 
@@ -40,7 +40,7 @@ return new class extends Migration
     {
         $tables = config('inventory.database.tables', []);
         $prefix = config('inventory.database.table_prefix', 'inventory_');
-        $tableName = $tables['demand_history'] ?? $prefix . 'demand_history';
+        $tableName = $tables['demand_history'] ?? $prefix.'demand_history';
 
         Schema::dropIfExists($tableName);
     }

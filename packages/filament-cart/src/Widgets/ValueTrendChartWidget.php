@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Widgets;
 
-use AIArmada\FilamentCart\Pages\AnalyticsPage;
 use AIArmada\FilamentCart\Services\CartAnalyticsService;
 use Filament\Widgets\ChartWidget;
 use Illuminate\Support\Carbon;
@@ -15,6 +14,12 @@ use Livewire\Attributes\On;
  */
 class ValueTrendChartWidget extends ChartWidget
 {
+    public ?string $dateFrom = null;
+
+    public ?string $dateTo = null;
+
+    public ?string $interval = null;
+
     protected ?string $heading = 'Cart Value Trends';
 
     protected ?string $pollingInterval = '60s';
@@ -29,10 +34,9 @@ class ValueTrendChartWidget extends ChartWidget
 
     protected function getData(): array
     {
-        $page = $this->getPageInstance();
-        $from = $page?->getDateFrom() ?? Carbon::now()->subDays(30);
-        $to = $page?->getDateTo() ?? Carbon::now();
-        $interval = $page?->getInterval() ?? 'day';
+        $from = $this->resolveDateFrom();
+        $to = $this->resolveDateTo();
+        $interval = $this->resolveInterval();
 
         $service = app(CartAnalyticsService::class);
         $trends = $service->getValueTrends($from, $to, $interval);
@@ -116,15 +120,36 @@ class ValueTrendChartWidget extends ChartWidget
         ];
     }
 
-    private function getPageInstance(): ?AnalyticsPage
+    private function resolveDateFrom(): Carbon
     {
-        $livewire = $this->getLivewire();
+        $value = $this->resolveQueryValue('dateFrom', $this->dateFrom);
 
-        if ($livewire instanceof AnalyticsPage) {
-            return $livewire;
+        return $value !== '' ? Carbon::parse($value) : Carbon::now()->subDays(30);
+    }
+
+    private function resolveDateTo(): Carbon
+    {
+        $value = $this->resolveQueryValue('dateTo', $this->dateTo);
+
+        return $value !== '' ? Carbon::parse($value) : Carbon::now();
+    }
+
+    private function resolveInterval(): string
+    {
+        $value = $this->resolveQueryValue('interval', $this->interval);
+
+        return $value !== '' ? $value : 'day';
+    }
+
+    private function resolveQueryValue(string $key, ?string $fallback): string
+    {
+        $queryValue = request()->query($key);
+
+        if (is_string($queryValue) && $queryValue !== '') {
+            return $queryValue;
         }
 
-        return null;
+        return $fallback ?? '';
     }
 
     private function formatLabel(string $date, string $interval): string

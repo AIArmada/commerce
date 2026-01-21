@@ -73,18 +73,6 @@ it('filters carts in checkout', function (): void {
     expect($results->contains($abandoned))->toBeFalse();
 });
 
-it('filters collaborative carts and fraud risk carts', function (): void {
-    $collaborative = Cart::factory()->create(['is_collaborative' => true]);
-    Cart::factory()->create(['is_collaborative' => false]);
-
-    expect(Cart::query()->collaborative()->pluck('id')->all())->toContain($collaborative->id);
-
-    $highFraud = Cart::factory()->create(['fraud_risk_level' => 'high']);
-    Cart::factory()->create(['fraud_risk_level' => 'low']);
-
-    expect(Cart::query()->highFraudRisk()->pluck('id')->all())->toContain($highFraud->id);
-});
-
 it('filters carts needing recovery', function (): void {
     $needsRecovery = Cart::factory()->create([
         'checkout_abandoned_at' => now()->subHour(),

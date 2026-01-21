@@ -25,7 +25,7 @@ final class OrderFactory extends Factory
 
         return [
             'user_id' => User::factory(),
-            'order_number' => 'ORD-' . mb_strtoupper($this->faker->unique()->bothify('????####')),
+            'order_number' => 'ORD-'.mb_strtoupper($this->faker->unique()->bothify('????####')),
             'status' => $this->faker->randomElement(['pending', 'processing', 'shipped', 'delivered', 'cancelled']),
             'payment_status' => $this->faker->randomElement(['pending', 'paid', 'failed', 'refunded']),
             'subtotal' => $subtotal,

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
 
-use AIArmada\Products\Models\Product;
 use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Toggle;
 use Filament\Resources\RelationManagers\RelationManager;
@@ -138,25 +137,6 @@ final class VariantsRelationManager extends RelationManager
                         }
 
                         return $data;
-                    }),
-                \Filament\Actions\Action::make('generate_variants')
-                    ->label('Generate All Variants')
-                    ->icon('heroicon-o-sparkles')
-                    ->color('success')
-                    ->requiresConfirmation()
-                    ->modalHeading('Generate Product Variants')
-                    ->modalDescription('This will generate all possible variant combinations from the product options. Existing variants will be removed.')
-                    ->action(function (): void {
-                        /** @var Product $product */
-                        $product = $this->getOwnerRecord();
-                        $service = app(\AIArmada\Products\Services\VariantGeneratorService::class);
-                        $variants = $service->generate($product);
-
-                        \Filament\Notifications\Notification::make()
-                            ->success()
-                            ->title('Variants Generated')
-                            ->body("Generated {$variants->count()} variant(s).")
-                            ->send();
                     }),
             ])
             ->actions([

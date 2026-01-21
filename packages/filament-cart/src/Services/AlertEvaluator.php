@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Services;
 
-use AIArmada\FilamentCart\Models\AlertRule;
+use AIArmada\Cart\Models\AlertRule;
 use Illuminate\Support\Collection;
 
 /**

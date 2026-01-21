@@ -25,12 +25,11 @@ use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher;
 use App\Listeners\HandleChipPaymentSuccess;
 use Exception;
+use Illuminate\Database\QueryException;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
-use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 use Illuminate\View\View;
 
 final class ShopController extends Controller
@@ -128,9 +127,9 @@ final class ShopController extends Controller
         // Search filter
         if ($request->filled('search')) {
             $query->where(function ($q) use ($request) {
-                $q->where('name', 'like', '%' . $request->search . '%')
-                    ->orWhere('description', 'like', '%' . $request->search . '%')
-                    ->orWhere('sku', 'like', '%' . $request->search . '%');
+                $q->where('name', 'like', '%'.$request->search.'%')
+                    ->orWhere('description', 'like', '%'.$request->search.'%')
+                    ->orWhere('sku', 'like', '%'.$request->search.'%');
             });
         }
 
@@ -216,7 +215,10 @@ final class ShopController extends Controller
         $cartTotal = Cart::isEmpty() ? 0 : Cart::getRawTotal();
         $cartSubtotal = Cart::isEmpty() ? 0 : Cart::getRawSubtotalWithoutConditions();
         $cartQuantity = Cart::getTotalQuantity();
+        
         $appliedVoucher = session('applied_voucher');
+        $appliedVouchers = Cart::getAppliedVoucherCodes();
+        $cartConditions = Cart::getConditions()->toArray();
 
         $owner = OwnerContext::resolve();
 
@@ -238,7 +240,7 @@ final class ShopController extends Controller
             ->take(3)
             ->get();
 
-        return view('shop.cart', compact('cartItems', 'cartTotal', 'cartSubtotal', 'cartQuantity', 'activeVouchers', 'appliedVoucher'));
+        return view('shop.cart', compact('cartItems', 'cartTotal', 'cartSubtotal', 'cartQuantity', 'activeVouchers', 'appliedVoucher', 'appliedVouchers', 'cartConditions'));
     }
 
     /**
@@ -365,7 +367,7 @@ final class ShopController extends Controller
             Cart::applyVoucher($request->voucher_code);
             session(['applied_voucher' => mb_strtoupper($request->voucher_code)]);
 
-            return back()->with('success', 'Voucher ' . mb_strtoupper($request->voucher_code) . ' applied!');
+            return back()->with('success', 'Voucher '.mb_strtoupper($request->voucher_code).' applied!');
         } catch (InvalidVoucherException $e) {
             return back()->with('error', $e->getMessage());
         }
@@ -374,8 +376,23 @@ final class ShopController extends Controller
     /**
      * Remove voucher from cart.
      */
-    public function removeVoucher(): RedirectResponse
+    public function removeVoucher(Request $request): RedirectResponse
     {
+        $voucherCode = $request->input('voucher_code');
+
+        if ($voucherCode) {
+            Cart::removeVoucher($voucherCode);
+
+            // Also clean up session if it matches (for backwards compatibility/simplicity)
+            $appliedInSession = session('applied_voucher');
+            if ($appliedInSession === mb_strtoupper((string) $voucherCode)) {
+                session()->forget('applied_voucher');
+            }
+
+            return back()->with('success', 'Voucher '.mb_strtoupper((string) $voucherCode).' removed.');
+        }
+
+        // Fallback for when no code provided (shouldn't happen with new UI)
         $appliedVoucher = session('applied_voucher');
 
         if ($appliedVoucher) {
@@ -390,7 +407,7 @@ final class ShopController extends Controller
     /**
      * Checkout page.
      */
-    public function checkout(): View | RedirectResponse
+    public function checkout(): View|RedirectResponse
     {
         if (Cart::isEmpty()) {
             return redirect()->route('shop.cart')->with('error', 'Your cart is empty.');
@@ -668,7 +685,7 @@ final class ShopController extends Controller
                 ->reference($order->order_number)
                 ->customer(
                     email: $request->email,
-                    fullName: $request->first_name . ' ' . $request->last_name,
+                    fullName: $request->first_name.' '.$request->last_name,
                     phone: $request->phone,
                     country: 'MY'
                 )
@@ -692,7 +709,7 @@ final class ShopController extends Controller
             // Add shipping as a product if applicable
             if ($shippingCost > 0) {
                 $purchase->addProductCents(
-                    name: 'Shipping (' . ucfirst(str_replace('_', ' ', $request->shipping_method)) . ')',
+                    name: 'Shipping ('.ucfirst(str_replace('_', ' ', $request->shipping_method)).')',
                     priceInCents: $shippingCost,
                     quantity: 1
                 );
@@ -753,7 +770,7 @@ final class ShopController extends Controller
             $order->update(['status' => 'payment_failed']);
 
             return redirect()->route('shop.checkout')
-                ->with('error', 'Payment initialization failed. Please try again. Error: ' . $e->getMessage());
+                ->with('error', 'Payment initialization failed. Please try again. Error: '.$e->getMessage());
         }
     }
 
@@ -921,7 +938,7 @@ final class ShopController extends Controller
     /**
      * Account page.
      */
-    public function account(): View | RedirectResponse
+    public function account(): View|RedirectResponse
     {
         if (! Auth::check()) {
             return redirect()->route('shop.home')->with('error', 'Please sign in to view your account.');

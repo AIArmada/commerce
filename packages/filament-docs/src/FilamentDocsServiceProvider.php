@@ -13,6 +13,7 @@ final class FilamentDocsServiceProvider extends PackageServiceProvider
     {
         $package
             ->name('filament-docs')
+            ->hasViews()
             ->hasConfigFile('filament-docs')
             ->hasRoute('filament-docs');
     }

@@ -15,63 +15,63 @@ return new class extends Migration
         $tablePrefix = $database['table_prefix'] ?? 'docs_';
         $tables = $database['tables'] ?? [];
 
-        $docsTable = $tables['docs'] ?? $tablePrefix . 'docs';
-        $workflowsTable = $tables['workflows'] ?? $tablePrefix . 'workflows';
-        $sequencesTable = $tables['doc_sequences'] ?? $tablePrefix . 'sequences';
+        $docsTable = $tables['docs'] ?? $tablePrefix.'docs';
+        $workflowsTable = $tables['workflows'] ?? $tablePrefix.'workflows';
+        $sequencesTable = $tables['doc_sequences'] ?? $tablePrefix.'sequences';
 
-        $this->ensureOwnerColumns($tables['doc_status_histories'] ?? $tablePrefix . 'doc_status_histories');
-        $this->ensureOwnerColumns($tables['doc_payments'] ?? $tablePrefix . 'payments');
-        $this->ensureOwnerColumns($tables['doc_emails'] ?? $tablePrefix . 'emails');
-        $this->ensureOwnerColumns($tables['doc_versions'] ?? $tablePrefix . 'versions');
-        $this->ensureOwnerColumns($tables['doc_approvals'] ?? $tablePrefix . 'approvals');
-        $this->ensureOwnerColumns($tables['doc_einvoice_submissions'] ?? $tablePrefix . 'einvoice_submissions');
-        $this->ensureOwnerColumns($tables['workflow_steps'] ?? $tablePrefix . 'workflow_steps');
-        $this->ensureOwnerColumns($tables['sequence_numbers'] ?? $tablePrefix . 'sequence_numbers');
+        $this->ensureOwnerColumns($tables['doc_status_histories'] ?? $tablePrefix.'doc_status_histories');
+        $this->ensureOwnerColumns($tables['doc_payments'] ?? $tablePrefix.'payments');
+        $this->ensureOwnerColumns($tables['doc_emails'] ?? $tablePrefix.'emails');
+        $this->ensureOwnerColumns($tables['doc_versions'] ?? $tablePrefix.'versions');
+        $this->ensureOwnerColumns($tables['doc_approvals'] ?? $tablePrefix.'approvals');
+        $this->ensureOwnerColumns($tables['doc_einvoice_submissions'] ?? $tablePrefix.'einvoice_submissions');
+        $this->ensureOwnerColumns($tables['workflow_steps'] ?? $tablePrefix.'workflow_steps');
+        $this->ensureOwnerColumns($tables['sequence_numbers'] ?? $tablePrefix.'sequence_numbers');
 
         $this->backfillOwnerFromParent(
-            childTable: $tables['doc_status_histories'] ?? $tablePrefix . 'doc_status_histories',
+            childTable: $tables['doc_status_histories'] ?? $tablePrefix.'doc_status_histories',
             parentTable: $docsTable,
             parentIdColumn: 'id',
             childForeignKeyColumn: 'doc_id',
         );
         $this->backfillOwnerFromParent(
-            childTable: $tables['doc_payments'] ?? $tablePrefix . 'payments',
+            childTable: $tables['doc_payments'] ?? $tablePrefix.'payments',
             parentTable: $docsTable,
             parentIdColumn: 'id',
             childForeignKeyColumn: 'doc_id',
         );
         $this->backfillOwnerFromParent(
-            childTable: $tables['doc_emails'] ?? $tablePrefix . 'emails',
+            childTable: $tables['doc_emails'] ?? $tablePrefix.'emails',
             parentTable: $docsTable,
             parentIdColumn: 'id',
             childForeignKeyColumn: 'doc_id',
         );
         $this->backfillOwnerFromParent(
-            childTable: $tables['doc_versions'] ?? $tablePrefix . 'versions',
+            childTable: $tables['doc_versions'] ?? $tablePrefix.'versions',
             parentTable: $docsTable,
             parentIdColumn: 'id',
             childForeignKeyColumn: 'doc_id',
         );
         $this->backfillOwnerFromParent(
-            childTable: $tables['doc_approvals'] ?? $tablePrefix . 'approvals',
+            childTable: $tables['doc_approvals'] ?? $tablePrefix.'approvals',
             parentTable: $docsTable,
             parentIdColumn: 'id',
             childForeignKeyColumn: 'doc_id',
         );
         $this->backfillOwnerFromParent(
-            childTable: $tables['doc_einvoice_submissions'] ?? $tablePrefix . 'einvoice_submissions',
+            childTable: $tables['doc_einvoice_submissions'] ?? $tablePrefix.'einvoice_submissions',
             parentTable: $docsTable,
             parentIdColumn: 'id',
             childForeignKeyColumn: 'doc_id',
         );
         $this->backfillOwnerFromParent(
-            childTable: $tables['workflow_steps'] ?? $tablePrefix . 'workflow_steps',
+            childTable: $tables['workflow_steps'] ?? $tablePrefix.'workflow_steps',
             parentTable: $workflowsTable,
             parentIdColumn: 'id',
             childForeignKeyColumn: 'workflow_id',
         );
         $this->backfillOwnerFromParent(
-            childTable: $tables['sequence_numbers'] ?? $tablePrefix . 'sequence_numbers',
+            childTable: $tables['sequence_numbers'] ?? $tablePrefix.'sequence_numbers',
             parentTable: $sequencesTable,
             parentIdColumn: 'id',
             childForeignKeyColumn: 'doc_sequence_id',
@@ -101,7 +101,7 @@ return new class extends Migration
             }
 
             // Avoid relying on morphs() auto index names; keep them explicit and stable.
-            $table->index(['owner_type', 'owner_id'], $tableName . '_owner_index');
+            $table->index(['owner_type', 'owner_id'], $tableName.'_owner_index');
         });
     }
 

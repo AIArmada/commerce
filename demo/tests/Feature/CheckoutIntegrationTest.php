@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
+use AIArmada\Chip\Builders\PurchaseBuilder;
 use AIArmada\Chip\Data\PurchaseData;
 use AIArmada\Chip\Facades\Chip;
-use AIArmada\Chip\Builders\PurchaseBuilder;
 use AIArmada\Chip\Services\ChipCollectService;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Customers\Models\Customer;

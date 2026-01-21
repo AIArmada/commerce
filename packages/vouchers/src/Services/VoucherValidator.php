@@ -104,6 +104,12 @@ class VoucherValidator
                 $currency = mb_strtoupper($voucher->currency ?? config('vouchers.default_currency', 'MYR'));
                 $formattedMinValue = (string) Money::{$currency}($voucher->min_cart_value);
 
+                \Illuminate\Support\Facades\Log::info('Voucher min cart value check failed', [
+                    'code' => $code,
+                    'cartTotal' => $cartTotal,
+                    'min_cart_value' => $voucher->min_cart_value,
+                ]);
+
                 return VoucherValidationResult::invalid(
                     "Minimum cart value of {$formattedMinValue} required.",
                     ['min_cart_value' => $voucher->min_cart_value, 'current_cart_value' => $cartTotal]

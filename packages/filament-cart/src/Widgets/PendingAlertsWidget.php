@@ -4,7 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Widgets;
 
-use AIArmada\FilamentCart\Models\AlertLog;
+use AIArmada\Cart\Models\AlertLog;
+use Filament\Actions;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Filament\Widgets\TableWidget as BaseWidget;
@@ -51,12 +52,12 @@ class PendingAlertsWidget extends BaseWidget
                     ->since(),
             ])
             ->actions([
-                Tables\Actions\Action::make('markRead')
+                Actions\Action::make('markRead')
                     ->icon('heroicon-o-check')
                     ->action(fn (AlertLog $record) => $record->markAsRead())
                     ->tooltip('Mark as read'),
 
-                Tables\Actions\Action::make('view')
+                Actions\Action::make('view')
                     ->icon('heroicon-o-eye')
                     ->url(fn (AlertLog $record) => $record->cart_id
                         ? route('filament.admin.resources.carts.view', $record->cart_id)
@@ -65,7 +66,7 @@ class PendingAlertsWidget extends BaseWidget
                     ->tooltip('View cart'),
             ])
             ->bulkActions([
-                Tables\Actions\BulkAction::make('markAllRead')
+                Actions\BulkAction::make('markAllRead')
                     ->label('Mark as Read')
                     ->icon('heroicon-o-check')
                     ->action(fn ($records) => $records->each->markAsRead()),

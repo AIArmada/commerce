@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Services;
 
+use AIArmada\Cart\Models\AlertLog;
+use AIArmada\Cart\Models\AlertRule;
 use AIArmada\FilamentCart\Data\AlertEvent;
-use AIArmada\FilamentCart\Models\AlertLog;
-use AIArmada\FilamentCart\Models\AlertRule;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Pages;
 
+use AIArmada\FilamentCart\Settings\CartRecoverySettings;
 use BackedEnum;
 use Filament\Actions\Action;
 use Filament\Forms\Components\KeyValue;
@@ -20,7 +21,7 @@ use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
 use Filament\Schemas\Schema;
-use Illuminate\Support\Facades\Config;
+use Throwable;
 
 /**
  * Recovery settings configuration page.
@@ -43,7 +44,11 @@ class RecoverySettingsPage extends Page implements HasForms
 
     public function mount(): void
     {
-        $this->form->fill($this->getDefaultValues());
+        $settings = $this->resolveSettings();
+
+        $this->form->fill($settings
+            ? $this->mapSettingsToFormState($settings)
+            : $this->getDefaultValues());
     }
 
     public function form(Schema $schema): Schema
@@ -294,8 +299,12 @@ class RecoverySettingsPage extends Page implements HasForms
     {
         $data = $this->form->getState();
 
-        // In a real implementation, save to database or config
-        // Using spatie/laravel-settings or similar
+        $settings = $this->resolveSettings();
+
+        if ($settings !== null) {
+            $this->applyFormStateToSettings($settings, $data);
+            $settings->save();
+        }
 
         Notification::make()
             ->title('Settings saved')
@@ -305,7 +314,15 @@ class RecoverySettingsPage extends Page implements HasForms
 
     public function resetToDefaults(): void
     {
-        $this->form->fill($this->getDefaultValues());
+        $defaults = $this->getDefaultValues();
+        $this->form->fill($defaults);
+
+        $settings = $this->resolveSettings();
+
+        if ($settings !== null) {
+            $this->applyFormStateToSettings($settings, $defaults);
+            $settings->save();
+        }
 
         Notification::make()
             ->title('Settings reset to defaults')
@@ -368,5 +385,89 @@ class RecoverySettingsPage extends Page implements HasForms
             'exclude_if_ordered_within_days' => 7,
             'custom_exclusion_rules' => [],
         ];
+    }
+
+    private function resolveSettings(): ?CartRecoverySettings
+    {
+        try {
+            /** @var CartRecoverySettings $settings */
+            $settings = app(CartRecoverySettings::class);
+
+            return $settings;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapSettingsToFormState(CartRecoverySettings $settings): array
+    {
+        return [
+            'recovery_enabled' => $settings->recoveryEnabled,
+            'default_abandonment_threshold' => $settings->defaultAbandonmentThresholdMinutes,
+            'max_recovery_attempts' => $settings->maxRecoveryAttempts,
+            'cooldown_between_attempts' => $settings->cooldownBetweenAttemptsHours,
+            'email_enabled' => $settings->emailEnabled,
+            'email_from_name' => $settings->emailFromName,
+            'email_from_address' => $settings->emailFromAddress,
+            'email_reply_to' => $settings->emailReplyTo,
+            'email_track_opens' => $settings->emailTrackOpens,
+            'email_track_clicks' => $settings->emailTrackClicks,
+            'sms_enabled' => $settings->smsEnabled,
+            'sms_provider' => $settings->smsProvider,
+            'sms_from_number' => $settings->smsFromNumber,
+            'sms_max_length' => $settings->smsMaxLength,
+            'push_enabled' => $settings->pushEnabled,
+            'push_provider' => $settings->pushProvider,
+            'push_icon_url' => $settings->pushIconUrl,
+            'push_require_interaction' => $settings->pushRequireInteraction,
+            'send_start_hour' => $settings->sendStartHour,
+            'send_end_hour' => $settings->sendEndHour,
+            'respect_user_timezone' => $settings->respectUserTimezone,
+            'blocked_days' => $settings->blockedDays,
+            'min_cart_value' => (int) round($settings->minCartValue / 100),
+            'max_messages_per_customer_per_week' => $settings->maxMessagesPerCustomerPerWeek,
+            'exclude_repeat_recoveries' => $settings->excludeRepeatRecoveries,
+            'exclude_if_ordered_within_days' => $settings->excludeIfOrderedWithinDays,
+            'custom_exclusion_rules' => $settings->customExclusionRules,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    private function applyFormStateToSettings(CartRecoverySettings $settings, array $data): void
+    {
+        $settings->recoveryEnabled = (bool) ($data['recovery_enabled'] ?? true);
+        $settings->defaultAbandonmentThresholdMinutes = (int) ($data['default_abandonment_threshold'] ?? 60);
+        $settings->maxRecoveryAttempts = (int) ($data['max_recovery_attempts'] ?? 3);
+        $settings->cooldownBetweenAttemptsHours = (int) ($data['cooldown_between_attempts'] ?? 24);
+        $settings->emailEnabled = (bool) ($data['email_enabled'] ?? true);
+        $settings->emailFromName = (string) ($data['email_from_name'] ?? config('app.name'));
+        $settings->emailFromAddress = (string) ($data['email_from_address'] ?? config('mail.from.address'));
+        $settings->emailReplyTo = $data['email_reply_to'] !== '' ? $data['email_reply_to'] : null;
+        $settings->emailTrackOpens = (bool) ($data['email_track_opens'] ?? true);
+        $settings->emailTrackClicks = (bool) ($data['email_track_clicks'] ?? true);
+        $settings->smsEnabled = (bool) ($data['sms_enabled'] ?? false);
+        $settings->smsProvider = $data['sms_provider'] !== '' ? $data['sms_provider'] : null;
+        $settings->smsFromNumber = $data['sms_from_number'] !== '' ? $data['sms_from_number'] : null;
+        $settings->smsMaxLength = (int) ($data['sms_max_length'] ?? 160);
+        $settings->pushEnabled = (bool) ($data['push_enabled'] ?? false);
+        $settings->pushProvider = $data['push_provider'] !== '' ? $data['push_provider'] : null;
+        $settings->pushIconUrl = $data['push_icon_url'] !== '' ? $data['push_icon_url'] : null;
+        $settings->pushRequireInteraction = (bool) ($data['push_require_interaction'] ?? false);
+        $settings->sendStartHour = (int) ($data['send_start_hour'] ?? 9);
+        $settings->sendEndHour = (int) ($data['send_end_hour'] ?? 21);
+        $settings->respectUserTimezone = (bool) ($data['respect_user_timezone'] ?? true);
+        $settings->blockedDays = is_array($data['blocked_days'] ?? null) ? $data['blocked_days'] : [];
+        $settings->minCartValue = (int) round(((float) ($data['min_cart_value'] ?? 0)) * 100);
+        $settings->maxMessagesPerCustomerPerWeek = (int) ($data['max_messages_per_customer_per_week'] ?? 3);
+        $settings->excludeRepeatRecoveries = (bool) ($data['exclude_repeat_recoveries'] ?? true);
+        $settings->excludeIfOrderedWithinDays = (int) ($data['exclude_if_ordered_within_days'] ?? 7);
+        $settings->customExclusionRules = is_array($data['custom_exclusion_rules'] ?? null)
+            ? $data['custom_exclusion_rules']
+            : [];
     }
 }

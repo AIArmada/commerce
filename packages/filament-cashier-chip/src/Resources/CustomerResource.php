@@ -25,6 +25,8 @@ final class CustomerResource extends BaseCashierChipResource
 
     protected static ?string $recordTitleAttribute = 'name';
 
+    protected static ?string $slug = 'chip-customers';
+
     public static function getModelLabel(): string
     {
         return __('filament-cashier-chip::filament-cashier-chip.customer.label');

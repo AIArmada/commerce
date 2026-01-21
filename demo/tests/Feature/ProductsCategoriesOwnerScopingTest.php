@@ -62,12 +62,12 @@ it('shows only products and categories for the current owner context', function 
             ->assertSee($categoryA->name)
             ->assertDontSee($categoryB->name);
 
-        $this->get('/products?category=' . $categoryA->slug)
+        $this->get('/products?category='.$categoryA->slug)
             ->assertOk()
             ->assertSee($productA->name)
             ->assertDontSee($productB->name);
 
-        $this->get('/products/' . $productB->slug)
+        $this->get('/products/'.$productB->slug)
             ->assertNotFound();
     });
 });

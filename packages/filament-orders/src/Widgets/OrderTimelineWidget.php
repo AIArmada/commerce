@@ -56,37 +56,6 @@ final class OrderTimelineWidget extends Widget implements HasForms
             'timestamp' => $this->record->created_at,
         ]);
 
-        // Status transitions from activity log (if using spatie/laravel-activitylog)
-        if (method_exists($this->record, 'activities')) {
-            try {
-                /** @var Collection<int, object> $activities */
-                $activities = $this->record->activities()->latest()->limit(25)->get();
-
-                foreach ($activities as $activity) {
-                    /** @var object{description: string, properties: array{old_status?: string, new_status?: string}, created_at: \Carbon\Carbon, causer?: object{name: string}|null} $activity */
-                    if ($activity->description !== 'status_changed') {
-                        continue;
-                    }
-
-                    $events->push([
-                        'type' => 'status_change',
-                        'title' => 'Status Updated',
-                        'description' => sprintf(
-                            'Status changed from %s to %s',
-                            $activity->properties['old_status'] ?? 'Unknown',
-                            $activity->properties['new_status'] ?? 'Unknown'
-                        ),
-                        'icon' => 'heroicon-o-arrow-path',
-                        'color' => 'info',
-                        'timestamp' => $activity->created_at,
-                        'causer' => $activity->causer?->name ?? 'System',
-                    ]);
-                }
-            } catch (Throwable) {
-                // Ignore activity log if not configured.
-            }
-        }
-
         // Payment events
         foreach ($this->record->payments ?? [] as $payment) {
             $currency = $this->record->currency ?? (string) config('orders.currency.default', 'MYR');

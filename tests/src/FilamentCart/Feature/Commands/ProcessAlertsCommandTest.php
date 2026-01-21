@@ -2,8 +2,8 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Models\AlertLog;
-use AIArmada\FilamentCart\Models\AlertRule;
+use AIArmada\Cart\Models\AlertLog;
+use AIArmada\Cart\Models\AlertRule;
 use AIArmada\FilamentCart\Services\AlertDispatcher;
 use AIArmada\FilamentCart\Services\AlertEvaluator;
 
@@ -51,7 +51,7 @@ describe('ProcessAlertsCommand', function (): void {
     it('skips rules in cooldown', function (): void {
         $rule = AlertRule::create([
             'name' => 'Frequent Alert',
-            'event_type' => 'fraud',
+            'event_type' => 'abandonment',
             'is_active' => true,
             'cooldown_minutes' => 60,
             'conditions' => [],

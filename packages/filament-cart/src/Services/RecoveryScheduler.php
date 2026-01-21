@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Services;
 
+use AIArmada\Cart\Models\RecoveryAttempt;
+use AIArmada\Cart\Models\RecoveryCampaign;
 use AIArmada\FilamentCart\Models\Cart;
-use AIArmada\FilamentCart\Models\RecoveryAttempt;
-use AIArmada\FilamentCart\Models\RecoveryCampaign;
+use AIArmada\FilamentCart\Settings\CartRecoverySettings;
+use AIArmada\Orders\Models\Order;
+use Carbon\Carbon;
 use Carbon\CarbonInterface;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -22,6 +25,12 @@ class RecoveryScheduler
      */
     public function scheduleForCampaign(RecoveryCampaign $campaign): int
     {
+        $settings = $this->resolveSettings();
+
+        if ($settings !== null && ! $settings->recoveryEnabled) {
+            return 0;
+        }
+
         if (! $campaign->isActive()) {
             return 0;
         }
@@ -50,6 +59,15 @@ class RecoveryScheduler
      */
     public function processScheduledAttempts(): array
     {
+        $settings = $this->resolveSettings();
+
+        if ($settings !== null && ! $settings->recoveryEnabled) {
+            return [
+                'processed' => 0,
+                'failed' => 0,
+            ];
+        }
+
         $dueAttempts = RecoveryAttempt::query()->forOwner()
             ->where('status', 'scheduled')
             ->where('scheduled_for', '<=', now())
@@ -81,10 +99,12 @@ class RecoveryScheduler
      */
     public function scheduleNextAttempt(RecoveryAttempt $previousAttempt): ?RecoveryAttempt
     {
+        $settings = $this->resolveSettings();
         $campaign = $previousAttempt->campaign;
         $cart = $previousAttempt->cart;
 
         // Check if cart was recovered
+        // @phpstan-ignore property.notFound
         if ($cart && $cart->recovered_at !== null) {
             return null;
         }
@@ -95,15 +115,17 @@ class RecoveryScheduler
             ->where('cart_id', $previousAttempt->cart_id)
             ->count();
 
-        if ($attemptCount >= $campaign->max_attempts) {
+        if ($attemptCount >= $this->getMaxAttempts($campaign, $settings)) {
             return null;
         }
 
+        /** @var \AIArmada\FilamentCart\Models\Cart $cart */
         return $this->createAttempt(
             $campaign,
             $cart,
-            now()->addHours($campaign->attempt_interval_hours),
+            $this->adjustScheduledFor($cart, now()->addHours($campaign->attempt_interval_hours), $settings),
             $attemptCount + 1,
+            $settings,
         );
     }
 
@@ -125,6 +147,7 @@ class RecoveryScheduler
      */
     private function findEligibleCarts(RecoveryCampaign $campaign): \Illuminate\Database\Eloquent\Collection
     {
+        $settings = $this->resolveSettings();
         $cartTable = (new Cart)->getTable();
 
         $query = Cart::query()->forOwner()
@@ -143,6 +166,10 @@ class RecoveryScheduler
         // Apply cart value filters
         if ($campaign->min_cart_value_cents !== null) {
             $query->where('subtotal', '>=', $campaign->min_cart_value_cents);
+        }
+
+        if ($settings !== null && $settings->minCartValue > 0) {
+            $query->where('subtotal', '>=', $settings->minCartValue);
         }
 
         if ($campaign->max_cart_value_cents !== null) {
@@ -173,6 +200,20 @@ class RecoveryScheduler
                 ->orWhereNotNull('metadata->phone');
         });
 
+        if ($settings !== null && $settings->excludeRepeatRecoveries) {
+            $query->whereNotExists(function ($subquery) use ($cartTable): void {
+                $prefix = config('filament-cart.database.table_prefix', 'cart_');
+                $subquery->select(DB::raw(1))
+                    ->from($cartTable . ' as recovered_cart')
+                    ->whereNotNull('recovered_cart.recovered_at')
+                    ->where('recovered_cart.recovered_at', '>=', now()->subDays(30))
+                    ->where(function ($match) use ($cartTable): void {
+                        $match->whereColumn("{$cartTable}.metadata->email", 'recovered_cart.metadata->email')
+                            ->orWhereColumn("{$cartTable}.metadata->phone", 'recovered_cart.metadata->phone');
+                    });
+            });
+        }
+
         return $query->limit(500)->get();
     }
 
@@ -181,9 +222,19 @@ class RecoveryScheduler
      */
     private function scheduleAttemptForCart(RecoveryCampaign $campaign, Cart $cart): bool
     {
-        $scheduledFor = now()->addMinutes(rand(1, 15)); // Add some randomization
+        $settings = $this->resolveSettings();
 
-        $attempt = $this->createAttempt($campaign, $cart, $scheduledFor, 1);
+        if (! $this->passesExclusions($cart, $settings)) {
+            return false;
+        }
+
+        if ($this->isWeeklyLimitReached($cart, $settings)) {
+            return false;
+        }
+
+        $scheduledFor = $this->adjustScheduledFor($cart, now()->addMinutes(rand(1, 15)), $settings);
+
+        $attempt = $this->createAttempt($campaign, $cart, $scheduledFor, 1, $settings);
 
         return $attempt !== null;
     }
@@ -196,6 +247,7 @@ class RecoveryScheduler
         Cart $cart,
         CarbonInterface $scheduledFor,
         int $attemptNumber,
+        ?CartRecoverySettings $settings = null,
     ): ?RecoveryAttempt {
         $email = $cart->email ?? ($cart->metadata['email'] ?? null);
         $phone = $cart->phone ?? ($cart->metadata['phone'] ?? null);
@@ -229,6 +281,10 @@ class RecoveryScheduler
                 : $campaign->discount_value;
         }
 
+        if ($settings !== null && $attemptNumber > $this->getMaxAttempts($campaign, $settings)) {
+            return null;
+        }
+
         return RecoveryAttempt::create([
             'campaign_id' => $campaign->id,
             'cart_id' => $cart->id,
@@ -249,6 +305,150 @@ class RecoveryScheduler
             'cart_items_count' => $cart->items_count ?? 0,
             'scheduled_for' => $scheduledFor,
         ]);
+    }
+
+    private function resolveSettings(): ?CartRecoverySettings
+    {
+        try {
+            /** @var CartRecoverySettings $settings */
+            $settings = app(CartRecoverySettings::class);
+
+            return $settings;
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private function getMaxAttempts(RecoveryCampaign $campaign, ?CartRecoverySettings $settings): int
+    {
+        if ($settings === null) {
+            return $campaign->max_attempts;
+        }
+
+        return min($campaign->max_attempts, $settings->maxRecoveryAttempts);
+    }
+
+    private function adjustScheduledFor(Cart $cart, CarbonInterface $scheduledFor, ?CartRecoverySettings $settings): CarbonInterface
+    {
+        if ($settings === null) {
+            return $scheduledFor;
+        }
+
+        $timezone = (string) config('app.timezone', 'UTC');
+
+        if ($settings->respectUserTimezone && is_string($cart->metadata['timezone'] ?? null)) {
+            $timezone = (string) $cart->metadata['timezone'];
+        }
+
+        $blockedDays = collect($settings->blockedDays)
+            ->pluck('day')
+            ->filter()
+            ->map(fn (string $day): string => mb_strtolower($day))
+            ->all();
+
+        $candidate = Carbon::parse($scheduledFor->toDateTimeString(), $timezone);
+
+        for ($i = 0; $i < 7; $i++) {
+            $dayName = mb_strtolower($candidate->englishDayOfWeek);
+
+            if (! in_array($dayName, $blockedDays, true)) {
+                if ($candidate->hour < $settings->sendStartHour) {
+                    $candidate->setTime($settings->sendStartHour, 0);
+                }
+
+                if ($candidate->hour >= $settings->sendEndHour) {
+                    $candidate = $candidate->addDay()->setTime($settings->sendStartHour, 0);
+
+                    continue;
+                }
+
+                return $candidate->setTimezone(config('app.timezone', 'UTC'));
+            }
+
+            $candidate = $candidate->addDay()->setTime($settings->sendStartHour, 0);
+        }
+
+        return $scheduledFor;
+    }
+
+    private function isWeeklyLimitReached(Cart $cart, ?CartRecoverySettings $settings): bool
+    {
+        if ($settings === null || $settings->maxMessagesPerCustomerPerWeek <= 0) {
+            return false;
+        }
+
+        $email = $cart->email ?? ($cart->metadata['email'] ?? null);
+        $phone = $cart->phone ?? ($cart->metadata['phone'] ?? null);
+
+        if ($email === null && $phone === null) {
+            return false;
+        }
+
+        $query = RecoveryAttempt::query()->forOwner()
+            ->where('created_at', '>=', now()->subDays(7));
+
+        if ($email !== null) {
+            $query->where('recipient_email', $email);
+        } elseif ($phone !== null) {
+            $query->where('recipient_phone', $phone);
+        }
+
+        return $query->count() >= $settings->maxMessagesPerCustomerPerWeek;
+    }
+
+    private function passesExclusions(Cart $cart, ?CartRecoverySettings $settings): bool
+    {
+        if ($settings === null) {
+            return true;
+        }
+
+        if ($settings->excludeRepeatRecoveries) {
+            $email = $cart->email ?? ($cart->metadata['email'] ?? null);
+            $phone = $cart->phone ?? ($cart->metadata['phone'] ?? null);
+
+            if ($email !== null || $phone !== null) {
+                $query = Cart::query()->forOwner()
+                    ->whereNotNull('recovered_at')
+                    ->where('recovered_at', '>=', now()->subDays(30));
+
+                if ($email !== null) {
+                    $query->where('metadata->email', $email);
+                }
+
+                if ($phone !== null) {
+                    $query->orWhere('metadata->phone', $phone);
+                }
+
+                if ($query->exists()) {
+                    return false;
+                }
+            }
+        }
+
+        if ($settings->excludeIfOrderedWithinDays > 0 && class_exists(Order::class)) {
+            $customerId = $cart->metadata['customer_id'] ?? null;
+            $customerType = $cart->metadata['customer_type'] ?? null;
+
+            if (is_string($customerId) && is_string($customerType)) {
+                $orders = Order::query();
+
+                if (method_exists(Order::class, 'scopeForOwner')) {
+                    $orders->forOwner();
+                }
+
+                $recentOrderExists = $orders
+                    ->where('customer_id', $customerId)
+                    ->where('customer_type', $customerType)
+                    ->where('created_at', '>=', now()->subDays($settings->excludeIfOrderedWithinDays))
+                    ->exists();
+
+                if ($recentOrderExists) {
+                    return false;
+                }
+            }
+        }
+
+        return true;
     }
 
     /**

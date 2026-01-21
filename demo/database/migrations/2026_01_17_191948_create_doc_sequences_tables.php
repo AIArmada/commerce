@@ -14,8 +14,8 @@ return new class extends Migration
         $tablePrefix = $database['table_prefix'] ?? 'docs_';
         $tables = $database['tables'] ?? [];
 
-        $sequencesTable = $tables['doc_sequences'] ?? $tablePrefix . 'sequences';
-        $numbersTable = $tables['sequence_numbers'] ?? $tablePrefix . 'sequence_numbers';
+        $sequencesTable = $tables['doc_sequences'] ?? $tablePrefix.'sequences';
+        $numbersTable = $tables['sequence_numbers'] ?? $tablePrefix.'sequence_numbers';
 
         Schema::create($sequencesTable, function (Blueprint $table) use ($sequencesTable): void {
             $table->uuid('id')->primary();
@@ -31,8 +31,8 @@ return new class extends Migration
             $table->nullableUuidMorphs('owner');
             $table->timestamps();
 
-            $table->index(['doc_type', 'is_active'], $sequencesTable . '_type_active_index');
-            $table->index('owner_type', $sequencesTable . '_owner_type_index');
+            $table->index(['doc_type', 'is_active'], $sequencesTable.'_type_active_index');
+            $table->index('owner_type', $sequencesTable.'_owner_type_index');
         });
 
         Schema::create($numbersTable, function (Blueprint $table) use ($numbersTable): void {
@@ -44,9 +44,9 @@ return new class extends Migration
 
             $table->unique(
                 ['doc_sequence_id', 'period_key'],
-                $numbersTable . '_sequence_period_unique'
+                $numbersTable.'_sequence_period_unique'
             );
-            $table->index('period_key', $numbersTable . '_period_key_index');
+            $table->index('period_key', $numbersTable.'_period_key_index');
         });
     }
 
@@ -56,8 +56,8 @@ return new class extends Migration
         $tablePrefix = $database['table_prefix'] ?? 'docs_';
         $tables = $database['tables'] ?? [];
 
-        $sequencesTable = $tables['doc_sequences'] ?? $tablePrefix . 'sequences';
-        $numbersTable = $tables['sequence_numbers'] ?? $tablePrefix . 'sequence_numbers';
+        $sequencesTable = $tables['doc_sequences'] ?? $tablePrefix.'sequences';
+        $numbersTable = $tables['sequence_numbers'] ?? $tablePrefix.'sequence_numbers';
 
         Schema::dropIfExists($numbersTable);
         Schema::dropIfExists($sequencesTable);

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentAffiliateNetwork\Resources;
 use AIArmada\AffiliateNetwork\Models\AffiliateOfferApplication;
 use AIArmada\AffiliateNetwork\Services\OfferManagementService;
 use BackedEnum;
+use Filament\Actions;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Textarea;
@@ -144,7 +145,7 @@ final class AffiliateOfferApplicationResource extends Resource
                     ->relationship('offer', 'name'),
             ])
             ->actions([
-                Tables\Actions\Action::make('approve')
+                Actions\Action::make('approve')
                     ->icon('heroicon-o-check')
                     ->color('success')
                     ->requiresConfirmation()
@@ -161,7 +162,7 @@ final class AffiliateOfferApplicationResource extends Resource
                             ->send();
                     }),
 
-                Tables\Actions\Action::make('reject')
+                Actions\Action::make('reject')
                     ->icon('heroicon-o-x-mark')
                     ->color('danger')
                     ->form([
@@ -183,7 +184,7 @@ final class AffiliateOfferApplicationResource extends Resource
                             ->send();
                     }),
 
-                Tables\Actions\Action::make('revoke')
+                Actions\Action::make('revoke')
                     ->icon('heroicon-o-no-symbol')
                     ->color('danger')
                     ->form([
@@ -205,11 +206,11 @@ final class AffiliateOfferApplicationResource extends Resource
                             ->send();
                     }),
 
-                Tables\Actions\ViewAction::make(),
+                Actions\ViewAction::make(),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\BulkAction::make('approve_selected')
+                Actions\BulkActionGroup::make([
+                    Actions\BulkAction::make('approve_selected')
                         ->label('Approve Selected')
                         ->icon('heroicon-o-check')
                         ->color('success')

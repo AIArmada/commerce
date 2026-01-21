@@ -199,7 +199,7 @@ final class InventorySeeder extends Seeder
             $locations[$data['code']] = $location;
         }
 
-        $this->command->info('      ✓ Created ' . count($locations) . ' warehouse locations');
+        $this->command->info('      ✓ Created '.count($locations).' warehouse locations');
 
         return $locations;
     }
@@ -266,7 +266,7 @@ final class InventorySeeder extends Seeder
                         'allocation_strategy' => rand(1, 5) === 1 ? 'fifo' : null, // Some use FIFO
                         'metadata' => [
                             'last_count_by' => fake()->name(),
-                            'bin_location' => mb_strtoupper(Str::random(1)) . '-' . rand(1, 50) . '-' . rand(1, 10),
+                            'bin_location' => mb_strtoupper(Str::random(1)).'-'.rand(1, 50).'-'.rand(1, 10),
                         ],
                     ]
                 );
@@ -274,7 +274,7 @@ final class InventorySeeder extends Seeder
             }
         }
 
-        $this->command->info('      ✓ Created ' . $levelCount . ' inventory level records');
+        $this->command->info('      ✓ Created '.$levelCount.' inventory level records');
     }
 
     /**
@@ -305,8 +305,8 @@ final class InventorySeeder extends Seeder
                     'quantity' => rand(50, 200),
                     'type' => 'receipt',
                     'reason' => 'purchase',
-                    'reference' => 'PO-' . mb_strtoupper(Str::random(8)),
-                    'note' => 'Supplier delivery - ' . fake()->company(),
+                    'reference' => 'PO-'.mb_strtoupper(Str::random(8)),
+                    'note' => 'Supplier delivery - '.fake()->company(),
                     'occurred_at' => now()->subDays(rand(1, 90)),
                 ]);
                 $movementCount++;
@@ -326,7 +326,7 @@ final class InventorySeeder extends Seeder
                 'quantity' => rand(10, 50),
                 'type' => 'transfer',
                 'reason' => 'rebalance',
-                'reference' => 'TRF-' . mb_strtoupper(Str::random(8)),
+                'reference' => 'TRF-'.mb_strtoupper(Str::random(8)),
                 'note' => 'Stock rebalancing between locations',
                 'occurred_at' => now()->subDays(rand(1, 30)),
             ]);
@@ -346,7 +346,7 @@ final class InventorySeeder extends Seeder
                     'quantity' => rand(1, 5),
                     'type' => 'shipment',
                     'reason' => 'sale',
-                    'reference' => 'ORD-' . mb_strtoupper(Str::random(8)),
+                    'reference' => 'ORD-'.mb_strtoupper(Str::random(8)),
                     'note' => 'Customer order fulfillment',
                     'occurred_at' => now()->subDays(rand(1, 60)),
                 ]);
@@ -366,13 +366,13 @@ final class InventorySeeder extends Seeder
                 'quantity' => rand(-5, 10),
                 'type' => 'adjustment',
                 'reason' => fake()->randomElement(['count', 'damage', 'found', 'expired']),
-                'reference' => 'ADJ-' . mb_strtoupper(Str::random(8)),
+                'reference' => 'ADJ-'.mb_strtoupper(Str::random(8)),
                 'note' => 'Inventory audit adjustment',
                 'occurred_at' => now()->subDays(rand(1, 30)),
             ]);
             $movementCount++;
         }
 
-        $this->command->info('      ✓ Created ' . $movementCount . ' movement records');
+        $this->command->info('      ✓ Created '.$movementCount.' movement records');
     }
 }

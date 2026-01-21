@@ -130,4 +130,15 @@ abstract class OrderStatus extends State
     {
         return false;
     }
+
+    /**
+     * Get the state name (e.g., 'delivered', 'processing').
+     *
+     * This method provides a convenient way to access the state name
+     * without relying on the static property directly.
+     */
+    public function name(): string
+    {
+        return $this->getValue();
+    }
 }

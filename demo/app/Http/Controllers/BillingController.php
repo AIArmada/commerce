@@ -158,7 +158,7 @@ class BillingController extends Controller
     /**
      * Billing portal (unified for Chip + Stripe).
      */
-    public function portal(): RedirectResponse | View
+    public function portal(): RedirectResponse|View
     {
         $user = Auth::user();
         if (! $user) {

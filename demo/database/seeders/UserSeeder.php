@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use App\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
 /**
@@ -160,7 +160,7 @@ final class UserSeeder extends Seeder
                 );
             }
 
-            $this->command->info('   ✓ Created ' . count($demoUsers) . ' admin users + ' . count($customers) . ' customers');
+            $this->command->info('   ✓ Created '.count($demoUsers).' admin users + '.count($customers).' customers');
         } finally {
             setPermissionsTeamId($previousTeamId);
         }

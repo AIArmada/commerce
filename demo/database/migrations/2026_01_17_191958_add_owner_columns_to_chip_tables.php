@@ -26,7 +26,7 @@ return new class extends Migration
         ];
 
         foreach ($tables as $suffix) {
-            $tableName = $prefix . $suffix;
+            $tableName = $prefix.$suffix;
 
             if (! Schema::hasTable($tableName)) {
                 continue;

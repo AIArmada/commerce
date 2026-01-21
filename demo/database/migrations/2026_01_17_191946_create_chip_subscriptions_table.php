@@ -16,7 +16,7 @@ return new class extends Migration
         $databaseConfig = config('cashier-chip.database', []);
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
         $tables = $databaseConfig['tables'] ?? [];
-        $tableName = $tables['subscriptions'] ?? $tablePrefix . 'subscriptions';
+        $tableName = $tables['subscriptions'] ?? $tablePrefix.'subscriptions';
 
         if (Schema::hasTable($tableName)) {
             return;
@@ -51,7 +51,7 @@ return new class extends Migration
             $table->index('next_billing_at');
             $table->index('ends_at');
             $table->index('coupon_id');
-            $table->index(['user_id', 'type'], $tableName . '_user_type_idx');
+            $table->index(['user_id', 'type'], $tableName.'_user_type_idx');
         });
     }
 
@@ -63,7 +63,7 @@ return new class extends Migration
         $databaseConfig = config('cashier-chip.database', []);
         $tablePrefix = $databaseConfig['table_prefix'] ?? 'cashier_chip_';
         $tables = $databaseConfig['tables'] ?? [];
-        $tableName = $tables['subscriptions'] ?? $tablePrefix . 'subscriptions';
+        $tableName = $tables['subscriptions'] ?? $tablePrefix.'subscriptions';
 
         Schema::dropIfExists($tableName);
     }

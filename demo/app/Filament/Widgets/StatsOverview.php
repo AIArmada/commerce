@@ -14,7 +14,6 @@ use AIArmada\Products\Models\Product;
 use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
-use App\Models\User;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
 use Illuminate\Support\Number;
@@ -23,7 +22,7 @@ final class StatsOverview extends BaseWidget
 {
     protected static ?int $sort = -3;
 
-    protected int | string | array $columnSpan = 'full';
+    protected int|string|array $columnSpan = 'full';
 
     protected function getStats(): array
     {
@@ -31,7 +30,7 @@ final class StatsOverview extends BaseWidget
 
         if ($owner === null) {
             return [
-                Stat::make('Total Revenue', 'RM ' . Number::format(0, 2))
+                Stat::make('Total Revenue', 'RM '.Number::format(0, 2))
                     ->description('From paid orders')
                     ->descriptionIcon('heroicon-m-banknotes')
                     ->color('success')
@@ -53,7 +52,7 @@ final class StatsOverview extends BaseWidget
                     ->color('primary'),
 
                 Stat::make('Affiliates', 0)
-                    ->description('RM ' . Number::format(0, 2) . ' pending')
+                    ->description('RM '.Number::format(0, 2).' pending')
                     ->descriptionIcon('heroicon-m-users')
                     ->color('success'),
 
@@ -90,7 +89,7 @@ final class StatsOverview extends BaseWidget
         $lowStockProducts = 0;
 
         return [
-            Stat::make('Total Revenue', 'RM ' . Number::format($totalRevenue / 100, 2))
+            Stat::make('Total Revenue', 'RM '.Number::format($totalRevenue / 100, 2))
                 ->description('From paid orders')
                 ->descriptionIcon('heroicon-m-banknotes')
                 ->color('success')
@@ -102,22 +101,22 @@ final class StatsOverview extends BaseWidget
                 ->color($pendingOrders > 0 ? 'warning' : 'success'),
 
             Stat::make('Products', Product::query()->forOwner($owner)->count())
-                ->description($lowStockProducts > 0 ? $lowStockProducts . ' low inventory' : 'Inventory healthy')
+                ->description($lowStockProducts > 0 ? $lowStockProducts.' low inventory' : 'Inventory healthy')
                 ->descriptionIcon($lowStockProducts > 0 ? 'heroicon-m-exclamation-triangle' : 'heroicon-m-cube')
                 ->color($lowStockProducts > 0 ? 'warning' : 'info'),
 
             Stat::make('Active Vouchers', $activeVouchers)
-                ->description($voucherRedemptions . ' redemptions')
+                ->description($voucherRedemptions.' redemptions')
                 ->descriptionIcon('heroicon-m-ticket')
                 ->color('primary'),
 
             Stat::make('Affiliates', $activeAffiliates)
-                ->description('RM ' . Number::format($pendingCommissions / 100, 2) . ' pending')
+                ->description('RM '.Number::format($pendingCommissions / 100, 2).' pending')
                 ->descriptionIcon('heroicon-m-users')
                 ->color('success'),
 
             Stat::make('Customers', $uniqueCustomersWithOrders)
-                ->description($uniqueCustomersWithOrders . ' with orders')
+                ->description($uniqueCustomersWithOrders.' with orders')
                 ->descriptionIcon('heroicon-m-user-group')
                 ->color('info'),
         ];

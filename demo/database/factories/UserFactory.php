@@ -24,7 +24,7 @@ final class UserFactory extends Factory
             'name' => $this->faker->name(),
             'email' => $this->faker->unique()->safeEmail(),
             'phone' => $this->faker->phoneNumber(),
-            'avatar' => 'https://ui-avatars.com/api/?name=' . urlencode($this->faker->name()) . '&background=random',
+            'avatar' => 'https://ui-avatars.com/api/?name='.urlencode($this->faker->name()).'&background=random',
             'email_verified_at' => now(),
             'password' => self::$password ??= Hash::make('password'),
             'remember_token' => Str::random(10),

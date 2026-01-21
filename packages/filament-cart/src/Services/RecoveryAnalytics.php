@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Services;
 
+use AIArmada\Cart\Models\RecoveryAttempt;
+use AIArmada\Cart\Models\RecoveryCampaign;
 use AIArmada\FilamentCart\Data\CampaignMetrics;
 use AIArmada\FilamentCart\Data\RecoveryInsight;
-use AIArmada\FilamentCart\Models\RecoveryAttempt;
-use AIArmada\FilamentCart\Models\RecoveryCampaign;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 

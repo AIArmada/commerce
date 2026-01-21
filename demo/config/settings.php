@@ -8,6 +8,7 @@ return [
      * put them (manually) here.
      */
     'settings' => [
+        AIArmada\FilamentCart\Settings\CartRecoverySettings::class,
     ],
 
     /*
@@ -26,6 +27,7 @@ return [
         // Monorepo package settings migrations
         base_path('../packages/pricing/database/settings'),
         base_path('../packages/tax/database/settings'),
+        base_path('../packages/filament-cart/database/settings'),
     ],
 
     /*

@@ -43,8 +43,8 @@ final class BillingShowcaseSeeder extends Seeder
 
         // Setup admin with CHIP customer ID and payment method
         $this->setupBillableUser($admin, [
-            'chip_id' => 'cli_demo_admin_' . Str::random(16),
-            'chip_default_payment_method' => 'tok_' . Str::random(32),
+            'chip_id' => 'cli_demo_admin_'.Str::random(16),
+            'chip_default_payment_method' => 'tok_'.Str::random(32),
             'pm_type' => 'visa',
             'pm_last_four' => '4242',
         ]);
@@ -69,15 +69,15 @@ final class BillingShowcaseSeeder extends Seeder
 
         // Add Stripe data alongside Chip
         $admin->update([
-            'stripe_id' => 'cus_demo_admin_' . Str::random(16),
-            'stripe_default_payment_method' => 'pm_' . Str::random(24),
+            'stripe_id' => 'cus_demo_admin_'.Str::random(16),
+            'stripe_default_payment_method' => 'pm_'.Str::random(24),
         ]);
 
         // Create Stripe subscriptions (mock for demo)
         SubscriptionFactory::new()->create([
             'user_id' => $admin->id,
             'stripe_status' => 'active',
-            'stripe_id' => 'sub_stripe_' . Str::random(20),
+            'stripe_id' => 'sub_stripe_'.Str::random(20),
             'stripe_price' => 'price_stripe_pro',
         ]);
 
@@ -105,13 +105,13 @@ final class BillingShowcaseSeeder extends Seeder
         return Subscription::create([
             'user_id' => $user->id,
             'type' => $attributes['type'] ?? 'default',
-            'chip_id' => 'sub_' . Str::random(40),
+            'chip_id' => 'sub_'.Str::random(40),
             'chip_status' => $attributes['chip_status'] ?? Subscription::STATUS_ACTIVE,
             'chip_price' => $attributes['chip_price'] ?? null,
             'quantity' => $attributes['quantity'] ?? 1,
             'billing_interval' => $attributes['billing_interval'] ?? 'month',
             'billing_interval_count' => $attributes['billing_interval_count'] ?? 1,
-            'recurring_token' => 'tok_' . Str::random(32),
+            'recurring_token' => 'tok_'.Str::random(32),
             'trial_ends_at' => $attributes['trial_ends_at'] ?? null,
             'ends_at' => $attributes['ends_at'] ?? null,
             'next_billing_at' => $attributes['next_billing_at'] ?? Carbon::now()->addMonth(),

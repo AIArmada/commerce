@@ -4,11 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Resources;
 
-use AIArmada\FilamentCart\Models\AlertRule;
+use AIArmada\Cart\Models\AlertRule;
 use AIArmada\FilamentCart\Resources\AlertRuleResource\Pages;
 use BackedEnum;
-use Filament\Forms;
+use Filament\Actions;
+use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
 use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -33,28 +41,27 @@ class AlertRuleResource extends Resource
     public static function form(Schema $schema): Schema
     {
         return $schema
-            ->components([
-                Forms\Components\Section::make('Basic Information')
+            ->schema([
+                Section::make('Basic Information')
                     ->schema([
-                        Forms\Components\TextInput::make('name')
+                        TextInput::make('name')
                             ->required()
                             ->maxLength(255),
 
-                        Forms\Components\Textarea::make('description')
+                        Textarea::make('description')
                             ->rows(2)
                             ->maxLength(1000),
 
-                        Forms\Components\Select::make('event_type')
+                        Select::make('event_type')
                             ->required()
                             ->options([
                                 'abandonment' => 'Cart Abandonment',
-                                'fraud' => 'Fraud Detection',
                                 'high_value' => 'High-Value Cart',
                                 'recovery' => 'Recovery Opportunity',
                                 'custom' => 'Custom Event',
                             ]),
 
-                        Forms\Components\Select::make('severity')
+                        Select::make('severity')
                             ->required()
                             ->default('info')
                             ->options([
@@ -63,24 +70,24 @@ class AlertRuleResource extends Resource
                                 'critical' => 'Critical',
                             ]),
 
-                        Forms\Components\TextInput::make('priority')
+                        TextInput::make('priority')
                             ->numeric()
                             ->default(0)
                             ->helperText('Higher priority rules are evaluated first'),
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Conditions')
+                Section::make('Conditions')
                     ->description('Define when this alert should trigger')
                     ->schema([
-                        Forms\Components\Repeater::make('conditions.all')
+                        Repeater::make('conditions.all')
                             ->label('All conditions must match (AND)')
                             ->schema([
-                                Forms\Components\TextInput::make('field')
+                                TextInput::make('field')
                                     ->required()
                                     ->placeholder('e.g., cart_value_cents'),
 
-                                Forms\Components\Select::make('operator')
+                                Select::make('operator')
                                     ->required()
                                     ->default('>=')
                                     ->options([
@@ -98,7 +105,7 @@ class AlertRuleResource extends Resource
                                         'between' => 'Between',
                                     ]),
 
-                                Forms\Components\TextInput::make('value')
+                                TextInput::make('value')
                                     ->placeholder('Value to compare'),
                             ])
                             ->columns(3)
@@ -106,50 +113,50 @@ class AlertRuleResource extends Resource
                             ->addActionLabel('Add Condition'),
                     ]),
 
-                Forms\Components\Section::make('Notification Channels')
+                Section::make('Notification Channels')
                     ->schema([
-                        Forms\Components\Toggle::make('notify_database')
+                        Toggle::make('notify_database')
                             ->label('In-App Notifications')
                             ->default(true),
 
-                        Forms\Components\Toggle::make('notify_email')
+                        Toggle::make('notify_email')
                             ->label('Email Notifications')
                             ->live(),
 
-                        Forms\Components\TagsInput::make('email_recipients')
+                        TagsInput::make('email_recipients')
                             ->label('Email Recipients')
                             ->placeholder('Add email address')
-                            ->visible(fn (Forms\Get $get) => $get('notify_email')),
+                            ->visible(fn (Get $get) => $get('notify_email')),
 
-                        Forms\Components\Toggle::make('notify_slack')
+                        Toggle::make('notify_slack')
                             ->label('Slack Notifications')
                             ->live(),
 
-                        Forms\Components\TextInput::make('slack_webhook_url')
+                        TextInput::make('slack_webhook_url')
                             ->label('Slack Webhook URL')
                             ->url()
-                            ->visible(fn (Forms\Get $get) => $get('notify_slack')),
+                            ->visible(fn (Get $get) => $get('notify_slack')),
 
-                        Forms\Components\Toggle::make('notify_webhook')
+                        Toggle::make('notify_webhook')
                             ->label('Webhook Notifications')
                             ->live(),
 
-                        Forms\Components\TextInput::make('webhook_url')
+                        TextInput::make('webhook_url')
                             ->label('Webhook URL')
                             ->url()
-                            ->visible(fn (Forms\Get $get) => $get('notify_webhook')),
+                            ->visible(fn (Get $get) => $get('notify_webhook')),
                     ])
                     ->columns(2),
 
-                Forms\Components\Section::make('Throttling')
+                Section::make('Throttling')
                     ->schema([
-                        Forms\Components\TextInput::make('cooldown_minutes')
+                        TextInput::make('cooldown_minutes')
                             ->label('Cooldown Period (minutes)')
                             ->numeric()
                             ->default(60)
                             ->helperText('Minimum time between alerts of this type'),
 
-                        Forms\Components\Toggle::make('is_active')
+                        Toggle::make('is_active')
                             ->label('Active')
                             ->default(true),
                     ])
@@ -168,7 +175,6 @@ class AlertRuleResource extends Resource
                 Tables\Columns\TextColumn::make('event_type')
                     ->badge()
                     ->color(fn (string $state): string => match ($state) {
-                        'fraud' => 'danger',
                         'abandonment' => 'warning',
                         'high_value' => 'info',
                         'recovery' => 'success',
@@ -222,7 +228,6 @@ class AlertRuleResource extends Resource
                 Tables\Filters\SelectFilter::make('event_type')
                     ->options([
                         'abandonment' => 'Cart Abandonment',
-                        'fraud' => 'Fraud Detection',
                         'high_value' => 'High-Value Cart',
                         'recovery' => 'Recovery Opportunity',
                         'custom' => 'Custom Event',
@@ -238,9 +243,9 @@ class AlertRuleResource extends Resource
                 Tables\Filters\TernaryFilter::make('is_active'),
             ])
             ->actions([
-                Tables\Actions\ViewAction::make(),
-                Tables\Actions\EditAction::make(),
-                Tables\Actions\Action::make('test')
+                Actions\ViewAction::make(),
+                Actions\EditAction::make(),
+                Actions\Action::make('test')
                     ->icon('heroicon-o-play')
                     ->color('info')
                     ->requiresConfirmation()
@@ -260,12 +265,12 @@ class AlertRuleResource extends Resource
                     }),
             ])
             ->bulkActions([
-                Tables\Actions\BulkActionGroup::make([
-                    Tables\Actions\DeleteBulkAction::make(),
-                    Tables\Actions\BulkAction::make('activate')
+                Actions\BulkActionGroup::make([
+                    Actions\DeleteBulkAction::make(),
+                    Actions\BulkAction::make('activate')
                         ->icon('heroicon-o-check')
                         ->action(fn ($records) => $records->each->update(['is_active' => true])),
-                    Tables\Actions\BulkAction::make('deactivate')
+                    Actions\BulkAction::make('deactivate')
                         ->icon('heroicon-o-x-mark')
                         ->action(fn ($records) => $records->each->update(['is_active' => false])),
                 ]),

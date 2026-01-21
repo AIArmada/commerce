@@ -5,14 +5,14 @@
             <x-filament::section>
                 <div class="text-center">
                     <div class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                        {{ $metrics?->revenue?->currency ?? 'MYR' }} {{ number_format(($metrics?->revenue?->total_revenue ?? 0) / 100, 2) }}
+                        {{ $metrics['revenue']['currency'] ?? 'MYR' }} {{ number_format(($metrics['revenue']['grossRevenue'] ?? 0) / 100, 2) }}
                     </div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">
                         {{ __('Total Revenue') }}
                     </div>
-                    @if(isset($metrics?->revenue?->growth_percentage))
-                        <div class="text-xs {{ $metrics->revenue->growth_percentage >= 0 ? 'text-success-600' : 'text-danger-600' }}">
-                            {{ $metrics->revenue->growth_percentage >= 0 ? '+' : '' }}{{ number_format($metrics->revenue->growth_percentage, 1) }}%
+                    @if(isset($metrics['revenue']['growthRate']))
+                        <div class="text-xs {{ $metrics['revenue']['growthRate'] >= 0 ? 'text-success-600' : 'text-danger-600' }}">
+                            {{ $metrics['revenue']['growthRate'] >= 0 ? '+' : '' }}{{ number_format($metrics['revenue']['growthRate'], 1) }}%
                         </div>
                     @endif
                 </div>
@@ -21,7 +21,7 @@
             <x-filament::section>
                 <div class="text-center">
                     <div class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                        {{ $metrics?->transactions?->total_count ?? 0 }}
+                        {{ $metrics['transactions']['total'] ?? 0 }}
                     </div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">
                         {{ __('Transactions') }}
@@ -32,7 +32,7 @@
             <x-filament::section>
                 <div class="text-center">
                     <div class="text-3xl font-bold text-success-600 dark:text-success-400">
-                        {{ number_format(($metrics?->transactions?->success_rate ?? 0) * 100, 1) }}%
+                        {{ number_format($metrics['transactions']['successRate'] ?? 0, 1) }}%
                     </div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">
                         {{ __('Success Rate') }}
@@ -43,7 +43,7 @@
             <x-filament::section>
                 <div class="text-center">
                     <div class="text-3xl font-bold text-gray-900 dark:text-gray-100">
-                        {{ $metrics?->revenue?->currency ?? 'MYR' }} {{ number_format(($metrics?->transactions?->average_value ?? 0) / 100, 2) }}
+                        {{ $metrics['revenue']['currency'] ?? 'MYR' }} {{ number_format(($metrics['revenue']['averageTransaction'] ?? 0) / 100, 2) }}
                     </div>
                     <div class="text-sm text-gray-500 dark:text-gray-400">
                         {{ __('Avg. Transaction') }}
@@ -93,7 +93,7 @@
                     {{ __('Payment Methods') }}
                 </x-slot>
 
-                @if(empty($metrics?->payment_method_breakdown))
+                @if(empty($metrics['paymentMethods']))
                     <div class="text-center py-6">
                         <x-heroicon-o-credit-card class="mx-auto h-12 w-12 text-gray-400" />
                         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ __('No payment data') }}</p>
@@ -101,20 +101,20 @@
                 @else
                     <div class="space-y-3">
                         @php
-                            $totalPayments = array_sum(array_column($metrics->payment_method_breakdown, 'count'));
+                            $totalPayments = array_sum(array_column($metrics['paymentMethods'], 'attempts'));
                         @endphp
-                        @foreach($metrics->payment_method_breakdown as $method)
+                        @foreach($metrics['paymentMethods'] as $method)
                             <div>
                                 <div class="flex justify-between text-sm mb-1">
-                                    <span class="text-gray-700 dark:text-gray-300">{{ ucfirst($method['payment_method'] ?? 'Unknown') }}</span>
+                                    <span class="text-gray-700 dark:text-gray-300">{{ ucfirst($method['method'] ?? 'Unknown') }}</span>
                                     <span class="text-gray-500">
-                                        {{ $method['count'] }} ({{ number_format(($method['revenue'] ?? 0) / 100, 2) }})
+                                        {{ $method['attempts'] ?? 0 }} ({{ number_format(($method['revenue'] ?? 0) / 100, 2) }})
                                     </span>
                                 </div>
                                 <div class="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
                                     <div 
                                         class="bg-primary-600 h-2 rounded-full" 
-                                        style="width: {{ $totalPayments > 0 ? ($method['count'] / $totalPayments) * 100 : 0 }}%"
+                                        style="width: {{ $totalPayments > 0 ? (($method['attempts'] ?? 0) / $totalPayments) * 100 : 0 }}%"
                                     ></div>
                                 </div>
                             </div>
@@ -128,7 +128,7 @@
                     {{ __('Transaction Status') }}
                 </x-slot>
 
-                @if(!isset($metrics?->transactions))
+                @if(empty($metrics['transactions']))
                     <div class="text-center py-6">
                         <x-heroicon-o-chart-pie class="mx-auto h-12 w-12 text-gray-400" />
                         <p class="mt-2 text-sm text-gray-500 dark:text-gray-400">{{ __('No transaction data') }}</p>
@@ -140,7 +140,7 @@
                                 <x-heroicon-o-check-circle class="h-5 w-5 text-success-600" />
                                 <span class="text-sm font-medium text-success-800 dark:text-success-200">{{ __('Completed') }}</span>
                             </div>
-                            <span class="text-lg font-bold text-success-600">{{ $metrics->transactions->completed_count ?? 0 }}</span>
+                            <span class="text-lg font-bold text-success-600">{{ $metrics['transactions']['successful'] ?? 0 }}</span>
                         </div>
 
                         <div class="flex items-center justify-between p-3 bg-warning-50 dark:bg-warning-900/20 rounded-lg">
@@ -148,7 +148,7 @@
                                 <x-heroicon-o-clock class="h-5 w-5 text-warning-600" />
                                 <span class="text-sm font-medium text-warning-800 dark:text-warning-200">{{ __('Pending') }}</span>
                             </div>
-                            <span class="text-lg font-bold text-warning-600">{{ $metrics->transactions->pending_count ?? 0 }}</span>
+                            <span class="text-lg font-bold text-warning-600">{{ $metrics['transactions']['pending'] ?? 0 }}</span>
                         </div>
 
                         <div class="flex items-center justify-between p-3 bg-danger-50 dark:bg-danger-900/20 rounded-lg">
@@ -156,7 +156,7 @@
                                 <x-heroicon-o-x-circle class="h-5 w-5 text-danger-600" />
                                 <span class="text-sm font-medium text-danger-800 dark:text-danger-200">{{ __('Failed') }}</span>
                             </div>
-                            <span class="text-lg font-bold text-danger-600">{{ $metrics->transactions->failed_count ?? 0 }}</span>
+                            <span class="text-lg font-bold text-danger-600">{{ $metrics['transactions']['failed'] ?? 0 }}</span>
                         </div>
 
                         <div class="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -164,7 +164,7 @@
                                 <x-heroicon-o-arrow-uturn-left class="h-5 w-5 text-gray-600" />
                                 <span class="text-sm font-medium text-gray-800 dark:text-gray-200">{{ __('Refunded') }}</span>
                             </div>
-                            <span class="text-lg font-bold text-gray-600">{{ $metrics->transactions->refunded_count ?? 0 }}</span>
+                            <span class="text-lg font-bold text-gray-600">{{ $metrics['transactions']['refunded'] ?? 0 }}</span>
                         </div>
                     </div>
                 @endif
@@ -172,7 +172,7 @@
         </div>
 
         {{-- Failure Analysis --}}
-        @if(!empty($metrics?->failure_analysis))
+        @if(!empty($metrics['failures']))
             <x-filament::section>
                 <x-slot name="heading">
                     {{ __('Failure Analysis') }}
@@ -188,7 +188,7 @@
                             </tr>
                         </thead>
                         <tbody class="divide-y dark:divide-gray-700">
-                            @foreach($metrics->failure_analysis as $failure)
+                            @foreach($metrics['failures'] as $failure)
                                 <tr>
                                     <td class="py-2 text-gray-900 dark:text-gray-100">{{ $failure['reason'] ?? 'Unknown' }}</td>
                                     <td class="py-2 text-right text-gray-600 dark:text-gray-400">{{ $failure['count'] ?? 0 }}</td>

@@ -16,6 +16,7 @@ use AIArmada\Cart\Events\ItemConditionAdded;
 use AIArmada\Cart\Events\ItemConditionRemoved;
 use AIArmada\Cart\Events\ItemRemoved;
 use AIArmada\Cart\Events\ItemUpdated;
+use AIArmada\Cart\Models\RecoveryAttempt;
 use AIArmada\Cart\Services\BuiltInRulesFactory;
 use AIArmada\FilamentCart\Commands\AggregateMetricsCommand;
 use AIArmada\FilamentCart\Commands\MonitorCartsCommand;
@@ -25,6 +26,7 @@ use AIArmada\FilamentCart\Commands\ScheduleRecoveryCommand;
 use AIArmada\FilamentCart\Listeners\ApplyGlobalConditions;
 use AIArmada\FilamentCart\Listeners\CleanupSnapshotOnCartMerged;
 use AIArmada\FilamentCart\Listeners\SyncCartOnEvent;
+use AIArmada\FilamentCart\Models\Cart as CartSnapshot;
 use AIArmada\FilamentCart\Services\AlertDispatcher;
 use AIArmada\FilamentCart\Services\AlertEvaluator;
 use AIArmada\FilamentCart\Services\CartAnalyticsService;
@@ -64,6 +66,9 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
     {
         $this->app->singleton(FilamentCartPlugin::class);
 
+        // Configure cart package to use filament Cart model for relationships
+        config(['cart.models.cart' => CartSnapshot::class]);
+
         if (! $this->app->bound(RulesFactoryInterface::class)) {
             $this->app->singleton(function ($app): RulesFactoryInterface {
                 $factoryClass = (string) config(
@@ -97,9 +102,34 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
         $this->app->singleton(AlertEvaluator::class);
     }
 
+    public function bootingPackage(): void
+    {
+        if (! $this->app->runningInConsole()) {
+            return;
+        }
+
+        $this->publishes([
+            __DIR__ . '/../database/settings' => database_path('settings'),
+        ], 'filament-cart-settings');
+    }
+
     public function packageBooted(): void
     {
         $this->registerEventListeners();
+        $this->registerRecoveryAttemptCartRelation();
+    }
+
+    /**
+     * Register the cart() relationship on RecoveryAttempt.
+     *
+     * This relationship is defined here rather than in core cart package
+     * to avoid circular dependency (core cart should not depend on filament-cart).
+     */
+    protected function registerRecoveryAttemptCartRelation(): void
+    {
+        RecoveryAttempt::resolveRelationUsing('cart', function (RecoveryAttempt $model) {
+            return $model->belongsTo(CartSnapshot::class, 'cart_id');
+        });
     }
 
     /**

@@ -28,7 +28,9 @@ describe('CartStatsWidget', function (): void {
     });
 
     it('is owner scoped when owner mode is enabled', function (): void {
+        config()->set('cart.owner.enabled', true);
         config()->set('filament-cart.owner.enabled', true);
+        config()->set('cart.owner.include_global', false);
         config()->set('filament-cart.owner.include_global', false);
         config()->set('cart.money.default_currency', 'USD');
 

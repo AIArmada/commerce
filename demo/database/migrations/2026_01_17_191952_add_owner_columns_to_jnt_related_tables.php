@@ -13,10 +13,10 @@ return new class extends Migration
         $tables = config('jnt.database.tables', []);
         $prefix = config('jnt.database.table_prefix', 'jnt_');
 
-        $orderItemsTable = $tables['order_items'] ?? $prefix . 'order_items';
-        $orderParcelsTable = $tables['order_parcels'] ?? $prefix . 'order_parcels';
-        $trackingEventsTable = $tables['tracking_events'] ?? $prefix . 'tracking_events';
-        $webhookLogsTable = $tables['webhook_logs'] ?? $prefix . 'webhook_logs';
+        $orderItemsTable = $tables['order_items'] ?? $prefix.'order_items';
+        $orderParcelsTable = $tables['order_parcels'] ?? $prefix.'order_parcels';
+        $trackingEventsTable = $tables['tracking_events'] ?? $prefix.'tracking_events';
+        $webhookLogsTable = $tables['webhook_logs'] ?? $prefix.'webhook_logs';
 
         foreach ([$orderItemsTable, $orderParcelsTable, $trackingEventsTable, $webhookLogsTable] as $tableName) {
             if (Schema::hasColumn($tableName, 'owner_type')) {
@@ -34,10 +34,10 @@ return new class extends Migration
         $tables = config('jnt.database.tables', []);
         $prefix = config('jnt.database.table_prefix', 'jnt_');
 
-        $orderItemsTable = $tables['order_items'] ?? $prefix . 'order_items';
-        $orderParcelsTable = $tables['order_parcels'] ?? $prefix . 'order_parcels';
-        $trackingEventsTable = $tables['tracking_events'] ?? $prefix . 'tracking_events';
-        $webhookLogsTable = $tables['webhook_logs'] ?? $prefix . 'webhook_logs';
+        $orderItemsTable = $tables['order_items'] ?? $prefix.'order_items';
+        $orderParcelsTable = $tables['order_parcels'] ?? $prefix.'order_parcels';
+        $trackingEventsTable = $tables['tracking_events'] ?? $prefix.'tracking_events';
+        $webhookLogsTable = $tables['webhook_logs'] ?? $prefix.'webhook_logs';
 
         foreach ([$orderItemsTable, $orderParcelsTable, $trackingEventsTable, $webhookLogsTable] as $tableName) {
             Schema::table($tableName, function (Blueprint $table): void {

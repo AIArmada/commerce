@@ -12,7 +12,7 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        Schema::create($tablePrefix . 'send_webhooks', function (Blueprint $table): void {
+        Schema::create($tablePrefix.'send_webhooks', function (Blueprint $table): void {
             // CHIP Send webhooks use integer identifiers instead of UUIDs
             $table->integer('id')->primary();
 
@@ -42,6 +42,6 @@ return new class extends Migration
     {
         $tablePrefix = config('chip.database.table_prefix', 'chip_');
 
-        Schema::dropIfExists($tablePrefix . 'send_webhooks');
+        Schema::dropIfExists($tablePrefix.'send_webhooks');
     }
 };

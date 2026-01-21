@@ -13,7 +13,7 @@ return new class extends Migration
         $prefix = config('filament-cart.database.table_prefix', 'cart_');
         $jsonType = (string) config('filament-cart.database.json_column_type', 'json');
 
-        Schema::create($prefix . 'recovery_attempts', function (Blueprint $table) use ($jsonType): void {
+        Schema::create($prefix.'recovery_attempts', function (Blueprint $table) use ($jsonType): void {
             $table->uuid('id')->primary();
             $table->foreignUuid('campaign_id');
             $table->foreignUuid('cart_id');
@@ -73,6 +73,6 @@ return new class extends Migration
     {
         $prefix = config('filament-cart.database.table_prefix', 'cart_');
 
-        Schema::dropIfExists($prefix . 'recovery_attempts');
+        Schema::dropIfExists($prefix.'recovery_attempts');
     }
 };

@@ -2,7 +2,7 @@
     <x-filament::section>
         <x-slot name="heading">
             <div class="flex items-center gap-2">
-                <x-heroicon-o-chart-bar class="h-5 w-5 text-primary-500" />
+                <x-heroicon-o-chart-bar class="fi-icon fi-size-md text-primary-500" />
                 <span>Abandonment Analysis</span>
             </div>
         </x-slot>

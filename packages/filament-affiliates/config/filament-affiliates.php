@@ -7,15 +7,15 @@ return [
 
     'navigation_group' => 'E-commerce',
 
-    /* Features */
+    /* Widgets */
 
     'widgets' => [
-        'show_conversion_rate' => true,
         'currency' => env('AFFILIATES_DEFAULT_CURRENCY', 'USD'),
     ],
 
+    /* Portal */
+
     'portal' => [
-        'enabled' => env('AFFILIATES_PORTAL_ENABLED', true),
         'panel_id' => env('AFFILIATES_PORTAL_PANEL_ID', 'affiliate'),
         'path' => env('AFFILIATES_PORTAL_PATH', 'affiliate'),
         'brand_name' => env('AFFILIATES_PORTAL_BRAND_NAME', 'Affiliate Portal'),

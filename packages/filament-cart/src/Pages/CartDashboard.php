@@ -6,8 +6,6 @@ namespace AIArmada\FilamentCart\Pages;
 
 use AIArmada\FilamentCart\Widgets\AbandonedCartsWidget;
 use AIArmada\FilamentCart\Widgets\CartStatsOverviewWidget;
-use AIArmada\FilamentCart\Widgets\CollaborativeCartsWidget;
-use AIArmada\FilamentCart\Widgets\FraudDetectionWidget;
 use AIArmada\FilamentCart\Widgets\RecoveryOptimizerWidget;
 use BackedEnum;
 use Filament\Pages\Page;
@@ -16,8 +14,7 @@ use UnitEnum;
 /**
  * Cart analytics dashboard page.
  *
- * Provides an overview of cart activity, abandonment rates,
- * fraud detection, AI recovery, and collaborative carts.
+ * Provides an overview of cart activity, abandonment rates, and recovery.
  */
 class CartDashboard extends Page
 {
@@ -40,19 +37,14 @@ class CartDashboard extends Page
 
     public static function getNavigationBadge(): ?string
     {
-        $count = self::getAbandonedCartCount() + self::getFraudAlertCount();
+        $count = self::getAbandonedCartCount();
 
         return $count > 0 ? (string) $count : null;
     }
 
     public static function getNavigationBadgeColor(): ?string
     {
-        $fraudCount = self::getFraudAlertCount();
         $abandonedCount = self::getAbandonedCartCount();
-
-        if ($fraudCount > 0) {
-            return 'danger';
-        }
 
         if ($abandonedCount >= 10) {
             return 'warning';
@@ -80,20 +72,12 @@ class CartDashboard extends Page
     {
         $widgets = [];
 
-        if (config('filament-cart.widgets.fraud_detection', true) && config('filament-cart.features.fraud_detection', true)) {
-            $widgets[] = FraudDetectionWidget::class;
-        }
-
-        if (config('filament-cart.widgets.recovery_optimizer', true) && config('filament-cart.features.ai_recovery', true)) {
+        if (config('filament-cart.widgets.recovery_optimizer', true) && config('filament-cart.features.recovery', true)) {
             $widgets[] = RecoveryOptimizerWidget::class;
         }
 
         if (config('filament-cart.widgets.abandoned_carts', true) && config('filament-cart.features.abandonment_tracking', true)) {
             $widgets[] = AbandonedCartsWidget::class;
-        }
-
-        if (config('filament-cart.widgets.collaborative_carts', true) && config('filament-cart.features.collaborative_carts', true)) {
-            $widgets[] = CollaborativeCartsWidget::class;
         }
 
         return $widgets;
@@ -109,18 +93,6 @@ class CartDashboard extends Page
             ->whereNotNull('checkout_abandoned_at')
             ->whereNull('recovered_at')
             ->where('checkout_abandoned_at', '>=', now()->subDay())
-            ->count();
-    }
-
-    private static function getFraudAlertCount(): int
-    {
-        if (! class_exists(\AIArmada\FilamentCart\Models\Cart::class)) {
-            return 0;
-        }
-
-        return \AIArmada\FilamentCart\Models\Cart::query()->forOwner()
-            ->whereIn('fraud_risk_level', ['high', 'medium'])
-            ->where('updated_at', '>=', now()->subDay())
             ->count();
     }
 }

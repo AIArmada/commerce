@@ -47,27 +47,6 @@ class AlertEvent extends Data
     }
 
     /**
-     * Create from fraud signal.
-     *
-     * @param  array<string, mixed>  $fraudData
-     */
-    public static function fromFraud(string $cartId, string $sessionId, array $fraudData): self
-    {
-        $riskScore = $fraudData['risk_score'] ?? 0;
-
-        return new self(
-            event_type: 'fraud',
-            severity: $riskScore >= 0.8 ? 'critical' : 'warning',
-            title: 'Fraud Signal Detected',
-            message: "Suspicious activity detected with risk score of {$riskScore}.",
-            cart_id: $cartId,
-            session_id: $sessionId,
-            data: $fraudData,
-            occurred_at: now(),
-        );
-    }
-
-    /**
      * Create from high value cart.
      *
      * @param  array<string, mixed>  $cartData

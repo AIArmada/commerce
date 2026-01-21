@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Models\RecoveryTemplate;
+use AIArmada\Cart\Models\RecoveryTemplate;
 
 describe('RecoveryTemplate', function (): void {
     it('can be created with required attributes', function (): void {

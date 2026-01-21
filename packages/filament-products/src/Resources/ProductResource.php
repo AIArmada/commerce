@@ -4,14 +4,19 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentProducts\Resources;
 
+use AIArmada\CommerceSupport\Support\OwnerContext;
+use AIArmada\Customers\Models\Customer;
 use AIArmada\FilamentProducts\Resources\ProductResource\Pages;
 use AIArmada\FilamentProducts\Resources\ProductResource\RelationManagers;
+use AIArmada\Pricing\Contracts\PriceCalculatorInterface;
+use AIArmada\Pricing\Data\PriceResultData;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Enums\ProductType;
 use AIArmada\Products\Enums\ProductVisibility;
 use AIArmada\Products\Models\Product;
 use BackedEnum;
 use Filament\Forms\Components\MarkdownEditor;
+use Filament\Forms\Components\Placeholder;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\SpatieMediaLibraryFileUpload;
 use Filament\Forms\Components\TagsInput;
@@ -29,6 +34,8 @@ use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Number;
+use Throwable;
 use UnitEnum;
 
 final class ProductResource extends Resource
@@ -225,6 +232,117 @@ final class ProductResource extends Resource
                                     ->label('Charge Tax')
                                     ->default(true),
                             ]),
+
+                        Section::make('Calculated Pricing')
+                            ->schema([
+                                Select::make('pricing_customer_id')
+                                    ->label('Customer (Optional)')
+                                    ->searchable()
+                                    ->helperText('Use a customer context for pricing rules.')
+                                    ->visible(fn (): bool => class_exists(Customer::class))
+                                    ->dehydrated(false)
+                                    ->live()
+                                    ->getSearchResultsUsing(function (string $search): array {
+                                        if (! class_exists(Customer::class)) {
+                                            return [];
+                                        }
+
+                                        $owner = OwnerContext::resolve();
+                                        $query = Customer::query();
+
+                                        if (method_exists(Customer::class, 'scopeForOwner')) {
+                                            $query->forOwner($owner);
+                                        }
+
+                                        return $query
+                                            ->where(function (Builder $query) use ($search): void {
+                                                $query
+                                                    ->where('full_name', 'like', "%{$search}%")
+                                                    ->orWhere('email', 'like', "%{$search}%");
+                                            })
+                                            ->limit(50)
+                                            ->get()
+                                            ->mapWithKeys(function (Customer $customer): array {
+                                                $fullName = (string) $customer->getAttribute('full_name');
+                                                $email = (string) $customer->getAttribute('email');
+
+                                                return [
+                                                    (string) $customer->getKey() => $fullName . ' (' . $email . ')',
+                                                ];
+                                            })
+                                            ->toArray();
+                                    })
+                                    ->getOptionLabelUsing(function ($value): ?string {
+                                        if ($value === null || ! class_exists(Customer::class)) {
+                                            return null;
+                                        }
+
+                                        $owner = OwnerContext::resolve();
+                                        $query = Customer::query();
+
+                                        if (method_exists(Customer::class, 'scopeForOwner')) {
+                                            $query->forOwner($owner);
+                                        }
+
+                                        $customer = $query
+                                            ->whereKey($value)
+                                            ->first();
+
+                                        if (! $customer instanceof Customer) {
+                                            return null;
+                                        }
+
+                                        $fullName = (string) $customer->getAttribute('full_name');
+                                        $email = (string) $customer->getAttribute('email');
+
+                                        return $fullName . ' (' . $email . ')';
+                                    }),
+
+                                Placeholder::make('calculated_price')
+                                    ->label('Calculated Price')
+                                    ->content(function (?Product $record, Get $get): string {
+                                        $result = self::calculatePriceResult($record, $get('pricing_customer_id'));
+
+                                        if (! $result || ! $record instanceof Product) {
+                                            return 'Save product to calculate.';
+                                        }
+
+                                        return self::formatCurrency($result->finalPrice, $record->currency);
+                                    }),
+
+                                Placeholder::make('discount_summary')
+                                    ->label('Discount')
+                                    ->content(function (?Product $record, Get $get): string {
+                                        $result = self::calculatePriceResult($record, $get('pricing_customer_id'));
+
+                                        if (! $result || $result->discountAmount <= 0) {
+                                            return 'No discount';
+                                        }
+
+                                        $currency = $record?->currency ?? 'MYR';
+                                        $amount = self::formatCurrency($result->discountAmount, $currency);
+
+                                        return "{$amount} ({$result->discountPercentage}%)";
+                                    }),
+
+                                Placeholder::make('pricing_source')
+                                    ->label('Applied Rule')
+                                    ->content(function (?Product $record, Get $get): string {
+                                        $result = self::calculatePriceResult($record, $get('pricing_customer_id'));
+
+                                        if (! $result) {
+                                            return '—';
+                                        }
+
+                                        return $result->promotionName
+                                            ?? $result->priceListName
+                                            ?? $result->tierDescription
+                                            ?? $result->discountSource
+                                            ?? 'Base Price';
+                                    }),
+                            ])
+                            ->visible(fn (?Product $record): bool => $record instanceof Product)
+                            ->columns(1),
 
                         Section::make('Media')
                             ->schema([
@@ -442,6 +560,46 @@ final class ProductResource extends Resource
                     ])
                     ->columns(3),
 
+                Section::make('Calculated Pricing')
+                    ->schema([
+                        TextEntry::make('calculated_price')
+                            ->label('Calculated Price')
+                            ->state(function (Product $record): string {
+                                $result = self::calculatePriceResult($record, null);
+
+                                if (! $result) {
+                                    return '—';
+                                }
+
+                                return self::formatCurrency($result->finalPrice, $record->currency);
+                            }),
+                        TextEntry::make('calculated_discount')
+                            ->label('Discount')
+                            ->state(function (Product $record): string {
+                                $result = self::calculatePriceResult($record, null);
+
+                                if (! $result || $result->discountAmount <= 0) {
+                                    return 'No discount';
+                                }
+
+                                $amount = self::formatCurrency($result->discountAmount, $record->currency);
+
+                                return "{$amount} ({$result->discountPercentage}%)";
+                            }),
+                        TextEntry::make('calculated_source')
+                            ->label('Applied Rule')
+                            ->state(function (Product $record): string {
+                                $result = self::calculatePriceResult($record, null);
+
+                                return $result?->promotionName
+                                    ?? $result?->priceListName
+                                    ?? $result?->tierDescription
+                                    ?? $result?->discountSource
+                                    ?? 'Base Price';
+                            }),
+                    ])
+                    ->columns(3),
+
                 Section::make('Description')
                     ->schema([
                         TextEntry::make('description')
@@ -450,6 +608,31 @@ final class ProductResource extends Resource
                     ])
                     ->collapsible(),
             ]);
+    }
+
+    private static function calculatePriceResult(?Product $record, ?string $customerId): ?PriceResultData
+    {
+        if (! $record instanceof Product) {
+            return null;
+        }
+
+        try {
+            $calculator = app(PriceCalculatorInterface::class);
+            $context = ['currency' => $record->currency];
+
+            if (is_string($customerId) && $customerId !== '') {
+                $context['customer_id'] = $customerId;
+            }
+
+            return $calculator->calculate($record, 1, $context);
+        } catch (Throwable) {
+            return null;
+        }
+    }
+
+    private static function formatCurrency(int $amountMinor, ?string $currency): string
+    {
+        return Number::currency($amountMinor / 100, $currency ?? 'MYR');
     }
 
     public static function getRelations(): array

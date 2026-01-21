@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Events;
 
-use AIArmada\FilamentCart\Models\RecoveryAttempt;
+use AIArmada\Cart\Models\RecoveryAttempt;
 use Illuminate\Foundation\Events\Dispatchable;
 use Illuminate\Queue\SerializesModels;
 

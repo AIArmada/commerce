@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentCart\Commands;
 
+use AIArmada\Cart\Models\AlertRule;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentCart\Data\AlertEvent;
-use AIArmada\FilamentCart\Models\AlertRule;
 use AIArmada\FilamentCart\Services\AlertDispatcher;
 use AIArmada\FilamentCart\Services\AlertEvaluator;
 use Illuminate\Console\Command;
@@ -195,12 +195,6 @@ class ProcessAlertsCommand extends Command
                 'items_count' => 3,
                 'time_since_abandonment_minutes' => 45,
                 'customer_type' => 'returning',
-            ],
-            'fraud' => [
-                'risk_score' => 0.75,
-                'ip_country' => 'US',
-                'cart_value_cents' => 50000,
-                'velocity_score' => 0.8,
             ],
             'high_value' => [
                 'cart_value_cents' => 25000,

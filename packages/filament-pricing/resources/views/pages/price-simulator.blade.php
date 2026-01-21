@@ -1,7 +1,7 @@
 <x-filament-panels::page>
-    <x-filament-panels::form wire:submit="calculate">
+    <form wire:submit="calculate">
         {{ $this->form }}
-    </x-filament-panels::form>
+    </form>
 
     @if ($result)
         <div class="mt-6">

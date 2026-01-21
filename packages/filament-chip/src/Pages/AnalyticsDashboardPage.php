@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentChip\Pages;
 
-use AIArmada\Chip\Data\DashboardMetrics;
 use AIArmada\Chip\Services\LocalAnalyticsService;
 use BackedEnum;
 use Carbon\CarbonImmutable;
@@ -16,7 +15,8 @@ class AnalyticsDashboardPage extends Page
 {
     public string $period = '30';
 
-    public ?DashboardMetrics $metrics = null;
+    /** @var array<string, mixed> */
+    public array $metrics = [];
 
     /** @var array<int, array{period: string, count: int, revenue: int}> */
     public array $revenueTrend = [];
@@ -54,7 +54,7 @@ class AnalyticsDashboardPage extends Page
         $endDate = CarbonImmutable::now();
         $startDate = $endDate->subDays((int) $this->period);
 
-        $this->metrics = $service->getDashboardMetrics($startDate, $endDate);
+        $this->metrics = $service->getDashboardMetrics($startDate, $endDate)->toArray();
         $this->revenueTrend = $service->getRevenueTrend($startDate, $endDate, 'day');
     }
 

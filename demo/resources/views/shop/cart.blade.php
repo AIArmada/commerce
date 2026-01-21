@@ -87,7 +87,7 @@
                             @csrf
                             <div class="flex gap-2">
                                 <input type="text" name="voucher_code" placeholder="Enter code" 
-                                       value="{{ $appliedVoucher ?? '' }}"
+                                       value=""
                                        class="flex-1 border rounded-lg px-3 py-2 focus:ring-amber-500 focus:border-amber-500">
                                 <button type="submit" 
                                         class="bg-gray-900 text-white px-4 py-2 rounded-lg font-medium hover:bg-gray-800">
@@ -95,13 +95,18 @@
                                 </button>
                             </div>
                         </form>
-                        @if($appliedVoucher)
-                        <div class="mt-2 flex items-center justify-between text-sm">
-                            <span class="text-green-600">✓ Voucher applied: {{ $appliedVoucher }}</span>
-                            <form action="{{ route('shop.cart.voucher.remove') }}" method="POST" class="inline">
-                                @csrf
-                                <button type="submit" class="text-red-500 hover:text-red-600">Remove</button>
-                            </form>
+                        @if(count($appliedVouchers) > 0)
+                        <div class="mt-4 space-y-2">
+                            @foreach($appliedVouchers as $code)
+                            <div class="flex items-center justify-between text-sm bg-green-50 p-2 rounded border border-green-100">
+                                <span class="text-green-700 font-medium">✓ {{ $code }}</span>
+                                <form action="{{ route('shop.cart.voucher.remove') }}" method="POST" class="inline">
+                                    @csrf
+                                    <input type="hidden" name="voucher_code" value="{{ $code }}">
+                                    <button type="submit" class="text-red-500 hover:text-red-600 font-medium">Remove</button>
+                                </form>
+                            </div>
+                            @endforeach
                         </div>
                         @endif
                     </div>
@@ -113,9 +118,27 @@
                             <span>RM {{ number_format($cartSubtotal / 100, 2) }}</span>
                         </div>
 
-                        @if($appliedVoucher)
-                        <div class="flex justify-between text-green-600">
-                            <span>🎫 Voucher Discount</span>
+                        @php
+                            $totalVoucherDiscount = 0;
+                            $vouchers = collect($cartConditions)->filter(fn($c) => ($c['type'] ?? '') === 'voucher');
+                        @endphp
+
+                        @foreach($vouchers as $name => $cond)
+                            <div class="flex justify-between text-green-600 text-sm">
+                                <span>🎫 {{ $name }}</span>
+                                @php
+                                    // Use the same logic as Cart::getVoucherDiscount() or just calculate from conditions
+                                    // But since we are already in the view and have conditions, let's show their parsed values if possible
+                                    // Actually, let's just show the calculated value if we had it.
+                                    // For now, let's use a simpler approach since we know it's a discount.
+                                @endphp
+                                <span>Applied</span>
+                            </div>
+                        @endforeach
+
+                        @if($cartSubtotal > $cartTotal)
+                        <div class="flex justify-between text-green-600 font-bold border-t border-dashed pt-2">
+                            <span>Total Discount</span>
                             <span>-RM {{ number_format(($cartSubtotal - $cartTotal) / 100, 2) }}</span>
                         </div>
                         @endif

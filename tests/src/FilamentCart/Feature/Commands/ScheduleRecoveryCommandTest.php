@@ -2,7 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\FilamentCart\Models\RecoveryCampaign;
+use AIArmada\Cart\Models\RecoveryCampaign;
 use AIArmada\FilamentCart\Services\RecoveryScheduler;
 
 describe('ScheduleRecoveryCommand', function (): void {
