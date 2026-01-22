@@ -260,10 +260,16 @@ class CartModel extends Model
     protected function withItems(Builder $query): void
     {
         // DB-agnostic approach: check for non-empty JSON array
-        // Works on MySQL, PostgreSQL, and SQLite
-        $query->whereNotNull('items')
-            ->where('items', '!=', '[]')
-            ->where('items', '!=', '{}');
+        $query->whereNotNull('items');
+
+        $driver = $query->getConnection()->getDriverName();
+        if ($driver === 'pgsql') {
+            $query->whereRaw("items::text != '[]'")
+                ->whereRaw("items::text != '{}'");
+        } else {
+            $query->where('items', '!=', '[]')
+                ->where('items', '!=', '{}');
+        }
     }
 
     /**

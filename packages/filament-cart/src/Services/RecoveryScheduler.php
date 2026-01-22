@@ -409,15 +409,16 @@ class RecoveryScheduler
             if ($email !== null || $phone !== null) {
                 $query = Cart::query()->forOwner()
                     ->whereNotNull('recovered_at')
-                    ->where('recovered_at', '>=', now()->subDays(30));
+                    ->where('recovered_at', '>=', now()->subDays(30))
+                    ->where(function ($q) use ($email, $phone): void {
+                        if ($email !== null) {
+                            $q->where('metadata->email', $email);
+                        }
 
-                if ($email !== null) {
-                    $query->where('metadata->email', $email);
-                }
-
-                if ($phone !== null) {
-                    $query->orWhere('metadata->phone', $phone);
-                }
+                        if ($phone !== null) {
+                            $q->orWhere('metadata->phone', $phone);
+                        }
+                    });
 
                 if ($query->exists()) {
                     return false;

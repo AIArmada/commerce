@@ -396,4 +396,71 @@ class Cart extends Model
     {
         return Attribute::get(fn (): string => $this->formatMoney($this->savings));
     }
+
+    /**
+     * Mark that checkout has started for this cart.
+     */
+    public function markCheckoutStarted(): static
+    {
+        if ($this->checkout_started_at === null) {
+            $this->update([
+                'checkout_started_at' => now(),
+                'last_activity_at' => now(),
+            ]);
+        } else {
+            $this->update([
+                'last_activity_at' => now(),
+            ]);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Mark this cart as abandoned.
+     */
+    public function markAsAbandoned(): static
+    {
+        if ($this->checkout_abandoned_at === null && $this->recovered_at === null) {
+            $this->update([
+                'checkout_abandoned_at' => now(),
+            ]);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Mark this cart as recovered (customer completed purchase or returned).
+     */
+    public function markAsRecovered(): static
+    {
+        if ($this->checkout_abandoned_at !== null && $this->recovered_at === null) {
+            $this->update([
+                'recovered_at' => now(),
+            ]);
+        }
+
+        return $this;
+    }
+
+    /**
+     * Update last activity timestamp.
+     */
+    public function touchActivity(): static
+    {
+        $this->update(['last_activity_at' => now()]);
+
+        return $this;
+    }
+
+    /**
+     * Increment recovery attempts counter.
+     */
+    public function incrementRecoveryAttempts(): static
+    {
+        $this->increment('recovery_attempts');
+
+        return $this;
+    }
 }

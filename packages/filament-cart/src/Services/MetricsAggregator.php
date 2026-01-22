@@ -6,6 +6,7 @@ namespace AIArmada\FilamentCart\Services;
 
 use AIArmada\Cart\Models\CartDailyMetrics;
 use AIArmada\FilamentCart\Models\Cart;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -87,16 +88,14 @@ class MetricsAggregator
             ->whereBetween('created_at', [$start, $end]);
 
         if ($segment !== null) {
-            $baseQuery->where(DB::raw("JSON_EXTRACT(metadata, '$.segment')"), $segment);
+            $baseQuery->where(DB::raw($this->getJsonExtractExpression('metadata', 'segment')), $segment);
         }
 
         // Cart counts
         $cartsCreated = (clone $baseQuery)->count();
 
         $cartsWithItems = (clone $baseQuery)
-            ->whereNotNull('items')
-            ->where('items', '!=', '[]')
-            ->where('items', '!=', 'null')
+            ->where(fn ($q) => $this->whereHasItems($q))
             ->count();
 
         $cartsEmpty = $cartsCreated - $cartsWithItems;
@@ -104,8 +103,7 @@ class MetricsAggregator
         // Active carts (updated in period with items)
         $cartsActive = Cart::query()->forOwner()
             ->whereBetween('updated_at', [$start, $end])
-            ->whereNotNull('items')
-            ->where('items', '!=', '[]')
+            ->where(fn ($q) => $this->whereHasItems($q))
             ->count();
 
         // Checkout funnel
@@ -133,8 +131,7 @@ class MetricsAggregator
         // Value metrics
         $totalCartValue = (int) Cart::query()->forOwner()
             ->whereBetween('updated_at', [$start, $end])
-            ->whereNotNull('items')
-            ->where('items', '!=', '[]')
+            ->where(fn ($q) => $this->whereHasItems($q))
             ->sum('subtotal');
 
         $avgCartValue = $cartsWithItems > 0 ? (int) ($totalCartValue / $cartsWithItems) : 0;
@@ -161,5 +158,39 @@ class MetricsAggregator
             'total_items' => $totalItems,
             'average_items_per_cart' => round($avgItemsPerCart, 2),
         ];
+    }
+
+    /**
+     * Add where clause for carts with items (database-agnostic).
+     *
+     * @param  Builder<Cart>  $query
+     */
+    private function whereHasItems(Builder $query): void
+    {
+        $driver = DB::getDriverName();
+
+        $query->whereNotNull('items');
+
+        if ($driver === 'pgsql') {
+            $query->whereRaw("items::text != '[]'")
+                ->whereRaw("items::text != 'null'");
+        } else {
+            $query->where('items', '!=', '[]')
+                ->where('items', '!=', 'null');
+        }
+    }
+
+    /**
+     * Get SQL expression for JSON extraction (database-agnostic).
+     */
+    private function getJsonExtractExpression(string $column, string $key): string
+    {
+        $driver = DB::getDriverName();
+
+        if ($driver === 'pgsql') {
+            return "{$column}->>'{$key}'";
+        }
+
+        return "JSON_EXTRACT({$column}, '\$.{$key}')";
     }
 }

@@ -9,6 +9,7 @@ use Akaunting\Money\Money;
 use Filament\Support\Icons\Heroicon;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 
 /**
@@ -81,15 +82,13 @@ final class CartStatsOverviewWidget extends BaseWidget
 
         return [
             'active_carts' => (clone $base)
-                ->whereNotNull('items')
-                ->where('items', '!=', '[]')
+                ->where(fn ($q) => $this->whereHasItems($q))
                 ->where('updated_at', '>=', $yesterday)
                 ->count(),
 
             'total_value' => (int) (clone $base)
-                ->whereNotNull('items')
-                ->where('items', '!=', '[]')
-                ->sum(DB::raw("COALESCE(JSON_EXTRACT(metadata, '$.subtotal'), 0)")),
+                ->where(fn ($q) => $this->whereHasItems($q))
+                ->sum(DB::raw($this->getSubtotalExpression())),
 
             'checkouts_started' => (clone $base)
                 ->whereNotNull('checkout_started_at')
@@ -109,7 +108,7 @@ final class CartStatsOverviewWidget extends BaseWidget
             'recovered_value' => (int) (clone $base)
                 ->whereNotNull('recovered_at')
                 ->where('recovered_at', '>=', $yesterday)
-                ->sum(DB::raw("COALESCE(JSON_EXTRACT(metadata, '$.subtotal'), 0)")),
+                ->sum(DB::raw($this->getSubtotalExpression())),
         ];
     }
 
@@ -158,8 +157,7 @@ final class CartStatsOverviewWidget extends BaseWidget
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i);
             $count = Cart::query()->forOwner()
-                ->whereNotNull('items')
-                ->where('items', '!=', '[]')
+                ->where(fn ($q) => $this->whereHasItems($q))
                 ->whereDate('updated_at', $date->toDateString())
                 ->count();
             $data[] = $count;
@@ -181,14 +179,45 @@ final class CartStatsOverviewWidget extends BaseWidget
         for ($i = 6; $i >= 0; $i--) {
             $date = now()->subDays($i);
             $value = (int) Cart::query()->forOwner()
-                ->whereNotNull('items')
-                ->where('items', '!=', '[]')
+                ->where(fn ($q) => $this->whereHasItems($q))
                 ->whereDate('updated_at', $date->toDateString())
-                ->sum(DB::raw("COALESCE(JSON_EXTRACT(metadata, '$.subtotal'), 0)"));
+                ->sum(DB::raw($this->getSubtotalExpression()));
             $data[] = $value / 100; // Convert cents to dollars for chart
         }
 
         return $data;
+    }
+
+    /**
+     * Add where clause for carts with items (database-agnostic).
+     *
+     * @param  Builder|\Illuminate\Database\Eloquent\Builder<Cart>  $query
+     */
+    private function whereHasItems(Builder|\Illuminate\Database\Eloquent\Builder $query): void
+    {
+        $driver = DB::getDriverName();
+
+        $query->whereNotNull('items');
+
+        if ($driver === 'pgsql') {
+            $query->whereRaw("items::text != '[]'");
+        } else {
+            $query->where('items', '!=', '[]');
+        }
+    }
+
+    /**
+     * Get SQL expression for subtotal extraction (database-agnostic).
+     */
+    private function getSubtotalExpression(): string
+    {
+        $driver = DB::getDriverName();
+
+        if ($driver === 'pgsql') {
+            return "COALESCE((metadata->>'subtotal')::int, 0)";
+        }
+
+        return "COALESCE(JSON_EXTRACT(metadata, '$.subtotal'), 0)";
     }
 
     private function formatMoney(int $amount): string

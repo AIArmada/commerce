@@ -119,6 +119,17 @@ final class RecoveryCampaignResource extends Resource
                             ]),
                     ]),
 
+                Section::make('Template')
+                    ->schema([
+                        Select::make('control_template_id')
+                            ->label('Recovery Template')
+                            ->options(fn () => RecoveryTemplate::query()->forOwner()->where('status', 'active')->pluck('name', 'id'))
+                            ->searchable()
+                            ->required()
+                            ->helperText('The template to use for recovery messages')
+                            ->visible(fn ($get) => ! $get('ab_testing_enabled')),
+                    ]),
+
                 Section::make('Strategy')
                     ->schema([
                         Select::make('strategy')
@@ -162,14 +173,16 @@ final class RecoveryCampaignResource extends Resource
                             ->default(50)
                             ->visible(fn ($get) => $get('ab_testing_enabled')),
                         Select::make('control_template_id')
-                            ->label('Control Template')
-                            ->options(fn () => RecoveryTemplate::query()->forOwner()->pluck('name', 'id'))
+                            ->label('Control Template (A)')
+                            ->options(fn () => RecoveryTemplate::query()->forOwner()->where('status', 'active')->pluck('name', 'id'))
                             ->searchable()
+                            ->required()
                             ->visible(fn ($get) => $get('ab_testing_enabled')),
                         Select::make('variant_template_id')
-                            ->label('Variant Template')
-                            ->options(fn () => RecoveryTemplate::query()->forOwner()->pluck('name', 'id'))
+                            ->label('Variant Template (B)')
+                            ->options(fn () => RecoveryTemplate::query()->forOwner()->where('status', 'active')->pluck('name', 'id'))
                             ->searchable()
+                            ->required()
                             ->visible(fn ($get) => $get('ab_testing_enabled')),
                     ])
                     ->columns(2),
