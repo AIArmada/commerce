@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAuthz\Models;
 
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Spatie\Permission\Contracts\Role as RoleContract;
 use Spatie\Permission\Guard;
@@ -39,6 +40,13 @@ final class Role extends SpatieRole
         $relation = $this->belongsToMany(Permission::class, $pivotTable, $rolePivotKey, $permissionPivotKey);
 
         return $relation;
+    }
+
+    public function authzScope(): BelongsTo
+    {
+        $teamsKey = app(PermissionRegistrar::class)->teamsKey;
+
+        return $this->belongsTo(AuthzScope::class, $teamsKey);
     }
 
     public function getTable(): string

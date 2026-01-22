@@ -10,7 +10,9 @@ Filament Authz is a comprehensive authorization package for Filament v5, built o
 
 - **Automatic Discovery** — Automatically discovers Resources, Pages, and Widgets to generate permissions
 - **Multi-Panel Support** — Configure different authorization settings for each Filament panel
-- **Tenant Isolation** — Seamless support for multi-tenant applications with scoped roles and permissions
+- **Authz Scopes** — Optional model-backed scopes for institutions, speakers, and more
+- **Tenant Scoping** — Seamless support for multi-tenant applications with scoped roles and permissions
+- **Central App Mode** — Manage roles across scopes from a single panel
 - **Enhanced UI** — Beautiful Role resource with tabbed interface, master toggles, and collapsible sections
 - **Wildcard Permissions** — Support for flexible wildcard matching (e.g., `user.*`, `*.view`)
 - **Policy Generation** — CLI command to scaffold Laravel Policies based on discovered permissions
@@ -28,9 +30,9 @@ Unlike packages that rely on generated permission files, Filament Authz **dynami
 
 ```php
 // Permissions are discovered automatically from:
-// - Resources: UserResource → user.view-any, user.create, etc.
-// - Pages: SettingsPage → page.settings-page
-// - Widgets: StatsWidget → widget.stats-widget
+// - Resources: UserResource → user.viewAny, user.create, etc.
+// - Pages: SettingsPage → page.settingsPage
+// - Widgets: StatsWidget → widget.statsWidget
 ```
 
 ### Permission Keys
@@ -39,25 +41,42 @@ Permission keys are constructed using a configurable format:
 
 | Setting | Default | Example |
 |---------|---------|---------|
-| Case | `kebab` | `user`, `order-item` |
+| Case | `camel` | `user`, `orderItem` |
 | Separator | `.` | `user.create`, `order.view` |
 
 Configure in `config/filament-authz.php`:
 ```php
 'permissions' => [
     'separator' => '.',
-    'case' => 'kebab', // snake, kebab, camel, pascal, upper_snake, lower
+    'case' => 'camel', // snake, kebab, camel, pascal, upper_snake, lower
 ],
 ```
 
+### Authz Scopes
+
+Authz Scopes let you attach roles and permissions to any model (institutions, speakers, events, etc.) instead of a single tenant type. Scopes are stored in the `authz_scopes` table and can be resolved from models or IDs.
+
+Enable in config:
+
+```php
+'authz_scopes' => [
+    'enabled' => true,
+    'auto_create' => true,
+],
+```
+
+Use `HasAuthzScope` on scopeable models to create scopes automatically and set readable labels.
+
 ### Multi-Tenancy
 
-When `scopedToTenant()` is enabled on the plugin, roles and permissions are automatically filtered by the current tenant context. This integrates with the standard `commerce-support` multitenancy primitives.
+When `scopeToTenant()` is enabled on the plugin (default), roles and permissions are automatically filtered by the current tenant context. You can drive the context using Filament tenancy + `SyncAuthzTenant`, or with Authz Scopes.
 
 ```php
 FilamentAuthzPlugin::make()
-    ->scopedToTenant()
-    ->tenantOwnershipRelationship('team');
+    ->scopeToTenant()
+    ->centralApp()
+    ->tenantRelationshipName('organization')
+    ->tenantOwnershipRelationshipName('owner');
 ```
 
 ## Quick Start
@@ -114,6 +133,7 @@ class SettingsPage extends Page
 |-------|---------|
 | `Role` | Extends Spatie Role with UUID support and tenant scoping |
 | `Permission` | Extends Spatie Permission with UUID support |
+| `AuthzScope` | Model-backed scope for tenant or domain-specific roles |
 
 ### Traits
 
@@ -122,6 +142,7 @@ class SettingsPage extends Page
 | `HasPageAuthz` | Protects Filament Pages with permission checks |
 | `HasWidgetAuthz` | Protects Filament Widgets with permission checks |
 | `HasPanelAuthz` | Adds panel access control with auto-role assignment |
+| `HasAuthzScope` | Creates and maintains Authz Scopes for models |
 | `CanBeImpersonated` | Adds impersonation capability to User models |
 | `SyncsRolePermissions` | Shared permission sync logic for Role pages |
 | `ScopesAuthzTenancy` | Applies tenant scoping to queries |

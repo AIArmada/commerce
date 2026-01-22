@@ -20,6 +20,7 @@ use Illuminate\Contracts\Auth\Access\Authorizable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
+use Spatie\Permission\PermissionRegistrar;
 
 class PermissionResource extends Resource
 {
@@ -72,8 +73,16 @@ class PermissionResource extends Resource
         $superAdminRole = config('filament-authz.super_admin_role');
 
         if (method_exists($user, 'hasRole')) {
-            if ((bool) call_user_func([$user, 'hasRole'], $superAdminRole)) {
-                return true;
+            $registrar = app(PermissionRegistrar::class);
+            $teams = $registrar->teams;
+            $registrar->teams = false;
+
+            try {
+                if ((bool) call_user_func([$user, 'hasRole'], $superAdminRole)) {
+                    return true;
+                }
+            } finally {
+                $registrar->teams = $teams;
             }
         }
 

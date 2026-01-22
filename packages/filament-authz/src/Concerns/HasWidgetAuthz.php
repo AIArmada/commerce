@@ -27,7 +27,7 @@ use Filament\Facades\Filament;
  * }
  * ```
  *
- * The widget will require the permission: `widget.stats-widget` (kebab-cased by default)
+ * The widget will require the permission: `widget.statsWidget` (case format is configurable)
  *
  * @requires The parent class must implement `canView(): bool`
  */

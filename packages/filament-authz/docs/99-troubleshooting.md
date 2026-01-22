@@ -191,9 +191,14 @@ To run in production, use the `--force` flag if available, or configure `APP_ENV
 
 ## Tenant Scoping Not Working
 
-1. **Verify enabled** — Check `->scopedToTenant()` on plugin or `scoped_to_tenant` in config
-2. **Check OwnerContext** — The owner resolver must return the current tenant:
+1. **Verify enabled** — Check `->scopeToTenant()` on plugin or `scoped_to_tenant` in config
+2. **Check teams config** — Ensure `config('permission.teams')` is `true` and `team_foreign_key` matches your scope key (e.g., `authz_scope_id`)
+3. **Check resolver + context** — The resolver should match your setup and a scope must be set:
    ```php
-   app(OwnerResolverInterface::class)->resolve();
+   use Spatie\Permission\Contracts\PermissionsTeamResolver;
+
+   app(PermissionsTeamResolver::class);
+   // AuthzScopeTeamResolver when authz_scopes.enabled = true
+   // OwnerContextTeamResolver when using commerce-support + teams
    ```
-3. **Check Role model** — The `Role` model should use `HasOwner` trait when scoped
+   For Filament tenancy, register `SyncAuthzTenant` in tenant middleware. For Authz Scopes, use `Authz::withScope()` to set scope explicitly.

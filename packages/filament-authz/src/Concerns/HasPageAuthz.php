@@ -27,7 +27,7 @@ use Filament\Facades\Filament;
  * }
  * ```
  *
- * The page will require the permission: `page.settings-page` (kebab-cased by default)
+ * The page will require the permission: `page.settingsPage` (case format is configurable)
  */
 trait HasPageAuthz
 {

@@ -6,13 +6,18 @@ namespace AIArmada\FilamentAuthz;
 
 use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
 use AIArmada\FilamentAuthz\Services\PermissionKeyBuilder;
+use AIArmada\FilamentAuthz\Support\AuthzScopeResolver;
 use Closure;
 use Filament\Facades\Filament;
 use Filament\Pages\Page;
 use Filament\Panel;
 use Filament\Resources\Resource;
 use Filament\Widgets\Widget;
+use Illuminate\Contracts\Auth\Access\Authorizable;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+use Spatie\Permission\PermissionRegistrar;
 
 /**
  * Main Authz service providing entity discovery, permission building, and configuration access.
@@ -210,12 +215,82 @@ class Authz
     }
 
     /**
+     * Resolve a scopeable model or scope to an authz scope ID.
+     */
+    public function resolveScopeId(mixed $scope): string | int | null
+    {
+        return AuthzScopeResolver::resolveId($scope);
+    }
+
+    /**
+     * Run a callback within a scope context.
+     */
+    public function withScope(mixed $scope, callable $callback, ?Authorizable $user = null): mixed
+    {
+        $previousScope = getPermissionsTeamId();
+        $scopeId = $this->resolveScopeId($scope);
+
+        setPermissionsTeamId($scopeId);
+        $this->flushPermissionCache($user);
+
+        try {
+            return $callback();
+        } finally {
+            setPermissionsTeamId($previousScope);
+            $this->flushPermissionCache($user);
+        }
+    }
+
+    /**
+     * Check a permission within a scope context.
+     */
+    public function userCanInScope(Authorizable $user, string $ability, mixed $scope): bool
+    {
+        return (bool) $this->withScope($scope, fn (): bool => $user->can($ability), $user);
+    }
+
+    /**
+     * Check a permission across all scopes.
+     */
+    public function userHasPermissionAcrossScopes(Authorizable $user, string $ability): bool
+    {
+        return (bool) $this->withoutTeams(fn (): bool => $user->can($ability), $user);
+    }
+
+    /**
      * Clear all caches.
      */
     public function clearCache(): void
     {
         $this->discoveryCache = [];
         $this->permissionCache = [];
+    }
+
+    protected function flushPermissionCache(?Authorizable $user = null): void
+    {
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+
+        $authUser = $user ?? Auth::user();
+
+        if ($authUser instanceof Model) {
+            $authUser->unsetRelation('roles')->unsetRelation('permissions');
+        }
+    }
+
+    protected function withoutTeams(callable $callback, ?Authorizable $user = null): mixed
+    {
+        $registrar = app(PermissionRegistrar::class);
+        $teams = $registrar->teams;
+
+        $registrar->teams = false;
+        $this->flushPermissionCache($user);
+
+        try {
+            return $callback();
+        } finally {
+            $registrar->teams = $teams;
+            $this->flushPermissionCache($user);
+        }
     }
 
     /**

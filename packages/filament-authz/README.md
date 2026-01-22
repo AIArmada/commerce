@@ -10,7 +10,7 @@ A comprehensive Filament v5 authorization package extending Spatie laravel-permi
 - **Automatic Discovery** — Discovers Resources, Pages, and Widgets to generate permissions automatically
 - **Multi-Panel Support** — Configure different authorization settings per Filament panel
 - **Policy Generation** — CLI command to scaffold Laravel Policies based on discovered permissions
-- **Tenant Scoping** — Optional integration with commerce-support for multi-tenant applications
+- **Authz Scopes + Tenant Scoping** — Scope roles to any model (institutions, speakers, etc.) with central app support and optional commerce-support integration
 
 ## Requirements
 
@@ -75,7 +75,7 @@ public function panel(Panel $panel): Panel
 // config/filament-authz.php
 return [
     // Authentication guards to support
-    'guards' => ['web'],
+    'guards' => ['web', 'api'],
 
     // Role that bypasses all permission checks
     'super_admin_role' => 'super_admin',
@@ -83,15 +83,27 @@ return [
     // Enable wildcard permission patterns like 'orders.*'
     'wildcard_permissions' => true,
 
+    // Scope roles and permissions to a tenant/scope (Spatie teams)
+    'scoped_to_tenant' => true,
+
+    // Allow managing roles across scopes in a central panel
+    'central_app' => false,
+
+    // Optional authz scopes (institutions, speakers, etc.)
+    'authz_scopes' => [
+        'enabled' => false,
+        'auto_create' => true,
+    ],
+
     // Permission key format
     'permissions' => [
         'separator' => '.',
-        'case' => 'kebab', // snake, kebab, camel, pascal, upper_snake, lower
+        'case' => 'camel', // snake, kebab, camel, pascal, upper_snake, lower
     ],
 
     // Navigation settings
     'navigation' => [
-        'group' => 'Settings',
+        'group' => 'Authz',
         'sort' => 99,
     ],
 
@@ -145,6 +157,34 @@ Users with the configured super admin role automatically bypass all permission c
 ```php
 // User with 'super_admin' role passes all gates
 Gate::allows('any-permission'); // true
+```
+
+## Authz Scopes (Optional)
+
+Use Authz scopes to attach roles/permissions to any model (institutions, speakers, events, etc.).
+
+```php
+// config/filament-authz.php
+'authz_scopes' => [
+    'enabled' => true,
+    'auto_create' => true,
+],
+
+// config/permission.php
+'teams' => true,
+'team_foreign_key' => 'authz_scope_id',
+```
+
+```php
+use AIArmada\FilamentAuthz\Concerns\HasAuthzScope;
+use AIArmada\FilamentAuthz\Facades\Authz;
+
+class Institution extends Model
+{
+    use HasAuthzScope;
+}
+
+Authz::userCanInScope($user, 'event.update', $institution);
 ```
 
 ## Commands

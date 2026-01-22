@@ -17,6 +17,7 @@ use AIArmada\FilamentAuthz\Services\EntityDiscoveryService;
 use AIArmada\FilamentAuthz\Services\ImpersonateManager;
 use AIArmada\FilamentAuthz\Services\PermissionKeyBuilder;
 use AIArmada\FilamentAuthz\Services\WildcardPermissionResolver;
+use AIArmada\FilamentAuthz\Support\AuthzScopeTeamResolver;
 use AIArmada\FilamentAuthz\Support\OwnerContextTeamResolver;
 use Illuminate\Auth\AuthManager;
 use Illuminate\Auth\Events\Login;
@@ -77,6 +78,7 @@ class FilamentAuthzServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'filament-authz');
         $this->loadTranslationsFrom(__DIR__ . '/../resources/lang', 'filament-authz');
         $this->loadRoutesFrom(__DIR__ . '/../routes/web.php');
+        $this->loadMigrationsFrom(__DIR__ . '/../database/migrations');
 
         $this->registerImpersonationBanner();
         $this->registerBladeDirectives();
@@ -104,7 +106,19 @@ class FilamentAuthzServiceProvider extends ServiceProvider
 
         if ($superAdminRole !== '') {
             Gate::before(static function ($user, string $ability) use ($superAdminRole) {
-                return method_exists($user, 'hasRole') && $user->hasRole($superAdminRole) ? true : null;
+                if (! method_exists($user, 'hasRole')) {
+                    return null;
+                }
+
+                $registrar = app(PermissionRegistrar::class);
+                $teams = $registrar->teams;
+                $registrar->teams = false;
+
+                try {
+                    return $user->hasRole($superAdminRole) ? true : null;
+                } finally {
+                    $registrar->teams = $teams;
+                }
             });
         }
 
@@ -154,6 +168,12 @@ class FilamentAuthzServiceProvider extends ServiceProvider
 
     private function registerTeamResolver(): void
     {
+        if (config('filament-authz.authz_scopes.enabled', false)) {
+            $this->app->singleton(PermissionsTeamResolver::class, AuthzScopeTeamResolver::class);
+
+            return;
+        }
+
         if (! class_exists(\AIArmada\CommerceSupport\Support\OwnerContext::class)) {
             return;
         }

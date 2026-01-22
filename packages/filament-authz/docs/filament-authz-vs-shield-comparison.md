@@ -290,12 +290,19 @@ public function register(Panel $panel): void
 | Central app mode | ✅ | ✅ | Both support |
 | Tenant relationship | ✅ | ✅ | Both configurable |
 | **OwnerContext integration** | ❌ | ✅ | Commerce-support |
+| **Authz scopes** | ❌ | ✅ | Model-backed scopes |
 
-**Authz Evidence - OwnerContextTeamResolver:**
+**Authz Evidence - Team resolver selection:**
 ```php
-// FilamentAuthzServiceProvider.php (lines 119-128)
+// FilamentAuthzServiceProvider.php (lines 170-186)
 private function registerTeamResolver(): void
 {
+    if (config('filament-authz.authz_scopes.enabled', false)) {
+        $this->app->singleton(PermissionsTeamResolver::class, AuthzScopeTeamResolver::class);
+
+        return;
+    }
+
     if (! class_exists(\AIArmada\CommerceSupport\Support\OwnerContext::class)) {
         return;
     }
@@ -308,7 +315,7 @@ private function registerTeamResolver(): void
 }
 ```
 
-**🏆 Winner: Authz** - OwnerContext integration provides seamless tenant resolution within the commerce ecosystem.
+**🏆 Winner: Authz** - Supports both Authz Scopes and OwnerContext integration for tenant resolution.
 
 ---
 
