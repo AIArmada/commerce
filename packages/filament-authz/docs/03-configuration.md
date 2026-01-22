@@ -42,9 +42,11 @@ $panel->plugins([
         ->permissionCase('snake')           // snake_case keys
         ->permissionSeparator(':')          // Use : separator
         
-        // Multitenancy
-        ->scopedToTenant()
-        ->tenantOwnershipRelationship('team')
+        // Multitenancy / scopes
+        ->scopeToTenant()
+        ->centralApp()
+        ->tenantRelationshipName('organization')
+        ->tenantOwnershipRelationshipName('owner')
 ]);
 ```
 
@@ -63,10 +65,12 @@ $panel->plugins([
 | `excludeWidgets()` | `array` | `[]` | Widgets to exclude |
 | `gridColumns()` | `int` | `2` | Form grid columns |
 | `checkboxColumns()` | `int` | `3` | Checkboxes per row |
-| `permissionCase()` | `string` | `'kebab'` | Key case format |
+| `permissionCase()` | `string` | `'camel'` | Key case format |
 | `permissionSeparator()` | `string` | `'.'` | Key separator |
-| `scopedToTenant()` | `bool` | `false` | Enable tenant scoping |
-| `tenantOwnershipRelationship()` | `string` | `null` | Tenant relation name |
+| `scopeToTenant()` | `bool` | `true` | Enable tenant scoping |
+| `centralApp()` | `bool` | `false` | Enable central app scope selector |
+| `tenantRelationshipName()` | `string` | `null` | Tenant relation name |
+| `tenantOwnershipRelationshipName()` | `string` | `null` | Tenant ownership relation name |
 
 ## Config File Reference
 
@@ -81,7 +85,7 @@ php artisan vendor:publish --tag=filament-authz-config
 Authentication guards the package supports. Permissions are created for each guard.
 
 ```php
-'guards' => ['web'],
+'guards' => ['web', 'api'],
 ```
 
 ### Super Admin Role
@@ -111,6 +115,27 @@ Enable pattern matching like `orders.*` to match `orders.view`, `orders.create`,
 'wildcard_permissions' => true,
 ```
 
+### Tenant Scoping & Authz Scopes
+
+```php
+'scoped_to_tenant' => true,
+'central_app' => false,
+
+'authz_scopes' => [
+    'enabled' => false,
+    'auto_create' => true,
+],
+```
+
+When using Authz Scopes, enable Spatie teams in `config/permission.php` and set the team key:
+
+```php
+'teams' => true,
+'team_foreign_key' => 'authz_scope_id',
+```
+
+When `authz_scopes.enabled` is true, the package uses Authz scopes for team resolution instead of commerce-support's OwnerContext.
+
 ### Permission Key Format
 
 How permission keys are constructed.
@@ -118,7 +143,7 @@ How permission keys are constructed.
 ```php
 'permissions' => [
     'separator' => '.',      // Separator between subject and action
-    'case' => 'kebab',       // snake, kebab, camel, pascal, upper_snake, lower
+    'case' => 'camel',       // snake, kebab, camel, pascal, upper_snake, lower
 ],
 ```
 
@@ -180,7 +205,7 @@ Additional permissions beyond discovered entities.
 
 ```php
 'navigation' => [
-    'group' => 'Settings',
+    'group' => 'Authz',
     'sort' => 99,
     'icons' => [
         'roles' => 'heroicon-o-shield-check',
@@ -245,10 +270,10 @@ When impersonation is enabled:
 Enable multi-tenant support for roles and permissions.
 
 ```php
-'scoped_to_tenant' => false,
+'scoped_to_tenant' => true,
 ```
 
-When enabled, roles are filtered by the current tenant context using the `commerce-support` owner primitives.
+When enabled, roles are filtered by the current tenant/scope context. Use Filament tenancy with `SyncAuthzTenant` or Authz Scopes with `Authz::withScope()`.
 
 ## Environment Variables
 
