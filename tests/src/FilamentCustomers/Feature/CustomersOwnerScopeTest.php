@@ -52,7 +52,6 @@ it('applyToOwnedQuery returns global-only rows when no owner is resolved and mod
         'email' => 'global@example.com',
         'status' => 'active',
         'accepts_marketing' => false,
-        'is_tax_exempt' => false,
 
         'owner_type' => null,
         'owner_id' => null,
@@ -64,7 +63,6 @@ it('applyToOwnedQuery returns global-only rows when no owner is resolved and mod
         'email' => 'owned@example.com',
         'status' => 'active',
         'accepts_marketing' => false,
-        'is_tax_exempt' => false,
 
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
@@ -107,7 +105,6 @@ it('applyToOwnedQuery returns only owner rows when owner is resolved and model h
         'email' => 'global2@example.com',
         'status' => 'active',
         'accepts_marketing' => 0,
-        'is_tax_exempt' => 0,
 
         'owner_type' => null,
         'owner_id' => null,
@@ -121,7 +118,6 @@ it('applyToOwnedQuery returns only owner rows when owner is resolved and model h
         'email' => 'a@example.com',
         'status' => 'active',
         'accepts_marketing' => false,
-        'is_tax_exempt' => false,
 
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
@@ -133,7 +129,6 @@ it('applyToOwnedQuery returns only owner rows when owner is resolved and model h
         'email' => 'b@example.com',
         'status' => 'active',
         'accepts_marketing' => false,
-        'is_tax_exempt' => false,
 
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),

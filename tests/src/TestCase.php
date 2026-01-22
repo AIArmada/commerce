@@ -1221,9 +1221,6 @@ abstract class TestCase extends Orchestra
             $table->string('company')->nullable();
             $table->string('status')->default('active');
             $table->boolean('accepts_marketing')->default(false);
-            $table->boolean('is_tax_exempt')->default(false);
-            $table->timestamp('email_verified_at')->nullable();
-            $table->timestamp('last_login_at')->nullable();
             $table->nullableUuidMorphs('owner');
             $table->json('metadata')->nullable();
             $table->timestamps();
@@ -1289,8 +1286,8 @@ abstract class TestCase extends Orchestra
             $table->string('first_name')->nullable();
             $table->string('last_name')->nullable();
             $table->string('company')->nullable();
-            $table->string('address_line_1');
-            $table->string('address_line_2')->nullable();
+            $table->string('address1');
+            $table->string('address2')->nullable();
             $table->string('city');
             $table->string('state')->nullable();
             $table->string('postal_code')->nullable();

@@ -373,29 +373,6 @@ describe('Segment Model', function (): void {
             expect($matching)->toBeInstanceOf(Illuminate\Support\Collection::class);
         });
 
-        it('handles is_tax_exempt condition', function (): void {
-            $segment = Segment::create([
-                'name' => 'Tax Exempt ' . uniqid(),
-                'slug' => 'tax-exempt-' . uniqid(),
-                'is_automatic' => true,
-                'conditions' => [
-                    ['field' => 'is_tax_exempt', 'value' => true],
-                ],
-            ]);
-
-            Customer::create([
-                'first_name' => 'Tax',
-                'last_name' => 'Exempt',
-                'email' => 'tax-exempt-' . uniqid() . '@example.com',
-                'status' => CustomerStatus::Active,
-                'is_tax_exempt' => true,
-            ]);
-
-            $matching = $segment->getMatchingCustomers();
-
-            expect($matching->every(fn ($c) => $c->is_tax_exempt))->toBeTrue();
-        });
-
         it('handles default field with custom operator', function (): void {
             $segment = Segment::create([
                 'name' => 'Custom Field ' . uniqid(),

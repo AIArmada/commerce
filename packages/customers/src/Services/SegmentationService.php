@@ -234,7 +234,7 @@ final class SegmentationService
     /**
      * Get segment statistics.
      *
-     * @return array{customer_count: int, active_count: int, marketing_opted_in: int, marketing_opted_in_percentage: float, tax_exempt_count: int}
+     * @return array{customer_count: int, active_count: int, marketing_opted_in: int, marketing_opted_in_percentage: float}
      */
     public function getSegmentStats(Segment $segment): array
     {
@@ -246,20 +246,17 @@ final class SegmentationService
                 'active_count' => 0,
                 'marketing_opted_in' => 0,
                 'marketing_opted_in_percentage' => 0.0,
-                'tax_exempt_count' => 0,
             ];
         }
 
         $activeCount = $customers->where('status', 'active')->count();
         $marketingOptedIn = $customers->where('accepts_marketing', true)->count();
-        $taxExemptCount = $customers->where('is_tax_exempt', true)->count();
 
         return [
             'customer_count' => $customers->count(),
             'active_count' => $activeCount,
             'marketing_opted_in' => $marketingOptedIn,
             'marketing_opted_in_percentage' => round(($marketingOptedIn / $customers->count()) * 100, 1),
-            'tax_exempt_count' => $taxExemptCount,
         ];
     }
 
@@ -291,11 +288,8 @@ final class SegmentationService
 
         return match ($field) {
             'accepts_marketing' => $customer->accepts_marketing === (bool) $value,
-            'is_tax_exempt' => $customer->is_tax_exempt === (bool) $value,
             'status' => $customer->status->value === $value,
             'created_days_ago' => $customer->created_at && $customer->created_at->lte(CarbonImmutable::now()->subDays((int) $value)),
-            'last_login_days' => $customer->last_login_at && $customer->last_login_at->gte(CarbonImmutable::now()->subDays((int) $value)),
-            'no_login_days' => ! $customer->last_login_at || $customer->last_login_at->lte(CarbonImmutable::now()->subDays((int) $value)),
             default => false,
         };
     }

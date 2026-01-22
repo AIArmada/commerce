@@ -22,7 +22,7 @@ describe('Address Model', function (): void {
                 'customer_id' => $customer->id,
                 'first_name' => 'John',
                 'last_name' => 'Doe',
-                'address_line_1' => '123 Main Street',
+                'address1' => '123 Main Street',
                 'city' => 'Kuala Lumpur',
                 'state' => 'KL',
                 'postal_code' => '50000',
@@ -48,7 +48,7 @@ describe('Address Model', function (): void {
                 'customer_id' => $customer->id,
                 'first_name' => 'Jane',
                 'last_name' => 'Doe',
-                'address_line_1' => '100 Ship Street',
+                'address1' => '100 Ship Street',
                 'city' => 'Petaling Jaya',
                 'country' => 'MY',
                 'type' => 'shipping',
@@ -58,7 +58,7 @@ describe('Address Model', function (): void {
                 'customer_id' => $customer->id,
                 'first_name' => 'Jane',
                 'last_name' => 'Doe',
-                'address_line_1' => '200 Bill Street',
+                'address1' => '200 Bill Street',
                 'city' => 'Shah Alam',
                 'country' => 'MY',
                 'type' => 'billing',
@@ -80,7 +80,7 @@ describe('Address Model', function (): void {
 
             $default = Address::create([
                 'customer_id' => $customer->id,
-                'address_line_1' => 'Default Street',
+                'address1' => 'Default Street',
                 'city' => 'KL',
                 'country' => 'MY',
                 'is_default' => true,
@@ -88,7 +88,7 @@ describe('Address Model', function (): void {
 
             $other = Address::create([
                 'customer_id' => $customer->id,
-                'address_line_1' => 'Other Street',
+                'address1' => 'Other Street',
                 'city' => 'KL',
                 'country' => 'MY',
                 'is_default' => false,
@@ -161,7 +161,7 @@ describe('Segment Model', function (): void {
     it('can store JSON conditions', function (): void {
         $conditions = [
             ['field' => 'accepts_marketing', 'value' => true],
-            ['field' => 'is_tax_exempt', 'value' => false],
+            ['field' => 'status', 'value' => 'active'],
         ];
 
         $segment = Segment::create([

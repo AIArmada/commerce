@@ -133,8 +133,8 @@ Billing and shipping addresses.
 | `first_name` | `string\|null` | First name |
 | `last_name` | `string\|null` | Last name |
 | `company` | `string\|null` | Company name |
-| `address_line_1` | `string` | Address line 1 |
-| `address_line_2` | `string\|null` | Address line 2 |
+| `address1` | `string` | Address 1 |
+| `address2` | `string\|null` | Address 2 |
 | `city` | `string` | City |
 | `state` | `string\|null` | State/province |
 | `postal_code` | `string\|null` | Postal/ZIP code |
