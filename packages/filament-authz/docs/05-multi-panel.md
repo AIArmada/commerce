@@ -27,7 +27,7 @@ $panel->plugins([
     FilamentAuthzPlugin::make()
         ->roleResource(false) // Don't allow customers to edit roles
         ->permissionResource(false)
-        ->scopedToTenant() // Customers see only their roles
+        ->scopeToTenant() // Customers see only their roles
 ]);
 ```
 
@@ -38,11 +38,13 @@ When a user visits a panel, the `EntityDiscoveryService` only identifies resourc
 The Role resource form uses the current panel to discover what should be displayed in the tabs. If you have different resources in different panels, the Role management UI will reflect that.
 
 ### Tenant Scoping
-If your panel uses tenant-scoping (e.g., via `scopedToTenant()`), the Role resource will automatically apply a global scope to ensure roles are only visible to the correct tenant.
+If your panel uses tenant-scoping (e.g., via `scopeToTenant()`), the Role resource will automatically apply a global scope to ensure roles are only visible to the correct tenant.
+
+If you need a central admin panel to manage roles across multiple scopes, enable `centralApp()` with `authz_scopes.enabled`.
 
 ## SyncAuthzTenant Middleware
 
-The `SyncAuthzTenant` middleware ensures the authorization context is properly set for each panel request. It's automatically registered when using the plugin with tenant scoping.
+The `SyncAuthzTenant` middleware ensures the authorization context is properly set for each panel request when using Filament tenancy.
 
 ### Manual Registration
 
@@ -59,7 +61,7 @@ $panel
 ### What It Does
 
 1. Resolves the current tenant from the Filament panel
-2. Sets the owner context for authorization scoping
+2. Sets the Spatie team context for authorization scoping
 3. Ensures all queries in the request are properly tenant-filtered
 
 ## Panel-Specific Guards

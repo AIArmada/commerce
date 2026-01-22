@@ -14,13 +14,13 @@ For a `UserResource`, the following permissions are generated:
 
 | Permission Key | Policy Method |
 |----------------|---------------|
-| `user.view-any` | `viewAny()` |
+| `user.viewAny` | `viewAny()` |
 | `user.view` | `view()` |
 | `user.create` | `create()` |
 | `user.update` | `update()` |
 | `user.delete` | `delete()` |
 | `user.restore` | `restore()` |
-| `user.force-delete` | `forceDelete()` |
+| `user.forceDelete` | `forceDelete()` |
 
 ### Generating Policies
 
@@ -40,7 +40,7 @@ class UserPolicy
 
     public function viewAny(User $user): bool
     {
-        return $user->can('user.view-any');
+        return $user->can('user.viewAny');
     }
 
     public function view(User $user, User $model): bool
@@ -76,7 +76,7 @@ class SystemSettings extends Page
 }
 ```
 
-The page will automatically require the permission `page.system-settings` (derived from the class name).
+The page will automatically require the permission `page.systemSettings` (derived from the class name).
 
 ### Custom Permission Key
 
@@ -89,7 +89,7 @@ class SystemSettings extends Page
 
     public static function authzPermission(): ?string
     {
-        return 'admin.system-settings'; // Custom key
+        return 'admin.systemSettings'; // Custom key
     }
 }
 ```
@@ -117,7 +117,7 @@ class RevenueWidget extends StatsOverviewWidget
 }
 ```
 
-The widget will require the permission `widget.revenue-widget`.
+The widget will require the permission `widget.revenueWidget`.
 
 ## Custom Permissions
 
@@ -140,6 +140,52 @@ if ($user->can('export-reports')) {
 }
 ```
 
+## Authz Scopes
+
+Authz Scopes let you attach roles to any model (institutions, speakers, events, etc.).
+
+Enable Spatie teams and Authz scopes:
+
+```php
+// config/permission.php
+'teams' => true,
+'team_foreign_key' => 'authz_scope_id',
+
+// config/filament-authz.php
+'authz_scopes' => [
+    'enabled' => true,
+    'auto_create' => true,
+],
+```
+
+Add scopes to your models:
+
+```php
+use AIArmada\FilamentAuthz\Concerns\HasAuthzScope;
+
+class Institution extends Model
+{
+    use HasAuthzScope;
+}
+
+class Speaker extends Model
+{
+    use HasAuthzScope;
+}
+```
+
+Check permissions within a scope:
+
+```php
+use AIArmada\FilamentAuthz\Facades\Authz;
+
+Authz::userCanInScope($user, 'event.update', $institution);
+Authz::withScope($speaker, fn () => $user->can('event.update'));
+Authz::userHasPermissionAcrossScopes($user, 'event.update'); // global or cross-scope
+```
+
+When `central_app` is enabled, the Role resource includes a scope selector. Leave it empty for a global role.
+
 ## Programmatic Permission Building
 
 Use the `Authz` facade to build and check permissions:
@@ -148,12 +194,12 @@ Use the `Authz` facade to build and check permissions:
 use AIArmada\FilamentAuthz\Facades\Authz;
 
 // Build a permission key using configured format
-$key = Authz::buildPermissionKey('Order', 'delete');
-// Returns: 'order.delete' (with kebab case + dot separator)
+$key = Authz::buildPermissionKey('OrderItem', 'viewAny');
+// Returns: 'orderItem.viewAny' (with camel case + dot separator)
 
 // Get all permissions for a resource
 $permissions = Authz::getResourcePermissions(OrderResource::class);
-// Returns: ['order.view-any' => 'View Any', 'order.view' => 'View', ...]
+// Returns: ['order.viewAny' => 'View Any', 'order.view' => 'View', ...]
 
 // Get all discovered permissions
 $allPermissions = Authz::getAllPermissions();

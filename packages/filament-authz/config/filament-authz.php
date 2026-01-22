@@ -26,6 +26,13 @@ return [
 
     'scoped_to_tenant' => true,
 
+    'central_app' => false,
+
+    'authz_scopes' => [
+        'enabled' => false,
+        'auto_create' => true,
+    ],
+
     'permissions' => [
         'separator' => '.',
         'case' => 'camel',
