@@ -53,7 +53,7 @@ $customer = Customer::create([
 
 $customer->addresses()->create([
     'type' => AddressType::Both,
-    'address_line_1' => '123 Main Street',
+    'address1' => '123 Main Street',
     'city' => 'Kuala Lumpur',
     'postcode' => '50000',
     'country' => 'MY',
@@ -109,8 +109,8 @@ $address = $customer->addresses()->create([
     'type' => AddressType::Shipping,
     'label' => 'Home',
     'recipient_name' => 'John Doe',
-    'address_line_1' => '456 Oak Avenue',
-    'address_line_2' => 'Apt 3B',
+    'address1' => '456 Oak Avenue',
+    'address2' => 'Apt 3B',
     'city' => 'Petaling Jaya',
     'state' => 'Selangor',
     'postcode' => '46000',
@@ -280,11 +280,8 @@ Automatic segments can use these conditions:
 | Field | Operators | Description |
 |-------|-----------|-------------|
 | `accepts_marketing` | `=` | Boolean: customer accepts marketing |
-| `is_tax_exempt` | `=` | Boolean: customer is tax exempt |
 | `status` | `=`, `!=` | Customer status enum value |
 | `created_days_ago` | `>=`, `<=`, `>`, `<` | Days since customer creation |
-| `last_login_days` | `>=`, `<=`, `>`, `<` | Days since last login |
-| `no_login_days` | `>=` | Customers who haven't logged in for X days |
 
 ### Rebuild Segments Command
 

@@ -76,8 +76,8 @@ $this->orderService->addAddress($order, [
     'type' => 'shipping', // or 'billing'
     'first_name' => 'John',
     'last_name' => 'Doe',
-    'address_line_1' => '123 Main Street',
-    'address_line_2' => 'Apt 4B',
+    'address1' => '123 Main Street',
+    'address2' => 'Apt 4B',
     'city' => 'Kuala Lumpur',
     'state' => 'Wilayah Persekutuan',
     'postal_code' => '50000',

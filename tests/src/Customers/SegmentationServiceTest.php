@@ -164,26 +164,6 @@ describe('SegmentationService', function (): void {
             expect($this->service->customerMatchesSegment($customer, $segment))->toBeTrue();
         });
 
-        it('matches is_tax_exempt condition', function (): void {
-            $customer = Customer::create([
-                'first_name' => 'Tax',
-                'last_name' => 'Exempt',
-                'email' => 'tax-exempt-' . uniqid() . '@example.com',
-                'status' => CustomerStatus::Active,
-                'is_tax_exempt' => true,
-            ]);
-
-            $segment = Segment::create([
-                'name' => 'Tax Exempt ' . uniqid(),
-                'slug' => 'tax-exempt-' . uniqid(),
-                'conditions' => [
-                    ['field' => 'is_tax_exempt', 'value' => true],
-                ],
-            ]);
-
-            expect($this->service->customerMatchesSegment($customer, $segment))->toBeTrue();
-        });
-
         it('matches status condition', function (): void {
             $customer = Customer::create([
                 'first_name' => 'Status',
@@ -217,46 +197,6 @@ describe('SegmentationService', function (): void {
                 'slug' => 'veteran-' . uniqid(),
                 'conditions' => [
                     ['field' => 'created_days_ago', 'value' => 7],
-                ],
-            ]);
-
-            expect($this->service->customerMatchesSegment($customer, $segment))->toBeTrue();
-        });
-
-        it('matches last_login_days condition', function (): void {
-            $customer = Customer::create([
-                'first_name' => 'Recent',
-                'last_name' => 'Login',
-                'email' => 'recent-login-' . uniqid() . '@example.com',
-                'status' => CustomerStatus::Active,
-                'last_login_at' => now()->subDays(5),
-            ]);
-
-            $segment = Segment::create([
-                'name' => 'Recent Login ' . uniqid(),
-                'slug' => 'recent-login-' . uniqid(),
-                'conditions' => [
-                    ['field' => 'last_login_days', 'value' => 10],
-                ],
-            ]);
-
-            expect($this->service->customerMatchesSegment($customer, $segment))->toBeTrue();
-        });
-
-        it('matches no_login_days condition', function (): void {
-            $customer = Customer::create([
-                'first_name' => 'Inactive',
-                'last_name' => 'User',
-                'email' => 'inactive-' . uniqid() . '@example.com',
-                'status' => CustomerStatus::Active,
-                'last_login_at' => now()->subDays(60),
-            ]);
-
-            $segment = Segment::create([
-                'name' => 'Inactive ' . uniqid(),
-                'slug' => 'inactive-' . uniqid(),
-                'conditions' => [
-                    ['field' => 'no_login_days', 'value' => 30],
                 ],
             ]);
 

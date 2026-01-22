@@ -20,14 +20,12 @@ The customer list includes:
 - Customer name with email (searchable)
 - Status badge (colored by status)
 - Marketing opt-in status
-- Tax exempt status
 - Segment badges
 - Join date
 
 **Filters:**
 - Status (Active, Inactive, Suspended, Pending Verification)
 - Accepts Marketing (Yes/No/All)
-- Tax Exempt (Yes/No/All)
 - Segments (multi-select)
 
 **Actions:**
@@ -56,8 +54,6 @@ The customer form is organized into sections:
 **Preferences (2 columns):**
 ```php
 - Accepts Marketing (toggle)
-- Tax Exempt (toggle)
-- Tax Exempt Reason (conditional textarea)
 ```
 
 **Status Sidebar:**
@@ -82,7 +78,6 @@ The customer view page displays comprehensive information:
 - Status badge
 
 **Activity:**
-- Last Login date
 - Customer Since date
 
 **Segments:**
@@ -184,10 +179,7 @@ The Segment Resource manages customer segmentation with support for automatic ru
 
 **Available Condition Fields:**
 - Accepts Marketing (boolean)
-- Is Tax Exempt (boolean)
 - Days Since Registration
-- Days Since Last Login
-- Days Without Login
 
 **Settings Sidebar:**
 ```php

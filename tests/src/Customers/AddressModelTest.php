@@ -44,7 +44,7 @@ describe('Address Model', function (): void {
         it('belongs to a customer', function (): void {
             $address = Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '123 Main St',
+                'address1' => '123 Main St',
                 'city' => 'Kuala Lumpur',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -59,7 +59,7 @@ describe('Address Model', function (): void {
         it('checks if billing address', function (): void {
             $billing = Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '123 Billing St',
+                'address1' => '123 Billing St',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -68,7 +68,7 @@ describe('Address Model', function (): void {
 
             $shipping = Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '456 Shipping St',
+                'address1' => '456 Shipping St',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -77,7 +77,7 @@ describe('Address Model', function (): void {
 
             $both = Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '789 Both St',
+                'address1' => '789 Both St',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -92,7 +92,7 @@ describe('Address Model', function (): void {
         it('checks if shipping address', function (): void {
             $billing = Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '123 Billing St',
+                'address1' => '123 Billing St',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -101,7 +101,7 @@ describe('Address Model', function (): void {
 
             $shipping = Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '456 Shipping St',
+                'address1' => '456 Shipping St',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -117,7 +117,7 @@ describe('Address Model', function (): void {
         it('can set as default billing', function (): void {
             $address1 = Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '123 Main St',
+                'address1' => '123 Main St',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -126,7 +126,7 @@ describe('Address Model', function (): void {
 
             $address2 = Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '456 Other St',
+                'address1' => '456 Other St',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -141,7 +141,7 @@ describe('Address Model', function (): void {
         it('can set as default shipping', function (): void {
             $address1 = Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '123 Main St',
+                'address1' => '123 Main St',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -150,7 +150,7 @@ describe('Address Model', function (): void {
 
             $address2 = Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '456 Other St',
+                'address1' => '456 Other St',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -167,8 +167,8 @@ describe('Address Model', function (): void {
         it('returns concatenated address parts', function (): void {
             $address = Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '123 Main St',
-                'address_line_2' => 'Suite 100',
+                'address1' => '123 Main St',
+                'address2' => 'Suite 100',
                 'city' => 'Kuala Lumpur',
                 'state' => 'WP',
                 'postcode' => '50000',
@@ -187,8 +187,8 @@ describe('Address Model', function (): void {
                 'customer_id' => $this->customer->id,
                 'recipient_name' => 'John Doe',
                 'company' => 'Acme Inc',
-                'address_line_1' => '123 Main St',
-                'address_line_2' => 'Suite 100',
+                'address1' => '123 Main St',
+                'address2' => 'Suite 100',
                 'city' => 'Kuala Lumpur',
                 'state' => 'WP',
                 'postcode' => '50000',
@@ -211,8 +211,8 @@ describe('Address Model', function (): void {
                 'customer_id' => $this->customer->id,
                 'recipient_name' => 'Jane Doe',
                 'company' => 'Test Corp',
-                'address_line_1' => '123 Main St',
-                'address_line_2' => 'Apt 4B',
+                'address1' => '123 Main St',
+                'address2' => 'Apt 4B',
                 'city' => 'KL',
                 'state' => 'WP',
                 'postcode' => '50000',
@@ -232,7 +232,7 @@ describe('Address Model', function (): void {
         it('falls back to customer name when no recipient', function (): void {
             $address = Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '123 Main St',
+                'address1' => '123 Main St',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -248,7 +248,7 @@ describe('Address Model', function (): void {
         it('can filter billing addresses', function (): void {
             Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '123 Billing',
+                'address1' => '123 Billing',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -257,7 +257,7 @@ describe('Address Model', function (): void {
 
             Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '456 Shipping',
+                'address1' => '456 Shipping',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -272,7 +272,7 @@ describe('Address Model', function (): void {
         it('can filter shipping addresses', function (): void {
             Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '456 Shipping',
+                'address1' => '456 Shipping',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -287,7 +287,7 @@ describe('Address Model', function (): void {
         it('can filter default billing addresses', function (): void {
             Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '123 Default Billing',
+                'address1' => '123 Default Billing',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -302,7 +302,7 @@ describe('Address Model', function (): void {
         it('can filter default shipping addresses', function (): void {
             Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '123 Default Shipping',
+                'address1' => '123 Default Shipping',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',
@@ -317,7 +317,7 @@ describe('Address Model', function (): void {
         it('can filter verified addresses', function (): void {
             Address::create([
                 'customer_id' => $this->customer->id,
-                'address_line_1' => '123 Verified',
+                'address1' => '123 Verified',
                 'city' => 'KL',
                 'postcode' => '50000',
                 'country' => 'MY',

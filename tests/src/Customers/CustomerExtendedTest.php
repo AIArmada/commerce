@@ -35,8 +35,7 @@ describe('Customer Model - Extended Coverage', function (): void {
 
             expect(array_key_exists('status', $casts))->toBeTrue()
                 ->and(array_key_exists('accepts_marketing', $casts))->toBeTrue()
-                ->and(array_key_exists('is_tax_exempt', $casts))->toBeTrue()
-                ->and(array_key_exists('last_login_at', $casts))->toBeTrue();
+                ->and(array_key_exists('metadata', $casts))->toBeTrue();
         });
     });
 
@@ -99,29 +98,6 @@ describe('Customer Model - Extended Coverage', function (): void {
         it('has inSegment scope', function (): void {
             $query = Customer::inSegment('test-id');
             expect($query)->toBeInstanceOf(Illuminate\Database\Eloquent\Builder::class);
-        });
-
-        it('can filter recently active customers', function (): void {
-            $recent = Customer::create([
-                'first_name' => 'Recent',
-                'last_name' => 'Active',
-                'email' => 'recent-active-' . uniqid() . '@example.com',
-                'status' => CustomerStatus::Active,
-                'last_login_at' => now()->subDays(5),
-            ]);
-
-            $old = Customer::create([
-                'first_name' => 'Old',
-                'last_name' => 'Login',
-                'email' => 'old-login-' . uniqid() . '@example.com',
-                'status' => CustomerStatus::Active,
-                'last_login_at' => now()->subDays(60),
-            ]);
-
-            $recentlyActive = Customer::recentlyActive(30)->get();
-
-            expect($recentlyActive->pluck('id'))->toContain($recent->id)
-                ->and($recentlyActive->pluck('id'))->not->toContain($old->id);
         });
 
         it('has active scope pattern', function (): void {

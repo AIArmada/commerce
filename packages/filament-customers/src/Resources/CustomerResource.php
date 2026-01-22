@@ -16,7 +16,6 @@ use Filament\Infolists\Components\TextEntry;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Group;
 use Filament\Schemas\Components\Section;
-use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
 use Filament\Tables\Table;
@@ -108,14 +107,6 @@ class CustomerResource extends Resource
                                 Forms\Components\Toggle::make('accepts_marketing')
                                     ->label('Accepts Marketing')
                                     ->helperText('Customer has opted in for marketing emails'),
-
-                                Forms\Components\Toggle::make('is_tax_exempt')
-                                    ->label('Tax Exempt'),
-
-                                Forms\Components\Textarea::make('tax_exempt_reason')
-                                    ->label('Tax Exempt Reason')
-                                    ->rows(2)
-                                    ->visible(fn (Get $get) => $get('is_tax_exempt')),
                             ])
                             ->columns(2),
                     ])
@@ -176,20 +167,9 @@ class CustomerResource extends Resource
                     ->boolean()
                     ->toggleable(),
 
-                Tables\Columns\IconColumn::make('is_tax_exempt')
-                    ->label('Tax Exempt')
-                    ->boolean()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
                 Tables\Columns\TextColumn::make('segments.name')
                     ->label('Segments')
                     ->badge()
-                    ->toggleable(isToggledHiddenByDefault: true),
-
-                Tables\Columns\TextColumn::make('last_login_at')
-                    ->label('Last Login')
-                    ->dateTime('d M Y')
-                    ->sortable()
                     ->toggleable(isToggledHiddenByDefault: true),
 
                 Tables\Columns\TextColumn::make('created_at')
@@ -209,9 +189,6 @@ class CustomerResource extends Resource
                 Tables\Filters\TernaryFilter::make('accepts_marketing')
                     ->label('Accepts Marketing'),
 
-                Tables\Filters\TernaryFilter::make('is_tax_exempt')
-                    ->label('Tax Exempt'),
-
                 Tables\Filters\SelectFilter::make('segments')
                     ->relationship(
                         name: 'segments',
@@ -222,8 +199,8 @@ class CustomerResource extends Resource
                     ->preload(),
 
                 Tables\Filters\Filter::make('recent')
-                    ->label('Active (Last 30 days)')
-                    ->query(fn ($query) => $query->where('last_login_at', '>=', CarbonImmutable::now()->subDays(30))),
+                    ->label('New (Last 30 days)')
+                    ->query(fn ($query) => $query->where('created_at', '>=', CarbonImmutable::now()->subDays(30))),
             ])
             ->actions([
                 \Filament\Actions\ViewAction::make(),
@@ -289,32 +266,16 @@ class CustomerResource extends Resource
                             ->formatStateUsing(fn ($state) => $state ? 'Yes' : 'No')
                             ->badge()
                             ->color(fn ($state) => $state ? 'success' : 'gray'),
-                        TextEntry::make('is_tax_exempt')
-                            ->label('Tax Exempt')
-                            ->formatStateUsing(fn ($state) => $state ? 'Yes' : 'No')
-                            ->badge()
-                            ->color(fn ($state) => $state ? 'warning' : 'gray'),
-                        TextEntry::make('tax_exempt_reason')
-                            ->label('Tax Exempt Reason')
-                            ->placeholder('N/A'),
                     ])
-                    ->columns(3),
+                    ->columns(1),
 
                 Section::make('Activity')
                     ->schema([
-                        TextEntry::make('last_login_at')
-                            ->label('Last Login')
-                            ->dateTime()
-                            ->placeholder('Never'),
-                        TextEntry::make('email_verified_at')
-                            ->label('Email Verified')
-                            ->dateTime()
-                            ->placeholder('Not verified'),
                         TextEntry::make('created_at')
                             ->label('Customer Since')
                             ->dateTime(),
                     ])
-                    ->columns(3),
+                    ->columns(1),
 
                 Section::make('Segments')
                     ->schema([
