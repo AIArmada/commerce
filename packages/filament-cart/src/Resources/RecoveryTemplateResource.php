@@ -144,7 +144,8 @@ final class RecoveryTemplateResource extends Resource
                 Section::make('Available Variables')
                     ->schema([
                         ViewField::make('variables_info')
-                            ->view('filament-cart::components.template-variables'),
+                            ->view('filament-cart::components.template-variables')
+                            ->dehydrated(false),
                     ])
                     ->collapsible()
                     ->collapsed(),

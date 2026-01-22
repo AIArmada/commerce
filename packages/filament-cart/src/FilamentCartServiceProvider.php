@@ -19,6 +19,7 @@ use AIArmada\Cart\Events\ItemUpdated;
 use AIArmada\Cart\Models\RecoveryAttempt;
 use AIArmada\Cart\Services\BuiltInRulesFactory;
 use AIArmada\FilamentCart\Commands\AggregateMetricsCommand;
+use AIArmada\FilamentCart\Commands\MarkAbandonedCartsCommand;
 use AIArmada\FilamentCart\Commands\MonitorCartsCommand;
 use AIArmada\FilamentCart\Commands\ProcessAlertsCommand;
 use AIArmada\FilamentCart\Commands\ProcessRecoveryCommand;
@@ -58,6 +59,7 @@ final class FilamentCartServiceProvider extends PackageServiceProvider
                 ProcessRecoveryCommand::class,
                 MonitorCartsCommand::class,
                 ProcessAlertsCommand::class,
+                MarkAbandonedCartsCommand::class,
             ])
             ->discoversMigrations();
     }
