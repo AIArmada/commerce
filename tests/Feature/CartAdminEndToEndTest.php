@@ -14,7 +14,6 @@ use AIArmada\FilamentCart\Resources\AlertRuleResource;
 use AIArmada\FilamentCart\Resources\CartConditionResource;
 use AIArmada\FilamentCart\Resources\RecoveryCampaignResource;
 use AIArmada\FilamentCart\Resources\RecoveryTemplateResource;
-use Filament\Actions\CreateAction;
 use Livewire\Livewire;
 
 uses(TestCase::class);

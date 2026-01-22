@@ -363,8 +363,8 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
         return AddressData::from([
             'name' => $location->name ?? config('app.name'),
             'company' => $address['company'] ?? null,
-            'address' => $address['line1'] ?? $address['address_line_1'] ?? $address['address'] ?? '',
-            'address2' => $address['line2'] ?? $address['address_line_2'] ?? $address['address2'] ?? null,
+            'address' => $address['line1'] ?? $address['address1'] ?? $address['address_line_1'] ?? $address['address'] ?? '',
+            'address2' => $address['line2'] ?? $address['address2'] ?? $address['address_line_2'] ?? null,
             'city' => $address['city'] ?? '',
             'state' => $address['state'] ?? '',
             'postCode' => $address['postcode'] ?? $address['postal_code'] ?? $address['postCode'] ?? '',

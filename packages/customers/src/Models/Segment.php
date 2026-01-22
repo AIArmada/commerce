@@ -284,14 +284,8 @@ class Segment extends Model
 
             match ($field) {
                 'accepts_marketing' => $query->where('accepts_marketing', (bool) $value),
-                'is_tax_exempt' => $query->where('is_tax_exempt', (bool) $value),
                 'status' => $query->where('status', (string) $value),
                 'created_days_ago' => $query->where('created_at', '<=', CarbonImmutable::now()->subDays((int) $value)),
-                'last_login_days' => $query->where('last_login_at', '>=', CarbonImmutable::now()->subDays((int) $value)),
-                'no_login_days' => $query->where(function (Builder $q) use ($value): void {
-                    $q->whereNull('last_login_at')
-                        ->orWhere('last_login_at', '<=', CarbonImmutable::now()->subDays((int) $value));
-                }),
                 default => null,
             };
         }

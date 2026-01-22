@@ -441,7 +441,7 @@ final class ShopController extends Controller
             'phone' => 'required|string',
             'first_name' => 'required|string',
             'last_name' => 'required|string',
-            'address_line_1' => 'required|string',
+            'address1' => 'required|string',
             'city' => 'required|string',
             'state' => 'required|string',
             'postcode' => 'required|string',
@@ -604,8 +604,8 @@ final class ShopController extends Controller
             'type' => 'shipping',
             'first_name' => $request->first_name,
             'last_name' => $request->last_name,
-            'line1' => $request->address_line_1,
-            'line2' => $request->address_line_2,
+            'line1' => $request->address1,
+            'line2' => $request->address2,
             'city' => $request->city,
             'state' => $request->state,
             'postcode' => $request->postcode,
@@ -699,7 +699,7 @@ final class ShopController extends Controller
                     country: 'MY'
                 )
                 ->billingAddress(
-                    streetAddress: $request->address_line_1,
+                    streetAddress: $request->address1,
                     city: $request->city,
                     zipCode: $request->postcode,
                     state: $request->state,

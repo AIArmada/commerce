@@ -78,10 +78,7 @@ it('passes customer_id in context when a customer is provided', function (): voi
         'lifetime_value' => 0,
         'total_orders' => 0,
         'accepts_marketing' => false,
-        'is_tax_exempt' => false,
-        'email_verified_at' => null,
         'last_order_at' => null,
-        'last_login_at' => null,
     ]);
 
     $capturedContext = null;

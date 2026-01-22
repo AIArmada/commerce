@@ -58,7 +58,6 @@ it('scopes CustomerResource query to the resolved owner', function (): void {
         'email' => 'alice-a@example.com',
         'status' => 'active',
         'accepts_marketing' => true,
-        'is_tax_exempt' => false,
 
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
@@ -70,7 +69,6 @@ it('scopes CustomerResource query to the resolved owner', function (): void {
         'email' => 'bob-b@example.com',
         'status' => 'active',
         'accepts_marketing' => true,
-        'is_tax_exempt' => false,
 
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),

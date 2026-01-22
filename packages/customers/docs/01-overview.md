@@ -13,7 +13,6 @@ The Customers package provides core customer identity and data management for th
 - **User Integration**: Link customers to application users for unified identity
 - **Status Tracking**: Monitor customer status (Active, Inactive, Suspended, Pending Verification)
 - **Marketing Preferences**: Track opt-in/opt-out status for marketing communications
-- **Tax Exemptions**: Support for tax-exempt customers with reason tracking
 
 ### Address Management
 - **Multiple Addresses**: Support unlimited addresses per customer
@@ -26,7 +25,7 @@ The Customers package provides core customer identity and data management for th
 - **Manual Segments**: Hand-picked customer groups
 - **Segment Types**: Loyalty, Behavior, Demographic, Custom
 - **Dynamic Updates**: Automatic segment membership updates based on rules
-- **Condition Types**: Marketing opt-in, tax exempt, status, creation date, login activity
+- **Condition Types**: Marketing opt-in, status, creation date
 
 ### Customer Groups
 - **Group Management**: Organize customers into buying groups

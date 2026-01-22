@@ -108,11 +108,8 @@ class SegmentResource extends Resource
                                             ->label('Field')
                                             ->options([
                                                 'accepts_marketing' => 'Accepts Marketing',
-                                                'is_tax_exempt' => 'Tax Exempt',
                                                 'status' => 'Customer Status',
                                                 'created_days_ago' => 'Customer for X Days',
-                                                'last_login_days' => 'Logged in Last X Days',
-                                                'no_login_days' => 'No Login for X Days',
                                             ])
                                             ->required()
                                             ->live(),
@@ -121,12 +118,12 @@ class SegmentResource extends Resource
                                             ->label('Value')
                                             ->required()
                                             ->numeric()
-                                            ->visible(fn (Get $get) => in_array($get('field'), ['created_days_ago', 'last_login_days', 'no_login_days']))
+                                            ->visible(fn (Get $get) => in_array($get('field'), ['created_days_ago']))
                                             ->dehydratedWhenHidden(),
 
                                         Forms\Components\Toggle::make('value_boolean')
                                             ->label('Value')
-                                            ->visible(fn (Get $get) => in_array($get('field'), ['accepts_marketing', 'is_tax_exempt']))
+                                            ->visible(fn (Get $get) => in_array($get('field'), ['accepts_marketing']))
                                             ->dehydratedWhenHidden(),
 
                                         Forms\Components\Select::make('value_status')

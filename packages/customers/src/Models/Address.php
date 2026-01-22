@@ -24,8 +24,8 @@ use InvalidArgumentException;
  * @property string|null $recipient_name
  * @property string|null $company
  * @property string|null $phone
- * @property string $address_line_1
- * @property string|null $address_line_2
+ * @property string $address1
+ * @property string|null $address2
  * @property string $city
  * @property string|null $state
  * @property string $postcode
@@ -147,8 +147,8 @@ class Address extends Model
     public function getFullAddressAttribute(): string
     {
         $parts = array_filter([
-            $this->address_line_1,
-            $this->address_line_2,
+            $this->address1,
+            $this->address2,
             $this->city,
             $this->state,
             $this->postcode,
@@ -177,10 +177,10 @@ class Address extends Model
             $lines[] = $this->company;
         }
 
-        $lines[] = $this->address_line_1;
+        $lines[] = $this->address1;
 
-        if ($this->address_line_2) {
-            $lines[] = $this->address_line_2;
+        if ($this->address2) {
+            $lines[] = $this->address2;
         }
 
         $lines[] = implode(' ', array_filter([
@@ -206,8 +206,8 @@ class Address extends Model
         return [
             'name' => $this->recipient_name ?? $this->customer->full_name,
             'company' => $this->company,
-            'address1' => $this->address_line_1,
-            'address2' => $this->address_line_2,
+            'address1' => $this->address1,
+            'address2' => $this->address2,
             'city' => $this->city,
             'state' => $this->state,
             'postcode' => $this->postcode,

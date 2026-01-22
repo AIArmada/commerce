@@ -34,10 +34,6 @@ use Spatie\Tags\HasTags;
  * @property string|null $company
  * @property CustomerStatus $status
  * @property bool $accepts_marketing
- * @property bool $is_tax_exempt
- * @property string|null $tax_exempt_reason
- * @property CarbonImmutable|null $email_verified_at
- * @property CarbonImmutable|null $last_login_at
  * @property array<string, mixed>|null $metadata
  * @property CarbonImmutable|null $created_at
  * @property CarbonImmutable|null $updated_at
@@ -68,10 +64,7 @@ class Customer extends Model implements HasMedia
      */
     protected $casts = [
         'status' => CustomerStatus::class,
-        'email_verified_at' => 'datetime',
-        'last_login_at' => 'datetime',
         'accepts_marketing' => 'boolean',
-        'is_tax_exempt' => 'boolean',
         'metadata' => 'array',
     ];
 
@@ -81,7 +74,6 @@ class Customer extends Model implements HasMedia
     protected $attributes = [
         'status' => 'active',
         'accepts_marketing' => true,
-        'is_tax_exempt' => false,
     ];
 
     /**
@@ -280,15 +272,6 @@ class Customer extends Model implements HasMedia
         return $query->whereHas('segments', fn ($q) => $q->where('segment_id', $segmentId));
     }
 
-    /**
-     * @param  Builder<self>  $query
-     * @return Builder<self>
-     */
-    public function scopeRecentlyActive(Builder $query, int $days = 30): Builder
-    {
-        return $query->where('last_login_at', '>=', CarbonImmutable::now()->subDays($days));
-    }
-
     // =========================================================================
     // MEDIA COLLECTIONS
     // =========================================================================
@@ -392,7 +375,6 @@ class Customer extends Model implements HasMedia
             'phone',
             'status',
             'accepts_marketing',
-            'is_tax_exempt',
         ];
     }
 

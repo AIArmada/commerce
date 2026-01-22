@@ -33,12 +33,6 @@ return new class extends Migration
 
             // Preferences
             $table->boolean('accepts_marketing')->default(true);
-            $table->boolean('is_tax_exempt')->default(false);
-            $table->string('tax_exempt_reason')->nullable();
-
-            // Timestamps
-            $table->timestamp('email_verified_at')->nullable();
-            $table->timestamp('last_login_at')->nullable();
 
             // Metadata
             $table->{$jsonColumnType}('metadata')->nullable();
@@ -48,7 +42,6 @@ return new class extends Migration
             // Indexes - email unique per owner for multitenancy
             $table->unique(['owner_type', 'owner_id', 'email'], 'customers_owner_email_unique');
             $table->index(['status', 'accepts_marketing']);
-            $table->index('last_login_at');
         });
     }
 

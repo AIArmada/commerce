@@ -31,10 +31,7 @@ class CustomerFactory extends Factory
             'lifetime_value' => $this->faker->numberBetween(0, 100000_00),
             'total_orders' => $this->faker->numberBetween(0, 50),
             'accepts_marketing' => $this->faker->boolean(70),
-            'is_tax_exempt' => false,
-            'email_verified_at' => $this->faker->optional()->dateTimeThisYear(),
             'last_order_at' => $this->faker->optional()->dateTimeThisMonth(),
-            'last_login_at' => $this->faker->optional()->dateTimeThisWeek(),
         ];
     }
 
@@ -76,17 +73,6 @@ class CustomerFactory extends Factory
         return $this->state(fn (array $attributes) => [
             'lifetime_value' => $this->faker->numberBetween(10000_00, 500000_00),
             'total_orders' => $this->faker->numberBetween(20, 100),
-        ]);
-    }
-
-    /**
-     * Tax exempt customer.
-     */
-    public function taxExempt(string $reason = 'Business customer'): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'is_tax_exempt' => true,
-            'tax_exempt_reason' => $reason,
         ]);
     }
 

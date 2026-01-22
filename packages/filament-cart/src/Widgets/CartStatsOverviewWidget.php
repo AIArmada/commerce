@@ -193,7 +193,7 @@ final class CartStatsOverviewWidget extends BaseWidget
      *
      * @param  Builder|\Illuminate\Database\Eloquent\Builder<Cart>  $query
      */
-    private function whereHasItems(Builder|\Illuminate\Database\Eloquent\Builder $query): void
+    private function whereHasItems(Builder | \Illuminate\Database\Eloquent\Builder $query): void
     {
         $driver = DB::getDriverName();
 

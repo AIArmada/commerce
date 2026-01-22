@@ -28,13 +28,12 @@ it('custom relation manager actions require authentication (abort 403)', functio
         'email' => 'rm-customer-' . uniqid() . '@example.com',
         'status' => 'active',
         'accepts_marketing' => false,
-        'is_tax_exempt' => false,
     ]);
 
     $address = Address::query()->create([
         'customer_id' => $customer->getKey(),
         'type' => 'both',
-        'address_line_1' => 'Line 1',
+        'address1' => 'Line 1',
         'city' => 'City',
         'postcode' => '12345',
         'country' => 'MY',

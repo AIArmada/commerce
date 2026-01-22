@@ -61,7 +61,6 @@ it('CustomerStatsWidget is owner-scoped for counts and aggregates', function ():
         'email' => 'a1@example.com',
         'status' => 'active',
         'accepts_marketing' => true,
-        'is_tax_exempt' => false,
         'created_at' => Carbon::now()->subDays(2),
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
@@ -73,7 +72,6 @@ it('CustomerStatsWidget is owner-scoped for counts and aggregates', function ():
         'email' => 'b1@example.com',
         'status' => 'active',
         'accepts_marketing' => true,
-        'is_tax_exempt' => false,
         'created_at' => Carbon::now()->subDays(2),
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
@@ -116,7 +114,6 @@ it('RecentCustomersWidget query is owner-scoped', function (): void {
         'email' => 'a-high@example.com',
         'status' => 'active',
         'accepts_marketing' => true,
-        'is_tax_exempt' => false,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);
@@ -127,7 +124,6 @@ it('RecentCustomersWidget query is owner-scoped', function (): void {
         'email' => 'b-high@example.com',
         'status' => 'active',
         'accepts_marketing' => true,
-        'is_tax_exempt' => false,
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]);
