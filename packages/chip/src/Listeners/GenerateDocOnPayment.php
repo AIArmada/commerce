@@ -7,8 +7,9 @@ namespace AIArmada\Chip\Listeners;
 use AIArmada\Chip\Events\PurchasePaid;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Docs\DataObjects\DocData;
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\States\DocStatus;
+use AIArmada\Docs\States\Paid;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Support\Arr;
 
@@ -60,8 +61,8 @@ final class GenerateDocOnPayment implements ShouldQueue
         $amount = $event->getAmount();
         $currency = $event->getCurrency();
 
-        // Determine status - since payment is already complete, mark as PAID
-        $status = DocStatus::PAID;
+        // Determine status - since payment is already complete, mark as Paid
+        $status = DocStatus::fromString(Paid::class);
 
         return new DocData(
             docType: $docType,

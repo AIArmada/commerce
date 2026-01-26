@@ -8,8 +8,10 @@ use AIArmada\FilamentShipping\Widgets\CarrierPerformanceWidget;
 use AIArmada\FilamentShipping\Widgets\PendingActionsWidget;
 use AIArmada\FilamentShipping\Widgets\PendingShipmentsWidget;
 use AIArmada\FilamentShipping\Widgets\ShippingDashboardWidget;
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\States\Delivered;
+use AIArmada\Shipping\States\ExceptionStatus;
+use AIArmada\Shipping\States\Pending;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -107,7 +109,7 @@ describe('CarrierPerformanceWidget', function (): void {
             'owner_id' => $owner->getKey(),
             'reference' => 'C-REF-1',
             'carrier_code' => 'jnt',
-            'status' => ShipmentStatus::Delivered,
+            'status' => Delivered::class,
             'created_at' => Carbon::now()->subDays(2),
             'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
             'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
@@ -118,7 +120,7 @@ describe('CarrierPerformanceWidget', function (): void {
             'owner_id' => $owner->getKey(),
             'reference' => 'C-REF-2',
             'carrier_code' => 'jnt',
-            'status' => ShipmentStatus::Exception,
+            'status' => ExceptionStatus::class,
             'created_at' => Carbon::now()->subDays(1),
             'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
             'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
@@ -188,7 +190,7 @@ describe('PendingActionsWidget', function (): void {
             'owner_id' => $ownerA->getKey(),
             'reference' => 'W-REF-A',
             'carrier_code' => 'test',
-            'status' => ShipmentStatus::Pending,
+            'status' => Pending::class,
             'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
             'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
         ]);
@@ -198,7 +200,7 @@ describe('PendingActionsWidget', function (): void {
             'owner_id' => $ownerB->getKey(),
             'reference' => 'W-REF-B',
             'carrier_code' => 'test',
-            'status' => ShipmentStatus::Pending,
+            'status' => Pending::class,
             'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
             'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
         ]);
@@ -208,7 +210,7 @@ describe('PendingActionsWidget', function (): void {
             'owner_id' => null,
             'reference' => 'W-REF-G',
             'carrier_code' => 'test',
-            'status' => ShipmentStatus::Pending,
+            'status' => Pending::class,
             'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
             'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
         ]);

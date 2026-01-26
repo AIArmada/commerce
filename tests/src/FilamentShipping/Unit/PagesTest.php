@@ -5,8 +5,8 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentShipping\Pages\ManifestPage;
 use AIArmada\FilamentShipping\Pages\ShippingDashboard;
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\States\Shipped;
 use Filament\Schemas\Schema;
 use Filament\Support\Icons\Heroicon;
 use Filament\Tables\Table;
@@ -129,7 +129,7 @@ describe('ManifestPage', function (): void {
             'owner_id' => null,
             'reference' => 'M-REF-1',
             'carrier_code' => 'jnt',
-            'status' => ShipmentStatus::Shipped,
+            'status' => Shipped::class,
             'shipped_at' => Carbon::parse($date)->startOfDay(),
             'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
             'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
@@ -140,7 +140,7 @@ describe('ManifestPage', function (): void {
             'owner_id' => null,
             'reference' => 'M-REF-2',
             'carrier_code' => 'flat_rate',
-            'status' => ShipmentStatus::Shipped,
+            'status' => Shipped::class,
             'shipped_at' => Carbon::parse($date)->startOfDay(),
             'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
             'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],

@@ -7,9 +7,10 @@ namespace AIArmada\Chip\Listeners;
 use AIArmada\Chip\Events\PaymentRefunded;
 use AIArmada\Chip\Models\Purchase;
 use AIArmada\Docs\DataObjects\DocData;
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\States\DocStatus;
+use AIArmada\Docs\States\Paid;
 use Illuminate\Contracts\Queue\ShouldQueue;
 
 /**
@@ -93,7 +94,7 @@ final class GenerateDocOnRefund implements ShouldQueue
 
         return new DocData(
             docType: $docType,
-            status: DocStatus::PAID, // Credit notes are immediately effective
+            status: DocStatus::fromString(Paid::class), // Credit notes are immediately effective
             issueDate: now(),
             dueDate: null,
             subtotal: $amount / 100,
