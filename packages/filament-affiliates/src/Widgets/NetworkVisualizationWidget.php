@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Widgets;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Widgets\Widget;
 use Illuminate\Database\Eloquent\Model;
@@ -43,7 +44,7 @@ final class NetworkVisualizationWidget extends Widget
                     fn ($query) => $query->forOwner($owner),
                 )
                 ->whereNull('parent_affiliate_id')
-                ->where('status', AffiliateStatus::Active)
+                ->where('status', AffiliateStatus::fromString(Active::class)->getValue())
                 ->with(['rank'])
                 ->withCount(['children', 'conversions'])
                 ->limit(10)
@@ -88,7 +89,7 @@ final class NetworkVisualizationWidget extends Widget
                     (bool) config('affiliates.owner.enabled', false),
                     fn ($query) => $query->forOwner($owner),
                 )
-                ->where('status', AffiliateStatus::Active)
+                ->where('status', AffiliateStatus::fromString(Active::class)->getValue())
                 ->count(),
             'max_depth' => $this->calculateMaxDepth(),
             'avg_children' => $this->calculateAverageChildren(),
@@ -101,7 +102,7 @@ final class NetworkVisualizationWidget extends Widget
 
         if ($currentDepth < $this->depth) {
             $children = $affiliate->children()
-                ->where('status', AffiliateStatus::Active)
+                ->where('status', AffiliateStatus::fromString(Active::class)->getValue())
                 ->with(['rank'])
                 ->withCount(['children', 'conversions'])
                 ->get()
@@ -121,7 +122,7 @@ final class NetworkVisualizationWidget extends Widget
             'id' => $affiliate->id,
             'name' => $affiliate->name,
             'code' => $affiliate->code,
-            'status' => $affiliate->status->value,
+            'status' => AffiliateStatus::normalize($affiliate->status),
             'rank' => $affiliate->rank?->name,
             'conversions' => $conversionsCount,
             'children' => $children,

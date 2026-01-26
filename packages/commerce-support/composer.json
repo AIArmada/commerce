@@ -23,6 +23,7 @@
         "spatie/laravel-package-tools": "^1.92",
         "spatie/laravel-settings": "^3.6",
         "spatie/laravel-sluggable": "^3.7",
+        "spatie/laravel-model-states": "^2.0",
         "spatie/laravel-tags": "^4.2",
         "spatie/laravel-webhook-client": "^3.4"
     },

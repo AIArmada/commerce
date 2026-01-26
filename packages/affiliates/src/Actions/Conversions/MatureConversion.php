@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Conversions;
 
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\QualifiedConversion;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -29,7 +30,7 @@ final class MatureConversion
      */
     public function handle(AffiliateConversion $conversion): bool
     {
-        if ($conversion->status !== ConversionStatus::Qualified) {
+        if (! $conversion->status->equals(QualifiedConversion::class)) {
             return false;
         }
 
@@ -49,7 +50,7 @@ final class MatureConversion
 
         // Update conversion status
         $conversion->update([
-            'status' => ConversionStatus::Approved,
+            'status' => ApprovedConversion::class,
             'metadata' => array_merge($conversion->metadata ?? [], [
                 'matured_at' => now()->toIso8601String(),
             ]),

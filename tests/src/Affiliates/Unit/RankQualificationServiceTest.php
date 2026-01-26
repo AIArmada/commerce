@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Enums\RankQualificationReason;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -12,6 +10,8 @@ use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\AffiliateRankHistory;
 use AIArmada\Affiliates\Services\NetworkService;
 use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
 use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
@@ -22,7 +22,7 @@ beforeEach(function (): void {
         'code' => 'RANK-' . uniqid(),
         'name' => 'Rank Test Affiliate',
         'contact_email' => 'rank@example.com',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => CommissionType::Percentage,
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -106,7 +106,7 @@ describe('RankQualificationService', function (): void {
                 'subtotal_minor' => 6000,
                 'total_minor' => 6000,
                 'commission_minor' => 600,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(5),
             ]);
 
@@ -216,7 +216,7 @@ describe('RankQualificationService', function (): void {
                 'code' => 'ALL-1-' . uniqid(),
                 'name' => 'All Test 1',
                 'contact_email' => 'all1@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -226,7 +226,7 @@ describe('RankQualificationService', function (): void {
                 'code' => 'ALL-2-' . uniqid(),
                 'name' => 'All Test 2',
                 'contact_email' => 'all2@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -260,7 +260,7 @@ describe('RankQualificationService', function (): void {
                 'code' => 'BATCH-' . uniqid(),
                 'name' => 'Batch Affiliate',
                 'contact_email' => 'batch@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -365,7 +365,7 @@ describe('RankQualificationService', function (): void {
                 'subtotal_minor' => 5000,
                 'total_minor' => 5500,
                 'commission_minor' => 550,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(5),
             ]);
 
@@ -376,7 +376,7 @@ describe('RankQualificationService', function (): void {
                 'subtotal_minor' => 3000,
                 'total_minor' => 3300,
                 'commission_minor' => 330,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(10),
             ]);
 
@@ -394,7 +394,7 @@ describe('RankQualificationService', function (): void {
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
                 'commission_minor' => 500,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(5),
             ]);
 
@@ -406,7 +406,7 @@ describe('RankQualificationService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(45),
             ]);
 
@@ -428,7 +428,7 @@ describe('RankQualificationService', function (): void {
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
                 'commission_minor' => 500,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(5),
             ]);
 
@@ -446,7 +446,7 @@ describe('RankQualificationService', function (): void {
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
                 'commission_minor' => 500,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(60),
             ]);
 
@@ -473,7 +473,7 @@ describe('RankQualificationService', function (): void {
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
                 'commission_minor' => 500,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(5),
             ]);
 

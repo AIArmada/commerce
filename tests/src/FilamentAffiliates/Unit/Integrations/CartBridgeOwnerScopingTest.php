@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Support\Integrations\CartBridge;
@@ -71,7 +71,7 @@ it('does not leak cross-tenant cart urls by identifier', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'AFF-' . Str::uuid(),
             'name' => 'Affiliate A',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 500,
             'currency' => 'USD',
@@ -87,7 +87,7 @@ it('does not leak cross-tenant cart urls by identifier', function (): void {
             'total_minor' => 10000,
             'commission_minor' => 500,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Approved,
+            'status' => ApprovedConversion::class,
             'channel' => 'test',
             'occurred_at' => now(),
         ]);

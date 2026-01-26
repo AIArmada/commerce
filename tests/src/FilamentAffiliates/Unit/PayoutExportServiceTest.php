@@ -2,11 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\ConversionStatus;
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\FilamentAffiliates\Services\PayoutExportService;
 use Illuminate\Support\Str;
 
@@ -21,7 +23,7 @@ function createPayoutWithConversions(): AffiliatePayout
     $affiliate = Affiliate::create([
         'code' => 'EXPORT-' . Str::uuid(),
         'name' => 'Export Test Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -31,7 +33,7 @@ function createPayoutWithConversions(): AffiliatePayout
         'reference' => 'PAY-' . Str::uuid(),
         'amount_minor' => 15000,
         'currency' => 'USD',
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
         'payee_type' => $affiliate->getMorphClass(),
         'payee_id' => $affiliate->getKey(),
     ]);
@@ -45,7 +47,7 @@ function createPayoutWithConversions(): AffiliatePayout
         'total_minor' => 10000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Approved,
+        'status' => ApprovedConversion::class,
         'occurred_at' => now(),
     ]);
 
@@ -57,7 +59,7 @@ function createPayoutWithConversions(): AffiliatePayout
         'total_minor' => 20000,
         'commission_minor' => 1000,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Paid,
+        'status' => PaidConversion::class,
         'occurred_at' => now(),
     ]);
 
@@ -137,9 +139,9 @@ it('formats payout status safely for both enum and string statuses', function ()
     $method = $reflection->getMethod('getStatusValue');
     $method->setAccessible(true);
 
-    /** @var string $enumStatus */
-    $enumStatus = $method->invoke($service, $payout);
-    expect($enumStatus)->toBe('pending');
+    /** @var string $stateStatus */
+    $stateStatus = $method->invoke($service, $payout);
+    expect($stateStatus)->toBe('pending');
 
     $payout->status = 'processing';
 
@@ -176,7 +178,7 @@ it('handles payouts with zero conversions', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'EMPTY-' . Str::uuid(),
         'name' => 'Empty Test Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -186,7 +188,7 @@ it('handles payouts with zero conversions', function (): void {
         'reference' => 'PAY-EMPTY-' . Str::uuid(),
         'amount_minor' => 0,
         'currency' => 'USD',
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
         'payee_type' => $affiliate->getMorphClass(),
         'payee_id' => $affiliate->getKey(),
     ]);

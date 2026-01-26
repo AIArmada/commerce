@@ -5,6 +5,13 @@ declare(strict_types=1);
 use AIArmada\Cart\Models\RecoveryAttempt;
 use AIArmada\Cart\Models\RecoveryCampaign;
 use AIArmada\Cart\Models\RecoveryTemplate;
+use AIArmada\Cart\States\Clicked;
+use AIArmada\Cart\States\Converted;
+use AIArmada\Cart\States\Failed;
+use AIArmada\Cart\States\Opened;
+use AIArmada\Cart\States\Queued;
+use AIArmada\Cart\States\Scheduled;
+use AIArmada\Cart\States\Sent;
 use AIArmada\FilamentCart\Models\Cart;
 use Illuminate\Support\Carbon;
 
@@ -49,14 +56,14 @@ describe('RecoveryAttempt', function (): void {
             'template_id' => $this->template->id,
             'recipient_email' => 'test@example.com',
             'channel' => 'email',
-            'status' => 'scheduled',
+            'status' => Scheduled::class,
             'attempt_number' => 1,
         ]);
 
         expect($attempt)->toBeInstanceOf(RecoveryAttempt::class);
         expect($attempt->id)->not->toBeNull();
         expect($attempt->channel)->toBe('email');
-        expect($attempt->status)->toBe('scheduled');
+        expect($attempt->status)->toBeInstanceOf(Scheduled::class);
     });
 
     it('returns table name from config', function (): void {
@@ -71,7 +78,7 @@ describe('RecoveryAttempt', function (): void {
             'campaign_id' => $this->campaign->id,
             'cart_id' => $this->cart->id,
             'channel' => 'email',
-            'status' => 'scheduled',
+            'status' => Scheduled::class,
             'attempt_number' => 1,
         ]);
 
@@ -84,7 +91,7 @@ describe('RecoveryAttempt', function (): void {
             'campaign_id' => $this->campaign->id,
             'cart_id' => $this->cart->id,
             'channel' => 'email',
-            'status' => 'scheduled',
+            'status' => Scheduled::class,
             'attempt_number' => 1,
         ]);
 
@@ -98,7 +105,7 @@ describe('RecoveryAttempt', function (): void {
             'cart_id' => $this->cart->id,
             'template_id' => $this->template->id,
             'channel' => 'email',
-            'status' => 'scheduled',
+            'status' => Scheduled::class,
             'attempt_number' => 1,
         ]);
 
@@ -110,7 +117,7 @@ describe('RecoveryAttempt', function (): void {
             'campaign_id' => $this->campaign->id,
             'cart_id' => $this->cart->id,
             'channel' => 'email',
-            'status' => 'scheduled',
+            'status' => Scheduled::class,
             'attempt_number' => 1,
         ]);
 
@@ -118,7 +125,7 @@ describe('RecoveryAttempt', function (): void {
             'campaign_id' => $this->campaign->id,
             'cart_id' => $this->cart->id,
             'channel' => 'email',
-            'status' => 'sent',
+            'status' => Sent::class,
             'attempt_number' => 2,
         ]);
 
@@ -131,7 +138,7 @@ describe('RecoveryAttempt', function (): void {
             'campaign_id' => $this->campaign->id,
             'cart_id' => $this->cart->id,
             'channel' => 'email',
-            'status' => 'sent',
+            'status' => Sent::class,
             'attempt_number' => 1,
         ]);
 
@@ -143,7 +150,7 @@ describe('RecoveryAttempt', function (): void {
             'campaign_id' => $this->campaign->id,
             'cart_id' => $this->cart->id,
             'channel' => 'email',
-            'status' => 'opened',
+            'status' => Opened::class,
             'attempt_number' => 1,
         ]);
 
@@ -155,7 +162,7 @@ describe('RecoveryAttempt', function (): void {
             'campaign_id' => $this->campaign->id,
             'cart_id' => $this->cart->id,
             'channel' => 'email',
-            'status' => 'clicked',
+            'status' => Clicked::class,
             'attempt_number' => 1,
         ]);
 
@@ -167,7 +174,7 @@ describe('RecoveryAttempt', function (): void {
             'campaign_id' => $this->campaign->id,
             'cart_id' => $this->cart->id,
             'channel' => 'email',
-            'status' => 'converted',
+            'status' => Converted::class,
             'attempt_number' => 1,
         ]);
 
@@ -179,7 +186,7 @@ describe('RecoveryAttempt', function (): void {
             'campaign_id' => $this->campaign->id,
             'cart_id' => $this->cart->id,
             'channel' => 'email',
-            'status' => 'failed',
+            'status' => Failed::class,
             'attempt_number' => 1,
         ]);
 
@@ -191,14 +198,14 @@ describe('RecoveryAttempt', function (): void {
             'campaign_id' => $this->campaign->id,
             'cart_id' => $this->cart->id,
             'channel' => 'email',
-            'status' => 'queued',
+            'status' => Queued::class,
             'attempt_number' => 1,
         ]);
 
         $attempt->markAsSent('msg-123');
         $attempt->refresh();
 
-        expect($attempt->status)->toBe('sent');
+        expect($attempt->status)->toBeInstanceOf(Sent::class);
         expect($attempt->sent_at)->not->toBeNull();
         expect($attempt->message_id)->toBe('msg-123');
     });
@@ -208,14 +215,14 @@ describe('RecoveryAttempt', function (): void {
             'campaign_id' => $this->campaign->id,
             'cart_id' => $this->cart->id,
             'channel' => 'email',
-            'status' => 'sent',
+            'status' => Sent::class,
             'attempt_number' => 1,
         ]);
 
         $attempt->markAsOpened();
         $attempt->refresh();
 
-        expect($attempt->status)->toBe('opened');
+        expect($attempt->status)->toBeInstanceOf(Opened::class);
         expect($attempt->opened_at)->not->toBeNull();
     });
 
@@ -224,14 +231,14 @@ describe('RecoveryAttempt', function (): void {
             'campaign_id' => $this->campaign->id,
             'cart_id' => $this->cart->id,
             'channel' => 'email',
-            'status' => 'sent',
+            'status' => Sent::class,
             'attempt_number' => 1,
         ]);
 
         $attempt->markAsClicked();
         $attempt->refresh();
 
-        expect($attempt->status)->toBe('clicked');
+        expect($attempt->status)->toBeInstanceOf(Clicked::class);
         expect($attempt->clicked_at)->not->toBeNull();
         expect($attempt->opened_at)->not->toBeNull(); // opened is implied
     });
@@ -241,14 +248,14 @@ describe('RecoveryAttempt', function (): void {
             'campaign_id' => $this->campaign->id,
             'cart_id' => $this->cart->id,
             'channel' => 'email',
-            'status' => 'sent',
+            'status' => Sent::class,
             'attempt_number' => 1,
         ]);
 
         $attempt->markAsConverted();
         $attempt->refresh();
 
-        expect($attempt->status)->toBe('converted');
+        expect($attempt->status)->toBeInstanceOf(Converted::class);
         expect($attempt->converted_at)->not->toBeNull();
     });
 
@@ -257,14 +264,14 @@ describe('RecoveryAttempt', function (): void {
             'campaign_id' => $this->campaign->id,
             'cart_id' => $this->cart->id,
             'channel' => 'email',
-            'status' => 'queued',
+            'status' => Queued::class,
             'attempt_number' => 1,
         ]);
 
         $attempt->markAsFailed('Connection timeout');
         $attempt->refresh();
 
-        expect($attempt->status)->toBe('failed');
+        expect($attempt->status)->toBeInstanceOf(Failed::class);
         expect($attempt->failed_at)->not->toBeNull();
         expect($attempt->failure_reason)->toBe('Connection timeout');
     });
@@ -274,7 +281,7 @@ describe('RecoveryAttempt', function (): void {
             'campaign_id' => $this->campaign->id,
             'cart_id' => $this->cart->id,
             'channel' => 'email',
-            'status' => 'opened',
+            'status' => Opened::class,
             'attempt_number' => 1,
             'opened_at' => now()->subHour(),
         ]);

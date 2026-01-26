@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Affiliates;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Disabled;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -20,7 +20,7 @@ final class RejectAffiliate
      */
     public function handle(Affiliate $affiliate): Affiliate
     {
-        $affiliate->status = AffiliateStatus::Disabled;
+        $affiliate->status = new Disabled($affiliate);
         $affiliate->save();
 
         return $affiliate;

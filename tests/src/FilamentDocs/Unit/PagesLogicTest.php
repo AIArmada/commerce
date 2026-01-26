@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Sent;
 use AIArmada\FilamentDocs\Pages\AgingReportPage;
 use AIArmada\FilamentDocs\Pages\PendingApprovalsPage;
 
@@ -14,19 +16,19 @@ uses(TestCase::class);
 
 it('computes an aging summary across buckets', function (): void {
     Doc::factory()->create([
-        'status' => DocStatus::SENT,
+        'status' => Sent::class,
         'due_date' => now()->addDays(1),
         'total' => 100,
     ]);
 
     Doc::factory()->create([
-        'status' => DocStatus::OVERDUE,
+        'status' => Overdue::class,
         'due_date' => now()->subDays(10),
         'total' => 200,
     ]);
 
     Doc::factory()->create([
-        'status' => DocStatus::PENDING,
+        'status' => Pending::class,
         'due_date' => now()->subDays(40),
         'total' => 300,
     ]);

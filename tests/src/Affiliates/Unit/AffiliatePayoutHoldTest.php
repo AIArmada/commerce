@@ -2,16 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\States\Active;
 
 describe('AffiliatePayoutHold Model', function (): void {
     beforeEach(function (): void {
         $this->affiliate = Affiliate::create([
             'code' => 'HOLD' . uniqid(),
             'name' => 'Hold Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',

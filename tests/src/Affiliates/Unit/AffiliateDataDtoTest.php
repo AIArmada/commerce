@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Data\AffiliateData;
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\Draft;
+use AIArmada\Affiliates\States\Pending;
 use Carbon\Carbon;
 
 describe('AffiliateAttributionData', function (): void {
@@ -62,7 +65,7 @@ describe('AffiliateAttributionData', function (): void {
                 'code' => 'MODEL-' . uniqid(),
                 'name' => 'Test Affiliate',
                 'contact_email' => 'test@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -224,7 +227,7 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test Affiliate',
-                status: AffiliateStatus::Active,
+                status: AffiliateStatus::fromString(Active::class),
                 commissionType: CommissionType::Percentage,
                 commissionRate: 1000,
                 currency: 'USD',
@@ -233,7 +236,7 @@ describe('AffiliateData', function (): void {
             expect($data->id)->toBe('aff-123');
             expect($data->code)->toBe('CODE456');
             expect($data->name)->toBe('Test Affiliate');
-            expect($data->status)->toBe(AffiliateStatus::Active);
+            expect($data->status->equals(Active::class))->toBeTrue();
             expect($data->commissionType)->toBe(CommissionType::Percentage);
             expect($data->commissionRate)->toBe(1000);
             expect($data->currency)->toBe('USD');
@@ -246,7 +249,7 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test Affiliate',
-                status: AffiliateStatus::Active,
+                status: AffiliateStatus::fromString(Active::class),
                 commissionType: CommissionType::Percentage,
                 commissionRate: 1000,
                 currency: 'USD',
@@ -265,7 +268,7 @@ describe('AffiliateData', function (): void {
                 'code' => 'DATA-' . uniqid(),
                 'name' => 'Data Test Affiliate',
                 'contact_email' => 'data@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Fixed,
                 'commission_rate' => 500,
                 'currency' => 'EUR',
@@ -279,7 +282,7 @@ describe('AffiliateData', function (): void {
             expect($data->id)->toBe($affiliate->id);
             expect($data->code)->toBe($affiliate->code);
             expect($data->name)->toBe('Data Test Affiliate');
-            expect($data->status)->toBe(AffiliateStatus::Active);
+            expect($data->status->equals(Active::class))->toBeTrue();
             expect($data->commissionType)->toBe(CommissionType::Fixed);
             expect($data->commissionRate)->toBe(500);
             expect($data->currency)->toBe('EUR');
@@ -293,7 +296,7 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::Active,
+                status: AffiliateStatus::fromString(Active::class),
                 commissionType: CommissionType::Percentage,
                 commissionRate: 1000,
                 currency: 'USD',
@@ -307,7 +310,7 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::Draft,
+                status: AffiliateStatus::fromString(Draft::class),
                 commissionType: CommissionType::Percentage,
                 commissionRate: 1000,
                 currency: 'USD',
@@ -321,7 +324,7 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::Pending,
+                status: AffiliateStatus::fromString(Pending::class),
                 commissionType: CommissionType::Percentage,
                 commissionRate: 1000,
                 currency: 'USD',
@@ -337,7 +340,7 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::Active,
+                status: AffiliateStatus::fromString(Active::class),
                 commissionType: CommissionType::Percentage,
                 commissionRate: 1000,
                 currency: 'USD',
@@ -351,7 +354,7 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::Active,
+                status: AffiliateStatus::fromString(Active::class),
                 commissionType: CommissionType::Fixed,
                 commissionRate: 500,
                 currency: 'USD',
@@ -367,7 +370,7 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::Active,
+                status: AffiliateStatus::fromString(Active::class),
                 commissionType: CommissionType::Percentage,
                 commissionRate: 1000, // 10.00%
                 currency: 'USD',
@@ -381,7 +384,7 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::Active,
+                status: AffiliateStatus::fromString(Active::class),
                 commissionType: CommissionType::Fixed,
                 commissionRate: 500, // 5.00 USD
                 currency: 'USD',
@@ -395,7 +398,7 @@ describe('AffiliateData', function (): void {
                 id: 'aff-123',
                 code: 'CODE456',
                 name: 'Test',
-                status: AffiliateStatus::Active,
+                status: AffiliateStatus::fromString(Active::class),
                 commissionType: CommissionType::Fixed,
                 commissionRate: 1234,
                 currency: 'EUR',

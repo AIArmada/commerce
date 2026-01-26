@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 test('AffiliateConversion has affiliate relationship', function (): void {
@@ -28,7 +30,7 @@ test('AffiliateConversion can be created with fillable attributes', function ():
     $affiliate = Affiliate::create([
         'code' => 'AFF1',
         'name' => 'Test Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -40,7 +42,7 @@ test('AffiliateConversion can be created with fillable attributes', function ():
         'order_reference' => 'ORD123',
         'commission_minor' => 500,
         'commission_currency' => 'USD',
-        'status' => 'approved',
+        'status' => ApprovedConversion::class,
     ]);
 
     expect($conversion->affiliate_id)->toBe($affiliate->id);
@@ -48,5 +50,5 @@ test('AffiliateConversion can be created with fillable attributes', function ():
     expect($conversion->order_reference)->toBe('ORD123');
     expect($conversion->commission_minor)->toBe(500);
     expect($conversion->commission_currency)->toBe('USD');
-    expect($conversion->status->value)->toBe('approved');
+    expect($conversion->status)->toBeInstanceOf(ApprovedConversion::class);
 });

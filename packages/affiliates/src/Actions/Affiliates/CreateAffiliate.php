@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Affiliates;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -52,7 +53,7 @@ final class CreateAffiliate
                 $affiliate->owner_id = $owner->getKey();
             }
 
-            if ($status === AffiliateStatus::Active) {
+            if ($status === Active::class) {
                 $affiliate->activated_at = now();
             }
 
@@ -72,12 +73,19 @@ final class CreateAffiliate
     /**
      * @param  array<string, mixed>  $data
      */
-    private function determineStatus(array $data, RegistrationApprovalMode $approvalMode): AffiliateStatus
+    /**
+     * @return class-string<AffiliateStatus>
+     */
+    private function determineStatus(array $data, RegistrationApprovalMode $approvalMode): string
     {
         if (isset($data['status'])) {
-            return $data['status'] instanceof AffiliateStatus
-                ? $data['status']
-                : (AffiliateStatus::tryFrom($data['status']) ?? $approvalMode->defaultStatus());
+            if ($data['status'] instanceof AffiliateStatus) {
+                return $data['status']::class;
+            }
+
+            if (is_string($data['status'])) {
+                return AffiliateStatus::resolveStateClassFor($data['status']);
+            }
         }
 
         return $approvalMode->defaultStatus();

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
@@ -11,6 +10,8 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramCreative;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\Pending;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
@@ -109,7 +110,7 @@ describe('AffiliateProgram Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TEST-001',
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -165,7 +166,7 @@ describe('AffiliateProgram Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TEST-001',
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -284,7 +285,7 @@ describe('AffiliateProgram Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TEST-001',
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -307,7 +308,7 @@ describe('AffiliateProgram Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TEST-001',
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -338,7 +339,7 @@ describe('AffiliateProgram Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TEST-001',
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -363,7 +364,7 @@ describe('AffiliateProgram Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TEST-001',
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Pending,
+            'status' => Pending::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',

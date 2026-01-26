@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\States\Active;
 use Carbon\Carbon;
 
 test('AffiliateAttributionData constructor sets properties', function (): void {
@@ -42,7 +43,7 @@ test('AffiliateAttributionData fromModel creates data from attribution', functio
     $affiliate = Affiliate::create([
         'code' => 'AFF1',
         'name' => 'Test Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',

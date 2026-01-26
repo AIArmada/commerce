@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Actions;
 
-use AIArmada\Shipping\Enums\ShipmentStatus;
+use AIArmada\Shipping\Enums\ShipmentStatus as ShipmentStatusEnum;
 use AIArmada\Shipping\Exceptions\InvalidStatusTransitionException;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\States\Delivered;
+use AIArmada\Shipping\States\ShipmentStatus as ShipmentStatusState;
+use AIArmada\Shipping\States\Shipped;
 use Illuminate\Support\Facades\DB;
 use Lorisleiva\Actions\Concerns\AsAction;
 
@@ -24,7 +27,7 @@ final class UpdateShipmentStatus
      */
     public function handle(
         Shipment $shipment,
-        ShipmentStatus $status,
+        ShipmentStatusState | ShipmentStatusEnum | string $status,
         ?string $description = null,
         ?string $location = null,
         array $metadata = []
@@ -32,18 +35,23 @@ final class UpdateShipmentStatus
         return DB::transaction(function () use ($shipment, $status, $description, $location, $metadata): Shipment {
             $previousStatus = $shipment->status;
 
-            if (! $previousStatus->canTransitionTo($status)) {
-                throw new InvalidStatusTransitionException($previousStatus, $status);
+            $nextStatusClass = ShipmentStatusState::resolveStateClassFor($status, $shipment);
+            $nextStatus = new $nextStatusClass($shipment);
+
+            if (! $previousStatus->canTransitionTo($nextStatusClass)) {
+                throw new InvalidStatusTransitionException($previousStatus, $nextStatus);
             }
 
-            $shipment->status = $status;
+            $shipment->forceFill([
+                'status' => $nextStatus,
+            ]);
 
             // Update timestamp fields based on status
-            if ($status === ShipmentStatus::Shipped && $shipment->shipped_at === null) {
+            if ($shipment->status instanceof Shipped && $shipment->shipped_at === null) {
                 $shipment->shipped_at = now();
             }
 
-            if ($status === ShipmentStatus::Delivered && $shipment->delivered_at === null) {
+            if ($shipment->status instanceof Delivered && $shipment->delivered_at === null) {
                 $shipment->delivered_at = now();
             }
 
@@ -51,7 +59,7 @@ final class UpdateShipmentStatus
 
             // Create event record
             $shipment->events()->create([
-                'normalized_status' => $status->toTrackingStatus(),
+                'normalized_status' => $nextStatus->toTrackingStatus(),
                 'description' => $description,
                 'location' => $location,
                 'raw_data' => $metadata ?: null,

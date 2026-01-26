@@ -5,18 +5,19 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Listeners\AttachAffiliateFromVoucher;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\States\Active as AffiliateActive;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
+use AIArmada\Vouchers\States\Active;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
     $this->affiliate = Affiliate::create([
         'code' => 'VOUCHER-AFF',
         'name' => 'Voucher Partner',
-        'status' => 'active',
+        'status' => AffiliateActive::class,
         'commission_type' => 'percentage',
         'commission_rate' => 100,
         'currency' => 'USD',
@@ -34,7 +35,7 @@ function dispatchVoucherApplied(array $metadata): void
         'type' => VoucherType::Fixed->value,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active->value,
+        'status' => Active::class,
         'metadata' => $metadata,
     ]);
 
@@ -58,7 +59,7 @@ test('voucher code fallback attaches affiliate when metadata missing', function 
     $fallbackAffiliate = Affiliate::create([
         'code' => 'VOUCHER-FALLBACK',
         'name' => 'Fallback Partner',
-        'status' => 'active',
+        'status' => AffiliateActive::class,
         'commission_type' => 'percentage',
         'commission_rate' => 150,
         'currency' => 'USD',

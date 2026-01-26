@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliateFraudSignal Model', function (): void {
@@ -15,7 +15,7 @@ describe('AffiliateFraudSignal Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FRAUD-TEST-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -42,7 +42,7 @@ describe('AffiliateFraudSignal Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FRAUD-AFF-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -66,7 +66,7 @@ describe('AffiliateFraudSignal Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FRAUD-PEND-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -104,7 +104,7 @@ describe('AffiliateFraudSignal Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FRAUD-CONF-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -142,7 +142,7 @@ describe('AffiliateFraudSignal Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FRAUD-HIGH-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -189,7 +189,7 @@ describe('AffiliateFraudSignal Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FRAUD-REVIEW-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -217,7 +217,7 @@ describe('AffiliateFraudSignal Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FRAUD-DISM-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -245,7 +245,7 @@ describe('AffiliateFraudSignal Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FRAUD-CONFIRM-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -273,7 +273,7 @@ describe('AffiliateFraudSignal Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FRAUD-EVID-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -303,7 +303,7 @@ describe('AffiliateFraudSignal Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FRAUD-SEV-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',

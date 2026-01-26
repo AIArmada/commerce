@@ -4,9 +4,15 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\CancelledPayout;
+use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\FailedPayout;
+use AIArmada\Affiliates\States\PayoutStatus;
+use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\States\ProcessingPayout;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -20,13 +26,13 @@ final class PayoutReconciliationService
      */
     public function reconcilePayout(AffiliatePayout $payout, string $externalStatus, array $externalData = []): bool
     {
-        $newStatus = $this->mapExternalStatus($externalStatus);
+        $statusClass = $this->mapExternalStatus($externalStatus);
 
-        if ($newStatus === null || $newStatus->value === $payout->status->value) {
+        if ($statusClass === null || $payout->status->equals($statusClass)) {
             return false;
         }
 
-        DB::transaction(function () use ($payout, $newStatus, $externalData): void {
+        DB::transaction(function () use ($payout, $statusClass, $externalData): void {
             $metadata = array_merge($payout->metadata ?? [], [
                 'reconciled_at' => now()->toIso8601String(),
                 'external_data' => $externalData,
@@ -36,21 +42,23 @@ final class PayoutReconciliationService
                 $metadata['external_reference'] = $externalData['reference'];
             }
 
+            $newStatus = PayoutStatus::fromString($statusClass, $payout);
+
             $payout->update([
-                'status' => $newStatus,
-                'paid_at' => $newStatus === PayoutStatus::Completed ? now() : $payout->paid_at,
+                'status' => $statusClass,
+                'paid_at' => $newStatus->equals(CompletedPayout::class) ? now() : $payout->paid_at,
                 'metadata' => $metadata,
             ]);
 
             // Create audit event
             $payout->events()->create([
-                'to_status' => $newStatus->value,
+                'to_status' => $newStatus->getValue(),
                 'notes' => 'Status updated via reconciliation',
                 'metadata' => $externalData,
             ]);
 
             // If failed, return commission to balance
-            if ($newStatus === PayoutStatus::Failed) {
+            if ($newStatus->equals(FailedPayout::class)) {
                 $this->returnCommissionToBalance($payout);
             }
         });
@@ -64,7 +72,7 @@ final class PayoutReconciliationService
     public function getPayoutsNeedingReconciliation(): Collection
     {
         return AffiliatePayout::query()
-            ->whereIn('status', [PayoutStatus::Processing->value, PayoutStatus::Pending->value])
+            ->whereIn('status', [ProcessingPayout::value(), PendingPayout::value()])
             ->whereNotNull('metadata->external_reference')
             ->where('updated_at', '<=', now()->subHours(1))
             ->get();
@@ -87,10 +95,10 @@ final class PayoutReconciliationService
 
         $payouts = $query->get();
 
-        $byStatus = $payouts->groupBy(fn ($p) => $p->status->value)->map->count();
+        $byStatus = $payouts->groupBy(fn ($p) => $p->status->getValue())->map->count();
         $totalAmount = $payouts->sum('amount_minor');
-        $completedAmount = $payouts->where('status', PayoutStatus::Completed)->sum('amount_minor');
-        $failedAmount = $payouts->where('status', PayoutStatus::Failed)->sum('amount_minor');
+        $completedAmount = $payouts->filter(fn ($p) => $p->status->equals(CompletedPayout::class))->sum('amount_minor');
+        $failedAmount = $payouts->filter(fn ($p) => $p->status->equals(FailedPayout::class))->sum('amount_minor');
 
         return [
             'period' => [
@@ -118,15 +126,15 @@ final class PayoutReconciliationService
 
         // Calculate expected balance from conversions
         $approvedCommissions = $affiliate->conversions()
-            ->where('status', 'approved')
+            ->where('status', ApprovedConversion::value())
             ->sum('commission_minor');
 
         $paidOut = $affiliate->payouts()
-            ->where('status', PayoutStatus::Completed->value)
+            ->where('status', CompletedPayout::value())
             ->sum('total_minor');
 
         $pendingPayouts = $affiliate->payouts()
-            ->whereIn('status', [PayoutStatus::Pending->value, PayoutStatus::Processing->value])
+            ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
             ->sum('total_minor');
 
         $expectedAvailable = $approvedCommissions - $paidOut - $pendingPayouts;
@@ -146,14 +154,14 @@ final class PayoutReconciliationService
         ];
     }
 
-    private function mapExternalStatus(string $status): ?PayoutStatus
+    private function mapExternalStatus(string $status): ?string
     {
         return match (mb_strtolower($status)) {
-            'completed', 'paid', 'success', 'succeeded' => PayoutStatus::Completed,
-            'failed', 'declined', 'rejected', 'error' => PayoutStatus::Failed,
-            'pending', 'created' => PayoutStatus::Pending,
-            'processing', 'in_progress' => PayoutStatus::Processing,
-            'cancelled', 'canceled' => PayoutStatus::Cancelled,
+            'completed', 'paid', 'success', 'succeeded' => CompletedPayout::class,
+            'failed', 'declined', 'rejected', 'error' => FailedPayout::class,
+            'pending', 'created' => PendingPayout::class,
+            'processing', 'in_progress' => ProcessingPayout::class,
+            'cancelled', 'canceled' => CancelledPayout::class,
             default => null,
         };
     }
@@ -169,7 +177,7 @@ final class PayoutReconciliationService
 
         // Update linked conversions back to approved status
         $payout->conversions()->update([
-            'status' => 'approved',
+            'status' => ApprovedConversion::value(),
             'affiliate_payout_id' => null,
         ]);
     }

@@ -2,18 +2,18 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\Active as AffiliateActive;
+use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentAffiliates\Support\Integrations\CartBridge;
 use AIArmada\FilamentAffiliates\Support\Integrations\VoucherBridge;
 use AIArmada\FilamentCart\Models\Cart as SnapshotCart;
 use AIArmada\FilamentVouchers\Models\Voucher;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\States\Active;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -111,7 +111,7 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
     $affiliateB = Affiliate::create([
         'code' => 'AFF-B-' . Str::uuid(),
         'name' => 'Affiliate B',
-        'status' => AffiliateStatus::Active,
+        'status' => AffiliateActive::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -128,7 +128,7 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
         'total_minor' => 10000,
         'commission_minor' => 1000,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Approved,
+        'status' => ApprovedConversion::class,
         'occurred_at' => now(),
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => (string) $ownerB->getKey(),
@@ -139,7 +139,7 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
     $affiliateA = Affiliate::create([
         'code' => 'AFF-A-' . Str::uuid(),
         'name' => 'Affiliate A',
-        'status' => AffiliateStatus::Active,
+        'status' => AffiliateActive::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -156,7 +156,7 @@ test('cart bridge does not resolve urls when cart is not referenced in current o
         'total_minor' => 10000,
         'commission_minor' => 1000,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Approved,
+        'status' => ApprovedConversion::class,
         'occurred_at' => now(),
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => (string) $ownerA->getKey(),
@@ -172,7 +172,7 @@ test('voucher bridge resolves urls for vouchers when enabled', function (): void
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
     ]);
 
     $url = app(VoucherBridge::class)->resolveUrl('BRIDGE-VOUCHER');
@@ -215,7 +215,7 @@ test('voucher bridge does not resolve urls outside current owner scope', functio
         'type' => VoucherType::Fixed,
         'value' => 500,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]);
@@ -228,7 +228,7 @@ test('voucher bridge does not resolve urls outside current owner scope', functio
         'type' => VoucherType::Fixed,
         'value' => 700,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);

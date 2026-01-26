@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateNetwork;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -14,7 +14,7 @@ describe('AffiliateNetwork Model', function (): void {
         $this->rootAffiliate = Affiliate::create([
             'code' => 'ROOT-001',
             'name' => 'Root Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -23,7 +23,7 @@ describe('AffiliateNetwork Model', function (): void {
         $this->childAffiliate = Affiliate::create([
             'code' => 'CHILD-001',
             'name' => 'Child Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -33,7 +33,7 @@ describe('AffiliateNetwork Model', function (): void {
         $this->grandchildAffiliate = Affiliate::create([
             'code' => 'GRANDCHILD-001',
             'name' => 'Grandchild Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -104,7 +104,7 @@ describe('AffiliateNetwork Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'SOLO-001',
             'name' => 'Solo Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -128,7 +128,7 @@ describe('AffiliateNetwork Model', function (): void {
         $newAffiliate = Affiliate::create([
             'code' => 'NEW-001',
             'name' => 'New Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',

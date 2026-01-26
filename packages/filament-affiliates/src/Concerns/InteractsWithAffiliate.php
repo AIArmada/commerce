@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Concerns;
 
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Collection;
 
@@ -109,7 +110,7 @@ trait InteractsWithAffiliate
         }
 
         return (int) $affiliate->conversions()
-            ->where('status', ConversionStatus::Approved)
+            ->where('status', ApprovedConversion::value())
             ->sum('commission_minor');
     }
 
@@ -125,7 +126,7 @@ trait InteractsWithAffiliate
         }
 
         return (int) $affiliate->conversions()
-            ->where('status', ConversionStatus::Pending)
+            ->where('status', PendingConversion::value())
             ->sum('commission_minor');
     }
 

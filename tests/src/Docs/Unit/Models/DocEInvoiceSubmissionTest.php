@@ -2,6 +2,8 @@
 
 declare(strict_types=1);
 
+use AIArmada\Docs\Enums\DocEInvoiceSubmissionStatus;
+use AIArmada\Docs\Enums\DocEInvoiceValidationStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEInvoiceSubmission;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -10,20 +12,20 @@ uses(RefreshDatabase::class);
 
 test('einvoice submission status helpers', function (): void {
     $sub = DocEInvoiceSubmission::factory()->create([
-        'status' => 'pending',
+        'status' => DocEInvoiceSubmissionStatus::Pending,
         'validation_status' => null,
     ]);
 
     expect($sub->isPending())->toBeTrue();
     expect($sub->isSubmitted())->toBeFalse();
 
-    $sub->update(['status' => 'submitted']);
+    $sub->update(['status' => DocEInvoiceSubmissionStatus::Submitted]);
     expect($sub->isSubmitted())->toBeTrue();
 });
 
 test('einvoice submission validation helpers', function (): void {
     $sub = DocEInvoiceSubmission::factory()->create([
-        'validation_status' => 'valid',
+        'validation_status' => DocEInvoiceValidationStatus::Valid,
         'errors' => null,
         'warnings' => [],
     ]);
@@ -34,7 +36,7 @@ test('einvoice submission validation helpers', function (): void {
     expect($sub->hasWarnings())->toBeFalse();
 
     $sub->update([
-        'validation_status' => 'invalid',
+        'validation_status' => DocEInvoiceValidationStatus::Invalid,
         'errors' => ['field' => 'error'],
         'warnings' => ['field' => 'warning'],
     ]);

@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\CommissionMaturityService;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Affiliates\States\QualifiedConversion;
 use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
@@ -18,7 +20,7 @@ beforeEach(function (): void {
         'code' => 'MAT-' . uniqid(),
         'name' => 'Maturity Test Affiliate',
         'contact_email' => 'maturity@example.com',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => CommissionType::Percentage,
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -36,7 +38,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(35),
             ]);
 
@@ -68,7 +70,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(5), // Only 5 days old
             ]);
 
@@ -85,7 +87,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(35),
             ]);
 
@@ -104,7 +106,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(35),
             ]);
 
@@ -122,7 +124,7 @@ describe('CommissionMaturityService', function (): void {
             expect($result)->toBeTrue();
 
             $conversion->refresh();
-            expect($conversion->status)->toBe(ConversionStatus::Approved);
+            expect($conversion->status->equals(ApprovedConversion::class))->toBeTrue();
         });
 
         test('moves commission from holding to available', function (): void {
@@ -133,7 +135,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(35),
             ]);
 
@@ -161,7 +163,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Pending,
+                'status' => PendingConversion::class,
                 'occurred_at' => now()->subDays(35),
             ]);
 
@@ -178,7 +180,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(5), // Not mature yet
             ]);
 
@@ -195,7 +197,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(35),
                 'metadata' => ['original' => 'value'],
             ]);
@@ -224,7 +226,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(35),
             ]);
 
@@ -246,7 +248,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => $occurredAt,
             ]);
 
@@ -267,7 +269,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(35),
             ]);
 
@@ -282,7 +284,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(5),
             ]);
 
@@ -299,7 +301,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(10),
             ]);
 
@@ -310,7 +312,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 20000,
                 'total_minor' => 20000,
                 'commission_minor' => 2000,
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(15),
             ]);
 
@@ -327,7 +329,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subDays(10),
             ]);
 
@@ -338,7 +340,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Pending,
+                'status' => PendingConversion::class,
                 'occurred_at' => now()->subDays(10),
             ]);
 
@@ -366,7 +368,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(25), // Matures in 5 days, but cutoff is 20 days
             ]);
 
@@ -379,7 +381,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(15), // After cutoff, included
             ]);
 
@@ -406,7 +408,7 @@ describe('CommissionMaturityService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(25), // Before cutoff (20 days), excluded
             ]);
 

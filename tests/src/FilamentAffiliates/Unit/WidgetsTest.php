@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
 use AIArmada\FilamentAffiliates\Widgets\FraudAlertWidget;
 use AIArmada\FilamentAffiliates\Widgets\NetworkVisualizationWidget;
@@ -110,7 +110,7 @@ it('PayoutQueueWidget table heading includes pending count', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'WIDG-' . Str::uuid(),
         'name' => 'Widget Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -121,7 +121,7 @@ it('PayoutQueueWidget table heading includes pending count', function (): void {
         'reference' => 'PAY-WID-' . Str::uuid(),
         'amount_minor' => 5000,
         'currency' => 'USD',
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
     ]);
 
     $widget = new PayoutQueueWidget;
@@ -171,7 +171,7 @@ it('NetworkVisualizationWidget returns network stats', function (): void {
     Affiliate::create([
         'code' => 'NET-' . Str::uuid(),
         'name' => 'Network Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -192,7 +192,7 @@ it('NetworkVisualizationWidget returns root affiliates when no affiliate_id', fu
     Affiliate::create([
         'code' => 'ROOT-' . Str::uuid(),
         'name' => 'Root Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'parent_affiliate_id' => null,
         'commission_type' => 'percentage',
         'commission_rate' => 500,

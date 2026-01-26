@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\Paused;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 
@@ -18,7 +19,7 @@ function createVoucherForScopesTest(array $attributes = []): Voucher
         'name' => 'Test Voucher',
         'type' => VoucherType::Percentage,
         'value' => 1000,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'stacking_priority' => 100,
     ], $attributes));
 }
@@ -38,8 +39,8 @@ describe('Voucher Model Scopes', function (): void {
 
 describe('Voucher Model Methods', function (): void {
     it('checks if voucher is active', function (): void {
-        $active = createVoucherForScopesTest(['status' => VoucherStatus::Active]);
-        $paused = createVoucherForScopesTest(['status' => VoucherStatus::Paused]);
+        $active = createVoucherForScopesTest(['status' => Active::class]);
+        $paused = createVoucherForScopesTest(['status' => Paused::class]);
 
         expect($active->isActive())->toBeTrue()
             ->and($paused->isActive())->toBeFalse();
@@ -117,19 +118,19 @@ describe('Voucher Model Methods', function (): void {
 
     it('checks canBeRedeemed correctly', function (): void {
         $validVoucher = createVoucherForScopesTest([
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'starts_at' => Carbon::now()->subDay(),
             'expires_at' => Carbon::now()->addDay(),
             'usage_limit' => 10,
         ]);
 
         $expiredVoucher = createVoucherForScopesTest([
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'expires_at' => Carbon::now()->subHour(),
         ]);
 
         $pausedVoucher = createVoucherForScopesTest([
-            'status' => VoucherStatus::Paused,
+            'status' => Paused::class,
         ]);
 
         expect($validVoucher->canBeRedeemed())->toBeTrue()

@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutResult;
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\FailedPayout;
+use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Actions\BulkPayoutAction;
 use Illuminate\Database\Eloquent\Collection;
@@ -44,7 +47,7 @@ it('processes a pending payout successfully', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'PAYOUT-' . Str::uuid(),
         'name' => 'Payout Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -63,7 +66,7 @@ it('processes a pending payout successfully', function (): void {
 
     $payout = AffiliatePayout::create([
         'reference' => 'PAYOUT-REF-' . Str::uuid(),
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
         'total_minor' => 1500,
         'currency' => 'USD',
         'payee_type' => $affiliate->getMorphClass(),
@@ -82,14 +85,14 @@ it('processes a pending payout successfully', function (): void {
 
     $payout->refresh();
 
-    expect($payout->status)->toBe(PayoutStatus::Completed)
+    expect($payout->status)->toBeInstanceOf(CompletedPayout::class)
         ->and($payout->paid_at)->not->toBeNull()
         ->and($payout->external_reference)->toBe('EXT-123');
 
     $event = $payout->events()->first();
     expect($event)->not->toBeNull()
-        ->and($event->from_status)->toBe(PayoutStatus::Processing->value)
-        ->and($event->to_status)->toBe(PayoutStatus::Completed->value)
+        ->and($event->from_status)->toBe(ProcessingPayout::value())
+        ->and($event->to_status)->toBe(CompletedPayout::value())
         ->and($event->notes)->toBe('Payout processed successfully');
 });
 
@@ -103,7 +106,7 @@ it('marks a pending payout as failed when no default payout method exists', func
     $affiliate = Affiliate::create([
         'code' => 'NOMETHOD-' . Str::uuid(),
         'name' => 'No Method Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -113,7 +116,7 @@ it('marks a pending payout as failed when no default payout method exists', func
 
     $payout = AffiliatePayout::create([
         'reference' => 'PAYOUT-REF-' . Str::uuid(),
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
         'total_minor' => 1500,
         'currency' => 'USD',
         'payee_type' => $affiliate->getMorphClass(),
@@ -128,11 +131,11 @@ it('marks a pending payout as failed when no default payout method exists', func
 
     $payout->refresh();
 
-    expect($payout->status)->toBe(PayoutStatus::Failed);
+    expect($payout->status)->toBeInstanceOf(FailedPayout::class);
 
     $event = $payout->events()->first();
     expect($event)->not->toBeNull()
-        ->and($event->to_status)->toBe(PayoutStatus::Failed->value)
+        ->and($event->to_status)->toBe(FailedPayout::value())
         ->and($event->notes)->toBe('No default payout method configured');
 });
 
@@ -146,7 +149,7 @@ it('marks a pending payout as failed when the processor fails', function (): voi
     $affiliate = Affiliate::create([
         'code' => 'FAIL-' . Str::uuid(),
         'name' => 'Fail Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -165,7 +168,7 @@ it('marks a pending payout as failed when the processor fails', function (): voi
 
     $payout = AffiliatePayout::create([
         'reference' => 'PAYOUT-REF-' . Str::uuid(),
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
         'total_minor' => 1500,
         'currency' => 'USD',
         'payee_type' => $affiliate->getMorphClass(),
@@ -184,11 +187,11 @@ it('marks a pending payout as failed when the processor fails', function (): voi
 
     $payout->refresh();
 
-    expect($payout->status)->toBe(PayoutStatus::Failed);
+    expect($payout->status)->toBeInstanceOf(FailedPayout::class);
 
     $event = $payout->events()->first();
     expect($event)->not->toBeNull()
-        ->and($event->to_status)->toBe(PayoutStatus::Failed->value)
+        ->and($event->to_status)->toBe(FailedPayout::value())
         ->and($event->notes)->toBe('Processor failed');
 });
 
@@ -202,7 +205,7 @@ it('marks a pending payout as failed when the processor throws', function (): vo
     $affiliate = Affiliate::create([
         'code' => 'THROW-' . Str::uuid(),
         'name' => 'Throw Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -221,7 +224,7 @@ it('marks a pending payout as failed when the processor throws', function (): vo
 
     $payout = AffiliatePayout::create([
         'reference' => 'PAYOUT-REF-' . Str::uuid(),
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
         'total_minor' => 1500,
         'currency' => 'USD',
         'payee_type' => $affiliate->getMorphClass(),
@@ -240,11 +243,11 @@ it('marks a pending payout as failed when the processor throws', function (): vo
 
     $payout->refresh();
 
-    expect($payout->status)->toBe(PayoutStatus::Failed);
+    expect($payout->status)->toBeInstanceOf(FailedPayout::class);
 
     $event = $payout->events()->first();
     expect($event)->not->toBeNull()
-        ->and($event->to_status)->toBe(PayoutStatus::Failed->value)
+        ->and($event->to_status)->toBe(FailedPayout::value())
         ->and($event->notes)->toBe('Processor exploded');
 });
 

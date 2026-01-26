@@ -2,61 +2,53 @@
 
 declare(strict_types=1);
 
-use AIArmada\Inventory\Enums\BackorderStatus;
+use AIArmada\Inventory\States\BackorderStatus;
+use AIArmada\Inventory\States\Cancelled;
+use AIArmada\Inventory\States\Expired;
+use AIArmada\Inventory\States\Fulfilled;
+use AIArmada\Inventory\States\PartiallyFulfilled;
+use AIArmada\Inventory\States\Pending;
 
-test('BackorderStatus enum has correct cases', function (): void {
-    expect(BackorderStatus::cases())->toHaveCount(5);
-    expect(BackorderStatus::Pending->value)->toBe('pending');
-    expect(BackorderStatus::PartiallyFulfilled->value)->toBe('partially_fulfilled');
-    expect(BackorderStatus::Fulfilled->value)->toBe('fulfilled');
-    expect(BackorderStatus::Cancelled->value)->toBe('cancelled');
-    expect(BackorderStatus::Expired->value)->toBe('expired');
+test('BackorderStatus labels are correct', function (): void {
+    expect(BackorderStatus::fromString(Pending::class)->label())->toBe('Pending');
+    expect(BackorderStatus::fromString(PartiallyFulfilled::class)->label())->toBe('Partially Fulfilled');
+    expect(BackorderStatus::fromString(Fulfilled::class)->label())->toBe('Fulfilled');
+    expect(BackorderStatus::fromString(Cancelled::class)->label())->toBe('Cancelled');
+    expect(BackorderStatus::fromString(Expired::class)->label())->toBe('Expired');
 });
 
-test('BackorderStatus label returns correct labels', function (): void {
-    expect(BackorderStatus::Pending->label())->toBe('Pending');
-    expect(BackorderStatus::PartiallyFulfilled->label())->toBe('Partially Fulfilled');
-    expect(BackorderStatus::Fulfilled->label())->toBe('Fulfilled');
-    expect(BackorderStatus::Cancelled->label())->toBe('Cancelled');
-    expect(BackorderStatus::Expired->label())->toBe('Expired');
+test('BackorderStatus colors are correct', function (): void {
+    expect(BackorderStatus::fromString(Pending::class)->color())->toBe('warning');
+    expect(BackorderStatus::fromString(PartiallyFulfilled::class)->color())->toBe('info');
+    expect(BackorderStatus::fromString(Fulfilled::class)->color())->toBe('success');
+    expect(BackorderStatus::fromString(Cancelled::class)->color())->toBe('danger');
+    expect(BackorderStatus::fromString(Expired::class)->color())->toBe('gray');
 });
 
-test('BackorderStatus color returns correct colors', function (): void {
-    expect(BackorderStatus::Pending->color())->toBe('warning');
-    expect(BackorderStatus::PartiallyFulfilled->color())->toBe('info');
-    expect(BackorderStatus::Fulfilled->color())->toBe('success');
-    expect(BackorderStatus::Cancelled->color())->toBe('danger');
-    expect(BackorderStatus::Expired->color())->toBe('gray');
+test('BackorderStatus open/closed flags work correctly', function (): void {
+    expect(BackorderStatus::fromString(Pending::class)->isOpen())->toBeTrue();
+    expect(BackorderStatus::fromString(PartiallyFulfilled::class)->isOpen())->toBeTrue();
+    expect(BackorderStatus::fromString(Fulfilled::class)->isOpen())->toBeFalse();
+    expect(BackorderStatus::fromString(Cancelled::class)->isOpen())->toBeFalse();
+    expect(BackorderStatus::fromString(Expired::class)->isOpen())->toBeFalse();
+
+    expect(BackorderStatus::fromString(Pending::class)->isClosed())->toBeFalse();
+    expect(BackorderStatus::fromString(PartiallyFulfilled::class)->isClosed())->toBeFalse();
+    expect(BackorderStatus::fromString(Fulfilled::class)->isClosed())->toBeTrue();
+    expect(BackorderStatus::fromString(Cancelled::class)->isClosed())->toBeTrue();
+    expect(BackorderStatus::fromString(Expired::class)->isClosed())->toBeTrue();
 });
 
-test('BackorderStatus isOpen works correctly', function (): void {
-    expect(BackorderStatus::Pending->isOpen())->toBeTrue();
-    expect(BackorderStatus::PartiallyFulfilled->isOpen())->toBeTrue();
-    expect(BackorderStatus::Fulfilled->isOpen())->toBeFalse();
-    expect(BackorderStatus::Cancelled->isOpen())->toBeFalse();
-    expect(BackorderStatus::Expired->isOpen())->toBeFalse();
-});
+test('BackorderStatus fulfill/cancel flags work correctly', function (): void {
+    expect(BackorderStatus::fromString(Pending::class)->canFulfill())->toBeTrue();
+    expect(BackorderStatus::fromString(PartiallyFulfilled::class)->canFulfill())->toBeTrue();
+    expect(BackorderStatus::fromString(Fulfilled::class)->canFulfill())->toBeFalse();
+    expect(BackorderStatus::fromString(Cancelled::class)->canFulfill())->toBeFalse();
+    expect(BackorderStatus::fromString(Expired::class)->canFulfill())->toBeFalse();
 
-test('BackorderStatus isClosed works correctly', function (): void {
-    expect(BackorderStatus::Pending->isClosed())->toBeFalse();
-    expect(BackorderStatus::PartiallyFulfilled->isClosed())->toBeFalse();
-    expect(BackorderStatus::Fulfilled->isClosed())->toBeTrue();
-    expect(BackorderStatus::Cancelled->isClosed())->toBeTrue();
-    expect(BackorderStatus::Expired->isClosed())->toBeTrue();
-});
-
-test('BackorderStatus canFulfill works correctly', function (): void {
-    expect(BackorderStatus::Pending->canFulfill())->toBeTrue();
-    expect(BackorderStatus::PartiallyFulfilled->canFulfill())->toBeTrue();
-    expect(BackorderStatus::Fulfilled->canFulfill())->toBeFalse();
-    expect(BackorderStatus::Cancelled->canFulfill())->toBeFalse();
-    expect(BackorderStatus::Expired->canFulfill())->toBeFalse();
-});
-
-test('BackorderStatus canCancel works correctly', function (): void {
-    expect(BackorderStatus::Pending->canCancel())->toBeTrue();
-    expect(BackorderStatus::PartiallyFulfilled->canCancel())->toBeTrue();
-    expect(BackorderStatus::Fulfilled->canCancel())->toBeFalse();
-    expect(BackorderStatus::Cancelled->canCancel())->toBeFalse();
-    expect(BackorderStatus::Expired->canCancel())->toBeFalse();
+    expect(BackorderStatus::fromString(Pending::class)->canCancel())->toBeTrue();
+    expect(BackorderStatus::fromString(PartiallyFulfilled::class)->canCancel())->toBeTrue();
+    expect(BackorderStatus::fromString(Fulfilled::class)->canCancel())->toBeFalse();
+    expect(BackorderStatus::fromString(Cancelled::class)->canCancel())->toBeFalse();
+    expect(BackorderStatus::fromString(Expired::class)->canCancel())->toBeFalse();
 });

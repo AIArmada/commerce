@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Widgets;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Filament\Widgets\StatsOverviewWidget;
 use Filament\Widgets\StatsOverviewWidget\Stat;
@@ -78,7 +79,7 @@ final class PerformanceOverviewWidget extends StatsOverviewWidget
                 (bool) config('affiliates.owner.enabled', false),
                 fn ($query) => $query->forOwner($owner),
             )
-            ->where('status', AffiliateStatus::Active)
+            ->where('status', AffiliateStatus::fromString(Active::class)->getValue())
             ->count();
 
         $newAffiliates = Affiliate::query()

@@ -2,63 +2,81 @@
 
 declare(strict_types=1);
 
-use AIArmada\Inventory\Enums\SerialStatus;
+use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\States\Available;
+use AIArmada\Inventory\States\Disposed;
+use AIArmada\Inventory\States\InRepair;
+use AIArmada\Inventory\States\Lost;
+use AIArmada\Inventory\States\Reserved;
+use AIArmada\Inventory\States\Returned;
+use AIArmada\Inventory\States\SerialStatus;
+use AIArmada\Inventory\States\Shipped;
+use AIArmada\Inventory\States\Sold;
 
-test('SerialStatus enum has correct cases', function (): void {
-    expect(SerialStatus::cases())->toHaveCount(9);
-    expect(SerialStatus::Available->value)->toBe('available');
-    expect(SerialStatus::Reserved->value)->toBe('reserved');
-    expect(SerialStatus::Sold->value)->toBe('sold');
-    expect(SerialStatus::Disposed->value)->toBe('disposed');
+test('SerialStatus states are registered', function (): void {
+    $states = SerialStatus::classes();
+
+    expect($states)->toHaveCount(9);
+    expect($states)->toContain(Available::class);
+    expect($states)->toContain(Reserved::class);
+    expect($states)->toContain(Sold::class);
+    expect($states)->toContain(Disposed::class);
 });
 
 test('SerialStatus options returns correct array', function (): void {
-    $options = SerialStatus::options();
+    $options = SerialStatus::options(new InventorySerial);
     expect($options)->toBeArray();
     expect($options)->toHaveKey('available');
     expect($options['available'])->toBe('Available');
 });
 
 test('SerialStatus label returns correct labels', function (): void {
-    expect(SerialStatus::Available->label())->toBe('Available');
-    expect(SerialStatus::Reserved->label())->toBe('Reserved');
-    expect(SerialStatus::Sold->label())->toBe('Sold');
-    expect(SerialStatus::Disposed->label())->toBe('Disposed');
-    expect(SerialStatus::InRepair->label())->toBe('In Repair');
+    $model = new InventorySerial;
+
+    expect((new Available($model))->label())->toBe('Available');
+    expect((new Reserved($model))->label())->toBe('Reserved');
+    expect((new Sold($model))->label())->toBe('Sold');
+    expect((new Disposed($model))->label())->toBe('Disposed');
+    expect((new InRepair($model))->label())->toBe('In Repair');
 });
 
 test('SerialStatus color returns correct colors', function (): void {
-    expect(SerialStatus::Available->color())->toBe('success');
-    expect(SerialStatus::Reserved->color())->toBe('warning');
-    expect(SerialStatus::Sold->color())->toBe('info');
-    expect(SerialStatus::Disposed->color())->toBe('danger');
+    $model = new InventorySerial;
+
+    expect((new Available($model))->color())->toBe('success');
+    expect((new Reserved($model))->color())->toBe('warning');
+    expect((new Sold($model))->color())->toBe('info');
+    expect((new Disposed($model))->color())->toBe('danger');
 });
 
 test('SerialStatus isAllocatable works correctly', function (): void {
-    expect(SerialStatus::Available->isAllocatable())->toBeTrue();
-    expect(SerialStatus::Reserved->isAllocatable())->toBeFalse();
-    expect(SerialStatus::Sold->isAllocatable())->toBeFalse();
+    $model = new InventorySerial;
+
+    expect((new Available($model))->isAllocatable())->toBeTrue();
+    expect((new Reserved($model))->isAllocatable())->toBeFalse();
+    expect((new Sold($model))->isAllocatable())->toBeFalse();
 });
 
 test('SerialStatus isInStock works correctly', function (): void {
-    expect(SerialStatus::Available->isInStock())->toBeTrue();
-    expect(SerialStatus::Reserved->isInStock())->toBeTrue();
-    expect(SerialStatus::Sold->isInStock())->toBeFalse();
-    expect(SerialStatus::Disposed->isInStock())->toBeFalse();
-});
+    $model = new InventorySerial;
 
-test('SerialStatus allowedTransitions returns correct transitions', function (): void {
-    expect(SerialStatus::Available->allowedTransitions())->toContain(SerialStatus::Reserved);
-    expect(SerialStatus::Available->allowedTransitions())->toContain(SerialStatus::Sold);
-    expect(SerialStatus::Sold->allowedTransitions())->toContain(SerialStatus::Shipped);
-    expect(SerialStatus::Sold->allowedTransitions())->toContain(SerialStatus::Returned);
-    expect(SerialStatus::Disposed->allowedTransitions())->toBeEmpty();
-    expect(SerialStatus::Lost->allowedTransitions())->toContain(SerialStatus::Available);
+    expect((new Available($model))->isInStock())->toBeTrue();
+    expect((new Reserved($model))->isInStock())->toBeTrue();
+    expect((new Sold($model))->isInStock())->toBeFalse();
+    expect((new Disposed($model))->isInStock())->toBeFalse();
 });
 
 test('SerialStatus canTransitionTo works correctly', function (): void {
-    expect(SerialStatus::Available->canTransitionTo(SerialStatus::Reserved))->toBeTrue();
-    expect(SerialStatus::Available->canTransitionTo(SerialStatus::Disposed))->toBeTrue();
-    expect(SerialStatus::Sold->canTransitionTo(SerialStatus::Available))->toBeFalse();
-    expect(SerialStatus::Disposed->canTransitionTo(SerialStatus::Available))->toBeFalse();
+    $available = new InventorySerial(['status' => Available::class]);
+    $sold = new InventorySerial(['status' => Sold::class]);
+    $disposed = new InventorySerial(['status' => Disposed::class]);
+    $lost = new InventorySerial(['status' => Lost::class]);
+
+    expect($available->status->canTransitionTo(Reserved::class))->toBeTrue();
+    expect($available->status->canTransitionTo(Disposed::class))->toBeTrue();
+    expect($sold->status->canTransitionTo(Available::class))->toBeFalse();
+    expect($disposed->status->canTransitionTo(Available::class))->toBeFalse();
+    expect($sold->status->canTransitionTo(Shipped::class))->toBeTrue();
+    expect($sold->status->canTransitionTo(Returned::class))->toBeTrue();
+    expect($lost->status->canTransitionTo(Available::class))->toBeTrue();
 });

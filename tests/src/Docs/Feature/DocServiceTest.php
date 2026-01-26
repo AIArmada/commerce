@@ -3,10 +3,15 @@
 declare(strict_types=1);
 
 use AIArmada\Docs\DataObjects\DocData;
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Services\DocService;
+use AIArmada\Docs\States\DocStatus;
+use AIArmada\Docs\States\Draft;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Paid;
+use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Sent;
 
 test('it can generate doc numbers', function (): void {
     $service = app(DocService::class);
@@ -68,7 +73,7 @@ test('it can create a doc', function (): void {
         ->toBeInstanceOf(Doc::class)
         ->and($doc->doc_number)->toBeString()
         ->and($doc->doc_type)->toBe('invoice')
-        ->and($doc->status)->toBe(DocStatus::DRAFT)
+        ->and($doc->status->equals(Draft::class))->toBeTrue()
         ->and($doc->subtotal)->toBe('250.00')
         ->and($doc->total)->toBe('250.00')
         ->and($doc->items)->toBeArray()->toHaveCount(2);
@@ -99,17 +104,17 @@ test('it can update doc status', function (): void {
         'items' => [['name' => 'Item', 'quantity' => 1, 'price' => 100]],
     ]));
 
-    expect($doc->status)->toBe(DocStatus::DRAFT);
+    expect($doc->status->equals(Draft::class))->toBeTrue();
 
-    $service->updateStatus($doc, DocStatus::PAID, 'Payment received');
+    $service->updateStatus($doc, Paid::class, 'Payment received');
 
     $doc->refresh();
-    expect($doc->status)->toBe(DocStatus::PAID);
+    expect($doc->status->equals(Paid::class))->toBeTrue();
 
     $history = $doc->statusHistories()->first();
     expect($history)
         ->not->toBeNull()
-        ->and($history->status)->toBe(DocStatus::PAID)
+        ->and($history->status->equals(Paid::class))->toBeTrue()
         ->and($history->notes)->toBe('Payment received');
 });
 
@@ -126,7 +131,7 @@ test('it can mark doc as paid', function (): void {
     $doc->refresh();
 
     expect($doc->isPaid())->toBeTrue()
-        ->and($doc->status)->toBe(DocStatus::PAID)
+        ->and($doc->status->equals(Paid::class))->toBeTrue()
         ->and($doc->paid_at)->not->toBeNull();
 });
 
@@ -183,21 +188,21 @@ test('it can use custom template', function (): void {
         ->and($doc->template->slug)->toBe('custom');
 });
 
-test('doc status enum has correct labels', function (): void {
-    expect(DocStatus::DRAFT->label())->toBe('Draft')
-        ->and(DocStatus::PAID->label())->toBe('Paid')
-        ->and(DocStatus::OVERDUE->label())->toBe('Overdue');
+test('doc status has correct labels', function (): void {
+    expect(DocStatus::labelFor(Draft::class))->toBe('Draft')
+        ->and(DocStatus::labelFor(Paid::class))->toBe('Paid')
+        ->and(DocStatus::labelFor(Overdue::class))->toBe('Overdue');
 });
 
-test('doc status enum has correct colors', function (): void {
-    expect(DocStatus::DRAFT->color())->toBe('gray')
-        ->and(DocStatus::PAID->color())->toBe('success')
-        ->and(DocStatus::OVERDUE->color())->toBe('danger');
+test('doc status has correct colors', function (): void {
+    expect(DocStatus::colorFor(Draft::class))->toBe('gray')
+        ->and(DocStatus::colorFor(Paid::class))->toBe('success')
+        ->and(DocStatus::colorFor(Overdue::class))->toBe('danger');
 });
 
 test('it can check payable status', function (): void {
-    expect(DocStatus::PENDING->isPayable())->toBeTrue()
-        ->and(DocStatus::SENT->isPayable())->toBeTrue()
-        ->and(DocStatus::PAID->isPayable())->toBeFalse()
-        ->and(DocStatus::DRAFT->isPayable())->toBeFalse();
+    expect(DocStatus::fromString(Pending::class)->isPayable())->toBeTrue()
+        ->and(DocStatus::fromString(Sent::class)->isPayable())->toBeTrue()
+        ->and(DocStatus::fromString(Paid::class)->isPayable())->toBeFalse()
+        ->and(DocStatus::fromString(Draft::class)->isPayable())->toBeFalse();
 });

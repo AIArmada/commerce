@@ -2,13 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\PerformanceBonusService;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\Paused;
+use AIArmada\Affiliates\States\PendingConversion;
 
 beforeEach(function (): void {
     $this->service = app(PerformanceBonusService::class);
@@ -17,7 +19,7 @@ beforeEach(function (): void {
         'code' => 'PERF-' . uniqid(),
         'name' => 'Performance Test Affiliate',
         'contact_email' => 'perf@example.com',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => CommissionType::Percentage,
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -149,13 +151,13 @@ describe('PerformanceBonusService', function (): void {
                 ->first();
 
             expect($conversion)->not->toBeNull();
-            expect($conversion->status)->toBe(ConversionStatus::Approved);
+            expect($conversion->status->equals(ApprovedConversion::class))->toBeTrue();
             expect($conversion->metadata['type'])->toBe('performance_bonus');
             expect($conversion->metadata['bonus_type'])->toBe('top_performer');
         });
 
         test('skips inactive affiliates', function (): void {
-            $this->affiliate->update(['status' => AffiliateStatus::Paused]);
+            $this->affiliate->update(['status' => Paused::class]);
 
             $bonuses = [
                 [
@@ -237,7 +239,7 @@ describe('PerformanceBonusService', function (): void {
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
                 'commission_minor' => 500,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now(),
             ]);
 
@@ -255,7 +257,7 @@ describe('PerformanceBonusService', function (): void {
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
                 'commission_minor' => 500,
-                'status' => ConversionStatus::Pending,
+                'status' => PendingConversion::class,
                 'occurred_at' => now(),
             ]);
 
@@ -269,7 +271,7 @@ describe('PerformanceBonusService', function (): void {
                 'code' => 'LEAD-' . uniqid(),
                 'name' => 'Leaderboard Affiliate 2',
                 'contact_email' => 'lead2@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -283,7 +285,7 @@ describe('PerformanceBonusService', function (): void {
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
                 'commission_minor' => 500,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now(),
             ]);
 
@@ -295,7 +297,7 @@ describe('PerformanceBonusService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now(),
             ]);
 
@@ -312,7 +314,7 @@ describe('PerformanceBonusService', function (): void {
                     'code' => 'LIM-' . uniqid(),
                     'name' => "Limit Affiliate {$i}",
                     'contact_email' => "limit{$i}@example.com",
-                    'status' => AffiliateStatus::Active,
+                    'status' => Active::class,
                     'commission_type' => CommissionType::Percentage,
                     'commission_rate' => 1000,
                     'currency' => 'USD',
@@ -325,7 +327,7 @@ describe('PerformanceBonusService', function (): void {
                     'subtotal_minor' => 1000 * ($i + 1),
                     'total_minor' => 1000 * ($i + 1),
                     'commission_minor' => 100 * ($i + 1),
-                    'status' => ConversionStatus::Approved,
+                    'status' => ApprovedConversion::class,
                     'occurred_at' => now(),
                 ]);
             }
@@ -343,7 +345,7 @@ describe('PerformanceBonusService', function (): void {
                 'subtotal_minor' => 8000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now(),
             ]);
 
@@ -374,7 +376,7 @@ describe('PerformanceBonusService', function (): void {
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
                 'commission_minor' => 500,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now(),
             ]);
 
@@ -386,7 +388,7 @@ describe('PerformanceBonusService', function (): void {
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
                 'commission_minor' => 500,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subMonths(2),
             ]);
 

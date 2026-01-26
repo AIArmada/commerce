@@ -6,8 +6,8 @@ use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\FilamentVouchers\Models\Voucher as FilamentVoucher;
 use AIArmada\FilamentVouchers\Support\OwnerTypeRegistry;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\States\Active;
 
 uses(TestCase::class);
 
@@ -35,7 +35,7 @@ it('computes owner_display_name attribute on filament voucher model', function (
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);
@@ -48,7 +48,7 @@ it('computes owner_display_name attribute on filament voucher model', function (
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);

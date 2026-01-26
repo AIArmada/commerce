@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Actions;
 
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\States\Draft;
+use AIArmada\Shipping\States\ShipmentStatus as ShipmentStatusState;
 use AIArmada\Shipping\Support\ShippingOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -54,15 +55,27 @@ final class CreateShipment
                 }
             }
 
-            $status = $data['status'] ?? ShipmentStatus::Draft;
+            $status = $data['status'] ?? Draft::class;
 
-            if (is_string($status)) {
-                $status = ShipmentStatus::tryFrom($status) ?? ShipmentStatus::Draft;
+            if ($status instanceof ShipmentStatusState) {
+                $status = $status->getValue();
+            }
+
+            if (! is_string($status)) {
+                $status = Draft::class;
+            }
+
+            $status = ShipmentStatusState::normalize($status);
+
+            $statusClass = ShipmentStatusState::resolveStateClass($status) ?? Draft::class;
+
+            if (! is_string($statusClass) || ! is_subclass_of($statusClass, ShipmentStatusState::class)) {
+                $statusClass = Draft::class;
             }
 
             $shipment = Shipment::create([
                 'reference' => $data['reference'] ?? $this->generateReference(),
-                'status' => $status,
+                'status' => $statusClass,
                 'carrier_code' => $data['carrier_code'] ?? $data['carrier'] ?? '',
                 'service_code' => $data['service_code'] ?? $data['service_type'] ?? null,
                 'tracking_number' => $data['tracking_number'] ?? null,

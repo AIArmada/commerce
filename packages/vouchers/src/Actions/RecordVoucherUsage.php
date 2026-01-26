@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\Vouchers\Actions;
 
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Exceptions\VoucherUsageLimitException;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\States\Depleted;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -86,7 +86,7 @@ final class RecordVoucherUsage
             if ($lockedVoucher->usage_limit !== null) {
                 $newUsageCount = VoucherUsage::where('voucher_id', $lockedVoucher->id)->count();
                 if ($newUsageCount >= $lockedVoucher->usage_limit) {
-                    $lockedVoucher->update(['status' => VoucherStatus::Depleted]);
+                    $lockedVoucher->update(['status' => Depleted::class]);
                 }
             }
 

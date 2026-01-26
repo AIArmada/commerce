@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliateCommissionPromotion Model', function (): void {
@@ -107,7 +107,7 @@ describe('AffiliateCommissionPromotion Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'PROMO-AFF-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -130,7 +130,7 @@ describe('AffiliateCommissionPromotion Model', function (): void {
         $includedAffiliate = Affiliate::create([
             'code' => 'PROMO-INC-' . uniqid(),
             'name' => 'Included Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -139,7 +139,7 @@ describe('AffiliateCommissionPromotion Model', function (): void {
         $excludedAffiliate = Affiliate::create([
             'code' => 'PROMO-EXC-' . uniqid(),
             'name' => 'Excluded Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',

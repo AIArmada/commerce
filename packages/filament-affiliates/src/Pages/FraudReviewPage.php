@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Pages;
 
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -157,7 +157,7 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
                         ]);
 
                         if ($signal->conversion) {
-                            $signal->conversion->update(['status' => ConversionStatus::Rejected]);
+                            $signal->conversion->update(['status' => RejectedConversion::class]);
                         }
                     }),
 
@@ -211,7 +211,7 @@ final class FraudReviewPage extends Page implements HasForms, HasTable
                             ]);
 
                             if ($signal->conversion) {
-                                $signal->conversion->update(['status' => ConversionStatus::Rejected]);
+                                $signal->conversion->update(['status' => RejectedConversion::class]);
                             }
                         });
                     }),

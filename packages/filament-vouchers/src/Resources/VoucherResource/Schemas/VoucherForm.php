@@ -6,8 +6,9 @@ namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas;
 
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\FilamentVouchers\Support\OwnerTypeRegistry;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\VoucherStatus;
 use Filament\Forms\Components\DateTimePicker;
 use Filament\Forms\Components\KeyValue;
 use Filament\Forms\Components\Select;
@@ -230,12 +231,8 @@ final class VoucherForm
 
                             Select::make('status')
                                 ->label('Status')
-                                ->options(
-                                    static fn (): array => collect(VoucherStatus::cases())
-                                        ->mapWithKeys(static fn (VoucherStatus $status): array => [$status->value => $status->label()])
-                                        ->toArray()
-                                )
-                                ->default(VoucherStatus::Active->value)
+                                ->options(static fn (): array => VoucherStatus::options())
+                                ->default(VoucherStatus::normalize(Active::class))
                                 ->required(),
                         ]),
                 ]),

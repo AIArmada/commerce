@@ -11,7 +11,8 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Products\Models\Product;
-use AIArmada\Vouchers\Enums\VoucherStatus;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\VoucherStatus;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use Filament\Widgets\StatsOverviewWidget as BaseWidget;
@@ -74,7 +75,7 @@ final class StatsOverview extends BaseWidget
             ->count('customer_id');
 
         // Voucher stats
-        $activeVouchers = Voucher::query()->forOwner($owner)->where('status', VoucherStatus::Active)->count();
+        $activeVouchers = Voucher::query()->forOwner($owner)->where('status', VoucherStatus::normalize(Active::class))->count();
         $voucherRedemptions = VoucherUsage::query()
             ->whereIn('voucher_id', Voucher::query()->forOwner($owner)->select('id'))
             ->count();

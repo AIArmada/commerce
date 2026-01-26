@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Services\VoucherService;
 use AIArmada\Vouchers\Services\VoucherValidator;
+use AIArmada\Vouchers\States\Active;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model as EloquentModel;
 use Illuminate\Database\Schema\Blueprint;
@@ -41,7 +41,7 @@ it('redeems voucher manually when allowed', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 10,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'allows_manual_redemption' => true,
     ]);
 
@@ -81,7 +81,7 @@ it('rejects manual redemption when voucher disallows it', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 5,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'allows_manual_redemption' => false,
     ]);
 
@@ -122,7 +122,7 @@ it('scopes vouchers to the resolved owner', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 10,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
     ]);
 
     VoucherModel::create([
@@ -131,7 +131,7 @@ it('scopes vouchers to the resolved owner', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 10,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'owner_type' => $otherOwner->getMorphClass(),
         'owner_id' => $otherOwner->getKey(),
     ]);
@@ -142,7 +142,7 @@ it('scopes vouchers to the resolved owner', function (): void {
         'type' => VoucherType::Fixed,
         'value' => 15,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
     ]);
 
     expect($service->find('OWNED'))->not->toBeNull()

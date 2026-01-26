@@ -11,7 +11,9 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Orders\Models\Order;
-use AIArmada\Vouchers\Enums\VoucherStatus;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\Expired;
+use AIArmada\Vouchers\States\Paused;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
@@ -71,7 +73,7 @@ final class ShowcaseSeeder extends Seeder
                 'min_cart_value' => 10000,
                 'max_discount' => 50000,
                 'usage_limit' => 100,
-                'status' => VoucherStatus::Active,
+                'status' => Active::class,
                 'starts_at' => now(),
                 'expires_at' => now()->addHours(6),
             ],
@@ -84,7 +86,7 @@ final class ShowcaseSeeder extends Seeder
                 'min_cart_value' => 15000,
                 'max_discount' => 30000,
                 'usage_limit' => 200,
-                'status' => VoucherStatus::Active,
+                'status' => Active::class,
                 'starts_at' => now()->startOfWeek()->addDays(5),
                 'expires_at' => now()->endOfWeek(),
             ],
@@ -101,7 +103,7 @@ final class ShowcaseSeeder extends Seeder
                 'min_cart_value' => 20000,
                 'usage_limit' => 500,
                 'usage_limit_per_user' => 1,
-                'status' => VoucherStatus::Active,
+                'status' => Active::class,
                 'starts_at' => now()->subMonth(),
                 'expires_at' => now()->addMonths(3),
             ],
@@ -113,7 +115,7 @@ final class ShowcaseSeeder extends Seeder
                 'value' => 2500,
                 'max_discount' => 50000,
                 'usage_limit_per_user' => 1,
-                'status' => VoucherStatus::Active,
+                'status' => Active::class,
                 'starts_at' => now()->subYear(),
                 'expires_at' => now()->addYear(),
             ],
@@ -130,7 +132,7 @@ final class ShowcaseSeeder extends Seeder
                 'min_cart_value' => 5000,
                 'max_discount' => 20000,
                 'usage_limit_per_user' => 1,
-                'status' => VoucherStatus::Active,
+                'status' => Active::class,
                 'starts_at' => now()->subMonths(6),
                 'expires_at' => now()->addYear(),
             ],
@@ -142,7 +144,7 @@ final class ShowcaseSeeder extends Seeder
                 'value' => 5000,
                 'usage_limit' => 1000,
                 'usage_limit_per_user' => 1,
-                'status' => VoucherStatus::Active,
+                'status' => Active::class,
                 'starts_at' => now(),
                 'expires_at' => now()->addMonths(6),
             ],
@@ -159,7 +161,7 @@ final class ShowcaseSeeder extends Seeder
                 'min_cart_value' => 10000,
                 'max_discount' => 100000,
                 'usage_limit' => 5000,
-                'status' => VoucherStatus::Paused, // Not started yet - paused until holiday
+                'status' => Paused::class, // Not started yet - paused until holiday
                 'starts_at' => now()->addDays(7),
                 'expires_at' => now()->addMonth(),
             ],
@@ -173,7 +175,7 @@ final class ShowcaseSeeder extends Seeder
                 'max_discount' => 80000,
                 'usage_limit' => 2000,
                 'applied_count' => 1245,
-                'status' => VoucherStatus::Expired,
+                'status' => Expired::class,
                 'starts_at' => now()->subMonths(4),
                 'expires_at' => now()->subMonth(),
             ],
@@ -190,7 +192,7 @@ final class ShowcaseSeeder extends Seeder
                 'min_cart_value' => 8000,
                 'usage_limit' => null,
                 'usage_limit_per_user' => 5,
-                'status' => VoucherStatus::Active,
+                'status' => Active::class,
                 'starts_at' => now()->subMonths(3),
                 'expires_at' => now()->addYear(),
                 'metadata' => ['category' => 'shipping'],
@@ -202,7 +204,7 @@ final class ShowcaseSeeder extends Seeder
                 'type' => VoucherType::Fixed,
                 'value' => 2500,
                 'min_cart_value' => 10000,
-                'status' => VoucherStatus::Active,
+                'status' => Active::class,
                 'starts_at' => now(),
                 'expires_at' => now()->addMonths(6),
                 'metadata' => ['category' => 'shipping', 'shipping_type' => 'express'],
@@ -221,7 +223,7 @@ final class ShowcaseSeeder extends Seeder
                 'max_discount' => 30000,
                 'usage_limit' => 500,
                 'applied_count' => 287,
-                'status' => VoucherStatus::Active,
+                'status' => Active::class,
                 'starts_at' => now()->subMonths(2),
                 'expires_at' => now()->addMonths(4),
                 'metadata' => ['affiliate_code' => 'INFLUENCER-MAYA', 'campaign' => 'influencer'],
@@ -236,7 +238,7 @@ final class ShowcaseSeeder extends Seeder
                 'max_discount' => 20000,
                 'usage_limit' => 300,
                 'applied_count' => 156,
-                'status' => VoucherStatus::Active,
+                'status' => Active::class,
                 'starts_at' => now()->subMonths(1),
                 'expires_at' => now()->addMonths(5),
                 'metadata' => ['affiliate_code' => 'LIFESTYLE-AMIR', 'campaign' => 'influencer'],

@@ -5,11 +5,14 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Enums\SerialStatus;
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventorySerial;
 use AIArmada\Inventory\Models\InventorySerialHistory;
+use AIArmada\Inventory\States\Available;
+use AIArmada\Inventory\States\Reserved;
+use AIArmada\Inventory\States\SerialStatus;
+use AIArmada\Inventory\States\Sold;
 
 class InventorySerialTest extends InventoryTestCase
 {
@@ -31,7 +34,7 @@ class InventorySerialTest extends InventoryTestCase
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'serial_number' => 'SN-12345',
-            'status' => SerialStatus::Available->value,
+            'status' => SerialStatus::normalize(Available::class),
             'condition' => SerialCondition::New->value,
         ]);
 
@@ -84,10 +87,10 @@ class InventorySerialTest extends InventoryTestCase
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Available->value,
+            'status' => SerialStatus::normalize(Available::class),
         ]);
 
-        expect($serial->getStatusEnum())->toBe(SerialStatus::Available);
+        expect($serial->getStatusEnum())->toBeInstanceOf(Available::class);
     }
 
     public function test_get_condition_enum(): void
@@ -174,14 +177,14 @@ class InventorySerialTest extends InventoryTestCase
         $available = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Available->value,
+            'status' => SerialStatus::normalize(Available::class),
             'condition' => SerialCondition::New->value,
         ]);
 
         $sold = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Sold->value,
+            'status' => SerialStatus::normalize(Sold::class),
             'condition' => SerialCondition::New->value,
         ]);
 
@@ -194,15 +197,15 @@ class InventorySerialTest extends InventoryTestCase
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Available->value,
+            'status' => SerialStatus::normalize(Available::class),
         ]);
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Sold->value,
+            'status' => SerialStatus::normalize(Sold::class),
         ]);
 
-        $available = InventorySerial::withStatus(SerialStatus::Available)->get();
+        $available = InventorySerial::withStatus(Available::class)->get();
 
         expect($available)->toHaveCount(1);
     }
@@ -212,12 +215,12 @@ class InventorySerialTest extends InventoryTestCase
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Available->value,
+            'status' => SerialStatus::normalize(Available::class),
         ]);
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Sold->value,
+            'status' => SerialStatus::normalize(Sold::class),
         ]);
 
         $available = InventorySerial::available()->get();
@@ -230,17 +233,17 @@ class InventorySerialTest extends InventoryTestCase
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Available->value,
+            'status' => SerialStatus::normalize(Available::class),
         ]);
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Reserved->value,
+            'status' => SerialStatus::normalize(Reserved::class),
         ]);
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Sold->value,
+            'status' => SerialStatus::normalize(Sold::class),
         ]);
 
         $inStock = InventorySerial::inStock()->get();
@@ -291,13 +294,13 @@ class InventorySerialTest extends InventoryTestCase
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Available->value,
+            'status' => SerialStatus::normalize(Available::class),
             'condition' => SerialCondition::New->value,
         ]);
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Available->value,
+            'status' => SerialStatus::normalize(Available::class),
             'condition' => SerialCondition::Damaged->value,
         ]);
 
@@ -411,11 +414,11 @@ class InventorySerialTest extends InventoryTestCase
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Available->value,
+            'status' => SerialStatus::normalize(Available::class),
         ]);
 
         // Available can transition to Reserved
-        expect($serial->canTransitionTo(SerialStatus::Reserved))->toBeTrue();
+        expect($serial->canTransitionTo(Reserved::class))->toBeTrue();
     }
 
     public function test_transition_to_changes_status(): void
@@ -423,13 +426,13 @@ class InventorySerialTest extends InventoryTestCase
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Available->value,
+            'status' => SerialStatus::normalize(Available::class),
         ]);
 
-        $result = $serial->transitionTo(SerialStatus::Reserved);
+        $result = $serial->transitionTo(Reserved::class);
 
         expect($result)->toBe($serial);
-        expect($serial->fresh()->status)->toBe(SerialStatus::Reserved->value);
+        expect($serial->fresh()->status)->toBeInstanceOf(Reserved::class);
     }
 
     public function test_transition_to_throws_on_invalid_transition(): void
@@ -437,10 +440,10 @@ class InventorySerialTest extends InventoryTestCase
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Sold->value,
+            'status' => SerialStatus::normalize(Sold::class),
         ]);
 
-        expect(fn () => $serial->transitionTo(SerialStatus::Available))
+        expect(fn () => $serial->transitionTo(Available::class))
             ->toThrow(InvalidArgumentException::class);
     }
 

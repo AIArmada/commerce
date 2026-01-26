@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
+use AIArmada\Affiliates\States\Active;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -30,7 +31,7 @@ test('AffiliateAttribution scopeActive filters expired attributions', function (
     $affiliate = Affiliate::create([
         'code' => 'AFF1',
         'name' => 'Test Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -67,7 +68,7 @@ test('AffiliateAttribution refreshLastSeen updates last_seen_at', function (): v
     $affiliate = Affiliate::create([
         'code' => 'AFF1',
         'name' => 'Test Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',

@@ -5,7 +5,7 @@ declare(strict_types=1);
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Product;
-use AIArmada\Vouchers\Enums\VoucherStatus;
+use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -44,7 +44,7 @@ test('checkout displays pre-discount subtotal when a voucher is applied', functi
         'allows_manual_redemption' => true,
         'starts_at' => null,
         'expires_at' => null,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'target_definition' => null,
         'metadata' => null,
         'owner_type' => $owner->getMorphClass(),

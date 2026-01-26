@@ -2,10 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -34,7 +35,7 @@ it('scopes attributions to current owner and global when enabled', function (): 
     $affiliate = Affiliate::create([
         'code' => 'AFF-OWNER-A',
         'name' => 'Owned Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -109,7 +110,7 @@ it('scopes conversions to current owner and global when enabled', function (): v
     $affiliate = Affiliate::create([
         'code' => 'AFF-OWNER-A-2',
         'name' => 'Owned Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -124,7 +125,7 @@ it('scopes conversions to current owner and global when enabled', function (): v
         'total_minor' => 10000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Pending,
+        'status' => PendingConversion::class,
         'owner_type' => null,
         'owner_id' => null,
     ]);
@@ -136,7 +137,7 @@ it('scopes conversions to current owner and global when enabled', function (): v
         'total_minor' => 10000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Pending,
+        'status' => PendingConversion::class,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => $ownerA->getKey(),
     ]);
@@ -148,7 +149,7 @@ it('scopes conversions to current owner and global when enabled', function (): v
         'total_minor' => 10000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Pending,
+        'status' => PendingConversion::class,
         'owner_type' => $ownerB->getMorphClass(),
         'owner_id' => $ownerB->getKey(),
     ]);
@@ -160,7 +161,7 @@ it('scopes conversions to current owner and global when enabled', function (): v
         'total_minor' => 10000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Pending,
+        'status' => PendingConversion::class,
         'owner_type' => $ownerA->getMorphClass(),
         'owner_id' => null,
     ]);
@@ -189,7 +190,7 @@ it('returns strict global-only when enabled and resolved owner is null', functio
     $affiliate = Affiliate::create([
         'code' => 'AFF-NULL-OWNER',
         'name' => 'Owned Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -231,7 +232,7 @@ it('returns strict global-only when enabled and resolved owner is null', functio
         'total_minor' => 10000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Pending,
+        'status' => PendingConversion::class,
         'owner_type' => null,
         'owner_id' => null,
     ]);
@@ -243,7 +244,7 @@ it('returns strict global-only when enabled and resolved owner is null', functio
         'total_minor' => 10000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Pending,
+        'status' => PendingConversion::class,
         'owner_type' => $owner->getMorphClass(),
         'owner_id' => $owner->getKey(),
     ]);
@@ -255,7 +256,7 @@ it('returns strict global-only when enabled and resolved owner is null', functio
         'total_minor' => 10000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Pending,
+        'status' => PendingConversion::class,
         'owner_type' => $owner->getMorphClass(),
         'owner_id' => null,
     ]);

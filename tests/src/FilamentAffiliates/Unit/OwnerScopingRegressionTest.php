@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
@@ -60,7 +60,7 @@ it('prevents cross-tenant reads and writes on admin payout and fraud pages', fun
         $affiliate = Affiliate::create([
             'code' => 'A-' . Str::uuid(),
             'name' => 'Affiliate A',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'USD',
@@ -68,7 +68,7 @@ it('prevents cross-tenant reads and writes on admin payout and fraud pages', fun
 
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-A-' . Str::uuid(),
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 5000,
             'currency' => 'USD',
             'affiliate_id' => $affiliate->getKey(),
@@ -93,7 +93,7 @@ it('prevents cross-tenant reads and writes on admin payout and fraud pages', fun
         $affiliate = Affiliate::create([
             'code' => 'B-' . Str::uuid(),
             'name' => 'Affiliate B',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'USD',
@@ -101,7 +101,7 @@ it('prevents cross-tenant reads and writes on admin payout and fraud pages', fun
 
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-B-' . Str::uuid(),
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 7000,
             'currency' => 'USD',
             'affiliate_id' => $affiliate->getKey(),

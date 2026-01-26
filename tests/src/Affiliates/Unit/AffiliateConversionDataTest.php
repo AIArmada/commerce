@@ -3,9 +3,11 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Data\AffiliateConversionData;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\ConversionStatus;
 use Carbon\Carbon;
 
 test('AffiliateConversionData constructor sets properties', function (): void {
@@ -22,7 +24,7 @@ test('AffiliateConversionData constructor sets properties', function (): void {
         totalMinor: 1200,
         commissionMinor: 120,
         commissionCurrency: 'USD',
-        status: ConversionStatus::Approved,
+        status: ConversionStatus::fromString(ApprovedConversion::class),
         occurredAt: $occurredAt,
         metadata: ['key' => 'value'],
     );
@@ -38,7 +40,7 @@ test('AffiliateConversionData constructor sets properties', function (): void {
     expect($data->totalMinor)->toBe(1200);
     expect($data->commissionMinor)->toBe(120);
     expect($data->commissionCurrency)->toBe('USD');
-    expect($data->status)->toBe(ConversionStatus::Approved);
+    expect($data->status->equals(ApprovedConversion::class))->toBeTrue();
     expect($data->occurredAt)->toBe($occurredAt);
     expect($data->metadata)->toBe(['key' => 'value']);
 });
@@ -47,7 +49,7 @@ test('AffiliateConversionData fromModel creates data from conversion', function 
     $affiliate = Affiliate::create([
         'code' => 'AFF1',
         'name' => 'Test Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -64,7 +66,7 @@ test('AffiliateConversionData fromModel creates data from conversion', function 
         'total_minor' => 1200,
         'commission_minor' => 120,
         'commission_currency' => 'USD',
-        'status' => 'approved',
+        'status' => ApprovedConversion::class,
         'occurred_at' => Carbon::now(),
         'metadata' => ['key' => 'value'],
     ]);
@@ -82,7 +84,7 @@ test('AffiliateConversionData fromModel creates data from conversion', function 
     expect($data->totalMinor)->toBe(1200);
     expect($data->commissionMinor)->toBe(120);
     expect($data->commissionCurrency)->toBe('USD');
-    expect($data->status)->toBe(ConversionStatus::Approved);
+    expect($data->status->equals(ApprovedConversion::class))->toBeTrue();
     expect($data->occurredAt)->toBeInstanceOf(Carbon::class);
     expect($data->metadata)->toBe(['key' => 'value']);
 });
@@ -101,12 +103,16 @@ test('AffiliateConversionData toArray returns array representation', function ()
         totalMinor: 1200,
         commissionMinor: 120,
         commissionCurrency: 'USD',
-        status: ConversionStatus::Approved,
+        status: ConversionStatus::fromString(ApprovedConversion::class),
         occurredAt: $occurredAt,
         metadata: ['key' => 'value'],
     );
 
     $array = $data->toArray();
+
+    expect($array['status'])->toBeInstanceOf(ApprovedConversion::class);
+
+    unset($array['status']);
 
     expect($array)->toBe([
         'id' => '1',
@@ -120,7 +126,6 @@ test('AffiliateConversionData toArray returns array representation', function ()
         'total_minor' => 1200,
         'commission_minor' => 120,
         'commission_currency' => 'USD',
-        'status' => 'approved',
         'occurred_at' => $occurredAt->format('c'),
         'metadata' => ['key' => 'value'],
     ]);
@@ -139,7 +144,7 @@ test('AffiliateConversionData toArray handles null occurredAt', function (): voi
         totalMinor: 1200,
         commissionMinor: 120,
         commissionCurrency: 'USD',
-        status: ConversionStatus::Approved,
+        status: ConversionStatus::fromString(ApprovedConversion::class),
         occurredAt: null,
         metadata: ['key' => 'value'],
     );

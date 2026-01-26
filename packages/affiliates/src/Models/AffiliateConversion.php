@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
-use AIArmada\Affiliates\Enums\ConversionStatus;
+use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -13,6 +13,7 @@ use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Spatie\ModelStates\HasStates;
 
 /**
  * @property string $id
@@ -49,6 +50,7 @@ class AffiliateConversion extends Model
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
+    use HasStates;
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';

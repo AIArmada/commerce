@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Vouchers\Data;
 
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherDataException;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\VoucherStatus;
 use Akaunting\Money\Money;
 use DateTimeImmutable;
 use DateTimeInterface;
@@ -78,7 +79,7 @@ class VoucherData extends Data
         $status = $voucher->status;
 
         if (! $status instanceof VoucherStatus) {
-            $status = VoucherStatus::from($status);
+            $status = VoucherStatus::fromString((string) $status);
         }
 
         return new self(
@@ -136,10 +137,8 @@ class VoucherData extends Data
             $type = VoucherType::from($type);
         }
 
-        $status = $data['status'] ?? VoucherStatus::Active;
-        if (is_string($status)) {
-            $status = VoucherStatus::from($status);
-        }
+        $status = $data['status'] ?? Active::class;
+        $status = VoucherStatus::fromString($status);
 
         // Get currency with config fallback
         $currency = $data['currency'] ?? (string) config('vouchers.default_currency', 'MYR');
@@ -190,7 +189,7 @@ class VoucherData extends Data
      */
     public function isActive(): bool
     {
-        return $this->status === VoucherStatus::Active;
+        return $this->status instanceof Active;
     }
 
     /**

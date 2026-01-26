@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\Orders\Events\CommissionAttributionRequired;
 use AIArmada\Orders\Models\Order;
 
@@ -12,7 +13,7 @@ it('records affiliate conversions when order commission attribution is required'
     $affiliate = Affiliate::create([
         'code' => 'ORDER-AFF',
         'name' => 'Order Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 100,
         'currency' => 'MYR',

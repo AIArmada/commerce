@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Services;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\States\Pending;
+use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -33,19 +37,23 @@ final class AffiliateStatsAggregator
         $conversionQuery = $this->conversionQuery($owner);
 
         $totalAffiliates = (clone $affiliateQuery)->count();
-        $activeAffiliates = (clone $affiliateQuery)->where('status', AffiliateStatus::Active)->count();
-        $pendingAffiliates = (clone $affiliateQuery)->where('status', AffiliateStatus::Pending)->count();
+        $activeAffiliates = (clone $affiliateQuery)
+            ->where('status', AffiliateStatus::fromString(Active::class)->getValue())
+            ->count();
+        $pendingAffiliates = (clone $affiliateQuery)
+            ->where('status', AffiliateStatus::fromString(Pending::class)->getValue())
+            ->count();
         $totalConversions = (clone $conversionQuery)->count();
         $pendingCommission = (int) (clone $conversionQuery)
-            ->where('status', ConversionStatus::Pending)
+            ->where('status', PendingConversion::value())
             ->sum('commission_minor');
         $paidCommission = (int) (clone $conversionQuery)
-            ->where('status', ConversionStatus::Paid)
+            ->where('status', PaidConversion::value())
             ->sum('commission_minor');
         $totalCommission = (int) (clone $conversionQuery)->sum('commission_minor');
 
         $approved = (clone $conversionQuery)
-            ->whereIn('status', [ConversionStatus::Approved, ConversionStatus::Paid])
+            ->whereIn('status', [ApprovedConversion::value(), PaidConversion::value()])
             ->count();
 
         $conversionRate = $totalConversions > 0

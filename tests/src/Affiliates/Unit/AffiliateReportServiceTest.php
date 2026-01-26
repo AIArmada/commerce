@@ -5,13 +5,14 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\Cart\Facades\Cart;
 
 beforeEach(function (): void {
     $this->affiliate = Affiliate::create([
         'code' => 'REPORT-1',
         'name' => 'Reporter',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 100,
         'currency' => 'USD',

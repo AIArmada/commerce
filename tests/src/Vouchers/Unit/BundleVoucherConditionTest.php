@@ -6,8 +6,9 @@ use AIArmada\Cart\Cart;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Compound\Conditions\BundleVoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\VoucherStatus;
 
 /**
  * Create a test cart with items.
@@ -78,7 +79,7 @@ function createBundleVoucherDataFor(
         ownerType: null,
         startsAt: null,
         expiresAt: null,
-        status: VoucherStatus::Active,
+        status: VoucherStatus::fromString(Active::class),
         targetDefinition: null,
         metadata: []
     );

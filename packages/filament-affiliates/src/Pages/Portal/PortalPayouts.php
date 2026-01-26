@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Pages\Portal;
 
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\PayoutStatus;
 use AIArmada\FilamentAffiliates\Concerns\InteractsWithAffiliate;
 use BackedEnum;
 use Filament\Pages\Page;
@@ -68,18 +69,9 @@ class PortalPayouts extends Page implements HasTable
                 TextColumn::make('status')
                     ->label(__('Status'))
                     ->badge()
-                    ->color(function (string | BackedEnum $state): string {
-                        $value = $state instanceof BackedEnum ? $state->value : $state;
-
-                        return match ($value) {
-                            PayoutStatus::Completed->value => 'success',
-                            PayoutStatus::Pending->value => 'warning',
-                            PayoutStatus::Processing->value => 'info',
-                            PayoutStatus::Failed->value => 'danger',
-                            PayoutStatus::Cancelled->value => 'gray',
-                            default => 'gray',
-                        };
-                    }),
+                    ->color(fn (string | BackedEnum $state): string => PayoutStatus::colorFor(
+                        $state instanceof BackedEnum ? $state->value : $state
+                    )),
 
                 TextColumn::make('paid_at')
                     ->label(__('Paid At'))
@@ -100,7 +92,7 @@ class PortalPayouts extends Page implements HasTable
             ? (int) AffiliatePayout::query()
                 ->where('payee_type', $affiliate->getMorphClass())
                 ->where('payee_id', $affiliate->getKey())
-                ->where('status', PayoutStatus::Completed)
+                ->where('status', CompletedPayout::value())
                 ->sum('total_minor')
             : 0;
 

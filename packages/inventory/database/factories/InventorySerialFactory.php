@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Database\Factories;
 
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Enums\SerialStatus;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\States\Available;
+use AIArmada\Inventory\States\Reserved;
+use AIArmada\Inventory\States\SerialStatus;
+use AIArmada\Inventory\States\Sold;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -26,7 +29,7 @@ class InventorySerialFactory extends Factory
             'sku' => $this->faker->optional(0.8)->bothify('SKU-####'),
             'location_id' => InventoryLocation::factory(),
             'batch_id' => null,
-            'status' => SerialStatus::Available->value,
+            'status' => SerialStatus::normalize(Available::class),
             'condition' => SerialCondition::New->value,
             'unit_cost_minor' => $this->faker->numberBetween(1000, 100000),
             'currency' => 'USD',
@@ -66,7 +69,7 @@ class InventorySerialFactory extends Factory
     public function reserved(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'status' => SerialStatus::Reserved->value,
+            'status' => SerialStatus::normalize(Reserved::class),
         ]);
     }
 
@@ -76,7 +79,7 @@ class InventorySerialFactory extends Factory
     public function sold(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'status' => SerialStatus::Sold->value,
+            'status' => SerialStatus::normalize(Sold::class),
             'sold_at' => now(),
             'order_id' => $this->faker->uuid(),
             'customer_id' => $this->faker->uuid(),

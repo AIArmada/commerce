@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Services;
 
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateNetwork;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -121,20 +124,18 @@ final class NetworkService
             return 0;
         }
 
-        $query = Affiliate::query()
-            ->whereIn('id', $descendantIds)
-            ->withSum([
-                'conversions' => function ($q) use ($from, $to): void {
-                    if ($from) {
-                        $q->where('occurred_at', '>=', $from);
-                    }
-                    if ($to) {
-                        $q->where('occurred_at', '<=', $to);
-                    }
-                },
-            ], 'total_minor');
+        $query = AffiliateConversion::query()
+            ->whereIn('affiliate_id', $descendantIds);
 
-        return (int) $query->get()->sum('conversions_sum_total_minor');
+        if ($from) {
+            $query->where('occurred_at', '>=', $from);
+        }
+
+        if ($to) {
+            $query->where('occurred_at', '<=', $to);
+        }
+
+        return (int) $query->sum('total_minor');
     }
 
     /**
@@ -153,7 +154,7 @@ final class NetworkService
 
         return Affiliate::query()
             ->whereIn('id', $descendantIds)
-            ->where('status', 'active')
+            ->where('status', AffiliateStatus::normalize(Active::class))
             ->count();
     }
 
@@ -170,7 +171,7 @@ final class NetworkService
                 'name' => $root->name,
                 'code' => $root->code,
                 'rank' => $root->rank?->name,
-                'status' => $root->status->value,
+                'status' => AffiliateStatus::normalize($root->status),
                 'stats' => [
                     'direct_recruits' => $root->direct_downline_count,
                     'total_downline' => $root->total_downline_count,
@@ -186,7 +187,7 @@ final class NetworkService
             'name' => $root->name,
             'code' => $root->code,
             'rank' => $root->rank?->name,
-            'status' => $root->status->value,
+            'status' => AffiliateStatus::normalize($root->status),
             'stats' => [
                 'direct_recruits' => $root->direct_downline_count,
                 'total_downline' => $root->total_downline_count,
@@ -212,7 +213,7 @@ final class NetworkService
                 'name' => $child->name,
                 'code' => $child->code,
                 'rank' => $child->rank?->name,
-                'status' => $child->status->value,
+                'status' => AffiliateStatus::normalize($child->status),
                 'stats' => [
                     'direct_recruits' => $child->direct_downline_count,
                     'total_downline' => $child->total_downline_count,

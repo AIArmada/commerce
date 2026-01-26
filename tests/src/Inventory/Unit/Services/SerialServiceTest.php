@@ -5,10 +5,17 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Enums\SerialStatus;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventorySerial;
 use AIArmada\Inventory\Services\SerialService;
+use AIArmada\Inventory\States\Available;
+use AIArmada\Inventory\States\Disposed;
+use AIArmada\Inventory\States\InRepair;
+use AIArmada\Inventory\States\Reserved;
+use AIArmada\Inventory\States\Returned;
+use AIArmada\Inventory\States\SerialStatus;
+use AIArmada\Inventory\States\Shipped;
+use AIArmada\Inventory\States\Sold;
 
 class SerialServiceTest extends InventoryTestCase
 {
@@ -42,7 +49,7 @@ class SerialServiceTest extends InventoryTestCase
 
         expect($serial)->toBeInstanceOf(InventorySerial::class);
         expect($serial->serial_number)->toBe('SN-001');
-        expect($serial->status)->toBe(SerialStatus::Available->value);
+        expect($serial->status)->toBeInstanceOf(Available::class);
         expect($serial->condition)->toBe(SerialCondition::New->value);
         expect($serial->history)->toHaveCount(1);
     }
@@ -86,14 +93,14 @@ class SerialServiceTest extends InventoryTestCase
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
-            'status' => SerialStatus::Available->value,
+            'status' => SerialStatus::normalize(Available::class),
             'condition' => SerialCondition::New->value,
         ]);
         InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
-            'status' => SerialStatus::Sold->value,
+            'status' => SerialStatus::normalize(Sold::class),
         ]);
 
         $available = $this->service->getAvailableSerials($this->item, $this->location->id);
@@ -120,12 +127,12 @@ class SerialServiceTest extends InventoryTestCase
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Available->value,
+            'status' => SerialStatus::normalize(Available::class),
         ]);
 
         $reserved = $this->service->reserve($serial, 'order-123', 'user-123');
 
-        expect($reserved->status)->toBe(SerialStatus::Reserved->value);
+        expect($reserved->status)->toBeInstanceOf(Reserved::class);
     }
 
     public function test_reserve_serial_throws_for_invalid_status(): void
@@ -133,7 +140,7 @@ class SerialServiceTest extends InventoryTestCase
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Sold->value,
+            'status' => SerialStatus::normalize(Sold::class),
         ]);
 
         $this->expectException(InvalidArgumentException::class);
@@ -145,12 +152,12 @@ class SerialServiceTest extends InventoryTestCase
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Reserved->value,
+            'status' => SerialStatus::normalize(Reserved::class),
         ]);
 
         $released = $this->service->release($serial, 'user-123');
 
-        expect($released->status)->toBe(SerialStatus::Available->value);
+        expect($released->status)->toBeInstanceOf(Available::class);
     }
 
     public function test_sell_serial(): void
@@ -158,12 +165,12 @@ class SerialServiceTest extends InventoryTestCase
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Reserved->value,
+            'status' => SerialStatus::normalize(Reserved::class),
         ]);
 
         $sold = $this->service->sell($serial, 'order-123', 'customer-456', 'user-123');
 
-        expect($sold->status)->toBe(SerialStatus::Sold->value);
+        expect($sold->status)->toBeInstanceOf(Sold::class);
         expect($sold->order_id)->toBe('order-123');
         expect($sold->customer_id)->toBe('customer-456');
     }
@@ -174,12 +181,12 @@ class SerialServiceTest extends InventoryTestCase
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
-            'status' => SerialStatus::Sold->value,
+            'status' => SerialStatus::normalize(Sold::class),
         ]);
 
         $shipped = $this->service->ship($serial, 'TRACK-123', 'user-123');
 
-        expect($shipped->status)->toBe(SerialStatus::Shipped->value);
+        expect($shipped->status)->toBeInstanceOf(Shipped::class);
         expect($shipped->location_id)->toBeNull();
     }
 
@@ -188,7 +195,7 @@ class SerialServiceTest extends InventoryTestCase
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Shipped->value,
+            'status' => SerialStatus::normalize(Shipped::class),
         ]);
 
         $returned = $this->service->processReturn(
@@ -199,7 +206,7 @@ class SerialServiceTest extends InventoryTestCase
             'user-123'
         );
 
-        expect($returned->status)->toBe(SerialStatus::Returned->value);
+        expect($returned->status)->toBeInstanceOf(Returned::class);
         expect($returned->condition)->toBe(SerialCondition::Used->value);
         expect($returned->location_id)->toBe($this->location->id);
     }
@@ -209,12 +216,12 @@ class SerialServiceTest extends InventoryTestCase
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::Returned->value,
+            'status' => SerialStatus::normalize(Returned::class),
         ]);
 
         $inRepair = $this->service->startRepair($serial, 'Screen damage', 'user-123');
 
-        expect($inRepair->status)->toBe(SerialStatus::InRepair->value);
+        expect($inRepair->status)->toBeInstanceOf(InRepair::class);
     }
 
     public function test_complete_repair(): void
@@ -222,13 +229,13 @@ class SerialServiceTest extends InventoryTestCase
         $serial = InventorySerial::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => SerialStatus::InRepair->value,
+            'status' => SerialStatus::normalize(InRepair::class),
             'condition' => SerialCondition::Damaged->value,
         ]);
 
         $repaired = $this->service->completeRepair($serial, SerialCondition::Refurbished, 'Repaired successfully', 'user-123');
 
-        expect($repaired->status)->toBe(SerialStatus::Available->value);
+        expect($repaired->status)->toBeInstanceOf(Available::class);
         expect($repaired->condition)->toBe(SerialCondition::Refurbished->value);
     }
 
@@ -238,13 +245,13 @@ class SerialServiceTest extends InventoryTestCase
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
-            'status' => SerialStatus::Returned->value,
+            'status' => SerialStatus::normalize(Returned::class),
             'condition' => SerialCondition::Damaged->value,
         ]);
 
         $disposed = $this->service->dispose($serial, 'Beyond repair', 'user-123');
 
-        expect($disposed->status)->toBe(SerialStatus::Disposed->value);
+        expect($disposed->status)->toBeInstanceOf(Disposed::class);
         expect($disposed->location_id)->toBeNull();
     }
 

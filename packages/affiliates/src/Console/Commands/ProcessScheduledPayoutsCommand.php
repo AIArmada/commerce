@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Console\Commands;
 
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Exception;
 use Illuminate\Console\Command;
@@ -21,11 +25,6 @@ final class ProcessScheduledPayoutsCommand extends Command
         {--min-amount= : Minimum amount threshold in minor units}';
 
     protected $description = 'Process scheduled payouts for affiliates';
-
-    public function __construct()
-    {
-        parent::__construct();
-    }
 
     public function handle(): int
     {
@@ -102,7 +101,7 @@ final class ProcessScheduledPayoutsCommand extends Command
         $errors = 0;
 
         $query = Affiliate::query()
-            ->where('status', 'active')
+            ->where('status', AffiliateStatus::normalize(Active::class))
             ->whereHas('balance', function ($q) use ($minAmount): void {
                 $q->where('available_minor', '>=', $minAmount);
             });
@@ -184,7 +183,7 @@ final class ProcessScheduledPayoutsCommand extends Command
 
         // Check for pending payouts
         $hasPendingPayout = $affiliate->payouts()
-            ->whereIn('status', [PayoutStatus::Pending->value, PayoutStatus::Processing->value])
+            ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
             ->exists();
 
         if ($hasPendingPayout) {
@@ -207,7 +206,7 @@ final class ProcessScheduledPayoutsCommand extends Command
                 'owner_id' => $affiliate->owner_id,
                 'total_minor' => $balance->available_minor,
                 'currency' => $balance->currency,
-                'status' => PayoutStatus::Pending->value,
+                'status' => PendingPayout::value(),
                 'scheduled_at' => now(),
             ]);
 
@@ -216,13 +215,13 @@ final class ProcessScheduledPayoutsCommand extends Command
 
             // Link approved conversions
             $affiliate->conversions()
-                ->where('status', 'approved')
+                ->where('status', ApprovedConversion::value())
                 ->whereNull('affiliate_payout_id')
                 ->update(['affiliate_payout_id' => $payout->id]);
 
             // Create audit event
             $payout->events()->create([
-                'to_status' => PayoutStatus::Pending->value,
+                'to_status' => PendingPayout::value(),
                 'notes' => 'Payout created via scheduled processing',
             ]);
         });

@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliateTaxDocument Model', function (): void {
@@ -13,7 +13,7 @@ describe('AffiliateTaxDocument Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TAX-TEST-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -39,7 +39,7 @@ describe('AffiliateTaxDocument Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TAX-AFF-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -62,7 +62,7 @@ describe('AffiliateTaxDocument Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TAX-PATH-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -85,7 +85,7 @@ describe('AffiliateTaxDocument Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TAX-GEN-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -109,7 +109,7 @@ describe('AffiliateTaxDocument Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TAX-SENT-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -134,7 +134,7 @@ describe('AffiliateTaxDocument Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TAX-TYPES-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -166,7 +166,7 @@ describe('AffiliateTaxDocument Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TAX-STATUS-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -198,7 +198,7 @@ describe('AffiliateTaxDocument Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TAX-CAST-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -221,7 +221,7 @@ describe('AffiliateTaxDocument Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TAX-NOTE-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',

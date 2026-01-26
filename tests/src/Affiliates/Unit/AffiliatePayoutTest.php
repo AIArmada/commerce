@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\States\ProcessingPayout;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 describe('AffiliatePayout Model', function (): void {
@@ -15,7 +18,7 @@ describe('AffiliatePayout Model', function (): void {
         $this->affiliate = Affiliate::create([
             'code' => 'PAYOUT' . uniqid(),
             'name' => 'Payout Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -25,7 +28,7 @@ describe('AffiliatePayout Model', function (): void {
     test('can be created with required fields', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-' . uniqid(),
-            'status' => 'pending',
+            'status' => PendingPayout::class,
             'total_minor' => 100000,
             'conversion_count' => 10,
             'currency' => 'USD',
@@ -42,7 +45,7 @@ describe('AffiliatePayout Model', function (): void {
     test('has polymorphic payee relationship', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-MORPH-' . uniqid(),
-            'status' => 'pending',
+            'status' => PendingPayout::class,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
@@ -67,7 +70,7 @@ describe('AffiliatePayout Model', function (): void {
     test('has many conversions', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-CONV-' . uniqid(),
-            'status' => 'completed',
+            'status' => CompletedPayout::class,
             'total_minor' => 75000,
             'conversion_count' => 3,
             'currency' => 'USD',
@@ -83,7 +86,7 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 25000,
             'commission_minor' => 2500,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Paid,
+            'status' => PaidConversion::class,
             'occurred_at' => now(),
         ]);
 
@@ -95,7 +98,7 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Paid,
+            'status' => PaidConversion::class,
             'occurred_at' => now(),
         ]);
 
@@ -105,7 +108,7 @@ describe('AffiliatePayout Model', function (): void {
     test('has many events', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-EVT-' . uniqid(),
-            'status' => 'pending',
+            'status' => PendingPayout::class,
             'total_minor' => 30000,
             'conversion_count' => 3,
             'currency' => 'USD',
@@ -132,7 +135,7 @@ describe('AffiliatePayout Model', function (): void {
     test('affiliate accessor returns payee when payee is Affiliate', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-AFF-' . uniqid(),
-            'status' => 'pending',
+            'status' => PendingPayout::class,
             'total_minor' => 20000,
             'conversion_count' => 2,
             'currency' => 'USD',
@@ -147,7 +150,7 @@ describe('AffiliatePayout Model', function (): void {
     test('amount_minor accessor returns total_minor', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-AMT-' . uniqid(),
-            'status' => 'pending',
+            'status' => PendingPayout::class,
             'total_minor' => 45000,
             'conversion_count' => 4,
             'currency' => 'USD',
@@ -161,7 +164,7 @@ describe('AffiliatePayout Model', function (): void {
     test('external_reference accessor returns metadata value', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-EXT-' . uniqid(),
-            'status' => 'completed',
+            'status' => CompletedPayout::class,
             'total_minor' => 60000,
             'conversion_count' => 6,
             'currency' => 'USD',
@@ -176,7 +179,7 @@ describe('AffiliatePayout Model', function (): void {
     test('external_reference accessor returns null when not set', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-NOEXT-' . uniqid(),
-            'status' => 'pending',
+            'status' => PendingPayout::class,
             'total_minor' => 10000,
             'conversion_count' => 1,
             'currency' => 'USD',
@@ -190,7 +193,7 @@ describe('AffiliatePayout Model', function (): void {
     test('notes accessor returns metadata value', function (): void {
         $payout = AffiliatePayout::create([
             'reference' => 'PAY-NOTE-' . uniqid(),
-            'status' => 'processing',
+            'status' => ProcessingPayout::class,
             'total_minor' => 35000,
             'conversion_count' => 3,
             'currency' => 'USD',
@@ -309,7 +312,7 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 30000,
             'commission_minor' => 3000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Paid,
+            'status' => PaidConversion::class,
             'occurred_at' => now(),
         ]);
 
