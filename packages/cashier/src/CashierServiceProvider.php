@@ -69,6 +69,16 @@ final class CashierServiceProvider extends PackageServiceProvider
             $this->publishes([
                 __DIR__ . '/../config/cashier.php' => $this->app->configPath('cashier.php'),
             ], 'cashier-config');
+
+            if (class_exists(\Laravel\Cashier\CashierServiceProvider::class)) {
+                $migrationsPath = base_path('vendor/laravel/cashier/database/migrations');
+
+                if (is_dir($migrationsPath)) {
+                    $this->publishes([
+                        $migrationsPath => $this->app->databasePath('migrations'),
+                    ], 'cashier-stripe-migrations');
+                }
+            }
         }
     }
 

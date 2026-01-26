@@ -145,7 +145,11 @@ class FulfillmentQueue extends Page implements HasTable
                     ->label('Customer')
                     ->searchable()
                     ->placeholder('Guest')
-                    ->description(fn (Order $record): string => $record->customer?->email ?? 'Guest'),
+                    ->description(function (Order $record): string {
+                        $email = $record->customer?->getAttribute('email');
+
+                        return is_string($email) && $email !== '' ? $email : 'Guest';
+                    }),
 
                 Tables\Columns\TextColumn::make('items_count')
                     ->label('Items')

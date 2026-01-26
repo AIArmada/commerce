@@ -47,10 +47,14 @@ final class OrderTimelineWidget extends Widget implements HasForms
         $events = collect([]);
 
         // Order created event
+        $customerName = $this->record->customer?->getAttribute('full_name')
+            ?? $this->record->customer?->getAttribute('name')
+            ?? 'Guest';
+
         $events->push([
             'type' => 'created',
             'title' => 'Order Created',
-            'description' => 'Order was placed by ' . ($this->record->customer?->full_name ?? 'Guest'),
+            'description' => 'Order was placed by ' . $customerName,
             'icon' => 'heroicon-o-shopping-cart',
             'color' => 'success',
             'timestamp' => $this->record->created_at,
@@ -98,6 +102,10 @@ final class OrderTimelineWidget extends Widget implements HasForms
 
         // Notes
         foreach ($this->record->orderNotes as $note) {
+            $causerName = $note->user?->getAttribute('name')
+                ?? $note->user?->getAttribute('full_name')
+                ?? 'System';
+
             $events->push([
                 'type' => 'note',
                 'title' => 'Note Added',
@@ -105,7 +113,7 @@ final class OrderTimelineWidget extends Widget implements HasForms
                 'icon' => 'heroicon-o-chat-bubble-left-ellipsis',
                 'color' => 'gray',
                 'timestamp' => $note->created_at,
-                'causer' => $note->user?->name ?? 'System',
+                'causer' => $causerName,
             ]);
         }
 

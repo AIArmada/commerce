@@ -31,7 +31,7 @@ class SyncTrackingAction extends Action
 
                     Notification::make()
                         ->title('Tracking Updated')
-                        ->body("Status: {$updatedShipment->status->getLabel()}")
+                        ->body("Status: {$updatedShipment->status->label()}")
                         ->success()
                         ->send();
                 } catch (Throwable $e) {

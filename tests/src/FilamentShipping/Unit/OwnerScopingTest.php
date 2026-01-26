@@ -6,8 +6,8 @@ use AIArmada\Commerce\Tests\Support\Fixtures\TestOwner;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\States\Pending;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
@@ -36,7 +36,7 @@ it('scopes ShipmentResource to current owner plus global', function (): void {
         'owner_id' => $ownerA->getKey(),
         'reference' => 'REF-A',
         'carrier_code' => 'test',
-        'status' => ShipmentStatus::Pending,
+        'status' => Pending::class,
         'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
         'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
     ]);
@@ -46,7 +46,7 @@ it('scopes ShipmentResource to current owner plus global', function (): void {
         'owner_id' => $ownerB->getKey(),
         'reference' => 'REF-B',
         'carrier_code' => 'test',
-        'status' => ShipmentStatus::Pending,
+        'status' => Pending::class,
         'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
         'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
     ]);
@@ -56,7 +56,7 @@ it('scopes ShipmentResource to current owner plus global', function (): void {
         'owner_id' => null,
         'reference' => 'REF-G',
         'carrier_code' => 'test',
-        'status' => ShipmentStatus::Pending,
+        'status' => Pending::class,
         'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
         'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
     ]);
@@ -92,7 +92,7 @@ it('returns empty when owner scoping is enabled but owner context is missing', f
         'owner_id' => $ownerA->getKey(),
         'reference' => 'REF-A',
         'carrier_code' => 'test',
-        'status' => ShipmentStatus::Pending,
+        'status' => Pending::class,
         'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
         'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
     ]);
@@ -102,7 +102,7 @@ it('returns empty when owner scoping is enabled but owner context is missing', f
         'owner_id' => null,
         'reference' => 'REF-G',
         'carrier_code' => 'test',
-        'status' => ShipmentStatus::Pending,
+        'status' => Pending::class,
         'origin_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
         'destination_address' => ['country' => 'MY', 'city' => 'Kuala Lumpur'],
     ]);
