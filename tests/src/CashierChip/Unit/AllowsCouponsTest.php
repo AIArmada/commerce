@@ -8,9 +8,10 @@ use AIArmada\CashierChip\Concerns\AllowsCoupons;
 use AIArmada\CashierChip\SubscriptionBuilder;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Services\VoucherService;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\Paused;
 use Akaunting\Money\Money;
 
 class AllowsCouponsTest extends CashierChipTestCase
@@ -77,7 +78,7 @@ class AllowsCouponsTest extends CashierChipTestCase
             'type' => VoucherType::Percentage->value,
             'value' => 1000, // 10%
             'currency' => 'MYR',
-            'status' => VoucherStatus::Active->value,
+            'status' => Active::class,
             'metadata' => ['duration' => 'once'],
         ]);
 
@@ -117,7 +118,7 @@ class AllowsCouponsTest extends CashierChipTestCase
             'type' => VoucherType::Fixed->value,
             'value' => 500,
             'currency' => 'MYR',
-            'status' => VoucherStatus::Paused->value,
+            'status' => Paused::class,
             'metadata' => ['duration' => 'once'],
         ]);
 
@@ -137,7 +138,7 @@ class AllowsCouponsTest extends CashierChipTestCase
             'type' => VoucherType::Fixed->value,
             'value' => 500,
             'currency' => 'MYR',
-            'status' => VoucherStatus::Active->value,
+            'status' => Active::class,
             'metadata' => ['duration' => 'forever'],
         ]);
 
@@ -157,7 +158,7 @@ class AllowsCouponsTest extends CashierChipTestCase
             'type' => VoucherType::Fixed->value,
             'value' => 500,
             'currency' => 'MYR',
-            'status' => VoucherStatus::Active->value,
+            'status' => Active::class,
             'metadata' => ['duration' => 'forever'],
         ]);
 
@@ -186,7 +187,7 @@ class AllowsCouponsTest extends CashierChipTestCase
             'type' => VoucherType::Percentage->value,
             'value' => 1000, // 10%
             'currency' => 'MYR',
-            'status' => VoucherStatus::Active->value,
+            'status' => Active::class,
             'metadata' => ['duration' => 'once'],
         ]);
 

@@ -4,7 +4,10 @@ declare(strict_types=1);
 
 namespace Database\Seeders;
 
-use AIArmada\Vouchers\Enums\VoucherStatus;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\Depleted;
+use AIArmada\Vouchers\States\Expired;
+use AIArmada\Vouchers\States\Paused;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use App\Models\User;
@@ -38,7 +41,7 @@ final class VoucherSeeder extends Seeder
             'usage_limit' => null,
             'usage_limit_per_user' => 1,
             'allows_manual_redemption' => true,
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'starts_at' => now()->subDays(30),
             'expires_at' => now()->addDays(60),
         ]);
@@ -56,7 +59,7 @@ final class VoucherSeeder extends Seeder
             'usage_limit' => 500,
             'usage_limit_per_user' => 1,
             'allows_manual_redemption' => true,
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'starts_at' => now()->subDays(7),
             'expires_at' => now()->addDays(90),
         ]);
@@ -74,7 +77,7 @@ final class VoucherSeeder extends Seeder
             'usage_limit' => 100,
             'usage_limit_per_user' => 1,
             'allows_manual_redemption' => true,
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'starts_at' => now(),
             'expires_at' => now()->addDays(3),
         ]);
@@ -92,7 +95,7 @@ final class VoucherSeeder extends Seeder
             'usage_limit' => 50,
             'usage_limit_per_user' => 2,
             'allows_manual_redemption' => true,
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'starts_at' => now()->subDays(14),
             'expires_at' => now()->addDays(30),
         ]);
@@ -112,7 +115,7 @@ final class VoucherSeeder extends Seeder
             'usage_limit' => null,
             'usage_limit_per_user' => 3,
             'allows_manual_redemption' => true,
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'starts_at' => now()->subDays(30),
             'expires_at' => now()->addDays(60),
         ]);
@@ -129,7 +132,7 @@ final class VoucherSeeder extends Seeder
             'usage_limit' => 200,
             'usage_limit_per_user' => 1,
             'allows_manual_redemption' => true,
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'starts_at' => now(),
             'expires_at' => now()->addDays(45),
         ]);
@@ -146,7 +149,7 @@ final class VoucherSeeder extends Seeder
             'usage_limit' => 50,
             'usage_limit_per_user' => 1,
             'allows_manual_redemption' => true,
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'starts_at' => now(),
             'expires_at' => now()->addDays(30),
         ]);
@@ -163,7 +166,7 @@ final class VoucherSeeder extends Seeder
             'usage_limit' => null,
             'usage_limit_per_user' => 5,
             'allows_manual_redemption' => true,
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'starts_at' => now()->subDays(7),
             'expires_at' => now()->addDays(60),
             'metadata' => ['voucher_category' => 'shipping'],
@@ -183,7 +186,7 @@ final class VoucherSeeder extends Seeder
             'usage_limit' => 10,
             'applied_count' => 12,
             'allows_manual_redemption' => true,
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'starts_at' => now()->subDays(7),
             'expires_at' => now()->addDays(30),
         ]);
@@ -210,7 +213,7 @@ final class VoucherSeeder extends Seeder
             'usage_limit' => 5,
             'applied_count' => 8,
             'allows_manual_redemption' => true,
-            'status' => VoucherStatus::Depleted,
+            'status' => Depleted::class,
             'starts_at' => now()->subDays(30),
             'expires_at' => now()->addDays(30),
         ]);
@@ -229,7 +232,7 @@ final class VoucherSeeder extends Seeder
             'usage_limit' => 100,
             'applied_count' => 45,
             'allows_manual_redemption' => true,
-            'status' => VoucherStatus::Expired,
+               'status' => Expired::class,
             'starts_at' => now()->subDays(60),
             'expires_at' => now()->subDays(7),
         ]);
@@ -245,7 +248,7 @@ final class VoucherSeeder extends Seeder
             'min_cart_value' => 15000,
             'usage_limit' => 200,
             'allows_manual_redemption' => true,
-            'status' => VoucherStatus::Scheduled,
+            'status' => Paused::class,
             'starts_at' => now()->addDays(7),
             'expires_at' => now()->addDays(37),
         ]);
@@ -260,7 +263,7 @@ final class VoucherSeeder extends Seeder
             'currency' => 'MYR',
             'usage_limit' => 100,
             'allows_manual_redemption' => true,
-            'status' => VoucherStatus::Paused,
+               'status' => Paused::class,
             'starts_at' => now()->subDays(14),
             'expires_at' => now()->addDays(14),
         ]);

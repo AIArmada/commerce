@@ -6,6 +6,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\Models\AffiliateNetwork;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -36,7 +37,7 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
     $affiliateA = Affiliate::create([
         'code' => 'AFF-OWN-A',
         'name' => 'Affiliate A',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -47,7 +48,7 @@ it('scopes touchpoints, daily stats, and network to current owner', function ():
     $affiliateB = Affiliate::create([
         'code' => 'AFF-OWN-B',
         'name' => 'Affiliate B',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',

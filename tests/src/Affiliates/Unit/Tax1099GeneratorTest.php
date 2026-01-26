@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\Tax\Tax1099Generator;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Support\Facades\Storage;
 
 beforeEach(function (): void {
@@ -15,7 +15,7 @@ beforeEach(function (): void {
         'code' => 'TAX-' . uniqid(),
         'name' => 'Tax Test Affiliate',
         'contact_email' => 'tax@example.com',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => CommissionType::Percentage,
         'commission_rate' => 1000,
         'currency' => 'USD',

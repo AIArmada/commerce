@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Models\AffiliateSupportTicket;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -15,7 +15,7 @@ describe('AffiliateSupportTicket Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TICKET-TEST-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -40,7 +40,7 @@ describe('AffiliateSupportTicket Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TICKET-AFF-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -62,7 +62,7 @@ describe('AffiliateSupportTicket Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TICKET-MSG-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -83,7 +83,7 @@ describe('AffiliateSupportTicket Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TICKET-ORDER-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -117,7 +117,7 @@ describe('AffiliateSupportTicket Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TICKET-PRIO-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -147,7 +147,7 @@ describe('AffiliateSupportTicket Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TICKET-STAT-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',

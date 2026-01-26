@@ -6,6 +6,10 @@ namespace AIArmada\FilamentCart\Services;
 
 use AIArmada\Cart\Models\RecoveryAttempt;
 use AIArmada\Cart\Models\RecoveryCampaign;
+use AIArmada\Cart\States\Cancelled;
+use AIArmada\Cart\States\Queued;
+use AIArmada\Cart\States\RecoveryAttemptStatus;
+use AIArmada\Cart\States\Scheduled;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Settings\CartRecoverySettings;
 use AIArmada\Orders\Models\Order;
@@ -69,7 +73,7 @@ class RecoveryScheduler
         }
 
         $dueAttempts = RecoveryAttempt::query()->forOwner()
-            ->where('status', 'scheduled')
+            ->where('status', RecoveryAttemptStatus::normalize(Scheduled::class))
             ->where('scheduled_for', '<=', now())
             ->orderBy('scheduled_for')
             ->limit(100)
@@ -136,8 +140,8 @@ class RecoveryScheduler
     {
         return RecoveryAttempt::query()->forOwner()
             ->where('cart_id', $cartId)
-            ->where('status', 'scheduled')
-            ->update(['status' => 'cancelled']);
+            ->where('status', RecoveryAttemptStatus::normalize(Scheduled::class))
+            ->update(['status' => Cancelled::class]);
     }
 
     /**
@@ -293,7 +297,7 @@ class RecoveryScheduler
             'recipient_phone' => $phone,
             'recipient_name' => $name,
             'channel' => $campaign->strategy === 'multi_channel' ? 'email' : $campaign->strategy,
-            'status' => 'scheduled',
+            'status' => Scheduled::class,
             'attempt_number' => $attemptNumber,
             'is_control' => $isControl,
             'is_variant' => $isVariant,
@@ -458,7 +462,7 @@ class RecoveryScheduler
     private function queueAttempt(RecoveryAttempt $attempt): void
     {
         $attempt->update([
-            'status' => 'queued',
+            'status' => Queued::class,
             'queued_at' => now(),
         ]);
 

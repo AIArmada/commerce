@@ -4,9 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Payouts;
 
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\PayoutStatus;
+use AIArmada\Affiliates\States\PendingPayout;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -40,17 +41,15 @@ final class CreatePayout
             $reference = $attributes['reference'] ?? $this->generateReference();
 
             // Handle status - accept either enum or string
-            $status = $attributes['status'] ?? PayoutStatus::Pending;
-            if (is_string($status)) {
-                $status = PayoutStatus::tryFrom($status) ?? PayoutStatus::Pending;
-            }
+            $status = $attributes['status'] ?? PendingPayout::class;
+            $status = PayoutStatus::fromString($status);
 
             $ownerType = $attributes['owner_type'] ?? $conversions->first()?->owner_type;
             $ownerId = $attributes['owner_id'] ?? $conversions->first()?->owner_id;
 
             $payout = AffiliatePayout::create([
                 'reference' => $reference,
-                'status' => $status,
+                'status' => $status::class,
                 'total_minor' => $total,
                 'conversion_count' => $conversions->count(),
                 'currency' => $currency,

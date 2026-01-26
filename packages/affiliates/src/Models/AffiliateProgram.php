@@ -6,6 +6,7 @@ namespace AIArmada\Affiliates\Models;
 
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
+use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -257,7 +258,7 @@ class AffiliateProgram extends Model
             }
         }
 
-        if (isset($rules['required_status']) && $affiliate->status->value !== $rules['required_status']) {
+        if (isset($rules['required_status']) && AffiliateStatus::normalize($affiliate->status) !== $rules['required_status']) {
             return false;
         }
 

@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Events\FraudSignalDetected;
@@ -13,6 +11,9 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\PendingConversion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
@@ -24,7 +25,7 @@ beforeEach(function (): void {
         'code' => 'FRAUD-' . uniqid(),
         'name' => 'Fraud Test Affiliate',
         'contact_email' => 'fraud@example.com',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => CommissionType::Percentage,
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -117,7 +118,7 @@ describe('FraudDetectionService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Pending,
+                'status' => PendingConversion::class,
                 'occurred_at' => now(),
             ]);
 
@@ -139,7 +140,7 @@ describe('FraudDetectionService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Pending,
+                'status' => PendingConversion::class,
                 'occurred_at' => now(),
                 'owner_id' => 'user-123', // Same as affiliate owner
                 'owner_type' => 'user',
@@ -166,7 +167,7 @@ describe('FraudDetectionService', function (): void {
                     'subtotal_minor' => 10000,
                     'total_minor' => 10000,
                     'commission_minor' => 1000,
-                    'status' => ConversionStatus::Approved,
+                    'status' => ApprovedConversion::class,
                     'occurred_at' => now(),
                 ]);
             }
@@ -178,7 +179,7 @@ describe('FraudDetectionService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Pending,
+                'status' => PendingConversion::class,
                 'occurred_at' => now(),
             ]);
 
@@ -209,7 +210,7 @@ describe('FraudDetectionService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Pending,
+                'status' => PendingConversion::class,
                 'occurred_at' => now(),
             ]);
 
@@ -232,7 +233,7 @@ describe('FraudDetectionService', function (): void {
                 'subtotal_minor' => 10000,
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
-                'status' => ConversionStatus::Pending,
+                'status' => PendingConversion::class,
                 'occurred_at' => now(),
             ]);
 

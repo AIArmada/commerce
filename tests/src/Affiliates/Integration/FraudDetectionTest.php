@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Events\FraudSignalDetected;
@@ -12,6 +11,7 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Services\FraudDetectionService;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Event;
@@ -20,7 +20,7 @@ beforeEach(function (): void {
     $this->affiliate = Affiliate::create([
         'code' => 'FRAUD-TEST',
         'name' => 'Fraud Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',

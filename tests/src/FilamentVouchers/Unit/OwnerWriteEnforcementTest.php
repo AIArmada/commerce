@@ -7,9 +7,9 @@ use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\States\Active;
 
 uses(TestCase::class);
 
@@ -54,7 +54,7 @@ it('keeps global rows global on update when owner mode enabled', function (): vo
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);
@@ -89,7 +89,7 @@ it('prevents changing ownership on update when owner mode enabled', function ():
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);

@@ -6,8 +6,10 @@ namespace AIArmada\Vouchers\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\Depleted;
+use AIArmada\Vouchers\States\VoucherStatus;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -15,6 +17,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Spatie\ModelStates\HasStates;
 
 /**
  * @property string $id
@@ -64,6 +67,7 @@ class Voucher extends Model
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
+    use HasStates;
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'vouchers.owner';
@@ -184,10 +188,7 @@ class Voucher extends Model
 
     public function isActive(): bool
     {
-        /** @var VoucherStatus|null $status */
-        $status = $this->getAttribute('status');
-
-        return $status === VoucherStatus::Active;
+        return $this->status instanceof Active;
     }
 
     public function isExpired(): bool
@@ -240,7 +241,7 @@ class Voucher extends Model
         $usageLimit = $this->getAttribute('usage_limit');
 
         if ($usageLimit && $this->getTimesUsedAttribute() >= $usageLimit) {
-            $this->update(['status' => VoucherStatus::Depleted]);
+            $this->update(['status' => Depleted::class]);
         }
     }
 

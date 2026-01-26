@@ -2,10 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
 use AIArmada\Docs\Models\DocTemplate;
+use AIArmada\Docs\States\Cancelled;
+use AIArmada\Docs\States\DocStatus;
+use AIArmada\Docs\States\Draft;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Paid;
+use AIArmada\Docs\States\PartiallyPaid;
+use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Sent;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
@@ -65,7 +72,7 @@ test('doc has many approvals', function (): void {
 
 test('doc is overdue when past due date and not paid', function (): void {
     $doc = Doc::factory()->create([
-        'status' => DocStatus::SENT,
+        'status' => Sent::class,
         'due_date' => CarbonImmutable::now()->subDays(5),
     ]);
 
@@ -74,7 +81,7 @@ test('doc is overdue when past due date and not paid', function (): void {
 
 test('doc is not overdue when status is paid', function (): void {
     $doc = Doc::factory()->create([
-        'status' => DocStatus::PAID,
+        'status' => Paid::class,
         'due_date' => CarbonImmutable::now()->subDays(5),
     ]);
 
@@ -83,7 +90,7 @@ test('doc is not overdue when status is paid', function (): void {
 
 test('doc is not overdue when status is cancelled', function (): void {
     $doc = Doc::factory()->create([
-        'status' => DocStatus::CANCELLED,
+        'status' => Cancelled::class,
         'due_date' => CarbonImmutable::now()->subDays(5),
     ]);
 
@@ -92,7 +99,7 @@ test('doc is not overdue when status is cancelled', function (): void {
 
 test('doc is not overdue when due date is in future', function (): void {
     $doc = Doc::factory()->create([
-        'status' => DocStatus::SENT,
+        'status' => Sent::class,
         'due_date' => CarbonImmutable::now()->addDays(5),
     ]);
 
@@ -101,7 +108,7 @@ test('doc is not overdue when due date is in future', function (): void {
 
 test('doc is not overdue when due date is null', function (): void {
     $doc = Doc::factory()->create([
-        'status' => DocStatus::SENT,
+        'status' => Sent::class,
         'due_date' => null,
     ]);
 
@@ -109,22 +116,22 @@ test('doc is not overdue when due date is null', function (): void {
 });
 
 test('doc is paid returns true when status is paid', function (): void {
-    $doc = Doc::factory()->create(['status' => DocStatus::PAID]);
+    $doc = Doc::factory()->create(['status' => Paid::class]);
 
     expect($doc->isPaid())->toBeTrue();
 });
 
 test('doc is paid returns false when status is not paid', function (): void {
-    $doc = Doc::factory()->create(['status' => DocStatus::SENT]);
+    $doc = Doc::factory()->create(['status' => Sent::class]);
 
     expect($doc->isPaid())->toBeFalse();
 });
 
 test('doc can be paid returns true for payable statuses', function (): void {
-    $pendingDoc = Doc::factory()->create(['status' => DocStatus::PENDING]);
-    $sentDoc = Doc::factory()->create(['status' => DocStatus::SENT]);
-    $overdueDoc = Doc::factory()->create(['status' => DocStatus::OVERDUE]);
-    $partialDoc = Doc::factory()->create(['status' => DocStatus::PARTIALLY_PAID]);
+    $pendingDoc = Doc::factory()->create(['status' => Pending::class]);
+    $sentDoc = Doc::factory()->create(['status' => Sent::class]);
+    $overdueDoc = Doc::factory()->create(['status' => Overdue::class]);
+    $partialDoc = Doc::factory()->create(['status' => PartiallyPaid::class]);
 
     expect($pendingDoc->canBePaid())->toBeTrue()
         ->and($sentDoc->canBePaid())->toBeTrue()
@@ -133,9 +140,9 @@ test('doc can be paid returns true for payable statuses', function (): void {
 });
 
 test('doc can be paid returns false for non-payable statuses', function (): void {
-    $draftDoc = Doc::factory()->create(['status' => DocStatus::DRAFT]);
-    $paidDoc = Doc::factory()->create(['status' => DocStatus::PAID]);
-    $cancelledDoc = Doc::factory()->create(['status' => DocStatus::CANCELLED]);
+    $draftDoc = Doc::factory()->create(['status' => Draft::class]);
+    $paidDoc = Doc::factory()->create(['status' => Paid::class]);
+    $cancelledDoc = Doc::factory()->create(['status' => Cancelled::class]);
 
     expect($draftDoc->canBePaid())->toBeFalse()
         ->and($paidDoc->canBePaid())->toBeFalse()
@@ -145,112 +152,112 @@ test('doc can be paid returns false for non-payable statuses', function (): void
 test('mark as paid updates status and paid_at', function (): void {
     CarbonImmutable::setTestNow('2024-06-15 10:30:00');
 
-    $doc = Doc::factory()->create(['status' => DocStatus::SENT]);
+    $doc = Doc::factory()->create(['status' => Sent::class]);
     $doc->markAsPaid();
 
-    expect($doc->fresh()->status)->toBe(DocStatus::PAID)
+    expect($doc->fresh()->status->equals(Paid::class))->toBeTrue()
         ->and($doc->fresh()->paid_at)->not->toBeNull();
 
     CarbonImmutable::setTestNow();
 });
 
 test('mark as paid creates status history', function (): void {
-    $doc = Doc::factory()->create(['status' => DocStatus::SENT]);
+    $doc = Doc::factory()->create(['status' => Sent::class]);
     $doc->markAsPaid('Payment received via bank transfer');
 
     expect($doc->statusHistories)->toHaveCount(1)
-        ->and($doc->statusHistories->first()->status)->toBe(DocStatus::PAID)
+        ->and($doc->statusHistories->first()->status->equals(Paid::class))->toBeTrue()
         ->and($doc->statusHistories->first()->notes)->toBe('Payment received via bank transfer');
 });
 
 test('mark as sent updates status from draft', function (): void {
-    $doc = Doc::factory()->create(['status' => DocStatus::DRAFT]);
+    $doc = Doc::factory()->create(['status' => Draft::class]);
     $doc->markAsSent();
 
-    expect($doc->fresh()->status)->toBe(DocStatus::SENT);
+    expect($doc->fresh()->status->equals(Sent::class))->toBeTrue();
 });
 
 test('mark as sent updates status from pending', function (): void {
-    $doc = Doc::factory()->create(['status' => DocStatus::PENDING]);
+    $doc = Doc::factory()->create(['status' => Pending::class]);
     $doc->markAsSent();
 
-    expect($doc->fresh()->status)->toBe(DocStatus::SENT);
+    expect($doc->fresh()->status->equals(Sent::class))->toBeTrue();
 });
 
 test('mark as sent does not update status if already sent', function (): void {
-    $doc = Doc::factory()->create(['status' => DocStatus::SENT]);
+    $doc = Doc::factory()->create(['status' => Sent::class]);
     $initialHistoryCount = $doc->statusHistories()->count();
 
     $doc->markAsSent();
 
-    expect($doc->fresh()->status)->toBe(DocStatus::SENT)
+    expect($doc->fresh()->status->equals(Sent::class))->toBeTrue()
         ->and($doc->statusHistories()->count())->toBe($initialHistoryCount);
 });
 
 test('mark as sent creates status history', function (): void {
-    $doc = Doc::factory()->create(['status' => DocStatus::DRAFT]);
+    $doc = Doc::factory()->create(['status' => Draft::class]);
     $doc->markAsSent('Sent to customer');
 
     expect($doc->statusHistories)->toHaveCount(1)
-        ->and($doc->statusHistories->first()->status)->toBe(DocStatus::SENT)
+        ->and($doc->statusHistories->first()->status->equals(Sent::class))->toBeTrue()
         ->and($doc->statusHistories->first()->notes)->toBe('Sent to customer');
 });
 
 test('cancel updates status to cancelled', function (): void {
-    $doc = Doc::factory()->create(['status' => DocStatus::SENT]);
+    $doc = Doc::factory()->create(['status' => Sent::class]);
     $doc->cancel();
 
-    expect($doc->fresh()->status)->toBe(DocStatus::CANCELLED);
+    expect($doc->fresh()->status->equals(Cancelled::class))->toBeTrue();
 });
 
 test('cancel does not work on paid docs', function (): void {
-    $doc = Doc::factory()->create(['status' => DocStatus::PAID]);
+    $doc = Doc::factory()->create(['status' => Paid::class]);
     $doc->cancel();
 
-    expect($doc->fresh()->status)->toBe(DocStatus::PAID);
+    expect($doc->fresh()->status->equals(Paid::class))->toBeTrue();
 });
 
 test('cancel creates status history', function (): void {
-    $doc = Doc::factory()->create(['status' => DocStatus::SENT]);
+    $doc = Doc::factory()->create(['status' => Sent::class]);
     $doc->cancel('Customer requested cancellation');
 
     expect($doc->statusHistories)->toHaveCount(1)
-        ->and($doc->statusHistories->first()->status)->toBe(DocStatus::CANCELLED)
+        ->and($doc->statusHistories->first()->status->equals(Cancelled::class))->toBeTrue()
         ->and($doc->statusHistories->first()->notes)->toBe('Customer requested cancellation');
 });
 
 test('update status marks overdue docs as overdue', function (): void {
     $doc = Doc::factory()->create([
-        'status' => DocStatus::SENT,
+        'status' => Sent::class,
         'due_date' => CarbonImmutable::now()->subDays(5),
     ]);
 
     $doc->updateStatus();
 
-    expect($doc->fresh()->status)->toBe(DocStatus::OVERDUE);
+    expect($doc->fresh()->status->equals(Overdue::class))->toBeTrue();
 });
 
 test('update status does not change non-overdue docs', function (): void {
     $doc = Doc::factory()->create([
-        'status' => DocStatus::SENT,
+        'status' => Sent::class,
         'due_date' => CarbonImmutable::now()->addDays(5),
     ]);
 
     $doc->updateStatus();
 
-    expect($doc->fresh()->status)->toBe(DocStatus::SENT);
+    expect($doc->fresh()->status->equals(Sent::class))->toBeTrue();
 });
 
 test('update status creates history when marking as overdue', function (): void {
     $doc = Doc::factory()->create([
-        'status' => DocStatus::SENT,
+        'status' => Sent::class,
         'due_date' => CarbonImmutable::now()->subDays(5),
     ]);
 
     $doc->updateStatus();
 
     expect($doc->statusHistories)->toHaveCount(1)
-        ->and($doc->statusHistories->first()->status)->toBe(DocStatus::OVERDUE);
+        ->and($doc->statusHistories->first()->status->equals(Overdue::class))->toBeTrue();
 });
 
 test('deleting doc cascades to related approvals', function (): void {
@@ -263,11 +270,11 @@ test('deleting doc cascades to related approvals', function (): void {
     expect(DocApproval::where('doc_id', $docId)->count())->toBe(0);
 });
 
-test('doc casts status to enum', function (): void {
-    $doc = Doc::factory()->create(['status' => DocStatus::DRAFT]);
+test('doc casts status to state', function (): void {
+    $doc = Doc::factory()->create(['status' => Draft::class]);
 
     expect($doc->status)->toBeInstanceOf(DocStatus::class)
-        ->and($doc->status)->toBe(DocStatus::DRAFT);
+        ->and($doc->status->equals(Draft::class))->toBeTrue();
 });
 
 test('doc casts items to array', function (): void {

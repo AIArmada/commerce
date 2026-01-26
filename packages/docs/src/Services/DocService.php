@@ -7,13 +7,20 @@ namespace AIArmada\Docs\Services;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Docs\Contracts\DocServiceInterface;
 use AIArmada\Docs\DataObjects\DocData;
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
 use AIArmada\Docs\Models\DocTemplate;
 use AIArmada\Docs\Models\DocVersion;
 use AIArmada\Docs\Numbering\NumberStrategyRegistry;
+use AIArmada\Docs\States\Cancelled;
+use AIArmada\Docs\States\DocStatus;
+use AIArmada\Docs\States\Draft;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Paid;
+use AIArmada\Docs\States\PartiallyPaid;
+use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Sent;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -99,11 +106,21 @@ final class DocService implements DocServiceInterface
         }
 
         // Determine status
-        $status = $data->status ?? DocStatus::DRAFT;
+        $status = $data->status ?? Draft::class;
+
+        if ($status instanceof DocStatus) {
+            $status = $status::class;
+        }
+
+        if (! is_string($status)) {
+            $status = Draft::class;
+        }
+
+        $statusClass = DocStatus::resolveStateClassFor($status);
 
         // Only set due_date for payable statuses (not for PAID, CANCELLED, REFUNDED)
         $dueDate = $data->dueDate;
-        if ($dueDate === null && $status->isPayable()) {
+        if ($dueDate === null && DocStatus::fromString($statusClass)->isPayable()) {
             $dueDays = (int) $this->resolveDefault($docType, 'due_days', 30);
             $dueDate = CarbonImmutable::now()->addDays($dueDays);
         }
@@ -115,7 +132,7 @@ final class DocService implements DocServiceInterface
             'doc_template_id' => $template?->id,
             'docable_type' => $data->docableType,
             'docable_id' => $data->docableId,
-            'status' => $status,
+            'status' => $statusClass,
             'issue_date' => $data->issueDate ?? CarbonImmutable::now(),
             'due_date' => $dueDate,
             'subtotal' => $subtotal,
@@ -165,7 +182,7 @@ final class DocService implements DocServiceInterface
             $docData = array_merge($data, [
                 'doc_number' => $docNumber,
                 'doc_type' => $type->value,
-                'status' => DocStatus::DRAFT,
+                'status' => Draft::class,
                 'issue_date' => $data['issue_date'] ?? CarbonImmutable::now(),
             ]);
 
@@ -282,9 +299,9 @@ final class DocService implements DocServiceInterface
             if ($totalPaid >= $docTotal) {
                 $doc->markAsPaid("Payment recorded: {$payment->amount}");
             } elseif ($totalPaid > 0) {
-                $doc->update(['status' => DocStatus::PARTIALLY_PAID]);
+                $doc->update(['status' => PartiallyPaid::class]);
                 $doc->statusHistories()->create(array_merge([
-                    'status' => DocStatus::PARTIALLY_PAID,
+                    'status' => PartiallyPaid::class,
                     'notes' => "Partial payment recorded: {$payment->amount}",
                 ], $ownerAttributes));
             }
@@ -442,11 +459,12 @@ final class DocService implements DocServiceInterface
     /**
      * Update a document's status with audit trail.
      */
-    public function updateStatus(Doc $doc, DocStatus $status, ?string $notes = null): void
+    public function updateStatus(Doc $doc, DocStatus | string $status, ?string $notes = null): void
     {
         $oldStatus = $doc->status;
+        $statusClass = DocStatus::resolveStateClassFor($status, $doc);
 
-        $doc->update(['status' => $status]);
+        $doc->update(['status' => $statusClass]);
 
         $ownerAttributes = [];
         if (config('docs.owner.enabled', false)) {
@@ -458,8 +476,8 @@ final class DocService implements DocServiceInterface
 
         // Record status change
         $doc->statusHistories()->create(array_merge([
-            'status' => $status,
-            'notes' => $notes ?? "Status changed from {$oldStatus->label()} to {$status->label()}",
+            'status' => $statusClass,
+            'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::labelFor($statusClass, $doc),
         ], $ownerAttributes));
     }
 

@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\RankQualificationReason;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -14,6 +13,7 @@ use AIArmada\Affiliates\Services\FraudDetectionService;
 use AIArmada\Affiliates\Services\NetworkService;
 use AIArmada\Affiliates\Services\ProgramService;
 use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
 use AIArmada\Affiliates\Traits\HasAffiliates;
@@ -23,7 +23,7 @@ test('AffiliateRankHistory can be created with all fields', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'RANKHISTORY001',
         'name' => 'Rank History Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -60,7 +60,7 @@ test('AffiliateRankHistory isPromotion returns true when toRank exists and fromR
     $affiliate = Affiliate::create([
         'code' => 'PROMO001',
         'name' => 'Promo Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -82,7 +82,7 @@ test('AffiliateRankHistory isDemotion returns true when fromRank exists and toRa
     $affiliate = Affiliate::create([
         'code' => 'DEMO001',
         'name' => 'Demo Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -110,7 +110,7 @@ test('AffiliatePayoutEvent can be created', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'PAYEVENT001',
         'name' => 'Payout Event Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -146,7 +146,7 @@ test('AffiliateSupportMessage can be created', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'SUPPORT001',
         'name' => 'Support Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -189,7 +189,7 @@ test('RankQualificationService evaluate returns null when no ranks exist', funct
     $affiliate = Affiliate::create([
         'code' => 'EVAL001',
         'name' => 'Evaluate Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -207,7 +207,7 @@ test('RankQualificationService calculateMetrics returns array', function (): voi
     $affiliate = Affiliate::create([
         'code' => 'METRICS001',
         'name' => 'Metrics Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -236,7 +236,7 @@ test('RankQualificationService assignRank works', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'ASSIGN001',
         'name' => 'Assign Rank Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -253,7 +253,7 @@ test('RankQualificationService processRankChange works', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'PROCESS001',
         'name' => 'Process Rank Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -271,7 +271,7 @@ test('RankQualificationService processBatch works', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'BATCH001',
         'name' => 'Batch Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -303,7 +303,7 @@ test('NetworkService getDirectRecruits returns collection', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'NETWORK001',
         'name' => 'Network Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -320,7 +320,7 @@ test('NetworkService getActiveDownlineCount returns int', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'ACTIVE001',
         'name' => 'Active Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -338,7 +338,7 @@ test('NetworkService getTeamSales returns int', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'TEAM001',
         'name' => 'Team Sales Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -368,7 +368,7 @@ test('FraudDetectionService getRiskProfile returns array', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'FRAUD001',
         'name' => 'Fraud Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -399,7 +399,7 @@ test('AffiliateLinkGenerator generates links correctly', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'LINKGEN001',
         'name' => 'Link Gen Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',

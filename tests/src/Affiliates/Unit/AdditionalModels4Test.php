@@ -2,8 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -16,6 +14,8 @@ use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
 use AIArmada\Affiliates\Services\CohortAnalyzer;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -24,7 +24,7 @@ test('AffiliateConversion can be created with required fields', function (): voi
     $affiliate = Affiliate::create([
         'code' => 'CONV001',
         'name' => 'Conversion Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -37,7 +37,7 @@ test('AffiliateConversion can be created with required fields', function (): voi
         'total_minor' => 50000,
         'commission_minor' => 5000,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Approved,
+        'status' => ApprovedConversion::class,
         'occurred_at' => now(),
     ]);
 

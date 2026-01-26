@@ -9,13 +9,18 @@ use AIArmada\Shipping\Data\ShipmentData;
 use AIArmada\Shipping\Data\ShipmentItemData;
 use AIArmada\Shipping\Data\ShipmentResultData;
 use AIArmada\Shipping\Enums\DriverCapability;
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Exceptions\InvalidStatusTransitionException;
 use AIArmada\Shipping\Exceptions\ShipmentAlreadyShippedException;
 use AIArmada\Shipping\Exceptions\ShipmentNotCancellableException;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Services\ShipmentService;
 use AIArmada\Shipping\ShippingManager;
+use AIArmada\Shipping\States\Cancelled;
+use AIArmada\Shipping\States\Delivered;
+use AIArmada\Shipping\States\Draft;
+use AIArmada\Shipping\States\InTransit;
+use AIArmada\Shipping\States\Pending;
+use AIArmada\Shipping\States\Shipped;
 
 describe('ShipmentService', function (): void {
     beforeEach(function (): void {
@@ -67,7 +72,7 @@ describe('ShipmentService', function (): void {
         expect($shipment)->toBeInstanceOf(Shipment::class);
         expect($shipment->reference)->toBe('TEST-SHIP-001');
         expect($shipment->carrier_code)->toBe('null');
-        expect($shipment->status)->toBe(ShipmentStatus::Draft);
+        expect($shipment->status)->toBeInstanceOf(Draft::class);
         expect($shipment->owner_id)->toBe('test-owner-123');
         expect($shipment->owner_type)->toBe('TestOwner');
         expect($shipment->items)->toHaveCount(1);
@@ -137,7 +142,7 @@ describe('ShipmentService', function (): void {
 
         $updated = $this->service->markPending($shipment);
 
-        expect($updated->status)->toBe(ShipmentStatus::Pending);
+        expect($updated->status)->toBeInstanceOf(Pending::class);
         expect($updated->events)->toHaveCount(1);
         expect($updated->events->first()->description)->toBe('Shipment marked as pending');
     });
@@ -148,7 +153,7 @@ describe('ShipmentService', function (): void {
             'owner_id' => 'test-owner-123',
             'reference' => 'TEST-PENDING-FAIL',
             'carrier_code' => 'null',
-            'status' => 'pending',
+            'status' => Pending::class,
             'origin_address' => ['name' => 'Origin'],
             'destination_address' => ['name' => 'Dest'],
         ]);
@@ -167,9 +172,9 @@ describe('ShipmentService', function (): void {
             'destination_address' => ['name' => 'Dest'],
         ]);
 
-        $updated = $this->service->updateStatus($shipment, ShipmentStatus::Pending, 'Test status update');
+        $updated = $this->service->updateStatus($shipment, Pending::class, 'Test status update');
 
-        expect($updated->status)->toBe(ShipmentStatus::Pending);
+        expect($updated->status)->toBeInstanceOf(Pending::class);
         expect($updated->events)->toHaveCount(1);
         expect($updated->events->first()->description)->toBe('Test status update');
     });
@@ -184,7 +189,7 @@ describe('ShipmentService', function (): void {
             'destination_address' => ['name' => 'Dest'],
         ]);
 
-        expect(fn () => $this->service->updateStatus($shipment, ShipmentStatus::Delivered))
+        expect(fn () => $this->service->updateStatus($shipment, Delivered::class))
             ->toThrow(InvalidStatusTransitionException::class);
     });
 
@@ -200,7 +205,7 @@ describe('ShipmentService', function (): void {
 
         $cancelled = $this->service->cancel($shipment, 'Test cancellation');
 
-        expect($cancelled->status)->toBe(ShipmentStatus::Cancelled);
+        expect($cancelled->status)->toBeInstanceOf(Cancelled::class);
         expect($cancelled->events)->toHaveCount(1);
         expect($cancelled->events->first()->description)->toBe('Test cancellation');
     });
@@ -211,7 +216,7 @@ describe('ShipmentService', function (): void {
             'owner_id' => 'test-owner-123',
             'reference' => 'TEST-CANCEL-FAIL',
             'carrier_code' => 'null',
-            'status' => 'shipped',
+            'status' => Shipped::class,
             'origin_address' => ['name' => 'Origin'],
             'destination_address' => ['name' => 'Dest'],
         ]);
@@ -255,14 +260,14 @@ describe('ShipmentService', function (): void {
             'owner_id' => 'test-owner-123',
             'reference' => 'TEST-DELIVERED',
             'carrier_code' => 'null',
-            'status' => 'in_transit',
+            'status' => InTransit::class,
             'origin_address' => ['name' => 'Origin'],
             'destination_address' => ['name' => 'Dest'],
         ]);
 
-        $updated = $this->service->updateStatus($shipment, ShipmentStatus::Delivered);
+        $updated = $this->service->updateStatus($shipment, Delivered::class);
 
-        expect($updated->status)->toBe(ShipmentStatus::Delivered);
+        expect($updated->status)->toBeInstanceOf(Delivered::class);
         expect($updated->delivered_at)->not->toBeNull();
     });
 
@@ -272,7 +277,7 @@ describe('ShipmentService', function (): void {
             'owner_id' => 'test-owner-123',
             'reference' => 'TEST-SHIP',
             'carrier_code' => 'null',
-            'status' => ShipmentStatus::Pending,
+            'status' => Pending::class,
             'origin_address' => [
                 'name' => 'Test Origin',
                 'phone' => '123-456-7890',
@@ -314,7 +319,7 @@ describe('ShipmentService', function (): void {
 
         $shipped = $service->ship($shipment);
 
-        expect($shipped->status)->toBe(ShipmentStatus::Shipped);
+        expect($shipped->status)->toBeInstanceOf(Shipped::class);
         expect($shipped->tracking_number)->toBe('TRACK123');
         expect($shipped->carrier_reference)->toBe('CARRIER123');
         expect($shipped->label_url)->toBe('https://example.com/label.pdf');
@@ -329,7 +334,7 @@ describe('ShipmentService', function (): void {
             'owner_id' => 'test-owner-123',
             'reference' => 'TEST-SHIP',
             'carrier_code' => 'null',
-            'status' => ShipmentStatus::Shipped, // Already shipped
+            'status' => Shipped::class, // Already shipped
             'origin_address' => [
                 'name' => 'Test Origin',
                 'phone' => '123-456-7890',
@@ -360,7 +365,7 @@ describe('ShipmentService', function (): void {
             'owner_id' => 'test-owner-123',
             'reference' => 'TEST-LABEL',
             'carrier_code' => 'null',
-            'status' => ShipmentStatus::Shipped,
+            'status' => Shipped::class,
             'tracking_number' => 'TRACK123',
             'origin_address' => [
                 'name' => 'Test Origin',
@@ -413,7 +418,7 @@ describe('ShipmentService', function (): void {
             'owner_id' => 'test-owner-123',
             'reference' => 'TEST-LABEL',
             'carrier_code' => 'null',
-            'status' => ShipmentStatus::Pending,
+            'status' => Pending::class,
             'origin_address' => ['name' => 'Origin'],
             'destination_address' => ['name' => 'Dest'],
         ]);

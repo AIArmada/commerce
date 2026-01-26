@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliatePayoutEvent Model', function (): void {
@@ -14,7 +14,7 @@ describe('AffiliatePayoutEvent Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'EVENT-TEST-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -46,7 +46,7 @@ describe('AffiliatePayoutEvent Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'EVENT-PAY-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -77,7 +77,7 @@ describe('AffiliatePayoutEvent Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'EVENT-STAT-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -108,7 +108,7 @@ describe('AffiliatePayoutEvent Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'EVENT-TRANS-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -158,7 +158,7 @@ describe('AffiliatePayoutEvent Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'EVENT-META-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -195,7 +195,7 @@ describe('AffiliatePayoutEvent Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'EVENT-NOTE-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -226,7 +226,7 @@ describe('AffiliatePayoutEvent Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'EVENT-CAST-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',

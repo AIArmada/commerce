@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\RankQualificationReason;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Models\AffiliateRankHistory;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliateRankHistory Model', function (): void {
@@ -15,7 +15,7 @@ describe('AffiliateRankHistory Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'RANKHIST-TEST-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -46,7 +46,7 @@ describe('AffiliateRankHistory Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'RANKHIST-AFF-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -74,7 +74,7 @@ describe('AffiliateRankHistory Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'RANKHIST-RANKS-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -112,7 +112,7 @@ describe('AffiliateRankHistory Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'RANKHIST-PROMO-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -148,7 +148,7 @@ describe('AffiliateRankHistory Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'RANKHIST-DEMO-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -184,7 +184,7 @@ describe('AffiliateRankHistory Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'RANKHIST-FIRST-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -213,7 +213,7 @@ describe('AffiliateRankHistory Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'RANKHIST-LOSE-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -242,7 +242,7 @@ describe('AffiliateRankHistory Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'RANKHIST-ENUM-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -270,7 +270,7 @@ describe('AffiliateRankHistory Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'RANKHIST-DATE-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',

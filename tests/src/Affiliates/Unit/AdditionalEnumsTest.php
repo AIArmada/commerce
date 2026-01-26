@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
@@ -11,6 +10,8 @@ use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\RankQualificationReason;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\Pending;
 
 // CommissionRuleType Tests
 test('CommissionRuleType enum has all expected cases', function (): void {
@@ -195,9 +196,9 @@ test('RegistrationApprovalMode description returns correct descriptions', functi
 });
 
 test('RegistrationApprovalMode defaultStatus returns correct statuses', function (): void {
-    expect(RegistrationApprovalMode::Auto->defaultStatus())->toBe(AffiliateStatus::Active);
-    expect(RegistrationApprovalMode::Open->defaultStatus())->toBe(AffiliateStatus::Pending);
-    expect(RegistrationApprovalMode::Admin->defaultStatus())->toBe(AffiliateStatus::Pending);
+    expect(RegistrationApprovalMode::Auto->defaultStatus())->toBe(Active::class);
+    expect(RegistrationApprovalMode::Open->defaultStatus())->toBe(Pending::class);
+    expect(RegistrationApprovalMode::Admin->defaultStatus())->toBe(Pending::class);
 });
 
 // FraudSeverity Tests (already partially covered, adding full coverage)

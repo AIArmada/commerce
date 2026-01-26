@@ -2,14 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\ConversionStatus;
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutEvent;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\States\PendingPayout;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
@@ -19,7 +20,7 @@ describe('AffiliatePayout Model', function (): void {
         $this->affiliate = Affiliate::create([
             'code' => 'PAYOUT-TEST-' . uniqid(),
             'name' => 'Payout Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -31,14 +32,14 @@ describe('AffiliatePayout Model', function (): void {
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
         ]);
 
         expect($payout)->toBeInstanceOf(AffiliatePayout::class)
-            ->and($payout->status)->toBe(PayoutStatus::Pending)
+            ->and($payout->status)->toBeInstanceOf(PendingPayout::class)
             ->and($payout->total_minor)->toBe(50000)
             ->and($payout->conversion_count)->toBe(5);
     });
@@ -48,7 +49,7 @@ describe('AffiliatePayout Model', function (): void {
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
@@ -64,7 +65,7 @@ describe('AffiliatePayout Model', function (): void {
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
@@ -78,7 +79,7 @@ describe('AffiliatePayout Model', function (): void {
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
@@ -92,7 +93,7 @@ describe('AffiliatePayout Model', function (): void {
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
@@ -107,7 +108,7 @@ describe('AffiliatePayout Model', function (): void {
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 12345,
             'conversion_count' => 1,
             'currency' => 'USD',
@@ -121,7 +122,7 @@ describe('AffiliatePayout Model', function (): void {
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
@@ -136,7 +137,7 @@ describe('AffiliatePayout Model', function (): void {
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
@@ -150,7 +151,7 @@ describe('AffiliatePayout Model', function (): void {
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
@@ -165,7 +166,7 @@ describe('AffiliatePayout Model', function (): void {
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
@@ -179,7 +180,7 @@ describe('AffiliatePayout Model', function (): void {
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
@@ -196,7 +197,7 @@ describe('AffiliatePayout Model', function (): void {
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
@@ -212,7 +213,7 @@ describe('AffiliatePayout Model', function (): void {
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'status' => PayoutStatus::Completed,
+            'status' => CompletedPayout::class,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
@@ -227,7 +228,7 @@ describe('AffiliatePayout Model', function (): void {
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
@@ -249,7 +250,7 @@ describe('AffiliatePayout Model', function (): void {
             'reference' => 'PAY-' . uniqid(),
             'payee_type' => Affiliate::class,
             'payee_id' => $this->affiliate->id,
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'total_minor' => 50000,
             'conversion_count' => 5,
             'currency' => 'USD',
@@ -263,7 +264,7 @@ describe('AffiliatePayout Model', function (): void {
             'total_minor' => 10000,
             'commission_minor' => 1000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Paid,
+            'status' => PaidConversion::class,
         ]);
 
         $payout->delete();

@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShipmentEvent;
 use AIArmada\Shipping\Models\ShipmentItem;
 use AIArmada\Shipping\Models\ShipmentLabel;
+use AIArmada\Shipping\States\Draft;
+use AIArmada\Shipping\States\Pending;
+use AIArmada\Shipping\States\ShipmentStatus;
+use AIArmada\Shipping\States\Shipped;
 use Illuminate\Support\Str;
 
 describe('Shipment Model', function (): void {
@@ -40,7 +43,7 @@ describe('Shipment Model', function (): void {
         expect($shipment->ulid)->toBeString();
         expect($shipment->reference)->toBe('TEST-001');
         expect($shipment->carrier_code)->toBe('test-carrier');
-        expect($shipment->status)->toBe(ShipmentStatus::Draft);
+        expect($shipment->status)->toBeInstanceOf(Draft::class);
         expect($shipment->package_count)->toBe(1);
         expect($shipment->total_weight)->toBe(0);
         expect($shipment->currency)->toBe('MYR');
@@ -66,7 +69,7 @@ describe('Shipment Model', function (): void {
             'owner_id' => 'test-owner-123',
             'reference' => 'TEST-003',
             'carrier_code' => 'test-carrier',
-            'status' => 'shipped',
+            'status' => Shipped::class,
             'origin_address' => ['name' => 'Origin'],
             'destination_address' => ['name' => 'Dest'],
             'package_count' => '2',
@@ -76,7 +79,7 @@ describe('Shipment Model', function (): void {
         ]);
 
         expect($shipment->status)->toBeInstanceOf(ShipmentStatus::class);
-        expect($shipment->status)->toBe(ShipmentStatus::Shipped);
+        expect($shipment->status)->toBeInstanceOf(Shipped::class);
         expect($shipment->package_count)->toBeInt();
         expect($shipment->total_weight)->toBeInt();
         expect($shipment->shipping_cost)->toBeInt();
@@ -172,7 +175,7 @@ describe('Shipment Model', function (): void {
             'owner_id' => 'test-owner-123',
             'reference' => 'TEST-008',
             'carrier_code' => 'test-carrier',
-            'status' => 'shipped',
+            'status' => Shipped::class,
             'origin_address' => ['name' => 'Origin'],
             'destination_address' => ['name' => 'Dest'],
         ]);
@@ -259,10 +262,10 @@ describe('Shipment Model', function (): void {
             'destination_address' => ['name' => 'Dest'],
         ]);
 
-        expect($shipment->canTransitionTo(ShipmentStatus::Pending))->toBeTrue();
-        expect($shipment->canTransitionTo(ShipmentStatus::Shipped))->toBeFalse();
+        expect($shipment->canTransitionTo(Pending::class))->toBeTrue();
+        expect($shipment->canTransitionTo(Shipped::class))->toBeFalse();
 
-        $shipment->update(['status' => 'pending']);
-        expect($shipment->canTransitionTo(ShipmentStatus::Shipped))->toBeTrue();
+        $shipment->update(['status' => Pending::class]);
+        expect($shipment->canTransitionTo(Shipped::class))->toBeTrue();
     });
 });

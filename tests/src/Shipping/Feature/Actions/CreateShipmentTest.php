@@ -3,8 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Shipping\Actions\CreateShipment;
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\States\Draft;
+use AIArmada\Shipping\States\Pending;
+use AIArmada\Shipping\States\Shipped;
 
 describe('CreateShipment Action', function (): void {
     it('can create a shipment with minimal data', function (): void {
@@ -22,7 +24,7 @@ describe('CreateShipment Action', function (): void {
         expect($shipment)->toBeInstanceOf(Shipment::class);
         expect($shipment->reference)->toBe('TEST-CREATE-001');
         expect($shipment->carrier_code)->toBe('test-carrier');
-        expect($shipment->status)->toBe(ShipmentStatus::Draft);
+        expect($shipment->status)->toBeInstanceOf(Draft::class);
     });
 
     it('can create a shipment with full data', function (): void {
@@ -52,7 +54,7 @@ describe('CreateShipment Action', function (): void {
         expect($shipment->reference)->toBe('TEST-CREATE-002');
         expect($shipment->carrier_code)->toBe('test-carrier');
         expect($shipment->service_code)->toBe('express');
-        expect($shipment->status)->toBe(ShipmentStatus::Pending);
+        expect($shipment->status)->toBeInstanceOf(Pending::class);
         expect($shipment->tracking_number)->toBe('TRACK123');
         expect($shipment->total_weight)->toBe(1500);
         expect($shipment->declared_value)->toBe(5000);
@@ -91,7 +93,7 @@ describe('CreateShipment Action', function (): void {
 
         $shipment = $action->handle($data);
 
-        expect($shipment->status)->toBe(ShipmentStatus::Shipped);
+        expect($shipment->status)->toBeInstanceOf(Shipped::class);
     });
 
     it('defaults to draft status when invalid status provided', function (): void {
@@ -107,7 +109,7 @@ describe('CreateShipment Action', function (): void {
 
         $shipment = $action->handle($data);
 
-        expect($shipment->status)->toBe(ShipmentStatus::Draft);
+        expect($shipment->status)->toBeInstanceOf(Draft::class);
     });
 
     it('requires owner context when owner scoping is enabled', function (): void {

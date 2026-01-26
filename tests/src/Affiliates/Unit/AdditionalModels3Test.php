@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
@@ -15,6 +14,7 @@ use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Models\AffiliateTrainingModule;
 use AIArmada\Affiliates\Models\AffiliateTrainingProgress;
 use AIArmada\Affiliates\Models\AffiliateVolumeTier;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 // AffiliateProgramCreative Tests
@@ -55,7 +55,7 @@ test('AffiliateProgramCreative getTrackingUrl appends affiliate code', function 
     $affiliate = Affiliate::create([
         'code' => 'CREAT001',
         'name' => 'Creative Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -76,7 +76,7 @@ test('AffiliateProgramCreative getTrackingUrl uses ampersand for existing query 
     $affiliate = Affiliate::create([
         'code' => 'CREAT002',
         'name' => 'Query Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -97,7 +97,7 @@ test('AffiliateProgramCreative getEmbedCode for banner type', function (): void 
     $affiliate = Affiliate::create([
         'code' => 'EMBED001',
         'name' => 'Embed Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -126,7 +126,7 @@ test('AffiliateProgramCreative getEmbedCode for text link type', function (): vo
     $affiliate = Affiliate::create([
         'code' => 'EMBED002',
         'name' => 'Text Link Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -385,7 +385,7 @@ test('AffiliateSupportTicket can be created', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'SUPPORT001',
         'name' => 'Support Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -412,7 +412,7 @@ test('AffiliateSupportMessage can be created', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'MSG001',
         'name' => 'Message Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -445,7 +445,7 @@ test('AffiliateTaxDocument can be created', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'TAX001',
         'name' => 'Tax Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -488,7 +488,7 @@ test('AffiliateTrainingProgress can be created', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'TRAIN001',
         'name' => 'Training Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',

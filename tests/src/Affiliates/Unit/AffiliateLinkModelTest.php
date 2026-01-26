@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliateLink Model', function (): void {
@@ -15,7 +15,7 @@ describe('AffiliateLink Model', function (): void {
         $this->affiliate = Affiliate::create([
             'code' => 'LINK-TEST-' . uniqid(),
             'name' => 'Link Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',

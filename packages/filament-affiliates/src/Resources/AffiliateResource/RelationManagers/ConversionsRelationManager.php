@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateResource\RelationManagers;
 
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\ConversionStatus;
+use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Tables\AffiliateConversionsTable;
 use AIArmada\FilamentAffiliates\Support\Integrations\CartBridge;
@@ -79,23 +82,23 @@ final class ConversionsRelationManager extends RelationManager
                     ->label('Approve')
                     ->icon(Heroicon::OutlinedCheck)
                     ->color('success')
-                    ->visible(fn (AffiliateConversion $record): bool => AffiliateConversionsTable::statusEnum($record->status) !== ConversionStatus::Approved)
+                    ->visible(fn (AffiliateConversion $record): bool => ! $record->status->equals(ApprovedConversion::class))
                     ->requiresConfirmation()
-                    ->action(fn (AffiliateConversion $record): bool => AffiliateConversionsTable::updateStatus($record, ConversionStatus::Approved)),
+                    ->action(fn (AffiliateConversion $record): bool => AffiliateConversionsTable::updateStatus($record, ApprovedConversion::class)),
                 Action::make('reject')
                     ->label('Reject')
                     ->icon(Heroicon::OutlinedXMark)
                     ->color('danger')
-                    ->visible(fn (AffiliateConversion $record): bool => AffiliateConversionsTable::statusEnum($record->status) !== ConversionStatus::Rejected)
+                    ->visible(fn (AffiliateConversion $record): bool => ! $record->status->equals(RejectedConversion::class))
                     ->requiresConfirmation()
-                    ->action(fn (AffiliateConversion $record): bool => AffiliateConversionsTable::updateStatus($record, ConversionStatus::Rejected)),
+                    ->action(fn (AffiliateConversion $record): bool => AffiliateConversionsTable::updateStatus($record, RejectedConversion::class)),
                 Action::make('mark_paid')
                     ->label('Mark Paid')
                     ->icon(Heroicon::OutlinedBanknotes)
                     ->color('primary')
-                    ->visible(fn (AffiliateConversion $record): bool => AffiliateConversionsTable::statusEnum($record->status) !== ConversionStatus::Paid)
+                    ->visible(fn (AffiliateConversion $record): bool => ! $record->status->equals(PaidConversion::class))
                     ->requiresConfirmation()
-                    ->action(fn (AffiliateConversion $record): bool => AffiliateConversionsTable::updateStatus($record, ConversionStatus::Paid)),
+                    ->action(fn (AffiliateConversion $record): bool => AffiliateConversionsTable::updateStatus($record, PaidConversion::class)),
             ])
             ->emptyStateHeading('No conversions yet');
     }

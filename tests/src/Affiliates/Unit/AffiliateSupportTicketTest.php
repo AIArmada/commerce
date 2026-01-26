@@ -2,17 +2,17 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateSupportMessage;
 use AIArmada\Affiliates\Models\AffiliateSupportTicket;
+use AIArmada\Affiliates\States\Active;
 
 describe('AffiliateSupportTicket Model', function (): void {
     beforeEach(function (): void {
         $this->affiliate = Affiliate::create([
             'code' => 'SUPPORT' . uniqid(),
             'name' => 'Support Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',

@@ -3,9 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Cart\AffiliateDiscountConditionProvider;
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\Disabled;
 use AIArmada\Cart\Cart;
 use AIArmada\Cart\Conditions\CartCondition;
 use AIArmada\Cart\Storage\DatabaseStorage;
@@ -70,7 +71,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'NO-DISCOUNT-TEST',
             'name' => 'No Discount Partner',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'MYR',
@@ -93,7 +94,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'PARTNER10-TEST',
             'name' => 'Partner Ten',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'MYR',
@@ -123,7 +124,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FIXED5-TEST',
             'name' => 'Fixed Five',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'MYR',
@@ -186,7 +187,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'INACTIVE-TEST',
             'name' => 'Inactive Partner',
-            'status' => AffiliateStatus::Disabled,
+            'status' => Disabled::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'MYR',
@@ -205,7 +206,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'VALID-DISCOUNT-TEST',
             'name' => 'Valid Partner',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'MYR',
@@ -230,7 +231,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'ZERO-DISCOUNT-TEST',
             'name' => 'Zero Discount',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'MYR',
@@ -256,7 +257,7 @@ describe('AffiliateDiscountConditionProvider', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'SPECIAL-ATTRS-TEST',
             'name' => 'Special Partner',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'MYR',

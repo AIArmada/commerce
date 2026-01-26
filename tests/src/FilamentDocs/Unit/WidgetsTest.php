@@ -5,8 +5,12 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\TestCase;
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\States\Cancelled;
+use AIArmada\Docs\States\DocStatus;
+use AIArmada\Docs\States\Draft;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Paid;
 use AIArmada\FilamentDocs\Widgets\DocStatsWidget;
 use AIArmada\FilamentDocs\Widgets\RecentDocumentsWidget;
 use AIArmada\FilamentDocs\Widgets\RevenueChartWidget;
@@ -25,8 +29,8 @@ function filamentDocs_invokeMethod(object $instance, string $methodName, array $
 }
 
 it('builds DocStatsWidget stats and formatting', function (): void {
-    Doc::factory()->count(2)->create(['status' => DocStatus::DRAFT]);
-    Doc::factory()->create(['status' => DocStatus::PAID, 'total' => 100, 'paid_at' => now()]);
+    Doc::factory()->count(2)->create(['status' => Draft::class]);
+    Doc::factory()->create(['status' => Paid::class, 'total' => 100, 'paid_at' => now()]);
 
     $widget = app(DocStatsWidget::class);
 
@@ -47,7 +51,7 @@ it('builds RecentDocumentsWidget table', function (): void {
 
 it('builds RevenueChartWidget data, options, and type', function (): void {
     Doc::factory()->create([
-        'status' => DocStatus::PAID,
+        'status' => Paid::class,
         'paid_at' => now(),
         'total' => 100,
     ]);
@@ -62,8 +66,8 @@ it('builds RevenueChartWidget data, options, and type', function (): void {
 });
 
 it('builds StatusBreakdownWidget data and color mapping', function (): void {
-    Doc::factory()->create(['status' => DocStatus::DRAFT]);
-    Doc::factory()->create(['status' => DocStatus::PAID]);
+    Doc::factory()->create(['status' => Draft::class]);
+    Doc::factory()->create(['status' => Paid::class]);
 
     $widget = app(StatusBreakdownWidget::class);
     $data = filamentDocs_invokeMethod($widget, 'getData');
@@ -103,15 +107,15 @@ it('prevents cross-tenant metric leakage in Filament Docs widgets', function ():
     };
 
     // Owner A data
-    $createDocForOwner($ownerA, ['status' => DocStatus::DRAFT]);
-    $createDocForOwner($ownerA, ['status' => DocStatus::DRAFT]);
-    $createDocForOwner($ownerA, ['status' => DocStatus::PAID, 'paid_at' => now(), 'total' => 100]);
-    $createDocForOwner($ownerA, ['status' => DocStatus::OVERDUE, 'total' => 50]);
+    $createDocForOwner($ownerA, ['status' => Draft::class]);
+    $createDocForOwner($ownerA, ['status' => Draft::class]);
+    $createDocForOwner($ownerA, ['status' => Paid::class, 'paid_at' => now(), 'total' => 100]);
+    $createDocForOwner($ownerA, ['status' => Overdue::class, 'total' => 50]);
 
     // Owner B data (must never be included when scoped to Owner A)
-    $createDocForOwner($ownerB, ['status' => DocStatus::DRAFT]);
-    $createDocForOwner($ownerB, ['status' => DocStatus::PAID, 'paid_at' => now(), 'total' => 999]);
-    $createDocForOwner($ownerB, ['status' => DocStatus::CANCELLED]);
+    $createDocForOwner($ownerB, ['status' => Draft::class]);
+    $createDocForOwner($ownerB, ['status' => Paid::class, 'paid_at' => now(), 'total' => 999]);
+    $createDocForOwner($ownerB, ['status' => Cancelled::class]);
 
     OwnerContext::withOwner($ownerA, function (): void {
         $statsWidget = app(DocStatsWidget::class);
@@ -131,10 +135,10 @@ it('prevents cross-tenant metric leakage in Filament Docs widgets', function ():
         $statusWidget = app(StatusBreakdownWidget::class);
         $statusData = filamentDocs_invokeMethod($statusWidget, 'getData');
 
-        expect($statusData['labels'])->toContain(DocStatus::DRAFT->label());
-        expect($statusData['labels'])->toContain(DocStatus::PAID->label());
-        expect($statusData['labels'])->toContain(DocStatus::OVERDUE->label());
-        expect($statusData['labels'])->not()->toContain(DocStatus::CANCELLED->label());
+        expect($statusData['labels'])->toContain(DocStatus::labelFor(Draft::class));
+        expect($statusData['labels'])->toContain(DocStatus::labelFor(Paid::class));
+        expect($statusData['labels'])->toContain(DocStatus::labelFor(Overdue::class));
+        expect($statusData['labels'])->not()->toContain(DocStatus::labelFor(Cancelled::class));
 
         $revenueWidget = app(RevenueChartWidget::class);
         $revenueData = filamentDocs_invokeMethod($revenueWidget, 'getData');

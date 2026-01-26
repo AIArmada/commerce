@@ -95,9 +95,9 @@
                     <div class="flex justify-between">
                         <span class="text-gray-600">Status:</span>
                         <span class="rounded-full px-2 py-1 text-xs font-semibold
-                            @if($doc->status->value === 'paid') bg-green-100 text-green-800
-                            @elseif($doc->status->value === 'pending' || $doc->status->value === 'sent') bg-blue-100 text-blue-800
-                            @elseif($doc->status->value === 'overdue') bg-red-100 text-red-800
+                            @if(\AIArmada\Docs\States\DocStatus::normalize($doc->status) === 'paid') bg-green-100 text-green-800
+                            @elseif(in_array(\AIArmada\Docs\States\DocStatus::normalize($doc->status), ['pending', 'sent'], true)) bg-blue-100 text-blue-800
+                            @elseif(\AIArmada\Docs\States\DocStatus::normalize($doc->status) === 'overdue') bg-red-100 text-red-800
                             @else bg-gray-100 text-gray-800
                             @endif">
                             {{ $doc->status->label() }}

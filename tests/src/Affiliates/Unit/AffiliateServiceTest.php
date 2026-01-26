@@ -8,6 +8,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Support\Middleware\TrackAffiliateCookie;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Facades\Cart;
@@ -23,7 +24,7 @@ beforeEach(function (): void {
         'code' => 'AFFILIATE42',
         'name' => 'Launch Partner',
         'description' => 'Test affiliate partner',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500, // 5%
         'currency' => 'USD',
@@ -174,7 +175,7 @@ test('affiliate cookies honor owner scoping', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'OWNED-AFF',
         'name' => 'Scoped Partner',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 250,
         'currency' => 'USD',
@@ -223,7 +224,7 @@ test('self referral is blocked when owner matches current owner', function (): v
     $selfAffiliate = Affiliate::create([
         'code' => 'SELF',
         'name' => 'Self Owned',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 100,
         'currency' => 'USD',

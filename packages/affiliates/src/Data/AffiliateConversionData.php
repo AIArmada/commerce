@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Data;
 
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\ConversionStatus;
+use AIArmada\Affiliates\States\PendingConversion;
 use Carbon\CarbonInterface;
 use Spatie\LaravelData\Attributes\MapInputName;
 use Spatie\LaravelData\Attributes\MapOutputName;
@@ -21,6 +23,8 @@ use Spatie\LaravelData\Mappers\SnakeCaseMapper;
 #[MapOutputName(SnakeCaseMapper::class)]
 class AffiliateConversionData extends Data
 {
+    public readonly ConversionStatus $status;
+
     /**
      * @param  array<string, mixed>|null  $metadata
      */
@@ -36,18 +40,20 @@ class AffiliateConversionData extends Data
         public readonly int $totalMinor = 0,
         public readonly int $commissionMinor = 0,
         public readonly string $commissionCurrency = 'MYR',
-        public readonly ConversionStatus $status = ConversionStatus::Pending,
+        ?ConversionStatus $status = null,
         #[WithCast(DateTimeInterfaceCast::class)]
         public readonly ?CarbonInterface $occurredAt = null,
         public readonly ?array $metadata = null,
-    ) {}
+    ) {
+        $this->status = $status ?? ConversionStatus::fromString(PendingConversion::class);
+    }
 
     public static function fromModel(AffiliateConversion $conversion): self
     {
         $status = $conversion->status;
 
         if (! $status instanceof ConversionStatus) {
-            $status = ConversionStatus::from((string) $status);
+            $status = ConversionStatus::fromString((string) $status);
         }
 
         return new self(
@@ -70,12 +76,12 @@ class AffiliateConversionData extends Data
 
     public function isPending(): bool
     {
-        return $this->status === ConversionStatus::Pending;
+        return $this->status->equals(PendingConversion::class);
     }
 
     public function isApproved(): bool
     {
-        return $this->status === ConversionStatus::Approved;
+        return $this->status->equals(ApprovedConversion::class);
     }
 
     public function getFormattedCommission(): string

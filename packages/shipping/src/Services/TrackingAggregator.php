@@ -7,7 +7,6 @@ namespace AIArmada\Shipping\Services;
 use AIArmada\Shipping\Contracts\StatusMapperInterface;
 use AIArmada\Shipping\Data\TrackingEventData;
 use AIArmada\Shipping\Enums\DriverCapability;
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use AIArmada\Shipping\Events\ShipmentDelivered;
 use AIArmada\Shipping\Events\ShipmentStatusChanged;
@@ -15,6 +14,14 @@ use AIArmada\Shipping\Events\TrackingUpdated;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShipmentEvent;
 use AIArmada\Shipping\ShippingManager;
+use AIArmada\Shipping\States\AwaitingPickup;
+use AIArmada\Shipping\States\Cancelled;
+use AIArmada\Shipping\States\Delivered;
+use AIArmada\Shipping\States\ExceptionStatus;
+use AIArmada\Shipping\States\InTransit;
+use AIArmada\Shipping\States\OutForDelivery;
+use AIArmada\Shipping\States\ReturnToSender;
+use AIArmada\Shipping\States\ShipmentStatus as ShipmentStatusState;
 use AIArmada\Shipping\Support\ShippingOwnerScope;
 use Illuminate\Support\Collection;
 use Throwable;
@@ -116,9 +123,9 @@ class TrackingAggregator
         return ShippingOwnerScope::applyToOwnedQuery(Shipment::query())
             ->whereNotNull('tracking_number')
             ->whereNotIn('status', [
-                ShipmentStatus::Delivered,
-                ShipmentStatus::Cancelled,
-                ShipmentStatus::ReturnToSender,
+                ShipmentStatusState::normalize(Delivered::class),
+                ShipmentStatusState::normalize(Cancelled::class),
+                ShipmentStatusState::normalize(ReturnToSender::class),
             ])
             ->where('created_at', '>', now()->subDays($maxAge))
             ->where(function ($query) use ($syncInterval): void {
@@ -181,34 +188,39 @@ class TrackingAggregator
             return;
         }
 
-        $newStatus = $this->mapTrackingToShipmentStatus($latestEvent->normalized_status);
+        $normalizedStatus = $this->mapTrackingToShipmentStatus($latestEvent->normalized_status);
+        $statusClass = ShipmentStatusState::resolveStateClass($normalizedStatus) ?? null;
 
-        if ($newStatus !== $shipment->status) {
+        if ($statusClass === null || ! is_subclass_of($statusClass, ShipmentStatusState::class)) {
+            return;
+        }
+
+        if (! $shipment->status->equals($statusClass)) {
             $oldStatus = $shipment->status;
-            $shipment->update(['status' => $newStatus]);
+            $shipment->update(['status' => $statusClass]);
 
-            if ($newStatus === ShipmentStatus::Delivered) {
+            if ($shipment->status->equals(Delivered::class)) {
                 $shipment->update(['delivered_at' => $latestEvent->occurred_at]);
                 event(new ShipmentDelivered($shipment));
             }
 
-            event(new ShipmentStatusChanged($shipment, $oldStatus, $newStatus));
+            event(new ShipmentStatusChanged($shipment, $oldStatus, $shipment->status));
         }
     }
 
     /**
      * Map tracking status to shipment status.
      */
-    protected function mapTrackingToShipmentStatus(TrackingStatus $trackingStatus): ShipmentStatus
+    protected function mapTrackingToShipmentStatus(TrackingStatus $trackingStatus): string
     {
         return match ($trackingStatus->getCategory()) {
-            'pre_shipment' => ShipmentStatus::AwaitingPickup,
-            'in_transit' => ShipmentStatus::InTransit,
-            'out_for_delivery' => ShipmentStatus::OutForDelivery,
-            'delivered' => ShipmentStatus::Delivered,
-            'exception' => ShipmentStatus::Exception,
-            'return' => ShipmentStatus::ReturnToSender,
-            default => ShipmentStatus::InTransit,
+            'pre_shipment' => ShipmentStatusState::normalize(AwaitingPickup::class),
+            'in_transit' => ShipmentStatusState::normalize(InTransit::class),
+            'out_for_delivery' => ShipmentStatusState::normalize(OutForDelivery::class),
+            'delivered' => ShipmentStatusState::normalize(Delivered::class),
+            'exception' => ShipmentStatusState::normalize(ExceptionStatus::class),
+            'return' => ShipmentStatusState::normalize(ReturnToSender::class),
+            default => ShipmentStatusState::normalize(InTransit::class),
         };
     }
 }

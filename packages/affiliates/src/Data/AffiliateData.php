@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Data;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\Draft;
 use Spatie\LaravelData\Attributes\MapInputName;
 use Spatie\LaravelData\Attributes\MapOutputName;
 use Spatie\LaravelData\Data;
@@ -36,11 +38,17 @@ class AffiliateData extends Data
 
     public static function fromModel(Affiliate $affiliate): self
     {
+        $status = $affiliate->status;
+
+        if (! $status instanceof AffiliateStatus) {
+            $status = AffiliateStatus::fromString((string) ($status ?? Draft::class));
+        }
+
         return new self(
             id: (string) $affiliate->getKey(),
             code: (string) $affiliate->code,
             name: (string) $affiliate->name,
-            status: $affiliate->status ?? AffiliateStatus::Draft,
+            status: $status,
             commissionType: $affiliate->commission_type ?? CommissionType::Percentage,
             commissionRate: (int) $affiliate->commission_rate,
             currency: (string) $affiliate->currency,
@@ -51,7 +59,7 @@ class AffiliateData extends Data
 
     public function isActive(): bool
     {
-        return $this->status === AffiliateStatus::Active;
+        return $this->status instanceof Active;
     }
 
     public function isPercentageCommission(): bool

@@ -7,8 +7,10 @@ namespace AIArmada\Commerce\Tests\CashierChip\Unit;
 use AIArmada\CashierChip\Coupon;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\Paused;
+use AIArmada\Vouchers\States\VoucherStatus;
 use Carbon\Carbon;
 
 class CouponTest extends CashierChipTestCase
@@ -83,7 +85,7 @@ class CouponTest extends CashierChipTestCase
     public function test_validation()
     {
         $activeVoucher = $this->createVoucherData([
-            'status' => VoucherStatus::Active,
+            'status' => VoucherStatus::fromString(Active::class),
             'startsAt' => Carbon::yesterday(),
             'expiresAt' => Carbon::tomorrow(),
         ]);
@@ -91,7 +93,7 @@ class CouponTest extends CashierChipTestCase
         $this->assertTrue((new Coupon($activeVoucher))->isActive());
         $this->assertFalse((new Coupon($activeVoucher))->isExpired());
 
-        $inactiveVoucher = $this->createVoucherData(['status' => VoucherStatus::Paused]);
+        $inactiveVoucher = $this->createVoucherData(['status' => VoucherStatus::fromString(Paused::class)]);
         $this->assertFalse((new Coupon($inactiveVoucher))->isValid());
         $this->assertFalse((new Coupon($inactiveVoucher))->isActive());
 
@@ -118,6 +120,7 @@ class CouponTest extends CashierChipTestCase
     public function test_calculate_discount_fixed()
     {
         $voucher = $this->createVoucherData([
+            'status' => VoucherStatus::fromString(Active::class),
             'type' => VoucherType::Fixed,
             'value' => 500, // 5.00
         ]);
@@ -126,6 +129,10 @@ class CouponTest extends CashierChipTestCase
         $this->assertEquals(500, $coupon->calculateDiscount(10000));
         // Capped at amount
         $this->assertEquals(400, $coupon->calculateDiscount(400));
+        $inactiveVoucher = $this->createVoucherData(['status' => VoucherStatus::fromString(Paused::class)]);
+
+        $inactiveCoupon = new Coupon($inactiveVoucher);
+        $this->assertFalse($inactiveCoupon->isValid());
     }
 
     public function test_calculate_discount_with_min_cart_value()
@@ -157,10 +164,10 @@ class CouponTest extends CashierChipTestCase
         $coupon = new Coupon($voucher);
 
         $array = $coupon->toArray();
+        $json = $coupon->toJson();
         $this->assertArrayHasKey('id', $array);
         $this->assertArrayHasKey('name', $array);
 
-        $json = $coupon->toJson();
         $this->assertJson($json);
     }
 
@@ -186,7 +193,7 @@ class CouponTest extends CashierChipTestCase
             ownerType: null,
             startsAt: $attributes['startsAt'] ?? null,
             expiresAt: $attributes['expiresAt'] ?? null,
-            status: $attributes['status'] ?? VoucherStatus::Active,
+            status: $attributes['status'] ?? VoucherStatus::fromString(Active::class),
             targetDefinition: null,
             metadata: $attributes['metadata'] ?? [],
         );

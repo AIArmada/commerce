@@ -2,11 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionTemplate;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 
 uses(RefreshDatabase::class);
@@ -273,7 +273,7 @@ describe('AffiliateCommissionTemplate Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TEST-001',
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',

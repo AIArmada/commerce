@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Enums\EmailStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocEmail;
 use AIArmada\Docs\Models\DocEmailTemplate;
 use AIArmada\Docs\Services\DocEmailService;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Pending;
 use Illuminate\Support\Facades\Route;
 
 beforeEach(function (): void {
@@ -31,7 +32,7 @@ test('it can send document email', function (): void {
     $doc = Doc::factory()->create([
         'doc_type' => DocType::Invoice->value,
         'doc_number' => 'INV-2024-001',
-        'status' => DocStatus::PENDING,
+        'status' => Pending::class,
         'total' => 1000.00,
         'currency' => 'MYR',
     ]);
@@ -82,7 +83,7 @@ test('it can send reminder for overdue document', function (): void {
     $doc = Doc::factory()->create([
         'doc_type' => DocType::Invoice->value,
         'doc_number' => 'INV-2024-003',
-        'status' => DocStatus::OVERDUE,
+        'status' => Overdue::class,
         'due_date' => now()->subDays(5),
     ]);
 

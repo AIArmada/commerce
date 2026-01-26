@@ -2,27 +2,28 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\ConversionStatus;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\ConversionStatus;
+use AIArmada\Affiliates\States\Disabled;
+use AIArmada\Affiliates\States\Draft;
+use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\States\Paused;
+use AIArmada\Affiliates\States\Pending;
+use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Affiliates\States\QualifiedConversion;
+use AIArmada\Affiliates\States\RejectedConversion;
 
-test('AffiliateStatus enum has correct cases and labels', function (): void {
-    expect(AffiliateStatus::cases())->toHaveCount(5);
+test('AffiliateStatus states have correct labels', function (): void {
+    expect(AffiliateStatus::all()->count())->toBe(5);
 
-    expect(AffiliateStatus::Draft->value)->toBe('draft');
-    expect(AffiliateStatus::Draft->label())->toBe('Draft');
-
-    expect(AffiliateStatus::Pending->value)->toBe('pending');
-    expect(AffiliateStatus::Pending->label())->toBe('Pending Approval');
-
-    expect(AffiliateStatus::Active->value)->toBe('active');
-    expect(AffiliateStatus::Active->label())->toBe('Active');
-
-    expect(AffiliateStatus::Paused->value)->toBe('paused');
-    expect(AffiliateStatus::Paused->label())->toBe('Paused');
-
-    expect(AffiliateStatus::Disabled->value)->toBe('disabled');
-    expect(AffiliateStatus::Disabled->label())->toBe('Disabled');
+    expect(AffiliateStatus::labelFor(Draft::class))->toBe('Draft');
+    expect(AffiliateStatus::labelFor(Pending::class))->toBe('Pending Approval');
+    expect(AffiliateStatus::labelFor(Active::class))->toBe('Active');
+    expect(AffiliateStatus::labelFor(Paused::class))->toBe('Paused');
+    expect(AffiliateStatus::labelFor(Disabled::class))->toBe('Disabled');
 });
 
 test('CommissionType enum has correct cases and labels', function (): void {
@@ -35,21 +36,21 @@ test('CommissionType enum has correct cases and labels', function (): void {
     expect(CommissionType::Fixed->label())->toBe('Fixed Amount');
 });
 
-test('ConversionStatus enum has correct cases and labels', function (): void {
-    expect(ConversionStatus::cases())->toHaveCount(5);
+test('ConversionStatus states have correct values and labels', function (): void {
+    expect(ConversionStatus::all()->count())->toBe(5);
 
-    expect(ConversionStatus::Pending->value)->toBe('pending');
-    expect(ConversionStatus::Pending->label())->toBe('Pending Review');
+    expect(PendingConversion::value())->toBe('pending');
+    expect(ConversionStatus::labelFor(PendingConversion::class))->toBe('Pending Review');
 
-    expect(ConversionStatus::Qualified->value)->toBe('qualified');
-    expect(ConversionStatus::Qualified->label())->toBe('Qualified');
+    expect(QualifiedConversion::value())->toBe('qualified');
+    expect(ConversionStatus::labelFor(QualifiedConversion::class))->toBe('Qualified');
 
-    expect(ConversionStatus::Approved->value)->toBe('approved');
-    expect(ConversionStatus::Approved->label())->toBe('Approved');
+    expect(ApprovedConversion::value())->toBe('approved');
+    expect(ConversionStatus::labelFor(ApprovedConversion::class))->toBe('Approved');
 
-    expect(ConversionStatus::Rejected->value)->toBe('rejected');
-    expect(ConversionStatus::Rejected->label())->toBe('Rejected');
+    expect(RejectedConversion::value())->toBe('rejected');
+    expect(ConversionStatus::labelFor(RejectedConversion::class))->toBe('Rejected');
 
-    expect(ConversionStatus::Paid->value)->toBe('paid');
-    expect(ConversionStatus::Paid->label())->toBe('Paid Out');
+    expect(PaidConversion::value())->toBe('paid');
+    expect(ConversionStatus::labelFor(PaidConversion::class))->toBe('Paid Out');
 });

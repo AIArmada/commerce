@@ -2,19 +2,21 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\AffiliatePayoutService;
 use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Cart\Facades\Cart;
 
 beforeEach(function (): void {
     $this->affiliate = Affiliate::create([
         'code' => 'PAYOUT-1',
         'name' => 'Payout Partner',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 100,
         'currency' => 'USD',
@@ -37,10 +39,10 @@ test('payout service batches conversions into a payout', function (): void {
     $conversions = AffiliateConversion::all();
 
     $payout = app(AffiliatePayoutService::class)->createPayout($conversions->pluck('id')->all(), [
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
     ]);
 
-    expect($payout->status)->toBe(PayoutStatus::Pending)
+    expect($payout->status)->toBeInstanceOf(PendingPayout::class)
         ->and($payout->conversion_count)->toBe(2)
         ->and($payout->total_minor)->toBe(30);
 
@@ -53,7 +55,7 @@ test('multi level payouts create upline conversions', function (): void {
     $parent = Affiliate::create([
         'code' => 'UPLINE',
         'name' => 'Parent',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 100,
         'currency' => 'USD',
@@ -62,7 +64,7 @@ test('multi level payouts create upline conversions', function (): void {
     $child = Affiliate::create([
         'code' => 'DOWNLINE',
         'name' => 'Child',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 100,
         'currency' => 'USD',
@@ -85,15 +87,15 @@ test('multi level payouts create upline conversions', function (): void {
 test('AffiliatePayoutService updates payout status to completed sets paid_at', function (): void {
     $payout = AffiliatePayout::create([
         'reference' => 'PAY123',
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
         'total_minor' => 1000,
         'conversion_count' => 1,
         'currency' => 'USD',
     ]);
 
     $service = app(AffiliatePayoutService::class);
-    $updated = $service->updateStatus($payout, PayoutStatus::Completed->value);
+    $updated = $service->updateStatus($payout, CompletedPayout::value());
 
-    expect($updated->status)->toBe(PayoutStatus::Completed);
+    expect($updated->status)->toBeInstanceOf(CompletedPayout::class);
     expect($updated->paid_at)->not->toBeNull();
 });

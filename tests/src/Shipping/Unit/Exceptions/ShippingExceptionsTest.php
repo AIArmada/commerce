@@ -2,12 +2,15 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Exceptions\InvalidStatusTransitionException;
 use AIArmada\Shipping\Exceptions\ShipmentAlreadyShippedException;
 use AIArmada\Shipping\Exceptions\ShipmentCreationFailedException;
 use AIArmada\Shipping\Exceptions\ShipmentNotCancellableException;
 use AIArmada\Shipping\Models\Shipment;
+use AIArmada\Shipping\States\Cancelled;
+use AIArmada\Shipping\States\Delivered;
+use AIArmada\Shipping\States\InTransit;
+use AIArmada\Shipping\States\Pending;
 
 // ============================================
 // InvalidStatusTransitionException Tests
@@ -15,19 +18,21 @@ use AIArmada\Shipping\Models\Shipment;
 
 describe('InvalidStatusTransitionException', function (): void {
     it('contains from and to statuses', function (): void {
+        $shipment = Mockery::mock(Shipment::class);
         $exception = new InvalidStatusTransitionException(
-            ShipmentStatus::Delivered,
-            ShipmentStatus::InTransit
+            new Delivered($shipment),
+            new InTransit($shipment)
         );
 
-        expect($exception->from)->toBe(ShipmentStatus::Delivered);
-        expect($exception->to)->toBe(ShipmentStatus::InTransit);
+        expect($exception->from)->toBeInstanceOf(Delivered::class);
+        expect($exception->to)->toBeInstanceOf(InTransit::class);
     });
 
     it('has descriptive message', function (): void {
+        $shipment = Mockery::mock(Shipment::class);
         $exception = new InvalidStatusTransitionException(
-            ShipmentStatus::Cancelled,
-            ShipmentStatus::Pending
+            new Cancelled($shipment),
+            new Pending($shipment)
         );
 
         expect($exception->getMessage())->toContain('cancelled');
@@ -75,9 +80,9 @@ describe('ShipmentNotCancellableException', function (): void {
     it('contains shipment and status in message', function (): void {
         $shipment = Mockery::mock(Shipment::class);
         $shipment->shouldReceive('getAttribute')->with('reference')->andReturn('TEST-002');
-        $shipment->shouldReceive('getAttribute')->with('status')->andReturn(ShipmentStatus::Delivered);
+        $shipment->shouldReceive('getAttribute')->with('status')->andReturn(new Delivered($shipment));
         $shipment->shouldReceive('__get')->with('reference')->andReturn('TEST-002');
-        $shipment->shouldReceive('__get')->with('status')->andReturn(ShipmentStatus::Delivered);
+        $shipment->shouldReceive('__get')->with('status')->andReturn(new Delivered($shipment));
 
         $exception = new ShipmentNotCancellableException($shipment);
 

@@ -7,6 +7,7 @@ namespace AIArmada\FilamentCart\Services;
 use AIArmada\Cart\Models\RecoveryAttempt;
 use AIArmada\Cart\Models\RecoveryCampaign;
 use AIArmada\Cart\Models\RecoveryTemplate;
+use AIArmada\Cart\States\Queued;
 use AIArmada\FilamentCart\Events\CartRecovered;
 use AIArmada\FilamentCart\Events\RecoveryAttemptClicked;
 use AIArmada\FilamentCart\Events\RecoveryAttemptOpened;
@@ -26,7 +27,7 @@ class RecoveryDispatcher
      */
     public function dispatch(RecoveryAttempt $attempt): bool
     {
-        if ($attempt->status !== 'queued') {
+        if (! $attempt->status instanceof Queued) {
             return false;
         }
 

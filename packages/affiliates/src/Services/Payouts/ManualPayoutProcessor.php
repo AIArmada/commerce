@@ -7,6 +7,7 @@ namespace AIArmada\Affiliates\Services\Payouts;
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutResult;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\PayoutStatus;
 use DateTimeInterface;
 use Illuminate\Support\Str;
 
@@ -28,7 +29,7 @@ final class ManualPayoutProcessor implements PayoutProcessorInterface
 
     public function getStatus(AffiliatePayout $payout): string
     {
-        return $payout->status->value;
+        return PayoutStatus::normalize($payout->status);
     }
 
     public function cancel(AffiliatePayout $payout): bool

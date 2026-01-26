@@ -13,7 +13,7 @@ class ShipmentNotCancellableException extends Exception
         public readonly Shipment $shipment
     ) {
         parent::__construct(
-            "Shipment [{$shipment->reference}] cannot be cancelled in its current state [{$shipment->status->value}]."
+            "Shipment [{$shipment->reference}] cannot be cancelled in its current state [{$shipment->status->getValue()}]."
         );
     }
 }

@@ -2,11 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
@@ -66,7 +69,7 @@ it('portal pages do not leak cross-tenant data when owner mode enabled', functio
     $affiliateB = Affiliate::create([
         'code' => 'PORTAL-B-' . Str::uuid(),
         'name' => 'Portal Affiliate B',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -81,13 +84,13 @@ it('portal pages do not leak cross-tenant data when owner mode enabled', functio
         'total_minor' => 10000,
         'commission_minor' => 1000,
         'commission_currency' => 'USD',
-        'status' => 'approved',
+        'status' => ApprovedConversion::class,
         'occurred_at' => now(),
     ]);
 
     AffiliatePayout::create([
         'reference' => 'PAYOUT-B-' . Str::uuid(),
-        'status' => 'completed',
+        'status' => CompletedPayout::class,
         'total_minor' => 1500,
         'currency' => 'USD',
         'payee_type' => $affiliateB->getMorphClass(),
@@ -149,7 +152,7 @@ it('portal pages only return current owner affiliate stats when multiple owners 
     $affiliateA = Affiliate::create([
         'code' => 'PORTAL-A-' . Str::uuid(),
         'name' => 'Portal Affiliate A',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -160,7 +163,7 @@ it('portal pages only return current owner affiliate stats when multiple owners 
     $affiliateB = Affiliate::create([
         'code' => 'PORTAL-B2-' . Str::uuid(),
         'name' => 'Portal Affiliate B',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -191,7 +194,7 @@ it('portal pages only return current owner affiliate stats when multiple owners 
         'total_minor' => 10000,
         'commission_minor' => 1000,
         'commission_currency' => 'USD',
-        'status' => 'approved',
+        'status' => ApprovedConversion::class,
         'occurred_at' => now(),
     ]);
 
@@ -202,13 +205,13 @@ it('portal pages only return current owner affiliate stats when multiple owners 
         'total_minor' => 10000,
         'commission_minor' => 9999,
         'commission_currency' => 'USD',
-        'status' => 'approved',
+        'status' => ApprovedConversion::class,
         'occurred_at' => now(),
     ]);
 
     AffiliatePayout::create([
         'reference' => 'PAYOUT-A-' . Str::uuid(),
-        'status' => 'completed',
+        'status' => CompletedPayout::class,
         'total_minor' => 1500,
         'currency' => 'USD',
         'payee_type' => $affiliateA->getMorphClass(),
@@ -218,7 +221,7 @@ it('portal pages only return current owner affiliate stats when multiple owners 
 
     AffiliatePayout::create([
         'reference' => 'PAYOUT-B-' . Str::uuid(),
-        'status' => 'completed',
+        'status' => CompletedPayout::class,
         'total_minor' => 9999,
         'currency' => 'USD',
         'payee_type' => $affiliateB->getMorphClass(),
@@ -253,7 +256,7 @@ it('portal pages return scoped view data when affiliate exists', function (): vo
     $affiliate = Affiliate::create([
         'code' => 'PORTAL-' . Str::uuid(),
         'name' => 'Portal Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -276,7 +279,7 @@ it('portal pages return scoped view data when affiliate exists', function (): vo
         'total_minor' => 10000,
         'commission_minor' => 1000,
         'commission_currency' => 'USD',
-        'status' => 'approved',
+        'status' => ApprovedConversion::class,
         'occurred_at' => now(),
     ]);
 
@@ -287,13 +290,13 @@ it('portal pages return scoped view data when affiliate exists', function (): vo
         'total_minor' => 5000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
-        'status' => 'pending',
+        'status' => PendingConversion::class,
         'occurred_at' => now(),
     ]);
 
     AffiliatePayout::create([
         'reference' => 'PAYOUT-' . Str::uuid(),
-        'status' => 'completed',
+        'status' => CompletedPayout::class,
         'total_minor' => 1500,
         'currency' => 'USD',
         'payee_type' => $affiliate->getMorphClass(),
@@ -337,7 +340,7 @@ it('PortalConversions configures its table', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'CONV-' . Str::uuid(),
         'name' => 'Conversions Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -369,7 +372,7 @@ it('PortalPayouts configures its table', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'PAY-' . Str::uuid(),
         'name' => 'Payouts Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -401,7 +404,7 @@ it('PortalLinks generates links when affiliate exists', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'LINK-' . Str::uuid(),
         'name' => 'Link Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -447,7 +450,7 @@ it('PortalLinks falls back when link generator rejects the default URL', functio
     Affiliate::create([
         'code' => 'FALLBACK-' . Str::uuid(),
         'name' => 'Fallback Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',

@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Http\Controllers\AffiliateApiController;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\Services\AffiliateService;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -20,7 +20,7 @@ beforeEach(function (): void {
         'code' => 'API-TEST-' . uniqid(),
         'name' => 'API Test Affiliate',
         'contact_email' => 'api@example.com',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => CommissionType::Percentage,
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -83,7 +83,7 @@ describe('AffiliateApiController', function (): void {
                 'code' => 'API-OWNER-A-' . uniqid(),
                 'name' => 'Affiliate A',
                 'contact_email' => 'a@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',

@@ -21,7 +21,8 @@ use AIArmada\Products\Enums\ProductStatus;
 use AIArmada\Products\Models\Category;
 use AIArmada\Products\Models\Product;
 use AIArmada\Tax\Services\TaxCalculator;
-use AIArmada\Vouchers\Enums\VoucherStatus;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\VoucherStatus;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher;
 use App\Listeners\HandleChipPaymentSuccess;
@@ -69,7 +70,7 @@ final class ShopController extends Controller
                 fn ($query) => $query->forOwner($owner),
                 fn ($query) => $query->whereRaw('1 = 0'),
             )
-            ->where('status', VoucherStatus::Active)
+            ->where('status', VoucherStatus::normalize(Active::class))
             ->where(function ($query) {
                 $query->whereNull('expires_at')
                     ->orWhere('expires_at', '>', now());

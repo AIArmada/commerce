@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\RankQualificationReason;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateProgramJoined;
@@ -15,13 +14,14 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Models\AffiliateRank;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Support\Carbon;
 
 test('AffiliateActivated event can be constructed with an affiliate', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'TEST001',
         'name' => 'Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -45,7 +45,7 @@ test('AffiliateProgramJoined event can be constructed with affiliate, program an
     $affiliate = Affiliate::create([
         'code' => 'PROG001',
         'name' => 'Program Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -78,7 +78,7 @@ test('AffiliateProgramLeft event can be constructed with affiliate and program',
     $affiliate = Affiliate::create([
         'code' => 'LEFT001',
         'name' => 'Leaving Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -103,7 +103,7 @@ test('AffiliateTierUpgraded event can be constructed with all parameters', funct
     $affiliate = Affiliate::create([
         'code' => 'TIER001',
         'name' => 'Tier Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -144,7 +144,7 @@ test('AffiliateTierUpgraded event allows null fromTier for initial tier assignme
     $affiliate = Affiliate::create([
         'code' => 'TIER002',
         'name' => 'Initial Tier Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -192,7 +192,7 @@ test('AffiliateRankChanged event can be constructed with all parameters', functi
     $affiliate = Affiliate::create([
         'code' => 'RANK001',
         'name' => 'Rank Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -229,7 +229,7 @@ test('AffiliateRankChanged event allows null fromRank for initial rank', functio
     $affiliate = Affiliate::create([
         'code' => 'RANK002',
         'name' => 'Initial Rank Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -258,7 +258,7 @@ test('AffiliateRankChanged event methods work correctly', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'RANK003',
         'name' => 'Method Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -296,7 +296,7 @@ test('AffiliateRankChanged event detects demotion correctly', function (): void 
     $affiliate = Affiliate::create([
         'code' => 'RANK004',
         'name' => 'Demotion Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',

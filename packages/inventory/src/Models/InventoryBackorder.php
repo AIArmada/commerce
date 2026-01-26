@@ -7,7 +7,12 @@ namespace AIArmada\Inventory\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Enums\BackorderPriority;
-use AIArmada\Inventory\Enums\BackorderStatus;
+use AIArmada\Inventory\States\BackorderStatus;
+use AIArmada\Inventory\States\Cancelled;
+use AIArmada\Inventory\States\Expired;
+use AIArmada\Inventory\States\Fulfilled;
+use AIArmada\Inventory\States\PartiallyFulfilled;
+use AIArmada\Inventory\States\Pending;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -15,6 +20,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Spatie\ModelStates\HasStates;
 
 /**
  * @property string $id
@@ -46,6 +52,7 @@ class InventoryBackorder extends Model
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
+    use HasStates;
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'inventory.owner';
@@ -158,8 +165,8 @@ class InventoryBackorder extends Model
     public function scopeOpen(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
         return $query->whereIn('status', [
-            BackorderStatus::Pending->value,
-            BackorderStatus::PartiallyFulfilled->value,
+            BackorderStatus::normalize(Pending::class),
+            BackorderStatus::normalize(PartiallyFulfilled::class),
         ]);
     }
 
@@ -168,7 +175,7 @@ class InventoryBackorder extends Model
      */
     public function scopePending(\Illuminate\Database\Eloquent\Builder $query): \Illuminate\Database\Eloquent\Builder
     {
-        return $query->where('status', BackorderStatus::Pending->value);
+        return $query->where('status', BackorderStatus::normalize(Pending::class));
     }
 
     /**
@@ -253,13 +260,13 @@ class InventoryBackorder extends Model
 
         $newFulfilled = $this->quantity_fulfilled + $quantity;
         $newStatus = $newFulfilled >= $this->quantity_requested - $this->quantity_cancelled
-            ? BackorderStatus::Fulfilled
-            : BackorderStatus::PartiallyFulfilled;
+            ? Fulfilled::class
+            : PartiallyFulfilled::class;
 
         return $this->update([
             'quantity_fulfilled' => $newFulfilled,
             'status' => $newStatus,
-            'fulfilled_at' => $newStatus === BackorderStatus::Fulfilled ? now() : null,
+            'fulfilled_at' => $newStatus === Fulfilled::class ? now() : null,
         ]);
     }
 
@@ -279,7 +286,7 @@ class InventoryBackorder extends Model
         $remaining = $this->quantity_requested - $this->quantity_fulfilled - $newCancelled;
 
         $newStatus = $remaining <= 0
-            ? BackorderStatus::Cancelled
+            ? Cancelled::class
             : $this->status;
 
         $metadata = $this->metadata ?? [];
@@ -290,7 +297,7 @@ class InventoryBackorder extends Model
         return $this->update([
             'quantity_cancelled' => $newCancelled,
             'status' => $newStatus,
-            'cancelled_at' => $newStatus === BackorderStatus::Cancelled ? now() : null,
+            'cancelled_at' => $newStatus === Cancelled::class ? now() : null,
             'metadata' => $metadata,
         ]);
     }
@@ -305,7 +312,7 @@ class InventoryBackorder extends Model
         }
 
         return $this->update([
-            'status' => BackorderStatus::Expired,
+            'status' => Expired::class,
             'cancelled_at' => now(),
         ]);
     }

@@ -3,12 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Conversions\MatureConversion;
-use AIArmada\Affiliates\Enums\AffiliateStatus;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\CommissionMaturityService;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Affiliates\States\QualifiedConversion;
 
 describe('MatureConversion Action', function (): void {
     beforeEach(function (): void {
@@ -17,7 +19,7 @@ describe('MatureConversion Action', function (): void {
         $this->affiliate = Affiliate::create([
             'code' => 'MATURE' . uniqid(),
             'name' => 'Maturity Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -41,7 +43,7 @@ describe('MatureConversion Action', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Qualified,
+            'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(35), // Past maturity
         ]);
 
@@ -52,7 +54,7 @@ describe('MatureConversion Action', function (): void {
         $conversion->refresh();
         $balance->refresh();
 
-        expect($conversion->status)->toBe(ConversionStatus::Approved);
+        expect($conversion->status->equals(ApprovedConversion::class))->toBeTrue();
         expect($balance->available_minor)->toBe(5000);
         expect($balance->holding_minor)->toBe(0);
     });
@@ -65,7 +67,7 @@ describe('MatureConversion Action', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Pending,
+            'status' => PendingConversion::class,
             'occurred_at' => now()->subDays(35),
         ]);
 
@@ -82,7 +84,7 @@ describe('MatureConversion Action', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Qualified,
+            'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(15), // Not yet mature
         ]);
 
@@ -99,7 +101,7 @@ describe('MatureConversion Action', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Qualified,
+            'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(35),
         ]);
 
@@ -131,7 +133,7 @@ describe('MatureConversion Action', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Qualified,
+            'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(35),
         ]);
 
@@ -149,7 +151,7 @@ describe('CommissionMaturityService', function (): void {
         $this->affiliate = Affiliate::create([
             'code' => 'MATSERV' . uniqid(),
             'name' => 'Maturity Service Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -175,7 +177,7 @@ describe('CommissionMaturityService', function (): void {
                 'total_minor' => 50000,
                 'commission_minor' => 5000,
                 'commission_currency' => 'USD',
-                'status' => ConversionStatus::Qualified,
+                'status' => QualifiedConversion::class,
                 'occurred_at' => now()->subDays(35),
             ]);
         }
@@ -202,7 +204,7 @@ describe('CommissionMaturityService', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Qualified,
+            'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(35),
         ]);
 
@@ -222,7 +224,7 @@ describe('CommissionMaturityService', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Qualified,
+            'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(10),
         ]);
 
@@ -240,7 +242,7 @@ describe('CommissionMaturityService', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Qualified,
+            'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(35),
         ]);
 
@@ -255,7 +257,7 @@ describe('CommissionMaturityService', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Qualified,
+            'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(10),
         ]);
 
@@ -271,7 +273,7 @@ describe('CommissionMaturityService', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Qualified,
+            'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(10),
         ]);
 
@@ -282,7 +284,7 @@ describe('CommissionMaturityService', function (): void {
             'total_minor' => 30000,
             'commission_minor' => 3000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Qualified,
+            'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(15),
         ]);
 
@@ -312,7 +314,7 @@ describe('CommissionMaturityService', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Qualified,
+            'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(25), // Matures in 5 days
         ]);
 
@@ -324,7 +326,7 @@ describe('CommissionMaturityService', function (): void {
             'total_minor' => 30000,
             'commission_minor' => 3000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Qualified,
+            'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(10), // Matures in 20 days
         ]);
 
@@ -348,7 +350,7 @@ describe('CommissionMaturityService', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Qualified,
+            'status' => QualifiedConversion::class,
             'occurred_at' => now()->subDays(35),
         ]);
 

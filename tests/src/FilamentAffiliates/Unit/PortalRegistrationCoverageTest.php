@@ -2,9 +2,9 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\AffiliateRegistrationService;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\FilamentAffiliates\Pages\Portal\PortalRegistration;
 use Filament\Forms\Components\TextInput;
 use Illuminate\Database\Eloquent\Model;
@@ -77,7 +77,7 @@ it('creates an affiliate through the registration service during registration ha
             return Affiliate::create([
                 'code' => 'REG-' . Str::uuid(),
                 'name' => $data['name'],
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => 'percentage',
                 'commission_rate' => 500,
                 'currency' => 'USD',

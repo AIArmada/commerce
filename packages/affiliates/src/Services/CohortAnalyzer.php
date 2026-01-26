@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Illuminate\Database\Query\Builder;
@@ -74,7 +74,9 @@ final class CohortAnalyzer
                 return $affiliate->conversions()->sum('commission_minor');
             });
 
-            $activeAffiliates = $affiliates->where('status', AffiliateStatus::Active)->count();
+            $activeAffiliates = $affiliates
+                ->filter(fn (Affiliate $affiliate): bool => $affiliate->status->equals(Active::class))
+                ->count();
 
             $results[$cohortMonth] = [
                 'cohort' => $cohortMonth,
@@ -378,7 +380,7 @@ final class CohortAnalyzer
             }
 
             $activeCount = Affiliate::whereIn('id', $affiliateIds)
-                ->where('status', AffiliateStatus::Active)
+                ->where('status', Active::class)
                 ->where(function ($query) use ($periodEnd): void {
                     $query->whereNull('disabled_at')
                         ->orWhere('disabled_at', '>', $periodEnd);
