@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\States\Active;
 use Filament\Actions\Action;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
@@ -23,10 +23,10 @@ final class ActivateVoucherAction extends Action
         $this->modalHeading('Activate Voucher');
         $this->modalDescription('This will make the voucher available for use.');
 
-        $this->visible(fn (Voucher $record): bool => $record->status !== VoucherStatus::Active);
+        $this->visible(fn (Voucher $record): bool => ! ($record->status instanceof Active));
 
         $this->action(function (Voucher $record): void {
-            $record->update(['status' => VoucherStatus::Active]);
+            $record->update(['status' => Active::class]);
 
             Notification::make()
                 ->title('Voucher activated')

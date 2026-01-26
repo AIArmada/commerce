@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Widgets;
 
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use Filament\Actions\Action;
 use Filament\Facades\Filament;
@@ -30,7 +31,7 @@ final class PayoutQueueWidget extends BaseWidget
             ->query(
                 OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
                     ->with('affiliate')
-                    ->whereIn('status', [PayoutStatus::Pending->value, PayoutStatus::Processing->value])
+                    ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
                     ->orderBy('scheduled_at')
                     ->limit(10)
             )
@@ -51,8 +52,8 @@ final class PayoutQueueWidget extends BaseWidget
 
                 Tables\Columns\BadgeColumn::make('status')
                     ->colors([
-                        'warning' => PayoutStatus::Pending->value,
-                        'info' => PayoutStatus::Processing->value,
+                        'warning' => PendingPayout::value(),
+                        'info' => ProcessingPayout::value(),
                     ]),
 
                 Tables\Columns\TextColumn::make('conversions_count')
@@ -65,7 +66,7 @@ final class PayoutQueueWidget extends BaseWidget
                     ->color('success')
                     ->requiresConfirmation()
                     ->authorize(fn (): bool => (Filament::auth()->user() ?? auth()->user())?->can('affiliates.payout.update') ?? false)
-                    ->visible(fn ($record) => $record->status === PayoutStatus::Pending->value)
+                    ->visible(fn (AffiliatePayout $record): bool => $record->status->equals(PendingPayout::class))
                     ->action(function (AffiliatePayout $record): void {
                         Gate::authorize('update', $record);
 
@@ -73,7 +74,7 @@ final class PayoutQueueWidget extends BaseWidget
                             ->whereKey($record->getKey())
                             ->firstOrFail();
 
-                        $payout->update(['status' => PayoutStatus::Processing->value]);
+                        $payout->update(['status' => ProcessingPayout::class]);
                     }),
 
                 Action::make('view')
@@ -89,7 +90,7 @@ final class PayoutQueueWidget extends BaseWidget
     protected function getTableHeading(): ?string
     {
         $pendingCount = OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
-            ->whereIn('status', [PayoutStatus::Pending->value, PayoutStatus::Processing->value])
+            ->whereIn('status', [PendingPayout::value(), ProcessingPayout::value()])
             ->count();
 
         return "Pending Payouts ({$pendingCount})";

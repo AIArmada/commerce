@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace Tests\Affiliates\Unit\Services;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Services\CohortAnalyzer;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -27,7 +27,7 @@ test('analyzeMonthly returns correct cohort data', function (): void {
     $jan1 = Affiliate::create([
         'code' => 'JAN1',
         'name' => 'Jan Affiliate 1',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -37,7 +37,7 @@ test('analyzeMonthly returns correct cohort data', function (): void {
     $jan2 = Affiliate::create([
         'code' => 'JAN2',
         'name' => 'Jan Affiliate 2',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -48,7 +48,7 @@ test('analyzeMonthly returns correct cohort data', function (): void {
     $feb1 = Affiliate::create([
         'code' => 'FEB1',
         'name' => 'Feb Affiliate 1',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -129,7 +129,7 @@ test('calculateRetentionCurve returns aggregated data', function (): void {
     $jan1 = Affiliate::create([
         'code' => 'JAN_R1',
         'name' => 'Jan Affiliate Ret 1',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -139,7 +139,7 @@ test('calculateRetentionCurve returns aggregated data', function (): void {
     $jan2 = Affiliate::create([
         'code' => 'JAN_R2',
         'name' => 'Jan Affiliate Ret 2',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -151,7 +151,7 @@ test('calculateRetentionCurve returns aggregated data', function (): void {
     $feb1 = Affiliate::create([
         'code' => 'FEB_R1',
         'name' => 'Feb Affiliate Ret 1',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -204,7 +204,7 @@ test('calculateLtv returns correct lifetime value metrics', function (): void {
     $aff = Affiliate::create([
         'code' => 'LTV1',
         'name' => 'LTV Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -256,7 +256,7 @@ test('compareCohorts correctly identifies best and worst cohorts', function (): 
     $jan = Affiliate::create([
         'code' => 'COMP_JAN',
         'name' => 'Comp Jan',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -278,7 +278,7 @@ test('compareCohorts correctly identifies best and worst cohorts', function (): 
     $feb = Affiliate::create([
         'code' => 'COMP_FEB',
         'name' => 'Comp Feb',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -320,7 +320,7 @@ test('analyzeBySource groups by metadata source', function (): void {
     $googleAff = Affiliate::create([
         'code' => 'SRC_GOOGLE',
         'name' => 'Google Aff',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -331,7 +331,7 @@ test('analyzeBySource groups by metadata source', function (): void {
     $directAff = Affiliate::create([
         'code' => 'SRC_DIRECT',
         'name' => 'Direct Aff',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',

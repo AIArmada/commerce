@@ -5,6 +5,10 @@ declare(strict_types=1);
 use AIArmada\Cart\Models\RecoveryAttempt;
 use AIArmada\Cart\Models\RecoveryCampaign;
 use AIArmada\Cart\Models\RecoveryTemplate;
+use AIArmada\Cart\States\Failed;
+use AIArmada\Cart\States\Queued;
+use AIArmada\Cart\States\Scheduled;
+use AIArmada\Cart\States\Sent;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\RecoveryDispatcher;
 use Illuminate\Support\Carbon;
@@ -71,7 +75,7 @@ describe('RecoveryDispatcher', function (): void {
             'template_id' => $this->template->id,
             'recipient_email' => 'test@example.com',
             'channel' => 'email',
-            'status' => 'scheduled', // Not queued
+            'status' => Scheduled::class, // Not queued
             'attempt_number' => 1,
         ]);
 
@@ -88,7 +92,7 @@ describe('RecoveryDispatcher', function (): void {
             'recipient_email' => 'customer@example.com',
             'recipient_name' => 'John Doe',
             'channel' => 'email',
-            'status' => 'queued',
+            'status' => Queued::class,
             'attempt_number' => 1,
             'cart_value_cents' => 15000,
             'cart_items_count' => 3,
@@ -97,7 +101,7 @@ describe('RecoveryDispatcher', function (): void {
         $result = $this->dispatcher->dispatch($attempt);
 
         expect($result)->toBeTrue();
-        expect($attempt->fresh()->status)->toBe('sent');
+        expect($attempt->fresh()->status)->toBeInstanceOf(Sent::class);
         // Mail::send doesn't use Mailable, so we verify the status instead.
     });
 
@@ -108,7 +112,7 @@ describe('RecoveryDispatcher', function (): void {
             'template_id' => $this->template->id,
             'recipient_email' => null,
             'channel' => 'email',
-            'status' => 'queued',
+            'status' => Queued::class,
             'attempt_number' => 1,
         ]);
 
@@ -124,14 +128,14 @@ describe('RecoveryDispatcher', function (): void {
             'template_id' => $this->template->id,
             'recipient_phone' => '+1234567890',
             'channel' => 'sms',
-            'status' => 'queued',
+            'status' => Queued::class,
             'attempt_number' => 1,
         ]);
 
         $result = $this->dispatcher->dispatchSms($attempt, $this->template, []);
 
         expect($result)->toBeTrue();
-        expect($attempt->fresh()->status)->toBe('sent');
+        expect($attempt->fresh()->status)->toBeInstanceOf(Sent::class);
     });
 
     it('fails SMS dispatch without phone', function (): void {
@@ -141,7 +145,7 @@ describe('RecoveryDispatcher', function (): void {
             'template_id' => $this->template->id,
             'recipient_phone' => null,
             'channel' => 'sms',
-            'status' => 'queued',
+            'status' => Queued::class,
             'attempt_number' => 1,
         ]);
 
@@ -156,14 +160,14 @@ describe('RecoveryDispatcher', function (): void {
             'cart_id' => $this->cart->id,
             'template_id' => $this->template->id,
             'channel' => 'push',
-            'status' => 'queued',
+            'status' => Queued::class,
             'attempt_number' => 1,
         ]);
 
         $result = $this->dispatcher->dispatchPush($attempt, $this->template, []);
 
         expect($result)->toBeTrue();
-        expect($attempt->fresh()->status)->toBe('sent');
+        expect($attempt->fresh()->status)->toBeInstanceOf(Sent::class);
     });
 
     it('marks attempt as failed when template or cart is missing', function (): void {
@@ -173,14 +177,14 @@ describe('RecoveryDispatcher', function (): void {
             'template_id' => null,
             'recipient_email' => 'customer@example.com',
             'channel' => 'email',
-            'status' => 'queued',
+            'status' => Queued::class,
             'attempt_number' => 1,
         ]);
 
         $result = $this->dispatcher->dispatch($attempt);
 
         expect($result)->toBeFalse();
-        expect($attempt->fresh()->status)->toBe('failed');
+        expect($attempt->fresh()->status)->toBeInstanceOf(Failed::class);
         expect($attempt->fresh()->failure_reason)->toBe('Missing template or cart');
     });
 
@@ -191,14 +195,14 @@ describe('RecoveryDispatcher', function (): void {
             'template_id' => $this->template->id,
             'recipient_email' => 'customer@example.com',
             'channel' => 'whatsapp',
-            'status' => 'queued',
+            'status' => Queued::class,
             'attempt_number' => 1,
         ]);
 
         $result = $this->dispatcher->dispatch($attempt);
 
         expect($result)->toBeFalse();
-        expect($attempt->fresh()->status)->toBe('failed');
+        expect($attempt->fresh()->status)->toBeInstanceOf(Failed::class);
         expect($attempt->fresh()->failure_reason)->toContain('Unknown channel: whatsapp');
     });
 
@@ -209,7 +213,7 @@ describe('RecoveryDispatcher', function (): void {
             'template_id' => $this->template->id,
             'recipient_email' => 'test@example.com',
             'channel' => 'email',
-            'status' => 'sent',
+            'status' => Sent::class,
             'attempt_number' => 1,
         ]);
 
@@ -225,7 +229,7 @@ describe('RecoveryDispatcher', function (): void {
             'template_id' => $this->template->id,
             'recipient_email' => 'test@example.com',
             'channel' => 'email',
-            'status' => 'sent',
+            'status' => Sent::class,
             'attempt_number' => 1,
         ]);
 
@@ -242,7 +246,7 @@ describe('RecoveryDispatcher', function (): void {
             'template_id' => $this->template->id,
             'recipient_email' => 'test@example.com',
             'channel' => 'email',
-            'status' => 'sent',
+            'status' => Sent::class,
             'attempt_number' => 1,
         ]);
 

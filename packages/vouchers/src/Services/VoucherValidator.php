@@ -10,9 +10,11 @@ use AIArmada\CommerceSupport\Targeting\Enums\TargetingMode;
 use AIArmada\CommerceSupport\Targeting\TargetingContext;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\States\Depleted;
+use AIArmada\Vouchers\States\Expired;
+use AIArmada\Vouchers\States\Paused;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
@@ -57,15 +59,15 @@ class VoucherValidator
 
         // Check status (after time-based checks)
         if (! $voucher->isActive()) {
-            if ($voucher->status === VoucherStatus::Paused) {
+            if ($voucher->status instanceof Paused) {
                 return VoucherValidationResult::invalid('Voucher is paused.');
             }
 
-            if ($voucher->status === VoucherStatus::Expired) {
+            if ($voucher->status instanceof Expired) {
                 return VoucherValidationResult::invalid('Voucher has expired.');
             }
 
-            if ($voucher->status === VoucherStatus::Depleted) {
+            if ($voucher->status instanceof Depleted) {
                 return VoucherValidationResult::invalid('Voucher usage limit has been reached.');
             }
 

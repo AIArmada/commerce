@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Affiliates\GenerateAffiliateCode;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
 
 describe('GenerateAffiliateCode', function (): void {
     describe('handle', function (): void {
@@ -69,7 +70,7 @@ describe('GenerateAffiliateCode', function (): void {
                 'code' => 'TESTAB1234',
                 'name' => 'Existing Test',
                 'contact_email' => 'existing@test.com',
-                'status' => 'active',
+                'status' => Active::class,
                 'commission_type' => 'percentage',
                 'commission_rate' => 1000,
                 'currency' => 'USD',

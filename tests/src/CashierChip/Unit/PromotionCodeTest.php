@@ -8,8 +8,9 @@ use AIArmada\CashierChip\Coupon;
 use AIArmada\CashierChip\PromotionCode;
 use AIArmada\Commerce\Tests\CashierChip\CashierChipTestCase;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\VoucherStatus;
 
 class PromotionCodeTest extends CashierChipTestCase
 {
@@ -35,7 +36,7 @@ class PromotionCodeTest extends CashierChipTestCase
             ownerType: null,
             startsAt: null,
             expiresAt: null,
-            status: VoucherStatus::Active,
+            status: VoucherStatus::fromString(Active::class),
             targetDefinition: null,
             metadata: []
         );
@@ -71,7 +72,7 @@ class PromotionCodeTest extends CashierChipTestCase
             ownerType: null,
             startsAt: null,
             expiresAt: null,
-            status: VoucherStatus::Active,
+            status: VoucherStatus::fromString(Active::class),
             targetDefinition: null,
             metadata: []
         );
@@ -106,7 +107,7 @@ class PromotionCodeTest extends CashierChipTestCase
             ownerType: null,
             startsAt: null,
             expiresAt: null,
-            status: VoucherStatus::Active,
+            status: VoucherStatus::fromString(Active::class),
             targetDefinition: null,
             metadata: []
         );

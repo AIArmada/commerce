@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Enums\SerialStatus;
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventorySerial;
 use AIArmada\Inventory\Services\SerialLookupService;
+use AIArmada\Inventory\States\Available;
+use AIArmada\Inventory\States\Reserved;
+use AIArmada\Inventory\States\SerialStatus;
+use AIArmada\Inventory\States\Sold;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 
@@ -183,7 +186,7 @@ describe('SerialLookupService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'batch_id' => $this->batch->id,
-            'status' => SerialStatus::Available,
+            'status' => SerialStatus::normalize(Available::class),
         ]);
 
         InventorySerial::factory()->create([
@@ -191,10 +194,10 @@ describe('SerialLookupService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'batch_id' => $this->batch->id,
-            'status' => SerialStatus::Sold,
+            'status' => SerialStatus::normalize(Sold::class),
         ]);
 
-        $available = $this->service->getByStatus(SerialStatus::Available);
+        $available = $this->service->getByStatus(Available::class);
 
         expect($available)->toHaveCount(1);
     });
@@ -227,7 +230,7 @@ describe('SerialLookupService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'batch_id' => $this->batch->id,
-            'status' => SerialStatus::Available,
+            'status' => SerialStatus::normalize(Available::class),
             'condition' => SerialCondition::New,
         ]);
 
@@ -236,7 +239,7 @@ describe('SerialLookupService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'batch_id' => $this->batch->id,
-            'status' => SerialStatus::Sold,
+            'status' => SerialStatus::normalize(Sold::class),
         ]);
 
         $available = $this->service->getAvailableForSale($this->item);
@@ -250,7 +253,7 @@ describe('SerialLookupService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'batch_id' => $this->batch->id,
-            'status' => SerialStatus::Available,
+            'status' => SerialStatus::normalize(Available::class),
             'condition' => SerialCondition::New,
         ]);
 
@@ -260,7 +263,7 @@ describe('SerialLookupService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $location2->id,
             'batch_id' => $this->batch->id,
-            'status' => SerialStatus::Available,
+            'status' => SerialStatus::normalize(Available::class),
             'condition' => SerialCondition::New,
         ]);
 
@@ -298,7 +301,7 @@ describe('SerialLookupService', function (): void {
             'location_id' => $this->location->id,
             'batch_id' => $this->batch->id,
             'customer_id' => 'CUST-001',
-            'status' => SerialStatus::Sold,
+            'status' => SerialStatus::normalize(Sold::class),
             'warranty_expires_at' => CarbonImmutable::now()->addYear(),
         ]);
 
@@ -314,13 +317,13 @@ describe('SerialLookupService', function (): void {
             'location_id' => $this->location->id,
             'batch_id' => $this->batch->id,
             'serial_number' => 'TEST-001',
-            'status' => SerialStatus::Available,
+            'status' => SerialStatus::normalize(Available::class),
             'condition' => SerialCondition::New,
         ]);
 
         $results = $this->service->search([
             'serial_number' => 'TEST',
-            'status' => SerialStatus::Available,
+            'status' => SerialStatus::normalize(Available::class),
         ]);
 
         expect($results->total())->toBe(1);
@@ -332,7 +335,7 @@ describe('SerialLookupService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'batch_id' => $this->batch->id,
-            'status' => SerialStatus::Available,
+            'status' => SerialStatus::normalize(Available::class),
         ]);
 
         InventorySerial::factory()->count(2)->create([
@@ -340,13 +343,13 @@ describe('SerialLookupService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'batch_id' => $this->batch->id,
-            'status' => SerialStatus::Sold,
+            'status' => SerialStatus::normalize(Sold::class),
         ]);
 
         $counts = $this->service->countByStatus($this->item);
 
-        expect($counts[SerialStatus::Available->value])->toBe(1);
-        expect($counts[SerialStatus::Sold->value])->toBe(2);
+        expect($counts[SerialStatus::normalize(Available::class)])->toBe(1);
+        expect($counts[SerialStatus::normalize(Sold::class)])->toBe(2);
     });
 
     it('counts serials by condition for model', function (): void {
@@ -392,10 +395,10 @@ describe('SerialLookupService', function (): void {
             'location_id' => $this->location->id,
             'batch_id' => $this->batch->id,
             'unit_cost_minor' => 2000,
-            'status' => SerialStatus::Available,
+            'status' => SerialStatus::normalize(Available::class),
         ]);
 
-        $total = $this->service->getTotalValueForModel($this->item, SerialStatus::Available->value);
+        $total = $this->service->getTotalValueForModel($this->item, SerialStatus::normalize(Available::class));
 
         expect($total)->toBe(2000);
     });
@@ -435,7 +438,7 @@ describe('SerialLookupService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'batch_id' => $this->batch->id,
-            'status' => SerialStatus::Available,
+            'status' => SerialStatus::normalize(Available::class),
         ]);
 
         InventorySerial::factory()->create([
@@ -443,11 +446,11 @@ describe('SerialLookupService', function (): void {
             'inventoryable_id' => $this->item->getKey(),
             'location_id' => $this->location->id,
             'batch_id' => $this->batch->id,
-            'status' => SerialStatus::Reserved,
+            'status' => SerialStatus::normalize(Reserved::class),
         ]);
 
         $results = $this->service->search([
-            'status' => [SerialStatus::Available, SerialStatus::Reserved],
+            'status' => [Available::class, Reserved::class],
         ]);
 
         expect($results->total())->toBe(2);

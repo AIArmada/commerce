@@ -7,13 +7,15 @@ namespace AIArmada\Shipping\Models;
 use AIArmada\CommerceSupport\Traits\FormatsMoney;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Shipping\Enums\ShipmentStatus;
+use AIArmada\Shipping\Enums\ShipmentStatus as ShipmentStatusEnum;
+use AIArmada\Shipping\States\ShipmentStatus;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Str;
+use Spatie\ModelStates\HasStates;
 
 /**
  * @property string $id
@@ -51,6 +53,7 @@ class Shipment extends Model
     use FormatsMoney;
     use HasOwner;
     use HasOwnerScopeConfig;
+    use HasStates;
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'shipping.features.owner';
@@ -92,7 +95,6 @@ class Shipment extends Model
      * @var array<string, mixed>
      */
     protected $attributes = [
-        'status' => 'draft',
         'package_count' => 1,
         'total_weight' => 0,
         'declared_value' => 0,
@@ -171,9 +173,9 @@ class Shipment extends Model
         return $this->status->isTerminal();
     }
 
-    public function canTransitionTo(ShipmentStatus $newStatus): bool
+    public function canTransitionTo(string | ShipmentStatus | ShipmentStatusEnum $newStatus): bool
     {
-        return $this->status->canTransitionTo($newStatus);
+        return $this->status->canTransitionTo(ShipmentStatus::normalize($newStatus));
     }
 
     public function getLatestEvent(): ?ShipmentEvent

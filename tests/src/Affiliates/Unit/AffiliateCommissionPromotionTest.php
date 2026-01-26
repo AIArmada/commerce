@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionPromotion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\States\Active;
 
 describe('AffiliateCommissionPromotion Model', function (): void {
     beforeEach(function (): void {
@@ -25,7 +25,7 @@ describe('AffiliateCommissionPromotion Model', function (): void {
         $this->affiliate = Affiliate::create([
             'code' => 'PROMO' . uniqid(),
             'name' => 'Promo Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -143,7 +143,7 @@ describe('AffiliateCommissionPromotion Model', function (): void {
         $otherAffiliate = Affiliate::create([
             'code' => 'OTHER' . uniqid(),
             'name' => 'Other Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',

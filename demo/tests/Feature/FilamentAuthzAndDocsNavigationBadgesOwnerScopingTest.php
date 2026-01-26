@@ -1,8 +1,9 @@
 <?php
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Pending;
 use AIArmada\FilamentDocs\Resources\DocResource;
 use App\Models\User;
 use Illuminate\Foundation\Testing\LazilyRefreshDatabase;
@@ -21,7 +22,7 @@ test('docs navigation badges are owner-scoped (single tenancy)', function () {
         Doc::create([
             'doc_number' => 'DOC-1',
             'doc_type' => 'invoice',
-            'status' => DocStatus::PENDING,
+            'status' => Pending::class,
             'issue_date' => now(),
             'subtotal' => '100.00',
             'tax_amount' => '0.00',
@@ -35,7 +36,7 @@ test('docs navigation badges are owner-scoped (single tenancy)', function () {
         Doc::create([
             'doc_number' => 'DOC-2',
             'doc_type' => 'invoice',
-            'status' => DocStatus::OVERDUE,
+            'status' => Overdue::class,
             'issue_date' => now(),
             'subtotal' => '200.00',
             'tax_amount' => '0.00',

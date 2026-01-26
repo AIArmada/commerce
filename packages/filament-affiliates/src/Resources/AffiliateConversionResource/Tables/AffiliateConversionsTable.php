@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource\Tables;
 
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\ConversionStatus;
+use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\FilamentAffiliates\Resources\AffiliateConversionResource;
 use AIArmada\FilamentAffiliates\Support\Integrations\CartBridge;
 use AIArmada\FilamentAffiliates\Support\Integrations\VoucherBridge;
@@ -56,13 +60,7 @@ final class AffiliateConversionsTable
             ])
             ->filters([
                 SelectFilter::make('status')
-                    ->options([
-                        'pending' => 'Pending',
-                        'qualified' => 'Qualified',
-                        'approved' => 'Approved',
-                        'rejected' => 'Rejected',
-                        'paid' => 'Paid',
-                    ]),
+                    ->options(ConversionStatus::options()),
             ])
             ->actions([
                 Action::make('view')
@@ -88,59 +86,50 @@ final class AffiliateConversionsTable
                     ->label('Approve')
                     ->color('success')
                     ->icon(Heroicon::OutlinedCheck)
-                    ->visible(fn (AffiliateConversion $record): bool => self::statusEnum($record->status) !== ConversionStatus::Approved)
+                    ->visible(fn (AffiliateConversion $record): bool => ! $record->status->equals(ApprovedConversion::class))
                     ->requiresConfirmation()
-                    ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, ConversionStatus::Approved)),
+                    ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, ApprovedConversion::class)),
                 Action::make('reject')
                     ->label('Reject')
                     ->color('danger')
                     ->icon(Heroicon::OutlinedXMark)
-                    ->visible(fn (AffiliateConversion $record): bool => self::statusEnum($record->status) !== ConversionStatus::Rejected)
+                    ->visible(fn (AffiliateConversion $record): bool => ! $record->status->equals(RejectedConversion::class))
                     ->requiresConfirmation()
-                    ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, ConversionStatus::Rejected)),
+                    ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, RejectedConversion::class)),
                 Action::make('mark_paid')
                     ->label('Mark Paid')
                     ->color('primary')
                     ->icon(Heroicon::OutlinedBanknotes)
-                    ->visible(fn (AffiliateConversion $record): bool => self::statusEnum($record->status) !== ConversionStatus::Paid)
+                    ->visible(fn (AffiliateConversion $record): bool => ! $record->status->equals(PaidConversion::class))
                     ->requiresConfirmation()
-                    ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, ConversionStatus::Paid)),
+                    ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, PaidConversion::class)),
                 Action::make('reset_pending')
                     ->label('Reset to Pending')
                     ->color('gray')
                     ->icon(Heroicon::OutlinedArrowPath)
-                    ->visible(fn (AffiliateConversion $record): bool => self::statusEnum($record->status) !== ConversionStatus::Pending)
+                    ->visible(fn (AffiliateConversion $record): bool => ! $record->status->equals(PendingConversion::class))
                     ->requiresConfirmation()
-                    ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, ConversionStatus::Pending)),
+                    ->action(fn (AffiliateConversion $record): bool => self::updateStatus($record, PendingConversion::class)),
             ])
             ->bulkActions([]);
     }
 
     public static function statusColor(ConversionStatus | string $state): string
     {
-        return match (self::statusEnum($state)) {
-            ConversionStatus::Pending => 'warning',
-            ConversionStatus::Qualified => 'info',
-            ConversionStatus::Approved => 'success',
-            ConversionStatus::Paid => 'primary',
-            ConversionStatus::Rejected => 'danger',
-        };
+        return ConversionStatus::colorFor($state);
     }
 
     public static function statusLabel(ConversionStatus | string $state): string
     {
-        return self::statusEnum($state)->label();
+        return ConversionStatus::labelFor($state);
     }
 
-    public static function statusEnum(ConversionStatus | string $state): ConversionStatus
+    public static function updateStatus(AffiliateConversion $record, ConversionStatus | string $status): bool
     {
-        return $state instanceof ConversionStatus ? $state : ConversionStatus::from((string) $state);
-    }
+        $statusClass = ConversionStatus::resolveStateClassFor($status, $record);
 
-    public static function updateStatus(AffiliateConversion $record, ConversionStatus $status): bool
-    {
-        $record->status = $status;
-        $record->approved_at = in_array($status, [ConversionStatus::Approved, ConversionStatus::Paid], true)
+        $record->status = new $statusClass($record);
+        $record->approved_at = in_array($statusClass, [ApprovedConversion::class, PaidConversion::class], true)
             ? ($record->approved_at ?? now())
             : null;
 

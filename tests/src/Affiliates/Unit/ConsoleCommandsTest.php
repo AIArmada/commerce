@@ -6,12 +6,13 @@ use AIArmada\Affiliates\Console\Commands\AggregateDailyStatsCommand;
 use AIArmada\Affiliates\Console\Commands\ExportAffiliatePayoutCommand;
 use AIArmada\Affiliates\Console\Commands\ProcessCommissionMaturityCommand;
 use AIArmada\Affiliates\Console\Commands\ProcessRankUpgradesCommand;
-use AIArmada\Affiliates\Enums\AffiliateStatus;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Events\DailyStatsAggregated;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\PendingPayout;
 use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Facades\File;
 
@@ -22,7 +23,7 @@ test('AggregateDailyStatsCommand aggregates stats for yesterday by default', fun
     Affiliate::create([
         'code' => 'CMD001',
         'name' => 'Command Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -42,7 +43,7 @@ test('AggregateDailyStatsCommand accepts custom date', function (): void {
     Affiliate::create([
         'code' => 'CMD002',
         'name' => 'Custom Date Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -57,7 +58,7 @@ test('AggregateDailyStatsCommand handles backfill mode', function (): void {
     Affiliate::create([
         'code' => 'CMD003',
         'name' => 'Backfill Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -84,7 +85,7 @@ test('ExportAffiliatePayoutCommand exports payout to CSV', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'EXPORT001',
         'name' => 'Export Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -95,7 +96,7 @@ test('ExportAffiliatePayoutCommand exports payout to CSV', function (): void {
         'reference' => 'PAY_20240115_001',
         'amount_minor' => 10000,
         'currency' => 'USD',
-        'status' => 'pending',
+        'status' => PendingPayout::class,
     ]);
 
     AffiliateConversion::create([
@@ -106,7 +107,7 @@ test('ExportAffiliatePayoutCommand exports payout to CSV', function (): void {
         'total_minor' => 50000,
         'commission_minor' => 5000,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Approved,
+        'status' => ApprovedConversion::class,
         'occurred_at' => now(),
     ]);
 

@@ -2,21 +2,21 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\PendingConversion;
 
 describe('AffiliateFraudSignal Model', function (): void {
     beforeEach(function (): void {
         $this->affiliate = Affiliate::create([
             'code' => 'FRAUD' . uniqid(),
             'name' => 'Fraud Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -63,7 +63,7 @@ describe('AffiliateFraudSignal Model', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Pending,
+            'status' => PendingConversion::class,
             'occurred_at' => now(),
         ]);
 

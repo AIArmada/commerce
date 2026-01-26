@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -12,6 +10,13 @@ use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\Disabled;
+use AIArmada\Affiliates\States\Draft;
+use AIArmada\Affiliates\States\Paused;
+use AIArmada\Affiliates\States\Pending;
+use AIArmada\Affiliates\States\PendingConversion;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -39,7 +44,7 @@ describe('Affiliate Model - Owner Scopes', function (): void {
         $affiliate1 = Affiliate::create([
             'code' => 'AFF1',
             'name' => 'Test Affiliate 1',
-            'status' => 'active',
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'USD',
@@ -50,7 +55,7 @@ describe('Affiliate Model - Owner Scopes', function (): void {
         $affiliate2 = Affiliate::create([
             'code' => 'AFF2',
             'name' => 'Test Affiliate 2',
-            'status' => 'active',
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'USD',
@@ -70,7 +75,7 @@ describe('Affiliate Model - Owner Scopes', function (): void {
         $affiliate1 = Affiliate::create([
             'code' => 'AFF1',
             'name' => 'Test Affiliate 1',
-            'status' => 'active',
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'USD',
@@ -79,7 +84,7 @@ describe('Affiliate Model - Owner Scopes', function (): void {
         $affiliate2 = Affiliate::create([
             'code' => 'AFF2',
             'name' => 'Test Affiliate 2',
-            'status' => 'active',
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'USD',
@@ -94,12 +99,12 @@ describe('Affiliate Model - Owner Scopes', function (): void {
 
 describe('Affiliate Model - Status Methods', function (): void {
     test('isActive returns true for active status', function (): void {
-        $affiliate = new Affiliate(['status' => AffiliateStatus::Active]);
+        $affiliate = new Affiliate(['status' => AffiliateStatus::fromString(Active::class)]);
         expect($affiliate->isActive())->toBeTrue();
     });
 
     test('isActive returns false for non-active status', function (): void {
-        $affiliate = new Affiliate(['status' => AffiliateStatus::Pending]);
+        $affiliate = new Affiliate(['status' => AffiliateStatus::fromString(Pending::class)]);
         expect($affiliate->isActive())->toBeFalse();
     });
 
@@ -107,7 +112,7 @@ describe('Affiliate Model - Status Methods', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'PAUSED-001',
             'name' => 'Paused Affiliate',
-            'status' => AffiliateStatus::Paused,
+            'status' => Paused::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -119,7 +124,7 @@ describe('Affiliate Model - Status Methods', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'DISABLED-001',
             'name' => 'Disabled Affiliate',
-            'status' => AffiliateStatus::Disabled,
+            'status' => Disabled::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -133,7 +138,7 @@ describe('Affiliate Model - Relationships', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'AFF1',
             'name' => 'Test Affiliate',
-            'status' => 'active',
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'USD',
@@ -145,7 +150,7 @@ describe('Affiliate Model - Relationships', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'AFF1',
             'name' => 'Test Affiliate',
-            'status' => 'active',
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'USD',
@@ -167,7 +172,7 @@ describe('Affiliate Model - Relationships', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'LINK-001',
             'name' => 'Link Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -179,7 +184,7 @@ describe('Affiliate Model - Relationships', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'PAY-001',
             'name' => 'Payout Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -191,7 +196,7 @@ describe('Affiliate Model - Relationships', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'FRAUD-001',
             'name' => 'Fraud Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -203,7 +208,7 @@ describe('Affiliate Model - Relationships', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'STATS-001',
             'name' => 'Stats Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -215,7 +220,7 @@ describe('Affiliate Model - Relationships', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'BAL-001',
             'name' => 'Balance Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -227,7 +232,7 @@ describe('Affiliate Model - Relationships', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'PM-001',
             'name' => 'Payout Method Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -239,7 +244,7 @@ describe('Affiliate Model - Relationships', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'HOLD-001',
             'name' => 'Hold Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -256,7 +261,7 @@ describe('Affiliate Model - Relationships', function (): void {
         $parent = Affiliate::create([
             'code' => 'PARENT-001',
             'name' => 'Parent Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -265,7 +270,7 @@ describe('Affiliate Model - Relationships', function (): void {
         $child = Affiliate::create([
             'code' => 'CHILD-001',
             'name' => 'Child Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -283,7 +288,7 @@ describe('Affiliate Model - Payout Hold Methods', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'HOLDCHECK-001',
             'name' => 'Hold Check Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -302,7 +307,7 @@ describe('Affiliate Model - Payout Hold Methods', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'RELEASE-001',
             'name' => 'Release Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -321,7 +326,7 @@ describe('Affiliate Model - Payout Hold Methods', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'EXPIRE-001',
             'name' => 'Expire Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -340,7 +345,7 @@ describe('Affiliate Model - Payout Hold Methods', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'NOHOLD-001',
             'name' => 'No Hold Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -355,7 +360,7 @@ describe('Affiliate Model - Payout Request Methods', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'PAYOUT-INACTIVE',
             'name' => 'Payout Inactive Test',
-            'status' => AffiliateStatus::Paused,
+            'status' => Paused::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -368,7 +373,7 @@ describe('Affiliate Model - Payout Request Methods', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'PAYOUT-HOLD',
             'name' => 'Payout Hold Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -386,7 +391,7 @@ describe('Affiliate Model - Payout Request Methods', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'PAYOUT-NOBAL',
             'name' => 'Payout No Balance Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -399,7 +404,7 @@ describe('Affiliate Model - Payout Request Methods', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'PAYOUT-ZEROBAL',
             'name' => 'Zero Balance Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -421,7 +426,7 @@ describe('Affiliate Model - Payout Request Methods', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'PAYOUT-OK',
             'name' => 'Payout OK Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -445,7 +450,7 @@ describe('Affiliate Model - Accessors', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'EMAIL-001',
             'name' => 'Email Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -459,7 +464,7 @@ describe('Affiliate Model - Accessors', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'RATE-001',
             'name' => 'Rate Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1500,
             'currency' => 'USD',
@@ -474,7 +479,7 @@ describe('Affiliate Model - Casts', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'CAST-001',
             'name' => 'Cast Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -487,7 +492,7 @@ describe('Affiliate Model - Casts', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TYPE-001',
             'name' => 'Type Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -500,7 +505,7 @@ describe('Affiliate Model - Casts', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'META-001',
             'name' => 'Metadata Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -515,7 +520,7 @@ describe('Affiliate Model - Casts', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'ACTIVATED-001',
             'name' => 'Activated Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -533,7 +538,7 @@ describe('Affiliate Model - Events', function (): void {
         Affiliate::create([
             'code' => 'EVENT-001',
             'name' => 'Event Test Affiliate',
-            'status' => AffiliateStatus::Draft,
+            'status' => Draft::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -548,13 +553,13 @@ describe('Affiliate Model - Events', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'ACTIVATE-001',
             'name' => 'Activation Test',
-            'status' => AffiliateStatus::Draft,
+            'status' => Draft::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
         ]);
 
-        $affiliate->update(['status' => AffiliateStatus::Active]);
+        $affiliate->update(['status' => Active::class]);
 
         Event::assertDispatched(AffiliateActivated::class);
     });
@@ -565,7 +570,7 @@ describe('Affiliate Model - Events', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'SAME-001',
             'name' => 'Same Status Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -584,7 +589,7 @@ describe('Affiliate Model - Cascade Deletes', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'CASCADE-001',
             'name' => 'Cascade Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -607,7 +612,7 @@ describe('Affiliate Model - Cascade Deletes', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'CASCADE-002',
             'name' => 'Cascade Conversion Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -620,7 +625,7 @@ describe('Affiliate Model - Cascade Deletes', function (): void {
             'total_minor' => 10000,
             'commission_minor' => 1000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Pending,
+            'status' => PendingConversion::class,
         ]);
 
         $affiliate->delete();
@@ -632,7 +637,7 @@ describe('Affiliate Model - Cascade Deletes', function (): void {
         $parent = Affiliate::create([
             'code' => 'PARENT-CASCADE',
             'name' => 'Parent Cascade',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -641,7 +646,7 @@ describe('Affiliate Model - Cascade Deletes', function (): void {
         $child = Affiliate::create([
             'code' => 'CHILD-CASCADE',
             'name' => 'Child Cascade',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',

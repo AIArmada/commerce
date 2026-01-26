@@ -6,6 +6,7 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Docs\Enums\DocApprovalStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -21,7 +22,7 @@ use Illuminate\Support\Carbon;
  * @property string $doc_id
  * @property string $requested_by
  * @property string|null $assigned_to
- * @property string $status
+ * @property DocApprovalStatus $status
  * @property string|null $comments
  * @property Carbon|null $approved_at
  * @property Carbon|null $rejected_at
@@ -85,17 +86,17 @@ final class DocApproval extends Model
 
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return $this->status === DocApprovalStatus::Pending;
     }
 
     public function isApproved(): bool
     {
-        return $this->status === 'approved';
+        return $this->status === DocApprovalStatus::Approved;
     }
 
     public function isRejected(): bool
     {
-        return $this->status === 'rejected';
+        return $this->status === DocApprovalStatus::Rejected;
     }
 
     public function isExpired(): bool
@@ -106,7 +107,7 @@ final class DocApproval extends Model
     public function approve(?string $comments = null): void
     {
         $this->update([
-            'status' => 'approved',
+            'status' => DocApprovalStatus::Approved,
             'approved_at' => CarbonImmutable::now(),
             'comments' => $comments,
         ]);
@@ -115,7 +116,7 @@ final class DocApproval extends Model
     public function reject(?string $comments = null): void
     {
         $this->update([
-            'status' => 'rejected',
+            'status' => DocApprovalStatus::Rejected,
             'rejected_at' => CarbonImmutable::now(),
             'comments' => $comments,
         ]);
@@ -127,6 +128,7 @@ final class DocApproval extends Model
     protected function casts(): array
     {
         return [
+            'status' => DocApprovalStatus::class,
             'approved_at' => 'datetime',
             'rejected_at' => 'datetime',
             'expires_at' => 'datetime',

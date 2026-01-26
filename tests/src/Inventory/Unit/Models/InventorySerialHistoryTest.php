@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Inventory\Enums\SerialEventType;
-use AIArmada\Inventory\Enums\SerialStatus;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventorySerial;
 use AIArmada\Inventory\Models\InventorySerialHistory;
+use AIArmada\Inventory\States\Available;
+use AIArmada\Inventory\States\Reserved;
+use AIArmada\Inventory\States\SerialStatus;
 
 beforeEach(function (): void {
     $this->item = InventoryItem::create(['name' => 'Serialized Product']);
@@ -156,8 +158,8 @@ describe('InventorySerialHistory', function (): void {
             $history = InventorySerialHistory::create([
                 'serial_id' => $this->serial->id,
                 'event_type' => SerialEventType::Transferred->value,
-                'previous_status' => SerialStatus::Available->value,
-                'new_status' => SerialStatus::Reserved->value,
+                'previous_status' => SerialStatus::normalize(Available::class),
+                'new_status' => SerialStatus::normalize(Reserved::class),
                 'from_location_id' => $this->location->id,
                 'to_location_id' => $toLocation->id,
                 'reference' => 'ORDER-123',
@@ -170,8 +172,8 @@ describe('InventorySerialHistory', function (): void {
 
             expect($history->serial_id)->toBe($this->serial->id);
             expect($history->event_type)->toBe(SerialEventType::Transferred->value);
-            expect($history->previous_status)->toBe(SerialStatus::Available->value);
-            expect($history->new_status)->toBe(SerialStatus::Reserved->value);
+            expect($history->previous_status)->toBe(SerialStatus::normalize(Available::class));
+            expect($history->new_status)->toBe(SerialStatus::normalize(Reserved::class));
             expect($history->from_location_id)->toBe($this->location->id);
             expect($history->to_location_id)->toBe($toLocation->id);
             expect($history->reference)->toBe('ORDER-123');

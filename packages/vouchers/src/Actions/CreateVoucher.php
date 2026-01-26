@@ -6,8 +6,8 @@ namespace AIArmada\Vouchers\Actions;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\Vouchers\Concerns\NormalizesVoucherCodes;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
+use AIArmada\Vouchers\States\Active;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Lorisleiva\Actions\Concerns\AsAction;
@@ -38,7 +38,7 @@ final class CreateVoucher
                 'value' => $data['value'],
                 'currency' => $data['currency'] ?? config('vouchers.default_currency', 'MYR'),
                 'description' => $data['description'] ?? null,
-                'status' => $data['status'] ?? VoucherStatus::Active,
+                'status' => $data['status'] ?? Active::class,
                 'usage_limit' => $data['max_uses'] ?? $data['usage_limit'] ?? null,
                 'usage_limit_per_user' => $data['max_uses_per_user'] ?? $data['usage_limit_per_user'] ?? null,
                 'min_cart_value' => $data['min_order_value'] ?? $data['min_cart_value'] ?? null,

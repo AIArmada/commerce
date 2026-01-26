@@ -4,14 +4,15 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Conversions\MatureConversion;
 use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
-use AIArmada\Affiliates\Enums\AffiliateStatus;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTrainingModule;
 use AIArmada\Affiliates\Services\Commissions\CommissionCalculationResult;
 use AIArmada\Affiliates\Services\Commissions\CommissionRuleEngine;
 use AIArmada\Affiliates\Services\PerformanceBonusService;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Affiliates\States\QualifiedConversion;
 
 // MatureConversion Action Tests
 test('MatureConversion can be instantiated', function (): void {
@@ -26,7 +27,7 @@ test('MatureConversion returns false for non-qualified conversion', function ():
     $affiliate = Affiliate::create([
         'code' => 'MATURE001',
         'name' => 'Mature Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -39,7 +40,7 @@ test('MatureConversion returns false for non-qualified conversion', function ():
         'total_minor' => 50000,
         'commission_minor' => 5000,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Pending,
+        'status' => PendingConversion::class,
         'occurred_at' => now()->subDays(60),
     ]);
 
@@ -54,7 +55,7 @@ test('MatureConversion returns false for conversion with future maturity date', 
     $affiliate = Affiliate::create([
         'code' => 'MATURE002',
         'name' => 'Future Mature Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -67,7 +68,7 @@ test('MatureConversion returns false for conversion with future maturity date', 
         'total_minor' => 50000,
         'commission_minor' => 5000,
         'commission_currency' => 'USD',
-        'status' => 'qualified',
+        'status' => QualifiedConversion::class,
         'occurred_at' => now(), // Just occurred, not mature yet
     ]);
 
@@ -225,7 +226,7 @@ test('CommissionRuleEngine calculate returns CommissionCalculationResult', funct
     $affiliate = Affiliate::create([
         'code' => 'ENGINE001',
         'name' => 'Engine Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -243,7 +244,7 @@ test('CommissionRuleEngine getApplicableRules returns collection', function (): 
     $affiliate = Affiliate::create([
         'code' => 'ENGINE002',
         'name' => 'Rules Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',

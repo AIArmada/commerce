@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Traits;
 
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Enums\SerialStatus;
 use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\States\Available;
+use AIArmada\Inventory\States\SerialStatus;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use Illuminate\Support\Carbon;
@@ -32,7 +33,7 @@ trait HasSerialNumbers
     public function availableSerials(): Collection
     {
         return $this->serials()
-            ->where('status', SerialStatus::Available->value)
+            ->where('status', SerialStatus::normalize(Available::class))
             ->get();
     }
 
@@ -65,10 +66,10 @@ trait HasSerialNumbers
      *
      * @return Collection<int, InventorySerial>
      */
-    public function serialsByStatus(SerialStatus $status): Collection
+    public function serialsByStatus(SerialStatus | string $status): Collection
     {
         return $this->serials()
-            ->where('status', $status->value)
+            ->where('status', SerialStatus::normalize($status))
             ->get();
     }
 
@@ -99,7 +100,7 @@ trait HasSerialNumbers
             'serial_number' => $serialNumber,
             'location_id' => $locationId,
             'batch_id' => $batchId,
-            'status' => SerialStatus::Available->value,
+            'status' => SerialStatus::normalize(Available::class),
             'condition' => $condition->value,
             'unit_cost_minor' => $unitCostMinor,
             'warranty_expires_at' => $warrantyExpiresAt,
@@ -151,8 +152,9 @@ trait HasSerialNumbers
             ->toArray();
 
         $result = [];
-        foreach (SerialStatus::cases() as $status) {
-            $result[$status->value] = $counts[$status->value] ?? 0;
+        foreach (SerialStatus::classes() as $statusClass) {
+            $value = $statusClass::getMorphClass();
+            $result[$value] = $counts[$value] ?? 0;
         }
 
         return $result;
@@ -193,7 +195,7 @@ trait HasSerialNumbers
     public function availableSerialCount(): int
     {
         return $this->serials()
-            ->where('status', SerialStatus::Available->value)
+            ->where('status', SerialStatus::normalize(Available::class))
             ->count();
     }
 
@@ -213,7 +215,7 @@ trait HasSerialNumbers
     public function hasAvailableSerial(): bool
     {
         return $this->serials()
-            ->where('status', SerialStatus::Available->value)
+            ->where('status', SerialStatus::normalize(Available::class))
             ->exists();
     }
 
@@ -223,7 +225,7 @@ trait HasSerialNumbers
     public function getNextAvailableSerial(?string $locationId = null): ?InventorySerial
     {
         $query = $this->serials()
-            ->where('status', SerialStatus::Available->value)
+            ->where('status', SerialStatus::normalize(Available::class))
             ->orderBy('received_at');
 
         if ($locationId !== null) {
@@ -267,7 +269,7 @@ trait HasSerialNumbers
     public function availableSerialValue(): int
     {
         return (int) $this->serials()
-            ->where('status', SerialStatus::Available->value)
+            ->where('status', SerialStatus::normalize(Available::class))
             ->sum('unit_cost_minor');
     }
 

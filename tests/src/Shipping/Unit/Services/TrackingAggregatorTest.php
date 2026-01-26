@@ -5,11 +5,17 @@ declare(strict_types=1);
 use AIArmada\Shipping\Contracts\ShippingDriverInterface;
 use AIArmada\Shipping\Contracts\StatusMapperInterface;
 use AIArmada\Shipping\Enums\DriverCapability;
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Enums\TrackingStatus;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Services\TrackingAggregator;
 use AIArmada\Shipping\ShippingManager;
+use AIArmada\Shipping\States\AwaitingPickup;
+use AIArmada\Shipping\States\Delivered;
+use AIArmada\Shipping\States\ExceptionStatus;
+use AIArmada\Shipping\States\InTransit;
+use AIArmada\Shipping\States\OutForDelivery;
+use AIArmada\Shipping\States\ReturnToSender;
+use AIArmada\Shipping\States\ShipmentStatus as ShipmentStatusState;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 // ============================================
@@ -125,10 +131,16 @@ it('maps tracking status to shipment status correctly', function (): void {
 
     $aggregator = new TrackingAggregator($this->shippingManager);
 
-    expect($method->invoke($aggregator, TrackingStatus::AwaitingPickup))->toBe(ShipmentStatus::AwaitingPickup);
-    expect($method->invoke($aggregator, TrackingStatus::InTransit))->toBe(ShipmentStatus::InTransit);
-    expect($method->invoke($aggregator, TrackingStatus::OutForDelivery))->toBe(ShipmentStatus::OutForDelivery);
-    expect($method->invoke($aggregator, TrackingStatus::Delivered))->toBe(ShipmentStatus::Delivered);
-    expect($method->invoke($aggregator, TrackingStatus::Lost))->toBe(ShipmentStatus::Exception);
-    expect($method->invoke($aggregator, TrackingStatus::ReturnToSender))->toBe(ShipmentStatus::ReturnToSender);
+    expect($method->invoke($aggregator, TrackingStatus::AwaitingPickup))
+        ->toBe(ShipmentStatusState::normalize(AwaitingPickup::class));
+    expect($method->invoke($aggregator, TrackingStatus::InTransit))
+        ->toBe(ShipmentStatusState::normalize(InTransit::class));
+    expect($method->invoke($aggregator, TrackingStatus::OutForDelivery))
+        ->toBe(ShipmentStatusState::normalize(OutForDelivery::class));
+    expect($method->invoke($aggregator, TrackingStatus::Delivered))
+        ->toBe(ShipmentStatusState::normalize(Delivered::class));
+    expect($method->invoke($aggregator, TrackingStatus::Lost))
+        ->toBe(ShipmentStatusState::normalize(ExceptionStatus::class));
+    expect($method->invoke($aggregator, TrackingStatus::ReturnToSender))
+        ->toBe(ShipmentStatusState::normalize(ReturnToSender::class));
 });

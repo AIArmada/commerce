@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\QualifiedConversion;
 
 /**
  * Service for managing commission maturity and release to available balance.
@@ -32,7 +33,7 @@ final class CommissionMaturityService
         $matured = 0;
 
         $conversions = AffiliateConversion::query()
-            ->where('status', ConversionStatus::Qualified)
+            ->where('status', QualifiedConversion::value())
             ->where('occurred_at', '<=', now()->subDays($this->maturityDays))
             ->with('affiliate')
             ->get();
@@ -51,7 +52,7 @@ final class CommissionMaturityService
      */
     public function matureConversion(AffiliateConversion $conversion): bool
     {
-        if ($conversion->status !== ConversionStatus::Qualified) {
+        if (! $conversion->status->equals(QualifiedConversion::class)) {
             return false;
         }
 
@@ -71,7 +72,7 @@ final class CommissionMaturityService
 
         // Update conversion status
         $conversion->update([
-            'status' => ConversionStatus::Approved,
+            'status' => ApprovedConversion::class,
             'metadata' => array_merge($conversion->metadata ?? [], [
                 'matured_at' => now()->toIso8601String(),
             ]),
@@ -102,7 +103,7 @@ final class CommissionMaturityService
     public function getPendingMaturity(Affiliate $affiliate): int
     {
         return (int) $affiliate->conversions()
-            ->where('status', ConversionStatus::Qualified)
+            ->where('status', QualifiedConversion::value())
             ->sum('commission_minor');
     }
 
@@ -114,7 +115,7 @@ final class CommissionMaturityService
         $cutoffDate = now()->subDays($this->maturityDays - $days);
 
         return $affiliate->conversions()
-            ->where('status', ConversionStatus::Qualified)
+            ->where('status', QualifiedConversion::value())
             ->where('occurred_at', '>=', $cutoffDate)
             ->get()
             ->map(fn (AffiliateConversion $c) => [

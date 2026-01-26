@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\FilamentAffiliates\Pages;
 
 use AIArmada\Affiliates\Data\PayoutResult;
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\FailedPayout;
+use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\States\ProcessingPayout;
 use AIArmada\FilamentAffiliates\Support\OwnerScopedQuery;
 use BackedEnum;
 use Filament\Actions\Action;
@@ -50,7 +53,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
         return $table
             ->query(
                 OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
-                    ->where('status', PayoutStatus::Pending)
+                    ->where('status', PendingPayout::value())
                     ->with(['affiliate'])
                     ->latest()
             )
@@ -145,15 +148,15 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                         $fromStatus = $payout->status;
 
                         $payout->update([
-                            'status' => PayoutStatus::Failed,
+                            'status' => FailedPayout::class,
                             'metadata' => array_merge($payout->metadata ?? [], [
                                 'notes' => $data['reason'],
                             ]),
                         ]);
 
                         $payout->events()->create([
-                            'from_status' => $fromStatus instanceof UnitEnum ? $fromStatus->value : (string) $fromStatus,
-                            'to_status' => PayoutStatus::Failed->value,
+                            'from_status' => $fromStatus?->getValue(),
+                            'to_status' => FailedPayout::value(),
                             'notes' => $data['reason'],
                         ]);
 
@@ -203,13 +206,13 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
     public function getViewData(): array
     {
         $pending = OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
-            ->where('status', PayoutStatus::Pending);
+            ->where('status', PendingPayout::value());
 
         return [
             'pendingCount' => $pending->count(),
             'pendingTotal' => $pending->sum('total_minor'),
             'pendingByCurrency' => OwnerScopedQuery::throughAffiliate(AffiliatePayout::query())
-                ->where('status', PayoutStatus::Pending)
+                ->where('status', PendingPayout::value())
                 ->selectRaw('currency, SUM(total_minor) as total, COUNT(*) as count')
                 ->groupBy('currency')
                 ->get(),
@@ -220,12 +223,12 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
     {
         $factory = app(PayoutProcessorFactory::class);
 
-        if ($payout->status !== PayoutStatus::Pending) {
+        if (! $payout->status->equals(PendingPayout::class)) {
             return PayoutResult::failure('Payout is not pending.');
         }
 
         return DB::transaction(function () use ($payout, $factory): PayoutResult {
-            $payout->update(['status' => PayoutStatus::Processing]);
+            $payout->update(['status' => ProcessingPayout::class]);
 
             $payoutMethod = $payout->affiliate
                 ?->payoutMethods()
@@ -233,10 +236,10 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                 ->first();
 
             if (! $payoutMethod) {
-                $payout->update(['status' => PayoutStatus::Failed]);
+                $payout->update(['status' => FailedPayout::class]);
                 $payout->events()->create([
-                    'from_status' => PayoutStatus::Processing->value,
-                    'to_status' => PayoutStatus::Failed->value,
+                    'from_status' => ProcessingPayout::value(),
+                    'to_status' => FailedPayout::value(),
                     'notes' => 'No default payout method configured',
                 ]);
 
@@ -248,7 +251,7 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
 
             if ($result->success) {
                 $payout->update([
-                    'status' => PayoutStatus::Completed,
+                    'status' => CompletedPayout::class,
                     'paid_at' => now(),
                     'metadata' => array_merge(
                         $payout->metadata ?? [],
@@ -258,18 +261,18 @@ final class PayoutBatchPage extends Page implements HasForms, HasTable
                 ]);
 
                 $payout->events()->create([
-                    'from_status' => PayoutStatus::Processing->value,
-                    'to_status' => PayoutStatus::Completed->value,
+                    'from_status' => ProcessingPayout::value(),
+                    'to_status' => CompletedPayout::value(),
                     'notes' => 'Payout processed successfully',
                 ]);
 
                 return $result;
             }
 
-            $payout->update(['status' => PayoutStatus::Failed]);
+            $payout->update(['status' => FailedPayout::class]);
             $payout->events()->create([
-                'from_status' => PayoutStatus::Processing->value,
-                'to_status' => PayoutStatus::Failed->value,
+                'from_status' => ProcessingPayout::value(),
+                'to_status' => FailedPayout::value(),
                 'notes' => $result->failureReason ?? 'Payout processing failed',
             ]);
 

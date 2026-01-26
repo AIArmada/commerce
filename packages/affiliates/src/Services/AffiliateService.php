@@ -7,7 +7,6 @@ namespace AIArmada\Affiliates\Services;
 use AIArmada\Affiliates\Data\AffiliateAttributionData;
 use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Data\AffiliateData;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Events\AffiliateAttributed;
 use AIArmada\Affiliates\Events\AffiliateConversionRecorded;
 use AIArmada\Affiliates\Exceptions\AffiliateNotFoundException;
@@ -15,6 +14,9 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\ConversionStatus;
+use AIArmada\Affiliates\States\PendingConversion;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
 use AIArmada\Cart\Cart;
 use AIArmada\CommerceSupport\Support\OwnerContext;
@@ -316,8 +318,8 @@ final class AffiliateService
             fn () => $this->commissionCalculator->calculate($affiliate, $subtotalMinor ?? $totalMinor ?? 0)
         );
 
-        $status = config('affiliates.commissions.default_status', ConversionStatus::Pending->value);
-        $statusEnum = ConversionStatus::tryFrom($status) ?? ConversionStatus::Pending;
+        $status = config('affiliates.commissions.default_status', PendingConversion::value());
+        $statusEnum = ConversionStatus::fromString($status);
         $autoApprove = config('affiliates.commissions.auto_approve', false);
 
         $touches = $attribution?->touchpoints()->get() ?? collect();
@@ -349,7 +351,7 @@ final class AffiliateService
                 'total_minor' => $portionRevenue,
                 'commission_minor' => $portionCommission,
                 'commission_currency' => $payload['commission_currency'] ?? $affiliate->currency,
-                'status' => $autoApprove ? ConversionStatus::Approved : $statusEnum,
+                'status' => $autoApprove ? ApprovedConversion::class : $statusEnum::class,
                 'channel' => $payload['channel'] ?? null,
                 'metadata' => array_merge($payload['metadata'] ?? [], ['weight' => $weight]),
                 'owner_type' => $beneficiary?->owner_type ?? $affiliate->owner_type,
@@ -785,7 +787,7 @@ final class AffiliateService
                         'total_minor' => 0,
                         'commission_minor' => $portion,
                         'commission_currency' => $conversionData->commissionCurrency,
-                        'status' => $autoApprove ? ConversionStatus::Approved : $statusEnum,
+                        'status' => $autoApprove ? ApprovedConversion::class : $statusEnum::class,
                         'channel' => 'upline',
                         'metadata' => [
                             'upline_of' => $affiliate->getKey(),

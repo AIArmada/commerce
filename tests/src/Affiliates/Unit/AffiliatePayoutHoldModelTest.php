@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 describe('AffiliatePayoutHold Model', function (): void {
@@ -13,7 +13,7 @@ describe('AffiliatePayoutHold Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'HOLD-TEST-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -36,7 +36,7 @@ describe('AffiliatePayoutHold Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'HOLD-AFF-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -55,7 +55,7 @@ describe('AffiliatePayoutHold Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'HOLD-ACTIVE-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -74,7 +74,7 @@ describe('AffiliatePayoutHold Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'HOLD-REL-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -93,7 +93,7 @@ describe('AffiliatePayoutHold Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'HOLD-EXP-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -112,7 +112,7 @@ describe('AffiliatePayoutHold Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'HOLD-NOEXP-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -131,7 +131,7 @@ describe('AffiliatePayoutHold Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'HOLD-RELEASE-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -155,7 +155,7 @@ describe('AffiliatePayoutHold Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'HOLD-DATE-' . uniqid(),
             'name' => 'Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',

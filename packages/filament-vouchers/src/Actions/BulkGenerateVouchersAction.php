@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentVouchers\Actions;
 
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Services\VoucherService;
+use AIArmada\Vouchers\States\Active;
 use Filament\Actions\Action;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\TextInput;
@@ -96,7 +96,7 @@ final class BulkGenerateVouchersAction extends Action
                     'type' => VoucherType::from($data['type']),
                     'value' => (int) round((float) $data['value'] * 100),
                     'currency' => $data['currency'],
-                    'status' => VoucherStatus::Active,
+                    'status' => Active::class,
                     'usage_limit' => $data['usage_limit'] ? (int) $data['usage_limit'] : null,
                 ]);
 

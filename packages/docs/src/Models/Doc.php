@@ -6,7 +6,14 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
-use AIArmada\Docs\Enums\DocStatus;
+use AIArmada\Docs\States\Cancelled;
+use AIArmada\Docs\States\DocStatus;
+use AIArmada\Docs\States\Draft;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Paid;
+use AIArmada\Docs\States\PartiallyPaid;
+use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Sent;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -16,6 +23,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Spatie\ModelStates\HasStates;
 
 /**
  * @property string $id
@@ -58,6 +66,7 @@ final class Doc extends Model
     use HasFactory;
     use HasOwner;
     use HasOwnerScopeConfig;
+    use HasStates;
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'docs.owner';
@@ -159,7 +168,7 @@ final class Doc extends Model
 
     public function isOverdue(): bool
     {
-        if ($this->status === DocStatus::PAID || $this->status === DocStatus::CANCELLED) {
+        if ($this->status->equals(Paid::class) || $this->status->equals(Cancelled::class)) {
             return false;
         }
 
@@ -168,7 +177,7 @@ final class Doc extends Model
 
     public function isPaid(): bool
     {
-        return $this->status === DocStatus::PAID;
+        return $this->status->equals(Paid::class);
     }
 
     public function canBePaid(): bool
@@ -181,7 +190,7 @@ final class Doc extends Model
         $oldStatus = $this->status;
 
         $this->update([
-            'status' => DocStatus::PAID,
+            'status' => Paid::class,
             'paid_at' => CarbonImmutable::now(),
         ]);
 
@@ -194,17 +203,17 @@ final class Doc extends Model
         }
 
         $this->statusHistories()->create(array_merge([
-            'status' => DocStatus::PAID,
-            'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::PAID->label(),
+            'status' => Paid::class,
+            'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::labelFor(Paid::class, $this),
         ], $ownerAttributes));
     }
 
     public function markAsSent(?string $notes = null): void
     {
-        if ($this->status === DocStatus::DRAFT || $this->status === DocStatus::PENDING) {
+        if ($this->status->equals(Draft::class) || $this->status->equals(Pending::class)) {
             $oldStatus = $this->status;
 
-            $this->update(['status' => DocStatus::SENT]);
+            $this->update(['status' => Sent::class]);
 
             $ownerAttributes = [];
             if (config('docs.owner.enabled', false)) {
@@ -215,18 +224,18 @@ final class Doc extends Model
             }
 
             $this->statusHistories()->create(array_merge([
-                'status' => DocStatus::SENT,
-                'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::SENT->label(),
+                'status' => Sent::class,
+                'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::labelFor(Sent::class, $this),
             ], $ownerAttributes));
         }
     }
 
     public function cancel(?string $notes = null): void
     {
-        if ($this->status !== DocStatus::PAID) {
+        if (! $this->status->equals(Paid::class)) {
             $oldStatus = $this->status;
 
-            $this->update(['status' => DocStatus::CANCELLED]);
+            $this->update(['status' => Cancelled::class]);
 
             $ownerAttributes = [];
             if (config('docs.owner.enabled', false)) {
@@ -237,8 +246,8 @@ final class Doc extends Model
             }
 
             $this->statusHistories()->create(array_merge([
-                'status' => DocStatus::CANCELLED,
-                'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::CANCELLED->label(),
+                'status' => Cancelled::class,
+                'notes' => $notes ?? "Status changed from {$oldStatus->label()} to " . DocStatus::labelFor(Cancelled::class, $this),
             ], $ownerAttributes));
         }
     }
@@ -248,10 +257,10 @@ final class Doc extends Model
      */
     public function updateStatus(): void
     {
-        if ($this->isOverdue() && $this->status !== DocStatus::OVERDUE) {
+        if ($this->isOverdue() && ! $this->status->equals(Overdue::class)) {
             $oldStatus = $this->status;
 
-            $this->update(['status' => DocStatus::OVERDUE]);
+            $this->update(['status' => Overdue::class]);
 
             $ownerAttributes = [];
             if (config('docs.owner.enabled', false)) {
@@ -262,8 +271,8 @@ final class Doc extends Model
             }
 
             $this->statusHistories()->create(array_merge([
-                'status' => DocStatus::OVERDUE,
-                'notes' => "Status changed from {$oldStatus->label()} to " . DocStatus::OVERDUE->label() . ' (automatic overdue detection)',
+                'status' => Overdue::class,
+                'notes' => "Status changed from {$oldStatus->label()} to " . DocStatus::labelFor(Overdue::class, $this) . ' (automatic overdue detection)',
             ], $ownerAttributes));
         }
     }

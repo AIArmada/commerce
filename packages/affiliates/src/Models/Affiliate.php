@@ -4,10 +4,11 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Models;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Events\AffiliateActivated;
 use AIArmada\Affiliates\Events\AffiliateCreated;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
@@ -20,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
+use Spatie\ModelStates\HasStates;
 
 /**
  * @property string $id
@@ -70,6 +72,7 @@ class Affiliate extends Model
         scopeForOwner as baseScopeForOwner;
     }
     use HasOwnerScopeConfig;
+    use HasStates;
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'affiliates.owner';
@@ -258,7 +261,7 @@ class Affiliate extends Model
 
     public function isActive(): bool
     {
-        return $this->status === AffiliateStatus::Active;
+        return $this->status instanceof Active;
     }
 
     public function scopeForOwner(Builder $query, Model | string | null $owner = OwnerContext::CURRENT, bool $includeGlobal = false): Builder
@@ -304,7 +307,7 @@ class Affiliate extends Model
 
         self::updated(function (self $affiliate): void {
             // Fire activated event when status changes to Active
-            if ($affiliate->wasChanged('status') && $affiliate->status === AffiliateStatus::Active) {
+            if ($affiliate->wasChanged('status') && $affiliate->status instanceof Active) {
                 AffiliateActivated::dispatch($affiliate);
             }
         });

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services\Tax;
 
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
+use AIArmada\Affiliates\States\CompletedPayout;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -81,7 +81,7 @@ final class TaxDocumentService
 
         $affiliateIds = AffiliatePayout::query()
             ->where('payee_type', Affiliate::class)
-            ->where('status', PayoutStatus::Completed->value)
+            ->where('status', CompletedPayout::value())
             ->whereBetween('paid_at', [$startDate, $endDate])
             ->groupBy('payee_id')
             ->havingRaw('SUM(total_minor) >= ?', [$threshold])
@@ -98,7 +98,7 @@ final class TaxDocumentService
         $endDate = Carbon::create($year, 12, 31)->endOfDay();
 
         return (int) $affiliate->payouts()
-            ->where('status', PayoutStatus::Completed->value)
+            ->where('status', CompletedPayout::value())
             ->whereBetween('paid_at', [$startDate, $endDate])
             ->sum('total_minor');
     }

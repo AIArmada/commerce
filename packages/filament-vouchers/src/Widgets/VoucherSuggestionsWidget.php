@@ -7,10 +7,11 @@ namespace AIArmada\FilamentVouchers\Widgets;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\CartInstanceManager;
 use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\VoucherStatus;
 use Akaunting\Money\Money;
 use Filament\Notifications\Notification;
 use Filament\Support\Icons\Heroicon;
@@ -68,7 +69,7 @@ final class VoucherSuggestionsWidget extends Widget
 
             $vouchers = $voucherQuery
                 ->withCount('usages')
-                ->where('status', VoucherStatus::Active)
+                ->where('status', VoucherStatus::normalize(Active::class))
                 ->where(function ($query): void {
                     $query->whereNull('starts_at')
                         ->orWhere('starts_at', '<=', now());

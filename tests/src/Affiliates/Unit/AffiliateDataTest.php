@@ -3,16 +3,17 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Data\AffiliateData;
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
 
 test('AffiliateData constructor sets properties', function (): void {
     $data = new AffiliateData(
         id: '1',
         code: 'AFF1',
         name: 'Test Affiliate',
-        status: AffiliateStatus::Active,
+        status: AffiliateStatus::fromString(Active::class),
         commissionType: CommissionType::Percentage,
         commissionRate: 500,
         currency: 'USD',
@@ -23,7 +24,7 @@ test('AffiliateData constructor sets properties', function (): void {
     expect($data->id)->toBe('1');
     expect($data->code)->toBe('AFF1');
     expect($data->name)->toBe('Test Affiliate');
-    expect($data->status)->toBe(AffiliateStatus::Active);
+    expect($data->status->equals(Active::class))->toBeTrue();
     expect($data->commissionType)->toBe(CommissionType::Percentage);
     expect($data->commissionRate)->toBe(500);
     expect($data->currency)->toBe('USD');
@@ -35,7 +36,7 @@ test('AffiliateData fromModel creates data from affiliate', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFF1',
         'name' => 'Test Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -48,7 +49,7 @@ test('AffiliateData fromModel creates data from affiliate', function (): void {
     expect($data->id)->toBe($affiliate->id);
     expect($data->code)->toBe('AFF1');
     expect($data->name)->toBe('Test Affiliate');
-    expect($data->status)->toBe(AffiliateStatus::Active);
+    expect($data->status->equals(Active::class))->toBeTrue();
     expect($data->commissionType)->toBe(CommissionType::Percentage);
     expect($data->commissionRate)->toBe(500);
     expect($data->currency)->toBe('USD');
@@ -61,7 +62,7 @@ test('AffiliateData toArray returns array representation', function (): void {
         id: '1',
         code: 'AFF1',
         name: 'Test Affiliate',
-        status: AffiliateStatus::Active,
+        status: AffiliateStatus::fromString(Active::class),
         commissionType: CommissionType::Percentage,
         commissionRate: 500,
         currency: 'USD',
@@ -71,11 +72,12 @@ test('AffiliateData toArray returns array representation', function (): void {
 
     $array = $data->toArray();
 
-    expect($array)->toBe([
+    expect($array['status'])->toBeInstanceOf(Active::class);
+    expect($array['status']->equals(Active::class))->toBeTrue();
+    expect($array)->toMatchArray([
         'id' => '1',
         'code' => 'AFF1',
         'name' => 'Test Affiliate',
-        'status' => 'active',
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',

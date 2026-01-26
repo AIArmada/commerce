@@ -6,7 +6,6 @@ namespace AIArmada\Affiliates\Services\Payouts;
 
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutResult;
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use DateTimeInterface;
 use Exception;
@@ -118,7 +117,7 @@ final class PayPalProcessor implements PayoutProcessorInterface
 
     public function getStatus(AffiliatePayout $payout): string
     {
-        $currentStatus = $payout->status instanceof PayoutStatus ? $payout->status->value : (string) $payout->status;
+        $currentStatus = $payout->status->getValue();
 
         if (empty($payout->external_reference)) {
             return $currentStatus;

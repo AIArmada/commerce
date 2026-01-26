@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace AIArmada\FilamentVouchers\Services;
 
 use AIArmada\FilamentVouchers\Support\OwnerScopedQueries;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\Expired;
+use AIArmada\Vouchers\States\VoucherStatus;
 use Illuminate\Database\Eloquent\Builder;
 
 final class VoucherStatsAggregator
@@ -26,11 +28,11 @@ final class VoucherStatsAggregator
     {
         return [
             'total' => $this->vouchers()->count(),
-            'active' => $this->vouchers()->where('status', VoucherStatus::Active)->count(),
+            'active' => $this->vouchers()->where('status', VoucherStatus::normalize(Active::class))->count(),
             'upcoming' => $this->vouchers()
                 ->where('starts_at', '>', now())
                 ->count(),
-            'expired' => $this->vouchers()->where('status', VoucherStatus::Expired)->count(),
+            'expired' => $this->vouchers()->where('status', VoucherStatus::normalize(Expired::class))->count(),
             'manual_redemptions' => $this->usages()->where('channel', VoucherUsage::CHANNEL_MANUAL)->count(),
             'total_discount_minor' => $this->sumDiscountMinor(),
         ];

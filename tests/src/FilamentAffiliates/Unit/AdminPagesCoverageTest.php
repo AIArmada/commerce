@@ -2,14 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\AffiliateReportService;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
 use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
@@ -49,7 +49,7 @@ it('FraudReviewPage view data reflects detected signals', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFF-' . Str::uuid(),
         'name' => 'Fraud Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -100,7 +100,7 @@ it('PayoutBatchPage view data aggregates pending payouts', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFF-' . Str::uuid(),
         'name' => 'Payout Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -108,7 +108,7 @@ it('PayoutBatchPage view data aggregates pending payouts', function (): void {
 
     AffiliatePayout::create([
         'reference' => 'PAY-' . Str::uuid(),
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
         'total_minor' => 5000,
         'currency' => 'USD',
         'payee_type' => $affiliate->getMorphClass(),
@@ -117,7 +117,7 @@ it('PayoutBatchPage view data aggregates pending payouts', function (): void {
 
     AffiliatePayout::create([
         'reference' => 'PAY-' . Str::uuid(),
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
         'total_minor' => 7000,
         'currency' => 'USD',
         'payee_type' => $affiliate->getMorphClass(),

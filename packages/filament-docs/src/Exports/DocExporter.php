@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Exports;
 
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\States\DocStatus;
 use Filament\Actions\Exports\ExportColumn;
 use Filament\Actions\Exports\Exporter;
 use Filament\Actions\Exports\Models\Export;

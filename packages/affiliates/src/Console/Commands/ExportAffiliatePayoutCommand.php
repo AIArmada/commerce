@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Console\Commands;
 
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\ConversionStatus;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use Illuminate\Console\Command;
 use Illuminate\Database\Eloquent\Model;
@@ -37,7 +38,7 @@ final class ExportAffiliatePayoutCommand extends Command
                 $conversion->order_reference,
                 $conversion->commission_minor,
                 $conversion->commission_currency,
-                $conversion->status->value ?? (string) $conversion->status,
+                ConversionStatus::normalize($conversion->status),
             ]);
         }
 

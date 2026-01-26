@@ -4,8 +4,12 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\BackorderPriority;
-use AIArmada\Inventory\Enums\BackorderStatus;
 use AIArmada\Inventory\Models\InventoryBackorder;
+use AIArmada\Inventory\States\Cancelled;
+use AIArmada\Inventory\States\Expired;
+use AIArmada\Inventory\States\Fulfilled;
+use AIArmada\Inventory\States\PartiallyFulfilled;
+use AIArmada\Inventory\States\Pending;
 
 class InventoryBackorderTest extends InventoryTestCase
 {
@@ -34,7 +38,7 @@ class InventoryBackorderTest extends InventoryTestCase
         InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '1',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -44,7 +48,7 @@ class InventoryBackorderTest extends InventoryTestCase
         InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '2',
-            'status' => BackorderStatus::PartiallyFulfilled,
+            'status' => PartiallyFulfilled::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -54,7 +58,7 @@ class InventoryBackorderTest extends InventoryTestCase
         InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '3',
-            'status' => BackorderStatus::Fulfilled,
+            'status' => Fulfilled::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -71,7 +75,7 @@ class InventoryBackorderTest extends InventoryTestCase
         InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '4',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -81,7 +85,7 @@ class InventoryBackorderTest extends InventoryTestCase
         InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '5',
-            'status' => BackorderStatus::Fulfilled,
+            'status' => Fulfilled::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -91,7 +95,7 @@ class InventoryBackorderTest extends InventoryTestCase
 
         $pending = InventoryBackorder::pending()->get();
         expect($pending)->toHaveCount(1);
-        expect($pending->first()->status)->toBe(BackorderStatus::Pending);
+        expect($pending->first()->status)->toBeInstanceOf(Pending::class);
     }
 
     public function test_is_closed(): void
@@ -99,7 +103,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $fulfilled = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '6',
-            'status' => BackorderStatus::Fulfilled,
+            'status' => Fulfilled::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 10,
@@ -110,7 +114,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $pending = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '7',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -127,7 +131,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $overdue = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '8',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -139,7 +143,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $notOverdue = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '9',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -157,7 +161,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $canFulfill = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '10',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -168,7 +172,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $cannotFulfill = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '11',
-            'status' => BackorderStatus::Fulfilled,
+            'status' => Fulfilled::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 10,
@@ -185,7 +189,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $canCancel = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '12',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -196,7 +200,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $cannotCancel = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '13',
-            'status' => BackorderStatus::Cancelled,
+            'status' => Cancelled::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -213,7 +217,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '14',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -225,7 +229,7 @@ class InventoryBackorderTest extends InventoryTestCase
 
         expect($result)->toBeTrue();
         expect($backorder->fresh()->quantity_fulfilled)->toBe(5);
-        expect($backorder->fresh()->status)->toBe(BackorderStatus::PartiallyFulfilled);
+        expect($backorder->fresh()->status)->toBeInstanceOf(PartiallyFulfilled::class);
     }
 
     public function test_fulfill_complete(): void
@@ -233,7 +237,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '15',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -245,7 +249,7 @@ class InventoryBackorderTest extends InventoryTestCase
 
         expect($result)->toBeTrue();
         expect($backorder->fresh()->quantity_fulfilled)->toBe(10);
-        expect($backorder->fresh()->status)->toBe(BackorderStatus::Fulfilled);
+        expect($backorder->fresh()->status)->toBeInstanceOf(Fulfilled::class);
         expect($backorder->fresh()->fulfilled_at)->not->toBeNull();
     }
 
@@ -254,7 +258,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '16',
-            'status' => BackorderStatus::Fulfilled,
+            'status' => Fulfilled::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 10,
@@ -272,7 +276,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '17',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -292,7 +296,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '18',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -304,7 +308,7 @@ class InventoryBackorderTest extends InventoryTestCase
 
         expect($result)->toBeTrue();
         expect($backorder->fresh()->quantity_cancelled)->toBe(10);
-        expect($backorder->fresh()->status)->toBe(BackorderStatus::Cancelled);
+        expect($backorder->fresh()->status)->toBeInstanceOf(Cancelled::class);
         expect($backorder->fresh()->cancelled_at)->not->toBeNull();
     }
 
@@ -313,7 +317,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '19',
-            'status' => BackorderStatus::Cancelled,
+            'status' => Cancelled::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -331,7 +335,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '20',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -342,7 +346,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $result = $backorder->expire();
 
         expect($result)->toBeTrue();
-        expect($backorder->fresh()->status)->toBe(BackorderStatus::Expired);
+        expect($backorder->fresh()->status)->toBeInstanceOf(Expired::class);
         expect($backorder->fresh()->cancelled_at)->not->toBeNull();
     }
 
@@ -351,7 +355,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $backorder = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '21',
-            'status' => BackorderStatus::Fulfilled,
+            'status' => Fulfilled::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 10,
@@ -369,7 +373,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $lowPriority = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '22',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Low,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -388,7 +392,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $normalPriority = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '23',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -406,7 +410,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $highPriority = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '24',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::High,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
@@ -424,7 +428,7 @@ class InventoryBackorderTest extends InventoryTestCase
         $urgentPriority = InventoryBackorder::create([
             'inventoryable_type' => 'Test',
             'inventoryable_id' => '25',
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Urgent,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,

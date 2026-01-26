@@ -4,6 +4,9 @@ declare(strict_types=1);
 
 use AIArmada\Cart\Models\RecoveryAttempt;
 use AIArmada\Cart\Models\RecoveryCampaign;
+use AIArmada\Cart\States\Failed;
+use AIArmada\Cart\States\Queued;
+use AIArmada\Cart\States\Scheduled;
 use AIArmada\FilamentCart\Models\Cart;
 use AIArmada\FilamentCart\Services\RecoveryDispatcher;
 use AIArmada\FilamentCart\Services\RecoveryScheduler;
@@ -134,7 +137,7 @@ describe('RecoveryScheduler', function (): void {
             ->where('cart_id', $cart1->id)
             ->firstOrFail();
 
-        expect($attempt->status)->toBe('scheduled');
+        expect($attempt->status)->toBeInstanceOf(Scheduled::class);
         expect($attempt->discount_code)->not->toBeNull();
         expect($attempt->discount_value_cents)->toBe(200);
 
@@ -173,7 +176,7 @@ describe('RecoveryScheduler', function (): void {
             'campaign_id' => $campaign->id,
             'cart_id' => $cart->id,
             'channel' => 'email',
-            'status' => 'scheduled',
+            'status' => Scheduled::class,
             'attempt_number' => 1,
             'scheduled_for' => now()->subMinute(),
         ]);
@@ -190,7 +193,7 @@ describe('RecoveryScheduler', function (): void {
         expect($result['failed'])->toBe(0);
 
         $attempt->refresh();
-        expect($attempt->status)->toBe('queued');
+        expect($attempt->status)->toBeInstanceOf(Queued::class);
         expect($attempt->queued_at)->not->toBeNull();
     });
 
@@ -217,7 +220,7 @@ describe('RecoveryScheduler', function (): void {
             'campaign_id' => $campaign->id,
             'cart_id' => $cart->id,
             'channel' => 'email',
-            'status' => 'scheduled',
+            'status' => Scheduled::class,
             'attempt_number' => 1,
             'scheduled_for' => now()->subMinute(),
         ]);
@@ -232,7 +235,7 @@ describe('RecoveryScheduler', function (): void {
         expect($result['failed'])->toBe(1);
 
         $attempt->refresh();
-        expect($attempt->status)->toBe('failed');
+        expect($attempt->status)->toBeInstanceOf(Failed::class);
         expect($attempt->failure_reason)->toBe('dispatch failed');
     });
 
@@ -259,7 +262,7 @@ describe('RecoveryScheduler', function (): void {
             'campaign_id' => $campaign->id,
             'cart_id' => $cart->id,
             'channel' => 'email',
-            'status' => 'failed',
+            'status' => Failed::class,
             'attempt_number' => 1,
             'scheduled_for' => now()->subDay(),
         ]);
@@ -332,7 +335,7 @@ describe('RecoveryScheduler', function (): void {
             'campaign_id' => $campaign->id,
             'cart_id' => $cart->id,
             'channel' => 'email',
-            'status' => 'failed',
+            'status' => Failed::class,
             'attempt_number' => 1,
             'scheduled_for' => now()->subDay(),
         ]);

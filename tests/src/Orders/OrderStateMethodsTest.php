@@ -935,9 +935,9 @@ describe('Order State Methods - Direct Class Testing', function (): void {
     });
 
     describe('OrderStatus Base Class', function (): void {
-        it('has default state as Created', function (): void {
+        it('has default state as Processing', function (): void {
             $config = OrderStatus::config();
-            expect($config->defaultStateClass)->toBe(Created::class);
+            expect($config->defaultStateClass)->toBe(Processing::class);
         });
     });
 });

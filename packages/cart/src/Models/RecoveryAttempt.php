@@ -5,10 +5,17 @@ declare(strict_types=1);
 namespace AIArmada\Cart\Models;
 
 use AIArmada\Cart\Models\Concerns\HasCartOwner;
+use AIArmada\Cart\States\Clicked;
+use AIArmada\Cart\States\Converted;
+use AIArmada\Cart\States\Failed;
+use AIArmada\Cart\States\Opened;
+use AIArmada\Cart\States\RecoveryAttemptStatus;
+use AIArmada\Cart\States\Sent;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use RuntimeException;
+use Spatie\ModelStates\HasStates;
 
 /**
  * @property string $id
@@ -19,7 +26,7 @@ use RuntimeException;
  * @property string|null $recipient_phone
  * @property string|null $recipient_name
  * @property string $channel
- * @property string $status
+ * @property RecoveryAttemptStatus $status
  * @property int $attempt_number
  * @property bool $is_control
  * @property bool $is_variant
@@ -49,6 +56,7 @@ use RuntimeException;
 class RecoveryAttempt extends Model
 {
     use HasCartOwner;
+    use HasStates;
     use HasUuids;
 
     protected $fillable = [
@@ -117,32 +125,32 @@ class RecoveryAttempt extends Model
 
     public function isScheduled(): bool
     {
-        return $this->status === 'scheduled';
+        return $this->status->isScheduled();
     }
 
     public function isSent(): bool
     {
-        return in_array($this->status, ['sent', 'delivered', 'opened', 'clicked', 'converted']);
+        return $this->status->isSent();
     }
 
     public function isOpened(): bool
     {
-        return in_array($this->status, ['opened', 'clicked', 'converted']);
+        return $this->status->isOpened();
     }
 
     public function isClicked(): bool
     {
-        return in_array($this->status, ['clicked', 'converted']);
+        return $this->status->isClicked();
     }
 
     public function isConverted(): bool
     {
-        return $this->status === 'converted';
+        return $this->status->isConverted();
     }
 
     public function isFailed(): bool
     {
-        return in_array($this->status, ['failed', 'bounced']);
+        return $this->status->isFailed();
     }
 
     protected static function booted(): void
@@ -185,7 +193,7 @@ class RecoveryAttempt extends Model
     public function markAsSent(?string $messageId = null): void
     {
         $this->update([
-            'status' => 'sent',
+            'status' => Sent::class,
             'sent_at' => now(),
             'message_id' => $messageId,
         ]);
@@ -195,7 +203,7 @@ class RecoveryAttempt extends Model
     {
         if ($this->opened_at === null) {
             $this->update([
-                'status' => 'opened',
+                'status' => Opened::class,
                 'opened_at' => now(),
             ]);
         }
@@ -206,7 +214,7 @@ class RecoveryAttempt extends Model
         if ($this->clicked_at === null) {
             $this->markAsOpened();
             $this->update([
-                'status' => 'clicked',
+                'status' => Clicked::class,
                 'clicked_at' => now(),
             ]);
         }
@@ -216,7 +224,7 @@ class RecoveryAttempt extends Model
     {
         $this->markAsClicked();
         $this->update([
-            'status' => 'converted',
+            'status' => Converted::class,
             'converted_at' => now(),
         ]);
     }
@@ -224,7 +232,7 @@ class RecoveryAttempt extends Model
     public function markAsFailed(string $reason): void
     {
         $this->update([
-            'status' => 'failed',
+            'status' => Failed::class,
             'failed_at' => now(),
             'failure_reason' => $reason,
         ]);
@@ -233,6 +241,7 @@ class RecoveryAttempt extends Model
     protected function casts(): array
     {
         return [
+            'status' => RecoveryAttemptStatus::class,
             'is_control' => 'boolean',
             'is_variant' => 'boolean',
             'free_shipping_offered' => 'boolean',

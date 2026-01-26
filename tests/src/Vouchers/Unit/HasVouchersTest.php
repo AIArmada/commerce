@@ -8,10 +8,10 @@ use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Cart\Testing\InMemoryStorage;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
 use AIArmada\Vouchers\Data\VoucherData;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\Support\CartWithVouchers;
 use Illuminate\Support\Facades\Config;
 
@@ -34,7 +34,7 @@ it('retrieves applied vouchers from cart conditions', function (): void {
         'type' => VoucherType::Fixed->value,
         'value' => 25,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active->value,
+        'status' => Active::class,
     ]);
 
     $voucherCondition = new VoucherCondition($voucherData, order: 90, dynamic: false);
@@ -77,7 +77,7 @@ it('collects voucher conditions from cart conditions', function (): void {
         'type' => VoucherType::Fixed->value,
         'value' => 25,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active->value,
+        'status' => Active::class,
     ]);
 
     // Add a CartCondition with type 'voucher'
@@ -129,7 +129,7 @@ it('applies voucher successfully', function (): void {
         'type' => 'percentage',
         'value' => 10,
         'currency' => 'MYR',
-        'status' => 'active',
+        'status' => Active::class,
     ]);
 
     $result = $wrapper->applyVoucher('applytest');
@@ -176,7 +176,7 @@ it('removes voucher successfully', function (): void {
         'type' => 'percentage',
         'value' => 10,
         'currency' => 'MYR',
-        'status' => 'active',
+        'status' => Active::class,
     ]);
 
     $wrapper->applyVoucher('removetest');
@@ -229,7 +229,7 @@ it('calculates voucher discount', function (): void {
         'type' => 'fixed',
         'value' => 50,
         'currency' => 'MYR',
-        'status' => 'active',
+        'status' => Active::class,
     ]);
 
     // Add an item to the cart
@@ -291,7 +291,7 @@ it('validates applied vouchers', function (): void {
         'type' => 'percentage',
         'value' => 10,
         'currency' => 'MYR',
-        'status' => 'active',
+        'status' => Active::class,
     ]);
 
     $wrapper->applyVoucher('invalidate');
@@ -341,7 +341,7 @@ it('calculates voucher discount with stacking', function (): void {
         'type' => 'fixed',
         'value' => 20,
         'currency' => 'MYR',
-        'status' => 'active',
+        'status' => Active::class,
     ]);
 
     $voucher2 = Voucher::create([
@@ -350,7 +350,7 @@ it('calculates voucher discount with stacking', function (): void {
         'type' => 'fixed',
         'value' => 30,
         'currency' => 'MYR',
-        'status' => 'active',
+        'status' => Active::class,
     ]);
 
     $wrapper->applyVoucher('stack1');
@@ -397,7 +397,7 @@ it('removes static voucher condition', function (): void {
         'type' => VoucherType::Fixed->value,
         'value' => 25,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active->value,
+        'status' => Active::class,
     ]);
 
     $voucherCondition = new VoucherCondition($voucherData, order: 90, dynamic: false);

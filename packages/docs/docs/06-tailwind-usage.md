@@ -93,9 +93,9 @@ module.exports = {
 
 ```blade
 <span class="inline-flex items-center rounded-full px-3 py-1 text-xs font-medium
-    @if($doc->status->value === 'paid') bg-green-100 text-green-800
-    @elseif($doc->status->value === 'pending') bg-yellow-100 text-yellow-800
-    @elseif($doc->status->value === 'overdue') bg-red-100 text-red-800
+  @if(\Commerce\Docs\States\DocStatus::normalize($doc->status) === 'paid') bg-green-100 text-green-800
+  @elseif(\Commerce\Docs\States\DocStatus::normalize($doc->status) === 'pending') bg-yellow-100 text-yellow-800
+  @elseif(\Commerce\Docs\States\DocStatus::normalize($doc->status) === 'overdue') bg-red-100 text-red-800
     @else bg-gray-100 text-gray-800
     @endif">
     {{ $doc->status->label() }}

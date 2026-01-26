@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Shipping\Enums\ShipmentStatus;
 use AIArmada\Shipping\Events\ShipmentCancelled;
 use AIArmada\Shipping\Events\ShipmentCreated;
 use AIArmada\Shipping\Events\ShipmentDelivered;
@@ -11,6 +10,8 @@ use AIArmada\Shipping\Events\ShipmentStatusChanged;
 use AIArmada\Shipping\Events\TrackingUpdated;
 use AIArmada\Shipping\Models\Shipment;
 use AIArmada\Shipping\Models\ShipmentEvent;
+use AIArmada\Shipping\States\Pending;
+use AIArmada\Shipping\States\Shipped;
 
 // ============================================
 // ShipmentCreated Event Tests
@@ -87,13 +88,13 @@ describe('ShipmentStatusChanged', function (): void {
 
         $event = new ShipmentStatusChanged(
             $shipment,
-            ShipmentStatus::Pending,
-            ShipmentStatus::Shipped
+            new Pending($shipment),
+            new Shipped($shipment)
         );
 
         expect($event->shipment)->toBe($shipment);
-        expect($event->oldStatus)->toBe(ShipmentStatus::Pending);
-        expect($event->newStatus)->toBe(ShipmentStatus::Shipped);
+        expect($event->oldStatus)->toBeInstanceOf(Pending::class);
+        expect($event->newStatus)->toBeInstanceOf(Shipped::class);
     });
 });
 

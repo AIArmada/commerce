@@ -4,9 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Actions;
 
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
+use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\FailedPayout;
+use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\States\ProcessingPayout;
 use Exception;
 use Filament\Actions\BulkAction;
 use Illuminate\Database\Eloquent\Collection;
@@ -35,23 +38,23 @@ final class BulkPayoutAction extends BulkAction
                     continue;
                 }
 
-                if ($payout->status !== PayoutStatus::Pending) {
+                if (! $payout->status->equals(PendingPayout::class)) {
                     continue;
                 }
 
                 try {
                     DB::transaction(function () use ($payout, $factory, &$processed, &$failed): void {
-                        $payout->update(['status' => PayoutStatus::Processing->value]);
+                        $payout->update(['status' => ProcessingPayout::class]);
 
                         $payoutMethod = $payout->affiliate->payoutMethods()
                             ->where('is_default', true)
                             ->first();
 
                         if (! $payoutMethod) {
-                            $payout->update(['status' => PayoutStatus::Failed->value]);
+                            $payout->update(['status' => FailedPayout::class]);
                             $payout->events()->create([
-                                'from_status' => PayoutStatus::Processing->value,
-                                'to_status' => PayoutStatus::Failed->value,
+                                'from_status' => ProcessingPayout::value(),
+                                'to_status' => FailedPayout::value(),
                                 'notes' => 'No default payout method configured',
                             ]);
                             $failed++;
@@ -64,7 +67,7 @@ final class BulkPayoutAction extends BulkAction
 
                         if ($result->success) {
                             $payout->update([
-                                'status' => PayoutStatus::Completed->value,
+                                'status' => CompletedPayout::class,
                                 'paid_at' => now(),
                                 'metadata' => array_merge(
                                     $payout->metadata ?? [],
@@ -74,31 +77,29 @@ final class BulkPayoutAction extends BulkAction
                             ]);
 
                             $payout->events()->create([
-                                'from_status' => PayoutStatus::Processing->value,
-                                'to_status' => PayoutStatus::Completed->value,
+                                'from_status' => ProcessingPayout::value(),
+                                'to_status' => CompletedPayout::value(),
                                 'notes' => 'Payout processed successfully',
                             ]);
 
                             $processed++;
                         } else {
-                            $payout->update(['status' => PayoutStatus::Failed->value]);
+                            $payout->update(['status' => FailedPayout::class]);
                             $payout->events()->create([
-                                'from_status' => PayoutStatus::Processing->value,
-                                'to_status' => PayoutStatus::Failed->value,
+                                'from_status' => ProcessingPayout::value(),
+                                'to_status' => FailedPayout::value(),
                                 'notes' => $result->failureReason,
                             ]);
                             $failed++;
                         }
                     });
                 } catch (Exception $e) {
-                    $fromStatus = $payout->status instanceof PayoutStatus
-                        ? $payout->status->value
-                        : (string) $payout->status;
+                    $fromStatus = $payout->status?->getValue();
 
-                    $payout->update(['status' => PayoutStatus::Failed->value]);
+                    $payout->update(['status' => FailedPayout::class]);
                     $payout->events()->create([
                         'from_status' => $fromStatus,
-                        'to_status' => PayoutStatus::Failed->value,
+                        'to_status' => FailedPayout::value(),
                         'notes' => $e->getMessage(),
                     ]);
                     $failed++;

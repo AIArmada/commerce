@@ -4,7 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\Disabled;
+use AIArmada\Affiliates\States\Draft;
+use AIArmada\Affiliates\States\Paused;
+use AIArmada\Affiliates\States\Pending;
 use Filament\Infolists\Components\KeyValueEntry;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
@@ -31,14 +36,19 @@ final class AffiliateInfolist
                         TextEntry::make('status')
                             ->label('Status')
                             ->badge()
-                            ->color(fn (AffiliateStatus $state): string => match ($state) {
-                                AffiliateStatus::Draft => 'gray',
-                                AffiliateStatus::Active => 'success',
-                                AffiliateStatus::Pending => 'warning',
-                                AffiliateStatus::Paused => 'gray',
-                                AffiliateStatus::Disabled => 'danger',
+                            ->color(function (AffiliateStatus | string $state): string {
+                                $status = AffiliateStatus::fromString($state);
+
+                                return match (true) {
+                                    $status instanceof Draft => 'gray',
+                                    $status instanceof Active => 'success',
+                                    $status instanceof Pending => 'warning',
+                                    $status instanceof Paused => 'gray',
+                                    $status instanceof Disabled => 'danger',
+                                    default => 'gray',
+                                };
                             })
-                            ->formatStateUsing(fn (AffiliateStatus $state): string => $state->label()),
+                            ->formatStateUsing(fn (AffiliateStatus | string $state): string => AffiliateStatus::fromString($state)->label()),
                     ]),
 
                     TextEntry::make('description')

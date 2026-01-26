@@ -2,10 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateRank;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
 describe('AffiliateRank Model', function (): void {
@@ -46,7 +46,7 @@ describe('AffiliateRank Model', function (): void {
         Affiliate::create([
             'code' => 'RANK-TEST-' . uniqid(),
             'name' => 'Ranked Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -166,7 +166,7 @@ describe('AffiliateRank Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'QUAL-TEST-' . uniqid(),
             'name' => 'Qualification Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -189,7 +189,7 @@ describe('AffiliateRank Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'QUAL-FAIL-' . uniqid(),
             'name' => 'Qualification Fail Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -212,7 +212,7 @@ describe('AffiliateRank Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'QUAL-FAIL-' . uniqid(),
             'name' => 'Qualification Fail Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -235,7 +235,7 @@ describe('AffiliateRank Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'QUAL-FAIL-' . uniqid(),
             'name' => 'Qualification Fail Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -258,7 +258,7 @@ describe('AffiliateRank Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'QUAL-EXACT-' . uniqid(),
             'name' => 'Qualification Exact Test',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',

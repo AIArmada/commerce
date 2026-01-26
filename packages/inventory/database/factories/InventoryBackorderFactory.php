@@ -5,9 +5,12 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Database\Factories;
 
 use AIArmada\Inventory\Enums\BackorderPriority;
-use AIArmada\Inventory\Enums\BackorderStatus;
 use AIArmada\Inventory\Models\InventoryBackorder;
 use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\States\Cancelled;
+use AIArmada\Inventory\States\Fulfilled;
+use AIArmada\Inventory\States\PartiallyFulfilled;
+use AIArmada\Inventory\States\Pending;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -30,7 +33,7 @@ class InventoryBackorderFactory extends Factory
             'quantity_requested' => $requested,
             'quantity_fulfilled' => 0,
             'quantity_cancelled' => 0,
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => $this->faker->randomElement(BackorderPriority::cases()),
             'requested_at' => $this->faker->dateTimeBetween('-30 days', 'now'),
             'promised_at' => $this->faker->optional(0.6)->dateTimeBetween('now', '+30 days'),
@@ -57,7 +60,7 @@ class InventoryBackorderFactory extends Factory
     public function pending(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'quantity_fulfilled' => 0,
         ]);
     }
@@ -68,7 +71,7 @@ class InventoryBackorderFactory extends Factory
     public function partiallyFulfilled(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'status' => BackorderStatus::PartiallyFulfilled,
+            'status' => PartiallyFulfilled::class,
             'quantity_fulfilled' => (int) ($attributes['quantity_requested'] / 2),
         ]);
     }
@@ -79,7 +82,7 @@ class InventoryBackorderFactory extends Factory
     public function fulfilled(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'status' => BackorderStatus::Fulfilled,
+            'status' => Fulfilled::class,
             'quantity_fulfilled' => $attributes['quantity_requested'],
             'fulfilled_at' => now(),
         ]);
@@ -91,7 +94,7 @@ class InventoryBackorderFactory extends Factory
     public function cancelled(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'status' => BackorderStatus::Cancelled,
+            'status' => Cancelled::class,
             'quantity_cancelled' => $attributes['quantity_requested'],
             'cancelled_at' => now(),
         ]);
@@ -103,7 +106,7 @@ class InventoryBackorderFactory extends Factory
     public function overdue(): static
     {
         return $this->state(fn (array $attributes): array => [
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'promised_at' => $this->faker->dateTimeBetween('-14 days', '-1 day'),
         ]);
     }

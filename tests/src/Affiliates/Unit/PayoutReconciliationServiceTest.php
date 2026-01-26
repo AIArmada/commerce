@@ -2,14 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Services\PayoutReconciliationService;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\States\ProcessingPayout;
 
 beforeEach(function (): void {
     $this->service = new PayoutReconciliationService;
@@ -18,7 +20,7 @@ beforeEach(function (): void {
         'code' => 'RECON-' . uniqid(),
         'name' => 'Reconciliation Test Affiliate',
         'contact_email' => 'recon@example.com',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => CommissionType::Percentage,
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -34,7 +36,7 @@ describe('PayoutReconciliationService', function (): void {
                 'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
-                'status' => PayoutStatus::Processing,
+                'status' => ProcessingPayout::class,
                 'method' => 'bank_transfer',
             ]);
 
@@ -43,7 +45,7 @@ describe('PayoutReconciliationService', function (): void {
             expect($result)->toBeFalse();
 
             $payout->refresh();
-            expect($payout->status)->toBe(PayoutStatus::Processing);
+            expect($payout->status)->toBeInstanceOf(ProcessingPayout::class);
         });
 
         test('returns false when status is unchanged', function (): void {
@@ -53,7 +55,7 @@ describe('PayoutReconciliationService', function (): void {
                 'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
-                'status' => PayoutStatus::Completed,
+                'status' => CompletedPayout::class,
                 'method' => 'bank_transfer',
             ]);
 
@@ -69,7 +71,7 @@ describe('PayoutReconciliationService', function (): void {
                 'payee_id' => $this->affiliate->id,
                 'amount_minor' => 10000,
                 'currency' => 'USD',
-                'status' => PayoutStatus::Processing,
+                'status' => ProcessingPayout::class,
                 'method' => 'bank_transfer',
             ]);
 
@@ -78,7 +80,7 @@ describe('PayoutReconciliationService', function (): void {
             expect($result)->toBeTrue();
 
             $payout->refresh();
-            expect($payout->status)->toBe(PayoutStatus::Completed);
+            expect($payout->status)->toBeInstanceOf(CompletedPayout::class);
             expect($payout->paid_at)->not->toBeNull();
         });
 
@@ -89,7 +91,7 @@ describe('PayoutReconciliationService', function (): void {
                 'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
-                'status' => PayoutStatus::Processing,
+                'status' => ProcessingPayout::class,
                 'method' => 'bank_transfer',
                 'metadata' => ['original' => 'data'],
             ]);
@@ -113,7 +115,7 @@ describe('PayoutReconciliationService', function (): void {
                 'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
-                'status' => PayoutStatus::Processing,
+                'status' => ProcessingPayout::class,
                 'method' => 'bank_transfer',
             ]);
 
@@ -122,7 +124,7 @@ describe('PayoutReconciliationService', function (): void {
             expect($result)->toBeTrue();
 
             $payout->refresh();
-            expect($payout->status)->toBe(PayoutStatus::Completed);
+            expect($payout->status)->toBeInstanceOf(CompletedPayout::class);
         });
     });
 
@@ -135,7 +137,7 @@ describe('PayoutReconciliationService', function (): void {
                 'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
-                'status' => PayoutStatus::Processing,
+                'status' => ProcessingPayout::class,
                 'method' => 'bank_transfer',
                 'external_reference' => 'EXT-OLD',
             ]);
@@ -151,7 +153,7 @@ describe('PayoutReconciliationService', function (): void {
                 'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
-                'status' => PayoutStatus::Processing,
+                'status' => ProcessingPayout::class,
                 'method' => 'bank_transfer',
                 'external_reference' => 'EXT-NEW',
             ]);
@@ -169,7 +171,7 @@ describe('PayoutReconciliationService', function (): void {
                 'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
-                'status' => PayoutStatus::Completed,
+                'status' => CompletedPayout::class,
                 'method' => 'bank_transfer',
                 'external_reference' => 'EXT-123',
             ]);
@@ -189,7 +191,7 @@ describe('PayoutReconciliationService', function (): void {
                 'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
-                'status' => PayoutStatus::Pending,
+                'status' => PendingPayout::class,
                 'method' => 'bank_transfer',
                 'external_reference' => 'EXT-123',
             ]);
@@ -224,7 +226,7 @@ describe('PayoutReconciliationService', function (): void {
                 'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
-                'status' => PayoutStatus::Completed,
+                'status' => CompletedPayout::class,
                 'method' => 'bank_transfer',
             ]);
 
@@ -234,7 +236,7 @@ describe('PayoutReconciliationService', function (): void {
                 'payee_id' => $this->affiliate->id,
                 'amount_minor' => 5000,
                 'currency' => 'USD',
-                'status' => PayoutStatus::Completed,
+                'status' => CompletedPayout::class,
                 'method' => 'bank_transfer',
             ]);
 
@@ -244,14 +246,14 @@ describe('PayoutReconciliationService', function (): void {
                 'payee_id' => $this->affiliate->id,
                 'amount_minor' => 3000,
                 'currency' => 'USD',
-                'status' => PayoutStatus::Pending,
+                'status' => PendingPayout::class,
                 'method' => 'bank_transfer',
             ]);
 
             $result = $this->service->generateReport();
 
-            expect($result['by_status'][PayoutStatus::Completed->value])->toBe(2);
-            expect($result['by_status'][PayoutStatus::Pending->value])->toBe(1);
+            expect($result['by_status'][CompletedPayout::value()])->toBe(2);
+            expect($result['by_status'][PendingPayout::value()])->toBe(1);
         });
 
         test('handles empty payout result set', function (): void {

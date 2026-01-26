@@ -10,7 +10,7 @@ use AIArmada\FilamentVouchers\Resources\VoucherWalletResource;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\States\PendingPayment;
 use AIArmada\Orders\States\Processing;
-use AIArmada\Vouchers\Enums\VoucherStatus;
+use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherWallet;
@@ -52,7 +52,7 @@ test('orders + vouchers filament navigation badges work for the single tenant', 
             'type' => VoucherType::Fixed,
             'value' => 1000,
             'currency' => 'MYR',
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'owner_type' => $owner->getMorphClass(),
             'owner_id' => (string) $owner->getKey(),
         ]);
@@ -63,7 +63,7 @@ test('orders + vouchers filament navigation badges work for the single tenant', 
             'type' => VoucherType::Fixed,
             'value' => 2000,
             'currency' => 'MYR',
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'owner_type' => $owner->getMorphClass(),
             'owner_id' => (string) $owner->getKey(),
         ]);

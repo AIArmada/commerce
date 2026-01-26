@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Shipping\Exceptions;
 
-use AIArmada\Shipping\Enums\ShipmentStatus;
+use AIArmada\Shipping\States\ShipmentStatus;
 use Exception;
 
 class InvalidStatusTransitionException extends Exception
@@ -14,7 +14,7 @@ class InvalidStatusTransitionException extends Exception
         public readonly ShipmentStatus $to
     ) {
         parent::__construct(
-            "Cannot transition shipment from [{$from->value}] to [{$to->value}]."
+            "Cannot transition shipment from [{$from->getValue()}] to [{$to->getValue()}]."
         );
     }
 }

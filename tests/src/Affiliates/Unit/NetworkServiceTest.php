@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateNetwork;
 use AIArmada\Affiliates\Services\NetworkService;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\Paused;
 use Illuminate\Support\Carbon;
 
 beforeEach(function (): void {
@@ -20,7 +21,7 @@ beforeEach(function (): void {
         'code' => 'ROOT-' . uniqid(),
         'name' => 'Root Affiliate',
         'contact_email' => 'root@example.com',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => CommissionType::Percentage,
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -34,7 +35,7 @@ describe('NetworkService', function (): void {
                 'code' => 'ADD-' . uniqid(),
                 'name' => 'New Affiliate',
                 'contact_email' => 'new@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -56,7 +57,7 @@ describe('NetworkService', function (): void {
                 'code' => 'CHILD-' . uniqid(),
                 'name' => 'Child Affiliate',
                 'contact_email' => 'child@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -84,7 +85,7 @@ describe('NetworkService', function (): void {
                 'code' => 'COUNT-' . uniqid(),
                 'name' => 'Count Test Affiliate',
                 'contact_email' => 'count@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -105,7 +106,7 @@ describe('NetworkService', function (): void {
                 'code' => 'REMOVE-' . uniqid(),
                 'name' => 'Remove Affiliate',
                 'contact_email' => 'remove@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -129,7 +130,7 @@ describe('NetworkService', function (): void {
                 'code' => 'NEW-SPONSOR-' . uniqid(),
                 'name' => 'New Sponsor',
                 'contact_email' => 'newsponsor@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -140,7 +141,7 @@ describe('NetworkService', function (): void {
                 'code' => 'MOVE-' . uniqid(),
                 'name' => 'Move Affiliate',
                 'contact_email' => 'move@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -169,7 +170,7 @@ describe('NetworkService', function (): void {
                 'code' => 'UPLINE-' . uniqid(),
                 'name' => 'Upline Test',
                 'contact_email' => 'upline@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -201,7 +202,7 @@ describe('NetworkService', function (): void {
                 'code' => 'DOWN-' . uniqid(),
                 'name' => 'Downline Test',
                 'contact_email' => 'down@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -220,7 +221,7 @@ describe('NetworkService', function (): void {
                 'code' => 'NODOWN-' . uniqid(),
                 'name' => 'No Downline',
                 'contact_email' => 'nodown@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -244,7 +245,7 @@ describe('NetworkService', function (): void {
                 'code' => 'L1-' . uniqid(),
                 'name' => 'Level 1 Child',
                 'contact_email' => 'l1@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -256,7 +257,7 @@ describe('NetworkService', function (): void {
                 'code' => 'L2-' . uniqid(),
                 'name' => 'Level 2 Grandchild',
                 'contact_email' => 'l2@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -279,7 +280,7 @@ describe('NetworkService', function (): void {
                 'code' => 'SALES-' . uniqid(),
                 'name' => 'Sales Affiliate',
                 'contact_email' => 'sales@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -295,8 +296,7 @@ describe('NetworkService', function (): void {
                 'subtotal_minor' => 5000,
                 'total_minor' => 5000,
                 'commission_minor' => 500,
-                'status' => ConversionStatus::Approved,
-                'occurred_at' => now(),
+                'status' => ApprovedConversion::class,
             ]);
 
             $teamSales = $this->service->getTeamSales($this->rootAffiliate);
@@ -309,7 +309,7 @@ describe('NetworkService', function (): void {
                 'code' => 'NOSALES-' . uniqid(),
                 'name' => 'No Sales Affiliate',
                 'contact_email' => 'nosales@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -329,7 +329,7 @@ describe('NetworkService', function (): void {
                 'code' => 'DATE-' . uniqid(),
                 'name' => 'Date Test Affiliate',
                 'contact_email' => 'date@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -345,7 +345,7 @@ describe('NetworkService', function (): void {
                 'subtotal_minor' => 3000,
                 'total_minor' => 3000,
                 'commission_minor' => 300,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now(),
             ]);
 
@@ -357,7 +357,7 @@ describe('NetworkService', function (): void {
                 'subtotal_minor' => 2000,
                 'total_minor' => 2000,
                 'commission_minor' => 200,
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now()->subMonths(2),
             ]);
 
@@ -379,7 +379,7 @@ describe('NetworkService', function (): void {
                 'code' => 'ACTIVE-' . uniqid(),
                 'name' => 'Active Child',
                 'contact_email' => 'active@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -391,7 +391,7 @@ describe('NetworkService', function (): void {
                 'code' => 'INACTIVE-' . uniqid(),
                 'name' => 'Inactive Child',
                 'contact_email' => 'inactive@example.com',
-                'status' => AffiliateStatus::Paused,
+                'status' => Paused::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -432,7 +432,7 @@ describe('NetworkService', function (): void {
                 'code' => 'TREE-' . uniqid(),
                 'name' => 'Tree Child',
                 'contact_email' => 'tree@example.com',
-                'status' => AffiliateStatus::Active,
+                'status' => Active::class,
                 'commission_type' => CommissionType::Percentage,
                 'commission_rate' => 1000,
                 'currency' => 'USD',
@@ -457,7 +457,7 @@ describe('NetworkService', function (): void {
                     'code' => "DEPTH-{$i}-" . uniqid(),
                     'name' => "Depth {$i} Child",
                     'contact_email' => "depth{$i}@example.com",
-                    'status' => AffiliateStatus::Active,
+                    'status' => Active::class,
                     'commission_type' => CommissionType::Percentage,
                     'commission_rate' => 1000,
                     'currency' => 'USD',

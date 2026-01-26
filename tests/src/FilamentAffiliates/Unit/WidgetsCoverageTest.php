@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\FilamentAffiliates\Services\AffiliateStatsAggregator;
 use AIArmada\FilamentAffiliates\Widgets\AffiliateStatsWidget;
 use AIArmada\FilamentAffiliates\Widgets\FraudAlertWidget;
@@ -50,7 +51,7 @@ it('PerformanceOverviewWidget builds stats and computes changes', function (): v
     $affiliate = Affiliate::create([
         'code' => 'PERF-' . Str::uuid(),
         'name' => 'Perf Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -64,7 +65,7 @@ it('PerformanceOverviewWidget builds stats and computes changes', function (): v
         'total_minor' => 10000,
         'commission_minor' => 1000,
         'commission_currency' => 'USD',
-        'status' => 'approved',
+        'status' => ApprovedConversion::class,
         'occurred_at' => now()->startOfMonth()->addDay(),
     ]);
 
@@ -76,7 +77,7 @@ it('PerformanceOverviewWidget builds stats and computes changes', function (): v
         'total_minor' => 5000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
-        'status' => 'approved',
+        'status' => ApprovedConversion::class,
         'occurred_at' => now()->subMonth()->startOfMonth()->addDay(),
     ]);
 

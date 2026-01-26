@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Services;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\ApprovedConversion;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use Illuminate\Database\Query\Builder;
@@ -82,7 +83,7 @@ final class PerformanceBonusService
         foreach ($bonuses as $bonus) {
             $affiliate = Affiliate::find($bonus['affiliate_id']);
 
-            if (! $affiliate || $affiliate->status !== AffiliateStatus::Active) {
+            if (! $affiliate || ! $affiliate->status->equals(Active::class)) {
                 continue;
             }
 
@@ -111,7 +112,7 @@ final class PerformanceBonusService
                 'subtotal_minor' => 0,
                 'total_minor' => 0,
                 'commission_minor' => $bonus['amount_minor'],
-                'status' => ConversionStatus::Approved,
+                'status' => ApprovedConversion::class,
                 'occurred_at' => now(),
                 'metadata' => [
                     'type' => 'performance_bonus',
@@ -164,8 +165,8 @@ final class PerformanceBonusService
                 DB::raw("AVG({$conversionsTable}.total_minor) as avg_order_value"),
             ])
             ->whereBetween("{$conversionsTable}.occurred_at", [$from, $to])
-            ->where("{$conversionsTable}.status", ConversionStatus::Approved->value)
-            ->where("{$affiliatesTable}.status", AffiliateStatus::Active->value)
+            ->where("{$conversionsTable}.status", ApprovedConversion::value())
+            ->where("{$affiliatesTable}.status", AffiliateStatus::normalize(Active::class))
             ->groupBy("{$affiliatesTable}.id", "{$affiliatesTable}.name", "{$affiliatesTable}.code")
             ->orderByDesc('total_revenue')
             ->limit($limit);
@@ -275,15 +276,15 @@ final class PerformanceBonusService
 
         // Get affiliates who recruited during the period
         $recruiters = Affiliate::query()
-            ->where('status', AffiliateStatus::Active)
+            ->where('status', Active::class)
             ->whereHas('children', function ($query) use ($from, $to): void {
                 $query->whereBetween('created_at', [$from, $to])
-                    ->where('status', AffiliateStatus::Active);
+                    ->where('status', Active::class);
             })
             ->withCount([
                 'children' => function ($query) use ($from, $to): void {
                     $query->whereBetween('created_at', [$from, $to])
-                        ->where('status', AffiliateStatus::Active);
+                        ->where('status', Active::class);
                 },
             ])
             ->having('children_count', '>=', $config['min_recruits'] ?? 3)
@@ -334,7 +335,7 @@ final class PerformanceBonusService
         $minWeeks = $config['min_weeks'] ?? 4;
         $minConversionsPerWeek = $config['min_conversions_per_week'] ?? 1;
 
-        $affiliates = Affiliate::where('status', AffiliateStatus::Active)->get();
+        $affiliates = Affiliate::where('status', Active::class)->get();
 
         foreach ($affiliates as $affiliate) {
             $weeksWithSales = 0;
@@ -345,7 +346,7 @@ final class PerformanceBonusService
 
                 $conversionsThisWeek = $affiliate->conversions()
                     ->whereBetween('occurred_at', [$currentWeek, $weekEnd])
-                    ->where('status', ConversionStatus::Approved)
+                    ->where('status', ApprovedConversion::value())
                     ->count();
 
                 if ($conversionsThisWeek >= $minConversionsPerWeek) {
@@ -397,17 +398,17 @@ final class PerformanceBonusService
         $prevFrom = $from->copy()->subMonth()->startOfMonth();
         $prevTo = $from->copy()->subMonth()->endOfMonth();
 
-        $affiliates = Affiliate::where('status', AffiliateStatus::Active)->get();
+        $affiliates = Affiliate::where('status', Active::class)->get();
 
         foreach ($affiliates as $affiliate) {
             $currentRevenue = $affiliate->conversions()
                 ->whereBetween('occurred_at', [$from, $to])
-                ->where('status', ConversionStatus::Approved)
+                ->where('status', ApprovedConversion::value())
                 ->sum('total_minor');
 
             $previousRevenue = $affiliate->conversions()
                 ->whereBetween('occurred_at', [$prevFrom, $prevTo])
-                ->where('status', ConversionStatus::Approved)
+                ->where('status', ApprovedConversion::value())
                 ->sum('total_minor');
 
             // Must have minimum previous revenue to qualify

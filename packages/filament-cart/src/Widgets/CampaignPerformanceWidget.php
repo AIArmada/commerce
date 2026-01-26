@@ -24,6 +24,7 @@ class CampaignPerformanceWidget extends StatsOverviewWidget
             ->count();
 
         $totals = RecoveryCampaign::query()->forOwner()
+            ->toBase()
             ->selectRaw('
                 SUM(total_sent) as total_sent,
                 SUM(total_opened) as total_opened,

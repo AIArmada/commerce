@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionRuleType;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
@@ -13,6 +12,7 @@ use AIArmada\Affiliates\Models\AffiliateDailyStat;
 use AIArmada\Affiliates\Models\AffiliatePayoutHold;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 // AffiliateCommissionRule Tests
@@ -252,7 +252,7 @@ test('AffiliateDailyStat can be created with required fields', function (): void
     $affiliate = Affiliate::create([
         'code' => 'STAT001',
         'name' => 'Stats Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -305,7 +305,7 @@ test('AffiliatePayoutMethod can be created with required fields', function (): v
     $affiliate = Affiliate::create([
         'code' => 'PAY001',
         'name' => 'Payout Method Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -333,7 +333,7 @@ test('AffiliatePayoutMethod verify sets is_verified and verified_at', function (
     $affiliate = Affiliate::create([
         'code' => 'PAY002',
         'name' => 'Verify Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -357,7 +357,7 @@ test('AffiliatePayoutMethod setAsDefault updates default flag', function (): voi
     $affiliate = Affiliate::create([
         'code' => 'PAY003',
         'name' => 'Default Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -442,7 +442,7 @@ test('AffiliatePayoutHold can be created', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'HOLD001',
         'name' => 'Hold Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',

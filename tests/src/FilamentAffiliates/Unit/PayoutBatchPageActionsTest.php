@@ -2,12 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\FailedPayout;
+use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Pages\PayoutBatchPage;
 use AIArmada\FilamentAuthz\Models\Permission;
@@ -36,7 +38,7 @@ it('processes a payout via the record action', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFF-' . Str::uuid(),
         'name' => 'Payout Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -52,7 +54,7 @@ it('processes a payout via the record action', function (): void {
 
     $payout = AffiliatePayout::create([
         'reference' => 'PAY-' . Str::uuid(),
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
         'total_minor' => 5000,
         'currency' => 'USD',
         'payee_type' => $affiliate->getMorphClass(),
@@ -69,7 +71,7 @@ it('processes a payout via the record action', function (): void {
 
     $payout->refresh();
 
-    expect($payout->status)->toBe(PayoutStatus::Completed)
+    expect($payout->status)->toBeInstanceOf(CompletedPayout::class)
         ->and($payout->paid_at)->not->toBeNull()
         ->and($payout->external_reference)->not->toBeNull();
 
@@ -91,7 +93,7 @@ it('marks payout as failed when no default method exists', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFF-' . Str::uuid(),
         'name' => 'No Method Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -99,7 +101,7 @@ it('marks payout as failed when no default method exists', function (): void {
 
     $payout = AffiliatePayout::create([
         'reference' => 'PAY-' . Str::uuid(),
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
         'total_minor' => 5000,
         'currency' => 'USD',
         'payee_type' => $affiliate->getMorphClass(),
@@ -114,7 +116,7 @@ it('marks payout as failed when no default method exists', function (): void {
 
     $payout->refresh();
 
-    expect($payout->status)->toBe(PayoutStatus::Failed);
+    expect($payout->status)->toBeInstanceOf(FailedPayout::class);
     expect($payout->events()->count())->toBeGreaterThanOrEqual(1);
 });
 
@@ -133,7 +135,7 @@ it('rejects a payout and stores notes in metadata', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFF-' . Str::uuid(),
         'name' => 'Reject Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -141,7 +143,7 @@ it('rejects a payout and stores notes in metadata', function (): void {
 
     $payout = AffiliatePayout::create([
         'reference' => 'PAY-' . Str::uuid(),
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
         'total_minor' => 5000,
         'currency' => 'USD',
         'payee_type' => $affiliate->getMorphClass(),
@@ -161,7 +163,7 @@ it('rejects a payout and stores notes in metadata', function (): void {
 
     $payout->refresh();
 
-    expect($payout->status)->toBe(PayoutStatus::Failed)
+    expect($payout->status)->toBeInstanceOf(FailedPayout::class)
         ->and($payout->metadata)->toBeArray()
         ->and($payout->metadata['notes'])->toBe('Insufficient verification');
 
@@ -183,7 +185,7 @@ it('executes batch processing bulk action', function (): void {
     $affiliateA = Affiliate::create([
         'code' => 'AFF-' . Str::uuid(),
         'name' => 'Batch Affiliate A',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -192,7 +194,7 @@ it('executes batch processing bulk action', function (): void {
     $affiliateB = Affiliate::create([
         'code' => 'AFF-' . Str::uuid(),
         'name' => 'Batch Affiliate B',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -208,7 +210,7 @@ it('executes batch processing bulk action', function (): void {
 
     $payoutA = AffiliatePayout::create([
         'reference' => 'PAY-' . Str::uuid(),
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
         'total_minor' => 5000,
         'currency' => 'USD',
         'payee_type' => $affiliateA->getMorphClass(),
@@ -217,7 +219,7 @@ it('executes batch processing bulk action', function (): void {
 
     $payoutB = AffiliatePayout::create([
         'reference' => 'PAY-' . Str::uuid(),
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
         'total_minor' => 7000,
         'currency' => 'USD',
         'payee_type' => $affiliateB->getMorphClass(),
@@ -235,6 +237,6 @@ it('executes batch processing bulk action', function (): void {
     $payoutA->refresh();
     $payoutB->refresh();
 
-    expect($payoutA->status)->toBe(PayoutStatus::Completed)
-        ->and($payoutB->status)->toBe(PayoutStatus::Failed);
+    expect($payoutA->status)->toBeInstanceOf(CompletedPayout::class)
+        ->and($payoutB->status)->toBeInstanceOf(FailedPayout::class);
 });

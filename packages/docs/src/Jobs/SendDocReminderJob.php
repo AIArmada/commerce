@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Jobs;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
-use AIArmada\Docs\Enums\DocStatus;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Sent;
+use AIArmada\Docs\States\Draft;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Services\DocEmailService;
 use Carbon\CarbonImmutable;
@@ -180,7 +183,7 @@ final class SendDocReminderJob implements ShouldQueue
         $dueDate = CarbonImmutable::now()->addDays($this->daysBeforeDue);
 
         return $this->getScopedDocsQuery()
-            ->whereIn('status', [DocStatus::SENT, DocStatus::PENDING])
+            ->whereIn('status', [Sent::value(), Pending::value()])
             ->whereNotNull('due_date')
             ->whereDate('due_date', '=', $dueDate->toDateString())
             ->whereJsonContainsKey('customer_data->email')
@@ -195,7 +198,7 @@ final class SendDocReminderJob implements ShouldQueue
         $overdueDate = CarbonImmutable::now()->subDays($this->daysAfterOverdue);
 
         return $this->getScopedDocsQuery()
-            ->where('status', DocStatus::OVERDUE)
+            ->where('status', Overdue::value())
             ->whereNotNull('due_date')
             ->whereDate('due_date', '=', $overdueDate->toDateString())
             ->whereJsonContainsKey('customer_data->email')
@@ -281,14 +284,10 @@ final class SendDocReminderJob implements ShouldQueue
 
     protected function shouldSendReminder(Doc $doc): bool
     {
-        $reminderStatuses = [
-            DocStatus::DRAFT,
-            DocStatus::PENDING,
-            DocStatus::SENT,
-            DocStatus::OVERDUE,
-        ];
-
-        return in_array($doc->status, $reminderStatuses, true);
+        return $doc->status->equals(Draft::class)
+            || $doc->status->equals(Pending::class)
+            || $doc->status->equals(Sent::class)
+            || $doc->status->equals(Overdue::class);
     }
 
     protected function getRecipientEmail(?Doc $doc): ?string

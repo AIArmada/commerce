@@ -10,10 +10,10 @@ use AIArmada\FilamentVouchers\Models\Voucher as FilamentVoucher;
 use AIArmada\FilamentVouchers\Resources\VoucherResource;
 use AIArmada\FilamentVouchers\Resources\VoucherUsageResource;
 use AIArmada\FilamentVouchers\Resources\VoucherWalletResource;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\States\Active;
 
 uses(TestCase::class);
 
@@ -41,7 +41,7 @@ it('scopes Filament Vouchers resources to the resolved owner (including global)'
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);
@@ -52,7 +52,7 @@ it('scopes Filament Vouchers resources to the resolved owner (including global)'
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);
@@ -64,7 +64,7 @@ it('scopes Filament Vouchers resources to the resolved owner (including global)'
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);
@@ -143,7 +143,7 @@ it('can exclude global records from Filament Vouchers resources', function (): v
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);
@@ -154,7 +154,7 @@ it('can exclude global records from Filament Vouchers resources', function (): v
         'type' => VoucherType::Fixed,
         'value' => 1000,
         'currency' => 'USD',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'allows_manual_redemption' => true,
         'starts_at' => now()->subDay(),
     ]);

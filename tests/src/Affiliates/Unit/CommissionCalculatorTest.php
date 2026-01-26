@@ -5,6 +5,7 @@ declare(strict_types=1);
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Services\CommissionCalculator;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Support\Str;
 
 beforeEach(function (): void {
@@ -17,7 +18,7 @@ function createAffiliateForCommission(array $overrides = []): Affiliate
         'code' => 'COM-' . Str::uuid(),
         'name' => 'Commission Tester',
         'description' => null,
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => CommissionType::Percentage,
         'commission_rate' => 500,
         'currency' => 'USD',

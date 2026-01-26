@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
@@ -10,6 +9,7 @@ use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\States\Active;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -19,7 +19,7 @@ test('AffiliateBalance can be created with required fields', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'BAL001',
         'name' => 'Balance Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -76,7 +76,7 @@ test('AffiliateBalance addToHolding increments holding and lifetime earnings', f
     $affiliate = Affiliate::create([
         'code' => 'BAL002',
         'name' => 'Add Holding Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -101,7 +101,7 @@ test('AffiliateBalance releaseFromHolding moves funds to available', function ()
     $affiliate = Affiliate::create([
         'code' => 'BAL003',
         'name' => 'Release Holding Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -126,7 +126,7 @@ test('AffiliateBalance releaseFromHolding does not release more than available i
     $affiliate = Affiliate::create([
         'code' => 'BAL004',
         'name' => 'Limit Release Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -151,7 +151,7 @@ test('AffiliateBalance deductFromAvailable decrements available', function (): v
     $affiliate = Affiliate::create([
         'code' => 'BAL005',
         'name' => 'Deduct Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -200,7 +200,7 @@ test('AffiliateLink can be created with required fields', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'LINK001',
         'name' => 'Link Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -233,7 +233,7 @@ test('AffiliateLink incrementClicks increments click count', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'LINK002',
         'name' => 'Click Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -257,7 +257,7 @@ test('AffiliateLink incrementConversions increments conversion count', function 
     $affiliate = Affiliate::create([
         'code' => 'LINK003',
         'name' => 'Conversion Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -475,7 +475,7 @@ test('AffiliateProgramMembership can be created', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'MEMB001',
         'name' => 'Membership Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',

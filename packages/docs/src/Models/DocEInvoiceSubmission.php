@@ -6,6 +6,8 @@ namespace AIArmada\Docs\Models;
 
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
+use AIArmada\Docs\Enums\DocEInvoiceSubmissionStatus;
+use AIArmada\Docs\Enums\DocEInvoiceValidationStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -20,8 +22,8 @@ use Illuminate\Support\Carbon;
  * @property string $submission_uid
  * @property string|null $document_uuid
  * @property string|null $long_id
- * @property string $status
- * @property string|null $validation_status
+ * @property DocEInvoiceSubmissionStatus $status
+ * @property DocEInvoiceValidationStatus|null $validation_status
  * @property array<string, mixed>|null $errors
  * @property array<string, mixed>|null $warnings
  * @property string|null $ubl_xml
@@ -73,22 +75,22 @@ final class DocEInvoiceSubmission extends Model
 
     public function isPending(): bool
     {
-        return $this->status === 'pending';
+        return $this->status === DocEInvoiceSubmissionStatus::Pending;
     }
 
     public function isSubmitted(): bool
     {
-        return $this->status === 'submitted';
+        return $this->status === DocEInvoiceSubmissionStatus::Submitted;
     }
 
     public function isValid(): bool
     {
-        return $this->validation_status === 'valid';
+        return $this->validation_status === DocEInvoiceValidationStatus::Valid;
     }
 
     public function isRejected(): bool
     {
-        return $this->validation_status === 'invalid';
+        return $this->validation_status === DocEInvoiceValidationStatus::Invalid;
     }
 
     public function hasErrors(): bool
@@ -123,6 +125,8 @@ final class DocEInvoiceSubmission extends Model
     protected function casts(): array
     {
         return [
+            'status' => DocEInvoiceSubmissionStatus::class,
+            'validation_status' => DocEInvoiceValidationStatus::class,
             'errors' => 'array',
             'warnings' => 'array',
             'submitted_at' => 'datetime',

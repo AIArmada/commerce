@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\DataObjects;
 
-use AIArmada\Docs\Enums\DocStatus;
+use AIArmada\Docs\States\DocStatus;
 use DateTimeInterface;
 
 final class DocData
@@ -54,7 +54,7 @@ final class DocData
             templateSlug: $data['template_slug'] ?? null,
             docableType: $data['docable_type'] ?? null,
             docableId: $data['docable_id'] ?? null,
-            status: isset($data['status']) ? (is_string($data['status']) ? DocStatus::from($data['status']) : $data['status']) : null,
+            status: isset($data['status']) ? DocStatus::fromString($data['status']) : null,
             issueDate: $data['issue_date'] ?? null,
             dueDate: $data['due_date'] ?? null,
             items: $data['items'] ?? [],

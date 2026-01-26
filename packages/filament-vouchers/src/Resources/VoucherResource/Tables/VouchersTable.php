@@ -7,9 +7,13 @@ namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Tables;
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
 use AIArmada\FilamentVouchers\Support\MoneyHelper;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\Depleted;
+use AIArmada\Vouchers\States\Expired;
+use AIArmada\Vouchers\States\Paused;
+use AIArmada\Vouchers\States\VoucherStatus;
 use Filament\Actions\BulkActionGroup;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
@@ -135,13 +139,18 @@ final class VouchersTable
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->color(static fn (VoucherStatus | string $state): string => match ($state instanceof VoucherStatus ? $state : VoucherStatus::from($state)) {
-                        VoucherStatus::Active => 'success',
-                        VoucherStatus::Paused => 'warning',
-                        VoucherStatus::Expired => 'danger',
-                        VoucherStatus::Depleted => 'gray',
+                    ->color(static function (VoucherStatus | string $state): string {
+                        $status = $state instanceof VoucherStatus ? $state : VoucherStatus::fromString($state);
+
+                        return match (true) {
+                            $status instanceof Active => 'success',
+                            $status instanceof Paused => 'warning',
+                            $status instanceof Expired => 'danger',
+                            $status instanceof Depleted => 'gray',
+                            default => 'gray',
+                        };
                     })
-                    ->formatStateUsing(static fn (VoucherStatus | string $state): string => $state instanceof VoucherStatus ? $state->label() : VoucherStatus::from($state)->label())
+                    ->formatStateUsing(static fn (VoucherStatus | string $state): string => VoucherStatus::labelFor($state))
                     ->sortable(),
 
                 IconColumn::make('allows_manual_redemption')
@@ -174,7 +183,7 @@ final class VouchersTable
 
                 SelectFilter::make('status')
                     ->label('Status')
-                    ->options(static fn (): array => collect(VoucherStatus::cases())->mapWithKeys(fn (VoucherStatus $status): array => [$status->value => $status->label()])->toArray()),
+                    ->options(static fn (): array => VoucherStatus::options()),
 
                 Filter::make('manual_only')
                     ->label('Manual Redemption')
@@ -186,7 +195,7 @@ final class VouchersTable
                         $now = now();
 
                         return $query
-                            ->where('status', VoucherStatus::Active)
+                            ->where('status', VoucherStatus::normalize(Active::class))
                             ->where(function ($builder) use ($now): void {
                                 $builder
                                     ->whereNull('starts_at')

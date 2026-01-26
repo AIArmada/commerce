@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateResource\Tables;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Models\Affiliate;
-use BackedEnum;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\Disabled;
+use AIArmada\Affiliates\States\Draft;
+use AIArmada\Affiliates\States\Paused;
+use AIArmada\Affiliates\States\Pending;
 use Filament\Actions\DeleteAction;
 use Filament\Actions\DeleteBulkAction;
 use Filament\Actions\EditAction;
@@ -39,14 +43,19 @@ final class AffiliatesTable
                 TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->color(fn (AffiliateStatus | string $state): string => match ($state instanceof AffiliateStatus ? $state : AffiliateStatus::from($state)) {
-                        AffiliateStatus::Active => 'success',
-                        AffiliateStatus::Pending => 'warning',
-                        AffiliateStatus::Paused => 'gray',
-                        AffiliateStatus::Disabled => 'danger',
-                        default => 'info',
+                    ->color(function (AffiliateStatus | string $state): string {
+                        $status = AffiliateStatus::fromString($state);
+
+                        return match (true) {
+                            $status instanceof Draft => 'gray',
+                            $status instanceof Active => 'success',
+                            $status instanceof Pending => 'warning',
+                            $status instanceof Paused => 'gray',
+                            $status instanceof Disabled => 'danger',
+                            default => 'info',
+                        };
                     })
-                    ->formatStateUsing(fn (AffiliateStatus | string $state): string => $state instanceof AffiliateStatus ? $state->label() : AffiliateStatus::from($state)->label())
+                    ->formatStateUsing(fn (AffiliateStatus | string $state): string => AffiliateStatus::fromString($state)->label())
                     ->sortable(),
 
                 TextColumn::make('commission_rate')
@@ -78,7 +87,7 @@ final class AffiliatesTable
             ])
             ->filters([
                 SelectFilter::make('status')
-                    ->options(self::enumOptions(AffiliateStatus::class)),
+                    ->options(AffiliateStatus::options()),
             ])
             ->actions([
                 ViewAction::make(),
@@ -88,16 +97,5 @@ final class AffiliatesTable
             ->bulkActions([
                 DeleteBulkAction::make(),
             ]);
-    }
-
-    /**
-     * @param  class-string<BackedEnum>  $enum
-     * @return array<string, string>
-     */
-    private static function enumOptions(string $enum): array
-    {
-        return collect($enum::cases())
-            ->mapWithKeys(static fn ($case): array => [$case->value => method_exists($case, 'label') ? $case->label() : ucfirst($case->value)])
-            ->toArray();
     }
 }

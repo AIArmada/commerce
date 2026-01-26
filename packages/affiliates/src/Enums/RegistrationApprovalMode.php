@@ -4,6 +4,10 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Enums;
 
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\Pending;
+
 enum RegistrationApprovalMode: string
 {
     case Auto = 'auto';
@@ -28,12 +32,15 @@ enum RegistrationApprovalMode: string
         };
     }
 
-    public function defaultStatus(): AffiliateStatus
+    /**
+     * @return class-string<AffiliateStatus>
+     */
+    public function defaultStatus(): string
     {
         return match ($this) {
-            self::Auto => AffiliateStatus::Active,
-            self::Open => AffiliateStatus::Pending,
-            self::Admin => AffiliateStatus::Pending,
+            self::Auto => Active::class,
+            self::Open => Pending::class,
+            self::Admin => Pending::class,
         };
     }
 }

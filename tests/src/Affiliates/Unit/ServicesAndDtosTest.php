@@ -4,15 +4,19 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Data\AffiliateConversionData;
 use AIArmada\Affiliates\Data\AffiliateData;
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Services\AttributionModel;
 use AIArmada\Affiliates\Services\CommissionCalculator;
 use AIArmada\Affiliates\Services\NetworkService;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\ConversionStatus;
+use AIArmada\Affiliates\States\Disabled;
+use AIArmada\Affiliates\States\Paused;
 use AIArmada\Affiliates\Support\Links\AffiliateLinkGenerator;
 use AIArmada\Affiliates\Traits\HasAffiliates;
 
@@ -29,7 +33,7 @@ test('CommissionCalculator calculates percentage commission', function (): void 
     $affiliate = Affiliate::create([
         'code' => 'CALC001',
         'name' => 'Calculator Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => CommissionType::Percentage->value,
         'commission_rate' => 1000, // 10%
         'currency' => 'USD',
@@ -46,7 +50,7 @@ test('CommissionCalculator calculates fixed commission', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'CALC002',
         'name' => 'Fixed Calculator Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => CommissionType::Fixed->value,
         'commission_rate' => 500, // $5.00 fixed
         'currency' => 'USD',
@@ -87,7 +91,7 @@ test('AffiliateLinkGenerator generates tracking link', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'LINK001',
         'name' => 'Link Gen Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -104,7 +108,7 @@ test('AffiliateData can be created with constructor', function (): void {
         id: 'test-id',
         code: 'DTO001',
         name: 'DTO Test',
-        status: AffiliateStatus::Active,
+        status: AffiliateStatus::fromString(Active::class),
         commissionType: CommissionType::Percentage,
         commissionRate: 1000,
         currency: 'USD',
@@ -123,7 +127,7 @@ test('AffiliateConversionData can be created with constructor', function (): voi
         totalMinor: 50000,
         commissionMinor: 5000,
         commissionCurrency: 'USD',
-        status: ConversionStatus::Approved,
+        status: ConversionStatus::fromString(ApprovedConversion::class),
         occurredAt: now(),
     );
 
@@ -140,17 +144,17 @@ test('HasAffiliates trait provides affiliate relationship', function (): void {
 
 // Affiliate status enum edge cases
 test('AffiliateStatus disabled status works correctly', function (): void {
-    $affiliate = new Affiliate(['status' => AffiliateStatus::Disabled]);
+    $affiliate = new Affiliate(['status' => Disabled::class]);
 
     expect($affiliate->isActive())->toBeFalse();
-    expect($affiliate->status)->toBe(AffiliateStatus::Disabled);
+    expect($affiliate->status->equals(Disabled::class))->toBeTrue();
 });
 
 test('AffiliateStatus paused status works correctly', function (): void {
-    $affiliate = new Affiliate(['status' => AffiliateStatus::Paused]);
+    $affiliate = new Affiliate(['status' => Paused::class]);
 
     expect($affiliate->isActive())->toBeFalse();
-    expect($affiliate->status)->toBe(AffiliateStatus::Paused);
+    expect($affiliate->status->equals(Paused::class))->toBeTrue();
 });
 
 // Program status edge cases

@@ -7,7 +7,9 @@ namespace AIArmada\Inventory\Models;
 use AIArmada\CommerceSupport\Traits\HasOwner;
 use AIArmada\CommerceSupport\Traits\HasOwnerScopeConfig;
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Enums\SerialStatus;
+use AIArmada\Inventory\States\Available;
+use AIArmada\Inventory\States\Reserved;
+use AIArmada\Inventory\States\SerialStatus;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Builder;
@@ -19,6 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use InvalidArgumentException;
+use Spatie\ModelStates\HasStates;
 
 /**
  * @property string $id
@@ -30,7 +33,7 @@ use InvalidArgumentException;
  * @property string|null $batch_id
  * @property string|null $owner_type
  * @property int|string|null $owner_id
- * @property string $status
+ * @property SerialStatus $status
  * @property string $condition
  * @property int|null $unit_cost_minor
  * @property string $currency
@@ -64,6 +67,7 @@ final class InventorySerial extends Model
 
     use HasOwner;
     use HasOwnerScopeConfig;
+    use HasStates;
     use HasUuids;
 
     protected static string $ownerScopeConfigKey = 'inventory.owner';
@@ -161,7 +165,7 @@ final class InventorySerial extends Model
      */
     public function getStatusEnum(): SerialStatus
     {
-        return SerialStatus::from($this->status);
+        return $this->status;
     }
 
     /**
@@ -224,7 +228,7 @@ final class InventorySerial extends Model
     /**
      * Check if transition to new status is allowed.
      */
-    public function canTransitionTo(SerialStatus $newStatus): bool
+    public function canTransitionTo(string | SerialStatus $newStatus): bool
     {
         return $this->getStatusEnum()->canTransitionTo($newStatus);
     }
@@ -232,21 +236,24 @@ final class InventorySerial extends Model
     /**
      * Update status with validation.
      */
-    public function transitionTo(SerialStatus $newStatus): self
+    public function transitionTo(string | SerialStatus $newStatus): self
     {
         if (! $this->canTransitionTo($newStatus)) {
+            $targetClass = SerialStatus::resolveStateClass($newStatus instanceof SerialStatus ? $newStatus->getValue() : $newStatus);
+            $target = new $targetClass($this);
+
             throw new InvalidArgumentException(
                 sprintf(
                     'Cannot transition from %s to %s',
                     $this->getStatusEnum()->label(),
-                    $newStatus->label()
+                    $target->label()
                 )
             );
         }
 
-        $this->update(['status' => $newStatus->value]);
+        $this->status->transitionTo($newStatus);
 
-        return $this;
+        return $this->refresh();
     }
 
     /**
@@ -255,9 +262,9 @@ final class InventorySerial extends Model
      * @param  Builder<self>  $query
      * @return Builder<self>
      */
-    public function scopeWithStatus(Builder $query, SerialStatus $status): Builder
+    public function scopeWithStatus(Builder $query, SerialStatus | string $status): Builder
     {
-        return $query->where('status', $status->value);
+        return $query->where('status', SerialStatus::normalize($status));
     }
 
     /**
@@ -268,7 +275,7 @@ final class InventorySerial extends Model
      */
     public function scopeAvailable(Builder $query): Builder
     {
-        return $query->where('status', SerialStatus::Available->value);
+        return $query->where('status', SerialStatus::normalize(Available::class));
     }
 
     /**
@@ -280,8 +287,8 @@ final class InventorySerial extends Model
     public function scopeInStock(Builder $query): Builder
     {
         return $query->whereIn('status', [
-            SerialStatus::Available->value,
-            SerialStatus::Reserved->value,
+            SerialStatus::normalize(Available::class),
+            SerialStatus::normalize(Reserved::class),
         ]);
     }
 
@@ -315,7 +322,7 @@ final class InventorySerial extends Model
      */
     public function scopeSellable(Builder $query): Builder
     {
-        return $query->where('status', SerialStatus::Available->value)
+        return $query->where('status', SerialStatus::normalize(Available::class))
             ->whereIn('condition', [
                 SerialCondition::New->value,
                 SerialCondition::LikeNew->value,
@@ -458,6 +465,7 @@ final class InventorySerial extends Model
     protected function casts(): array
     {
         return [
+            'status' => SerialStatus::class,
             'unit_cost_minor' => 'integer',
             'warranty_expires_at' => 'date',
             'manufactured_at' => 'date',

@@ -2,9 +2,11 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\Pending;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
@@ -16,7 +18,7 @@ test('Affiliate can be created with required fields', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFFTEST001',
         'name' => 'Test Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -88,13 +90,13 @@ test('Affiliate has fraudSignals relationship', function (): void {
 });
 
 test('Affiliate isActive returns true when status is Active', function (): void {
-    $affiliate = new Affiliate(['status' => AffiliateStatus::Active]);
+    $affiliate = new Affiliate(['status' => AffiliateStatus::fromString(Active::class)]);
 
     expect($affiliate->isActive())->toBeTrue();
 });
 
 test('Affiliate isActive returns false when status is not Active', function (): void {
-    $affiliate = new Affiliate(['status' => AffiliateStatus::Pending]);
+    $affiliate = new Affiliate(['status' => AffiliateStatus::fromString(Pending::class)]);
 
     expect($affiliate->isActive())->toBeFalse();
 });
@@ -103,7 +105,7 @@ test('Affiliate canRequestPayout returns true when balance exceeds minimum', fun
     $affiliate = Affiliate::create([
         'code' => 'PAYCHECK001',
         'name' => 'Payout Check Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -125,7 +127,7 @@ test('Affiliate scopeForOwner filters by owner', function (): void {
     Affiliate::create([
         'code' => 'FOROWNER001',
         'name' => 'For Owner Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -141,7 +143,7 @@ test('Affiliate findByCode returns affiliate or null', function (): void {
     Affiliate::create([
         'code' => 'BYCODE001',
         'name' => 'By Code Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -191,7 +193,7 @@ test('Affiliate hasActivePayoutHold returns false when no holds', function (): v
     $affiliate = Affiliate::create([
         'code' => 'NOHOLD001',
         'name' => 'No Hold Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',

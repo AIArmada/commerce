@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
@@ -11,6 +10,7 @@ use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
 use AIArmada\Affiliates\Services\ProgramService;
+use AIArmada\Affiliates\States\Active;
 
 beforeEach(function (): void {
     $this->service = app(ProgramService::class);
@@ -19,7 +19,7 @@ beforeEach(function (): void {
         'code' => 'PROG-' . uniqid(),
         'name' => 'Program Test Affiliate',
         'contact_email' => 'prog@example.com',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => CommissionType::Percentage,
         'commission_rate' => 1000,
         'currency' => 'USD',

@@ -3,9 +3,10 @@
 declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\TestCase;
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
+use AIArmada\Docs\States\DocStatus;
+use AIArmada\Docs\States\Paid;
 use AIArmada\FilamentDocs\Exports\DocExporter;
 use Filament\Actions\Exports\Models\Export;
 
@@ -14,7 +15,7 @@ uses(TestCase::class);
 it('exports formatted column values for a doc record', function (): void {
     $doc = Doc::factory()->create([
         'doc_type' => 'invoice',
-        'status' => DocStatus::PAID,
+        'status' => Paid::class,
         'customer_data' => [
             'name' => 'Acme Inc',
             'email' => 'billing@acme.test',
@@ -52,7 +53,7 @@ it('exports formatted column values for a doc record', function (): void {
     expect($values)->toHaveCount(count($columnMap));
     expect($values[0])->toBe($doc->doc_number);
     expect($values[1])->toBe('Invoice');
-    expect($values[2])->toBe(DocStatus::PAID->label());
+    expect($values[2])->toBe(DocStatus::labelFor(Paid::class, $doc));
     expect($values[3])->toBe('Acme Inc');
     expect($values[4])->toBe('billing@acme.test');
     expect((float) $values[5])->toBe(23.45);

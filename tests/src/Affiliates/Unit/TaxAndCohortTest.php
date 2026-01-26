@@ -2,12 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Services\CohortAnalyzer;
 use AIArmada\Affiliates\Services\Tax\Tax1099Generator;
 use AIArmada\Affiliates\Services\Tax\TaxDocumentService;
+use AIArmada\Affiliates\States\Active;
 
 // Tax1099Generator Tests
 test('Tax1099Generator can be instantiated', function (): void {
@@ -29,7 +29,7 @@ test('TaxDocumentService calculateAnnualPayouts returns int', function (): void 
     $affiliate = Affiliate::create([
         'code' => 'TAXCALC001',
         'name' => 'Tax Calc Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -47,7 +47,7 @@ test('TaxDocumentService getDocumentsForAffiliate returns collection', function 
     $affiliate = Affiliate::create([
         'code' => 'TAXDOCS001',
         'name' => 'Tax Docs Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -64,7 +64,7 @@ test('TaxDocumentService markDocumentAsSent updates status', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'TAXSENT001',
         'name' => 'Tax Sent Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -93,7 +93,7 @@ test('TaxDocumentService generate1099ForAffiliate returns null for below thresho
     $affiliate = Affiliate::create([
         'code' => 'TAXBELOW001',
         'name' => 'Below Threshold Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',

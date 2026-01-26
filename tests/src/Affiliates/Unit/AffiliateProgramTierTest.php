@@ -2,9 +2,7 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Models\Affiliate;
@@ -13,6 +11,8 @@ use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateProgram;
 use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Models\AffiliateProgramTier;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
 
 describe('AffiliateProgramTier Model', function (): void {
     beforeEach(function (): void {
@@ -71,7 +71,7 @@ describe('AffiliateProgramTier Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'TIER' . uniqid(),
             'name' => 'Tier Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -130,7 +130,7 @@ describe('AffiliateProgramTier Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'UPGRADE' . uniqid(),
             'name' => 'Upgrade Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'USD',
@@ -153,7 +153,7 @@ describe('AffiliateProgramTier Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'REVTEST' . uniqid(),
             'name' => 'Revenue Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'USD',
@@ -178,7 +178,7 @@ describe('AffiliateProgramTier Model', function (): void {
             'total_minor' => 50000, // Only 500 in minor units, below 100000 minimum
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Approved,
+            'status' => ApprovedConversion::class,
             'occurred_at' => now(),
         ]);
 
@@ -199,7 +199,7 @@ describe('AffiliateProgramTier Model', function (): void {
         $affiliate = Affiliate::create([
             'code' => 'QUALIFY' . uniqid(),
             'name' => 'Qualified Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'USD',

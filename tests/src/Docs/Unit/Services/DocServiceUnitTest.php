@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Numbering\NumberStrategyRegistry;
 use AIArmada\Docs\Services\DocService;
 use AIArmada\Docs\Services\SequenceManager;
+use AIArmada\Docs\States\Draft;
+use AIArmada\Docs\States\Sent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Spatie\Browsershot\Browsershot;
@@ -132,10 +133,10 @@ test('downloadPdf generates pdf if missing', function (): void {
 
 test('markAsSent marks doc as sent', function (): void {
     $doc = Doc::factory()->create([
-        'status' => DocStatus::DRAFT,
+        'status' => Draft::class,
     ]);
 
     $this->service->markAsSent($doc, 'Sent to test@example.com');
 
-    expect($doc->fresh()->status)->toBe(DocStatus::SENT);
+    expect($doc->fresh()->status->equals(Sent::class))->toBeTrue();
 });

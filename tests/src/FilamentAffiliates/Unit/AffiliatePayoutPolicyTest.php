@@ -2,9 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\PendingPayout;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Policies\AffiliatePayoutPolicy;
 use AIArmada\FilamentAuthz\Models\Permission;
@@ -31,7 +32,7 @@ it('update policy returns true when user has affiliates.payout.update permission
     $affiliate = Affiliate::create([
         'code' => 'TEST-' . Str::uuid(),
         'name' => 'Test Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -43,7 +44,7 @@ it('update policy returns true when user has affiliates.payout.update permission
         'reference' => 'PAY-' . Str::uuid(),
         'total_minor' => 10000,
         'currency' => 'USD',
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
     ]);
 
     $policy = new AffiliatePayoutPolicy;
@@ -61,7 +62,7 @@ it('update policy returns false when user lacks affiliates.payout.update permiss
     $affiliate = Affiliate::create([
         'code' => 'TEST-' . Str::uuid(),
         'name' => 'Test Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -73,7 +74,7 @@ it('update policy returns false when user lacks affiliates.payout.update permiss
         'reference' => 'PAY-' . Str::uuid(),
         'total_minor' => 10000,
         'currency' => 'USD',
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
     ]);
 
     $policy = new AffiliatePayoutPolicy;
@@ -94,7 +95,7 @@ it('export policy returns true when user has affiliates.payout.export permission
     $affiliate = Affiliate::create([
         'code' => 'TEST-' . Str::uuid(),
         'name' => 'Test Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -106,7 +107,7 @@ it('export policy returns true when user has affiliates.payout.export permission
         'reference' => 'PAY-' . Str::uuid(),
         'total_minor' => 10000,
         'currency' => 'USD',
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
     ]);
 
     $policy = new AffiliatePayoutPolicy;
@@ -124,7 +125,7 @@ it('export policy returns false when user lacks affiliates.payout.export permiss
     $affiliate = Affiliate::create([
         'code' => 'TEST-' . Str::uuid(),
         'name' => 'Test Affiliate',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -136,7 +137,7 @@ it('export policy returns false when user lacks affiliates.payout.export permiss
         'reference' => 'PAY-' . Str::uuid(),
         'total_minor' => 10000,
         'currency' => 'USD',
-        'status' => PayoutStatus::Pending,
+        'status' => PendingPayout::class,
     ]);
 
     $policy = new AffiliatePayoutPolicy;

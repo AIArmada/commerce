@@ -40,8 +40,8 @@ final class DailyAggregationService
             ->selectRaw('COUNT(*) as clicks, COUNT(DISTINCT ip_address) as unique_clicks')
             ->first();
 
-        $clicks = (int) ($touchpointStats?->clicks ?? 0);
-        $uniqueClicks = (int) ($touchpointStats?->unique_clicks ?? 0);
+        $clicks = (int) ($touchpointStats?->getAttribute('clicks') ?? 0);
+        $uniqueClicks = (int) ($touchpointStats?->getAttribute('unique_clicks') ?? 0);
 
         $attributions = $affiliate->attributions()
             ->whereDate('first_seen_at', $date)
@@ -52,9 +52,9 @@ final class DailyAggregationService
             ->selectRaw('COUNT(*) as conversion_count, COALESCE(SUM(total_minor), 0) as revenue_minor, COALESCE(SUM(commission_minor), 0) as commission_minor')
             ->first();
 
-        $conversionCount = (int) ($conversionStats?->conversion_count ?? 0);
-        $revenue = (int) ($conversionStats?->revenue_minor ?? 0);
-        $commission = (int) ($conversionStats?->commission_minor ?? 0);
+        $conversionCount = (int) ($conversionStats?->getAttribute('conversion_count') ?? 0);
+        $revenue = (int) ($conversionStats?->getAttribute('revenue_minor') ?? 0);
+        $commission = (int) ($conversionStats?->getAttribute('commission_minor') ?? 0);
 
         $conversionRate = $clicks > 0 ? $conversionCount / $clicks : 0;
         $epc = $clicks > 0 ? $commission / $clicks : 0;

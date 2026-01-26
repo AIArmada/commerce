@@ -2,12 +2,16 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherTransaction;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\Depleted;
+use AIArmada\Vouchers\States\Expired;
+use AIArmada\Vouchers\States\Paused;
+use AIArmada\Vouchers\States\VoucherStatus;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -159,7 +163,7 @@ describe('Voucher Model', function (): void {
                     'type' => VoucherType::Percentage,
                     'value' => 10,
                     'currency' => 'MYR',
-                    'status' => VoucherStatus::Active,
+                    'status' => Active::class,
                 ]);
 
                 $voucher->usages()->create([
@@ -181,28 +185,28 @@ describe('Voucher Model', function (): void {
     describe('status checks', function (): void {
         it('isActive returns true for Active status', function (): void {
             $voucher = new Voucher;
-            $voucher->status = VoucherStatus::Active;
+            $voucher->status = Active::class;
 
             expect($voucher->isActive())->toBeTrue();
         });
 
         it('isActive returns false for Paused status', function (): void {
             $voucher = new Voucher;
-            $voucher->status = VoucherStatus::Paused;
+            $voucher->status = Paused::class;
 
             expect($voucher->isActive())->toBeFalse();
         });
 
         it('isActive returns false for Expired status', function (): void {
             $voucher = new Voucher;
-            $voucher->status = VoucherStatus::Expired;
+            $voucher->status = Expired::class;
 
             expect($voucher->isActive())->toBeFalse();
         });
 
         it('isActive returns false for Depleted status', function (): void {
             $voucher = new Voucher;
-            $voucher->status = VoucherStatus::Depleted;
+            $voucher->status = Depleted::class;
 
             expect($voucher->isActive())->toBeFalse();
         });
@@ -357,7 +361,7 @@ describe('Voucher Model', function (): void {
                 'type' => VoucherType::Percentage,
                 'value' => 1000,
                 'currency' => 'MYR',
-                'status' => VoucherStatus::Active,
+                'status' => Active::class,
             ]);
 
             $voucher->usages()->create([
@@ -381,7 +385,7 @@ describe('Voucher Model', function (): void {
                 'type' => VoucherType::Fixed,
                 'value' => 5000,
                 'currency' => 'MYR',
-                'status' => VoucherStatus::Active,
+                'status' => Active::class,
             ]);
 
             $voucher->walletEntries()->create([
@@ -405,7 +409,7 @@ describe('Voucher Model', function (): void {
                 'type' => VoucherType::Fixed,
                 'value' => 5000,
                 'currency' => 'MYR',
-                'status' => VoucherStatus::Active,
+                'status' => Active::class,
             ]);
 
             $voucher->transactions()->create([
@@ -431,7 +435,7 @@ describe('Voucher Model', function (): void {
                 'type' => VoucherType::Percentage,
                 'value' => 1500,
                 'currency' => 'MYR',
-                'status' => VoucherStatus::Active,
+                'status' => Active::class,
             ]);
 
             $voucher->usages()->create([

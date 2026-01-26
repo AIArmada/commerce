@@ -13,10 +13,11 @@ declare(strict_types=1);
  * stays analyzable in standalone installs.
  */
 
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\VoucherException;
 use AIArmada\Vouchers\Models\Voucher;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\VoucherStatus;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 
@@ -27,7 +28,7 @@ final class VoucherUsageExamples
         return Voucher::query()->create([
             'code' => 'SUMMER20',
             'type' => VoucherType::Percentage,
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'value' => 2000,
             'currency' => 'MYR',
             'description' => '20% off summer sale',
@@ -41,7 +42,7 @@ final class VoucherUsageExamples
         return Voucher::query()->create([
             'code' => 'SAVE50',
             'type' => VoucherType::Fixed,
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'value' => 5000,
             'currency' => 'MYR',
             'description' => 'RM50 off orders over RM200',
@@ -56,7 +57,7 @@ final class VoucherUsageExamples
         return Voucher::query()->create([
             'code' => 'FREESHIP',
             'type' => VoucherType::FreeShipping,
-            'status' => VoucherStatus::Active,
+            'status' => Active::class,
             'value' => 0,
             'currency' => 'MYR',
             'description' => 'Free shipping on all orders',
@@ -71,7 +72,7 @@ final class VoucherUsageExamples
 
         return $query
             ->where('code', $code)
-            ->where('status', VoucherStatus::Active)
+            ->where('status', VoucherStatus::normalize(Active::class))
             ->first();
     }
 

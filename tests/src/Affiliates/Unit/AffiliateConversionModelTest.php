@@ -2,19 +2,24 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliatePayout;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\ConversionStatus;
+use AIArmada\Affiliates\States\PaidConversion;
+use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Affiliates\States\QualifiedConversion;
+use AIArmada\Affiliates\States\RejectedConversion;
 
 describe('AffiliateConversion Model', function (): void {
     beforeEach(function (): void {
         $this->affiliate = Affiliate::create([
             'code' => 'CONV' . uniqid(),
             'name' => 'Conversion Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -30,7 +35,7 @@ describe('AffiliateConversion Model', function (): void {
             'total_minor' => 55000,
             'commission_minor' => 5500,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Pending,
+            'status' => PendingConversion::class,
             'occurred_at' => now(),
         ]);
 
@@ -48,7 +53,7 @@ describe('AffiliateConversion Model', function (): void {
             'total_minor' => 30000,
             'commission_minor' => 3000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Pending,
+            'status' => PendingConversion::class,
             'occurred_at' => now(),
         ]);
 
@@ -73,7 +78,7 @@ describe('AffiliateConversion Model', function (): void {
             'total_minor' => 40000,
             'commission_minor' => 4000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Qualified,
+            'status' => QualifiedConversion::class,
             'occurred_at' => now(),
         ]);
 
@@ -100,7 +105,7 @@ describe('AffiliateConversion Model', function (): void {
             'total_minor' => 10000,
             'commission_minor' => 1000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Paid,
+            'status' => PaidConversion::class,
             'occurred_at' => now(),
         ]);
 
@@ -116,7 +121,7 @@ describe('AffiliateConversion Model', function (): void {
             'total_minor' => 25000,
             'commission_minor' => 2500,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Approved,
+            'status' => ApprovedConversion::class,
             'occurred_at' => now(),
         ]);
 
@@ -131,14 +136,14 @@ describe('AffiliateConversion Model', function (): void {
             'total_minor' => 30000,
             'commission_minor' => 3000,
             'commission_currency' => 'EUR',
-            'status' => ConversionStatus::Pending,
+            'status' => PendingConversion::class,
             'occurred_at' => now(),
         ]);
 
         expect($conversion->currency)->toBe('EUR');
     });
 
-    test('casts status as enum', function (): void {
+    test('casts status as state', function (): void {
         $conversion = AffiliateConversion::create([
             'affiliate_id' => $this->affiliate->id,
             'affiliate_code' => $this->affiliate->code,
@@ -146,20 +151,20 @@ describe('AffiliateConversion Model', function (): void {
             'total_minor' => 20000,
             'commission_minor' => 2000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Pending,
+            'status' => PendingConversion::class,
             'occurred_at' => now(),
         ]);
 
         expect($conversion->status)->toBeInstanceOf(ConversionStatus::class);
-        expect($conversion->status)->toBe(ConversionStatus::Pending);
+        expect($conversion->status->equals(PendingConversion::class))->toBeTrue();
     });
 
     test('supports all conversion statuses', function (): void {
-        foreach ([ConversionStatus::Pending, ConversionStatus::Qualified, ConversionStatus::Approved, ConversionStatus::Rejected, ConversionStatus::Paid] as $status) {
+        foreach ([PendingConversion::class, QualifiedConversion::class, ApprovedConversion::class, RejectedConversion::class, PaidConversion::class] as $status) {
             $conversion = AffiliateConversion::create([
                 'affiliate_id' => $this->affiliate->id,
                 'affiliate_code' => $this->affiliate->code,
-                'order_reference' => 'ORD-STATUS-' . $status->value,
+                'order_reference' => 'ORD-STATUS-' . $status::value(),
                 'total_minor' => 10000,
                 'commission_minor' => 1000,
                 'commission_currency' => 'USD',
@@ -167,7 +172,7 @@ describe('AffiliateConversion Model', function (): void {
                 'occurred_at' => now(),
             ]);
 
-            expect($conversion->status)->toBe($status);
+            expect($conversion->status->equals($status))->toBeTrue();
         }
     });
 
@@ -185,7 +190,7 @@ describe('AffiliateConversion Model', function (): void {
             'total_minor' => 35000,
             'commission_minor' => 3500,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Approved,
+            'status' => ApprovedConversion::class,
             'metadata' => $metadata,
             'occurred_at' => now(),
         ]);
@@ -204,7 +209,7 @@ describe('AffiliateConversion Model', function (): void {
             'total_minor' => 15000,
             'commission_minor' => 1500,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Pending,
+            'status' => PendingConversion::class,
             'occurred_at' => '2024-06-15 14:30:00',
         ]);
 
@@ -220,7 +225,7 @@ describe('AffiliateConversion Model', function (): void {
             'total_minor' => 45000,
             'commission_minor' => 4500,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Approved,
+            'status' => ApprovedConversion::class,
             'occurred_at' => '2024-06-10 10:00:00',
             'approved_at' => '2024-06-11 12:00:00',
         ]);
@@ -239,7 +244,7 @@ describe('AffiliateConversion Model', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Approved,
+            'status' => ApprovedConversion::class,
             'occurred_at' => now(),
         ]);
 
@@ -256,7 +261,7 @@ describe('AffiliateConversion Model', function (): void {
             'total_minor' => 25000,
             'commission_minor' => 2500,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Qualified,
+            'status' => QualifiedConversion::class,
             'occurred_at' => now(),
         ]);
 
@@ -271,7 +276,7 @@ describe('AffiliateConversion Model', function (): void {
             'total_minor' => 30000,
             'commission_minor' => 3000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Pending,
+            'status' => PendingConversion::class,
             'channel' => 'mobile_app',
             'occurred_at' => now(),
         ]);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Affiliates\Actions\Conversions;
 
 use AIArmada\Affiliates\Models\AffiliateConversion;
+use AIArmada\Affiliates\States\QualifiedConversion;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -27,7 +28,7 @@ final class ProcessConversionMaturity
         $matured = 0;
 
         $conversions = AffiliateConversion::query()
-            ->where('status', 'qualified')
+            ->where('status', QualifiedConversion::value())
             ->where('occurred_at', '<=', now()->subDays($maturityDays))
             ->with('affiliate')
             ->get();

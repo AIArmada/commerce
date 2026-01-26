@@ -5,10 +5,12 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Enums\SerialStatus;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventorySerial;
 use AIArmada\Inventory\Services\SerialService;
+use AIArmada\Inventory\States\Available;
+use AIArmada\Inventory\States\SerialStatus;
+use AIArmada\Inventory\States\Sold;
 use Illuminate\Database\Eloquent\Model;
 
 /**
@@ -108,7 +110,7 @@ it('scopes SerialService::findBySerialNumber to current owner (and global when e
         'inventoryable_id' => $sku->getKey(),
         'serial_number' => 'SN-A',
         'location_id' => $locationA->id,
-        'status' => SerialStatus::Available->value,
+        'status' => SerialStatus::normalize(Available::class),
         'condition' => SerialCondition::New->value,
     ]);
 
@@ -119,7 +121,7 @@ it('scopes SerialService::findBySerialNumber to current owner (and global when e
         'inventoryable_id' => $sku->getKey(),
         'serial_number' => 'SN-B',
         'location_id' => $locationB->id,
-        'status' => SerialStatus::Available->value,
+        'status' => SerialStatus::normalize(Available::class),
         'condition' => SerialCondition::New->value,
     ]);
 
@@ -130,7 +132,7 @@ it('scopes SerialService::findBySerialNumber to current owner (and global when e
         'inventoryable_id' => $sku->getKey(),
         'serial_number' => 'SN-G',
         'location_id' => $locationGlobal->id,
-        'status' => SerialStatus::Available->value,
+        'status' => SerialStatus::normalize(Available::class),
         'condition' => SerialCondition::New->value,
     ]);
 
@@ -155,7 +157,7 @@ it('can exclude global serials when include_global is false', function (): void 
         'inventoryable_id' => $sku->getKey(),
         'serial_number' => 'SN-G2',
         'location_id' => $locationGlobal->id,
-        'status' => SerialStatus::Available->value,
+        'status' => SerialStatus::normalize(Available::class),
         'condition' => SerialCondition::New->value,
     ]);
 
@@ -190,7 +192,7 @@ it('prevents transferring serials to locations outside current owner scope', fun
         'inventoryable_id' => $sku->getKey(),
         'serial_number' => 'SN-T',
         'location_id' => $locationA->id,
-        'status' => SerialStatus::Available->value,
+        'status' => SerialStatus::normalize(Available::class),
         'condition' => SerialCondition::New->value,
     ]);
 
@@ -212,7 +214,7 @@ it('allows finding shipped serials by serial number using history scope', functi
         SerialCondition::New
     );
 
-    $serial->update(['status' => SerialStatus::Sold->value]);
+    $serial->update(['status' => SerialStatus::normalize(Sold::class)]);
 
     $service->ship($serial->fresh(), 'TRACK-1');
 

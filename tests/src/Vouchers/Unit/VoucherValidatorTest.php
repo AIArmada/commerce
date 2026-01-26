@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Models\Voucher;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Services\VoucherValidator;
+use AIArmada\Vouchers\States\Active;
+use AIArmada\Vouchers\States\Paused;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Config;
@@ -18,7 +19,7 @@ test('validates valid voucher', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => VoucherStatus::Active->value,
+        'status' => Active::class,
     ]);
 
     $validator = app(VoucherValidator::class);
@@ -46,7 +47,7 @@ test('validates inactive voucher', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => VoucherStatus::Paused->value,
+        'status' => Paused::class,
     ]);
 
     $validator = app(VoucherValidator::class);
@@ -65,7 +66,7 @@ test('validates voucher not started', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => VoucherStatus::Active->value,
+        'status' => Active::class,
         'starts_at' => now()->addDay(),
     ]);
 
@@ -85,7 +86,7 @@ test('validates expired voucher', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => VoucherStatus::Active->value,
+        'status' => Active::class,
         'expires_at' => now()->subDay(),
     ]);
 
@@ -107,7 +108,7 @@ test('validates voucher with usage limit reached', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => VoucherStatus::Active->value,
+        'status' => Active::class,
         'usage_limit' => 1,
     ]);
 
@@ -153,7 +154,7 @@ test('validates voucher with per-user limit reached', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => VoucherStatus::Active->value,
+        'status' => Active::class,
         'usage_limit_per_user' => 1,
     ]);
 
@@ -184,7 +185,7 @@ test('validates voucher with minimum cart value not met', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => VoucherStatus::Active->value,
+        'status' => Active::class,
         'min_cart_value' => 20000, // 20000 cents = $200.00
     ]);
 
@@ -204,7 +205,7 @@ test('validates with object cart', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => VoucherStatus::Active->value,
+        'status' => Active::class,
         'min_cart_value' => 5000, // 5000 cents = $50.00
     ]);
 
@@ -232,7 +233,7 @@ test('normalizes code with uppercase', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => VoucherStatus::Active->value,
+        'status' => Active::class,
     ]);
 
     $validator = app(VoucherValidator::class);
@@ -252,7 +253,7 @@ test('normalizes code without uppercase', function (): void {
         'type' => VoucherType::Percentage->value,
         'value' => 10,
         'currency' => 'MYR',
-        'status' => VoucherStatus::Active->value,
+        'status' => Active::class,
     ]);
 
     $validator = app(VoucherValidator::class);

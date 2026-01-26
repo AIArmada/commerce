@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace AIArmada\Affiliates\Actions\Affiliates;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
 use Lorisleiva\Actions\Concerns\AsAction;
 
 /**
@@ -20,11 +20,11 @@ final class ApproveAffiliate
      */
     public function handle(Affiliate $affiliate): Affiliate
     {
-        if ($affiliate->status === AffiliateStatus::Active) {
+        if ($affiliate->status->equals(Active::class)) {
             return $affiliate;
         }
 
-        $affiliate->status = AffiliateStatus::Active;
+        $affiliate->status = new Active($affiliate);
         $affiliate->activated_at = now();
         $affiliate->save();
 

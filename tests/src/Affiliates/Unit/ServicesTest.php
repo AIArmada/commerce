@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\MembershipStatus;
 use AIArmada\Affiliates\Enums\ProgramStatus;
 use AIArmada\Affiliates\Enums\RegistrationApprovalMode;
@@ -14,6 +13,9 @@ use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Services\AffiliateRegistrationService;
 use AIArmada\Affiliates\Services\DailyAggregationService;
 use AIArmada\Affiliates\Services\ProgramService;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\Disabled;
+use AIArmada\Affiliates\States\Pending;
 use Illuminate\Support\Facades\Event;
 
 // AffiliateRegistrationService Tests
@@ -59,7 +61,7 @@ test('AffiliateRegistrationService register delegates to CreateAffiliate action'
     $affiliate = $service->register([
         'code' => 'REG001',
         'name' => 'Registered Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -75,7 +77,7 @@ test('AffiliateRegistrationService approve delegates to ApproveAffiliate action'
     $affiliate = Affiliate::create([
         'code' => 'APPROVE001',
         'name' => 'Pending Affiliate',
-        'status' => AffiliateStatus::Pending,
+        'status' => Pending::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -83,7 +85,7 @@ test('AffiliateRegistrationService approve delegates to ApproveAffiliate action'
 
     $result = $service->approve($affiliate);
 
-    expect($result->status)->toBe(AffiliateStatus::Active);
+    expect($result->status->equals(Active::class))->toBeTrue();
 });
 
 test('AffiliateRegistrationService reject delegates to RejectAffiliate action', function (): void {
@@ -92,7 +94,7 @@ test('AffiliateRegistrationService reject delegates to RejectAffiliate action', 
     $affiliate = Affiliate::create([
         'code' => 'REJECT001',
         'name' => 'Pending Affiliate',
-        'status' => AffiliateStatus::Pending,
+        'status' => Pending::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -100,7 +102,7 @@ test('AffiliateRegistrationService reject delegates to RejectAffiliate action', 
 
     $result = $service->reject($affiliate);
 
-    expect($result->status)->toBe(AffiliateStatus::Disabled);
+    expect($result->status->equals(Disabled::class))->toBeTrue();
 });
 
 test('AffiliateRegistrationService generateCode delegates to GenerateAffiliateCode action', function (): void {
@@ -125,7 +127,7 @@ test('DailyAggregationService aggregateForAffiliate creates or updates daily sta
     $affiliate = Affiliate::create([
         'code' => 'AGG001',
         'name' => 'Aggregation Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -144,7 +146,7 @@ test('DailyAggregationService aggregate processes all affiliates', function (): 
     Affiliate::create([
         'code' => 'AGG002',
         'name' => 'Aggregate Test 1',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -153,7 +155,7 @@ test('DailyAggregationService aggregate processes all affiliates', function (): 
     Affiliate::create([
         'code' => 'AGG003',
         'name' => 'Aggregate Test 2',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -170,7 +172,7 @@ test('DailyAggregationService getAggregatedStats returns aggregated data', funct
     $affiliate = Affiliate::create([
         'code' => 'AGG004',
         'name' => 'Stats Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -220,7 +222,7 @@ test('DailyAggregationService backfill processes date range', function (): void 
     Affiliate::create([
         'code' => 'AGG005',
         'name' => 'Backfill Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -276,7 +278,7 @@ test('ProgramService joinProgram creates membership', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'JOIN001',
         'name' => 'Join Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -308,7 +310,7 @@ test('ProgramService joinProgram with approval required sets pending status', fu
     $affiliate = Affiliate::create([
         'code' => 'JOIN002',
         'name' => 'Pending Join Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -336,7 +338,7 @@ test('ProgramService leaveProgram removes membership', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'LEAVE001',
         'name' => 'Leave Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -367,7 +369,7 @@ test('ProgramService isMember returns correct status', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'MEMBER001',
         'name' => 'Member Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -396,7 +398,7 @@ test('ProgramService getMembership returns membership details', function (): voi
     $affiliate = Affiliate::create([
         'code' => 'MEMBD001',
         'name' => 'Membership Details Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -427,7 +429,7 @@ test('ProgramService getAffiliatePrograms returns affiliate programs', function 
     $affiliate = Affiliate::create([
         'code' => 'PROGS001',
         'name' => 'Programs Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',

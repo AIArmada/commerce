@@ -2,11 +2,10 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\States\Paid;
 use AIArmada\Orders\Events\OrderPaid;
-use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\OrdersServiceProvider;
 use AIArmada\Orders\Services\OrderService;
 use Illuminate\Contracts\Events\Dispatcher;
@@ -72,7 +71,7 @@ describe('Orders ↔ Docs Integration', function (): void {
             ->first();
 
         expect($doc)->not->toBeNull();
-        expect($doc?->status)->toBe(DocStatus::PAID);
+        expect($doc->status->equals(Paid::class))->toBeTrue();
     });
 
     it('does not create a document when docs integration is disabled', function (): void {

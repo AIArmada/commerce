@@ -5,11 +5,13 @@ declare(strict_types=1);
 use AIArmada\Commerce\Tests\Inventory\Fixtures\InventoryItem;
 use AIArmada\Commerce\Tests\Inventory\InventoryTestCase;
 use AIArmada\Inventory\Enums\BackorderPriority;
-use AIArmada\Inventory\Enums\BackorderStatus;
 use AIArmada\Inventory\Models\InventoryBackorder;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Services\BackorderService;
+use AIArmada\Inventory\States\Fulfilled;
+use AIArmada\Inventory\States\PartiallyFulfilled;
+use AIArmada\Inventory\States\Pending;
 
 class BackorderServiceTest extends InventoryTestCase
 {
@@ -44,7 +46,7 @@ class BackorderServiceTest extends InventoryTestCase
         expect($backorder)->toBeInstanceOf(InventoryBackorder::class);
         expect($backorder->inventoryable_id)->toBe($this->item->id);
         expect($backorder->quantity_requested)->toBe(10);
-        expect($backorder->status)->toBe(BackorderStatus::Pending);
+        expect($backorder->status)->toBeInstanceOf(Pending::class);
         expect($backorder->priority)->toBe(BackorderPriority::High);
     }
 
@@ -56,7 +58,7 @@ class BackorderServiceTest extends InventoryTestCase
             'location_id' => $this->location->id,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
         ]);
 
         $result = $this->service->fulfill($backorder, 5);
@@ -73,7 +75,7 @@ class BackorderServiceTest extends InventoryTestCase
             'location_id' => $this->location->id,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
         ]);
 
         $result = $this->service->cancel($backorder, 5, 'Out of stock');
@@ -87,17 +89,17 @@ class BackorderServiceTest extends InventoryTestCase
         InventoryBackorder::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
         ]);
         InventoryBackorder::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => BackorderStatus::PartiallyFulfilled,
+            'status' => PartiallyFulfilled::class,
         ]);
         InventoryBackorder::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
             'inventoryable_id' => $this->item->getKey(),
-            'status' => BackorderStatus::Fulfilled,
+            'status' => Fulfilled::class,
         ]);
 
         $openBackorders = $this->service->getOpenBackorders($this->item);
@@ -108,10 +110,10 @@ class BackorderServiceTest extends InventoryTestCase
     public function test_get_all_open_backorders(): void
     {
         InventoryBackorder::factory()->count(3)->create([
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
         ]);
         InventoryBackorder::factory()->create([
-            'status' => BackorderStatus::Fulfilled,
+            'status' => Fulfilled::class,
         ]);
 
         $allOpen = $this->service->getAllOpenBackorders();
@@ -122,11 +124,11 @@ class BackorderServiceTest extends InventoryTestCase
     public function test_get_overdue_backorders(): void
     {
         InventoryBackorder::factory()->create([
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'promised_at' => now()->subDay(),
         ]);
         InventoryBackorder::factory()->create([
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'promised_at' => now()->addDays(7),
         ]);
 
@@ -138,11 +140,11 @@ class BackorderServiceTest extends InventoryTestCase
     public function test_get_backorders_due_within(): void
     {
         InventoryBackorder::factory()->create([
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'promised_at' => now()->addDays(3),
         ]);
         InventoryBackorder::factory()->create([
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'promised_at' => now()->addDays(10),
         ]);
 
@@ -159,7 +161,7 @@ class BackorderServiceTest extends InventoryTestCase
             'location_id' => $this->location->id,
             'quantity_requested' => 5,
             'quantity_fulfilled' => 0,
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::High,
         ]);
         InventoryBackorder::factory()->create([
@@ -168,7 +170,7 @@ class BackorderServiceTest extends InventoryTestCase
             'location_id' => $this->location->id,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
         ]);
 
@@ -181,12 +183,12 @@ class BackorderServiceTest extends InventoryTestCase
     public function test_escalate_overdue(): void
     {
         InventoryBackorder::factory()->create([
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Normal,
             'promised_at' => now()->subDay(),
         ]);
         InventoryBackorder::factory()->create([
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::Urgent,
             'promised_at' => now()->subDay(),
         ]);
@@ -199,11 +201,11 @@ class BackorderServiceTest extends InventoryTestCase
     public function test_expire_old(): void
     {
         InventoryBackorder::factory()->create([
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'requested_at' => now()->subDays(100),
         ]);
         InventoryBackorder::factory()->create([
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'requested_at' => now()->subDays(10),
         ]);
 
@@ -215,13 +217,13 @@ class BackorderServiceTest extends InventoryTestCase
     public function test_get_statistics(): void
     {
         InventoryBackorder::factory()->create([
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => BackorderPriority::High,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
         ]);
         InventoryBackorder::factory()->create([
-            'status' => BackorderStatus::PartiallyFulfilled,
+            'status' => PartiallyFulfilled::class,
             'priority' => BackorderPriority::Normal,
             'quantity_requested' => 20,
             'quantity_fulfilled' => 5,
@@ -249,7 +251,7 @@ class BackorderServiceTest extends InventoryTestCase
             'location_id' => $this->location->id,
             'quantity_requested' => 10,
             'quantity_fulfilled' => 0,
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
         ]);
 
         $fulfillable = $this->service->getFulfillableBackorders();
@@ -278,7 +280,7 @@ class BackorderServiceTest extends InventoryTestCase
             'quantity_requested' => 10,
             'quantity_fulfilled' => 2,
             'quantity_cancelled' => 0,
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
         ]);
         InventoryBackorder::factory()->create([
             'inventoryable_type' => $this->item->getMorphClass(),
@@ -286,7 +288,7 @@ class BackorderServiceTest extends InventoryTestCase
             'quantity_requested' => 20,
             'quantity_fulfilled' => 5,
             'quantity_cancelled' => 3,
-            'status' => BackorderStatus::PartiallyFulfilled,
+            'status' => PartiallyFulfilled::class,
         ]);
 
         $total = $this->service->getTotalBackorderedQuantity($this->item);

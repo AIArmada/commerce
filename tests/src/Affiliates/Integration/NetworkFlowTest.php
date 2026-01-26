@@ -2,7 +2,6 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Events\AffiliateRankChanged;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
@@ -10,6 +9,8 @@ use AIArmada\Affiliates\Models\AffiliateNetwork;
 use AIArmada\Affiliates\Models\AffiliateRank;
 use AIArmada\Affiliates\Services\NetworkService;
 use AIArmada\Affiliates\Services\RankQualificationService;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\Paused;
 use Illuminate\Support\Facades\Event;
 
 beforeEach(function (): void {
@@ -51,7 +52,7 @@ test('affiliate can be added to network without a sponsor', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'ROOT-AFF',
         'name' => 'Root Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -74,7 +75,7 @@ test('affiliate can be added to network with a sponsor', function (): void {
     $sponsor = Affiliate::create([
         'code' => 'SPONSOR-001',
         'name' => 'Sponsor',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -86,7 +87,7 @@ test('affiliate can be added to network with a sponsor', function (): void {
     $recruit = Affiliate::create([
         'code' => 'RECRUIT-001',
         'name' => 'Recruit',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -115,7 +116,7 @@ test('multi-level network is correctly created', function (): void {
     $root = Affiliate::create([
         'code' => 'ROOT',
         'name' => 'Root',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -125,7 +126,7 @@ test('multi-level network is correctly created', function (): void {
     $level1 = Affiliate::create([
         'code' => 'LEVEL1',
         'name' => 'Level 1',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -135,7 +136,7 @@ test('multi-level network is correctly created', function (): void {
     $level2 = Affiliate::create([
         'code' => 'LEVEL2',
         'name' => 'Level 2',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -163,7 +164,7 @@ test('team sales are correctly calculated across network', function (): void {
     $root = Affiliate::create([
         'code' => 'LEADER',
         'name' => 'Leader',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -173,7 +174,7 @@ test('team sales are correctly calculated across network', function (): void {
     $member1 = Affiliate::create([
         'code' => 'MEMBER1',
         'name' => 'Member 1',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -183,7 +184,7 @@ test('team sales are correctly calculated across network', function (): void {
     $member2 = Affiliate::create([
         'code' => 'MEMBER2',
         'name' => 'Member 2',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -223,7 +224,7 @@ test('network tree is correctly built for visualization', function (): void {
     $root = Affiliate::create([
         'code' => 'TREE-ROOT',
         'name' => 'Tree Root',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -234,7 +235,7 @@ test('network tree is correctly built for visualization', function (): void {
     $child1 = Affiliate::create([
         'code' => 'CHILD-1',
         'name' => 'Child 1',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -260,7 +261,7 @@ test('rank qualification evaluates correctly', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'QUALIFY-TEST',
         'name' => 'Qualification Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -273,7 +274,7 @@ test('rank qualification evaluates correctly', function (): void {
         $recruit = Affiliate::create([
             'code' => "RECRUIT-{$i}",
             'name' => "Recruit {$i}",
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'USD',
@@ -322,7 +323,7 @@ test('rank upgrades are processed correctly', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'UPGRADE-TEST',
         'name' => 'Upgrade Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -335,7 +336,7 @@ test('rank upgrades are processed correctly', function (): void {
         $recruit = Affiliate::create([
             'code' => "UPGRADE-RECRUIT-{$i}",
             'name' => "Recruit {$i}",
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => 'percentage',
             'commission_rate' => 500,
             'currency' => 'USD',
@@ -382,7 +383,7 @@ test('active downline count is correctly calculated', function (): void {
     $root = Affiliate::create([
         'code' => 'ACTIVE-ROOT',
         'name' => 'Active Root',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -393,7 +394,7 @@ test('active downline count is correctly calculated', function (): void {
     $active1 = Affiliate::create([
         'code' => 'ACTIVE-1',
         'name' => 'Active 1',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -403,7 +404,7 @@ test('active downline count is correctly calculated', function (): void {
     $inactive = Affiliate::create([
         'code' => 'INACTIVE-1',
         'name' => 'Inactive 1',
-        'status' => AffiliateStatus::Paused,
+        'status' => Paused::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -413,7 +414,7 @@ test('active downline count is correctly calculated', function (): void {
     $active2 = Affiliate::create([
         'code' => 'ACTIVE-2',
         'name' => 'Active 2',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',

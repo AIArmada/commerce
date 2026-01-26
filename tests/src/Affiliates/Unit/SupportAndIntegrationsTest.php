@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Actions\Conversions\MatureConversion;
 use AIArmada\Affiliates\Actions\Conversions\ProcessConversionMaturity;
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateCommissionRule;
 use AIArmada\Affiliates\Models\AffiliateProgram;
@@ -12,6 +11,7 @@ use AIArmada\Affiliates\Models\AffiliateProgramMembership;
 use AIArmada\Affiliates\Services\AffiliateReportService;
 use AIArmada\Affiliates\Services\CommissionMaturityService;
 use AIArmada\Affiliates\Services\ProgramService;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Support\Integrations\CartIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Integrations\VoucherIntegrationRegistrar;
 use AIArmada\Affiliates\Support\Webhooks\WebhookDispatcher;
@@ -41,7 +41,7 @@ test('WebhookDispatcher dispatch returns void without errors', function (): void
     $affiliate = Affiliate::create([
         'code' => 'WEBHOOK001',
         'name' => 'Webhook Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -69,7 +69,7 @@ test('ProgramService isMember returns false for non-member', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'MEMBER001',
         'name' => 'Member Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -95,7 +95,7 @@ test('ProgramService joinProgram creates membership', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'JOIN001',
         'name' => 'Join Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -122,7 +122,7 @@ test('ProgramService leaveProgram removes membership', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'LEAVE001',
         'name' => 'Leave Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -158,7 +158,7 @@ test('AffiliateReportService affiliateSummary returns array', function (): void 
     $affiliate = Affiliate::create([
         'code' => 'REPORT001',
         'name' => 'Report Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',

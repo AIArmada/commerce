@@ -4,9 +4,13 @@ declare(strict_types=1);
 
 namespace AIArmada\Docs\Database\Factories;
 
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\States\Draft;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Paid;
+use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Sent;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 /**
@@ -41,7 +45,7 @@ final class DocFactory extends Factory
         return [
             'doc_number' => mb_strtoupper($this->faker->bothify('???-####-####')),
             'doc_type' => $this->faker->randomElement(DocType::cases())->value,
-            'status' => DocStatus::DRAFT,
+            'status' => Draft::class,
             'issue_date' => now(),
             'due_date' => now()->addDays(30),
             'subtotal' => $subtotal,
@@ -91,28 +95,28 @@ final class DocFactory extends Factory
     public function draft(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => DocStatus::DRAFT,
+            'status' => Draft::class,
         ]);
     }
 
     public function pending(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => DocStatus::PENDING,
+            'status' => Pending::class,
         ]);
     }
 
     public function sent(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => DocStatus::SENT,
+            'status' => Sent::class,
         ]);
     }
 
     public function paid(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => DocStatus::PAID,
+            'status' => Paid::class,
             'paid_at' => now(),
         ]);
     }
@@ -120,7 +124,7 @@ final class DocFactory extends Factory
     public function overdue(): static
     {
         return $this->state(fn (array $attributes) => [
-            'status' => DocStatus::OVERDUE,
+            'status' => Overdue::class,
             'due_date' => now()->subDays(7),
         ]);
     }

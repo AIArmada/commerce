@@ -6,11 +6,18 @@ namespace AIArmada\Inventory\Services;
 
 use AIArmada\Inventory\Enums\SerialCondition;
 use AIArmada\Inventory\Enums\SerialEventType;
-use AIArmada\Inventory\Enums\SerialStatus;
 use AIArmada\Inventory\Models\InventoryBatch;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventorySerial;
 use AIArmada\Inventory\Models\InventorySerialHistory;
+use AIArmada\Inventory\States\Available;
+use AIArmada\Inventory\States\Disposed;
+use AIArmada\Inventory\States\InRepair;
+use AIArmada\Inventory\States\Reserved;
+use AIArmada\Inventory\States\Returned;
+use AIArmada\Inventory\States\SerialStatus;
+use AIArmada\Inventory\States\Shipped;
+use AIArmada\Inventory\States\Sold;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -99,7 +106,7 @@ final class SerialService
                 'serial_number' => $serialNumber,
                 'location_id' => $locationId,
                 'batch_id' => $batchId,
-                'status' => SerialStatus::Available->value,
+                'status' => SerialStatus::normalize(Available::class),
                 'condition' => $condition->value,
                 'unit_cost_minor' => $unitCostMinor,
                 'warranty_expires_at' => $warrantyExpiresAt,
@@ -209,16 +216,16 @@ final class SerialService
     ): InventorySerial {
         $this->assertSerialAllowedForCurrentOwner($serial);
 
-        if (! $serial->canTransitionTo(SerialStatus::Reserved)) {
+        if (! $serial->canTransitionTo(Reserved::class)) {
             throw new InvalidArgumentException('Serial cannot be reserved from current status');
         }
 
-        $previousStatus = $serial->status;
-        $serial->transitionTo(SerialStatus::Reserved);
+        $previousStatus = $serial->status->getValue();
+        $serial->transitionTo(Reserved::class);
 
         $this->logEvent($serial, SerialEventType::Reserved, [
             'previous_status' => $previousStatus,
-            'new_status' => SerialStatus::Reserved->value,
+            'new_status' => SerialStatus::normalize(Reserved::class),
             'reference' => $orderId,
             'user_id' => $userId,
         ]);
@@ -233,16 +240,16 @@ final class SerialService
     {
         $this->assertSerialAllowedForCurrentOwner($serial);
 
-        if (! $serial->canTransitionTo(SerialStatus::Available)) {
+        if (! $serial->canTransitionTo(Available::class)) {
             throw new InvalidArgumentException('Serial cannot be released from current status');
         }
 
-        $previousStatus = $serial->status;
-        $serial->transitionTo(SerialStatus::Available);
+        $previousStatus = $serial->status->getValue();
+        $serial->transitionTo(Available::class);
 
         $this->logEvent($serial, SerialEventType::Released, [
             'previous_status' => $previousStatus,
-            'new_status' => SerialStatus::Available->value,
+            'new_status' => SerialStatus::normalize(Available::class),
             'user_id' => $userId,
         ]);
 
@@ -260,14 +267,15 @@ final class SerialService
     ): InventorySerial {
         $this->assertSerialAllowedForCurrentOwner($serial);
 
-        if (! $serial->canTransitionTo(SerialStatus::Sold)) {
+        if (! $serial->canTransitionTo(Sold::class)) {
             throw new InvalidArgumentException('Serial cannot be sold from current status');
         }
 
-        $previousStatus = $serial->status;
+        $previousStatus = $serial->status->getValue();
+
+        $serial->transitionTo(Sold::class);
 
         $serial->update([
-            'status' => SerialStatus::Sold->value,
             'order_id' => $orderId,
             'customer_id' => $customerId,
             'sold_at' => now(),
@@ -275,7 +283,7 @@ final class SerialService
 
         $this->logEvent($serial, SerialEventType::Sold, [
             'previous_status' => $previousStatus,
-            'new_status' => SerialStatus::Sold->value,
+            'new_status' => SerialStatus::normalize(Sold::class),
             'reference' => $orderId,
             'user_id' => $userId,
         ]);
@@ -290,21 +298,22 @@ final class SerialService
     {
         $this->assertSerialAllowedForCurrentOwner($serial);
 
-        if (! $serial->canTransitionTo(SerialStatus::Shipped)) {
+        if (! $serial->canTransitionTo(Shipped::class)) {
             throw new InvalidArgumentException('Serial cannot be shipped from current status');
         }
 
-        $previousStatus = $serial->status;
+        $previousStatus = $serial->status->getValue();
         $previousLocation = $serial->location_id;
 
+        $serial->transitionTo(Shipped::class);
+
         $serial->update([
-            'status' => SerialStatus::Shipped->value,
             'location_id' => null,
         ]);
 
         $this->logEvent($serial, SerialEventType::Shipped, [
             'previous_status' => $previousStatus,
-            'new_status' => SerialStatus::Shipped->value,
+            'new_status' => SerialStatus::normalize(Shipped::class),
             'from_location_id' => $previousLocation,
             'reference' => $trackingNumber,
             'user_id' => $userId,
@@ -326,22 +335,23 @@ final class SerialService
         $this->assertSerialAllowedForCurrentOwner($serial);
         $this->assertLocationIdAllowedForCurrentOwner($locationId);
 
-        if (! $serial->canTransitionTo(SerialStatus::Returned)) {
+        if (! $serial->canTransitionTo(Returned::class)) {
             throw new InvalidArgumentException('Serial cannot be returned from current status');
         }
 
-        $previousStatus = $serial->status;
+        $previousStatus = $serial->status->getValue();
         $previousCondition = $serial->condition;
 
+        $serial->transitionTo(Returned::class);
+
         $serial->update([
-            'status' => SerialStatus::Returned->value,
             'location_id' => $locationId,
             'condition' => $condition->value,
         ]);
 
         $this->logEvent($serial, SerialEventType::Returned, [
             'previous_status' => $previousStatus,
-            'new_status' => SerialStatus::Returned->value,
+            'new_status' => SerialStatus::normalize(Returned::class),
             'to_location_id' => $locationId,
             'user_id' => $userId,
             'notes' => $notes,
@@ -361,16 +371,16 @@ final class SerialService
     {
         $this->assertSerialAllowedForCurrentOwner($serial);
 
-        if (! $serial->canTransitionTo(SerialStatus::InRepair)) {
+        if (! $serial->canTransitionTo(InRepair::class)) {
             throw new InvalidArgumentException('Serial cannot be put in repair from current status');
         }
 
-        $previousStatus = $serial->status;
-        $serial->transitionTo(SerialStatus::InRepair);
+        $previousStatus = $serial->status->getValue();
+        $serial->transitionTo(InRepair::class);
 
         $this->logEvent($serial, SerialEventType::RepairStarted, [
             'previous_status' => $previousStatus,
-            'new_status' => SerialStatus::InRepair->value,
+            'new_status' => SerialStatus::normalize(InRepair::class),
             'user_id' => $userId,
             'notes' => $repairNotes,
         ]);
@@ -392,13 +402,13 @@ final class SerialService
         $previousCondition = $serial->condition;
 
         $serial->update([
-            'status' => SerialStatus::Available->value,
+            'status' => SerialStatus::normalize(Available::class),
             'condition' => $newCondition->value,
         ]);
 
         $this->logEvent($serial, SerialEventType::RepairCompleted, [
-            'previous_status' => SerialStatus::InRepair->value,
-            'new_status' => SerialStatus::Available->value,
+            'previous_status' => SerialStatus::normalize(InRepair::class),
+            'new_status' => SerialStatus::normalize(Available::class),
             'user_id' => $userId,
             'notes' => $repairNotes,
             'metadata' => [
@@ -417,17 +427,17 @@ final class SerialService
     {
         $this->assertSerialAllowedForCurrentOwner($serial);
 
-        $previousStatus = $serial->status;
+        $previousStatus = $serial->status->getValue();
         $previousLocation = $serial->location_id;
 
         $serial->update([
-            'status' => SerialStatus::Disposed->value,
+            'status' => SerialStatus::normalize(Disposed::class),
             'location_id' => null,
         ]);
 
         $this->logEvent($serial, SerialEventType::Disposed, [
             'previous_status' => $previousStatus,
-            'new_status' => SerialStatus::Disposed->value,
+            'new_status' => SerialStatus::normalize(Disposed::class),
             'from_location_id' => $previousLocation,
             'user_id' => $userId,
             'notes' => $reason,

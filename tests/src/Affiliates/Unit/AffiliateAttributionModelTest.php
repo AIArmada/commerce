@@ -2,13 +2,13 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateAttribution;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateTouchpoint;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\PendingConversion;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
@@ -18,7 +18,7 @@ describe('AffiliateAttribution Model', function (): void {
         $this->affiliate = Affiliate::create([
             'code' => 'ATTR-TEST-' . uniqid(),
             'name' => 'Attribution Test Affiliate',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -255,7 +255,7 @@ describe('AffiliateAttribution Model', function (): void {
             'total_minor' => 10000,
             'commission_minor' => 1000,
             'commission_currency' => 'USD',
-            'status' => ConversionStatus::Pending,
+            'status' => PendingConversion::class,
         ]);
 
         $attribution->delete();

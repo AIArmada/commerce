@@ -2,13 +2,14 @@
 
 declare(strict_types=1);
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
-use AIArmada\Affiliates\Enums\ConversionStatus;
 use AIArmada\Affiliates\Enums\FraudSeverity;
 use AIArmada\Affiliates\Enums\FraudSignalStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateConversion;
 use AIArmada\Affiliates\Models\AffiliateFraudSignal;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\PendingConversion;
+use AIArmada\Affiliates\States\RejectedConversion;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\FilamentAffiliates\Pages\FraudReviewPage;
 use AIArmada\FilamentAuthz\Models\Permission;
@@ -38,7 +39,7 @@ it('executes approve and reject record actions', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFF-' . Str::uuid(),
         'name' => 'Fraud Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -51,7 +52,7 @@ it('executes approve and reject record actions', function (): void {
         'total_minor' => 10000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Pending,
+        'status' => PendingConversion::class,
         'occurred_at' => now(),
     ]);
 
@@ -102,7 +103,7 @@ it('executes approve and reject record actions', function (): void {
     expect($signalToReject->status)->toBe(FraudSignalStatus::Confirmed)
         ->and($signalToReject->evidence)->toBeArray()
         ->and($signalToReject->evidence['review_notes'])->toBe('Confirmed fraud by QA')
-        ->and($conversion->status)->toBe(ConversionStatus::Rejected);
+        ->and($conversion->status->equals(RejectedConversion::class))->toBeTrue();
 });
 
 it('executes bulk approve and bulk reject actions', function (): void {
@@ -121,7 +122,7 @@ it('executes bulk approve and bulk reject actions', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'AFF-' . Str::uuid(),
         'name' => 'Fraud Bulk Affiliate',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -134,7 +135,7 @@ it('executes bulk approve and bulk reject actions', function (): void {
         'total_minor' => 10000,
         'commission_minor' => 500,
         'commission_currency' => 'USD',
-        'status' => ConversionStatus::Pending,
+        'status' => PendingConversion::class,
         'occurred_at' => now(),
     ]);
 
@@ -190,5 +191,5 @@ it('executes bulk approve and bulk reject actions', function (): void {
     $conversion->refresh();
 
     expect($bulkRejectSignal->status)->toBe(FraudSignalStatus::Confirmed)
-        ->and($conversion->status)->toBe(ConversionStatus::Rejected);
+        ->and($conversion->status->equals(RejectedConversion::class))->toBeTrue();
 });

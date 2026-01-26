@@ -5,8 +5,9 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Services;
 
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Enums\SerialStatus;
 use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\States\SerialStatus;
+use AIArmada\Inventory\States\Sold;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Database\Eloquent\Builder;
@@ -148,10 +149,10 @@ final class SerialLookupService
      *
      * @return Collection<int, InventorySerial>
      */
-    public function getByStatus(SerialStatus $status): Collection
+    public function getByStatus(SerialStatus | string $status): Collection
     {
         $query = InventorySerial::query()
-            ->where('status', $status->value)
+            ->where('status', SerialStatus::normalize($status))
             ->orderBy('created_at', 'desc');
 
         InventoryOwnerScope::applyToQueryByLocationRelation($query, 'location');
@@ -223,7 +224,7 @@ final class SerialLookupService
     {
         $query = InventorySerial::query()
             ->where('customer_id', $customerId)
-            ->where('status', SerialStatus::Sold->value)
+            ->where('status', SerialStatus::normalize(Sold::class))
             ->whereNotNull('warranty_expires_at')
             ->where('warranty_expires_at', '>', now())
             ->orderBy('warranty_expires_at');
@@ -268,8 +269,9 @@ final class SerialLookupService
         $counts = $countsQuery->pluck('count', 'status')->toArray();
 
         $result = [];
-        foreach (SerialStatus::cases() as $status) {
-            $result[$status->value] = $counts[$status->value] ?? 0;
+        foreach (SerialStatus::classes() as $statusClass) {
+            $value = $statusClass::getMorphClass();
+            $result[$value] = $counts[$value] ?? 0;
         }
 
         return $result;
@@ -379,10 +381,10 @@ final class SerialLookupService
 
         if (isset($criteria['status'])) {
             if (is_array($criteria['status'])) {
-                $statuses = array_map(fn ($s) => $s instanceof SerialStatus ? $s->value : $s, $criteria['status']);
+                $statuses = array_map(fn ($s) => SerialStatus::normalize($s), $criteria['status']);
                 $query->whereIn('status', $statuses);
             } else {
-                $status = $criteria['status'] instanceof SerialStatus ? $criteria['status']->value : $criteria['status'];
+                $status = SerialStatus::normalize($criteria['status']);
                 $query->where('status', $status);
             }
         }

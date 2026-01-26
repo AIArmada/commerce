@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace AIArmada\Docs\Contracts;
 
 use AIArmada\Docs\DataObjects\DocData;
-use AIArmada\Docs\Enums\DocStatus;
+use AIArmada\Docs\States\DocStatus;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
@@ -85,7 +85,7 @@ interface DocServiceInterface
     /**
      * Update a document's status with audit trail.
      */
-    public function updateStatus(Doc $doc, DocStatus $status, ?string $notes = null): void;
+    public function updateStatus(Doc $doc, DocStatus | string $status, ?string $notes = null): void;
 
     /**
      * Calculate document totals from items.

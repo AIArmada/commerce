@@ -7,6 +7,7 @@ use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateLink;
 use AIArmada\Affiliates\Models\AffiliatePayoutMethod;
 use AIArmada\Affiliates\Models\AffiliateProgram;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
@@ -35,7 +36,7 @@ it('rejects cross-tenant affiliate_id writes when owner mode is enabled', functi
     $affiliateA = Affiliate::create([
         'code' => 'AFF-GUARD-A',
         'name' => 'Affiliate A',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -46,7 +47,7 @@ it('rejects cross-tenant affiliate_id writes when owner mode is enabled', functi
     $affiliateB = Affiliate::create([
         'code' => 'AFF-GUARD-B',
         'name' => 'Affiliate B',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',

@@ -8,12 +8,12 @@ use AIArmada\Vouchers\Actions\RecordVoucherUsage;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
 use AIArmada\Vouchers\Models\VoucherUsage;
 use AIArmada\Vouchers\Models\VoucherWallet;
+use AIArmada\Vouchers\States\Active;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
@@ -54,7 +54,7 @@ class VoucherService
         /** @var string $code */
         $code = $data['code'];
         $data['code'] = $this->normalizeCode($code);
-        $data['status'] ??= VoucherStatus::Active;
+        $data['status'] ??= Active::class;
 
         if (
             config('vouchers.owner.enabled', false)

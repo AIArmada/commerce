@@ -6,8 +6,8 @@ namespace AIArmada\FilamentVouchers\Resources\VoucherResource\Schemas;
 
 use AIArmada\Cart\Conditions\ConditionTarget;
 use AIArmada\FilamentVouchers\Support\ConditionTargetPreset;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
+use AIArmada\Vouchers\States\VoucherStatus;
 use Filament\Infolists\Components\TextEntry;
 use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
@@ -44,7 +44,7 @@ final class VoucherInfolist
 
                             TextEntry::make('status')
                                 ->label('Status')
-                                ->formatStateUsing(static fn (VoucherStatus | string $state): string => $state instanceof VoucherStatus ? $state->label() : VoucherStatus::from($state)->label())
+                                ->formatStateUsing(static fn (VoucherStatus | string $state): string => VoucherStatus::labelFor($state))
                                 ->badge(),
                         ]),
 

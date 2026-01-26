@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace AIArmada\Inventory\Services;
 
 use AIArmada\Inventory\Enums\BackorderPriority;
-use AIArmada\Inventory\Enums\BackorderStatus;
 use AIArmada\Inventory\Models\InventoryBackorder;
 use AIArmada\Inventory\Models\InventoryLevel;
 use AIArmada\Inventory\Models\InventoryLocation;
+use AIArmada\Inventory\States\Pending;
 use AIArmada\Inventory\Support\InventoryOwnerScope;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -49,7 +49,7 @@ final class BackorderService
             'quantity_requested' => $quantity,
             'quantity_fulfilled' => 0,
             'quantity_cancelled' => 0,
-            'status' => BackorderStatus::Pending,
+            'status' => Pending::class,
             'priority' => $priority,
             'requested_at' => now(),
             'promised_at' => $promisedAt,

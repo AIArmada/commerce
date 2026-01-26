@@ -5,12 +5,12 @@ declare(strict_types=1);
 use AIArmada\Cart\CartManager;
 use AIArmada\Cart\Facades\Cart;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
-use AIArmada\Vouchers\Enums\VoucherStatus;
 use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Events\VoucherRemoved;
 use AIArmada\Vouchers\Exceptions\InvalidVoucherException;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
+use AIArmada\Vouchers\States\Active;
 use AIArmada\Vouchers\Support\CartManagerWithVouchers;
 use Illuminate\Support\Facades\Event;
 
@@ -49,7 +49,7 @@ test('can apply percentage voucher to cart', function (): void {
         'value' => 10,
         'currency' => 'MYR',
         'description' => '10% off',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'starts_at' => now()->subDay(),
         'expires_at' => now()->addMonth(),
     ]);
@@ -70,7 +70,7 @@ test('applying a voucher registers dynamic condition metadata', function (): voi
         'value' => 10,
         'currency' => 'MYR',
         'description' => '10% off',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'starts_at' => now()->subDay(),
         'expires_at' => now()->addMonth(),
     ]);
@@ -98,7 +98,7 @@ test('voucher dynamic condition restores on new cart instance', function (): voi
         'value' => 10,
         'currency' => 'MYR',
         'description' => '10% off',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'starts_at' => now()->subDay(),
         'expires_at' => now()->addMonth(),
     ]);
@@ -121,7 +121,7 @@ test('removing a voucher clears dynamic metadata', function (): void {
         'value' => 10,
         'currency' => 'MYR',
         'description' => '10% off',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'starts_at' => now()->subDay(),
         'expires_at' => now()->addMonth(),
     ]);
@@ -145,7 +145,7 @@ test('can apply fixed amount voucher to cart', function (): void {
         'value' => 20,
         'currency' => 'MYR',
         'description' => '$20 off',
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'starts_at' => now()->subDay(),
         'expires_at' => now()->addMonth(),
     ]);
@@ -168,7 +168,7 @@ test('throws exception when applying expired voucher', function (): void {
         'name' => 'Expired Voucher',
         'code' => 'EXPIRED',
         'type' => VoucherType::Percentage,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 10,
         'currency' => 'MYR',
         'starts_at' => now()->subMonth(),
@@ -185,7 +185,7 @@ test('throws exception when applying voucher below minimum cart value', function
         'name' => 'Min Cart Voucher',
         'code' => 'MIN100',
         'type' => VoucherType::Fixed,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 2000, // 2000 cents = $20.00
         'currency' => 'MYR',
         'min_cart_value' => 10000, // 10000 cents = $100.00
@@ -203,7 +203,7 @@ test('can remove voucher from cart', function (): void {
         'name' => 'Removable Voucher',
         'code' => 'REMOVE',
         'type' => VoucherType::Percentage,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 10,
         'currency' => 'MYR',
         'starts_at' => now()->subDay(),
@@ -224,7 +224,7 @@ test('can clear all vouchers from cart', function (): void {
         'name' => 'First Voucher',
         'code' => 'FIRST',
         'type' => VoucherType::Percentage,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 10,
         'currency' => 'MYR',
         'starts_at' => now()->subDay(),
@@ -235,7 +235,7 @@ test('can clear all vouchers from cart', function (): void {
         'name' => 'Second Voucher',
         'code' => 'SECOND',
         'type' => VoucherType::Percentage,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 5,
         'currency' => 'MYR',
         'starts_at' => now()->subDay(),
@@ -263,7 +263,7 @@ test('can get applied voucher codes', function (): void {
         'name' => 'Codes Voucher',
         'code' => 'CODE1',
         'type' => VoucherType::Percentage,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 10,
         'currency' => 'MYR',
         'starts_at' => now()->subDay(),
@@ -287,7 +287,7 @@ test('respects maximum vouchers per cart', function (): void {
         'name' => 'First Voucher',
         'code' => 'FIRST',
         'type' => VoucherType::Percentage,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 10,
         'currency' => 'MYR',
         'starts_at' => now()->subDay(),
@@ -298,7 +298,7 @@ test('respects maximum vouchers per cart', function (): void {
         'name' => 'Second Voucher',
         'code' => 'SECOND',
         'type' => VoucherType::Percentage,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 5,
         'currency' => 'MYR',
         'starts_at' => now()->subDay(),
@@ -320,7 +320,7 @@ test('replaces voucher when max per cart and replacement enabled', function (): 
         'name' => 'First Voucher',
         'code' => 'FIRST_REPL',
         'type' => VoucherType::Percentage,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 10,
         'currency' => 'MYR',
         'starts_at' => now()->subDay(),
@@ -331,7 +331,7 @@ test('replaces voucher when max per cart and replacement enabled', function (): 
         'name' => 'Second Voucher',
         'code' => 'SECOND_REPL',
         'type' => VoucherType::Percentage,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 5,
         'currency' => 'MYR',
         'starts_at' => now()->subDay(),
@@ -352,7 +352,7 @@ test('throws exception when applying same voucher twice', function (): void {
         'name' => 'Duplicate Voucher',
         'code' => 'DUPLICATE',
         'type' => VoucherType::Percentage,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 10,
         'currency' => 'MYR',
         'starts_at' => now()->subDay(),
@@ -372,7 +372,7 @@ test('can check if cart can add more vouchers', function (): void {
         'name' => 'Check Voucher',
         'code' => 'CHECK',
         'type' => VoucherType::Percentage,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 10,
         'currency' => 'MYR',
         'starts_at' => now()->subDay(),
@@ -389,7 +389,7 @@ test('can check if cart can add more vouchers', function (): void {
         'name' => 'Second Check Voucher',
         'code' => 'CHECK2',
         'type' => VoucherType::Percentage,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 5,
         'currency' => 'MYR',
         'starts_at' => now()->subDay(),
@@ -410,7 +410,7 @@ test('dispatches voucher applied event', function (): void {
         'name' => 'Event Voucher',
         'code' => 'EVENT',
         'type' => VoucherType::Percentage,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 10,
         'currency' => 'MYR',
         'starts_at' => now()->subDay(),
@@ -431,7 +431,7 @@ test('dispatches voucher removed event', function (): void {
         'name' => 'Remove Event Voucher',
         'code' => 'REMOVE_EVENT',
         'type' => VoucherType::Percentage,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 10,
         'currency' => 'MYR',
         'starts_at' => now()->subDay(),
@@ -453,7 +453,7 @@ test('voucher with case insensitive code works', function (): void {
         'name' => 'Lowercase Voucher',
         'code' => 'LOWERCASE',
         'type' => VoucherType::Percentage,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 10,
         'currency' => 'MYR',
         'starts_at' => now()->subDay(),
@@ -473,7 +473,7 @@ test('free shipping voucher is identified correctly', function (): void {
         'name' => 'Free Shipping Voucher',
         'code' => 'FREESHIP',
         'type' => VoucherType::FreeShipping,
-        'status' => VoucherStatus::Active,
+        'status' => Active::class,
         'value' => 0,
         'currency' => 'MYR',
         'starts_at' => now()->subDay(),

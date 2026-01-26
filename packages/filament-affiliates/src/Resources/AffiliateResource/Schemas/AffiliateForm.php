@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentAffiliates\Resources\AffiliateResource\Schemas;
 
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
+use AIArmada\Affiliates\States\AffiliateStatus;
+use AIArmada\Affiliates\States\Draft;
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
 use AIArmada\CommerceSupport\Support\OwnerScope;
@@ -51,8 +52,8 @@ final class AffiliateForm
                         Select::make('status')
                             ->label('Status')
                             ->required()
-                            ->options(self::enumOptions(AffiliateStatus::class))
-                            ->default(AffiliateStatus::Draft->value),
+                            ->options(AffiliateStatus::options())
+                            ->default(AffiliateStatus::fromString(Draft::class)->getValue()),
                     ]),
 
                     Textarea::make('description')

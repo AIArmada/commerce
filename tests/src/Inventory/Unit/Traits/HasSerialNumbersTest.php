@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 use AIArmada\Commerce\Tests\Inventory\Fixtures\SerializedInventoryItem;
 use AIArmada\Inventory\Enums\SerialCondition;
-use AIArmada\Inventory\Enums\SerialStatus;
 use AIArmada\Inventory\Models\InventoryLocation;
 use AIArmada\Inventory\Models\InventorySerial;
+use AIArmada\Inventory\States\Available;
+use AIArmada\Inventory\States\SerialStatus;
+use AIArmada\Inventory\States\Sold;
 
 beforeEach(function (): void {
     $this->item = SerializedInventoryItem::create(['name' => 'Serialized Product']);
@@ -37,14 +39,14 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Available->value,
+                'status' => SerialStatus::normalize(Available::class),
             ]);
 
             InventorySerial::factory()->create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Sold->value,
+                'status' => SerialStatus::normalize(Sold::class),
             ]);
 
             expect($this->item->availableSerials())->toHaveCount(1);
@@ -57,7 +59,7 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Available->value,
+                'status' => SerialStatus::normalize(Available::class),
             ]);
 
             expect($this->item->sellableSerials())->toHaveCount(1);
@@ -89,17 +91,17 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Sold->value,
+                'status' => SerialStatus::normalize(Sold::class),
             ]);
 
             InventorySerial::factory()->create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Available->value,
+                'status' => SerialStatus::normalize(Available::class),
             ]);
 
-            expect($this->item->serialsByStatus(SerialStatus::Sold))->toHaveCount(1);
+            expect($this->item->serialsByStatus(Sold::class))->toHaveCount(1);
         });
     });
 
@@ -132,7 +134,7 @@ describe('HasSerialNumbers trait', function (): void {
 
             expect($serial)->toBeInstanceOf(InventorySerial::class);
             expect($serial->serial_number)->toBe('SN-12345');
-            expect($serial->status)->toBe(SerialStatus::Available->value);
+            expect($serial->status)->toBeInstanceOf(Available::class);
             expect($serial->condition)->toBe(SerialCondition::New->value);
         });
 
@@ -173,21 +175,21 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Available->value,
+                'status' => SerialStatus::normalize(Available::class),
             ]);
 
             InventorySerial::factory()->count(2)->create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Sold->value,
+                'status' => SerialStatus::normalize(Sold::class),
             ]);
 
             $counts = $this->item->serialCountsByStatus();
 
             expect($counts)->toBeArray();
-            expect($counts[SerialStatus::Available->value])->toBe(1);
-            expect($counts[SerialStatus::Sold->value])->toBe(2);
+            expect($counts[SerialStatus::normalize(Available::class)])->toBe(1);
+            expect($counts[SerialStatus::normalize(Sold::class)])->toBe(2);
         });
     });
 
@@ -233,14 +235,14 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Available->value,
+                'status' => SerialStatus::normalize(Available::class),
             ]);
 
             InventorySerial::factory()->count(2)->create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Sold->value,
+                'status' => SerialStatus::normalize(Sold::class),
             ]);
 
             expect($this->item->availableSerialCount())->toBe(3);
@@ -253,7 +255,7 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Available->value,
+                'status' => SerialStatus::normalize(Available::class),
             ]);
 
             expect($this->item->sellableSerialCount())->toBe(2);
@@ -266,7 +268,7 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Available->value,
+                'status' => SerialStatus::normalize(Available::class),
             ]);
 
             expect($this->item->hasAvailableSerial())->toBeTrue();
@@ -277,7 +279,7 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Sold->value,
+                'status' => SerialStatus::normalize(Sold::class),
             ]);
 
             expect($this->item->hasAvailableSerial())->toBeFalse();
@@ -290,7 +292,7 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Available->value,
+                'status' => SerialStatus::normalize(Available::class),
                 'received_at' => now()->subDays(10),
             ]);
 
@@ -298,7 +300,7 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Available->value,
+                'status' => SerialStatus::normalize(Available::class),
                 'received_at' => now()->subDay(),
             ]);
 
@@ -312,14 +314,14 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Available->value,
+                'status' => SerialStatus::normalize(Available::class),
             ]);
 
             InventorySerial::factory()->create([
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $otherLocation->id,
-                'status' => SerialStatus::Available->value,
+                'status' => SerialStatus::normalize(Available::class),
             ]);
 
             expect($this->item->getNextAvailableSerial($this->location->id)->id)->toBe($serial->id);
@@ -390,7 +392,7 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Available->value,
+                'status' => SerialStatus::normalize(Available::class),
                 'unit_cost_minor' => 1000,
             ]);
 
@@ -398,7 +400,7 @@ describe('HasSerialNumbers trait', function (): void {
                 'inventoryable_type' => $this->item->getMorphClass(),
                 'inventoryable_id' => $this->item->getKey(),
                 'location_id' => $this->location->id,
-                'status' => SerialStatus::Sold->value,
+                'status' => SerialStatus::normalize(Sold::class),
                 'unit_cost_minor' => 2000,
             ]);
 

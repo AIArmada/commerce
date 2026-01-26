@@ -4,9 +4,14 @@ declare(strict_types=1);
 
 namespace AIArmada\FilamentDocs\Actions;
 
-use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocPayment;
+use AIArmada\Docs\States\DocStatus;
+use AIArmada\Docs\States\Overdue;
+use AIArmada\Docs\States\Paid;
+use AIArmada\Docs\States\PartiallyPaid;
+use AIArmada\Docs\States\Pending;
+use AIArmada\Docs\States\Sent;
 use Carbon\CarbonImmutable;
 use Filament\Actions\Action;
 use Filament\Forms\Components\DateTimePicker;
@@ -36,11 +41,11 @@ final class RecordPaymentAction
 
     private static function canRecordPayment(Doc $record): bool
     {
-        return in_array($record->status, [
-            DocStatus::SENT,
-            DocStatus::PENDING,
-            DocStatus::OVERDUE,
-            DocStatus::PARTIALLY_PAID,
+        return in_array($record->status::class, [
+            Sent::class,
+            Pending::class,
+            Overdue::class,
+            PartiallyPaid::class,
         ], true);
     }
 
@@ -128,10 +133,10 @@ final class RecordPaymentAction
         $newPaidAmount = self::getTotalPaid($record);
 
         if ($newPaidAmount >= (float) $record->total) {
-            $record->status = DocStatus::PAID;
+            $record->status = new Paid($record);
             $record->paid_at = $data['paid_at'];
         } else {
-            $record->status = DocStatus::PARTIALLY_PAID;
+            $record->status = new PartiallyPaid($record);
         }
 
         $record->save();

@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -9,7 +10,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 uses(RefreshDatabase::class);
 
 test('doc approval status helpers', function (): void {
-    $approval = DocApproval::factory()->create(['status' => 'pending']);
+    $approval = DocApproval::factory()->create(['status' => DocApprovalStatus::Pending]);
     expect($approval->isPending())->toBeTrue();
     expect($approval->isApproved())->toBeFalse();
     expect($approval->isRejected())->toBeFalse();
@@ -20,7 +21,7 @@ test('doc approval status helpers', function (): void {
     expect($approval->comments)->toBe('Looks good');
     expect($approval->approved_at)->not->toBeNull();
 
-    $rejected = DocApproval::factory()->create(['status' => 'pending']);
+    $rejected = DocApproval::factory()->create(['status' => DocApprovalStatus::Pending]);
     $rejected->reject('Bad');
     expect($rejected->isRejected())->toBeTrue();
     expect($rejected->comments)->toBe('Bad');

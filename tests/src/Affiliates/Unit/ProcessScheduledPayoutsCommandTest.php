@@ -3,13 +3,17 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Console\Commands\ProcessScheduledPayoutsCommand;
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\CommissionType;
-use AIArmada\Affiliates\Enums\PayoutStatus;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliateBalance;
 use AIArmada\Affiliates\Models\AffiliatePayout;
 use AIArmada\Affiliates\Models\AffiliatePayoutHold;
+use AIArmada\Affiliates\States\Active;
+use AIArmada\Affiliates\States\ApprovedConversion;
+use AIArmada\Affiliates\States\CompletedPayout;
+use AIArmada\Affiliates\States\Paused;
+use AIArmada\Affiliates\States\PendingPayout;
+use AIArmada\Affiliates\States\ProcessingPayout;
 use Illuminate\Support\Facades\Artisan;
 
 beforeEach(function (): void {
@@ -17,7 +21,7 @@ beforeEach(function (): void {
         'code' => 'PROCESS-' . uniqid(),
         'name' => 'Process Test Affiliate',
         'contact_email' => 'process@example.com',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => CommissionType::Percentage,
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -83,7 +87,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
             'code' => 'OTHER-' . uniqid(),
             'name' => 'Other Affiliate',
             'contact_email' => 'other@example.com',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -115,7 +119,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
     });
 
     test('skips inactive affiliates', function (): void {
-        $this->affiliate->update(['status' => AffiliateStatus::Paused]);
+        $this->affiliate->update(['status' => Paused::class]);
 
         AffiliateBalance::create([
             'affiliate_id' => $this->affiliate->id,
@@ -168,7 +172,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
             'payee_id' => $this->affiliate->id,
             'amount_minor' => 5000,
             'currency' => 'USD',
-            'status' => PayoutStatus::Pending,
+            'status' => PendingPayout::class,
             'method' => 'bank_transfer',
         ]);
 
@@ -193,7 +197,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
             'payee_id' => $this->affiliate->id,
             'amount_minor' => 5000,
             'currency' => 'USD',
-            'status' => PayoutStatus::Processing,
+            'status' => ProcessingPayout::class,
             'method' => 'bank_transfer',
         ]);
 
@@ -239,7 +243,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
             'payee_id' => $this->affiliate->id,
             'amount_minor' => 5000,
             'currency' => 'USD',
-            'status' => PayoutStatus::Completed,
+            'status' => CompletedPayout::class,
             'method' => 'bank_transfer',
         ]);
 
@@ -254,7 +258,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
             'code' => 'SECOND-' . uniqid(),
             'name' => 'Second Affiliate',
             'contact_email' => 'second@example.com',
-            'status' => AffiliateStatus::Active,
+            'status' => Active::class,
             'commission_type' => CommissionType::Percentage,
             'commission_rate' => 1000,
             'currency' => 'USD',
@@ -341,7 +345,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
             'total_minor' => 50000,
             'commission_minor' => 5000,
             'commission_currency' => 'USD',
-            'status' => AIArmada\Affiliates\Enums\ConversionStatus::Approved->value,
+            'status' => ApprovedConversion::class,
             'occurred_at' => now()->subDays(30),
             'affiliate_payout_id' => null,
         ]);
@@ -368,7 +372,7 @@ describe('ProcessScheduledPayoutsCommand', function (): void {
 
         $payout = AffiliatePayout::where('payee_id', $this->affiliate->id)->first();
 
-        expect($payout->status)->toBe(PayoutStatus::Pending);
+        expect($payout->status)->toBeInstanceOf(PendingPayout::class);
     });
 
     test('sets correct payout amount from balance', function (): void {

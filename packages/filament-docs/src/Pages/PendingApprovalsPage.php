@@ -6,6 +6,7 @@ namespace AIArmada\FilamentDocs\Pages;
 
 use AIArmada\CommerceSupport\Support\OwnerContext;
 use AIArmada\CommerceSupport\Support\OwnerQuery;
+use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
 use AIArmada\FilamentDocs\Resources\DocResource;
@@ -70,7 +71,7 @@ final class PendingApprovalsPage extends Page implements HasTable
 
         $query = DocApproval::query()
             ->where('assigned_to', $userId)
-            ->where('status', 'pending')
+                ->where('status', DocApprovalStatus::Pending)
             ->whereHas('doc', function (Builder $docQuery): void {
                 self::applyDocOwnerScope($docQuery);
             });
@@ -149,7 +150,7 @@ final class PendingApprovalsPage extends Page implements HasTable
                         self::assertCanActOnApproval($record);
 
                         $record->update([
-                            'status' => 'approved',
+                                'status' => DocApprovalStatus::Approved,
                             'approved_at' => CarbonImmutable::now(),
                             'comments' => $data['comments'] ?? null,
                         ]);
@@ -175,7 +176,7 @@ final class PendingApprovalsPage extends Page implements HasTable
                         self::assertCanActOnApproval($record);
 
                         $record->update([
-                            'status' => 'rejected',
+                                'status' => DocApprovalStatus::Rejected,
                             'rejected_at' => CarbonImmutable::now(),
                             'comments' => $data['comments'],
                         ]);
@@ -211,7 +212,7 @@ final class PendingApprovalsPage extends Page implements HasTable
         $query = DocApproval::query()
             ->with(['doc', 'requestedBy'])
             ->where('assigned_to', $userId)
-            ->where('status', 'pending');
+                ->where('status', DocApprovalStatus::Pending);
 
         return $query->whereHas('doc', function (Builder $docQuery): void {
             self::applyDocOwnerScope($docQuery);
@@ -250,7 +251,7 @@ final class PendingApprovalsPage extends Page implements HasTable
 
         abort_unless($userId !== null, 403);
         abort_unless((string) $approval->assigned_to === (string) $userId, 403);
-        abort_unless($approval->status === 'pending', 403);
+            abort_unless($approval->status === DocApprovalStatus::Pending, 403);
 
         $exists = Doc::query()
             ->whereKey($approval->doc_id)

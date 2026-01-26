@@ -3,13 +3,14 @@
 declare(strict_types=1);
 
 use AIArmada\Affiliates\Models\Affiliate;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\Affiliates\Support\CartWithAffiliates;
 
 beforeEach(function (): void {
     $this->affiliate = Affiliate::create([
         'code' => 'HAS-AFF',
         'name' => 'Trait Partner',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 300,
         'currency' => 'USD',

@@ -2,11 +2,12 @@
 
 declare(strict_types=1);
 
-use AIArmada\Docs\Enums\DocStatus;
+use AIArmada\Docs\Enums\DocApprovalStatus;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
 use AIArmada\Docs\Models\DocApproval;
 use AIArmada\Docs\Models\DocVersion;
+use AIArmada\Docs\States\Draft;
 
 beforeEach(function (): void {
     Doc::query()->delete();
@@ -18,20 +19,20 @@ describe('DocApproval', function (): void {
     test('it can create approval request', function (): void {
         $doc = Doc::factory()->create([
             'doc_type' => DocType::Invoice->value,
-            'status' => DocStatus::DRAFT,
+            'status' => Draft::class,
         ]);
 
         $approval = DocApproval::create([
             'doc_id' => $doc->id,
             'requested_by' => 'user-1',
             'assigned_to' => 'user-2',
-            'status' => 'pending',
+            'status' => DocApprovalStatus::Pending,
         ]);
 
         expect($approval)
             ->toBeInstanceOf(DocApproval::class)
             ->and($approval->doc_id)->toBe($doc->id)
-            ->and($approval->status)->toBe('pending');
+            ->and($approval->status)->toBe(DocApprovalStatus::Pending);
     });
 
     test('it can approve document', function (): void {
@@ -41,16 +42,16 @@ describe('DocApproval', function (): void {
             'doc_id' => $doc->id,
             'requested_by' => 'user-1',
             'assigned_to' => 'user-2',
-            'status' => 'pending',
+            'status' => DocApprovalStatus::Pending,
         ]);
 
         $approval->update([
-            'status' => 'approved',
+            'status' => DocApprovalStatus::Approved,
             'approved_at' => now(),
             'comments' => 'Looks good',
         ]);
 
-        expect($approval->status)->toBe('approved')
+        expect($approval->status)->toBe(DocApprovalStatus::Approved)
             ->and($approval->approved_at)->not->toBeNull()
             ->and($approval->comments)->toBe('Looks good');
     });
@@ -62,16 +63,16 @@ describe('DocApproval', function (): void {
             'doc_id' => $doc->id,
             'requested_by' => 'user-1',
             'assigned_to' => 'user-2',
-            'status' => 'pending',
+            'status' => DocApprovalStatus::Pending,
         ]);
 
         $approval->update([
-            'status' => 'rejected',
+            'status' => DocApprovalStatus::Rejected,
             'rejected_at' => now(),
             'comments' => 'Please revise the amounts',
         ]);
 
-        expect($approval->status)->toBe('rejected')
+        expect($approval->status)->toBe(DocApprovalStatus::Rejected)
             ->and($approval->comments)->toBe('Please revise the amounts');
     });
 
@@ -97,14 +98,14 @@ describe('DocApproval', function (): void {
             'doc_id' => $doc->id,
             'requested_by' => 'user-1',
             'assigned_to' => 'user-2',
-            'status' => 'approved',
+            'status' => DocApprovalStatus::Approved,
         ]);
 
         DocApproval::create([
             'doc_id' => $doc->id,
             'requested_by' => 'user-1',
             'assigned_to' => 'user-3',
-            'status' => 'pending',
+            'status' => DocApprovalStatus::Pending,
         ]);
 
         $doc->refresh();
@@ -121,7 +122,7 @@ describe('DocApproval', function (): void {
             'doc_id' => $doc->id,
             'requested_by' => 'user-1',
             'assigned_to' => 'user-2',
-            'status' => 'pending',
+            'status' => DocApprovalStatus::Pending,
         ]);
 
         expect($approval->doc->doc_number)->toBe('INV-2024-TEST');
@@ -141,7 +142,7 @@ describe('DocVersion', function (): void {
             'snapshot' => [
                 'items' => $doc->items,
                 'total' => $doc->total,
-                'status' => $doc->status->value,
+                'status' => $doc->status->getValue(),
             ],
             'changed_by' => 'user-1',
             'change_summary' => 'Initial version',

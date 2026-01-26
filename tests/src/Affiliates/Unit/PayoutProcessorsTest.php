@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 use AIArmada\Affiliates\Contracts\PayoutProcessorInterface;
 use AIArmada\Affiliates\Data\PayoutResult;
-use AIArmada\Affiliates\Enums\AffiliateStatus;
 use AIArmada\Affiliates\Enums\PayoutMethodType;
 use AIArmada\Affiliates\Models\Affiliate;
 use AIArmada\Affiliates\Models\AffiliatePayout;
@@ -13,6 +12,7 @@ use AIArmada\Affiliates\Services\Payouts\ManualPayoutProcessor;
 use AIArmada\Affiliates\Services\Payouts\PayoutProcessorFactory;
 use AIArmada\Affiliates\Services\Payouts\PayPalProcessor;
 use AIArmada\Affiliates\Services\Payouts\StripeConnectProcessor;
+use AIArmada\Affiliates\States\Active;
 
 // PayoutProcessorFactory Tests
 test('PayoutProcessorFactory can be instantiated', function (): void {
@@ -99,7 +99,7 @@ test('ManualPayoutProcessor process returns pending result', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'MANUAL001',
         'name' => 'Manual Payout Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -126,7 +126,7 @@ test('ManualPayoutProcessor getStatus returns payout status', function (): void 
     $affiliate = Affiliate::create([
         'code' => 'MANUAL002',
         'name' => 'Status Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -151,7 +151,7 @@ test('ManualPayoutProcessor cancel returns true', function (): void {
     $affiliate = Affiliate::create([
         'code' => 'MANUAL003',
         'name' => 'Cancel Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',
@@ -176,7 +176,7 @@ test('ManualPayoutProcessor getEstimatedArrival returns future date', function (
     $affiliate = Affiliate::create([
         'code' => 'MANUAL004',
         'name' => 'Arrival Test',
-        'status' => AffiliateStatus::Active,
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 1000,
         'currency' => 'USD',

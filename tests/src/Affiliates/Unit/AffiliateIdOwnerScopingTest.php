@@ -10,6 +10,7 @@ use AIArmada\Affiliates\Models\AffiliateSupportTicket;
 use AIArmada\Affiliates\Models\AffiliateTaxDocument;
 use AIArmada\Affiliates\Models\AffiliateTrainingModule;
 use AIArmada\Affiliates\Models\AffiliateTrainingProgress;
+use AIArmada\Affiliates\States\Active;
 use AIArmada\CommerceSupport\Contracts\OwnerResolverInterface;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Model;
@@ -39,7 +40,7 @@ it('scopes affiliate-derived rows by affiliate_id through the affiliate owner sc
     $affiliateA = Affiliate::create([
         'code' => 'AFF-REL-A',
         'name' => 'Affiliate A',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
@@ -50,7 +51,7 @@ it('scopes affiliate-derived rows by affiliate_id through the affiliate owner sc
     $affiliateB = Affiliate::create([
         'code' => 'AFF-REL-B',
         'name' => 'Affiliate B',
-        'status' => 'active',
+        'status' => Active::class,
         'commission_type' => 'percentage',
         'commission_rate' => 500,
         'currency' => 'USD',
