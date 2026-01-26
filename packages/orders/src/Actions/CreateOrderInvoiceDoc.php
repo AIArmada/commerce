@@ -10,6 +10,7 @@ use AIArmada\Docs\DataObjects\DocData;
 use AIArmada\Docs\Enums\DocStatus;
 use AIArmada\Docs\Enums\DocType;
 use AIArmada\Docs\Models\Doc;
+use AIArmada\Docs\States\DocStatus as DocStatusState;
 use AIArmada\Orders\Models\Order;
 use AIArmada\Orders\Models\OrderItem;
 
@@ -32,7 +33,7 @@ final class CreateOrderInvoiceDoc
                 docType: DocType::Invoice->value,
                 docableType: $order->getMorphClass(),
                 docableId: (string) $order->getKey(),
-                status: DocStatus::PAID,
+                status: DocStatusState::fromString(DocStatus::PAID->value),
                 issueDate: $order->paid_at ?? now(),
                 items: $this->buildItems($order),
                 subtotal: $this->toMajor($order->subtotal),
