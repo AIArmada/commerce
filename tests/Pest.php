@@ -26,6 +26,7 @@ pest()->extend(TestCase::class)->in(
     'src/CartCollaboration',
     'src/CartFraud',
     'src/CartGraphQL',
+    'src/Checkout',
     'src/Chip',
     'src/Docs',
     'src/FilamentCart',

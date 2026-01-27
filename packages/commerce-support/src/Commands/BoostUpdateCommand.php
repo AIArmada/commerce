@@ -7,8 +7,9 @@ namespace AIArmada\CommerceSupport\Commands;
 use Exception;
 use Illuminate\Console\Command;
 use Illuminate\Support\Collection;
-use Laravel\Boost\Contracts\Agent;
-use Laravel\Boost\Install\CodeEnvironmentsDetector;
+use Laravel\Boost\Contracts\SupportsGuidelines;
+use Laravel\Boost\Install\Agents\Agent;
+use Laravel\Boost\Install\AgentsDetector;
 use Laravel\Boost\Install\GuidelineComposer;
 use Laravel\Boost\Install\GuidelineConfig;
 use RuntimeException;
@@ -34,7 +35,7 @@ final class BoostUpdateCommand extends Command
 {
     protected $description = 'Update Laravel Boost guidelines using the correct project root';
 
-    public function handle(CodeEnvironmentsDetector $detector): int
+    public function handle(AgentsDetector $detector): int
     {
         $projectRoot = $this->getProjectRoot();
         $configPath = $projectRoot . '/boost.json';
@@ -70,12 +71,12 @@ final class BoostUpdateCommand extends Command
         }
 
         // Get agent instances
-        $allEnvironments = $detector->getCodeEnvironments();
-        $availableAgents = $allEnvironments->filter(fn ($env): bool => $env instanceof Agent);
+        $allAgents = $detector->getAgents();
+        $availableAgents = $allAgents->filter(fn (Agent $agent): bool => $agent instanceof SupportsGuidelines);
 
-        /** @var Collection<int, Agent> $selectedAgents */
+        /** @var Collection<int, Agent&SupportsGuidelines> $selectedAgents */
         $selectedAgents = collect($agentNames)
-            ->map(fn (string $name) => $availableAgents->first(fn ($env): bool => $env->name() === $name))
+            ->map(fn (string $name) => $availableAgents->first(fn (Agent $agent): bool => $agent->name() === $name))
             ->filter()
             ->values();
 
@@ -105,9 +106,9 @@ final class BoostUpdateCommand extends Command
         // Write guidelines to each agent
         $failed = [];
 
-        /** @var Agent $agent */
+        /** @var Agent&SupportsGuidelines $agent */
         foreach ($selectedAgents as $agent) {
-            $agentName = $agent->agentName();
+            $agentName = $agent->displayName();
             $this->output->write("  {$agentName}... ");
 
             try {

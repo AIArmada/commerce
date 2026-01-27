@@ -8,6 +8,7 @@ use AIArmada\AffiliateNetwork\AffiliateNetworkServiceProvider;
 use AIArmada\Affiliates\AffiliatesServiceProvider;
 use AIArmada\Cart\CartServiceProvider;
 use AIArmada\Cart\Facades\Cart;
+use AIArmada\Checkout\CheckoutServiceProvider;
 use AIArmada\Chip\ChipServiceProvider;
 use AIArmada\Commerce\Tests\Fixtures\Models\User;
 use AIArmada\Commerce\Tests\Support\OwnerResolvers\FixedOwnerResolver;
@@ -132,6 +133,7 @@ abstract class TestCase extends Orchestra
             \Filament\Tables\TablesServiceProvider::class,
             FilamentServiceProvider::class,
             CartServiceProvider::class,
+            CheckoutServiceProvider::class,
             ChipServiceProvider::class,
             JntServiceProvider::class,
             DocsServiceProvider::class,
@@ -1448,6 +1450,68 @@ abstract class TestCase extends Orchestra
             $table->timestamps();
             $table->index(['order_id', 'created_at']);
             $table->index(['order_id', 'is_customer_visible']);
+        });
+
+        // =========================================================================
+        // CHECKOUT PACKAGE TABLES
+        // =========================================================================
+        Schema::dropIfExists('checkout_sessions');
+
+        Schema::create('checkout_sessions', function (Blueprint $table): void {
+            $table->uuid('id')->primary();
+
+            // References
+            $table->string('cart_id')->index();
+            $table->foreignUuid('customer_id')->nullable()->index();
+            $table->foreignUuid('order_id')->nullable()->index();
+            $table->string('payment_id')->nullable()->index();
+
+            // Multi-tenancy
+            $table->nullableUuidMorphs('owner');
+
+            // Status tracking
+            $table->string('status')->default('pending')->index();
+            $table->string('current_step')->nullable();
+            $table->string('error_message')->nullable();
+
+            // Cart snapshot
+            $table->json('cart_snapshot')->nullable();
+            $table->json('step_states')->nullable();
+
+            // Address data
+            $table->json('shipping_data')->nullable();
+            $table->json('billing_data')->nullable();
+
+            // Calculation data
+            $table->json('pricing_data')->nullable();
+            $table->json('discount_data')->nullable();
+            $table->json('tax_data')->nullable();
+            $table->json('payment_data')->nullable();
+
+            // Payment handling
+            $table->string('payment_redirect_url', 2048)->nullable();
+            $table->unsignedSmallInteger('payment_attempts')->default(0);
+
+            // Selected options
+            $table->string('selected_shipping_method')->nullable();
+            $table->string('selected_payment_gateway')->nullable();
+
+            // Totals (stored in smallest currency unit, e.g., cents)
+            $table->unsignedBigInteger('subtotal')->default(0);
+            $table->unsignedBigInteger('discount_total')->default(0);
+            $table->unsignedBigInteger('shipping_total')->default(0);
+            $table->unsignedBigInteger('tax_total')->default(0);
+            $table->unsignedBigInteger('grand_total')->default(0);
+            $table->string('currency', 3)->default('MYR');
+
+            // Timestamps
+            $table->timestamp('expires_at')->nullable()->index();
+            $table->timestamp('completed_at')->nullable();
+            $table->timestamps();
+
+            // Indexes for common queries
+            $table->index(['status', 'created_at']);
+            $table->index(['customer_id', 'status']);
         });
 
         // =========================================================================

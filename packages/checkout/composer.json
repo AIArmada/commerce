@@ -1,0 +1,55 @@
+{
+    "name": "aiarmada/checkout",
+    "description": "Unified checkout flow orchestrating cart, orders, payments, and fulfillment for the AIArmada Commerce ecosystem",
+    "license": "MIT",
+    "homepage": "https://github.com/aiarmada/commerce",
+    "support": {
+        "issues": "https://github.com/aiarmada/commerce/issues",
+        "source": "https://github.com/aiarmada/commerce"
+    },
+    "require": {
+        "php": "^8.4",
+        "aiarmada/cart": "self.version",
+        "aiarmada/commerce-support": "self.version",
+        "aiarmada/customers": "self.version",
+        "aiarmada/docs": "self.version",
+        "aiarmada/orders": "self.version",
+        "aiarmada/pricing": "self.version",
+        "aiarmada/products": "self.version",
+        "aiarmada/shipping": "self.version",
+        "illuminate/contracts": "^11.0 || ^12.0",
+        "illuminate/support": "^11.0 || ^12.0",
+        "spatie/laravel-data": "^4.0",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "suggest": {
+        "aiarmada/cashier": "For unified multi-gateway payment processing (recommended)",
+        "aiarmada/cashier-chip": "For Cashier-style CHIP payment integration",
+        "aiarmada/chip": "For direct CHIP payment gateway integration",
+        "aiarmada/inventory": "For stock validation and reservation during checkout",
+        "aiarmada/jnt": "For J&T Express shipping integration (integrates via shipping adapter)",
+        "aiarmada/promotions": "For automatic promotion application during checkout",
+        "aiarmada/tax": "For tax calculation during checkout",
+        "aiarmada/vouchers": "For voucher/coupon redemption during checkout"
+    },
+    "autoload": {
+        "psr-4": {
+            "AIArmada\\Checkout\\": "src/"
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "AIArmada\\Checkout\\CheckoutServiceProvider"
+            ],
+            "aliases": {
+                "Checkout": "AIArmada\\Checkout\\Facades\\Checkout"
+            }
+        }
+    },
+    "config": {
+        "sort-packages": true
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

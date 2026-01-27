@@ -47,6 +47,14 @@ final class SupportServiceProvider extends PackageServiceProvider
     {
         $this->validateMorphKeyType();
         $this->warnAboutNullOwnerResolver();
+
+        // Commerce Support - Octane Compatibility
+        // Ensure static state is cleared between requests
+        if (class_exists(\Laravel\Octane\Events\RequestReceived::class)) {
+            $this->app['events']->listen(\Laravel\Octane\Events\RequestReceived::class, function (): void {
+                \AIArmada\CommerceSupport\Support\OwnerContext::clearOverride();
+            });
+        }
     }
 
     private function validateMorphKeyType(): void
@@ -132,7 +140,7 @@ final class SupportServiceProvider extends PackageServiceProvider
             );
         }
 
-        $this->app->singleton(OwnerResolverInterface::class, function ($app): OwnerResolverInterface {
+        $this->app->scoped(OwnerResolverInterface::class, function ($app): OwnerResolverInterface {
             /** @var class-string<OwnerResolverInterface> $resolverClass */
             $resolverClass = (string) config('commerce-support.owner.resolver', NullOwnerResolver::class);
 
