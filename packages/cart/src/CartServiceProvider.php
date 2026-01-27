@@ -120,7 +120,7 @@ final class CartServiceProvider extends PackageServiceProvider
 
     protected function registerCartManager(): void
     {
-        $this->app->singleton('cart', function (\Illuminate\Contracts\Foundation\Application $app) {
+        $this->app->scoped('cart', function (\Illuminate\Contracts\Foundation\Application $app) {
             return new CartManager(
                 storage: $app->make('cart.storage'),
                 events: $app->make(Dispatcher::class),

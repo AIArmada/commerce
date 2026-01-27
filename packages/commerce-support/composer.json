@@ -27,6 +27,9 @@
         "spatie/laravel-tags": "^4.2",
         "spatie/laravel-webhook-client": "^3.4"
     },
+    "suggest": {
+        "laravel/octane": "Required for high-performance Octane support"
+    },
     "autoload": {
         "files": [
             "src/helpers.php"

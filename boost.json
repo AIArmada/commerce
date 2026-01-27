@@ -2,18 +2,20 @@
     "agents": [
         "codex",
         "copilot",
-        "gemini",
         "opencode"
     ],
-    "editors": [
-        "codex",
-        "gemini",
-        "opencode",
-        "vscode"
-    ],
-    "guidelines": [
+    "guidelines": true,
+    "herd_mcp": true,
+    "mcp": true,
+    "packages": [
         "filament/blueprint",
-        "filament/filament"
+        "filament/filament",
+        "spatie/laravel-ray"
     ],
-    "herd_mcp": true
+    "sail": false,
+    "skills": [
+        "livewire-development",
+        "pest-testing",
+        "debugging-output-and-previewing-html-using-ray"
+    ]
 }
