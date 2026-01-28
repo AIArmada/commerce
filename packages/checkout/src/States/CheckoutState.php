@@ -77,12 +77,14 @@ abstract class CheckoutState extends State
             ->allowTransition(Processing::class, Cancelled::class)
             ->allowTransition(Processing::class, Expired::class)
             // Awaiting payment outcomes
+            ->allowTransition(AwaitingPayment::class, Processing::class)
             ->allowTransition(AwaitingPayment::class, PaymentProcessing::class)
             ->allowTransition(AwaitingPayment::class, PaymentFailed::class)
             ->allowTransition(AwaitingPayment::class, Completed::class)
             ->allowTransition(AwaitingPayment::class, Cancelled::class)
             ->allowTransition(AwaitingPayment::class, Expired::class)
             // Payment processing outcomes
+            ->allowTransition(PaymentProcessing::class, Processing::class)
             ->allowTransition(PaymentProcessing::class, Completed::class)
             ->allowTransition(PaymentProcessing::class, PaymentFailed::class)
             // Payment retry flow

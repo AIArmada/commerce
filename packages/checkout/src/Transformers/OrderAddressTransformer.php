@@ -21,23 +21,11 @@ final class OrderAddressTransformer implements SessionDataTransformerInterface
 
         [$firstName, $lastName] = $this->extractNames($data);
 
-        $line1 = $data['line1']
-            ?? $data['street1']
-            ?? $data['address1']
-            ?? $data['address_line1']
-            ?? $data['address_line_1']
-            ?? $data['address']
-            ?? null;
-
-        $line2 = $data['line2']
-            ?? $data['street2']
-            ?? $data['address2']
-            ?? $data['address_line2']
-            ?? $data['address_line_2']
-            ?? null;
+        $line1 = $data['line1'] ?? null;
+        $line2 = $data['line2'] ?? null;
 
         $city = $data['city'] ?? $data['town'] ?? null;
-        $postcode = $data['postcode'] ?? $data['postal_code'] ?? $data['zip'] ?? null;
+        $postcode = $data['postcode'] ?? $data['zip'] ?? null;
         $country = $this->normalizeCountry($data);
 
         return array_filter([
@@ -61,7 +49,7 @@ final class OrderAddressTransformer implements SessionDataTransformerInterface
      */
     private function isEmpty(array $data): bool
     {
-        foreach (['name', 'full_name', 'first_name', 'last_name', 'email', 'phone', 'line1', 'street1', 'address1', 'address_line_1', 'address'] as $key) {
+        foreach (['name', 'full_name', 'first_name', 'last_name', 'email', 'phone', 'line1'] as $key) {
             if (! empty($data[$key])) {
                 return false;
             }

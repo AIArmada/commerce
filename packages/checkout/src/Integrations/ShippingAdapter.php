@@ -126,7 +126,7 @@ final class ShippingAdapter
      */
     private function buildDestinationAddress(array $shippingData): ?AddressData
     {
-        $line1 = $shippingData['line1'] ?? $shippingData['address_line_1'] ?? '';
+        $line1 = $shippingData['line1'] ?? '';
         $postcode = $shippingData['postcode'] ?? '';
 
         if ($line1 === '' || $postcode === '') {
@@ -137,7 +137,7 @@ final class ShippingAdapter
             'name' => $shippingData['name'] ?? 'Customer',
             'phone' => $shippingData['phone'] ?? '',
             'line1' => $line1,
-            'line2' => $shippingData['line2'] ?? $shippingData['address_line_2'] ?? null,
+            'line2' => $shippingData['line2'] ?? null,
             'city' => $shippingData['city'] ?? null,
             'state' => $shippingData['state'] ?? null,
             'postcode' => $postcode,
@@ -187,8 +187,8 @@ final class ShippingAdapter
     {
         $origin = config('shipping.defaults.origin', []);
 
-        $line1 = $origin['line1'] ?? $origin['address'] ?? '';
-        $postcode = $origin['postcode'] ?? $origin['post_code'] ?? '';
+        $line1 = $origin['line1'] ?? '';
+        $postcode = $origin['postcode'] ?? '';
 
         if ($line1 === '' || $postcode === '') {
             return null;
@@ -198,7 +198,7 @@ final class ShippingAdapter
             'name' => $origin['name'] ?? config('app.name', 'Store'),
             'phone' => $origin['phone'] ?? '',
             'line1' => $line1,
-            'line2' => $origin['line2'] ?? $origin['address2'] ?? null,
+            'line2' => $origin['line2'] ?? null,
             'city' => $origin['city'] ?? null,
             'state' => $origin['state'] ?? null,
             'postcode' => $postcode,

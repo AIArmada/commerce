@@ -56,7 +56,7 @@ describe('CartServiceProvider', function (): void {
 
     it('registers cart manager correctly', function (): void {
         $app = mock(Application::class);
-        $app->shouldReceive('singleton')->withArgs(['cart', Mockery::type('callable')])->once();
+        $app->shouldReceive('scoped')->withArgs(['cart', Mockery::type('callable')])->once();
         $app->shouldReceive('alias')->withArgs(['cart', CartManager::class])->once();
         $app->shouldReceive('alias')->withArgs(['cart', CartManagerInterface::class])->once();
 

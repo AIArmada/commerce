@@ -259,8 +259,8 @@ describe('Address Model', function (): void {
                 ],
                 [
                     'name' => 'Resolver Test',
-                    'street1' => '123 Resolver St',
-                    'street2' => 'Suite 200',
+                    'line1' => '123 Resolver St',
+                    'line2' => 'Suite 200',
                     'city' => 'Kuala Lumpur',
                     'state' => 'WP',
                     'postcode' => '50000',
@@ -272,9 +272,7 @@ describe('Address Model', function (): void {
 
             expect($address)->not->toBeNull()
                 ->and($address?->line1)->toBe('123 Resolver St')
-                ->and($address?->line2)->toBe('Suite 200')
-                ->and($address?->address1)->toBe('123 Resolver St')
-                ->and($address?->address2)->toBe('Suite 200');
+                ->and($address?->line2)->toBe('Suite 200');
         });
     });
 

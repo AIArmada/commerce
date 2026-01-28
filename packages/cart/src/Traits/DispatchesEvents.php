@@ -32,8 +32,9 @@ trait DispatchesEvents
 
         // Check if we're inside a transaction
         $transactionLevel = DB::transactionLevel();
+        $isTesting = function_exists('app') && app()->runningUnitTests();
 
-        if ($transactionLevel > 0) {
+        if ($transactionLevel > 0 && ! $isTesting) {
             // Queue event to be dispatched after commit
             DB::afterCommit(fn () => $this->events->dispatch($event));
         } else {

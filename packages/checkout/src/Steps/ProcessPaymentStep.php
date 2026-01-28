@@ -69,7 +69,9 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
                     'processed_at' => now()->toIso8601String(),
                 ],
             ]);
-            $session->status->transitionTo(Processing::class);
+            if (! $session->status->is(Processing::class)) {
+                $session->status->transitionTo(Processing::class);
+            }
 
             return $this->success('No payment required - free order');
         }
@@ -131,7 +133,9 @@ final class ProcessPaymentStep extends AbstractCheckoutStep
                 session: $session,
                 paymentData: $paymentData,
             ));
-            $session->status->transitionTo(Processing::class);
+            if (! $session->status->is(Processing::class)) {
+                $session->status->transitionTo(Processing::class);
+            }
 
             return $this->success('Payment completed', [
                 'payment_id' => $result->paymentId,
