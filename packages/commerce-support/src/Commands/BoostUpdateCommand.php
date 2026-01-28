@@ -62,7 +62,11 @@ final class BoostUpdateCommand extends Command
         }
 
         $agentNames = $config['agents'] ?? [];
-        $guidelineNames = $config['guidelines'] ?? [];
+        $guidelineNames = $config['packages'] ?? [];
+
+        if (isset($config['guidelines']) && is_array($config['guidelines'])) {
+            $guidelineNames = $config['guidelines'];
+        }
 
         if (empty($agentNames)) {
             $this->components->warn('No agents configured in boost.json.');

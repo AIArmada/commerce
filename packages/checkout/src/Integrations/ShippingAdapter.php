@@ -164,7 +164,7 @@ final class ShippingAdapter
             $quantity = (int) ($item['quantity'] ?? 1);
 
             $weight = (int) ($item['weight'] ?? $attributes['weight'] ?? 0);
-            $weight = $weight * max(1, $quantity);
+            $weight *= max(1, $quantity);
 
             if ($weight <= 0) {
                 return null;
