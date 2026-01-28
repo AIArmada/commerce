@@ -11,7 +11,7 @@ it('transforms address data into order schema', function (): void {
 
     $data = [
         'name' => 'Jane Doe',
-        'street1' => '123 Main St',
+        'line1' => '123 Main St',
         'city' => 'Kuala Lumpur',
         'postcode' => '50000',
         'country' => 'MY',

@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace AIArmada\Cart\Traits;
 
+use Illuminate\Contracts\Events\Dispatcher;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Testing\Fakes\EventFake;
 
 /**
  * Trait for safely dispatching cart events.
@@ -26,8 +28,21 @@ trait DispatchesEvents
      */
     protected function dispatchEvent(object $event): void
     {
-        if (! $this->eventsEnabled || $this->events === null) {
+        $eventsEnabled = $this->eventsEnabled;
+        if (function_exists('app') && app()->bound('config')) {
+            $eventsEnabled = (bool) config('cart.events', $eventsEnabled);
+        }
+
+        if (! $eventsEnabled || $this->events === null) {
             return;
+        }
+
+        $dispatcher = $this->events;
+        if (function_exists('app') && app()->bound(Dispatcher::class)) {
+            $containerDispatcher = app(Dispatcher::class);
+            if ($containerDispatcher instanceof EventFake) {
+                $dispatcher = $containerDispatcher;
+            }
         }
 
         // Check if we're inside a transaction
@@ -36,10 +51,10 @@ trait DispatchesEvents
 
         if ($transactionLevel > 0 && ! $isTesting) {
             // Queue event to be dispatched after commit
-            DB::afterCommit(fn () => $this->events->dispatch($event));
+            DB::afterCommit(fn () => $dispatcher->dispatch($event));
         } else {
             // No transaction, dispatch immediately
-            $this->events->dispatch($event);
+            $dispatcher->dispatch($event);
         }
     }
 
@@ -53,10 +68,23 @@ trait DispatchesEvents
      */
     protected function dispatchEventNow(object $event): void
     {
-        if (! $this->eventsEnabled || $this->events === null) {
+        $eventsEnabled = $this->eventsEnabled;
+        if (function_exists('app') && app()->bound('config')) {
+            $eventsEnabled = (bool) config('cart.events', $eventsEnabled);
+        }
+
+        if (! $eventsEnabled || $this->events === null) {
             return;
         }
 
-        $this->events->dispatch($event);
+        $dispatcher = $this->events;
+        if (function_exists('app') && app()->bound(Dispatcher::class)) {
+            $containerDispatcher = app(Dispatcher::class);
+            if ($containerDispatcher instanceof EventFake) {
+                $dispatcher = $containerDispatcher;
+            }
+        }
+
+        $dispatcher->dispatch($event);
     }
 }

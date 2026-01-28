@@ -126,7 +126,9 @@ final class CheckoutService implements CheckoutServiceInterface
                     }
                 }
 
-                $session->status->transitionTo(Completed::class);
+                if (! $session->status->is(Completed::class)) {
+                    $session->status->transitionTo(Completed::class);
+                }
                 $this->events->dispatch(new CheckoutCompleted($session));
 
                 return CheckoutResult::success($session);
