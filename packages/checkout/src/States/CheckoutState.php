@@ -133,4 +133,14 @@ abstract class CheckoutState extends State
     {
         return $this->getValue();
     }
+
+    /**
+     * Determine whether the current state matches the given class.
+     *
+     * @param  class-string<CheckoutState>  $stateClass
+     */
+    public function is(string $stateClass): bool
+    {
+        return $this instanceof $stateClass;
+    }
 }
