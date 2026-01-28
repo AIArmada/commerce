@@ -217,16 +217,16 @@ final class CustomerResolver
         bool $setDefaultBilling,
         bool $setDefaultShipping,
     ): ?array {
-        $line1 = $this->resolveAddressField($data, ['line1', 'address1', 'address_line_1', 'street1', 'address']);
+        $line1 = $this->resolveAddressField($data, ['line1']);
         $city = $this->resolveAddressField($data, ['city', 'town']);
-        $postcode = $this->resolveAddressField($data, ['postcode', 'postal_code', 'zip']);
+        $postcode = $this->resolveAddressField($data, ['postcode', 'zip']);
         $country = $this->resolveAddressField($data, ['country', 'country_code']);
 
         if ($line1 === null || $city === null || $postcode === null || $country === null) {
             return null;
         }
 
-        $line2 = $this->resolveAddressField($data, ['line2', 'address2', 'address_line_2', 'street2']);
+        $line2 = $this->resolveAddressField($data, ['line2']);
         $state = $this->resolveAddressField($data, ['state', 'province', 'region']);
 
         $defaultBilling = $setDefaultBilling && ! $customer->addresses()->where('is_default_billing', true)->exists();

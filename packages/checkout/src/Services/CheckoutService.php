@@ -92,7 +92,9 @@ final class CheckoutService implements CheckoutServiceInterface
 
         $this->transformSessionData($session);
 
-        $session->status->transitionTo(Processing::class);
+        if (! $session->status->is(Processing::class)) {
+            $session->status->transitionTo(Processing::class);
+        }
 
         try {
             return DB::transaction(function () use ($session) {
@@ -283,10 +285,22 @@ final class CheckoutService implements CheckoutServiceInterface
      */
     private function createCartSnapshot(mixed $cart): array
     {
+        $metadata = method_exists($cart, 'getAllMetadata') ? $cart->getAllMetadata() : [];
+        $conditions = method_exists($cart, 'getConditions') ? $cart->getConditions()->toArray() : [];
+
+        $subtotal = $cart->subtotal()->getAmount();
+        $total = $cart->total()->getAmount();
+
         return [
             'items' => $cart->getItems()->toArray(),
-            'subtotal' => $cart->subtotal()->getAmount(),
-            'total' => $cart->total()->getAmount(),
+            'metadata' => $metadata,
+            'conditions' => $conditions,
+            'totals' => [
+                'subtotal' => $subtotal,
+                'total' => $total,
+            ],
+            'subtotal' => $subtotal,
+            'total' => $total,
             'item_count' => $cart->countItems(),
             'captured_at' => now()->toIso8601String(),
         ];
@@ -407,7 +421,10 @@ final class CheckoutService implements CheckoutServiceInterface
 
     private function handleCheckoutFailure(CheckoutSession $session, Throwable $e): void
     {
-        $session->status->transitionTo(PaymentFailed::class);
+        if (! $session->status->isTerminal() && ! $session->status->is(PaymentFailed::class)) {
+            $session->status->transitionTo(PaymentFailed::class);
+        }
+
         $session->update(['error_message' => $e->getMessage()]);
 
         $this->events->dispatch(new CheckoutFailed($session, $e->getMessage()));

@@ -277,7 +277,7 @@ class JntShippingDriver implements ShippingDriverInterface
     public function servicesDestination(AddressData $destination): bool
     {
         // JNT services Malaysia
-        return in_array(mb_strtoupper($destination->countryCode), ['MY', 'MYS'], true);
+        return in_array(mb_strtoupper($destination->country), ['MY', 'MYS'], true);
     }
 
     /**
@@ -288,8 +288,8 @@ class JntShippingDriver implements ShippingDriverInterface
         return new JntAddressData(
             name: $address->name,
             phone: $address->phone,
-            address: $address->address,
-            postCode: $address->postCode,
+            address: $address->line1,
+            postCode: $address->postcode,
             city: $address->city ?? '',
             area: $address->state ?? '',
         );
@@ -367,7 +367,7 @@ class JntShippingDriver implements ShippingDriverInterface
      */
     protected function getRegionMultiplier(AddressData $destination): float
     {
-        $postcode = $destination->postCode;
+        $postcode = $destination->postcode;
 
         // East Malaysia (Sabah/Sarawak) - higher rates
         $eastMalaysiaRanges = [
@@ -393,7 +393,7 @@ class JntShippingDriver implements ShippingDriverInterface
      */
     protected function getEstimatedDays(AddressData $destination): int
     {
-        $postcode = $destination->postCode;
+        $postcode = $destination->postcode;
         $defaultDays = (int) config('jnt.shipping.default_estimated_days', 3);
         $eastExtraDays = (int) config('jnt.shipping.east_malaysia_extra_days', 2);
 

@@ -216,11 +216,11 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
         return AddressData::from([
             'name' => $origin['name'] ?? config('app.name'),
             'company' => $origin['company'] ?? null,
-            'line1' => $origin['line1'] ?? $origin['address'] ?? '',
-            'line2' => $origin['line2'] ?? $origin['address2'] ?? null,
+            'line1' => $origin['line1'] ?? '',
+            'line2' => $origin['line2'] ?? null,
             'city' => $origin['city'] ?? '',
             'state' => $origin['state'] ?? '',
-            'postcode' => $origin['postcode'] ?? $origin['postCode'] ?? $origin['post_code'] ?? '',
+            'postcode' => $origin['postcode'] ?? $origin['postCode'] ?? '',
             'country' => $origin['country'] ?? $origin['country_code'] ?? $origin['countryCode'] ?? 'MY',
             'phone' => $origin['phone'] ?? '',
             'email' => $origin['email'] ?? null,
@@ -341,17 +341,17 @@ final class OrderFulfillmentHandler implements FulfillmentHandler
         $line1 = $location->line1 ?? null;
 
         if ($line1 === null || $line1 === '') {
-            $line1 = $origin['line1'] ?? $origin['address'] ?? '';
+            $line1 = $origin['line1'] ?? '';
         }
 
         return AddressData::from([
             'name' => $location->name ?? config('app.name'),
             'company' => $origin['company'] ?? null,
             'line1' => $line1,
-            'line2' => $location->line2 ?? $origin['line2'] ?? $origin['address2'] ?? null,
+            'line2' => $location->line2 ?? $origin['line2'] ?? null,
             'city' => $location->city ?? $origin['city'] ?? '',
             'state' => $location->state ?? $origin['state'] ?? '',
-            'postcode' => $location->postcode ?? $origin['postcode'] ?? $origin['postCode'] ?? $origin['post_code'] ?? '',
+            'postcode' => $location->postcode ?? $origin['postcode'] ?? $origin['postCode'] ?? '',
             'country' => $location->country ?? $origin['country'] ?? $origin['country_code'] ?? 'MY',
             'phone' => $origin['phone'] ?? '',
             'email' => $origin['email'] ?? null,

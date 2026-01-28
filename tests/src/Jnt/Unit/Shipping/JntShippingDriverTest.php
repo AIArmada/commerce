@@ -118,21 +118,21 @@ describe('getRates', function (): void {
         $origin = new AddressData(
             name: 'Sender',
             phone: '+60123456789',
-            address: '123 Main St',
+            line1: '123 Main St',
             city: 'Kuala Lumpur',
             state: 'WP Kuala Lumpur',
-            postCode: '50000',
-            countryCode: 'MYS'
+            postcode: '50000',
+            country: 'MYS'
         );
 
         $destination = new AddressData(
             name: 'Receiver',
             phone: '+60198765432',
-            address: '456 Second St',
+            line1: '456 Second St',
             city: 'Petaling Jaya',
             state: 'Selangor',
-            postCode: '47810',
-            countryCode: 'MYS'
+            postcode: '47810',
+            country: 'MYS'
         );
 
         $packages = [
@@ -151,25 +151,25 @@ describe('getRates', function (): void {
         $origin = new AddressData(
             name: 'Sender',
             phone: '+60123456789',
-            address: '123 Main St',
-            postCode: '50000',
-            countryCode: 'MYS'
+            line1: '123 Main St',
+            postcode: '50000',
+            country: 'MYS'
         );
 
         $destinationWest = new AddressData(
             name: 'Receiver',
             phone: '+60198765432',
-            address: '456 Second St',
-            postCode: '50000', // West Malaysia
-            countryCode: 'MYS'
+            line1: '456 Second St',
+            postcode: '50000', // West Malaysia
+            country: 'MYS'
         );
 
         $destinationEast = new AddressData(
             name: 'Receiver',
             phone: '+60198765432',
-            address: '456 Second St',
-            postCode: '88000', // Sabah
-            countryCode: 'MYS'
+            line1: '456 Second St',
+            postcode: '88000', // Sabah
+            country: 'MYS'
         );
 
         $packages = [
@@ -188,9 +188,9 @@ describe('servicesDestination', function (): void {
         $address = new AddressData(
             name: 'Test',
             phone: '+60123456789',
-            address: '123 Test St',
-            postCode: '50000',
-            countryCode: 'MY'
+            line1: '123 Test St',
+            postcode: '50000',
+            country: 'MY'
         );
 
         expect($this->driver->servicesDestination($address))->toBeTrue();
@@ -200,9 +200,9 @@ describe('servicesDestination', function (): void {
         $address = new AddressData(
             name: 'Test',
             phone: '+60123456789',
-            address: '123 Test St',
-            postCode: '50000',
-            countryCode: 'MYS'
+            line1: '123 Test St',
+            postcode: '50000',
+            country: 'MYS'
         );
 
         expect($this->driver->servicesDestination($address))->toBeTrue();
@@ -212,9 +212,9 @@ describe('servicesDestination', function (): void {
         $address = new AddressData(
             name: 'Test',
             phone: '+65123456789',
-            address: '123 Test St',
-            postCode: '123456',
-            countryCode: 'SGP'
+            line1: '123 Test St',
+            postcode: '123456',
+            country: 'SGP'
         );
 
         expect($this->driver->servicesDestination($address))->toBeFalse();
@@ -226,9 +226,9 @@ describe('validateAddress', function (): void {
         $address = new AddressData(
             name: 'Test',
             phone: '+60123456789',
-            address: '123 Test St',
-            postCode: '50000',
-            countryCode: 'MYS'
+            line1: '123 Test St',
+            postcode: '50000',
+            country: 'MYS'
         );
 
         $result = $this->driver->validateAddress($address);

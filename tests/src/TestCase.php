@@ -1223,11 +1223,18 @@ abstract class TestCase extends Orchestra
             $table->string('company')->nullable();
             $table->string('status')->default('active');
             $table->boolean('accepts_marketing')->default(false);
+            $table->boolean('is_guest')->default(false)->index();
             $table->nullableUuidMorphs('owner');
             $table->json('metadata')->nullable();
             $table->timestamps();
             $table->softDeletes();
         });
+
+        if (! Schema::hasColumn('customers', 'is_guest')) {
+            Schema::table('customers', function (Blueprint $table): void {
+                $table->boolean('is_guest')->default(false)->index();
+            });
+        }
 
         Schema::create('tags', function (Blueprint $table): void {
             $table->id();

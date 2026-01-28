@@ -135,8 +135,8 @@ class ShippingConditionProvider implements ConditionProviderInterface
 
         $name = $addressData['name'] ?? null;
         $phone = $addressData['phone'] ?? null;
-        $line1 = $addressData['line1'] ?? $addressData['address1'] ?? $addressData['address'] ?? null;
-        $postcode = $addressData['postcode'] ?? $addressData['postCode'] ?? $addressData['post_code'] ?? null;
+        $line1 = $addressData['line1'] ?? null;
+        $postcode = $addressData['postcode'] ?? $addressData['postCode'] ?? null;
 
         if (! is_string($name) || mb_trim($name) === '') {
             return null;
@@ -172,7 +172,7 @@ class ShippingConditionProvider implements ConditionProviderInterface
             'country' => $country,
             'company' => $addressData['company'] ?? null,
             'email' => $addressData['email'] ?? null,
-            'line2' => $addressData['line2'] ?? $addressData['address2'] ?? $addressData['address_2'] ?? null,
+            'line2' => $addressData['line2'] ?? null,
             'city' => $addressData['city'] ?? null,
             'state' => $addressData['state'] ?? null,
             'latitude' => $addressData['latitude'] ?? null,
@@ -192,7 +192,7 @@ class ShippingConditionProvider implements ConditionProviderInterface
             name: $origin['name'] ?? config('app.name', 'Store'),
             phone: $origin['phone'] ?? '',
             line1: $origin['line1'] ?? $origin['address'] ?? '',
-            postcode: $origin['postcode'] ?? $origin['post_code'] ?? '',
+            postcode: $origin['postcode'] ?? '',
             country: $origin['country'] ?? $origin['country_code'] ?? 'MY',
             state: $origin['state'] ?? null,
             city: $origin['city'] ?? null,

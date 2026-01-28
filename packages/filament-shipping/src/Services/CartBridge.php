@@ -123,11 +123,11 @@ class CartBridge
         return new AddressData(
             name: $config['name'] ?? config('app.name', 'Warehouse'),
             phone: $config['phone'] ?? '',
-            line1: $config['line1'] ?? $config['address'] ?? '',
-            line2: $config['line2'] ?? $config['address2'] ?? null,
+            line1: $config['line1'] ?? '',
+            line2: $config['line2'] ?? null,
             city: $config['city'] ?? null,
             state: $config['state'] ?? null,
-            postcode: $config['postcode'] ?? $config['post_code'] ?? '',
+            postcode: $config['postcode'] ?? '',
             country: $config['country'] ?? $config['country_code'] ?? 'MY',
         );
     }
@@ -151,11 +151,11 @@ class CartBridge
         return new AddressData(
             name: $address['name'],
             phone: $address['phone'],
-            line1: $address['line1'] ?? $address['address'] ?? $address['address1'] ?? '',
-            line2: $address['line2'] ?? $address['address2'] ?? null,
+            line1: $address['line1'] ?? '',
+            line2: $address['line2'] ?? null,
             city: $address['city'] ?? null,
             state: $address['state'] ?? null,
-            postcode: $address['postcode'] ?? $address['post_code'] ?? '',
+            postcode: $address['postcode'] ?? '',
             country: $address['country'] ?? $address['country_code'] ?? 'MY',
         );
     }
