@@ -87,6 +87,29 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Cookies
+    |--------------------------------------------------------------------------
+    */
+    'cookies' => [
+        'name' => env('AFFILIATE_NETWORK_COOKIE_NAME', 'affiliate_network_link'),
+        'lifetime_minutes' => env('AFFILIATE_NETWORK_COOKIE_LIFETIME', 60 * 24 * 30),
+        'secure' => env('AFFILIATE_NETWORK_COOKIE_SECURE', true),
+        'same_site' => env('AFFILIATE_NETWORK_COOKIE_SAMESITE', 'lax'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Checkout Integration
+    |--------------------------------------------------------------------------
+    */
+    'checkout' => [
+        'enabled' => env('AFFILIATE_NETWORK_CHECKOUT_ENABLED', false),
+        'middleware_group' => env('AFFILIATE_NETWORK_MIDDLEWARE_GROUP', 'web'),
+        'listen_for_orders' => env('AFFILIATE_NETWORK_LISTEN_ORDERS', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Marketplace
     |--------------------------------------------------------------------------
     */
@@ -147,6 +170,23 @@ return [
 | `signing_key` | Key for signing URLs | `APP_KEY` |
 | `default_ttl_minutes` | Link expiration time | `43200` (30 days) |
 | `parameter` | URL parameter name | `anl` |
+
+### Cookies
+
+| Key | Description | Default |
+|-----|-------------|---------|
+| `name` | Name of the attribution cookie | `affiliate_network_link` |
+| `lifetime_minutes` | Cookie expiration time | `43200` (30 days) |
+| `secure` | Set secure flag on cookie | `true` |
+| `same_site` | SameSite attribute | `lax` |
+
+### Checkout Integration
+
+| Key | Description | Default |
+|-----|-------------|---------|
+| `enabled` | Enable tracking on checkout sites | `false` |
+| `middleware_group` | Middleware group for tracking | `web` |
+| `listen_for_orders` | Record conversions on orders | `true` |
 
 ### Marketplace
 

@@ -15,7 +15,9 @@ use AIArmada\Inventory\Cart\CartManagerWithInventory;
 use AIArmada\Inventory\Cart\ValidateInventoryOnAdd;
 use AIArmada\Inventory\Console\CleanupExpiredAllocationsCommand;
 use AIArmada\Inventory\Console\CreateValuationSnapshotCommand;
+use AIArmada\Inventory\Contracts\CheckoutInventoryServiceInterface;
 use AIArmada\Inventory\Exports\ExportService;
+use AIArmada\Inventory\Integrations\CheckoutInventoryService;
 use AIArmada\Inventory\Integrations\FulfillmentLocationService;
 use AIArmada\Inventory\Listeners\CommitInventoryOnPayment;
 use AIArmada\Inventory\Listeners\DeductInventoryFromOrder;
@@ -97,6 +99,8 @@ final class InventoryServiceProvider extends PackageServiceProvider
             StockLevelReport::class,
             ExportService::class,
             FulfillmentLocationService::class,
+            CheckoutInventoryService::class,
+            CheckoutInventoryServiceInterface::class,
             'inventory',
             'inventory.allocations',
         ];
@@ -169,6 +173,10 @@ final class InventoryServiceProvider extends PackageServiceProvider
     private function registerIntegrationServices(): void
     {
         $this->app->singleton(FulfillmentLocationService::class);
+
+        // Checkout integration service
+        $this->app->singleton(CheckoutInventoryService::class);
+        $this->app->bind(CheckoutInventoryServiceInterface::class, CheckoutInventoryService::class);
     }
 
     /**

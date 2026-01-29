@@ -155,14 +155,15 @@ final class CheckoutServiceProvider extends PackageServiceProvider
     {
         $registry = $this->app->make(CheckoutStepRegistryInterface::class);
 
-        // Core steps (always available)
-        $registry->register('validate_cart', $this->app->make(ValidateCartStep::class));
-        $registry->register('resolve_customer', $this->app->make(ResolveCustomerStep::class));
-        $registry->register('calculate_pricing', $this->app->make(CalculatePricingStep::class));
-        $registry->register('calculate_shipping', $this->app->make(CalculateShippingStep::class));
-        $registry->register('process_payment', $this->app->make(ProcessPaymentStep::class));
-        $registry->register('create_order', $this->app->make(CreateOrderStep::class));
-        $registry->register('dispatch_documents', $this->app->make(DispatchDocumentGenerationStep::class));
+        // Core steps - use lazy factory closures to defer CartManager resolution
+        // until steps are actually executed (after session middleware has run)
+        $registry->registerLazy('validate_cart', fn () => $this->app->make(ValidateCartStep::class));
+        $registry->registerLazy('resolve_customer', fn () => $this->app->make(ResolveCustomerStep::class));
+        $registry->registerLazy('calculate_pricing', fn () => $this->app->make(CalculatePricingStep::class));
+        $registry->registerLazy('calculate_shipping', fn () => $this->app->make(CalculateShippingStep::class));
+        $registry->registerLazy('process_payment', fn () => $this->app->make(ProcessPaymentStep::class));
+        $registry->registerLazy('create_order', fn () => $this->app->make(CreateOrderStep::class));
+        $registry->registerLazy('dispatch_documents', fn () => $this->app->make(DispatchDocumentGenerationStep::class));
     }
 
     protected function registerOptionalIntegrations(): void
