@@ -14,6 +14,7 @@ The `aiarmada/affiliate-network` package provides a complete multi-merchant affi
 - **Offer Applications** - Affiliates apply to promote offers with approval workflows
 - **Tracking Links** - Signed deep link generation with click/conversion tracking and sub-ID support
 - **Creative Assets** - Banners, text links, email templates, HTML widgets, and video content
+- **Checkout Integration** - Native tracking and conversion recording for sites using the commerce checkout package
 - **Multi-Tenancy** - Full owner scoping with relationship-based inheritance
 - **Marketplace** - Public offer discovery with featured listings and search
 
@@ -107,8 +108,12 @@ affiliate-network/
 └── src/
     ├── AffiliateNetworkServiceProvider.php
     ├── Http/
-    │   └── Controllers/
-    │       └── LinkRedirectController.php
+    │   ├── Controllers/
+    │   │   └── LinkRedirectController.php
+    │   └── Middleware/
+    │       └── TrackNetworkLinkCookie.php  # Checkout tracking middleware
+    ├── Listeners/
+    │   └── RecordNetworkConversionForOrder.php # Order conversion listener
     ├── Models/
     │   ├── AffiliateSite.php              # Merchant sites (HasOwner)
     │   ├── AffiliateOffer.php             # Offers/campaigns

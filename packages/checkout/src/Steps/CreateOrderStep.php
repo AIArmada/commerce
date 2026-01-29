@@ -142,11 +142,8 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
         $inventoryAdapter = app(InventoryAdapter::class);
 
-        foreach ($reservations as $reservation) {
-            if (isset($reservation['reservation_id'])) {
-                $inventoryAdapter->commit($reservation['reservation_id']);
-            }
-        }
+        // Commit all reservations for this checkout session at once
+        $inventoryAdapter->commitAllForReference($session->id, $session->order_id);
     }
 
     private function clearCart(CheckoutSession $session): void
