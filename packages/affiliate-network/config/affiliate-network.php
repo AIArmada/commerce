@@ -85,6 +85,37 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Cookies
+    |--------------------------------------------------------------------------
+    |
+    | Cookie settings for tracking affiliate referrals on internal sites.
+    | Only applies when checkout integration is enabled.
+    |
+    */
+    'cookies' => [
+        'name' => env('AFFILIATE_NETWORK_COOKIE_NAME', 'affiliate_network_link'),
+        'lifetime_minutes' => env('AFFILIATE_NETWORK_COOKIE_LIFETIME', 60 * 24 * 30),
+        'secure' => env('AFFILIATE_NETWORK_COOKIE_SECURE', true),
+        'same_site' => env('AFFILIATE_NETWORK_COOKIE_SAMESITE', 'lax'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Checkout Integration
+    |--------------------------------------------------------------------------
+    |
+    | Enable this when the site uses the commerce checkout package and needs
+    | to track conversions from network affiliate links (Scenario B).
+    |
+    */
+    'checkout' => [
+        'enabled' => env('AFFILIATE_NETWORK_CHECKOUT_ENABLED', false),
+        'middleware_group' => env('AFFILIATE_NETWORK_MIDDLEWARE_GROUP', 'web'),
+        'listen_for_orders' => env('AFFILIATE_NETWORK_LISTEN_ORDERS', true),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
     | Marketplace
     |--------------------------------------------------------------------------
     */

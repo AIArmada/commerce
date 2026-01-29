@@ -167,16 +167,11 @@ final class ReserveInventoryStep extends AbstractCheckoutStep
             return;
         }
 
+        // Release all reservations for this checkout session at once
+        $this->inventoryAdapter->releaseAllForReference($session->id);
+
+        // Clear reservation data from session
         $pricingData = $session->pricing_data ?? [];
-        $reservations = $pricingData['inventory_reservations'] ?? [];
-
-        foreach ($reservations as $reservation) {
-            if (isset($reservation['reservation_id'])) {
-                $this->inventoryAdapter->release($reservation['reservation_id']);
-            }
-        }
-
-        // Clear reservation data
         unset($pricingData['inventory_reservations'], $pricingData['reservations_expire_at']);
         $session->update(['pricing_data' => $pricingData]);
     }

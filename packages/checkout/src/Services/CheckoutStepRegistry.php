@@ -7,11 +7,15 @@ namespace AIArmada\Checkout\Services;
 use AIArmada\Checkout\Contracts\CheckoutStepInterface;
 use AIArmada\Checkout\Contracts\CheckoutStepRegistryInterface;
 use AIArmada\Checkout\Exceptions\CheckoutStepException;
+use Closure;
 
 final class CheckoutStepRegistry implements CheckoutStepRegistryInterface
 {
     /** @var array<string, CheckoutStepInterface> */
     private array $steps = [];
+
+    /** @var array<string, Closure(): CheckoutStepInterface> */
+    private array $lazyFactories = [];
 
     /** @var array<string> */
     private array $order = [];
@@ -22,6 +26,20 @@ final class CheckoutStepRegistry implements CheckoutStepRegistryInterface
     public function register(string $identifier, CheckoutStepInterface $step): void
     {
         $this->steps[$identifier] = $step;
+        unset($this->lazyFactories[$identifier]);
+        $this->enabled[$identifier] ??= true;
+
+        if (! in_array($identifier, $this->order, true)) {
+            $this->order[] = $identifier;
+        }
+    }
+
+    /**
+     * @param  Closure(): CheckoutStepInterface  $factory
+     */
+    public function registerLazy(string $identifier, Closure $factory): void
+    {
+        $this->lazyFactories[$identifier] = $factory;
         $this->enabled[$identifier] ??= true;
 
         if (! in_array($identifier, $this->order, true)) {
@@ -31,12 +49,18 @@ final class CheckoutStepRegistry implements CheckoutStepRegistryInterface
 
     public function get(string $identifier): ?CheckoutStepInterface
     {
+        // Resolve lazy factory if not yet resolved
+        if (! isset($this->steps[$identifier]) && isset($this->lazyFactories[$identifier])) {
+            $this->steps[$identifier] = ($this->lazyFactories[$identifier])();
+            unset($this->lazyFactories[$identifier]);
+        }
+
         return $this->steps[$identifier] ?? null;
     }
 
     public function has(string $identifier): bool
     {
-        return isset($this->steps[$identifier]);
+        return isset($this->steps[$identifier]) || isset($this->lazyFactories[$identifier]);
     }
 
     /**
@@ -44,6 +68,11 @@ final class CheckoutStepRegistry implements CheckoutStepRegistryInterface
      */
     public function all(): array
     {
+        // Resolve all lazy factories
+        foreach (array_keys($this->lazyFactories) as $identifier) {
+            $this->get($identifier);
+        }
+
         return $this->steps;
     }
 
@@ -55,8 +84,11 @@ final class CheckoutStepRegistry implements CheckoutStepRegistryInterface
         $ordered = [];
 
         foreach ($this->order as $identifier) {
-            if ($this->isEnabled($identifier) && isset($this->steps[$identifier])) {
-                $ordered[] = $this->steps[$identifier];
+            if ($this->isEnabled($identifier) && $this->has($identifier)) {
+                $step = $this->get($identifier);
+                if ($step !== null) {
+                    $ordered[] = $step;
+                }
             }
         }
 

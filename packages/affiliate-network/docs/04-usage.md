@@ -266,3 +266,42 @@ $textLink = AffiliateOfferCreative::create([
 | `email` | `TYPE_EMAIL` | Email templates |
 | `html` | `TYPE_HTML` | HTML widgets |
 | `video` | `TYPE_VIDEO` | Video content |
+
+## Checkout Integration
+
+The `affiliate-network` package provides seamless integration with the `checkout` package for internal sites that are part of your network. This allows you to track affiliate referrals and record conversions automatically when an order is placed through the checkout package.
+
+### Enable Integration
+
+To enable the integration, set the following environment variable or update your config:
+
+```php
+// .env
+AFFILIATE_NETWORK_CHECKOUT_ENABLED=true
+```
+
+### How it Works
+
+1. **Tracking**: When a user visits your site with a network link parameter (default: `anl`), the `TrackNetworkLinkCookie` middleware captures the link identifier and stores it in a secure cookie.
+2. **Attribution**: The cookie persists based on the configured lifetime (default: 30 days).
+3. **Conversion**: When an order is completed via the `checkout` package, it triggers a `CommissionAttributionRequired` event.
+4. **Recording**: The `RecordNetworkConversionForOrder` listener catches this event, reads the attribution cookie, and records a conversion for the respective affiliate offer through the `OfferLinkService`.
+
+### Configuration Options
+
+You can customize the integration behavior in `config/affiliate-network.php`:
+
+```php
+'checkout' => [
+    'enabled' => env('AFFILIATE_NETWORK_CHECKOUT_ENABLED', false),
+    'middleware_group' => env('AFFILIATE_NETWORK_MIDDLEWARE_GROUP', 'web'),
+    'listen_for_orders' => env('AFFILIATE_NETWORK_LISTEN_ORDERS', true),
+],
+```
+
+The conversion recording automatically captures:
+- Order total (translated to commission)
+- Currency
+- Link reference
+- Sub IDs (from the original tracking link)
+- Order ID (stored in conversion metadata for audit)

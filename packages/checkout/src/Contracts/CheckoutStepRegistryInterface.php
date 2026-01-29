@@ -4,12 +4,22 @@ declare(strict_types=1);
 
 namespace AIArmada\Checkout\Contracts;
 
+use Closure;
+
 interface CheckoutStepRegistryInterface
 {
     /**
      * Register a checkout step.
      */
     public function register(string $identifier, CheckoutStepInterface $step): void;
+
+    /**
+     * Register a checkout step lazily via factory closure.
+     * The step will be instantiated on first access, not during registration.
+     *
+     * @param  Closure(): CheckoutStepInterface  $factory
+     */
+    public function registerLazy(string $identifier, Closure $factory): void;
 
     /**
      * Get a step by its identifier.
