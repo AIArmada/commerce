@@ -85,6 +85,7 @@ abstract class CheckoutState extends State
             ->allowTransition(AwaitingPayment::class, Expired::class)
             // Payment processing outcomes
             ->allowTransition(PaymentProcessing::class, Processing::class)
+            ->allowTransition(PaymentProcessing::class, AwaitingPayment::class)
             ->allowTransition(PaymentProcessing::class, Completed::class)
             ->allowTransition(PaymentProcessing::class, PaymentFailed::class)
             // Payment retry flow
@@ -129,7 +130,7 @@ abstract class CheckoutState extends State
     /**
      * Get the state name (e.g., 'pending', 'completed').
      */
-    public function name(): string
+    final public function name(): string
     {
         return $this->getValue();
     }
@@ -139,7 +140,7 @@ abstract class CheckoutState extends State
      *
      * @param  class-string<CheckoutState>  $stateClass
      */
-    public function is(string $stateClass): bool
+    final public function is(string $stateClass): bool
     {
         return $this instanceof $stateClass;
     }
