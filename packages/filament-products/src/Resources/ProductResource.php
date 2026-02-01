@@ -433,7 +433,24 @@ final class ProductResource extends Resource
                     ->label('Price')
                     ->money(fn (Product $record): string => $record->currency, divideBy: 100)
                     ->sortable()
-                    ->alignEnd(),
+                    ->alignEnd()
+                    ->description(function (Product $record): ?string {
+                        if (! class_exists(\AIArmada\Pricing\Models\Price::class)) {
+                            return null;
+                        }
+
+                        $pricesCount = $record->prices()->count();
+
+                        if ($pricesCount === 0) {
+                            return null;
+                        }
+
+                        $activePricesCount = $record->prices()
+                            ->whereHas('priceList', fn ($q) => $q->where('is_active', true))
+                            ->count();
+
+                        return "{$activePricesCount} of {$pricesCount} price lists";
+                    }),
 
                 Tables\Columns\IconColumn::make('is_featured')
                     ->label('Featured')
@@ -638,10 +655,17 @@ final class ProductResource extends Resource
 
     public static function getRelations(): array
     {
-        return [
+        $relations = [
             RelationManagers\VariantsRelationManager::class,
             RelationManagers\OptionsRelationManager::class,
         ];
+
+        // Add prices relation manager if pricing package is installed
+        if (class_exists(\AIArmada\Pricing\Models\Price::class)) {
+            $relations[] = RelationManagers\PricesRelationManager::class;
+        }
+
+        return $relations;
     }
 
     public static function getPages(): array

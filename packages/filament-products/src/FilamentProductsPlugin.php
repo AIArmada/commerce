@@ -28,24 +28,55 @@ final class FilamentProductsPlugin implements Plugin
     public function register(Panel $panel): void
     {
         $panel
-            ->resources([
-                Resources\ProductResource::class,
-                Resources\CategoryResource::class,
-                Resources\CollectionResource::class,
-                Resources\AttributeResource::class,
-                Resources\AttributeGroupResource::class,
-                Resources\AttributeSetResource::class,
-            ])
-            ->pages([
-                Pages\BulkEditProducts::class,
-                Pages\ImportExportProducts::class,
-            ])
+            ->resources($this->getResources())
+            ->pages($this->getPages())
             ->widgets([
                 Widgets\ProductStatsWidget::class,
                 Widgets\CategoryDistributionChart::class,
                 Widgets\ProductTypeDistributionWidget::class,
                 Widgets\TopSellingProductsWidget::class,
             ]);
+    }
+
+    /**
+     * @return array<class-string>
+     */
+    private function getResources(): array
+    {
+        $resources = [
+            Resources\ProductResource::class,
+            Resources\CategoryResource::class,
+            Resources\AttributeGroupResource::class,
+            Resources\AttributeSetResource::class,
+        ];
+
+        if (config('filament-products.features.collections', true)) {
+            $resources[] = Resources\CollectionResource::class;
+        }
+
+        if (config('filament-products.features.attributes', true)) {
+            $resources[] = Resources\AttributeResource::class;
+        }
+
+        return $resources;
+    }
+
+    /**
+     * @return array<class-string>
+     */
+    private function getPages(): array
+    {
+        $pages = [];
+
+        if (config('filament-products.features.bulk_edit', true)) {
+            $pages[] = Pages\BulkEditProducts::class;
+        }
+
+        if (config('filament-products.features.import_export', true)) {
+            $pages[] = Pages\ImportExportProducts::class;
+        }
+
+        return $pages;
     }
 
     public function boot(Panel $panel): void
