@@ -217,6 +217,29 @@ test('voucher service can be used by returns false when limit reached', function
     expect($service->canBeUsedBy('limitreached', $user))->toBeFalse();
 });
 
+test('voucher service redeem records fixed discount amount', function (): void {
+    $voucher = Voucher::create([
+        'code' => 'REDEEMFIXED',
+        'name' => 'Redeem Fixed',
+        'type' => 'fixed',
+        'value' => 500,
+        'currency' => 'MYR',
+        'status' => 'active',
+    ]);
+
+    $service = app(VoucherService::class);
+
+    $service->redeem('redeemfixed', 'order-123');
+
+    $usage = VoucherUsage::where('voucher_id', $voucher->id)->first();
+
+    expect($usage)->not->toBeNull()
+        ->and($usage?->discount_amount)->toBe(500)
+        ->and($usage?->currency)->toBe('MYR')
+        ->and($usage?->channel)->toBe('checkout')
+        ->and($usage?->metadata)->toMatchArray(['order_id' => 'order-123']);
+});
+
 test('voucher service can be used by returns false for non-existent', function (): void {
     $user = new class extends Model
     {

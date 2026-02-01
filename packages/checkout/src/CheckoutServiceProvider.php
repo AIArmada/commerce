@@ -39,6 +39,11 @@ final class CheckoutServiceProvider extends PackageServiceProvider
             ->hasConfigFile()
             ->discoversMigrations();
 
+        // Conditionally register views
+        if (config('checkout.views.enabled', true)) {
+            $package->hasViews('checkout');
+        }
+
         // Conditionally register routes
         if (config('checkout.routes.enabled', true)) {
             $package->hasRoute('checkout');
@@ -82,7 +87,7 @@ final class CheckoutServiceProvider extends PackageServiceProvider
 
     protected function registerStepRegistry(): void
     {
-        $this->app->singleton(CheckoutStepRegistry::class, function () {
+        $this->app->singleton(function (): CheckoutStepRegistry {
             $registry = new CheckoutStepRegistry;
 
             $enabledSteps = config('checkout.steps.enabled', []);
@@ -106,7 +111,7 @@ final class CheckoutServiceProvider extends PackageServiceProvider
 
     protected function registerPaymentGatewayResolver(): void
     {
-        $this->app->singleton(PaymentGatewayResolver::class, function () {
+        $this->app->singleton(function (): PaymentGatewayResolver {
             $resolver = new PaymentGatewayResolver(
                 config('checkout.payment.default_gateway'),
                 config('checkout.payment.gateway_priority', ['cashier', 'cashier-chip', 'chip']),
@@ -127,15 +132,15 @@ final class CheckoutServiceProvider extends PackageServiceProvider
         $gateways = (array) config('checkout.payment.gateways', []);
 
         if (class_exists(\AIArmada\Cashier\GatewayManager::class) && ($gateways['cashier']['enabled'] ?? true)) {
-            $resolver->register('cashier', $this->app->make(\AIArmada\Checkout\Integrations\Payment\CashierProcessor::class));
+            $resolver->register('cashier', $this->app->make(Integrations\Payment\CashierProcessor::class));
         }
 
         if (class_exists(\AIArmada\CashierChip\Cashier::class) && ($gateways['cashier-chip']['enabled'] ?? true)) {
-            $resolver->register('cashier-chip', $this->app->make(\AIArmada\Checkout\Integrations\Payment\CashierChipProcessor::class));
+            $resolver->register('cashier-chip', $this->app->make(Integrations\Payment\CashierChipProcessor::class));
         }
 
         if (class_exists(\AIArmada\Chip\Facades\Chip::class) && ($gateways['chip']['enabled'] ?? true)) {
-            $resolver->register('chip', $this->app->make(\AIArmada\Checkout\Integrations\Payment\ChipProcessor::class));
+            $resolver->register('chip', $this->app->make(Integrations\Payment\ChipProcessor::class));
         }
     }
 
@@ -172,6 +177,8 @@ final class CheckoutServiceProvider extends PackageServiceProvider
 
         // Inventory integration (optional)
         if ($this->hasInventoryPackage() && config('checkout.integrations.inventory.enabled', true)) {
+            // Bind InventoryAdapter so it can be injected into ReserveInventoryStep
+            $this->app->singleton(Integrations\InventoryAdapter::class);
             $registry->register('reserve_inventory', $this->app->make(ReserveInventoryStep::class));
         } else {
             $registry->disable('reserve_inventory');

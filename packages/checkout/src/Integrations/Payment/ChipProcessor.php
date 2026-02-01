@@ -38,14 +38,16 @@ final class ChipProcessor implements PaymentProcessorInterface
     {
         try {
             $purchase = Chip::createPurchase([
-                'products' => [
-                    [
-                        'name' => $request->description ?? "Checkout {$session->id}",
-                        'price' => $request->amount,
-                        'quantity' => 1,
+                'purchase' => [
+                    'products' => [
+                        [
+                            'name' => $request->description ?? "Checkout {$session->id}",
+                            'price' => $request->amount,
+                            'quantity' => 1,
+                        ],
                     ],
+                    'currency' => $request->currency,
                 ],
-                'currency' => $request->currency,
                 'client' => [
                     'email' => $request->customerEmail,
                     'full_name' => $request->customerName,

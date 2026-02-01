@@ -164,18 +164,25 @@ final class CashierChipProcessor implements PaymentProcessorInterface
 
     /**
      * Create payment for guest checkout using direct CHIP API.
+     *
+     * CHIP API expects data in this structure:
+     * - purchase.products (nested, not top-level)
+     * - client at top level
+     * - success_redirect, failure_redirect, cancel_redirect at top level
      */
     private function createGuestPayment(CheckoutSession $session, PaymentRequest $request): PaymentResult
     {
         $purchase = Chip::createPurchase([
-            'products' => [
-                [
-                    'name' => $request->description ?? "Checkout {$session->id}",
-                    'price' => $request->amount,
-                    'quantity' => 1,
+            'purchase' => [
+                'products' => [
+                    [
+                        'name' => $request->description ?? "Checkout {$session->id}",
+                        'price' => $request->amount,
+                        'quantity' => 1,
+                    ],
                 ],
+                'currency' => $request->currency,
             ],
-            'currency' => $request->currency,
             'client' => [
                 'email' => $request->customerEmail,
                 'full_name' => $request->customerName,

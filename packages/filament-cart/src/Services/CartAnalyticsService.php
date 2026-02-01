@@ -152,9 +152,11 @@ class CartAnalyticsService
 
         // Get strategy breakdown from cart metadata
         $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
-        $strategyExpression = $driver === 'sqlite'
-            ? "json_extract(metadata, '$.last_recovery_strategy')"
-            : "JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.last_recovery_strategy'))";
+        $strategyExpression = match ($driver) {
+            'sqlite' => "json_extract(metadata, '$.last_recovery_strategy')",
+            'pgsql' => "metadata->>'last_recovery_strategy'",
+            default => "JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.last_recovery_strategy'))",
+        };
 
         $strategyBreakdown = Cart::query()->forOwner()
             ->whereBetween('recovered_at', [$from, $to])
@@ -195,8 +197,16 @@ class CartAnalyticsService
         $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
 
         $groupBy = match ($interval) {
-            'week' => $driver === 'sqlite' ? "strftime('%Y-%W', date)" : 'YEARWEEK(date)',
-            'month' => $driver === 'sqlite' ? "strftime('%Y-%m', date)" : "DATE_FORMAT(date, '%Y-%m')",
+            'week' => match ($driver) {
+                'sqlite' => "strftime('%Y-%W', date)",
+                'pgsql' => "TO_CHAR(date, 'IYYY-IW')",
+                default => 'YEARWEEK(date)',
+            },
+            'month' => match ($driver) {
+                'sqlite' => "strftime('%Y-%m', date)",
+                'pgsql' => "TO_CHAR(date, 'YYYY-MM')",
+                default => "DATE_FORMAT(date, '%Y-%m')",
+            },
             default => 'date',
         };
 
@@ -229,9 +239,11 @@ class CartAnalyticsService
         $driver = \Illuminate\Support\Facades\DB::connection()->getDriverName();
 
         // By hour
-        $hourExpression = $driver === 'sqlite'
-            ? "CAST(strftime('%H', checkout_abandoned_at) AS INTEGER)"
-            : 'HOUR(checkout_abandoned_at)';
+        $hourExpression = match ($driver) {
+            'sqlite' => "CAST(strftime('%H', checkout_abandoned_at) AS INTEGER)",
+            'pgsql' => 'EXTRACT(HOUR FROM checkout_abandoned_at)',
+            default => 'HOUR(checkout_abandoned_at)',
+        };
 
         $byHour = Cart::query()->forOwner()
             ->whereBetween('checkout_abandoned_at', [$from, $to])
@@ -247,9 +259,11 @@ class CartAnalyticsService
         ksort($byHour);
 
         // By day of week
-        $dayExpression = $driver === 'sqlite'
-            ? "strftime('%w', checkout_abandoned_at)" // 0=Sunday
-            : 'DAYOFWEEK(checkout_abandoned_at) - 1'; // 1=Sunday -> 0
+        $dayExpression = match ($driver) {
+            'sqlite' => "strftime('%w', checkout_abandoned_at)", // 0=Sunday
+            'pgsql' => 'EXTRACT(DOW FROM checkout_abandoned_at)', // 0=Sunday
+            default => 'DAYOFWEEK(checkout_abandoned_at) - 1', // 1=Sunday -> 0
+        };
 
         $byDayOfWeek = Cart::query()->forOwner()
             ->whereBetween('checkout_abandoned_at', [$from, $to])
@@ -298,9 +312,11 @@ class CartAnalyticsService
             ->toArray();
 
         // Common exit points
-        $exitPointExpression = $driver === 'sqlite'
-            ? "COALESCE(json_extract(metadata, '$.last_step'), 'Unknown')"
-            : "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.last_step')), 'Unknown')";
+        $exitPointExpression = match ($driver) {
+            'sqlite' => "COALESCE(json_extract(metadata, '$.last_step'), 'Unknown')",
+            'pgsql' => "COALESCE(metadata->>'last_step', 'Unknown')",
+            default => "COALESCE(JSON_UNQUOTE(JSON_EXTRACT(metadata, '$.last_step')), 'Unknown')",
+        };
 
         $commonExitPoints = Cart::query()->forOwner()
             ->whereBetween('checkout_abandoned_at', [$from, $to])
