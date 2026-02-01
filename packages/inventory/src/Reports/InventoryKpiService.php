@@ -268,7 +268,7 @@ final class InventoryKpiService
         }
 
         $lowStockItems = (int) $lowStockQuery
-            ->selectRaw('COUNT(DISTINCT CONCAT(inventoryable_type, ":", inventoryable_id)) as aggregate')
+            ->selectRaw("COUNT(DISTINCT CONCAT(inventoryable_type, ':', inventoryable_id)) as aggregate")
             ->value('aggregate');
 
         $outOfStockQuery = InventoryLevel::query()
@@ -279,7 +279,7 @@ final class InventoryKpiService
         }
 
         $outOfStockItems = (int) $outOfStockQuery
-            ->selectRaw('COUNT(DISTINCT CONCAT(inventoryable_type, ":", inventoryable_id)) as aggregate')
+            ->selectRaw("COUNT(DISTINCT CONCAT(inventoryable_type, ':', inventoryable_id)) as aggregate")
             ->value('aggregate');
 
         return [
