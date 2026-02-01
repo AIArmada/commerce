@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace AIArmada\Checkout\Integrations;
 
 use AIArmada\Checkout\Models\CheckoutSession;
+use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
+use AIArmada\Vouchers\Data\VoucherValidationResult;
 
 final class VouchersAdapter
 {
@@ -20,7 +22,7 @@ final class VouchersAdapter
             return ['applied' => [], 'discount' => 0];
         }
 
-        $voucherService = app(\AIArmada\Vouchers\Contracts\VoucherServiceInterface::class);
+        $voucherService = app(VoucherServiceInterface::class);
 
         $applied = [];
         $totalDiscount = 0;
@@ -28,11 +30,11 @@ final class VouchersAdapter
 
         foreach ($codes as $code) {
             // Validate voucher
-            $validation = $voucherService->validate($code, [
+            $validation = $this->normalizeValidationResult($voucherService->validate($code, [
                 'customer_id' => $session->customer_id,
                 'subtotal' => $session->subtotal,
                 'currency' => $session->currency,
-            ]);
+            ]), $voucherService, $code);
 
             if (! $validation['valid']) {
                 continue;
@@ -76,13 +78,13 @@ final class VouchersAdapter
             return ['valid' => false, 'message' => 'Vouchers not available', 'voucher' => null];
         }
 
-        $voucherService = app(\AIArmada\Vouchers\Contracts\VoucherServiceInterface::class);
+        $voucherService = app(VoucherServiceInterface::class);
 
-        return $voucherService->validate($code, [
+        return $this->normalizeValidationResult($voucherService->validate($code, [
             'customer_id' => $session->customer_id,
             'subtotal' => $session->subtotal,
             'currency' => $session->currency,
-        ]);
+        ]), $voucherService, $code);
     }
 
     /**
@@ -94,7 +96,7 @@ final class VouchersAdapter
             return;
         }
 
-        $voucherService = app(\AIArmada\Vouchers\Contracts\VoucherServiceInterface::class);
+        $voucherService = app(VoucherServiceInterface::class);
         $voucherService->release($code);
     }
 
@@ -109,7 +111,7 @@ final class VouchersAdapter
             return;
         }
 
-        $voucherService = app(\AIArmada\Vouchers\Contracts\VoucherServiceInterface::class);
+        $voucherService = app(VoucherServiceInterface::class);
 
         foreach ($codes as $code) {
             $voucherService->redeem($code, $orderId);
@@ -138,5 +140,37 @@ final class VouchersAdapter
         }
 
         return $discount;
+    }
+
+    /**
+     * @param  array{valid: bool, message: string|null, voucher: array<string, mixed>|null}|VoucherValidationResult  $validation
+     * @return array{valid: bool, message: string|null, voucher: array<string, mixed>|null}
+     */
+    private function normalizeValidationResult(
+        array | VoucherValidationResult $validation,
+        VoucherServiceInterface $voucherService,
+        string $code
+    ): array {
+        if (is_array($validation)) {
+            return $validation;
+        }
+
+        $voucher = null;
+
+        if ($validation->isValid) {
+            $voucherData = $voucherService->find($code);
+
+            if ($voucherData === null) {
+                return ['valid' => false, 'message' => 'Voucher not found.', 'voucher' => null];
+            }
+
+            $voucher = $voucherData->toArray();
+        }
+
+        return [
+            'valid' => $validation->isValid,
+            'message' => $validation->reason,
+            'voucher' => $voucher,
+        ];
     }
 }

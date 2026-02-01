@@ -33,7 +33,7 @@ use InvalidArgumentException;
  * @property \Carbon\CarbonInterface $updated_at
  * @property-read Order $order
  */
-final class OrderPayment extends Model
+class OrderPayment extends Model
 {
     use FormatsMoney;
     use HasOwner {

@@ -481,9 +481,10 @@ final class ProductResource extends Resource
                         'name',
                         modifyQueryUsing: function (Builder $query): Builder {
                             /** @var Builder<\AIArmada\Products\Models\Category> $query */
-                            return $query->forOwner();
+                            return $query->select(['id', 'name'])->forOwner()->groupBy('id', 'name');
                         }
                     )
+                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->name)
                     ->multiple()
                     ->preload(),
             ])

@@ -38,7 +38,7 @@ use InvalidArgumentException;
  * @property Carbon $updated_at
  * @property-read Order $order
  */
-final class OrderItem extends Model
+class OrderItem extends Model
 {
     use FormatsMoney;
     use HasOwner {

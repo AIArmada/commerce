@@ -75,7 +75,7 @@ final class ResolveCustomerStep extends AbstractCheckoutStep
 
     private function loadCustomerDefaults(CheckoutSession $session): void
     {
-        if (! class_exists(\AIArmada\Customers\Models\Customer::class)) {
+        if (! class_exists(Customer::class)) {
             return;
         }
 

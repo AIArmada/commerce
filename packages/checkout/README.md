@@ -30,10 +30,20 @@ if ($result->requiresRedirect()) {
 return back()->withErrors($result->errors);
 ```
 
+### Publishing Views
+
+If you opt to use the built-in views (`response_mode` => `'view'`), you can publish them for customization:
+
+```bash
+php artisan vendor:publish --tag=checkout-views
+```
+
 ## Features
 
 - **Unified Checkout Flow**: Orchestrates cart → order → payment → fulfillment
 - **Step-Based Architecture**: Modular, pluggable steps with dependency resolution
+- **Flexible Response Modes**: Choose between 'redirect' or built-in 'view' response modes for payment callbacks.
+- **Built-in Views**: Optional, customizable Tailwind CSS Blade views for success, failure, and cancellation pages.
 - **Multiple Payment Gateways**: Chip, Cashier-Chip, Cashier processors
 - **Multi-tenancy Support**: Full owner-scoping via `HasOwner` trait
 - **Inventory Integration**: Optional stock reservation during checkout

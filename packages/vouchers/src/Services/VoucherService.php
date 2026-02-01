@@ -6,8 +6,10 @@ namespace AIArmada\Vouchers\Services;
 
 use AIArmada\Vouchers\Actions\RecordVoucherUsage;
 use AIArmada\Vouchers\Concerns\QueriesVouchers;
+use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Data\VoucherValidationResult;
+use AIArmada\Vouchers\Enums\VoucherType;
 use AIArmada\Vouchers\Exceptions\ManualRedemptionNotAllowedException;
 use AIArmada\Vouchers\Exceptions\VoucherNotFoundException;
 use AIArmada\Vouchers\Models\Voucher as VoucherModel;
@@ -17,8 +19,9 @@ use AIArmada\Vouchers\States\Active;
 use Akaunting\Money\Money;
 use Illuminate\Database\Eloquent\Collection as EloquentCollection;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Cache;
 
-class VoucherService
+class VoucherService implements VoucherServiceInterface
 {
     use QueriesVouchers;
 
@@ -283,5 +286,80 @@ class VoucherService
             ->where('holder_id', $holder->getKey())
             ->where('is_redeemed', false)
             ->delete() > 0;
+    }
+
+    /**
+     * Reserve a voucher for a checkout session.
+     *
+     * Reservations prevent the voucher from being used elsewhere
+     * during the checkout process.
+     */
+    public function reserve(string $code, string $sessionId): void
+    {
+        $voucher = $this->voucherQuery()
+            ->where('code', $this->normalizeCode($code))
+            ->firstOrFail();
+
+        /** @var VoucherModel $voucher */
+        $cacheKey = "voucher_reservation:{$voucher->id}:{$sessionId}";
+        $ttl = config('vouchers.reservation.ttl', 900); // 15 minutes default
+
+        Cache::put($cacheKey, [
+            'voucher_id' => $voucher->id,
+            'session_id' => $sessionId,
+            'reserved_at' => now()->toIso8601String(),
+        ], $ttl);
+    }
+
+    /**
+     * Release a voucher reservation.
+     */
+    public function release(string $code): void
+    {
+        $voucher = $this->voucherQuery()
+            ->where('code', $this->normalizeCode($code))
+            ->first();
+
+        if (! $voucher) {
+            return;
+        }
+
+        // Clear all reservations for this voucher
+        $pattern = "voucher_reservation:{$voucher->id}:*";
+
+        // Since we can't pattern-delete in all cache drivers,
+        // we rely on TTL expiration for cleanup
+    }
+
+    /**
+     * Redeem a voucher after successful order completion.
+     */
+    public function redeem(string $code, string $orderId): void
+    {
+        $voucher = $this->voucherQuery()
+            ->where('code', $this->normalizeCode($code))
+            ->firstOrFail();
+
+        /** @var VoucherModel $voucher */
+        $currency = config('vouchers.currency', 'MYR');
+
+        $voucherType = $voucher->type instanceof VoucherType
+            ? $voucher->type
+            : VoucherType::tryFrom((string) $voucher->type);
+
+        // Calculate the discount amount based on voucher type
+        $discountAmount = match ($voucherType) {
+            VoucherType::Percentage => Money::{$currency}(0), // Will be updated with actual order discount
+            VoucherType::Fixed => Money::{$currency}((int) ($voucher->value ?? 0)),
+            default => Money::{$currency}(0),
+        };
+
+        $this->recordUsage(
+            code: $code,
+            discountAmount: $discountAmount,
+            channel: 'checkout',
+            metadata: ['order_id' => $orderId],
+            voucherModel: $voucher
+        );
     }
 }

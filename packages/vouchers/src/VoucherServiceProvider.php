@@ -11,6 +11,7 @@ use AIArmada\Cart\Facades\Cart as CartFacade;
 use AIArmada\Cart\Services\CartConditionResolver;
 use AIArmada\Vouchers\Cart\VoucherConditionProvider;
 use AIArmada\Vouchers\Conditions\VoucherCondition;
+use AIArmada\Vouchers\Contracts\VoucherServiceInterface;
 use AIArmada\Vouchers\Data\VoucherData;
 use AIArmada\Vouchers\Events\VoucherApplied;
 use AIArmada\Vouchers\Facades\Voucher;
@@ -41,6 +42,9 @@ final class VoucherServiceProvider extends PackageServiceProvider
         $this->app->singleton(VoucherValidator::class);
         $this->app->singleton(VoucherRulesFactory::class, static fn () => new VoucherRulesFactory);
         $this->app->singleton(AffiliateIntegrationRegistrar::class);
+
+        // Bind interface for checkout package integration
+        $this->app->bind(VoucherServiceInterface::class, VoucherService::class);
 
         if (class_exists(ConditionProviderRegistry::class)) {
             $this->app->singleton(VoucherConditionProvider::class);
@@ -125,6 +129,7 @@ final class VoucherServiceProvider extends PackageServiceProvider
     {
         return [
             VoucherService::class,
+            VoucherServiceInterface::class,
             VoucherValidator::class,
             VoucherRulesFactory::class,
             AffiliateIntegrationRegistrar::class,

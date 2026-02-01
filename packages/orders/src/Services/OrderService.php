@@ -154,17 +154,42 @@ final class OrderService implements OrderServiceInterface
      */
     public function addAddress(Order $order, array $addressData, string $type): void
     {
+        // Handle 'name' field by splitting into first_name/last_name if not provided separately
+        $firstName = $addressData['first_name'] ?? null;
+        $lastName = $addressData['last_name'] ?? null;
+
+        if ($firstName === null && isset($addressData['name'])) {
+            $nameParts = explode(' ', mb_trim($addressData['name']), 2);
+            $firstName = $nameParts[0] ?? '';
+            $lastName = $nameParts[1] ?? '';
+        }
+
+        // Get country code - convert full names to ISO 2-letter codes
+        $country = $addressData['country_code'] ?? $addressData['country'] ?? 'MY';
+        if (mb_strlen($country) > 2) {
+            // Map common country names to ISO codes
+            $countryMap = [
+                'malaysia' => 'MY',
+                'singapore' => 'SG',
+                'indonesia' => 'ID',
+                'brunei' => 'BN',
+                'thailand' => 'TH',
+                'philippines' => 'PH',
+            ];
+            $country = $countryMap[mb_strtolower($country)] ?? 'MY';
+        }
+
         $order->addresses()->create([
             'type' => $type,
-            'first_name' => $addressData['first_name'],
-            'last_name' => $addressData['last_name'],
+            'first_name' => $firstName ?? '',
+            'last_name' => $lastName ?? '',
             'company' => $addressData['company'] ?? null,
-            'line1' => $addressData['line1'],
-            'line2' => $addressData['line2'] ?? null,
-            'city' => $addressData['city'],
+            'line1' => $addressData['line1'] ?? $addressData['address_line_1'] ?? $addressData['address'] ?? '',
+            'line2' => $addressData['line2'] ?? $addressData['address_line_2'] ?? null,
+            'city' => $addressData['city'] ?? '',
             'state' => $addressData['state'] ?? null,
-            'postcode' => $addressData['postcode'],
-            'country' => $addressData['country'] ?? $addressData['country_code'] ?? 'MY',
+            'postcode' => $addressData['postcode'] ?? $addressData['postal_code'] ?? '',
+            'country' => $country,
             'phone' => $addressData['phone'] ?? null,
             'email' => $addressData['email'] ?? null,
             'metadata' => $addressData['metadata'] ?? null,

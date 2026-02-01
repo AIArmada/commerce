@@ -8,7 +8,6 @@ use AIArmada\Promotions\Enums\PromotionType as BasePromotionType;
 use Filament\Support\Contracts\HasColor;
 use Filament\Support\Contracts\HasIcon;
 use Filament\Support\Contracts\HasLabel;
-use Filament\Support\Icons\Heroicon;
 
 /**
  * Filament-aware extension of PromotionType with UI contracts.
@@ -18,6 +17,14 @@ enum PromotionType: string implements HasColor, HasIcon, HasLabel
     case Percentage = 'percentage';
     case Fixed = 'fixed';
     case BuyXGetY = 'buy_x_get_y';
+
+    /**
+     * Convert from base PromotionType to Filament-aware version.
+     */
+    public static function fromBase(BasePromotionType $type): self
+    {
+        return self::from($type->value);
+    }
 
     public function getLabel(): string
     {
@@ -31,9 +38,9 @@ enum PromotionType: string implements HasColor, HasIcon, HasLabel
     public function getIcon(): string
     {
         return match ($this) {
-            self::Percentage => Heroicon::OutlinedReceiptPercent->value,
-            self::Fixed => Heroicon::OutlinedCurrencyDollar->value,
-            self::BuyXGetY => Heroicon::OutlinedGift->value,
+            self::Percentage => 'heroicon-o-receipt-percent',
+            self::Fixed => 'heroicon-o-currency-dollar',
+            self::BuyXGetY => 'heroicon-o-gift',
         };
     }
 
@@ -44,14 +51,6 @@ enum PromotionType: string implements HasColor, HasIcon, HasLabel
             self::Fixed => 'info',
             self::BuyXGetY => 'warning',
         };
-    }
-
-    /**
-     * Convert from base PromotionType to Filament-aware version.
-     */
-    public static function fromBase(BasePromotionType $type): self
-    {
-        return self::from($type->value);
     }
 
     /**
