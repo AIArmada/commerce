@@ -27,6 +27,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphMany;
 use InvalidArgumentException;
 use Spatie\MediaLibrary\HasMedia;
 use Spatie\MediaLibrary\InteractsWithMedia;
@@ -217,6 +218,20 @@ class Product extends Model implements Buyable, HasMedia, Inventoryable, Priceab
             'product_id',
             'collection_id'
         )->withTimestamps();
+    }
+
+    /**
+     * Get the product's prices from the pricing package.
+     *
+     * @return MorphMany<\AIArmada\Pricing\Models\Price, $this>
+     */
+    public function prices(): MorphMany
+    {
+        $priceClass = class_exists(\AIArmada\Pricing\Models\Price::class)
+            ? \AIArmada\Pricing\Models\Price::class
+            : \Illuminate\Database\Eloquent\Model::class;
+
+        return $this->morphMany($priceClass, 'priceable');
     }
 
     // =========================================================================
