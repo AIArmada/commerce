@@ -12,6 +12,9 @@ use AIArmada\Checkout\Models\CheckoutSession;
 use AIArmada\Checkout\States\Completed;
 use AIArmada\Inventory\InventoryServiceProvider;
 use AIArmada\Orders\Contracts\OrderServiceInterface;
+use AIArmada\Orders\Models\Order;
+use Illuminate\Support\Facades\Log;
+use Throwable;
 
 final class CreateOrderStep extends AbstractCheckoutStep
 {
@@ -92,11 +95,21 @@ final class CreateOrderStep extends AbstractCheckoutStep
             shippingAddress: $shippingData ?: null,
         );
 
+        // Confirm payment if not a free order (triggers PaymentConfirmed transition → OrderPaid event)
+        $isFreeOrder = ($paymentData['type'] ?? null) === 'free_order';
+        if (! $isFreeOrder && config('checkout.create_order.confirm_payment', true)) {
+            $this->confirmPayment($orderService, $order, $session, $paymentData);
+        }
+
         $session->update([
             'order_id' => $order->id,
             'completed_at' => now(),
         ]);
-        $session->status->transitionTo(Completed::class);
+
+        // Only transition to Completed if not already in that state
+        if (! $session->status->is(Completed::class)) {
+            $session->status->transitionTo(Completed::class);
+        }
 
         $this->commitInventoryReservations($session);
         $this->clearCart($session);
@@ -157,6 +170,60 @@ final class CreateOrderStep extends AbstractCheckoutStep
 
         if ($cart !== null) {
             $cart->clear();
+        }
+    }
+
+    /**
+     * Confirm payment via order service to trigger PaymentConfirmed transition.
+     *
+     * This creates the Payment record on the order and dispatches OrderPaid event.
+     *
+     * @param  array<string, mixed>  $paymentData
+     */
+    private function confirmPayment(
+        OrderServiceInterface $orderService,
+        Order $order,
+        CheckoutSession $session,
+        array $paymentData,
+    ): void {
+        $transactionId = $paymentData['transaction_id']
+            ?? $paymentData['payment_id']
+            ?? $session->payment_id
+            ?? 'unknown';
+
+        $gateway = $paymentData['gateway']
+            ?? $session->selected_payment_gateway
+            ?? 'unknown';
+
+        $amount = $paymentData['amount'] ?? $session->grand_total;
+
+        $metadata = [
+            'checkout_session_id' => $session->id,
+            'payment_id' => $session->payment_id,
+            'gateway_response' => $paymentData['gateway_response'] ?? null,
+        ];
+
+        try {
+            $orderService->confirmPayment(
+                order: $order,
+                transactionId: $transactionId,
+                gateway: $gateway,
+                amount: (int) $amount,
+                metadata: $metadata,
+            );
+
+            Log::debug('Payment confirmed for order via checkout', [
+                'order_id' => $order->id,
+                'order_number' => $order->order_number,
+                'transaction_id' => $transactionId,
+                'gateway' => $gateway,
+            ]);
+        } catch (Throwable $e) {
+            Log::error('Failed to confirm payment for order', [
+                'order_id' => $order->id,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't re-throw - order was created successfully, payment confirmation is supplementary
         }
     }
 }

@@ -401,7 +401,9 @@ final class CheckoutService implements CheckoutServiceInterface
             }
         }
 
-        $session->status->transitionTo(Completed::class);
+        if (! $session->status->is(Completed::class)) {
+            $session->status->transitionTo(Completed::class);
+        }
         $this->events->dispatch(new CheckoutCompleted($session));
 
         return CheckoutResult::success($session);
@@ -452,9 +454,11 @@ final class CheckoutService implements CheckoutServiceInterface
 
             $paymentVerified = $result->status === PaymentStatus::Completed;
 
-            // Update payment data with verification result
+            // Update payment data with verification result - update both 'status' and 'verification_status'
+            // so CreateOrderStep validation passes
             $session->update([
                 'payment_data' => array_merge($session->payment_data ?? [], [
+                    'status' => $result->status->value,
                     'verified_at' => now()->toIso8601String(),
                     'verification_status' => $result->status->value,
                 ]),

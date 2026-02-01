@@ -38,8 +38,8 @@ return [
     |
     */
     'models' => [
-        'customer' => \AIArmada\Customers\Models\Customer::class,
-        'order' => \AIArmada\Orders\Models\Order::class,
+        'customer' => AIArmada\Customers\Models\Customer::class,
+        'order' => AIArmada\Orders\Models\Order::class,
     ],
 
     /*
@@ -48,8 +48,8 @@ return [
     |--------------------------------------------------------------------------
     */
     'transformers' => [
-        'billing' => \AIArmada\Checkout\Transformers\NullSessionDataTransformer::class,
-        'shipping' => \AIArmada\Checkout\Transformers\NullSessionDataTransformer::class,
+        'billing' => AIArmada\Checkout\Transformers\NullSessionDataTransformer::class,
+        'shipping' => AIArmada\Checkout\Transformers\NullSessionDataTransformer::class,
     ],
 
     /*
@@ -82,6 +82,22 @@ return [
             'create_order',
             'dispatch_documents',
         ],
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Create Order Step Settings
+    |--------------------------------------------------------------------------
+    |
+    | Configure how the create_order step behaves after order creation.
+    |
+    | confirm_payment: When true, triggers PaymentConfirmed transition on the
+    |                  order after creation. This creates a Payment record and
+    |                  dispatches the OrderPaid event (for notifications, etc).
+    |
+    */
+    'create_order' => [
+        'confirm_payment' => env('CHECKOUT_CREATE_ORDER_CONFIRM_PAYMENT', true),
     ],
 
     /*
@@ -200,6 +216,43 @@ return [
         'success' => env('CHECKOUT_REDIRECT_SUCCESS', '/orders/{order_id}'),
         'failure' => env('CHECKOUT_REDIRECT_FAILURE', '/checkout/failed'),
         'cancel' => env('CHECKOUT_REDIRECT_CANCEL', '/checkout/cancelled'),
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Response Mode
+    |--------------------------------------------------------------------------
+    |
+    | How the package responds after processing payment callbacks:
+    |
+    | 'redirect' - Redirect to URLs in 'redirects' config (default)
+    |              Use this when you have custom result page controllers.
+    |
+    | 'view' - Render package views directly
+    |          Use this for simpler setups without custom controllers.
+    |
+    */
+    'response_mode' => env('CHECKOUT_RESPONSE_MODE', 'redirect'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Views
+    |--------------------------------------------------------------------------
+    |
+    | Configure package views for checkout result pages.
+    | Views can be published with: php artisan vendor:publish --tag=checkout-views
+    |
+    | Only used when response_mode is 'view'.
+    |
+    */
+    'views' => [
+        'enabled' => env('CHECKOUT_VIEWS_ENABLED', true),
+        'layout' => env('CHECKOUT_VIEWS_LAYOUT', 'layouts.app'),
+        'routes' => [
+            'success' => 'checkout::success',
+            'failure' => 'checkout::failure',
+            'cancel' => 'checkout::cancel',
+        ],
     ],
 
     /*
