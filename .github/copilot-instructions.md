@@ -409,6 +409,97 @@ These files are intentionally split by concern for easier maintenance. Read and 
 - Use per-package checks (tests/PHPStan) instead of repo-wide runs.
 - When a guideline requires verification, either run it (if feasible) or call out what must be run by the user.
 
+=== .ai/config rules ===
+
+# Config Guidelines
+
+- **Keys**: Keep minimal. If a key is defined but never read, remove it.
+- **Section order** (keep consistent across packages):
+  - Core: Database -> Credentials/API -> Defaults -> Features/Behavior -> Integrations -> HTTP -> Webhooks -> Cache -> Logging.
+  - Filament: Navigation -> Tables -> Features -> Resources.
+- **Rules**:
+  - Any package that uses JSON columns in migrations MUST define and use a `json_column_type` setting.
+  - Prefer opinionated defaults over excessive `env()` usage (only use env vars for secrets or deploy-time values).
+  - Comments: section headers only; inline comments only for non-obvious values.
+
+## Verification
+
+- Find config reads: `rg -n -- "config\('" packages/*/src packages/*/config`
+- Find unused keys (typical pattern): `rg -n -- "config\('pkg\." packages/*/config | cat`
+
+=== .ai/database rules ===
+
+# Database Guidelines
+
+- **Primary keys**: `uuid('id')->primary()`.
+- **Foreign keys**: `foreignUuid('col')` only.
+- **Never** add DB-level constraints or cascades: no `->constrained()`, no `->cascadeOnDelete()`, no FK constraints.
+- **Cascades/integrity**: enforce in application logic (models/actions/services).
+- **Migrations**: keep safe/idempotent; no `down()` required.
+
+## Verification
+
+- Ensure no constraints/cascades slipped in: `rg -n -- "constrained\(|cascadeOnDelete\(" packages/*/database`
+
+=== .ai/development rules ===
+
+# Development Guidelines
+
+- **Safety**: NEVER "cleanup" or mass-revert without permission.
+- **Scope**: Run tools (Pint/PHPStan) ONLY on modified packages.
+
+## Monorepo Formatting
+
+- **Golden rule**: No style-only PRs.
+- If touching `packages/*/src/**`, run Pint only on changed files (or at least only the changed packages).
+- Never run Pint repo-wide “just to be safe” — it creates noisy diffs across unrelated packages.
+
+## Best Practices
+
+- **Strict Laravel**: `Arr::get()`, `Collections`, `Service Container`.
+- **Modern PHP**: 8.4+ (readonly, match, modern typing).
+- **Time**: Use `CarbonImmutable` (or immutable date/time objects) wherever possible; avoid mutable `Carbon` unless you have a strong reason.
+- **Logic**: Action Classes only. No logic in Controllers/Models.
+- **Structure**: SOLID, Repository for access, Factory for creation.
+
+## Naming
+
+- **Classes**: `PascalCase`.
+- **Methods/Vars**: `camelCase`.
+- **Consts**: `SCREAMING_SNAKE`.
+- **DB**: `snake_case` (tables/cols).
+- **Bool**: `is_`, `has_`, `can_`.
+
+## Agents
+
+- **Auditor**: Strict auditing/security (`.github/agents/Auditor.agent.md`).
+- **QC**: QA/Testing (`.github/agents/QC.agent.md`).
+- **Visionary**: Architecture (`.github/agents/Visionary.agent.md`).
+
+## Beta Status
+
+- **Break Changes**: Allowed for improvement. No backward compatibility required.
+
+=== .ai/docs rules ===
+
+# Documentation Guidelines
+
+- **Location**: `packages/<pkg>/docs/`
+- **Required files**: `01-overview`, `02-install`, `03-config`, `04-usage`, `99-trouble`
+- **Format**: Markdown with YAML frontmatter (`title:`) at the top of every file.
+
+## Content rules
+
+- Use `##` for main sections, `###` for subsections.
+- Examples must be copy-paste ready (include imports/namespaces where relevant).
+- Cross-reference related docs using relative links.
+- Call out breaking changes explicitly and explain the migration path.
+
+## Callouts
+
+- Import: `import Aside from "@components/Aside.astro"`
+- Variants: `info`, `warning`, `tip`, `danger`
+
 === .ai/filament rules ===
 
 # Filament Guidelines
@@ -423,6 +514,21 @@ These files are intentionally split by concern for easier maintenance. Read and 
 ## Verification
 
 - Double-check method signatures in the installed Filament version before shipping.
+
+=== .ai/model rules ===
+
+# Model Guidelines
+
+- **Base**:
+  - Use `Illuminate\Database\Eloquent\Concerns\HasUuids`.
+  - Do NOT set `protected $table`; implement `getTable()` using package config (tables map + prefix).
+- **Relations**: type relations and collections with PHPDoc generics.
+- **Cascades**: implement application-level cascades in `booted()` (delete or null-out). Never rely on DB cascades.
+- **Migrations**: use `foreignUuid()` only (no `constrained()` / FK constraints).
+
+## Verification
+
+- Search for forbidden DB cascades/constraints in migrations: `rg -n -- "constrained\(|cascadeOnDelete\(" packages/*/database`
 
 === .ai/multitenancy rules ===
 
@@ -491,109 +597,16 @@ These files are intentionally split by concern for easier maintenance. Read and 
   - `rg -n -- "Route::.*\{.*\}" packages/<pkg>/routes`
   - `rg -n -- "withoutOwnerScope\(|withoutGlobalScope\(.*Owner" packages/<pkg>/src`
 
-=== .ai/development rules ===
+=== .ai/packages rules ===
 
-# Development Guidelines
+# Packages Guidelines
 
-- **Safety**: NEVER "cleanup" or mass-revert without permission.
-- **Scope**: Run tools (Pint/PHPStan) ONLY on modified packages.
-
-## Monorepo Formatting
-
-- **Golden rule**: No style-only PRs.
-- If touching `packages/*/src/**`, run Pint only on changed files (or at least only the changed packages).
-- Never run Pint repo-wide “just to be safe” — it creates noisy diffs across unrelated packages.
-
-## Best Practices
-
-- **Strict Laravel**: `Arr::get()`, `Collections`, `Service Container`.
-- **Modern PHP**: 8.4+ (readonly, match, modern typing).
-- **Time**: Use `CarbonImmutable` (or immutable date/time objects) wherever possible; avoid mutable `Carbon` unless you have a strong reason.
-- **Logic**: Action Classes only. No logic in Controllers/Models.
-- **Structure**: SOLID, Repository for access, Factory for creation.
-
-## Naming
-
-- **Classes**: `PascalCase`.
-- **Methods/Vars**: `camelCase`.
-- **Consts**: `SCREAMING_SNAKE`.
-- **DB**: `snake_case` (tables/cols).
-- **Bool**: `is_`, `has_`, `can_`.
-
-## Agents
-
-- **Auditor**: Strict auditing/security (`.github/agents/Auditor.agent.md`).
-- **QC**: QA/Testing (`.github/agents/QC.agent.md`).
-- **Visionary**: Architecture (`.github/agents/Visionary.agent.md`).
-
-## Beta Status
-
-- **Break Changes**: Allowed for improvement. No backward compatibility required.
-
-=== .ai/model rules ===
-
-# Model Guidelines
-
-- **Base**:
-  - Use `Illuminate\Database\Eloquent\Concerns\HasUuids`.
-  - Do NOT set `protected $table`; implement `getTable()` using package config (tables map + prefix).
-- **Relations**: type relations and collections with PHPDoc generics.
-- **Cascades**: implement application-level cascades in `booted()` (delete or null-out). Never rely on DB cascades.
-- **Migrations**: use `foreignUuid()` only (no `constrained()` / FK constraints).
-
-## Verification
-
-- Search for forbidden DB cascades/constraints in migrations: `rg -n -- "constrained\(|cascadeOnDelete\(" packages/*/database`
-
-=== .ai/database rules ===
-
-# Database Guidelines
-
-- **Primary keys**: `uuid('id')->primary()`.
-- **Foreign keys**: `foreignUuid('col')` only.
-- **Never** add DB-level constraints or cascades: no `->constrained()`, no `->cascadeOnDelete()`, no FK constraints.
-- **Cascades/integrity**: enforce in application logic (models/actions/services).
-- **Migrations**: keep safe/idempotent; no `down()` required.
-
-## Verification
-
-- Ensure no constraints/cascades slipped in: `rg -n -- "constrained\(|cascadeOnDelete\(" packages/*/database`
-
-=== .ai/spatie rules ===
-
-# Spatie Guidelines
-
-- **DTOs**: `spatie/laravel-data`
-- **Logging**: `activitylog` (business events), `auditing` (compliance)
-- **Webhooks**: `spatie/laravel-webhook-client` (idempotent job pattern)
-- **Media**: `spatie/laravel-medialibrary`
-- **Settings**: `spatie/laravel-settings`
-- **Tags**: `spatie/laravel-tags`
-- **States**: `spatie/laravel-model-states`
-
-## Rule of thumb
-
-- If one of the above solves the problem, prefer it over inventing a custom subsystem.
-
-=== .ai/docs rules ===
-
-# Documentation Guidelines
-
-- **Location**: `packages/<pkg>/docs/`
-- **Required files**: `01-overview`, `02-install`, `03-config`, `04-usage`, `99-trouble`
-- **Format**: Markdown with YAML frontmatter (`title:`) at the top of every file.
-
-## Content rules
-
-- Use `##` for main sections, `###` for subsections.
-- Examples must be copy-paste ready (include imports/namespaces where relevant).
-- Cross-reference related docs using relative links.
-- Call out breaking changes explicitly and explain the migration path.
-
-## Callouts
-
-- Import: `import Aside from "@components/Aside.astro"`
-- Variants: `info`, `warning`, `tip`, `danger`
+- **Independence**: Packages must work standalone. Prefer `suggest` over hard `require` for optional integrations.
+- **Foundation**: Always check `commerce-support` for existing primitives, traits, or contracts before building custom logic or requiring external packages directly.
+- **Integration**: When related packages are installed together, auto-enable integrations via `class_exists()` checks in service providers.
+- **DTOs**: Use `spatie/laravel-data`.
+- **Deletes**: No soft deletes (`SoftDeletes`).
+- **Testing**: Verify both standalone install and integrated behavior.
 
 === .ai/phpstan rules ===
 
@@ -610,34 +623,21 @@ These files are intentionally split by concern for easier maintenance. Read and 
 
 - Example: `./vendor/bin/phpstan analyse packages/<pkg>/src --level=6`
 
-=== .ai/packages rules ===
+=== .ai/spatie rules ===
 
-# Packages Guidelines
+# Spatie Guidelines
 
-- **Independence**: Packages must work standalone. Prefer `suggest` over hard `require` for optional integrations.
-- **Foundation**: Always check `commerce-support` for existing primitives, traits, or contracts before building custom logic or requiring external packages directly.
-- **Integration**: When related packages are installed together, auto-enable integrations via `class_exists()` checks in service providers.
-- **DTOs**: Use `spatie/laravel-data`.
-- **Deletes**: No soft deletes (`SoftDeletes`).
-- **Testing**: Verify both standalone install and integrated behavior.
+- **DTOs**: `spatie/laravel-data`
+- **Logging**: `activitylog` (business events), `auditing` (compliance)
+- **Webhooks**: `spatie/laravel-webhook-client` (idempotent job pattern)
+- **Media**: `spatie/laravel-medialibrary`
+- **Settings**: `spatie/laravel-settings`
+- **Tags**: `spatie/laravel-tags`
+- **States**: `spatie/laravel-model-states`
 
-=== .ai/config rules ===
+## Rule of thumb
 
-# Config Guidelines
-
-- **Keys**: Keep minimal. If a key is defined but never read, remove it.
-- **Section order** (keep consistent across packages):
-  - Core: Database -> Credentials/API -> Defaults -> Features/Behavior -> Integrations -> HTTP -> Webhooks -> Cache -> Logging.
-  - Filament: Navigation -> Tables -> Features -> Resources.
-- **Rules**:
-  - Any package that uses JSON columns in migrations MUST define and use a `json_column_type` setting.
-  - Prefer opinionated defaults over excessive `env()` usage (only use env vars for secrets or deploy-time values).
-  - Comments: section headers only; inline comments only for non-obvious values.
-
-## Verification
-
-- Find config reads: `rg -n -- "config\('" packages/*/src packages/*/config`
-- Find unused keys (typical pattern): `rg -n -- "config\('pkg\." packages/*/config | cat`
+- If one of the above solves the problem, prefer it over inventing a custom subsystem.
 
 === .ai/test rules ===
 
@@ -677,26 +677,11 @@ The Laravel Boost guidelines are specifically curated by Laravel maintainers for
 
 This application is a Laravel application and its main Laravel ecosystems package & versions are below. You are an expert with them all. Ensure you abide by these specific packages & versions.
 
-- php - 8.4.16
-- filament/filament (FILAMENT) - v5
-- larastan/larastan (LARASTAN) - v3
-- laravel/cashier (CASHIER) - v16
-- laravel/framework (LARAVEL) - v12
-- laravel/mcp (MCP) - v0
-- laravel/pint (PINT) - v1
-- laravel/prompts (PROMPTS) - v0
-- livewire/livewire (LIVEWIRE) - v4
-- pestphp/pest (PEST) - v4
-- phpunit/phpunit (PHPUNIT) - v12
-- rector/rector (RECTOR) - v2
+- php - 8.4.17
 
 ## Skills Activation
 
 This project has domain-specific skills available. You MUST activate the relevant skill whenever you work in that domain—don't wait until you're stuck.
-
-- `livewire-development` — Develops reactive Livewire 4 components. Activates when creating, updating, or modifying Livewire components; working with wire:model, wire:click, wire:loading, or any wire: directives; adding real-time updates, loading states, or reactivity; debugging component behavior; writing Livewire tests; or when the user mentions Livewire, component, counter, or reactive UI.
-- `pest-testing` — Tests applications using the Pest 4 PHP framework. Activates when writing tests, creating unit or feature tests, adding assertions, testing Livewire components, browser testing, debugging test failures, working with datasets or mocking; or when the user mentions test, spec, TDD, expects, assertion, coverage, or needs to verify functionality works.
-- `debugging-output-and-previewing-html-using-ray` — Use when user says &quot;send to Ray,&quot; &quot;show in Ray,&quot; &quot;debug in Ray,&quot; &quot;log to Ray,&quot; &quot;display in Ray,&quot; or wants to visualize data, debug output, or show diagrams in the Ray desktop application.
 
 ## Conventions
 
@@ -800,248 +785,10 @@ protected function isAccessible(User $user, ?string $path = null): bool
 
 - Add useful array shape type definitions when appropriate.
 
-=== laravel/core rules ===
+=== tests rules ===
 
-# Do Things the Laravel Way
+# Test Enforcement
 
-- Use `php artisan make:` commands to create new files (i.e. migrations, controllers, models, etc.). You can list available Artisan commands using the `list-artisan-commands` tool.
-- If you're creating a generic PHP class, use `php artisan make:class`.
-- Pass `--no-interaction` to all Artisan commands to ensure they work without user input. You should also pass the correct `--options` to ensure correct behavior.
-
-## Database
-
-- Always use proper Eloquent relationship methods with return type hints. Prefer relationship methods over raw queries or manual joins.
-- Use Eloquent models and relationships before suggesting raw database queries.
-- Avoid `DB::`; prefer `Model::query()`. Generate code that leverages Laravel's ORM capabilities rather than bypassing them.
-- Generate code that prevents N+1 query problems by using eager loading.
-- Use Laravel's query builder for very complex database operations.
-
-### Model Creation
-
-- When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `list-artisan-commands` to check the available options to `php artisan make:model`.
-
-### APIs & Eloquent Resources
-
-- For APIs, default to using Eloquent API Resources and API versioning unless existing API routes do not, then you should follow existing application convention.
-
-## Controllers & Validation
-
-- Always create Form Request classes for validation rather than inline validation in controllers. Include both validation rules and custom error messages.
-- Check sibling Form Requests to see if the application uses array or string based validation rules.
-
-## Authentication & Authorization
-
-- Use Laravel's built-in authentication and authorization features (gates, policies, Sanctum, etc.).
-
-## URL Generation
-
-- When generating links to other pages, prefer named routes and the `route()` function.
-
-## Queues
-
-- Use queued jobs for time-consuming operations with the `ShouldQueue` interface.
-
-## Configuration
-
-- Use environment variables only in configuration files - never use the `env()` function directly outside of config files. Always use `config('app.name')`, not `env('APP_NAME')`.
-
-## Testing
-
-- When creating models for tests, use the factories for the models. Check if the factory has custom states that can be used before manually setting up the model.
-- Faker: Use methods such as `$this->faker->word()` or `fake()->randomDigit()`. Follow existing conventions whether to use `$this->faker` or `fake()`.
-- When creating tests, make use of `php artisan make:test [options] {name}` to create a feature test, and pass `--unit` to create a unit test. Most tests should be feature tests.
-
-## Vite Error
-
-- If you receive an "Illuminate\Foundation\ViteException: Unable to locate file in Vite manifest" error, you can run `npm run build` or ask the user to run `npm run dev` or `composer run dev`.
-
-=== laravel/v12 rules ===
-
-# Laravel 12
-
-- CRITICAL: ALWAYS use `search-docs` tool for version-specific Laravel documentation and updated code examples.
-- Since Laravel 11, Laravel has a new streamlined file structure which this project uses.
-
-## Laravel 12 Structure
-
-- In Laravel 12, middleware are no longer registered in `app/Http/Kernel.php`.
-- Middleware are configured declaratively in `bootstrap/app.php` using `Application::configure()->withMiddleware()`.
-- `bootstrap/app.php` is the file to register middleware, exceptions, and routing files.
-- `bootstrap/providers.php` contains application specific service providers.
-- The `app\Console\Kernel.php` file no longer exists; use `bootstrap/app.php` or `routes/console.php` for console configuration.
-- Console commands in `app/Console/Commands/` are automatically available and do not require manual registration.
-
-## Database
-
-- When modifying a column, the migration must include all of the attributes that were previously defined on the column. Otherwise, they will be dropped and lost.
-- Laravel 12 allows limiting eagerly loaded records natively, without external packages: `$query->latest()->limit(10);`.
-
-### Models
-
-- Casts can and likely should be set in a `casts()` method on a model rather than the `$casts` property. Follow existing conventions from other models.
-
-=== pint/core rules ===
-
-# Laravel Pint Code Formatter
-
-- You must run `vendor/bin/pint --dirty` before finalizing changes to ensure your code matches the project's expected style.
-- Do not run `vendor/bin/pint --test`, simply run `vendor/bin/pint` to fix any formatting issues.
-
-=== livewire/core rules ===
-
-# Livewire
-
-- Livewire allows you to build dynamic, reactive interfaces using only PHP — no JavaScript required.
-- Instead of writing frontend code in JavaScript frameworks, you use Alpine.js to build the UI when client-side interactions are required.
-- State lives on the server; the UI reflects it. Validate and authorize in actions (they're like HTTP requests).
-- IMPORTANT: Activate `livewire-development` every time you're working with Livewire-related tasks.
-
-=== pest/core rules ===
-
-## Pest
-
-- This project uses Pest for testing. Create tests: `php artisan make:test --pest {name}`.
-- Run tests: `php artisan test --compact` or filter: `php artisan test --compact --filter=testName`.
-- Do NOT delete tests without approval.
-- CRITICAL: ALWAYS use `search-docs` tool for version-specific Pest documentation and updated code examples.
-- IMPORTANT: Activate `pest-testing` every time you're working with a Pest or testing-related task.
-
-=== filament/blueprint rules ===
-
-## Filament Blueprint
-
-You are writing Filament v5 implementation plans. Plans must be specific enough
-that an implementing agent can write code without making decisions.
-
-**Start here**: Read
-`/vendor/filament/blueprint/resources/markdown/planning/overview.md` for plan format,
-required sections, and what to clarify with the user before planning.
-
-=== filament/filament rules ===
-
-## Filament
-
-- Filament is used by this application. Follow existing conventions for how and where it's implemented.
-- Filament is a Server-Driven UI (SDUI) framework for Laravel that lets you define user interfaces in PHP using structured configuration objects. Built on Livewire, Alpine.js, and Tailwind CSS.
-- Use the `search-docs` tool for official documentation on Artisan commands, code examples, testing, relationships, and idiomatic practices.
-
-### Artisan
-
-- Use Filament-specific Artisan commands to create files. Find them with `list-artisan-commands` or `php artisan --help`.
-- Inspect required options and always pass `--no-interaction`.
-
-### Patterns
-
-Use static `make()` methods to initialize components. Most configuration methods accept a `Closure` for dynamic values.
-
-Use `Get $get` to read other form field values for conditional logic:
-
-<code-snippet name="Conditional form field" lang="php">
-use Filament\Forms\Components\Select;
-use Filament\Forms\Components\TextInput;
-use Filament\Schemas\Components\Utilities\Get;
-
-Select::make('type')
-    ->options(CompanyType::class)
-    ->required()
-    ->live(),
-
-TextInput::make('company_name')
-    ->required()
-    ->visible(fn (Get $get): bool => $get('type') === 'business'),
-</code-snippet>
-
-Use `state()` with a `Closure` to compute derived column values:
-
-<code-snippet name="Computed table column" lang="php">
-use Filament\Tables\Columns\TextColumn;
-
-TextColumn::make('full_name')
-    ->state(fn (User $record): string => "{$record->first_name} {$record->last_name}"),
-</code-snippet>
-
-Actions encapsulate a button with optional modal form and logic:
-
-<code-snippet name="Action with modal form" lang="php">
-use Filament\Actions\Action;
-use Filament\Forms\Components\TextInput;
-
-Action::make('updateEmail')
-    ->form([
-        TextInput::make('email')->email()->required(),
-    ])
-    ->action(fn (array $data, User $record): void => $record->update($data)),
-</code-snippet>
-
-### Testing
-
-Authenticate before testing panel functionality. Filament uses Livewire, so use `livewire()` or `Livewire::test()`:
-
-<code-snippet name="Filament Table Test" lang="php">
-    livewire(ListUsers::class)
-        ->assertCanSeeTableRecords($users)
-        ->searchTable($users->first()->name)
-        ->assertCanSeeTableRecords($users->take(1))
-        ->assertCanNotSeeTableRecords($users->skip(1));
-</code-snippet>
-
-<code-snippet name="Filament Create Resource Test" lang="php">
-    livewire(CreateUser::class)
-        ->fillForm([
-            'name' => 'Test',
-            'email' => 'test@example.com',
-        ])
-        ->call('create')
-        ->assertNotified()
-        ->assertRedirect();
-
-    assertDatabaseHas(User::class, [
-        'name' => 'Test',
-        'email' => 'test@example.com',
-    ]);
-</code-snippet>
-
-<code-snippet name="Testing Validation" lang="php">
-    livewire(CreateUser::class)
-        ->fillForm([
-            'name' => null,
-            'email' => 'invalid-email',
-        ])
-        ->call('create')
-        ->assertHasFormErrors([
-            'name' => 'required',
-            'email' => 'email',
-        ])
-        ->assertNotNotified();
-</code-snippet>
-
-<code-snippet name="Calling Actions" lang="php">
-    use Filament\Actions\DeleteAction;
-    use Filament\Actions\Testing\TestAction;
-
-    livewire(EditUser::class, ['record' => $user->id])
-        ->callAction(DeleteAction::class)
-        ->assertNotified()
-        ->assertRedirect();
-
-    livewire(ListUsers::class)
-        ->callAction(TestAction::make('promote')->table($user), [
-            'role' => 'admin',
-        ])
-        ->assertNotified();
-</code-snippet>
-
-### Common Mistakes
-
-**Commonly Incorrect Namespaces:**
-- Form fields (TextInput, Select, etc.): `Filament\Forms\Components\`
-- Infolist entries (for read-only views) (TextEntry, IconEntry, etc.): `Filament\Infolists\Components\`
-- Layout components (Grid, Section, Fieldset, Tabs, Wizard, etc.): `Filament\Schemas\Components\`
-- Schema utilities (Get, Set, etc.): `Filament\Schemas\Components\Utilities\`
-- Actions: `Filament\Actions\` (no `Filament\Tables\Actions\` etc.)
-- Icons: `Filament\Support\Icons\Heroicon` enum (e.g., `Heroicon::PencilSquare`)
-
-**Recent breaking changes to Filament:**
-- File visibility is `private` by default. Use `->visibility('public')` for public access.
-- `Grid`, `Section`, and `Fieldset` no longer span all columns by default.
+- Every change must be programmatically tested. Write a new test or update an existing test, then run the affected tests to make sure they pass.
+- Run the minimum number of tests needed to ensure code quality and speed. Use `php artisan test --compact` with a specific filename or filter.
 </laravel-boost-guidelines>

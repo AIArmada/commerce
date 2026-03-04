@@ -189,6 +189,30 @@ To run in production, use the `--force` flag if available, or configure `APP_ENV
    $user->givePermissionTo('orders.*');
    ```
 
+## Authz Scope Auto-Creation Failing (SQLite / Strict Databases)
+
+If you see an integrity constraint violation when `auto_create` attempts to insert a new `authz_scopes` row:
+
+```
+SQLSTATE[23000]: Integrity constraint violation: NOT NULL constraint failed: authz_scopes.scopeable_type
+```
+
+This was a bug in `AuthzScopeResolver` where `firstOrCreate()` was called with an empty first argument, causing `scopeable_type` and `scopeable_id` to be omitted from the INSERT. This was fixed so that these columns are now passed as the matching attributes to `firstOrCreate()`.
+
+If you encounter this on an older version, verify that `AuthzScopeResolver::resolveId()` passes `scopeable_type` and `scopeable_id` as the first argument to `firstOrCreate()`:
+
+```php
+$authzScope = AuthzScope::query()->firstOrCreate(
+    [
+        'scopeable_type' => $scopeableType,
+        'scopeable_id' => $scopeableId,
+    ],
+    [
+        'label' => $label,
+    ],
+);
+```
+
 ## Tenant Scoping Not Working
 
 1. **Verify enabled** — Check `->scopeToTenant()` on plugin or `scoped_to_tenant` in config

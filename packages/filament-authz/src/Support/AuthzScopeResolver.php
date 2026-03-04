@@ -42,9 +42,15 @@ final class AuthzScopeResolver
                 return $query->value('id');
             }
 
-            $authzScope = $query->firstOrCreate([], [
-                'label' => $label,
-            ]);
+            $authzScope = AuthzScope::query()->firstOrCreate(
+                [
+                    'scopeable_type' => $scopeableType,
+                    'scopeable_id' => $scopeableId,
+                ],
+                [
+                    'label' => $label,
+                ],
+            );
 
             if ($label !== null && $authzScope->label !== $label) {
                 $authzScope->forceFill(['label' => $label])->save();
