@@ -22,9 +22,9 @@ final class AttributeSetResource extends Resource
 {
     protected static ?string $model = AttributeSet::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-squares-2x2';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-squares-2x2';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Catalog';
+    protected static string | UnitEnum | null $navigationGroup = 'Catalog';
 
     protected static ?int $navigationSort = 42;
 
@@ -67,7 +67,7 @@ final class AttributeSetResource extends Resource
                             ->maxLength(100)
                             ->alphaDash()
                             ->live(onBlur: true)
-                            ->afterStateUpdated(fn(Set $set, ?string $state) => $set('code', $state ? Str::slug($state, '_') : '')),
+                            ->afterStateUpdated(fn (Set $set, ?string $state) => $set('code', $state ? Str::slug($state, '_') : '')),
 
                         Forms\Components\TextInput::make('name')
                             ->label(__('filament-products::resources.attribute_sets.fields.name'))
@@ -171,8 +171,8 @@ final class AttributeSetResource extends Resource
                     ->icon('heroicon-o-star')
                     ->color('warning')
                     ->requiresConfirmation()
-                    ->action(fn(AttributeSet $record) => $record->setAsDefault())
-                    ->visible(fn(AttributeSet $record): bool => !$record->is_default),
+                    ->action(fn (AttributeSet $record) => $record->setAsDefault())
+                    ->visible(fn (AttributeSet $record): bool => ! $record->is_default),
                 \Filament\Actions\DeleteAction::make(),
             ])
             ->bulkActions([

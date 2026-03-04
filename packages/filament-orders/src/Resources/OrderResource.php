@@ -34,7 +34,7 @@ final class OrderResource extends Resource
 {
     protected static ?string $model = Order::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-shopping-bag';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-shopping-bag';
 
     public static function getNavigationGroup(): ?string
     {
@@ -136,31 +136,31 @@ final class OrderResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('subtotal')
                             ->label('Subtotal')
-                            ->prefix(fn(?Order $record): string => $record?->currency ?? (string) config('orders.currency.default', 'MYR'))
+                            ->prefix(fn (?Order $record): string => $record?->currency ?? (string) config('orders.currency.default', 'MYR'))
                             ->numeric()
                             ->disabled(),
 
                         Forms\Components\TextInput::make('discount_total')
                             ->label('Discount')
-                            ->prefix(fn(?Order $record): string => $record?->currency ?? (string) config('orders.currency.default', 'MYR'))
+                            ->prefix(fn (?Order $record): string => $record?->currency ?? (string) config('orders.currency.default', 'MYR'))
                             ->numeric()
                             ->disabled(),
 
                         Forms\Components\TextInput::make('shipping_total')
                             ->label('Shipping')
-                            ->prefix(fn(?Order $record): string => $record?->currency ?? (string) config('orders.currency.default', 'MYR'))
+                            ->prefix(fn (?Order $record): string => $record?->currency ?? (string) config('orders.currency.default', 'MYR'))
                             ->numeric()
                             ->disabled(),
 
                         Forms\Components\TextInput::make('tax_total')
                             ->label('Tax')
-                            ->prefix(fn(?Order $record): string => $record?->currency ?? (string) config('orders.currency.default', 'MYR'))
+                            ->prefix(fn (?Order $record): string => $record?->currency ?? (string) config('orders.currency.default', 'MYR'))
                             ->numeric()
                             ->disabled(),
 
                         Forms\Components\TextInput::make('grand_total')
                             ->label('Grand Total')
-                            ->prefix(fn(?Order $record): string => $record?->currency ?? (string) config('orders.currency.default', 'MYR'))
+                            ->prefix(fn (?Order $record): string => $record?->currency ?? (string) config('orders.currency.default', 'MYR'))
                             ->numeric()
                             ->disabled(),
                     ])
@@ -182,8 +182,8 @@ final class OrderResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->formatStateUsing(fn($state) => $state?->label() ?? 'Unknown')
-                    ->color(fn($state) => match ($state?->color() ?? 'gray') {
+                    ->formatStateUsing(fn ($state) => $state?->label() ?? 'Unknown')
+                    ->color(fn ($state) => match ($state?->color() ?? 'gray') {
                         'success' => 'success',
                         'warning' => 'warning',
                         'danger' => 'danger',
@@ -191,7 +191,7 @@ final class OrderResource extends Resource
                         'primary' => 'primary',
                         default => 'gray',
                     })
-                    ->icon(fn($state) => $state?->icon() ?? 'heroicon-o-question-mark-circle'),
+                    ->icon(fn ($state) => $state?->icon() ?? 'heroicon-o-question-mark-circle'),
 
                 Tables\Columns\TextColumn::make('customer.name')
                     ->label('Customer')
@@ -205,7 +205,7 @@ final class OrderResource extends Resource
 
                 Tables\Columns\TextColumn::make('grand_total')
                     ->label('Total')
-                    ->money(fn(Order $record): string => $record->currency, divideBy: 100)
+                    ->money(fn (Order $record): string => $record->currency, divideBy: 100)
                     ->sortable()
                     ->alignEnd(),
 
@@ -229,11 +229,11 @@ final class OrderResource extends Resource
 
                 Tables\Filters\Filter::make('paid')
                     ->label('Paid Orders')
-                    ->query(fn(Builder $query) => $query->whereNotNull('paid_at')),
+                    ->query(fn (Builder $query) => $query->whereNotNull('paid_at')),
 
                 Tables\Filters\Filter::make('unpaid')
                     ->label('Unpaid Orders')
-                    ->query(fn(Builder $query) => $query->whereNull('paid_at')),
+                    ->query(fn (Builder $query) => $query->whereNull('paid_at')),
 
                 Tables\Filters\Filter::make('created_at')
                     ->form([
@@ -246,11 +246,11 @@ final class OrderResource extends Resource
                         return $query
                             ->when(
                                 $data['from'],
-                                fn(Builder $query, $date) => $query->whereDate('created_at', '>=', $date)
+                                fn (Builder $query, $date) => $query->whereDate('created_at', '>=', $date)
                             )
                             ->when(
                                 $data['until'],
-                                fn(Builder $query, $date) => $query->whereDate('created_at', '<=', $date)
+                                fn (Builder $query, $date) => $query->whereDate('created_at', '<=', $date)
                             );
                     }),
             ])
@@ -260,9 +260,9 @@ final class OrderResource extends Resource
                 \Filament\Actions\Action::make('download_invoice')
                     ->label('Invoice')
                     ->icon('heroicon-o-document-arrow-down')
-                    ->url(fn(Order $record) => route('filament-orders.invoice.download', $record))
+                    ->url(fn (Order $record) => route('filament-orders.invoice.download', $record))
                     ->openUrlInNewTab()
-                    ->visible(fn(Order $record) => $record->isPaid()),
+                    ->visible(fn (Order $record) => $record->isPaid()),
             ])
             ->bulkActions([
                 \Filament\Actions\BulkActionGroup::make([
@@ -285,8 +285,8 @@ final class OrderResource extends Resource
                         TextEntry::make('status')
                             ->label('Status')
                             ->badge()
-                            ->formatStateUsing(fn($state) => $state?->label() ?? 'Unknown')
-                            ->color(fn($state) => match ($state?->color() ?? 'gray') {
+                            ->formatStateUsing(fn ($state) => $state?->label() ?? 'Unknown')
+                            ->color(fn ($state) => match ($state?->color() ?? 'gray') {
                                 'success' => 'success',
                                 'warning' => 'warning',
                                 'danger' => 'danger',
@@ -323,7 +323,7 @@ final class OrderResource extends Resource
                         TextEntry::make('billingAddress.formatted')
                             ->label('Billing Address')
                             ->getStateUsing(function (Order $record): ?HtmlString {
-                                if (!$record->billingAddress) {
+                                if (! $record->billingAddress) {
                                     return null;
                                 }
 
@@ -335,7 +335,7 @@ final class OrderResource extends Resource
                         TextEntry::make('shippingAddress.formatted')
                             ->label('Shipping Address')
                             ->getStateUsing(function (Order $record): ?HtmlString {
-                                if (!$record->shippingAddress) {
+                                if (! $record->shippingAddress) {
                                     return null;
                                 }
 
@@ -350,24 +350,24 @@ final class OrderResource extends Resource
                     ->schema([
                         TextEntry::make('subtotal')
                             ->label('Subtotal')
-                            ->money(fn(Order $record): string => $record->currency, divideBy: 100),
+                            ->money(fn (Order $record): string => $record->currency, divideBy: 100),
 
                         TextEntry::make('discount_total')
                             ->label('Discount')
-                            ->money(fn(Order $record): string => $record->currency, divideBy: 100)
-                            ->visible(fn($record) => $record->discount_total > 0),
+                            ->money(fn (Order $record): string => $record->currency, divideBy: 100)
+                            ->visible(fn ($record) => $record->discount_total > 0),
 
                         TextEntry::make('shipping_total')
                             ->label('Shipping')
-                            ->money(fn(Order $record): string => $record->currency, divideBy: 100),
+                            ->money(fn (Order $record): string => $record->currency, divideBy: 100),
 
                         TextEntry::make('tax_total')
                             ->label('Tax')
-                            ->money(fn(Order $record): string => $record->currency, divideBy: 100),
+                            ->money(fn (Order $record): string => $record->currency, divideBy: 100),
 
                         TextEntry::make('grand_total')
                             ->label('Grand Total')
-                            ->money(fn(Order $record): string => $record->currency, divideBy: 100)
+                            ->money(fn (Order $record): string => $record->currency, divideBy: 100)
                             ->weight('bold')
                             ->size('lg'),
                     ])

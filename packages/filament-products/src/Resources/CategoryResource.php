@@ -28,9 +28,9 @@ final class CategoryResource extends Resource
 {
     protected static ?string $model = Category::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-folder';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-folder';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Catalog';
+    protected static string | UnitEnum | null $navigationGroup = 'Catalog';
 
     protected static ?int $navigationSort = 2;
 
@@ -67,7 +67,7 @@ final class CategoryResource extends Resource
                                     ->maxLength(255)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(
-                                        fn(Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
+                                        fn (Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
                                     ),
 
                                 TextInput::make('slug')
@@ -179,7 +179,7 @@ final class CategoryResource extends Resource
 
                         return $prefix . $record->name;
                     })
-                    ->description(fn($record) => $record->slug),
+                    ->description(fn ($record) => $record->slug),
 
                 Tables\Columns\TextColumn::make('parent.name')
                     ->label('Parent')
@@ -229,7 +229,7 @@ final class CategoryResource extends Resource
                         }
                     )
                     ->placeholder('All')
-                    ->options(fn() => ['0' => 'Root Categories'] + Category::query()->forOwner()->whereNull('parent_id')->pluck('name', 'id')->toArray()),
+                    ->options(fn () => ['0' => 'Root Categories'] + Category::query()->forOwner()->whereNull('parent_id')->pluck('name', 'id')->toArray()),
             ])
             ->actions([
                 \Filament\Actions\ViewAction::make(),
@@ -237,7 +237,7 @@ final class CategoryResource extends Resource
                 \Filament\Actions\Action::make('add_child')
                     ->label('Add Child')
                     ->icon('heroicon-o-plus')
-                    ->url(fn($record) => static::getUrl('create', ['parent' => $record->id])),
+                    ->url(fn ($record) => static::getUrl('create', ['parent' => $record->id])),
             ])
             ->bulkActions([
                 \Filament\Actions\BulkActionGroup::make([
@@ -246,13 +246,13 @@ final class CategoryResource extends Resource
                         ->label('Make Visible')
                         ->icon('heroicon-o-eye')
                         ->action(
-                            fn(\Illuminate\Support\Collection $records) => $records->each->update(['is_visible' => true])
+                            fn (\Illuminate\Support\Collection $records) => $records->each->update(['is_visible' => true])
                         ),
                     \Filament\Actions\BulkAction::make('hide')
                         ->label('Make Hidden')
                         ->icon('heroicon-o-eye-slash')
                         ->action(
-                            fn(\Illuminate\Support\Collection $records) => $records->each->update(['is_visible' => false])
+                            fn (\Illuminate\Support\Collection $records) => $records->each->update(['is_visible' => false])
                         ),
                 ]),
             ]);
@@ -274,7 +274,7 @@ final class CategoryResource extends Resource
                             ->placeholder('Root Category'),
                         TextEntry::make('full_path')
                             ->label('Full Path')
-                            ->getStateUsing(fn($record) => $record->getFullPath()),
+                            ->getStateUsing(fn ($record) => $record->getFullPath()),
                     ])
                     ->columns(2),
 
@@ -284,7 +284,7 @@ final class CategoryResource extends Resource
                             ->label('Direct Products'),
                         TextEntry::make('all_products_count')
                             ->label('All Products (including children)')
-                            ->getStateUsing(fn($record) => $record->getProductCount(true)),
+                            ->getStateUsing(fn ($record) => $record->getProductCount(true)),
                         TextEntry::make('children_count')
                             ->label('Child Categories'),
                     ])

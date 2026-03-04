@@ -30,9 +30,9 @@ class ShipmentResource extends Resource
 {
     protected static ?string $model = Shipment::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedTruck;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedTruck;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Shipping';
+    protected static string | UnitEnum | null $navigationGroup = 'Shipping';
 
     protected static ?int $navigationSort = 1;
 
@@ -44,7 +44,7 @@ class ShipmentResource extends Resource
         /** @var Builder<Shipment> $query */
         $query = parent::getEloquentQuery();
 
-        if (!(bool) config('shipping.features.owner.enabled', false)) {
+        if (! (bool) config('shipping.features.owner.enabled', false)) {
             return $query;
         }
 
@@ -74,7 +74,7 @@ class ShipmentResource extends Resource
 
                         Forms\Components\Select::make('carrier_code')
                             ->label('Carrier')
-                            ->options(fn() => static::getCarrierOptions())
+                            ->options(fn () => static::getCarrierOptions())
                             ->required(),
 
                         Forms\Components\TextInput::make('service_code')
@@ -82,7 +82,7 @@ class ShipmentResource extends Resource
 
                         Forms\Components\Select::make('status')
                             ->options(collect(ShipmentStatus::cases())
-                                ->mapWithKeys(fn($status) => [$status->value => $status->getLabel()]))
+                                ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()]))
                             ->required(),
 
                         Forms\Components\TextInput::make('tracking_number')
@@ -116,24 +116,24 @@ class ShipmentResource extends Resource
                         Forms\Components\TextInput::make('total_weight')
                             ->numeric()
                             ->suffix($weightUnit)
-                            ->formatStateUsing(fn($state) => $state === null
+                            ->formatStateUsing(fn ($state) => $state === null
                                 ? null
                                 : ($weightUnit === 'kg' ? $state / 1000 : $state))
-                            ->dehydrateStateUsing(fn($state) => $state === null
+                            ->dehydrateStateUsing(fn ($state) => $state === null
                                 ? null
                                 : ($weightUnit === 'kg' ? (int) round($state * 1000) : (int) $state)),
 
                         Forms\Components\TextInput::make('declared_value')
                             ->numeric()
                             ->prefix($currency)
-                            ->formatStateUsing(fn($state) => $state ? $state / 100 : null)
-                            ->dehydrateStateUsing(fn($state) => $state ? $state * 100 : null),
+                            ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
+                            ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : null),
 
                         Forms\Components\TextInput::make('shipping_cost')
                             ->numeric()
                             ->prefix($currency)
-                            ->formatStateUsing(fn($state) => $state ? $state / 100 : null)
-                            ->dehydrateStateUsing(fn($state) => $state ? $state * 100 : null),
+                            ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
+                            ->dehydrateStateUsing(fn ($state) => $state ? $state * 100 : null),
                     ])
                     ->columns(2),
             ]);
@@ -161,12 +161,12 @@ class ShipmentResource extends Resource
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn(ShipmentStatus $state) => $state->getColor())
-                    ->icon(fn(ShipmentStatus $state) => $state->getIcon()),
+                    ->color(fn (ShipmentStatus $state) => $state->getColor())
+                    ->icon(fn (ShipmentStatus $state) => $state->getIcon()),
 
                 Tables\Columns\TextColumn::make('total_weight')
                     ->label('Weight')
-                    ->formatStateUsing(fn($state) => $state === null
+                    ->formatStateUsing(fn ($state) => $state === null
                         ? '-'
                         : ($weightUnit === 'kg'
                             ? number_format($state / 1000, 2) . ' kg'
@@ -175,7 +175,7 @@ class ShipmentResource extends Resource
 
                 Tables\Columns\TextColumn::make('shipping_cost')
                     ->label('Cost')
-                    ->money(fn(Shipment $record): string => $record->currency, divideBy: 100)
+                    ->money(fn (Shipment $record): string => $record->currency, divideBy: 100)
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('shipped_at')
@@ -190,11 +190,11 @@ class ShipmentResource extends Resource
             ->filters([
                 Tables\Filters\SelectFilter::make('status')
                     ->options(collect(ShipmentStatus::cases())
-                        ->mapWithKeys(fn($status) => [$status->value => $status->getLabel()])),
+                        ->mapWithKeys(fn ($status) => [$status->value => $status->getLabel()])),
 
                 Tables\Filters\SelectFilter::make('carrier_code')
                     ->label('Carrier')
-                    ->options(fn() => static::getCarrierOptions()),
+                    ->options(fn () => static::getCarrierOptions()),
             ])
             ->actions([
                 ViewAction::make(),
@@ -242,7 +242,7 @@ class ShipmentResource extends Resource
         $shipping = app(ShippingManager::class);
 
         return collect($shipping->getAvailableDrivers())
-            ->mapWithKeys(fn($driver) => [$driver => ucfirst($driver)])
+            ->mapWithKeys(fn ($driver) => [$driver => ucfirst($driver)])
             ->toArray();
     }
 }

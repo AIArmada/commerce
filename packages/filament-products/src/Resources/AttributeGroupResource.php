@@ -22,9 +22,9 @@ final class AttributeGroupResource extends Resource
 {
     protected static ?string $model = AttributeGroup::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-group';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-group';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Catalog';
+    protected static string | UnitEnum | null $navigationGroup = 'Catalog';
 
     protected static ?int $navigationSort = 41;
 
@@ -67,7 +67,7 @@ final class AttributeGroupResource extends Resource
                             ->maxLength(100)
                             ->alphaDash()
                             ->live(onBlur: true)
-                            ->afterStateUpdated(fn(Set $set, ?string $state) => $set('code', $state ? Str::slug($state, '_') : '')),
+                            ->afterStateUpdated(fn (Set $set, ?string $state) => $set('code', $state ? Str::slug($state, '_') : '')),
 
                         Forms\Components\TextInput::make('name')
                             ->label(__('filament-products::resources.attribute_groups.fields.name'))

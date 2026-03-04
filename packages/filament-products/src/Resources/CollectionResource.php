@@ -34,9 +34,9 @@ final class CollectionResource extends Resource
 {
     protected static ?string $model = Collection::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-rectangle-stack';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-rectangle-stack';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Catalog';
+    protected static string | UnitEnum | null $navigationGroup = 'Catalog';
 
     protected static ?int $navigationSort = 3;
 
@@ -73,7 +73,7 @@ final class CollectionResource extends Resource
                                     ->maxLength(255)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(
-                                        fn(Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
+                                        fn (Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
                                     ),
 
                                 TextInput::make('slug')
@@ -119,7 +119,7 @@ final class CollectionResource extends Resource
                                         TextInput::make('value')
                                             ->label('Value')
                                             ->required()
-                                            ->visible(fn(Get $get) => in_array($get('field'), ['price_min', 'price_max', 'tag'])),
+                                            ->visible(fn (Get $get) => in_array($get('field'), ['price_min', 'price_max', 'tag'])),
 
                                         Select::make('value')
                                             ->label('Value')
@@ -130,21 +130,21 @@ final class CollectionResource extends Resource
                                                 'digital' => 'Digital',
                                                 'subscription' => 'Subscription',
                                             ])
-                                            ->visible(fn(Get $get) => $get('field') === 'type'),
+                                            ->visible(fn (Get $get) => $get('field') === 'type'),
 
                                         Select::make('value')
                                             ->label('Category')
-                                            ->options(fn() => Category::query()->forOwner()->pluck('name', 'id'))
+                                            ->options(fn () => Category::query()->forOwner()->pluck('name', 'id'))
                                             ->searchable()
-                                            ->visible(fn(Get $get) => $get('field') === 'category'),
+                                            ->visible(fn (Get $get) => $get('field') === 'category'),
 
                                         Toggle::make('value')
                                             ->label('Is Featured')
-                                            ->visible(fn(Get $get) => $get('field') === 'is_featured'),
+                                            ->visible(fn (Get $get) => $get('field') === 'is_featured'),
                                     ])
                                     ->columns(2)
                                     ->addActionLabel('Add Condition')
-                                    ->visible(fn(Get $get) => $get('type') === 'automatic'),
+                                    ->visible(fn (Get $get) => $get('type') === 'automatic'),
                             ]),
 
                         Section::make('Scheduling')
@@ -228,7 +228,7 @@ final class CollectionResource extends Resource
                                     ->searchable()
                                     ->helperText('For manual collections only'),
                             ])
-                            ->visible(fn(Get $get) => $get('type') !== 'automatic'),
+                            ->visible(fn (Get $get) => $get('type') !== 'automatic'),
                     ])
                     ->columnSpan(['lg' => 1]),
             ])
@@ -243,13 +243,13 @@ final class CollectionResource extends Resource
                     ->label('Collection')
                     ->searchable()
                     ->sortable()
-                    ->description(fn($record) => $record->slug),
+                    ->description(fn ($record) => $record->slug),
 
                 Tables\Columns\TextColumn::make('type')
                     ->label('Type')
                     ->badge()
-                    ->formatStateUsing(fn($state) => ucfirst($state))
-                    ->color(fn($state) => $state === 'automatic' ? 'info' : 'gray'),
+                    ->formatStateUsing(fn ($state) => ucfirst($state))
+                    ->color(fn ($state) => $state === 'automatic' ? 'info' : 'gray'),
 
                 Tables\Columns\TextColumn::make('products_count')
                     ->label('Products')
@@ -297,7 +297,7 @@ final class CollectionResource extends Resource
                     ->label('Rebuild')
                     ->icon('heroicon-o-arrow-path')
                     ->color('warning')
-                    ->visible(fn($record) => $record->isAutomatic())
+                    ->visible(fn ($record) => $record->isAutomatic())
                     ->requiresConfirmation()
                     ->action(function ($record): void {
                         $record->rebuildProductList();
@@ -344,7 +344,7 @@ final class CollectionResource extends Resource
                             ->placeholder('Never'),
                         IconEntry::make('is_currently_published')
                             ->label('Currently Published')
-                            ->getStateUsing(fn($record) => $record->isPublished())
+                            ->getStateUsing(fn ($record) => $record->isPublished())
                             ->boolean(),
                     ])
                     ->columns(3),

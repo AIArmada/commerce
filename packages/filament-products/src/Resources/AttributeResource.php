@@ -24,9 +24,9 @@ final class AttributeResource extends Resource
 {
     protected static ?string $model = Attribute::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-adjustments-horizontal';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-adjustments-horizontal';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Catalog';
+    protected static string | UnitEnum | null $navigationGroup = 'Catalog';
 
     protected static ?int $navigationSort = 40;
 
@@ -67,7 +67,7 @@ final class AttributeResource extends Resource
                             ->maxLength(100)
                             ->alphaDash()
                             ->live(onBlur: true)
-                            ->afterStateUpdated(fn(Set $set, ?string $state) => $set('code', $state ? Str::slug($state, '_') : '')),
+                            ->afterStateUpdated(fn (Set $set, ?string $state) => $set('code', $state ? Str::slug($state, '_') : '')),
 
                         Forms\Components\TextInput::make('name')
                             ->label(__('filament-products::resources.attributes.fields.name'))
@@ -83,7 +83,7 @@ final class AttributeResource extends Resource
                             ->label(__('filament-products::resources.attributes.fields.type'))
                             ->options(
                                 collect(AttributeType::cases())
-                                    ->mapWithKeys(fn(AttributeType $type) => [$type->value => $type->label()])
+                                    ->mapWithKeys(fn (AttributeType $type) => [$type->value => $type->label()])
                             )
                             ->required()
                             ->live()
@@ -139,9 +139,9 @@ final class AttributeResource extends Resource
                             ->columns(3)
                             ->reorderable()
                             ->collapsible()
-                            ->itemLabel(fn(array $state): ?string => $state['label'] ?? null),
+                            ->itemLabel(fn (array $state): ?string => $state['label'] ?? null),
                     ])
-                    ->visible(fn(Get $get): bool => in_array($get('type'), ['select', 'multiselect'], true)),
+                    ->visible(fn (Get $get): bool => in_array($get('type'), ['select', 'multiselect'], true)),
 
                 Section::make(__('filament-products::resources.attributes.sections.validation'))
                     ->schema([
@@ -209,9 +209,9 @@ final class AttributeResource extends Resource
                 Tables\Columns\TextColumn::make('type')
                     ->label(__('filament-products::resources.attributes.fields.type'))
                     ->badge()
-                    ->formatStateUsing(fn(AttributeType $state): string => $state->label())
-                    ->color(fn(AttributeType $state): string => $state->color())
-                    ->icon(fn(AttributeType $state): string => $state->icon()),
+                    ->formatStateUsing(fn (AttributeType $state): string => $state->label())
+                    ->color(fn (AttributeType $state): string => $state->color())
+                    ->icon(fn (AttributeType $state): string => $state->icon()),
 
                 Tables\Columns\TextColumn::make('groups.name')
                     ->label(__('filament-products::resources.attributes.fields.groups'))
@@ -252,7 +252,7 @@ final class AttributeResource extends Resource
                     ->label(__('filament-products::resources.attributes.fields.type'))
                     ->options(
                         collect(AttributeType::cases())
-                            ->mapWithKeys(fn(AttributeType $type) => [$type->value => $type->label()])
+                            ->mapWithKeys(fn (AttributeType $type) => [$type->value => $type->label()])
                     ),
 
                 Tables\Filters\SelectFilter::make('groups')

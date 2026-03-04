@@ -30,9 +30,9 @@ class ReturnAuthorizationResource extends Resource
 {
     protected static ?string $model = ReturnAuthorization::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowUturnLeft;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedArrowUturnLeft;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Shipping';
+    protected static string | UnitEnum | null $navigationGroup = 'Shipping';
 
     protected static ?int $navigationSort = 3;
 
@@ -46,7 +46,7 @@ class ReturnAuthorizationResource extends Resource
         /** @var Builder<ReturnAuthorization> $query */
         $query = parent::getEloquentQuery();
 
-        if (!(bool) config('shipping.features.owner.enabled', false)) {
+        if (! (bool) config('shipping.features.owner.enabled', false)) {
             return $query;
         }
 
@@ -96,7 +96,7 @@ class ReturnAuthorizationResource extends Resource
 
                         Forms\Components\Select::make('reason')
                             ->options(collect(ReturnReason::cases())
-                                ->mapWithKeys(fn($reason) => [$reason->value => $reason->getLabel()]))
+                                ->mapWithKeys(fn ($reason) => [$reason->value => $reason->getLabel()]))
                             ->required(),
 
                         Forms\Components\Textarea::make('reason_details')
@@ -135,7 +135,7 @@ class ReturnAuthorizationResource extends Resource
 
                 Tables\Columns\TextColumn::make('status')
                     ->badge()
-                    ->color(fn(string $state) => match ($state) {
+                    ->color(fn (string $state) => match ($state) {
                         'pending' => 'warning',
                         'approved' => 'info',
                         'rejected' => 'danger',
@@ -149,7 +149,7 @@ class ReturnAuthorizationResource extends Resource
                     ->badge(),
 
                 Tables\Columns\TextColumn::make('reason')
-                    ->formatStateUsing(fn($state) => ReturnReason::tryFrom($state)?->getLabel() ?? $state),
+                    ->formatStateUsing(fn ($state) => ReturnReason::tryFrom($state)?->getLabel() ?? $state),
 
                 Tables\Columns\TextColumn::make('items_count')
                     ->label('Items')

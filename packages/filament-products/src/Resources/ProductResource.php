@@ -42,9 +42,9 @@ final class ProductResource extends Resource
 {
     protected static ?string $model = Product::class;
 
-    protected static string|BackedEnum|null $navigationIcon = 'heroicon-o-cube';
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-cube';
 
-    protected static string|UnitEnum|null $navigationGroup = 'Catalog';
+    protected static string | UnitEnum | null $navigationGroup = 'Catalog';
 
     protected static ?int $navigationSort = 1;
 
@@ -80,7 +80,7 @@ final class ProductResource extends Resource
                                     ->maxLength(255)
                                     ->live(onBlur: true)
                                     ->afterStateUpdated(
-                                        fn(Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
+                                        fn (Set $set, ?string $state) => $set('slug', \Illuminate\Support\Str::slug($state))
                                     ),
 
                                 TextInput::make('slug')
@@ -109,8 +109,8 @@ final class ProductResource extends Resource
                                     ->required()
                                     ->minValue(0)
                                     ->step(0.01)
-                                    ->formatStateUsing(fn(?int $state): ?float => $state === null ? null : $state / 100)
-                                    ->dehydrateStateUsing(fn(?string $state): int => (int) round(((float) $state) * 100)),
+                                    ->formatStateUsing(fn (?int $state): ?float => $state === null ? null : $state / 100)
+                                    ->dehydrateStateUsing(fn (?string $state): int => (int) round(((float) $state) * 100)),
 
                                 TextInput::make('compare_price')
                                     ->label('Compare at Price')
@@ -119,8 +119,8 @@ final class ProductResource extends Resource
                                     ->helperText('Original price before discount')
                                     ->minValue(0)
                                     ->step(0.01)
-                                    ->formatStateUsing(fn(?int $state): ?float => $state === null ? null : $state / 100)
-                                    ->dehydrateStateUsing(fn(?string $state): ?int => $state === null ? null : (int) round(((float) $state) * 100)),
+                                    ->formatStateUsing(fn (?int $state): ?float => $state === null ? null : $state / 100)
+                                    ->dehydrateStateUsing(fn (?string $state): ?int => $state === null ? null : (int) round(((float) $state) * 100)),
 
                                 TextInput::make('cost')
                                     ->label('Cost per Item')
@@ -129,8 +129,8 @@ final class ProductResource extends Resource
                                     ->helperText('For profit calculation')
                                     ->minValue(0)
                                     ->step(0.01)
-                                    ->formatStateUsing(fn(?int $state): ?float => $state === null ? null : $state / 100)
-                                    ->dehydrateStateUsing(fn(?string $state): ?int => $state === null ? null : (int) round(((float) $state) * 100)),
+                                    ->formatStateUsing(fn (?int $state): ?float => $state === null ? null : $state / 100)
+                                    ->dehydrateStateUsing(fn (?string $state): ?int => $state === null ? null : (int) round(((float) $state) * 100)),
                             ])
                             ->columns(3),
 
@@ -157,7 +157,7 @@ final class ProductResource extends Resource
                                     ->label('Weight')
                                     ->numeric()
                                     ->suffix('kg')
-                                    ->visible(fn(Get $get) => $get('requires_shipping')),
+                                    ->visible(fn (Get $get) => $get('requires_shipping')),
 
                                 Grid::make(3)
                                     ->schema([
@@ -176,7 +176,7 @@ final class ProductResource extends Resource
                                             ->numeric()
                                             ->suffix('cm'),
                                     ])
-                                    ->visible(fn(Get $get) => $get('requires_shipping')),
+                                    ->visible(fn (Get $get) => $get('requires_shipping')),
                             ]),
 
                         Section::make('SEO')
@@ -203,7 +203,7 @@ final class ProductResource extends Resource
                                     ->label('Status')
                                     ->options(
                                         collect(ProductStatus::cases())
-                                            ->mapWithKeys(fn($status) => [$status->value => $status->label()])
+                                            ->mapWithKeys(fn ($status) => [$status->value => $status->label()])
                                     )
                                     ->required()
                                     ->default('draft'),
@@ -212,7 +212,7 @@ final class ProductResource extends Resource
                                     ->label('Visibility')
                                     ->options(
                                         collect(ProductVisibility::cases())
-                                            ->mapWithKeys(fn($visibility) => [$visibility->value => $visibility->label()])
+                                            ->mapWithKeys(fn ($visibility) => [$visibility->value => $visibility->label()])
                                     )
                                     ->default('catalog_search'),
                             ]),
@@ -223,7 +223,7 @@ final class ProductResource extends Resource
                                     ->label('Type')
                                     ->options(
                                         collect(ProductType::cases())
-                                            ->mapWithKeys(fn($type) => [$type->value => $type->label()])
+                                            ->mapWithKeys(fn ($type) => [$type->value => $type->label()])
                                     )
                                     ->required()
                                     ->default('simple'),
@@ -242,11 +242,11 @@ final class ProductResource extends Resource
                                     ->label('Customer (Optional)')
                                     ->searchable()
                                     ->helperText('Use a customer context for pricing rules.')
-                                    ->visible(fn(): bool => class_exists(Customer::class))
+                                    ->visible(fn (): bool => class_exists(Customer::class))
                                     ->dehydrated(false)
                                     ->live()
                                     ->getSearchResultsUsing(function (string $search): array {
-                                        if (!class_exists(Customer::class)) {
+                                        if (! class_exists(Customer::class)) {
                                             return [];
                                         }
 
@@ -276,7 +276,7 @@ final class ProductResource extends Resource
                                             ->toArray();
                                     })
                                     ->getOptionLabelUsing(function ($value): ?string {
-                                        if ($value === null || !class_exists(Customer::class)) {
+                                        if ($value === null || ! class_exists(Customer::class)) {
                                             return null;
                                         }
 
@@ -291,7 +291,7 @@ final class ProductResource extends Resource
                                             ->whereKey($value)
                                             ->first();
 
-                                        if (!$customer instanceof Customer) {
+                                        if (! $customer instanceof Customer) {
                                             return null;
                                         }
 
@@ -306,7 +306,7 @@ final class ProductResource extends Resource
                                     ->content(function (?Product $record, Get $get): string {
                                         $result = self::calculatePriceResult($record, $get('pricing_customer_id'));
 
-                                        if (!$result || !$record instanceof Product) {
+                                        if (! $result || ! $record instanceof Product) {
                                             return 'Save product to calculate.';
                                         }
 
@@ -318,7 +318,7 @@ final class ProductResource extends Resource
                                     ->content(function (?Product $record, Get $get): string {
                                         $result = self::calculatePriceResult($record, $get('pricing_customer_id'));
 
-                                        if (!$result || $result->discountAmount <= 0) {
+                                        if (! $result || $result->discountAmount <= 0) {
                                             return 'No discount';
                                         }
 
@@ -333,7 +333,7 @@ final class ProductResource extends Resource
                                     ->content(function (?Product $record, Get $get): string {
                                         $result = self::calculatePriceResult($record, $get('pricing_customer_id'));
 
-                                        if (!$result) {
+                                        if (! $result) {
                                             return '—';
                                         }
 
@@ -344,7 +344,7 @@ final class ProductResource extends Resource
                                             ?? 'Base Price';
                                     }),
                             ])
-                            ->visible(fn(?Product $record): bool => $record instanceof Product)
+                            ->visible(fn (?Product $record): bool => $record instanceof Product)
                             ->columns(1),
 
                         Section::make('Media')
@@ -410,13 +410,13 @@ final class ProductResource extends Resource
                     ->label('Product')
                     ->searchable()
                     ->sortable()
-                    ->description(fn($record) => $record->sku),
+                    ->description(fn ($record) => $record->sku),
 
                 Tables\Columns\TextColumn::make('type')
                     ->label('Type')
                     ->badge()
-                    ->formatStateUsing(fn(ProductType|string|null $state): string => ($state instanceof ProductType ? $state : ProductType::tryFrom((string) $state))?->label() ?? '—')
-                    ->color(fn(ProductType|string|null $state): string => match ($state instanceof ProductType ? $state : ProductType::tryFrom((string) $state)) {
+                    ->formatStateUsing(fn (ProductType | string | null $state): string => ($state instanceof ProductType ? $state : ProductType::tryFrom((string) $state))?->label() ?? '—')
+                    ->color(fn (ProductType | string | null $state): string => match ($state instanceof ProductType ? $state : ProductType::tryFrom((string) $state)) {
                         ProductType::Simple => 'gray',
                         ProductType::Configurable => 'info',
                         ProductType::Bundle => 'warning',
@@ -429,16 +429,16 @@ final class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('status')
                     ->label('Status')
                     ->badge()
-                    ->formatStateUsing(fn($state) => $state->label())
-                    ->color(fn($state) => $state->color()),
+                    ->formatStateUsing(fn ($state) => $state->label())
+                    ->color(fn ($state) => $state->color()),
 
                 Tables\Columns\TextColumn::make('price')
                     ->label('Price')
-                    ->money(fn(Product $record): string => $record->currency, divideBy: 100)
+                    ->money(fn (Product $record): string => $record->currency, divideBy: 100)
                     ->sortable()
                     ->alignEnd()
                     ->description(function (Product $record): ?string {
-                        if (!class_exists(\AIArmada\Pricing\Models\Price::class)) {
+                        if (! class_exists(\AIArmada\Pricing\Models\Price::class)) {
                             return null;
                         }
 
@@ -449,7 +449,7 @@ final class ProductResource extends Resource
                         }
 
                         $activePricesCount = $record->prices()
-                            ->whereHas('priceList', fn($q) => $q->where('is_active', true))
+                            ->whereHas('priceList', fn ($q) => $q->where('is_active', true))
                             ->count();
 
                         return "{$activePricesCount} of {$pricesCount} price lists";
@@ -483,13 +483,13 @@ final class ProductResource extends Resource
                 Tables\Filters\SelectFilter::make('status')
                     ->options(
                         collect(ProductStatus::cases())
-                            ->mapWithKeys(fn($status) => [$status->value => $status->label()])
+                            ->mapWithKeys(fn ($status) => [$status->value => $status->label()])
                     ),
 
                 Tables\Filters\SelectFilter::make('type')
                     ->options(
                         collect(ProductType::cases())
-                            ->mapWithKeys(fn($type) => [$type->value => $type->label()])
+                            ->mapWithKeys(fn ($type) => [$type->value => $type->label()])
                     ),
 
                 Tables\Filters\TernaryFilter::make('is_featured')
@@ -504,7 +504,7 @@ final class ProductResource extends Resource
                             return $query->select(['id', 'name'])->forOwner()->groupBy('id', 'name');
                         }
                     )
-                    ->getOptionLabelFromRecordUsing(fn($record) => $record->name)
+                    ->getOptionLabelFromRecordUsing(fn ($record) => $record->name)
                     ->multiple()
                     ->preload(),
             ])
@@ -514,7 +514,7 @@ final class ProductResource extends Resource
                 \Filament\Actions\Action::make('duplicate')
                     ->label('Duplicate')
                     ->icon('heroicon-o-document-duplicate')
-                    ->authorize(fn(Product $record): bool => auth()->user()?->can('duplicate', $record) ?? false)
+                    ->authorize(fn (Product $record): bool => auth()->user()?->can('duplicate', $record) ?? false)
                     ->action(function (Product $record) {
                         $newProduct = $record->replicate();
                         $newProduct->name = $record->name . ' (Copy)';
@@ -533,13 +533,13 @@ final class ProductResource extends Resource
                         ->label('Activate')
                         ->icon('heroicon-o-check-circle')
                         ->action(
-                            fn(\Illuminate\Support\Collection $records) => $records->each->update(['status' => ProductStatus::Active])
+                            fn (\Illuminate\Support\Collection $records) => $records->each->update(['status' => ProductStatus::Active])
                         ),
                     \Filament\Actions\BulkAction::make('draft')
                         ->label('Set to Draft')
                         ->icon('heroicon-o-pencil')
                         ->action(
-                            fn(\Illuminate\Support\Collection $records) => $records->each->update(['status' => ProductStatus::Draft])
+                            fn (\Illuminate\Support\Collection $records) => $records->each->update(['status' => ProductStatus::Draft])
                         ),
                 ]),
             ]);
@@ -559,25 +559,25 @@ final class ProductResource extends Resource
                         TextEntry::make('type')
                             ->label('Type')
                             ->badge()
-                            ->formatStateUsing(fn($state) => $state->label()),
+                            ->formatStateUsing(fn ($state) => $state->label()),
                         TextEntry::make('status')
                             ->label('Status')
                             ->badge()
-                            ->formatStateUsing(fn($state) => $state->label())
-                            ->color(fn($state) => $state->color()),
+                            ->formatStateUsing(fn ($state) => $state->label())
+                            ->color(fn ($state) => $state->color()),
                     ])
                     ->columns(4),
 
                 Section::make('Pricing')
                     ->schema([
                         TextEntry::make('price')
-                            ->money(fn(Product $record): string => $record->currency, divideBy: 100),
+                            ->money(fn (Product $record): string => $record->currency, divideBy: 100),
                         TextEntry::make('compare_price')
-                            ->money(fn(Product $record): string => $record->currency, divideBy: 100)
-                            ->visible(fn($record) => $record->compare_price),
+                            ->money(fn (Product $record): string => $record->currency, divideBy: 100)
+                            ->visible(fn ($record) => $record->compare_price),
                         TextEntry::make('cost')
-                            ->money(fn(Product $record): string => $record->currency, divideBy: 100)
-                            ->visible(fn($record) => $record->cost),
+                            ->money(fn (Product $record): string => $record->currency, divideBy: 100)
+                            ->visible(fn ($record) => $record->cost),
                     ])
                     ->columns(3),
 
@@ -588,7 +588,7 @@ final class ProductResource extends Resource
                             ->state(function (Product $record): string {
                                 $result = self::calculatePriceResult($record, null);
 
-                                if (!$result) {
+                                if (! $result) {
                                     return '—';
                                 }
 
@@ -599,7 +599,7 @@ final class ProductResource extends Resource
                             ->state(function (Product $record): string {
                                 $result = self::calculatePriceResult($record, null);
 
-                                if (!$result || $result->discountAmount <= 0) {
+                                if (! $result || $result->discountAmount <= 0) {
                                     return 'No discount';
                                 }
 
@@ -633,7 +633,7 @@ final class ProductResource extends Resource
 
     private static function calculatePriceResult(?Product $record, ?string $customerId): ?PriceResultData
     {
-        if (!$record instanceof Product) {
+        if (! $record instanceof Product) {
             return null;
         }
 
