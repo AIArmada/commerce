@@ -29,7 +29,7 @@ final class InventorySerialResource extends Resource
 
     protected static ?string $tenantOwnershipRelationshipName = 'location.owner';
 
-    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedQrCode;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedQrCode;
 
     protected static ?string $recordTitleAttribute = 'serial_number';
 
@@ -39,6 +39,9 @@ final class InventorySerialResource extends Resource
 
     protected static ?string $pluralModelLabel = 'Serial Numbers';
 
+    /**
+     * @return Builder<InventorySerial>
+     */
     public static function getEloquentQuery(): Builder
     {
         $query = InventorySerial::query()->with([
@@ -93,7 +96,7 @@ final class InventorySerialResource extends Resource
         return 'success';
     }
 
-    public static function getNavigationGroup(): string | UnitEnum | null
+    public static function getNavigationGroup(): string|UnitEnum|null
     {
         return config('filament-inventory.navigation_group');
     }

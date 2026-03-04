@@ -65,11 +65,46 @@ final class CalculateShippingStep extends AbstractCheckoutStep
     {
         $shippingData = $session->shipping_data ?? [];
 
-        // Get available shipping rates
+        // Cart conditions are the source of truth for shipping.
+        // Check if a shipping condition was already calculated by ShippingConditionProvider.
+        $cartShipping = $this->getShippingFromCartSnapshot($session);
+
+        if ($cartShipping !== null) {
+            $shippingTotal = $cartShipping['value'];
+
+            $shippingData = array_merge($shippingData, [
+                'source' => 'cart_condition',
+                'condition_name' => $cartShipping['name'],
+                'carrier' => $cartShipping['carrier'] ?? null,
+                'service' => $cartShipping['service'] ?? null,
+                'estimated_days' => $cartShipping['estimated_days'] ?? null,
+                'calculated_at' => now()->toIso8601String(),
+            ]);
+
+            $selectedMethod = $cartShipping['carrier'] !== null
+                ? ($cartShipping['carrier'] . '_' . ($cartShipping['service'] ?? 'standard'))
+                : 'cart_condition';
+
+            $session->update([
+                'shipping_data' => $shippingData,
+                'shipping_total' => $shippingTotal,
+                'selected_shipping_method' => $selectedMethod,
+            ]);
+
+            $session->calculateTotals();
+            $session->save();
+
+            return $this->success('Shipping from cart condition', [
+                'shipping_total' => $shippingTotal,
+                'method' => $selectedMethod,
+                'source' => 'cart_condition',
+            ]);
+        }
+
+        // Fallback: calculate shipping via ShippingAdapter when no cart condition exists
         $rates = $this->shippingAdapter->getRates($session);
 
         if (empty($rates)) {
-            // Check if shipping is not required (e.g., digital products only)
             if ($this->isShippingNotRequired($session)) {
                 $session->update([
                     'shipping_total' => 0,
@@ -85,7 +120,6 @@ final class CalculateShippingStep extends AbstractCheckoutStep
             return $this->failed('No shipping rates available', ['shipping' => 'No shipping methods available for your location']);
         }
 
-        // If shipping method already selected, calculate with that method
         $selectedMethod = $session->selected_shipping_method;
         $selectedRate = null;
 
@@ -93,7 +127,6 @@ final class CalculateShippingStep extends AbstractCheckoutStep
             $selectedRate = collect($rates)->firstWhere('method_id', $selectedMethod);
         }
 
-        // If no method selected or selected method not available, use cheapest
         if ($selectedRate === null) {
             $selectedRate = collect($rates)->sortBy('rate')->first();
             $selectedMethod = $selectedRate['method_id'] ?? null;
@@ -102,12 +135,12 @@ final class CalculateShippingStep extends AbstractCheckoutStep
         $shippingTotal = $selectedRate['rate'] ?? 0;
 
         $shippingData = array_merge($shippingData, [
+            'source' => 'shipping_adapter',
             'available_rates' => $rates,
             'selected_rate' => $selectedRate,
             'calculated_at' => now()->toIso8601String(),
         ]);
 
-        // Check for JNT integration
         if ($this->shippingAdapter->hasJntIntegration() && $this->shouldUseJnt($selectedRate)) {
             $jntData = $this->shippingAdapter->getJntShippingData($session, $selectedRate);
             $shippingData['jnt'] = $jntData;
@@ -126,6 +159,7 @@ final class CalculateShippingStep extends AbstractCheckoutStep
             'shipping_total' => $shippingTotal,
             'method' => $selectedMethod,
             'rates_count' => count($rates),
+            'source' => 'shipping_adapter',
         ]);
     }
 
@@ -143,6 +177,35 @@ final class CalculateShippingStep extends AbstractCheckoutStep
         }
 
         return true;
+    }
+
+    /**
+     * Extract shipping condition from cart snapshot if one exists.
+     *
+     * @return array{value: int, name: string, carrier: string|null, service: string|null, estimated_days: string|null}|null
+     */
+    private function getShippingFromCartSnapshot(CheckoutSession $session): ?array
+    {
+        $cartSnapshot = $session->cart_snapshot ?? [];
+        $conditions = $cartSnapshot['conditions'] ?? [];
+
+        foreach ($conditions as $condition) {
+            $type = $condition['type'] ?? null;
+
+            if ($type === 'shipping') {
+                $attributes = $condition['attributes'] ?? [];
+
+                return [
+                    'value' => (int) ($condition['value'] ?? 0),
+                    'name' => $condition['name'] ?? 'shipping',
+                    'carrier' => $attributes['carrier'] ?? null,
+                    'service' => $attributes['service'] ?? null,
+                    'estimated_days' => $attributes['estimated_days'] ?? null,
+                ];
+            }
+        }
+
+        return null;
     }
 
     /**

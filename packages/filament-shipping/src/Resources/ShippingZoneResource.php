@@ -28,18 +28,21 @@ class ShippingZoneResource extends Resource
 {
     protected static ?string $model = ShippingZone::class;
 
-    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedMap;
+    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedMap;
 
-    protected static string | UnitEnum | null $navigationGroup = 'Shipping';
+    protected static string|UnitEnum|null $navigationGroup = 'Shipping';
 
     protected static ?int $navigationSort = 2;
 
+    /**
+     * @return Builder<ShippingZone>
+     */
     public static function getEloquentQuery(): Builder
     {
         /** @var Builder<ShippingZone> $query */
         $query = parent::getEloquentQuery();
 
-        if (! (bool) config('shipping.features.owner.enabled', false)) {
+        if (!(bool) config('shipping.features.owner.enabled', false)) {
             return $query;
         }
 
@@ -97,11 +100,11 @@ class ShippingZoneResource extends Resource
                     ->schema([
                         Forms\Components\TagsInput::make('countries')
                             ->placeholder('Add country codes (e.g., MYS, SGP)')
-                            ->visible(fn (Get $get) => in_array($get('type'), ['country', 'state'])),
+                            ->visible(fn(Get $get) => in_array($get('type'), ['country', 'state'])),
 
                         Forms\Components\TagsInput::make('states')
                             ->placeholder('Add state names')
-                            ->visible(fn (Get $get) => $get('type') === 'state'),
+                            ->visible(fn(Get $get) => $get('type') === 'state'),
 
                         Forms\Components\Repeater::make('postcode_ranges')
                             ->schema([
@@ -113,7 +116,7 @@ class ShippingZoneResource extends Resource
                                     ->maxLength(20),
                             ])
                             ->columns(2)
-                            ->visible(fn (Get $get) => $get('type') === 'postcode'),
+                            ->visible(fn(Get $get) => $get('type') === 'postcode'),
 
                         Grid::make()
                             ->schema([
@@ -128,9 +131,9 @@ class ShippingZoneResource extends Resource
                                     ->numeric(),
                             ])
                             ->columns(3)
-                            ->visible(fn (Get $get) => $get('type') === 'radius'),
+                            ->visible(fn(Get $get) => $get('type') === 'radius'),
                     ])
-                    ->visible(fn (Get $get) => $get('type') !== null),
+                    ->visible(fn(Get $get) => $get('type') !== null),
             ]);
     }
 
@@ -148,7 +151,7 @@ class ShippingZoneResource extends Resource
 
                 Tables\Columns\TextColumn::make('type')
                     ->badge()
-                    ->color(fn (string $state) => match ($state) {
+                    ->color(fn(string $state) => match ($state) {
                         'country' => 'success',
                         'state' => 'info',
                         'postcode' => 'warning',

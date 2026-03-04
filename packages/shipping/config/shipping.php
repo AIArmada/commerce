@@ -93,6 +93,11 @@ return [
                 ],
             ],
         ],
+
+        'zone' => [
+            'driver' => 'zone',
+            'name' => 'Zone-Based Shipping',
+        ],
     ],
 
     /*

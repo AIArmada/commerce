@@ -14,6 +14,8 @@ class FilamentShippingPlugin implements Plugin
 
     protected bool $hasShippingZoneResource = true;
 
+    protected bool $hasShippingRateResource = true;
+
     protected bool $hasReturnAuthorizationResource = true;
 
     protected bool $hasDashboardWidgets = true;
@@ -51,6 +53,10 @@ class FilamentShippingPlugin implements Plugin
 
         if ($this->hasShippingZoneResource) {
             $resources[] = Resources\ShippingZoneResource::class;
+        }
+
+        if ($this->hasShippingRateResource) {
+            $resources[] = Resources\ShippingRateResource::class;
         }
 
         if ($this->hasReturnAuthorizationResource) {
@@ -97,6 +103,13 @@ class FilamentShippingPlugin implements Plugin
     public function shippingZoneResource(bool $condition = true): static
     {
         $this->hasShippingZoneResource = $condition;
+
+        return $this;
+    }
+
+    public function shippingRateResource(bool $condition = true): static
+    {
+        $this->hasShippingRateResource = $condition;
 
         return $this;
     }

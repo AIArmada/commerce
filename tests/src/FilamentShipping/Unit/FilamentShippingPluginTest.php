@@ -8,6 +8,7 @@ use AIArmada\FilamentShipping\Pages\ManifestPage;
 use AIArmada\FilamentShipping\Pages\ShippingDashboard;
 use AIArmada\FilamentShipping\Resources\ReturnAuthorizationResource;
 use AIArmada\FilamentShipping\Resources\ShipmentResource;
+use AIArmada\FilamentShipping\Resources\ShippingRateResource;
 use AIArmada\FilamentShipping\Resources\ShippingZoneResource;
 use AIArmada\FilamentShipping\Widgets\CarrierPerformanceWidget;
 use AIArmada\FilamentShipping\Widgets\PendingActionsWidget;
@@ -41,6 +42,13 @@ it('can disable shipment resource', function (): void {
 it('can disable shipping zone resource', function (): void {
     $plugin = FilamentShippingPlugin::make()
         ->shippingZoneResource(false);
+
+    expect($plugin)->toBeInstanceOf(FilamentShippingPlugin::class);
+});
+
+it('can disable shipping rate resource', function (): void {
+    $plugin = FilamentShippingPlugin::make()
+        ->shippingRateResource(false);
 
     expect($plugin)->toBeInstanceOf(FilamentShippingPlugin::class);
 });
@@ -106,6 +114,7 @@ it('registers resources, pages, and widgets by default', function (): void {
         ->with([
             ShipmentResource::class,
             ShippingZoneResource::class,
+            ShippingRateResource::class,
             ReturnAuthorizationResource::class,
         ])
         ->andReturnSelf();
@@ -136,6 +145,7 @@ it('registers nothing when all features are disabled', function (): void {
     $plugin = FilamentShippingPlugin::make()
         ->shipmentResource(false)
         ->shippingZoneResource(false)
+        ->shippingRateResource(false)
         ->returnAuthorizationResource(false)
         ->dashboardWidgets(false)
         ->shippingDashboard(false)

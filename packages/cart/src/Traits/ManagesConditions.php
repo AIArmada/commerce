@@ -328,14 +328,14 @@ trait ManagesConditions
      * Shipping is applied to the total (after discounts and taxes)
      *
      * @param  string  $name  The name of the shipping condition
-     * @param  string|float  $value  The value of the shipping fee (e.g. '15.00', '+15', etc.)
+     * @param  string|int|float  $value  The shipping fee: int for cents (800 = $8.00), float for dollars (8.00 = $8.00), string for operator-prefixed ('800', '+8.00', '10%')
      * @param  ConditionTarget|string|array<string, mixed>|null  $target  Optional target definition or DSL string
      * @param  string  $method  The shipping method identifier (e.g. 'standard', 'express')
      * @param  array<string, mixed>  $attributes  Additional attributes to store with the condition
      */
     public function addShipping(
         string $name,
-        string | float $value,
+        string | int | float $value,
         ConditionTarget | string | array | null $target = null,
         string $method = 'standard',
         array $attributes = []

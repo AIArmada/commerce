@@ -461,6 +461,321 @@ describe('ShippingRate Model', function (): void {
         expect($calculated)->toBe(500); // Falls back to base_rate
     });
 
+    // ─────────────────────────────────────────────────────────────
+    // CONDITION EVALUATION (meetsConditions)
+    // ─────────────────────────────────────────────────────────────
+
+    it('meets conditions when no conditions are set', function (): void {
+        $zone = ShippingZone::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'name' => 'Test Zone',
+            'code' => 'TEST_ZONE',
+            'type' => 'country',
+            'countries' => ['US'],
+        ]);
+
+        $rate = ShippingRate::create([
+            'zone_id' => $zone->id,
+            'method_code' => 'standard',
+            'name' => 'No Conditions',
+            'calculation_type' => 'flat',
+            'base_rate' => 500,
+            'conditions' => null,
+        ]);
+
+        $packages = [new PackageData(weight: 1000)];
+
+        expect($rate->meetsConditions($packages))->toBeTrue();
+    });
+
+    it('meets conditions when conditions array is empty', function (): void {
+        $zone = ShippingZone::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'name' => 'Test Zone',
+            'code' => 'TEST_ZONE',
+            'type' => 'country',
+            'countries' => ['US'],
+        ]);
+
+        $rate = ShippingRate::create([
+            'zone_id' => $zone->id,
+            'method_code' => 'standard',
+            'name' => 'Empty Conditions',
+            'calculation_type' => 'flat',
+            'base_rate' => 500,
+            'conditions' => [],
+        ]);
+
+        $packages = [new PackageData(weight: 1000)];
+
+        expect($rate->meetsConditions($packages))->toBeTrue();
+    });
+
+    it('evaluates min_weight condition', function (): void {
+        $zone = ShippingZone::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'name' => 'Test Zone',
+            'code' => 'TEST_ZONE',
+            'type' => 'country',
+            'countries' => ['US'],
+        ]);
+
+        $rate = ShippingRate::create([
+            'zone_id' => $zone->id,
+            'method_code' => 'heavy',
+            'name' => 'Heavy Only',
+            'calculation_type' => 'flat',
+            'base_rate' => 1500,
+            'conditions' => [
+                ['type' => 'min_weight', 'value' => 5000],
+            ],
+        ]);
+
+        $lightPackages = [new PackageData(weight: 2000)];
+        $heavyPackages = [new PackageData(weight: 6000)];
+        $exactPackages = [new PackageData(weight: 5000)];
+
+        expect($rate->meetsConditions($lightPackages))->toBeFalse();
+        expect($rate->meetsConditions($heavyPackages))->toBeTrue();
+        expect($rate->meetsConditions($exactPackages))->toBeTrue();
+    });
+
+    it('evaluates max_weight condition', function (): void {
+        $zone = ShippingZone::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'name' => 'Test Zone',
+            'code' => 'TEST_ZONE',
+            'type' => 'country',
+            'countries' => ['US'],
+        ]);
+
+        $rate = ShippingRate::create([
+            'zone_id' => $zone->id,
+            'method_code' => 'light',
+            'name' => 'Light Items Only',
+            'calculation_type' => 'flat',
+            'base_rate' => 300,
+            'conditions' => [
+                ['type' => 'max_weight', 'value' => 3000],
+            ],
+        ]);
+
+        $lightPackages = [new PackageData(weight: 1000)];
+        $heavyPackages = [new PackageData(weight: 5000)];
+        $exactPackages = [new PackageData(weight: 3000)];
+
+        expect($rate->meetsConditions($lightPackages))->toBeTrue();
+        expect($rate->meetsConditions($heavyPackages))->toBeFalse();
+        expect($rate->meetsConditions($exactPackages))->toBeTrue();
+    });
+
+    it('evaluates min_order_total condition', function (): void {
+        $zone = ShippingZone::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'name' => 'Test Zone',
+            'code' => 'TEST_ZONE',
+            'type' => 'country',
+            'countries' => ['US'],
+        ]);
+
+        $rate = ShippingRate::create([
+            'zone_id' => $zone->id,
+            'method_code' => 'free',
+            'name' => 'Free Over RM100',
+            'calculation_type' => 'flat',
+            'base_rate' => 0,
+            'conditions' => [
+                ['type' => 'min_order_total', 'value' => 10000],
+            ],
+        ]);
+
+        $packages = [new PackageData(weight: 1000)];
+
+        expect($rate->meetsConditions($packages, cartTotal: 5000))->toBeFalse();
+        expect($rate->meetsConditions($packages, cartTotal: 15000))->toBeTrue();
+        expect($rate->meetsConditions($packages, cartTotal: 10000))->toBeTrue();
+    });
+
+    it('evaluates max_order_total condition', function (): void {
+        $zone = ShippingZone::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'name' => 'Test Zone',
+            'code' => 'TEST_ZONE',
+            'type' => 'country',
+            'countries' => ['US'],
+        ]);
+
+        $rate = ShippingRate::create([
+            'zone_id' => $zone->id,
+            'method_code' => 'small_order',
+            'name' => 'Small Orders Only',
+            'calculation_type' => 'flat',
+            'base_rate' => 500,
+            'conditions' => [
+                ['type' => 'max_order_total', 'value' => 5000],
+            ],
+        ]);
+
+        $packages = [new PackageData(weight: 1000)];
+
+        expect($rate->meetsConditions($packages, cartTotal: 3000))->toBeTrue();
+        expect($rate->meetsConditions($packages, cartTotal: 8000))->toBeFalse();
+        expect($rate->meetsConditions($packages, cartTotal: 5000))->toBeTrue();
+    });
+
+    it('evaluates min_items condition', function (): void {
+        $zone = ShippingZone::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'name' => 'Test Zone',
+            'code' => 'TEST_ZONE',
+            'type' => 'country',
+            'countries' => ['US'],
+        ]);
+
+        $rate = ShippingRate::create([
+            'zone_id' => $zone->id,
+            'method_code' => 'bulk',
+            'name' => 'Bulk Discount Shipping',
+            'calculation_type' => 'flat',
+            'base_rate' => 500,
+            'conditions' => [
+                ['type' => 'min_items', 'value' => 5],
+            ],
+        ]);
+
+        $packages = [new PackageData(weight: 1000)];
+
+        expect($rate->meetsConditions($packages, itemCount: 3))->toBeFalse();
+        expect($rate->meetsConditions($packages, itemCount: 7))->toBeTrue();
+        expect($rate->meetsConditions($packages, itemCount: 5))->toBeTrue();
+    });
+
+    it('evaluates max_items condition', function (): void {
+        $zone = ShippingZone::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'name' => 'Test Zone',
+            'code' => 'TEST_ZONE',
+            'type' => 'country',
+            'countries' => ['US'],
+        ]);
+
+        $rate = ShippingRate::create([
+            'zone_id' => $zone->id,
+            'method_code' => 'small',
+            'name' => 'Small Order Shipping',
+            'calculation_type' => 'flat',
+            'base_rate' => 300,
+            'conditions' => [
+                ['type' => 'max_items', 'value' => 3],
+            ],
+        ]);
+
+        $packages = [new PackageData(weight: 1000)];
+
+        expect($rate->meetsConditions($packages, itemCount: 2))->toBeTrue();
+        expect($rate->meetsConditions($packages, itemCount: 5))->toBeFalse();
+        expect($rate->meetsConditions($packages, itemCount: 3))->toBeTrue();
+    });
+
+    it('requires ALL conditions to pass (AND logic)', function (): void {
+        $zone = ShippingZone::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'name' => 'Test Zone',
+            'code' => 'TEST_ZONE',
+            'type' => 'country',
+            'countries' => ['US'],
+        ]);
+
+        $rate = ShippingRate::create([
+            'zone_id' => $zone->id,
+            'method_code' => 'special',
+            'name' => 'Special Rate',
+            'calculation_type' => 'flat',
+            'base_rate' => 0,
+            'conditions' => [
+                ['type' => 'min_order_total', 'value' => 10000],
+                ['type' => 'max_weight', 'value' => 5000],
+            ],
+        ]);
+
+        $packages = [new PackageData(weight: 2000)];
+
+        expect($rate->meetsConditions($packages, cartTotal: 15000))->toBeTrue();
+        expect($rate->meetsConditions($packages, cartTotal: 5000))->toBeFalse();
+
+        $heavyPackages = [new PackageData(weight: 8000)];
+        expect($rate->meetsConditions($heavyPackages, cartTotal: 15000))->toBeFalse();
+    });
+
+    it('passes for unknown condition types', function (): void {
+        $zone = ShippingZone::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'name' => 'Test Zone',
+            'code' => 'TEST_ZONE',
+            'type' => 'country',
+            'countries' => ['US'],
+        ]);
+
+        $rate = ShippingRate::create([
+            'zone_id' => $zone->id,
+            'method_code' => 'standard',
+            'name' => 'Unknown Condition',
+            'calculation_type' => 'flat',
+            'base_rate' => 500,
+            'conditions' => [
+                ['type' => 'unknown_future_type', 'value' => 100],
+            ],
+        ]);
+
+        $packages = [new PackageData(weight: 1000)];
+
+        expect($rate->meetsConditions($packages))->toBeTrue();
+    });
+
+    it('sums weight across multiple packages for conditions', function (): void {
+        $zone = ShippingZone::create([
+            'owner_type' => 'TestOwner',
+            'owner_id' => 'test-owner-123',
+            'name' => 'Test Zone',
+            'code' => 'TEST_ZONE',
+            'type' => 'country',
+            'countries' => ['US'],
+        ]);
+
+        $rate = ShippingRate::create([
+            'zone_id' => $zone->id,
+            'method_code' => 'heavy',
+            'name' => 'Heavy Shipments',
+            'calculation_type' => 'flat',
+            'base_rate' => 2000,
+            'conditions' => [
+                ['type' => 'min_weight', 'value' => 5000],
+            ],
+        ]);
+
+        $twoLightPackages = [
+            new PackageData(weight: 2000),
+            new PackageData(weight: 1000),
+        ];
+        expect($rate->meetsConditions($twoLightPackages))->toBeFalse();
+
+        $twoHeavyPackages = [
+            new PackageData(weight: 3000),
+            new PackageData(weight: 3000),
+        ];
+        expect($rate->meetsConditions($twoHeavyPackages))->toBeTrue();
+    });
+
     it('handles table rate tier without rate key', function (): void {
         $zone = ShippingZone::create([
             'owner_type' => 'TestOwner',
