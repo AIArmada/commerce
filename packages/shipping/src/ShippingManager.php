@@ -10,6 +10,8 @@ use AIArmada\Shipping\Data\AddressData;
 use AIArmada\Shipping\Drivers\FlatRateShippingDriver;
 use AIArmada\Shipping\Drivers\ManualShippingDriver;
 use AIArmada\Shipping\Drivers\NullShippingDriver;
+use AIArmada\Shipping\Drivers\ZoneBasedShippingDriver;
+use AIArmada\Shipping\Services\ShippingZoneResolver;
 use Closure;
 use Illuminate\Contracts\Container\Container;
 use Illuminate\Support\Collection;
@@ -211,5 +213,16 @@ class ShippingManager
         $config = $this->container->get('config')->get('shipping.drivers.flat_rate', []);
 
         return new FlatRateShippingDriver($config);
+    }
+
+    /**
+     * Create the zone-based shipping driver.
+     */
+    protected function createZoneDriver(): ShippingDriverInterface
+    {
+        $config = $this->container->get('config')->get('shipping.drivers.zone', []);
+        $resolver = $this->container->make(ShippingZoneResolver::class);
+
+        return new ZoneBasedShippingDriver($resolver, $config);
     }
 }

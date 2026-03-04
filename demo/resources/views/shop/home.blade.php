@@ -1,25 +1,75 @@
 <x-shop-layout title="Home">
     <!-- Hero Section -->
-    <section class="relative bg-gradient-to-r from-amber-500 via-orange-500 to-red-500 overflow-hidden">
-        <div class="absolute inset-0 bg-black/20"></div>
-        <div class="relative max-w-7xl mx-auto px-4 py-24 sm:px-6 lg:px-8 text-center">
-            <h1 class="text-4xl md:text-6xl font-bold text-white mb-6">
-                Welcome to AIArmada Shop
-            </h1>
-            <p class="text-xl text-white/90 mb-8 max-w-2xl mx-auto">
-                Experience the full power of our commerce packages. Browse products, add to cart, 
-                apply vouchers, and complete checkout with real integrations.
-            </p>
-            <div class="flex flex-col sm:flex-row gap-4 justify-center">
-                <a href="{{ route('shop.products') }}" 
-                   class="bg-white text-amber-600 px-8 py-3 rounded-lg font-semibold text-lg hover:bg-gray-100 transition">
-                    Shop Now
-                </a>
-                <a href="#features" 
-                   class="border-2 border-white text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-white/10 transition">
-                    Learn More
-                </a>
+    <!-- Hero Section (Slider) -->
+    <section x-data="{
+        activeSlide: 0,
+        slides: [
+            {
+                image: '/images/slider/community_support.svg',
+                title: 'Building a Better Community',
+                description: 'Working together to support our neighbors and strengthen our society.'
+            },
+            {
+                image: '/images/slider/cultural_event.svg',
+                title: 'Celebrating Our Culture',
+                description: 'Preserving our heritage and promoting unity through diverse cultural events.'
+            },
+            {
+                image: '/images/slider/helping_hands_outreach.svg',
+                title: 'Helping Hands Outreach',
+                description: 'Delivering essential support and care to those who need it most.'
+            }
+        ],
+        init() {
+            setInterval(() => {
+                this.activeSlide = (this.activeSlide + 1) % this.slides.length;
+            }, 5000);
+        }
+    }" class="relative bg-gray-900 overflow-hidden h-[600px]">
+        <!-- Slides -->
+        <template x-for="(slide, index) in slides" :key="index">
+            <div x-show="activeSlide === index"
+                 x-transition:enter="transition ease-out duration-500"
+                 x-transition:enter-start="opacity-0 transform scale-105"
+                 x-transition:enter-end="opacity-100 transform scale-100"
+                 x-transition:leave="transition ease-in duration-500"
+                 x-transition:leave-start="opacity-100 transform scale-100"
+                 x-transition:leave-end="opacity-0 transform scale-105"
+                 class="absolute inset-0">
+                <!-- Image with Overlay -->
+                <div class="absolute inset-0 bg-black/40 z-10"></div>
+                <!-- Fallback gradient if image doesn't exist yet -->
+                 <img :src="slide.image" class="absolute inset-0 w-full h-full object-cover" alt="Hero Image"
+                      onerror="this.style.display='none'; this.nextElementSibling.style.display='block'">
+                <div class="absolute inset-0 w-full h-full bg-gradient-to-r from-amber-500/50 via-orange-500/50 to-red-500/50" style="display: none;"></div>
+
+                <!-- Content -->
+                <div class="absolute inset-0 z-20 flex items-center justify-center text-center">
+                    <div class="max-w-4xl px-4">
+                        <h1 x-text="slide.title" class="text-4xl md:text-6xl font-bold text-white mb-6 drop-shadow-lg"></h1>
+                        <p x-text="slide.description" class="text-xl text-white/90 mb-8 max-w-2xl mx-auto drop-shadow-md"></p>
+                        <div class="flex flex-col sm:flex-row gap-4 justify-center">
+                            <a href="{{ route('shop.products') }}" 
+                               class="bg-amber-600 text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-amber-700 transition shadow-lg">
+                                Support Us
+                            </a>
+                            <a href="#features" 
+                               class="bg-white/10 backdrop-blur border-2 border-white text-white px-8 py-3 rounded-lg font-semibold text-lg hover:bg-white/20 transition shadow-lg">
+                                Learn More
+                            </a>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </template>
+
+        <!-- Indicators -->
+        <div class="absolute bottom-8 left-0 right-0 z-30 flex justify-center gap-3">
+            <template x-for="(slide, index) in slides" :key="index">
+                <button @click="activeSlide = index"
+                        :class="activeSlide === index ? 'bg-amber-500 w-8' : 'bg-white/50 w-3 hover:bg-white'"
+                        class="h-3 rounded-full transition-all duration-300"></button>
+            </template>
         </div>
     </section>
 

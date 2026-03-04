@@ -52,10 +52,10 @@ describe('Shipping Conditions', function (): void {
         expect(Cart::total()->getAmount())->toBe(11500);
     });
 
-    it('handles numeric shipping values', function (): void {
+    it('handles integer cent shipping values', function (): void {
         Cart::add('item', 'Item', 100.00, 1);
 
-        Cart::addShipping('Shipping', 20);
+        Cart::addShipping('Shipping', 2000);
 
         expect(Cart::total()->getAmount())->toBe(12000);
     });

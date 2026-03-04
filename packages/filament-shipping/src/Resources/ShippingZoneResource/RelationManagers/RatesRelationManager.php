@@ -13,6 +13,7 @@ use Filament\Actions\EditAction;
 use Filament\Forms;
 use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Schemas\Components\Grid;
+use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables;
@@ -125,6 +126,56 @@ class RatesRelationManager extends RelationManager
 
                 Forms\Components\Textarea::make('description')
                     ->rows(2),
+
+                Section::make('Conditions')
+                    ->description('Optional rules that determine when this rate applies')
+                    ->schema([
+                        Forms\Components\Repeater::make('conditions')
+                            ->schema([
+                                Forms\Components\Select::make('type')
+                                    ->options([
+                                        'min_weight' => 'Minimum Weight (g)',
+                                        'max_weight' => 'Maximum Weight (g)',
+                                        'min_order_total' => 'Minimum Order Total',
+                                        'max_order_total' => 'Maximum Order Total',
+                                        'min_items' => 'Minimum Items',
+                                        'max_items' => 'Maximum Items',
+                                    ])
+                                    ->required()
+                                    ->live(),
+
+                                Forms\Components\TextInput::make('value')
+                                    ->numeric()
+                                    ->required()
+                                    ->prefix(fn (Get $get): ?string => in_array($get('type'), ['min_order_total', 'max_order_total'])
+                                        ? currency_symbol(config('shipping.defaults.currency', 'MYR'))
+                                        : null)
+                                    ->suffix(fn (Get $get): ?string => match ($get('type')) {
+                                        'min_weight', 'max_weight' => 'g',
+                                        default => null,
+                                    })
+                                    ->formatStateUsing(fn ($state, Get $get) => in_array($get('type'), ['min_order_total', 'max_order_total']) && $state
+                                        ? $state / 100
+                                        : $state)
+                                    ->dehydrateStateUsing(fn ($state, Get $get) => in_array($get('type'), ['min_order_total', 'max_order_total']) && $state
+                                        ? (int) ($state * 100)
+                                        : (int) $state),
+                            ])
+                            ->columns(2)
+                            ->defaultItems(0)
+                            ->addActionLabel('Add condition')
+                            ->collapsible()
+                            ->itemLabel(fn (array $state): ?string => match ($state['type'] ?? null) {
+                                'min_weight' => 'Min Weight: ' . ($state['value'] ?? '?') . 'g',
+                                'max_weight' => 'Max Weight: ' . ($state['value'] ?? '?') . 'g',
+                                'min_order_total' => 'Min Order: RM' . number_format(($state['value'] ?? 0) / 100, 2),
+                                'max_order_total' => 'Max Order: RM' . number_format(($state['value'] ?? 0) / 100, 2),
+                                'min_items' => 'Min Items: ' . ($state['value'] ?? '?'),
+                                'max_items' => 'Max Items: ' . ($state['value'] ?? '?'),
+                                default => null,
+                            }),
+                    ])
+                    ->collapsed(),
             ]);
     }
 

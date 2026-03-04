@@ -55,7 +55,7 @@ use Illuminate\Support\Facades\Facade;
  * @method static self addDiscount(string $name, string $value, string $target = 'subtotal')
  * @method static self addTax(string $name, string $value, string $target = 'subtotal')
  * @method static self addFee(string $name, string $value, string $target = 'total')
- * @method static self addShipping(string $name, string|float $value, string $method = 'standard', array<string, mixed> $attributes = [])
+ * @method static self addShipping(string $name, string|int|float $value, string $method = 'standard', array<string, mixed> $attributes = [])
  * @method static void removeShipping()
  * @method static \AIArmada\Cart\Conditions\CartCondition|null getShipping()
  * @method static string|null getShippingMethod()

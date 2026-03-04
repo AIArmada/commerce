@@ -115,6 +115,47 @@ class ShippingRate extends Model
     }
 
     // ─────────────────────────────────────────────────────────────
+    // CONDITION EVALUATION
+    // ─────────────────────────────────────────────────────────────
+
+    /**
+     * Check if this rate's conditions are met for the given context.
+     *
+     * @param  array<PackageData>  $packages
+     */
+    public function meetsConditions(array $packages, int $cartTotal = 0, int $itemCount = 0): bool
+    {
+        $conditions = $this->conditions;
+
+        if ($conditions === null || $conditions === []) {
+            return true;
+        }
+
+        $totalWeight = array_sum(array_map(fn (PackageData $p) => $p->weight, $packages));
+
+        foreach ($conditions as $condition) {
+            $type = $condition['type'] ?? null;
+            $value = (int) ($condition['value'] ?? 0);
+
+            $passes = match ($type) {
+                'min_weight' => $totalWeight >= $value,
+                'max_weight' => $totalWeight <= $value,
+                'min_order_total' => $cartTotal >= $value,
+                'max_order_total' => $cartTotal <= $value,
+                'min_items' => $itemCount >= $value,
+                'max_items' => $itemCount <= $value,
+                default => true,
+            };
+
+            if (! $passes) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    // ─────────────────────────────────────────────────────────────
     // RATE CALCULATION
     // ─────────────────────────────────────────────────────────────
 
