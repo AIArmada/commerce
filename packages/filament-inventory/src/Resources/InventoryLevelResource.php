@@ -28,7 +28,7 @@ final class InventoryLevelResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'id';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCube;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCube;
 
     protected static ?string $navigationLabel = 'Stock Levels';
 
@@ -90,7 +90,7 @@ final class InventoryLevelResource extends Resource
         return 'warning';
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-inventory.navigation_group');
     }

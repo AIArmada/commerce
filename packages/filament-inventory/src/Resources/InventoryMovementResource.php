@@ -26,7 +26,7 @@ final class InventoryMovementResource extends Resource
 
     protected static ?string $recordTitleAttribute = 'id';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedArrowsRightLeft;
 
     protected static ?string $navigationLabel = 'Movements';
 
@@ -72,7 +72,7 @@ final class InventoryMovementResource extends Resource
         ];
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-inventory.navigation_group');
     }

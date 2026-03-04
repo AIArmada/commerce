@@ -28,9 +28,9 @@ class ShippingRateResource extends Resource
 {
     protected static ?string $model = ShippingRate::class;
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedCurrencyDollar;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedCurrencyDollar;
 
-    protected static string|UnitEnum|null $navigationGroup = 'Shipping';
+    protected static string | UnitEnum | null $navigationGroup = 'Shipping';
 
     protected static ?int $navigationSort = 3;
 
@@ -44,7 +44,7 @@ class ShippingRateResource extends Resource
         /** @var Builder<ShippingRate> $query */
         $query = parent::getEloquentQuery()->with('zone');
 
-        if (!(bool) config('shipping.features.owner.enabled', false)) {
+        if (! (bool) config('shipping.features.owner.enabled', false)) {
             return $query;
         }
 
@@ -108,36 +108,36 @@ class ShippingRateResource extends Resource
                     ->schema([
                         Forms\Components\TextInput::make('base_rate')
                             ->numeric()
-                            ->prefix(fn(): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                            ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
                             ->required()
-                            ->formatStateUsing(fn($state) => $state ? $state / 100 : null)
-                            ->dehydrateStateUsing(fn($state) => $state ? (int) ($state * 100) : 0),
+                            ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
+                            ->dehydrateStateUsing(fn ($state) => $state ? (int) ($state * 100) : 0),
 
                         Forms\Components\TextInput::make('per_unit_rate')
                             ->numeric()
-                            ->prefix(fn(): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
-                            ->formatStateUsing(fn($state) => $state ? $state / 100 : null)
-                            ->dehydrateStateUsing(fn($state) => $state ? (int) ($state * 100) : 0)
-                            ->visible(fn(Get $get) => in_array($get('calculation_type'), ['per_kg', 'per_item', 'percentage'])),
+                            ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                            ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
+                            ->dehydrateStateUsing(fn ($state) => $state ? (int) ($state * 100) : 0)
+                            ->visible(fn (Get $get) => in_array($get('calculation_type'), ['per_kg', 'per_item', 'percentage'])),
 
                         Forms\Components\TextInput::make('min_charge')
                             ->numeric()
-                            ->prefix(fn(): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
-                            ->formatStateUsing(fn($state) => $state ? $state / 100 : null)
-                            ->dehydrateStateUsing(fn($state) => $state ? (int) ($state * 100) : null),
+                            ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                            ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
+                            ->dehydrateStateUsing(fn ($state) => $state ? (int) ($state * 100) : null),
 
                         Forms\Components\TextInput::make('max_charge')
                             ->numeric()
-                            ->prefix(fn(): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
-                            ->formatStateUsing(fn($state) => $state ? $state / 100 : null)
-                            ->dehydrateStateUsing(fn($state) => $state ? (int) ($state * 100) : null),
+                            ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                            ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
+                            ->dehydrateStateUsing(fn ($state) => $state ? (int) ($state * 100) : null),
 
                         Forms\Components\TextInput::make('free_shipping_threshold')
                             ->numeric()
-                            ->prefix(fn(): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                            ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
                             ->helperText('Orders above this amount get free shipping')
-                            ->formatStateUsing(fn($state) => $state ? $state / 100 : null)
-                            ->dehydrateStateUsing(fn($state) => $state ? (int) ($state * 100) : null),
+                            ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
+                            ->dehydrateStateUsing(fn ($state) => $state ? (int) ($state * 100) : null),
 
                         Forms\Components\Repeater::make('rate_table')
                             ->schema([
@@ -151,13 +151,13 @@ class ShippingRateResource extends Resource
                                     ->required(),
                                 Forms\Components\TextInput::make('rate')
                                     ->numeric()
-                                    ->prefix(fn(): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
+                                    ->prefix(fn (): string => currency_symbol(config('shipping.defaults.currency', 'MYR')))
                                     ->required()
-                                    ->formatStateUsing(fn($state) => $state ? $state / 100 : null)
-                                    ->dehydrateStateUsing(fn($state) => $state ? (int) ($state * 100) : 0),
+                                    ->formatStateUsing(fn ($state) => $state ? $state / 100 : null)
+                                    ->dehydrateStateUsing(fn ($state) => $state ? (int) ($state * 100) : 0),
                             ])
                             ->columns(3)
-                            ->visible(fn(Get $get) => $get('calculation_type') === 'table'),
+                            ->visible(fn (Get $get) => $get('calculation_type') === 'table'),
                     ])
                     ->columns(2),
 
@@ -198,17 +198,17 @@ class ShippingRateResource extends Resource
                                 Forms\Components\TextInput::make('value')
                                     ->numeric()
                                     ->required()
-                                    ->prefix(fn(Get $get): ?string => in_array($get('type'), ['min_order_total', 'max_order_total'])
+                                    ->prefix(fn (Get $get): ?string => in_array($get('type'), ['min_order_total', 'max_order_total'])
                                         ? currency_symbol(config('shipping.defaults.currency', 'MYR'))
                                         : null)
-                                    ->suffix(fn(Get $get): ?string => match ($get('type')) {
+                                    ->suffix(fn (Get $get): ?string => match ($get('type')) {
                                         'min_weight', 'max_weight' => 'g',
                                         default => null,
                                     })
-                                    ->formatStateUsing(fn($state, Get $get) => in_array($get('type'), ['min_order_total', 'max_order_total']) && $state
+                                    ->formatStateUsing(fn ($state, Get $get) => in_array($get('type'), ['min_order_total', 'max_order_total']) && $state
                                         ? $state / 100
                                         : $state)
-                                    ->dehydrateStateUsing(fn($state, Get $get) => in_array($get('type'), ['min_order_total', 'max_order_total']) && $state
+                                    ->dehydrateStateUsing(fn ($state, Get $get) => in_array($get('type'), ['min_order_total', 'max_order_total']) && $state
                                         ? (int) ($state * 100)
                                         : (int) $state),
                             ])
@@ -216,7 +216,7 @@ class ShippingRateResource extends Resource
                             ->defaultItems(0)
                             ->addActionLabel('Add condition')
                             ->collapsible()
-                            ->itemLabel(fn(array $state): ?string => match ($state['type'] ?? null) {
+                            ->itemLabel(fn (array $state): ?string => match ($state['type'] ?? null) {
                                 'min_weight' => 'Min Weight: ' . ($state['value'] ?? '?') . 'g',
                                 'max_weight' => 'Max Weight: ' . ($state['value'] ?? '?') . 'g',
                                 'min_order_total' => 'Min Order: RM' . number_format(($state['value'] ?? 0) / 100, 2),
@@ -254,7 +254,7 @@ class ShippingRateResource extends Resource
 
                 Tables\Columns\TextColumn::make('calculation_type')
                     ->badge()
-                    ->color(fn(string $state) => match ($state) {
+                    ->color(fn (string $state) => match ($state) {
                         'flat' => 'success',
                         'per_kg' => 'info',
                         'per_item' => 'warning',
@@ -264,12 +264,12 @@ class ShippingRateResource extends Resource
                     }),
 
                 Tables\Columns\TextColumn::make('base_rate')
-                    ->formatStateUsing(fn(ShippingRate $record): string => $record->formatted_base_rate)
+                    ->formatStateUsing(fn (ShippingRate $record): string => $record->formatted_base_rate)
                     ->sortable(),
 
                 Tables\Columns\TextColumn::make('delivery_estimate')
                     ->label('Delivery')
-                    ->getStateUsing(fn(ShippingRate $record) => $record->getDeliveryEstimate())
+                    ->getStateUsing(fn (ShippingRate $record) => $record->getDeliveryEstimate())
                     ->placeholder('-'),
 
                 Tables\Columns\IconColumn::make('active')

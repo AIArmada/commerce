@@ -24,7 +24,7 @@ final class InventoryAllocationResource extends Resource
 
     protected static ?string $tenantOwnershipRelationshipName = 'location.owner';
 
-    protected static string|BackedEnum|null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
+    protected static string | BackedEnum | null $navigationIcon = Heroicon::OutlinedClipboardDocumentCheck;
 
     protected static ?string $navigationLabel = 'Allocations';
 
@@ -84,7 +84,7 @@ final class InventoryAllocationResource extends Resource
         return 'danger';
     }
 
-    public static function getNavigationGroup(): string|UnitEnum|null
+    public static function getNavigationGroup(): string | UnitEnum | null
     {
         return config('filament-inventory.navigation_group');
     }
