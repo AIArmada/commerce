@@ -269,8 +269,8 @@ class PermissionResource extends Resource
 
         $items = $users
             ->map(static function (Model $user): string {
-                $name = trim((string) $user->getAttribute('name'));
-                $email = trim((string) $user->getAttribute('email'));
+                $name = mb_trim((string) $user->getAttribute('name'));
+                $email = mb_trim((string) $user->getAttribute('email'));
 
                 if ($name !== '' && $email !== '') {
                     return "{$name} <{$email}>";
