@@ -387,7 +387,6 @@ trait HasAuthzFormComponents
     }
 
     /**
-     * @param  mixed  $guard
      * @return array<string, string>
      */
     protected static function getDirectPermissionOptions(mixed $guard): array
