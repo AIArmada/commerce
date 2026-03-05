@@ -14,9 +14,11 @@ use Filament\Schemas\Components\Grid;
 use Filament\Schemas\Components\Section;
 use Filament\Schemas\Components\Tabs;
 use Filament\Schemas\Components\Tabs\Tab;
+use Filament\Schemas\Components\Utilities\Get;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
+use Spatie\Permission\PermissionRegistrar;
 use Throwable;
 
 /**
@@ -59,6 +61,10 @@ trait HasAuthzFormComponents
             $tabs[] = static::getCustomPermissionsTab();
         }
 
+        if (config('filament-authz.role_resource.tabs.direct_permissions', true)) {
+            $tabs[] = static::getDirectPermissionsTab();
+        }
+
         return $tabs;
     }
 
@@ -93,6 +99,7 @@ trait HasAuthzFormComponents
                     ->prefixIcon('heroicon-o-magnifying-glass')
                     ->suffixAction(
                         Action::make('clearResourceSearch')
+                            ->label(__('filament-authz::filament-authz.search.clear_resources'))
                             ->icon('heroicon-o-x-mark')
                             ->actionJs("\$set('resource_search', '')")
                     )
@@ -201,6 +208,7 @@ trait HasAuthzFormComponents
                     ->prefixIcon('heroicon-o-magnifying-glass')
                     ->suffixAction(
                         Action::make('clearPageSearch')
+                            ->label(__('filament-authz::filament-authz.search.clear_pages'))
                             ->icon('heroicon-o-x-mark')
                             ->actionJs("\$set('page_search', '')")
                     )
@@ -273,6 +281,7 @@ trait HasAuthzFormComponents
                     ->prefixIcon('heroicon-o-magnifying-glass')
                     ->suffixAction(
                         Action::make('clearWidgetSearch')
+                            ->label(__('filament-authz::filament-authz.search.clear_widgets'))
                             ->icon('heroicon-o-x-mark')
                             ->actionJs("\$set('widget_search', '')")
                     )
@@ -352,6 +361,98 @@ trait HasAuthzFormComponents
                             ->afterStateHydrated(fn (CheckboxList $component, ?Model $record) => static::setPermissionStateForRecord($component, $record)),
                     ]),
             ]);
+    }
+
+    protected static function getDirectPermissionsTab(): Tab
+    {
+        return Tab::make('direct_permissions')
+            ->label(__('filament-authz::filament-authz.tabs.direct_permissions'))
+            ->icon('heroicon-o-key')
+            ->schema([
+                Section::make(__('filament-authz::filament-authz.section.direct_permissions'))
+                    ->description(__('filament-authz::filament-authz.section.direct_permissions_description'))
+                    ->schema([
+                        CheckboxList::make('permissions_direct')
+                            ->label(__('filament-authz::filament-authz.form.direct_permissions'))
+                            ->helperText(__('filament-authz::filament-authz.form.direct_permissions_helper'))
+                            ->options(fn (Get $get): array => static::getDirectPermissionOptions($get('guard_name')))
+                            ->searchable()
+                            ->columns(3)
+                            ->bulkToggleable()
+                            ->gridDirection('row')
+                            ->default([])
+                            ->afterStateHydrated(fn (CheckboxList $component, ?Model $record) => static::setPermissionStateForRecord($component, $record)),
+                    ]),
+            ]);
+    }
+
+    /**
+     * @param  mixed  $guard
+     * @return array<string, string>
+     */
+    protected static function getDirectPermissionOptions(mixed $guard): array
+    {
+        $guards = (array) config('filament-authz.guards', ['web']);
+        $guardName = is_string($guard) && $guard !== '' ? $guard : ($guards[0] ?? 'web');
+
+        $registrar = app(PermissionRegistrar::class);
+
+        /** @var class-string<Model> $permissionClass */
+        $permissionClass = $registrar->getPermissionClass();
+
+        $names = $permissionClass::query()
+            ->where('guard_name', $guardName)
+            ->orderBy('name')
+            ->pluck('name')
+            ->map(static fn (mixed $name): string => (string) $name)
+            ->all();
+
+        $directNames = array_values(array_diff($names, static::getDiscoveredPermissionNames()));
+
+        if ($directNames === []) {
+            return [];
+        }
+
+        $options = array_combine($directNames, $directNames);
+
+        return static::localizePermissions($options);
+    }
+
+    /**
+     * @return list<string>
+     */
+    protected static function getDiscoveredPermissionNames(): array
+    {
+        /** @var list<string> $resourcePermissions */
+        $resourcePermissions = Authz::getResources()
+            ->flatMap(static fn (array $resource): array => array_keys($resource['permissions'] ?? []))
+            ->map(static fn (mixed $name): string => (string) $name)
+            ->all();
+
+        /** @var list<string> $pagePermissions */
+        $pagePermissions = Authz::getPages()
+            ->pluck('permission')
+            ->map(static fn (mixed $name): string => (string) $name)
+            ->all();
+
+        /** @var list<string> $widgetPermissions */
+        $widgetPermissions = Authz::getWidgets()
+            ->pluck('permission')
+            ->map(static fn (mixed $name): string => (string) $name)
+            ->all();
+
+        /** @var list<string> $customPermissions */
+        $customPermissions = array_map('strval', array_keys(Authz::getCustomPermissions()));
+
+        return Collection::make([
+            ...$resourcePermissions,
+            ...$pagePermissions,
+            ...$widgetPermissions,
+            ...$customPermissions,
+        ])->filter(static fn (string $name): bool => $name !== '')
+            ->unique()
+            ->values()
+            ->all();
     }
 
     /**
