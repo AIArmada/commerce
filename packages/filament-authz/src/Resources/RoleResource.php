@@ -15,6 +15,7 @@ use Filament\Facades\Filament;
 use Filament\Forms;
 use Filament\Resources\Resource;
 use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Get;
 use Filament\Schemas\Schema;
 use Filament\Tables\Columns\TextColumn;
 use Filament\Tables\Filters\Filter;
@@ -188,7 +189,31 @@ class RoleResource extends Resource
                 ->label(__('filament-authz::filament-authz.form.name'))
                 ->required()
                 ->maxLength(255)
-                ->unique(ignoreRecord: true)
+                ->scopedUnique(
+                    model: static::getModel(),
+                    column: 'name',
+                    ignoreRecord: true,
+                    modifyQueryUsing: function (Builder $query, Get $get): Builder {
+                        $table = $query->getModel()->getTable();
+                        $guards = (array) config('filament-authz.guards', ['web']);
+                        $guardName = (string) ($get('guard_name') ?: ($guards[0] ?? 'web'));
+
+                        $query->where("{$table}.guard_name", $guardName);
+
+                        if (config('filament-authz.authz_scopes.enabled', false) && config('filament-authz.central_app', false)) {
+                            $teamsKey = app(PermissionRegistrar::class)->teamsKey;
+                            $scopeId = $get($teamsKey);
+
+                            if (filled($scopeId)) {
+                                $query->where("{$table}.{$teamsKey}", $scopeId);
+                            } else {
+                                $query->whereNull("{$table}.{$teamsKey}");
+                            }
+                        }
+
+                        return $query;
+                    },
+                )
                 ->placeholder(__('filament-authz::filament-authz.form.name_placeholder'))
                 ->helperText(__('filament-authz::filament-authz.form.name_helper'))
                 ->autocomplete(false),
@@ -205,12 +230,12 @@ class RoleResource extends Resource
             $teamsKey = app(PermissionRegistrar::class)->teamsKey;
 
             $schema[] = Forms\Components\Select::make($teamsKey)
-                ->label('Scope')
+                ->label(__('filament-authz::filament-authz.form.scope'))
                 ->options(AuthzScope::query()->orderBy('label')->pluck('label', 'id')->all())
                 ->searchable()
                 ->preload()
                 ->nullable()
-                ->helperText('Leave empty for a global role.');
+                ->helperText(__('filament-authz::filament-authz.form.scope_helper'));
         }
 
         return $form->schema([
@@ -227,6 +252,46 @@ class RoleResource extends Resource
     public static function table(Table $table): Table
     {
         $guards = config('filament-authz.guards', ['web']);
+        $filters = [
+            SelectFilter::make('guard_name')
+                ->label(__('filament-authz::filament-authz.filter.guard'))
+                ->options(array_combine($guards, $guards))
+                ->placeholder(__('filament-authz::filament-authz.filter.all_guards'))
+                ->searchable(),
+        ];
+
+        if (config('filament-authz.authz_scopes.enabled', false)) {
+            $teamsKey = app(PermissionRegistrar::class)->teamsKey;
+            $scopeOptions = AuthzScope::query()->orderBy('label')->pluck('label', 'id')->all();
+
+            $filters[] = SelectFilter::make($teamsKey)
+                ->label(__('filament-authz::filament-authz.filter.scope'))
+                ->options([
+                    '__global__' => __('filament-authz::filament-authz.filter.global_scope'),
+                    ...$scopeOptions,
+                ])
+                ->placeholder(__('filament-authz::filament-authz.filter.all_scopes'))
+                ->searchable()
+                ->query(function (Builder $query, array $data) use ($teamsKey): Builder {
+                    $scopeValue = $data['value'] ?? null;
+
+                    if (! filled($scopeValue)) {
+                        return $query;
+                    }
+
+                    if ($scopeValue === '__global__') {
+                        return $query->whereNull($teamsKey);
+                    }
+
+                    return $query->where($teamsKey, $scopeValue);
+                });
+        }
+
+        $filters[] = Filter::make('has_permissions')
+            ->label(__('filament-authz::filament-authz.filter.has_permissions'))
+            ->query(fn (Builder $query): Builder => $query->has('permissions'))
+            ->indicator(__('filament-authz::filament-authz.filter.has_permissions'));
+
         $columns = [
             TextColumn::make('name')
                 ->label(__('filament-authz::filament-authz.table.name'))
@@ -241,8 +306,8 @@ class RoleResource extends Resource
 
         if (config('filament-authz.authz_scopes.enabled', false)) {
             $columns[] = TextColumn::make('authzScope.label')
-                ->label('Scope')
-                ->formatStateUsing(fn (?string $state): string => $state ?? 'Global')
+                ->label(__('filament-authz::filament-authz.table.scope'))
+                ->formatStateUsing(fn (?string $state): string => $state ?? __('filament-authz::filament-authz.table.global_scope'))
                 ->sortable()
                 ->toggleable();
         }
@@ -266,17 +331,7 @@ class RoleResource extends Resource
             ->sortable()
             ->toggleable(isToggledHiddenByDefault: true);
 
-        return $table->columns($columns)->filters([
-            SelectFilter::make('guard_name')
-                ->label(__('filament-authz::filament-authz.filter.guard'))
-                ->options(array_combine($guards, $guards))
-                ->placeholder(__('filament-authz::filament-authz.filter.all_guards'))
-                ->searchable(),
-            Filter::make('has_permissions')
-                ->label(__('filament-authz::filament-authz.filter.has_permissions'))
-                ->query(fn (Builder $query): Builder => $query->has('permissions'))
-                ->indicator(__('filament-authz::filament-authz.filter.has_permissions')),
-        ])->actions([
+        return $table->columns($columns)->filters($filters)->actions([
             Actions\EditAction::make(),
             Actions\DeleteAction::make(),
         ])->bulkActions([

@@ -41,7 +41,11 @@ return [
         'name_helper' => 'A unique identifier for this role',
         'guard_name' => 'Guard',
         'guard_name_helper' => 'The authentication guard this role applies to',
+        'scope' => 'Scope',
+        'scope_helper' => 'Leave empty for a global role.',
         'permissions' => 'Permissions',
+        'direct_permissions' => 'Additional Permissions',
+        'direct_permissions_helper' => 'Assign application permissions that are not exposed in Filament resource/page/widget tabs.',
         'team' => 'Team',
         'team_placeholder' => 'Select a team...',
         'select_all' => 'Select All',
@@ -56,6 +60,8 @@ return [
     'table' => [
         'name' => 'Name',
         'guard_name' => 'Guard',
+        'scope' => 'Scope',
+        'global_scope' => 'Global',
         'permissions_count' => 'Permissions',
         'created_at' => 'Created',
         'updated_at' => 'Updated',
@@ -69,6 +75,9 @@ return [
     'filter' => [
         'guard' => 'Guard',
         'all_guards' => 'All Guards',
+        'scope' => 'Scope',
+        'all_scopes' => 'All Scopes',
+        'global_scope' => 'Global',
         'has_permissions' => 'Has Permissions',
     ],
 
@@ -82,6 +91,7 @@ return [
         'pages' => 'Pages',
         'widgets' => 'Widgets',
         'custom' => 'Custom',
+        'direct_permissions' => 'Additional Permissions',
     ],
 
     /*
@@ -92,10 +102,13 @@ return [
     'search' => [
         'resources' => 'Search Resources',
         'resources_placeholder' => 'Type to filter resources...',
+        'clear_resources' => 'Clear resource search',
         'pages' => 'Search Pages',
         'pages_placeholder' => 'Type to filter pages...',
+        'clear_pages' => 'Clear page search',
         'widgets' => 'Search Widgets',
         'widgets_placeholder' => 'Type to filter widgets...',
+        'clear_widgets' => 'Clear widget search',
     ],
 
     /*
@@ -116,6 +129,8 @@ return [
         'widgets_description' => 'Control visibility of dashboard widgets.',
         'custom' => 'Custom Permissions',
         'custom_description' => 'Additional application-specific permissions.',
+        'direct_permissions' => 'Additional Permissions',
+        'direct_permissions_description' => 'Manage extra application permissions not listed in the Resource/Page/Widget tabs.',
     ],
 
     /*

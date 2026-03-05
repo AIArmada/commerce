@@ -101,6 +101,7 @@ return [
             'pages' => true,
             'widgets' => true,
             'custom_permissions' => true,
+            'direct_permissions' => true,
         ],
         'grid_columns' => 2,
         'checkbox_columns' => 3,
