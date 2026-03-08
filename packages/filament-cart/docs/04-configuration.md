@@ -444,7 +444,7 @@ Configure in your alert rules. Emails use Laravel's mail configuration.
 Set the webhook URL:
 
 ```env
-CART_SLACK_WEBHOOK=https://hooks.slack.com/services/T00000000/B00000000/XXXXXXXXXXXXXXXXXXXXXXXX
+CART_SLACK_WEBHOOK=
 ```
 
 Enable in config:
