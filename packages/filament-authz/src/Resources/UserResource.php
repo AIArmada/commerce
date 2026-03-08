@@ -46,6 +46,11 @@ class UserResource extends Resource
         return static::checkAbility('viewAny');
     }
 
+    public static function canView(Model $record): bool
+    {
+        return static::checkAbility('view');
+    }
+
     public static function canCreate(): bool
     {
         return static::checkAbility('create');
@@ -65,7 +70,7 @@ class UserResource extends Resource
     {
         $user = Auth::user();
 
-        if (! $user instanceof Authorizable) {
+        if (!$user instanceof Authorizable) {
             return false;
         }
 
@@ -198,18 +203,18 @@ class UserResource extends Resource
                 'password' => Forms\Components\TextInput::make('password')
                     ->password()
                     ->dehydrateStateUsing(function (?string $state): ?string {
-                        if ($state === null || $state === '') {
-                            return null;
-                        }
+                            if ($state === null || $state === '') {
+                                return null;
+                            }
 
-                        return Hash::make($state);
-                    })
+                            return Hash::make($state);
+                        })
                     ->dehydrated(function (?string $state): bool {
-                        return filled($state);
-                    })
+                            return filled($state);
+                        })
                     ->required(function (string $operation): bool {
-                        return $operation === 'create';
-                    })
+                            return $operation === 'create';
+                        })
                     ->maxLength(255),
                 default => Forms\Components\TextInput::make((string) $field)
                     ->maxLength(255),
