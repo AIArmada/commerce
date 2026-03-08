@@ -12,22 +12,43 @@ jobs:
       fail-fast: false
       matrix:
         package:
+          - affiliate-network
           - affiliates
           - cart
           - cashier
           - cashier-chip
+          - checkout
           - chip
           - commerce-support
           - csuite
+          - customers
           - docs
+          - filament-affiliate-network
           - filament-affiliates
+          - filament-authz
           - filament-cart
+          - filament-cashier
+          - filament-cashier-chip
           - filament-chip
+          - filament-customers
           - filament-docs
+          - filament-inventory
           - filament-jnt
-          - filament-permissions
+          - filament-orders
+          - filament-pricing
+          - filament-products
+          - filament-promotions
+          - filament-shipping
+          - filament-tax
           - filament-vouchers
+          - inventory
           - jnt
+          - orders
+          - pricing
+          - products
+          - promotions
+          - shipping
+          - tax
           - vouchers
 
     steps:
