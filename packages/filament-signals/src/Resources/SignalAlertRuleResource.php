@@ -1,0 +1,197 @@
+<?php
+
+declare(strict_types=1);
+
+namespace AIArmada\FilamentSignals\Resources;
+
+use AIArmada\FilamentSignals\Resources\SignalAlertRuleResource\Pages;
+use AIArmada\Signals\Models\SignalAlertRule;
+use AIArmada\Signals\Models\TrackedProperty;
+use BackedEnum;
+use Filament\Forms;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Components\Utilities\Set;
+use Filament\Schemas\Schema;
+use Filament\Tables;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Str;
+use UnitEnum;
+
+final class SignalAlertRuleResource extends Resource
+{
+    protected static ?string $model = SignalAlertRule::class;
+
+    protected static string | BackedEnum | null $navigationIcon = 'heroicon-o-bell-alert';
+
+    protected static string | UnitEnum | null $navigationGroup = 'Insights';
+
+    protected static ?int $navigationSort = 33;
+
+    protected static ?string $recordTitleAttribute = 'name';
+
+    /**
+     * @return Builder<SignalAlertRule>
+     */
+    public static function getEloquentQuery(): Builder
+    {
+        return SignalAlertRule::query()->forOwner()->with('trackedProperty');
+    }
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->schema([
+            Section::make('Alert Rule')
+                ->schema([
+                    Forms\Components\TextInput::make('name')
+                        ->required()
+                        ->maxLength(255)
+                        ->live(onBlur: true)
+                        ->afterStateUpdated(fn (Set $set, ?string $state) => $set('slug', $state ? Str::slug($state) : '')),
+
+                    Forms\Components\TextInput::make('slug')
+                        ->required()
+                        ->maxLength(255)
+                        ->alphaDash()
+                        ->unique(ignoreRecord: true),
+
+                    Forms\Components\Select::make('tracked_property_id')
+                        ->label('Tracked Property')
+                        ->relationship(
+                            name: 'trackedProperty',
+                            titleAttribute: 'name',
+                            modifyQueryUsing: fn (Builder $query): Builder => $query->whereIn(
+                                'id',
+                                TrackedProperty::query()->forOwner()->select('id')
+                            ),
+                        )
+                        ->searchable()
+                        ->preload(),
+
+                    Forms\Components\Select::make('metric_key')
+                        ->options([
+                            'events' => 'Events',
+                            'page_views' => 'Page Views',
+                            'conversions' => 'Conversions',
+                            'revenue_minor' => 'Revenue (Minor)',
+                            'conversion_rate' => 'Conversion Rate (%)',
+                        ])
+                        ->required(),
+
+                    Forms\Components\Select::make('operator')
+                        ->options([
+                            '>' => 'Greater Than',
+                            '>=' => 'Greater Than or Equal',
+                            '<' => 'Less Than',
+                            '<=' => 'Less Than or Equal',
+                            '=' => 'Equals',
+                            '!=' => 'Not Equals',
+                        ])
+                        ->default('>=')
+                        ->required(),
+
+                    Forms\Components\TextInput::make('threshold')
+                        ->numeric()
+                        ->default(0)
+                        ->required(),
+
+                    Forms\Components\TextInput::make('timeframe_minutes')
+                        ->numeric()
+                        ->default(60)
+                        ->required(),
+
+                    Forms\Components\TextInput::make('cooldown_minutes')
+                        ->numeric()
+                        ->default(60)
+                        ->required(),
+
+                    Forms\Components\Select::make('severity')
+                        ->options([
+                            'info' => 'Info',
+                            'warning' => 'Warning',
+                            'critical' => 'Critical',
+                        ])
+                        ->default('warning')
+                        ->required(),
+
+                    Forms\Components\TextInput::make('priority')
+                        ->numeric()
+                        ->default(0),
+
+                    Forms\Components\Toggle::make('is_active')
+                        ->default(true),
+
+                    Forms\Components\Textarea::make('description')
+                        ->rows(3)
+                        ->columnSpanFull(),
+                ])
+                ->columns(2),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                Tables\Columns\TextColumn::make('name')
+                    ->searchable()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('trackedProperty.name')
+                    ->label('Property')
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('metric_key')
+                    ->badge(),
+                Tables\Columns\TextColumn::make('threshold')
+                    ->numeric(decimalPlaces: 2)
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('timeframe_minutes')
+                    ->label('Window')
+                    ->suffix(' min'),
+                Tables\Columns\TextColumn::make('severity')
+                    ->badge()
+                    ->color(fn (string $state): string => match ($state) {
+                        'critical' => 'danger',
+                        'warning' => 'warning',
+                        default => 'info',
+                    }),
+                Tables\Columns\IconColumn::make('is_active')
+                    ->boolean(),
+                Tables\Columns\TextColumn::make('last_triggered_at')
+                    ->dateTime()
+                    ->sortable()
+                    ->toggleable(),
+                Tables\Columns\TextColumn::make('logs_count')
+                    ->counts('logs')
+                    ->label('Alerts'),
+            ])
+            ->defaultSort('priority', 'desc')
+            ->filters([
+                Tables\Filters\SelectFilter::make('severity')
+                    ->options([
+                        'info' => 'Info',
+                        'warning' => 'Warning',
+                        'critical' => 'Critical',
+                    ]),
+                Tables\Filters\TernaryFilter::make('is_active'),
+            ])
+            ->actions([
+                \Filament\Actions\EditAction::make(),
+                \Filament\Actions\DeleteAction::make(),
+            ])
+            ->bulkActions([
+                \Filament\Actions\BulkActionGroup::make([
+                    \Filament\Actions\DeleteBulkAction::make(),
+                ]),
+            ]);
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListSignalAlertRules::route('/'),
+            'create' => Pages\CreateSignalAlertRule::route('/create'),
+            'edit' => Pages\EditSignalAlertRule::route('/{record}/edit'),
+        ];
+    }
+}
