@@ -14,7 +14,7 @@ final class AuthzScopeTeamResolver implements PermissionsTeamResolver
         return AuthzScopeContext::resolve();
     }
 
-    public function setPermissionsTeamId(int|string|Model|null $id): void
+    public function setPermissionsTeamId(int | string | Model | null $id): void
     {
         $resolvedId = AuthzScopeResolver::resolveId($id);
 
