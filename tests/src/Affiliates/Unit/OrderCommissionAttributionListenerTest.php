@@ -23,10 +23,12 @@ it('records affiliate conversions when order commission attribution is required'
     app(AffiliateService::class)->attachToCartByCode($affiliate->code, $cart);
 
     $cartId = $cart->getId();
+    $orderReference = 'ORD-LISTENER-001';
 
     expect($cartId)->not()->toBeNull();
 
     $order = Order::factory()->paid()->create([
+        'order_number' => $orderReference,
         'metadata' => [
             'cart_id' => $cartId,
         ],
@@ -34,5 +36,9 @@ it('records affiliate conversions when order commission attribution is required'
 
     event(new CommissionAttributionRequired($order));
 
-    expect(AffiliateConversion::count())->toBe(1);
+    $conversion = AffiliateConversion::query()->sole();
+
+    expect($conversion->external_reference)->toBe($orderReference)
+        ->and($conversion->order_reference)->toBe($orderReference)
+        ->and($conversion->conversion_type)->toBe('purchase');
 });

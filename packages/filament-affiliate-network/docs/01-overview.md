@@ -17,6 +17,19 @@ The `aiarmada/filament-affiliate-network` plugin provides a complete Filament v5
 - **Network Stats Widget** - Overview statistics (sites, offers, clicks, conversions, revenue)
 - **Top Offers Widget** - Performance table of best-performing offers
 
+## Relationship to Core Affiliates
+
+This plugin sits on top of `aiarmada/affiliate-network`, which in turn depends on the `Affiliate` model from `aiarmada/affiliates`.
+
+The UI surfaces here manage network-specific entities such as:
+
+- merchant sites
+- offers
+- offer applications
+- offer links and their aggregated metrics
+
+They do not directly depend on the newer core affiliates conversion/link field names (`external_reference`, `value_minor`, subject-aware tracking fields), so no code changes were required for the recent affiliates package update.
+
 ## Plugin Architecture
 
 ```

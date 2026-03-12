@@ -51,9 +51,11 @@ Cart::attachAffiliate('AIARMADA42', [
 Cart::hasAffiliate(); // true
 
 Cart::recordAffiliateConversion([
-    'order_reference' => 'SO-100234',
+    'external_reference' => 'SO-100234',
+    'order_reference' => 'SO-100234', // compatibility alias
     'subtotal' => $order->subtotal_minor, // optional
-    'total' => $order->total_minor,
+    'value_minor' => $order->total_minor,
+    'total' => $order->total_minor, // compatibility alias
 ]);
 ```
 

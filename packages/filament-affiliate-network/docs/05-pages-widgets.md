@@ -50,6 +50,8 @@ $this->applyForOffer($offerId, $reason);
 $this->generateLink($offerId);
 ```
 
+Generated links are `AffiliateOfferLink` records from the affiliate-network package. They are separate from the core affiliates package's public link API and subject-aware tracking link records.
+
 **Customization:**
 
 ```php

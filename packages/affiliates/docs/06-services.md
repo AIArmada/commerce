@@ -46,14 +46,11 @@ $attribution = $service->trackVisitByCode('PARTNER42', $context, $cookieValue);
 $service->touchCookieAttribution($cookieValue, $context);
 
 // Record conversion
-$conversion = $service->recordConversion($affiliate, [
-    'order_reference' => 'ORD-123',
-    'total_minor' => 15000,
-]);
-
-// Record conversion from cart
-$conversion = $service->recordConversionFromCart($cart, [
-    'order_reference' => 'ORD-123',
+$conversion = $service->recordConversion($cart, [
+    'external_reference' => 'ORD-123',
+    'order_reference' => 'ORD-123', // compatibility alias
+    'value_minor' => 15000,
+    'total_minor' => 15000, // compatibility alias
 ]);
 ```
 

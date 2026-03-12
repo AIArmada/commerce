@@ -16,7 +16,10 @@ final class OwnerContextTeamResolver implements PermissionsTeamResolver
         return OwnerContext::resolve()?->getKey();
     }
 
-    public function setPermissionsTeamId(int | string | Model | null $id): void
+    /**
+     * @param  int|string|Model|null  $id
+     */
+    public function setPermissionsTeamId($id): void
     {
         if ($id instanceof Model || $id === null) {
             OwnerContext::override($id);
